@@ -141,12 +141,12 @@ inline unsigned genLog2(uint64_t value)
     return BitOperations::BitScanForward(value);
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 inline unsigned genLog2(size_t value)
 {
     return genLog2((uint64_t)value);
 }
-#endif // __APPLE__
+#endif // __APPLE__ || __OpenBSD__
 
 // Given an unsigned 64-bit value, returns the lower 32-bits in unsigned format
 //
@@ -1973,8 +1973,8 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     switch (oper)
     {
         case GT_CNS_INT:
-            AsIntCon()->gtFieldSeq = nullptr;
-            INDEBUG(AsIntCon()->gtTargetHandle = 0);
+            AsIntCon()->SetFieldSeq(nullptr);
+            INDEBUG(AsIntCon()->SetTargetHandle(0));
             break;
 #if defined(TARGET_ARM)
         case GT_MUL_LONG:
@@ -2101,8 +2101,8 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
             }
 
             AsIntCon()->SetIconValue(static_cast<ssize_t>(value));
-            AsIntCon()->gtFieldSeq          = nullptr;
-            AsIntCon()->gtCompileTimeHandle = 0;
+            AsIntCon()->SetFieldSeq(nullptr);
+            AsIntCon()->SetCompileTimeHandle(0);
             break;
 
 #if !defined(TARGET_64BIT)

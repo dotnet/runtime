@@ -526,20 +526,20 @@ private:
 // ============================================================================
 
 public:
-    // Get object information for a TypedByRef object. Initializes the objRef and typedByRefType fields of
-    // pObjectData (type info for the referent).
-    HRESULT STDMETHODCALLTYPE GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, DebuggerIPCE_ObjectData * pObjectData);
+    // Get object information for a TypedByRef object. Fills the objRef and typedByRefType
+    // (type info for the referent).
+    HRESULT STDMETHODCALLTYPE GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, CORDB_ADDRESS * pObjRef, DebuggerIPCE_BasicTypeData * pTypedByRefType);
 
     // Get the string length and offset to string base for a string object
-    HRESULT STDMETHODCALLTYPE GetStringData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData);
+    HRESULT STDMETHODCALLTYPE GetStringData(CORDB_ADDRESS objectAddress, UINT * pLength, UINT * pOffsetToStringBase);
 
     // Get information for an array type referent of an objRef, including rank, upper and lower bounds,
     // element size and type, and the number of elements.
-    HRESULT STDMETHODCALLTYPE GetArrayData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData);
+    HRESULT STDMETHODCALLTYPE GetArrayData(CORDB_ADDRESS objectAddress, BOOL * pIsValidArray, DacDbiArrayInfo * pArrayInfo);
 
     // Get information about an object for which we have a reference, including the object size and
     // type information.
-    HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, DebuggerIPCE_ObjectData * pObjectData);
+    HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, BOOL * pIsValidRef, UINT * pObjSize, UINT * pObjOffsetToVars, DebuggerIPCE_ExpandedTypeData * pObjTypeData);
 
     // Returns the thread which owns the monitor lock on an object and the acquisition count
     HRESULT STDMETHODCALLTYPE GetThreadOwningMonitorLock(VMPTR_Object vmObject, OUT MonitorLockInfo * pRetVal);
@@ -557,17 +557,11 @@ private:
     // invalid object addresses. See code:DacDbiInterfaceImpl::FastSanityCheckObject for more details.
     bool CheckRef(PTR_Object objPtr);
 
-    // Initialize basic object information: type handle, object size, offset to fields and expanded type
-    // information.
-    void InitObjectData(PTR_Object                objPtr,
-                        DebuggerIPCE_ObjectData * pObjectData);
-
 // ============================================================================
 // CordbAssembly, CordbModule
 // ============================================================================
 
     using ClrDataAccess::GetModuleData;
-    using ClrDataAccess::GetAddressType;
 
 public:
     // Get the full path and file name to the assembly's manifest module.
@@ -593,8 +587,8 @@ public:
 
     HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule, OUT BOOL * pIsModuleLoaded);
 
-    // Get the "type" of address.
-    HRESULT STDMETHODCALLTYPE GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal);
+    // Get whether the specified address is managed code.
+    HRESULT STDMETHODCALLTYPE IsManagedCode(CORDB_ADDRESS address, OUT BOOL * pIsManaged);
 
 
     // Enumerate the assemblies in the appdomain.

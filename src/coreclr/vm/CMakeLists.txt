@@ -17,9 +17,11 @@ include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
-if(CLR_CMAKE_TARGET_ANDROID)
+if(CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_OPENBSD)
+    # OpenBSD's ld.so cannot resolve native TLS relocations in shared objects and has no
+    # __tls_get_addr, so the runtime must use emulated TLS (like Android).
     add_definitions(-DFEATURE_EMULATED_TLS)
-endif(CLR_CMAKE_TARGET_ANDROID)
+endif()
 
 foreach (Config DEBUG CHECKED)
     add_compile_definitions($<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK>)
@@ -954,6 +956,11 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )
+    if (CLR_CMAKE_TARGET_BROWSER)
+        list(APPEND VM_SOURCES_WKS_ARCH
+            ${ARCH_SOURCES_DIR}/browserprofiler.cpp
+        )
+    endif(CLR_CMAKE_TARGET_BROWSER)
     set(VM_SOURCES_WKS_GEN
         ${ARCH_SOURCES_DIR}/callhelpers-interp-to-managed.cpp
         ${ARCH_SOURCES_DIR}/callhelpers-reverse.cpp

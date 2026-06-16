@@ -108,8 +108,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
         try
         {
-            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            TargetPointer appDomainAddr = _target.ReadPointer(appDomainPointer);
+            TargetPointer appDomainAddr = _target.Contracts.Loader.GetAppDomain();
 
             if (appDomainAddr != TargetPointer.Null)
             {
@@ -376,8 +375,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             MethodDescHandle mdh = GetFrameMethodDesc(out _);
-            TargetPointer appDomain = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.AppDomain));
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
             method.Interface = new ClrDataMethodInstance(_target, mdh, appDomain, legacyMethod);
         }
