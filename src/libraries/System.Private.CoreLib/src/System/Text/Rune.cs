@@ -1014,7 +1014,7 @@ namespace System.Text
         /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         static bool IParsable<Rune>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Rune result)
         {
-            if (DecodeFromUtf16(s, out result, out int charsConsumed) != OperationStatus.Done || charsConsumed != (s?.Length ?? 0))
+            if (DecodeFromUtf16(s, out result, out int charsConsumed) != OperationStatus.Done || charsConsumed != s!.Length)
             {
                 result = default;
                 return false;
