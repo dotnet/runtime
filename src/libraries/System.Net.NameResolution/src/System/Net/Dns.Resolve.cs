@@ -156,10 +156,7 @@ namespace System.Net
         /// <returns>A <see cref="DnsResult{T}"/> containing the PTR records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
         public static DnsResult<PtrRecord> ResolvePtr(IPAddress address)
-        {
-            ArgumentNullException.ThrowIfNull(address);
-            return DefaultResolver.ResolvePtr(DnsResolver.BuildArpaName(address));
-        }
+            => DefaultResolver.ResolvePtr(address);
 
         /// <summary>
         /// Asynchronously resolves the pointer (PTR) records for the specified name using the system-configured DNS servers.
@@ -179,10 +176,7 @@ namespace System.Net
         /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the PTR records.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
         public static Task<DnsResult<PtrRecord>> ResolvePtrAsync(IPAddress address, CancellationToken cancellationToken = default)
-        {
-            ArgumentNullException.ThrowIfNull(address);
-            return DefaultResolver.ResolvePtrAsync(DnsResolver.BuildArpaName(address), cancellationToken);
-        }
+            => DefaultResolver.ResolvePtrAsync(address, cancellationToken);
 
         /// <summary>
         /// Resolves the authoritative name server (NS) records for the specified name using the system-configured DNS servers.

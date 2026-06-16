@@ -79,6 +79,7 @@ namespace System.Net
         public System.Net.DnsResult<System.Net.TxtRecord> ResolveTxt(string name) { throw null; }
         public System.Net.DnsResult<System.Net.CNameRecord> ResolveCName(string name) { throw null; }
         public System.Net.DnsResult<System.Net.PtrRecord> ResolvePtr(string name) { throw null; }
+        public System.Net.DnsResult<System.Net.PtrRecord> ResolvePtr(System.Net.IPAddress address) { throw null; }
         public System.Net.DnsResult<System.Net.NsRecord> ResolveNs(string name) { throw null; }
         public System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.AddressRecord>> ResolveAddressesAsync(string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.AddressRecord>> ResolveAddressesAsync(string name, System.Net.Sockets.AddressFamily addressFamily, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -87,6 +88,7 @@ namespace System.Net
         public System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.TxtRecord>> ResolveTxtAsync(string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.CNameRecord>> ResolveCNameAsync(string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.PtrRecord>> ResolvePtrAsync(string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.PtrRecord>> ResolvePtrAsync(System.Net.IPAddress address, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.Net.DnsResult<System.Net.NsRecord>> ResolveNsAsync(string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }

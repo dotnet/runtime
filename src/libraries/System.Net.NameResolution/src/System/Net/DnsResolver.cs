@@ -152,6 +152,22 @@ namespace System.Net
         }
 
         /// <summary>
+        /// Resolves the pointer (PTR) records for the specified IP address, performing a reverse DNS lookup.
+        /// </summary>
+        /// <param name="address">The IP address to perform a reverse lookup for.</param>
+        /// <returns>A <see cref="DnsResult{T}"/> containing the PTR records.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
+        public DnsResult<PtrRecord> ResolvePtr(IPAddress address)
+        {
+            ArgumentNullException.ThrowIfNull(address);
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            Task<DnsResult<PtrRecord>> task = ResolvePtrCore(async: false, BuildArpaName(address), default);
+            Debug.Assert(task.IsCompleted);
+            return task.GetAwaiter().GetResult();
+        }
+
+        /// <summary>
         /// Resolves the authoritative name server (NS) records for the specified name.
         /// </summary>
         /// <param name="name">The domain name to resolve.</param>
@@ -271,6 +287,21 @@ namespace System.Net
             ValidateName(name);
             ObjectDisposedException.ThrowIf(_disposed, this);
             return ResolvePtrCore(async: true, name, cancellationToken);
+        }
+
+        /// <summary>
+        /// Asynchronously resolves the pointer (PTR) records for the specified IP address, performing a reverse DNS lookup.
+        /// </summary>
+        /// <param name="address">The IP address to perform a reverse lookup for.</param>
+        /// <param name="cancellationToken">A token to cancel the asynchronous operation.</param>
+        /// <returns>A task that completes with a <see cref="DnsResult{T}"/> containing the PTR records.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="address"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The resolver has been disposed.</exception>
+        public Task<DnsResult<PtrRecord>> ResolvePtrAsync(IPAddress address, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(address);
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return ResolvePtrCore(async: true, BuildArpaName(address), cancellationToken);
         }
 
         /// <summary>
