@@ -109,30 +109,34 @@ extends:
                       extraHelixArguments: /p:BuildTargetFramework=net481
 
         # WebAssembly CoreCLR - run the slow [OuterLoop] library suites on Chrome.
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/common/global-build-job.yml
-            helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-            buildConfig: Release
-            runtimeFlavor: coreclr
-            platforms:
-            - browser_wasm
-            jobParameters:
-              testScope: outerloop
-              nameSuffix: LibraryTestsCoreCLR
-              buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) /p:InstallChromeForTests=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:1
-              # Outerloop runs the slow suites, so the job waits longer than the
-              # innerloop wasm/coreclr leg (240) and longer than the per-batch Helix
-              # timeout cap (240) so the synchronous send-to-Helix wait fits in the job.
-              timeoutInMinutes: 420
-              includeAllPlatforms: ${{ variables['isRollingBuild'] }}
-              # extra steps, run tests
-              postBuildSteps:
-                - template: /eng/pipelines/libraries/helix.yml
-                  parameters:
-                    scenarios:
-                    - WasmTestOnChrome
-                    testScope: outerloop
-                    creator: dotnet-bot
-                    testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-                    extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+        # Gated on includeLinuxOuterloop (browser_wasm builds on a Linux host) so the
+        # wasm suites run in the umbrella and -linux outerloop definitions only, not in
+        # every platform-split (-windows/-osx) outerloop definition.
+        - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
+          - template: /eng/pipelines/common/platform-matrix.yml
+            parameters:
+              jobTemplate: /eng/pipelines/common/global-build-job.yml
+              helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+              buildConfig: Release
+              runtimeFlavor: coreclr
+              platforms:
+              - browser_wasm
+              jobParameters:
+                testScope: outerloop
+                nameSuffix: LibraryTestsCoreCLR
+                buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) /p:InstallChromeForTests=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:1
+                # Outerloop runs the slow suites, so the job waits longer than the
+                # innerloop wasm/coreclr leg (240) and longer than the per-batch Helix
+                # timeout cap (240) so the synchronous send-to-Helix wait fits in the job.
+                timeoutInMinutes: 420
+                includeAllPlatforms: ${{ variables['isRollingBuild'] }}
+                # extra steps, run tests
+                postBuildSteps:
+                  - template: /eng/pipelines/libraries/helix.yml
+                    parameters:
+                      scenarios:
+                      - WasmTestOnChrome
+                      testScope: outerloop
+                      creator: dotnet-bot
+                      testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                      extraHelixArguments: /p:BrowserHost=$(_hostedOs)
