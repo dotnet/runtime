@@ -35,13 +35,10 @@ public sealed unsafe partial class SOSDacImpl
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
       ISOSDacInterface16
 {
+    private const uint DefaultAppDomainId = 1;
+
     private readonly Target _target;
 
-    // When this class is created, the runtime may not have loaded the string and object method tables and set the global pointers.
-    // This is also the case for the GetUsefulGlobals API, which can be called as part of load notifications before runtime start.
-    // They should be set when actually requested via other DAC APIs, so we lazily read the global pointers.
-    private readonly Lazy<TargetPointer> _stringMethodTable;
-    private readonly Lazy<TargetPointer> _objectMethodTable;
     private readonly ulong _rcwMask = 1UL;
 
     private readonly ISOSDacInterface? _legacyImpl;
@@ -67,11 +64,6 @@ public sealed unsafe partial class SOSDacImpl
     public SOSDacImpl(Target target, object? legacyObj)
     {
         _target = target;
-        _stringMethodTable = new Lazy<TargetPointer>(
-            () => _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.StringMethodTable)));
-
-        _objectMethodTable = new Lazy<TargetPointer>(
-            () => _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable)));
 
         // Get all the interfaces for delegating to the legacy DAC
         if (legacyObj is not null)
@@ -126,38 +118,34 @@ public sealed unsafe partial class SOSDacImpl
 
             *data = default;
             data->AppDomainPtr = addr;
-            TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-            ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPointer).ToClrDataAddress(_target);
             Contracts.ILoader loader = _target.Contracts.Loader;
             TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
             data->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->appDomainStage = DacpAppDomainDataStage.STAGE_OPEN;
-            if (addr != systemDomain)
+
+            TargetPointer pAppDomain = addr.ToTargetPointer(_target);
+            data->dwId = DefaultAppDomainId;
+
+            IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
+                pAppDomain,
+                AssemblyIterationFlags.IncludeLoading |
+                AssemblyIterationFlags.IncludeLoaded |
+                AssemblyIterationFlags.IncludeExecution);
+
+            foreach (Contracts.ModuleHandle module in modules)
             {
-                TargetPointer pAppDomain = addr.ToTargetPointer(_target);
-                data->dwId = _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
-
-                IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
-                    pAppDomain,
-                    AssemblyIterationFlags.IncludeLoading |
-                    AssemblyIterationFlags.IncludeLoaded |
-                    AssemblyIterationFlags.IncludeExecution);
-
-                foreach (Contracts.ModuleHandle module in modules)
+                if (loader.IsAssemblyLoaded(module))
                 {
-                    if (loader.IsAssemblyLoaded(module))
-                    {
-                        data->AssemblyCount++;
-                    }
+                    data->AssemblyCount++;
                 }
-
-                IEnumerable<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
-                    pAppDomain,
-                    AssemblyIterationFlags.IncludeFailedToLoad);
-                data->FailedAssemblyCount = failedModules.Count();
             }
+
+            IEnumerable<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
+                pAppDomain,
+                AssemblyIterationFlags.IncludeFailedToLoad);
+            data->FailedAssemblyCount = failedModules.Count();
         }
         catch (System.Exception ex)
         {
@@ -193,8 +181,7 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             uint i = 0;
-            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
             if (appDomain != TargetPointer.Null && values.Length > 0)
             {
@@ -233,24 +220,19 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             ILoader loader = _target.Contracts.Loader;
-            TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-            ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
 
             string? friendlyName = null;
-            if (addr != systemDomain)
+            try
             {
-                try
-                {
-                    friendlyName = loader.GetAppDomainFriendlyName();
-                }
-                catch (VirtualReadException)
-                {
-                    // The FriendlyName field is a PTR_CWSTR (pointer to wide char string).
-                    // ReadUtf16String throws VirtualReadException when the pointer targets
-                    // unreadable memory (e.g. the name is not yet set during early init).
-                    // The native DAC handles this via PTR_AppDomain->m_friendlyName.IsValid()
-                    // and falls through to return an empty string. Match that behavior here.
-                }
+                friendlyName = loader.GetAppDomainFriendlyName();
+            }
+            catch (VirtualReadException)
+            {
+                // The FriendlyName field is a PTR_CWSTR (pointer to wide char string).
+                // ReadUtf16String throws VirtualReadException when the pointer targets
+                // unreadable memory (e.g. the name is not yet set during early init).
+                // The native DAC handles this via PTR_AppDomain->m_friendlyName.IsValid()
+                // and falls through to return an empty string. Match that behavior here.
             }
 
             if (friendlyName is null || friendlyName.Length == 0)
@@ -308,10 +290,9 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             appDomainStoreData->sharedDomain = 0;
-            TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-            appDomainStoreData->systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
-            TargetPointer appDomainPtr = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            appDomainStoreData->DomainCount = _target.ReadPointer(appDomainPtr) != 0 ? 1 : 0;
+            appDomainStoreData->systemDomain = 0;
+            TargetPointer defaultAppDomain = _target.Contracts.Loader.GetAppDomain();
+            appDomainStoreData->DomainCount = defaultAppDomain != TargetPointer.Null ? 1 : 0;
         }
         catch (System.Exception ex)
         {
@@ -363,9 +344,8 @@ public sealed unsafe partial class SOSDacImpl
             data->AssemblyPtr = assembly;
             data->DomainPtr = domain;
 
-            TargetPointer ppAppDomain = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            TargetPointer pAppDomain = _target.ReadPointer(ppAppDomain);
-            data->ParentDomain = pAppDomain.ToClrDataAddress(_target);
+            TargetPointer defaultAppDomain = _target.Contracts.Loader.GetAppDomain();
+            data->ParentDomain = defaultAppDomain.ToClrDataAddress(_target);
 
             ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(assembly.ToTargetPointer(_target));
@@ -415,13 +395,8 @@ public sealed unsafe partial class SOSDacImpl
             if (addr == 0)
                 throw new ArgumentException();
             TargetPointer appDomain = addr.ToTargetPointer(_target);
-            TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-            ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
-            if (addr == systemDomain)
-                // We shouldn't be asking for the assemblies in SystemDomain
-                throw new ArgumentException();
-
             ILoader loader = _target.Contracts.Loader;
+
             List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                 appDomain,
                 AssemblyIterationFlags.IncludeLoading |
@@ -1642,8 +1617,7 @@ public sealed unsafe partial class SOSDacImpl
             IGC gc = _target.Contracts.GC;
             List<HandleData> handles = gc.GetHandles(types);
 
-            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
             ClrDataAddress appDomainClrAddress = appDomain.ToClrDataAddress(_target);
 
             SOSHandleData[] sosHandles = new SOSHandleData[handles.Count];
@@ -3160,16 +3134,18 @@ public sealed unsafe partial class SOSDacImpl
 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle).ToClrDataAddress(_target);
 
-            Target.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
-            ulong tableDataOffset = (ulong)lookupMapTypeInfo.Fields[Constants.FieldNames.ModuleLookupMap.TableData].Offset;
-
             Contracts.ModuleLookupTables tables = contract.GetLookupTables(handle);
-            data->FieldDefToDescMap = _target.ReadPointer(tables.FieldDefToDesc + tableDataOffset).ToClrDataAddress(_target);
-            data->ManifestModuleReferencesMap = _target.ReadPointer(tables.ManifestModuleReferences + tableDataOffset).ToClrDataAddress(_target);
-            data->MemberRefToDescMap = _target.ReadPointer(tables.MemberRefToDesc + tableDataOffset).ToClrDataAddress(_target);
-            data->MethodDefToDescMap = _target.ReadPointer(tables.MethodDefToDesc + tableDataOffset).ToClrDataAddress(_target);
-            data->TypeDefToMethodTableMap = _target.ReadPointer(tables.TypeDefToMethodTable + tableDataOffset).ToClrDataAddress(_target);
-            data->TypeRefToMethodTableMap = _target.ReadPointer(tables.TypeRefToMethodTable + tableDataOffset).ToClrDataAddress(_target);
+            data->FieldDefToDescMap = ReadMapBase(_target, tables.FieldDefToDesc, tables.TableDataOffset);
+            data->ManifestModuleReferencesMap = ReadMapBase(_target, tables.ManifestModuleReferences, tables.TableDataOffset);
+            data->MemberRefToDescMap = ReadMapBase(_target, tables.MemberRefToDesc, tables.TableDataOffset);
+            data->MethodDefToDescMap = ReadMapBase(_target, tables.MethodDefToDesc, tables.TableDataOffset);
+            data->TypeDefToMethodTableMap = ReadMapBase(_target, tables.TypeDefToMethodTable, tables.TableDataOffset);
+            data->TypeRefToMethodTableMap = ReadMapBase(_target, tables.TypeRefToMethodTable, tables.TableDataOffset);
+
+            static ClrDataAddress ReadMapBase(Target target, TargetPointer table, uint offset)
+                => table == TargetPointer.Null
+                    ? default
+                    : target.ReadPointer(table + offset).ToClrDataAddress(target);
 
             // Always 0 - .NET no longer has these concepts
             data->dwModuleID = 0;
@@ -3351,17 +3327,17 @@ public sealed unsafe partial class SOSDacImpl
                 // Free objects have their component count explicitly set at the same offset as that for arrays
                 // Update the size to include those components
                 Target.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
-                ulong numComponentsOffset = (ulong)_target.GetTypeInfo(DataType.Array).Fields[Constants.FieldNames.Array.NumComponents].Offset;
+                ulong numComponentsOffset = (ulong)arrayTypeInfo.Fields[Constants.FieldNames.Array.NumComponents].Offset;
                 data->Size += _target.Read<uint>(objAddr + numComponentsOffset) * data->dwComponentSize;
             }
-            else if (mt == _stringMethodTable.Value)
+            else if (mt == runtimeTypeSystemContract.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.String))
             {
                 data->ObjectType = DacpObjectType.OBJ_STRING;
 
                 // Update the size to include the string character components
                 data->Size += (uint)objectContract.GetStringValue(objPtr).Length * data->dwComponentSize;
             }
-            else if (mt == _objectMethodTable.Value)
+            else if (mt == runtimeTypeSystemContract.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.Object))
             {
                 data->ObjectType = DacpObjectType.OBJ_OBJECT;
             }
@@ -4236,8 +4212,7 @@ public sealed unsafe partial class SOSDacImpl
                             data->HoldingThread = threadPtr.ToClrDataAddress(_target);
                         }
 
-                        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-                        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+                        TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
                         data->appDomainPtr = appDomain.ToClrDataAddress(_target);
 
                         data->AdditionalThreadCount = syncBlock.GetAdditionalThreadCount(syncBlockAddr);
@@ -4330,8 +4305,7 @@ public sealed unsafe partial class SOSDacImpl
             data->allocContextLimit = threadData.AllocContextLimit.ToClrDataAddress(_target);
             data->fiberData = 0;    // Always set to 0 - fibers are no longer supported
 
-            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
             data->context = appDomain.ToClrDataAddress(_target);
             data->domain = appDomain.ToClrDataAddress(_target);
 
@@ -4521,21 +4495,12 @@ public sealed unsafe partial class SOSDacImpl
         {
             if (data == null)
                 throw new ArgumentException();
-            data->ArrayMethodTable = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ObjectArrayMethodTable))
-                .ToClrDataAddress(_target);
-            data->StringMethodTable = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.StringMethodTable))
-                .ToClrDataAddress(_target);
-            data->ObjectMethodTable = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable))
-                .ToClrDataAddress(_target);
-            data->ExceptionMethodTable = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ExceptionMethodTable))
-                .ToClrDataAddress(_target);
-            data->FreeMethodTable = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable))
-                .ToClrDataAddress(_target);
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            data->ArrayMethodTable = rts.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.Array).ToClrDataAddress(_target);
+            data->StringMethodTable = rts.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.String).ToClrDataAddress(_target);
+            data->ObjectMethodTable = rts.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.Object).ToClrDataAddress(_target);
+            data->ExceptionMethodTable = rts.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.Exception).ToClrDataAddress(_target);
+            data->FreeMethodTable = rts.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.Free).ToClrDataAddress(_target);
         }
         catch (System.Exception ex)
         {

@@ -2414,7 +2414,7 @@ ClrDataAccess::GetAppDomainStoreData(struct DacpAppDomainStoreData *adsData)
 {
     SOSDacEnter();
 
-    adsData->systemDomain = HOST_CDADDR(SystemDomain::System());
+    adsData->systemDomain = (CLRDATA_ADDRESS)NULL;
     adsData->sharedDomain = (CLRDATA_ADDRESS)NULL;
 
     // Get an accurate count of appdomains.
@@ -2445,29 +2445,26 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
         appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
         appdomainData->appDomainStage = STAGE_OPEN;
 
-        if (addr != HOST_CDADDR(SystemDomain::System()))
+        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
+
+        appdomainData->dwId = DefaultADID;
+
+        AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
+            kIncludeLoading | kIncludeLoaded | kIncludeExecution));
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+
+        while (i.Next(pAssembly.This()))
         {
-            PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-
-            appdomainData->dwId = DefaultADID;
-
-            AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
-                kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-            CollectibleAssemblyHolder<Assembly *> pAssembly;
-
-            while (i.Next(pAssembly.This()))
+            if (pAssembly->IsLoaded())
             {
-                if (pAssembly->IsLoaded())
-                {
-                    appdomainData->AssemblyCount++;
-                }
+                appdomainData->AssemblyCount++;
             }
+        }
 
-            AppDomain::FailedAssemblyIterator j = pAppDomain->IterateFailedAssembliesEx();
-            while (j.Next())
-            {
-                appdomainData->FailedAssemblyCount++;
-            }
+        AppDomain::FailedAssemblyIterator j = pAppDomain->IterateFailedAssembliesEx();
+        while (j.Next())
+        {
+            appdomainData->FailedAssemblyCount++;
         }
     }
 
@@ -2558,40 +2555,32 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
 
     SOSDacEnter();
 
-    if (addr == HOST_CDADDR(SystemDomain::System()))
+    PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
+    AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
+        (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
+
+    int n = 0;
+    if (values)
     {
-        // We shouldn't be asking for the assemblies in SystemDomain
-        hr = E_INVALIDARG;
+        while (i.Next(pAssembly.This()) && (n < count))
+        {
+            if (pAssembly->IsLoaded())
+            {
+                // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
+                values[n++] = HOST_CDADDR(pAssembly.Extract());
+            }
+        }
     }
     else
     {
-        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-        AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
-            (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-
-        int n = 0;
-        if (values)
-        {
-            while (i.Next(pAssembly.This()) && (n < count))
-            {
-                if (pAssembly->IsLoaded())
-                {
-                    // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-                    values[n++] = HOST_CDADDR(pAssembly.Extract());
-                }
-            }
-        }
-        else
-        {
-            while (i.Next(pAssembly.This()))
-                if (pAssembly->IsLoaded())
-                    n++;
-        }
-
-        if (pNeeded)
-            *pNeeded = n;
+        while (i.Next(pAssembly.This()))
+            if (pAssembly->IsLoaded())
+                n++;
     }
+
+    if (pNeeded)
+        *pNeeded = n;
 
     SOSDacLeave();
     return hr;
@@ -2631,48 +2620,37 @@ ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout
 {
     SOSDacEnter();
 
-    if (addr == HOST_CDADDR(SystemDomain::System()))
+    PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
+
+    size_t countAsSizeT = count;
+    if (pAppDomain->m_friendlyName.IsValid())
     {
-        // SystemDomain doesn't have this field.
+        LPCWSTR friendlyName = (LPCWSTR)pAppDomain->m_friendlyName;
+        size_t friendlyNameLen = u16_strlen(friendlyName);
+
+        if (pNeeded)
+        {
+            *pNeeded = (unsigned int)(friendlyNameLen + 1);
+        }
+
+        if (name && count > 0)
+        {
+            if (countAsSizeT > (friendlyNameLen + 1))
+            {
+                countAsSizeT = friendlyNameLen + 1;
+            }
+            memcpy(name, friendlyName, countAsSizeT * sizeof(WCHAR));
+            name[countAsSizeT - 1] = 0;
+        }
+    }
+    else
+    {
         if (pNeeded)
             *pNeeded = 1;
         if (name && count > 0)
             name[0] = 0;
-    }
-    else
-    {
-        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
 
-        size_t countAsSizeT = count;
-        if (pAppDomain->m_friendlyName.IsValid())
-        {
-            LPCWSTR friendlyName = (LPCWSTR)pAppDomain->m_friendlyName;
-            size_t friendlyNameLen = u16_strlen(friendlyName);
-
-            if (pNeeded)
-            {
-                *pNeeded = (unsigned int)(friendlyNameLen + 1);
-            }
-
-            if (name && count > 0)
-            {
-                if (countAsSizeT > (friendlyNameLen + 1))
-                {
-                    countAsSizeT = friendlyNameLen + 1;
-                }
-                memcpy(name, friendlyName, countAsSizeT * sizeof(WCHAR));
-                name[countAsSizeT - 1] = 0;
-            }
-        }
-        else
-        {
-            if (pNeeded)
-                *pNeeded = 1;
-            if (name && count > 0)
-                name[0] = 0;
-
-            hr = S_OK;
-        }
+        hr = S_OK;
     }
 
     SOSDacLeave();
