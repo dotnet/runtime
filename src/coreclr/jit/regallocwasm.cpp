@@ -1193,6 +1193,16 @@ void WasmRegAlloc::ResolveReferences()
                 decls->push_back({type, physRegs.DeclaredCount});
             }
         }
+
+        // Allocate the per-funclet exnref local used to relay caught exceptions
+        // from the catch_ref landing to any throw_ref rethrow site in this function.
+        //
+        if (m_compiler->lvaWasmResumeIP != BAD_VAR_NUM)
+        {
+            assert(funcInfo->funWasmExnRefLocalIndex == UINT_MAX);
+            funcInfo->funWasmExnRefLocalIndex = indexBase;
+            decls->push_back({WasmValueType::ExnRef, 1});
+        }
     }
 
     // Set all lcl var assignments to the main method's allocations.
