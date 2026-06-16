@@ -32,6 +32,8 @@ namespace System.Text
 #pragma warning disable SA1001 // Commas should be spaced correctly
         , ISpanFormattable
         , IUtf8SpanFormattable
+        , IParsable<Rune>
+        , ISpanParsable<Rune>
         , IUtf8SpanParsable<Rune>
 #pragma warning restore SA1001
 #endif
@@ -994,6 +996,54 @@ namespace System.Text
             }
 
             return result;
+        }
+
+        /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
+        static Rune IParsable<Rune>.Parse(string s, IFormatProvider? provider)
+        {
+            ArgumentNullException.ThrowIfNull(s);
+
+            if (DecodeFromUtf16(s, out Rune result, out int charsConsumed) != OperationStatus.Done || charsConsumed != s.Length)
+            {
+                ThrowHelper.ThrowFormatInvalidString();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        static bool IParsable<Rune>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Rune result)
+        {
+            if (DecodeFromUtf16(s, out result, out int charsConsumed) != OperationStatus.Done || charsConsumed != (s?.Length ?? 0))
+            {
+                result = default;
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        static Rune ISpanParsable<Rune>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+        {
+            if (DecodeFromUtf16(s, out Rune result, out int charsConsumed) != OperationStatus.Done || charsConsumed != s.Length)
+            {
+                ThrowHelper.ThrowFormatInvalidString();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        static bool ISpanParsable<Rune>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Rune result)
+        {
+            if (DecodeFromUtf16(s, out result, out int charsConsumed) != OperationStatus.Done || charsConsumed != s.Length)
+            {
+                result = default;
+                return false;
+            }
+
+            return true;
         }
 
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();

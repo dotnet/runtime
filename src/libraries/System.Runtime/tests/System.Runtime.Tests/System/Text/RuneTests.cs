@@ -291,6 +291,71 @@ namespace System.Text.Tests
             Assert.Equal(Rune.ReplacementChar, actualRune);
         }
 
+        public static IEnumerable<object[]> Parse_Utf16_Valid_TestData()
+        {
+            yield return new object[] { "0", 0x0030 }; // ASCII char
+            yield return new object[] { "\u00D0", 0x00D0 }; // U+00D0 LATIN CAPITAL LETTER ETH (BMP, 1 char)
+            yield return new object[] { "\u2234", 0x2234 }; // U+2234 THEREFORE (BMP, 1 char)
+            yield return new object[] { "\uD83D\uDE32", 0x1F632 }; // U+1F632 ASTONISHED FACE (supplementary plane, surrogate pair)
+            yield return new object[] { "\uD83D\uDE0E", 0x1F60E }; // U+1F60E SMILING FACE WITH SUNGLASSES
+        }
+
+        public static IEnumerable<object[]> Parse_Utf16_Invalid_TestData()
+        {
+            yield return new object[] { "" }; // empty
+            yield return new object[] { "ab" }; // multiple BMP chars
+            yield return new object[] { "\uD83D" }; // unpaired high surrogate
+            yield return new object[] { "\uDE32" }; // unpaired low surrogate
+            yield return new object[] { "\uDE32\uD83D" }; // low followed by high (reversed surrogate pair)
+            yield return new object[] { "\uD83D\uDE32a" }; // valid surrogate pair plus extra char
+            yield return new object[] { "a\uD83D\uDE32" }; // extra char before valid surrogate pair
+            yield return new object[] { "\uD83Da" }; // high surrogate followed by non-low-surrogate
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Utf16_Valid_TestData))]
+        public static void Parse_String(string s, int expectedRuneValue)
+        {
+            Assert.Equal(expectedRuneValue, ParsableHelper<Rune>.Parse(s, null).Value);
+            Assert.True(ParsableHelper<Rune>.TryParse(s, null, out Rune actualRune));
+            Assert.Equal(expectedRuneValue, actualRune.Value);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Utf16_Invalid_TestData))]
+        public static void Parse_String_Invalid(string s)
+        {
+            Assert.Throws<FormatException>(() => ParsableHelper<Rune>.Parse(s, null));
+            Assert.False(ParsableHelper<Rune>.TryParse(s, null, out Rune actualRune));
+            Assert.Equal(default, actualRune);
+        }
+
+        [Fact]
+        public static void Parse_String_Null()
+        {
+            Assert.Throws<ArgumentNullException>(() => ParsableHelper<Rune>.Parse(null, null));
+            Assert.False(ParsableHelper<Rune>.TryParse(null, null, out Rune actualRune));
+            Assert.Equal(default, actualRune);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Utf16_Valid_TestData))]
+        public static void Parse_Span(string s, int expectedRuneValue)
+        {
+            Assert.Equal(expectedRuneValue, SpanParsableHelper<Rune>.Parse(s.AsSpan(), null).Value);
+            Assert.True(SpanParsableHelper<Rune>.TryParse(s.AsSpan(), null, out Rune actualRune));
+            Assert.Equal(expectedRuneValue, actualRune.Value);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Utf16_Invalid_TestData))]
+        public static void Parse_Span_Invalid(string s)
+        {
+            Assert.Throws<FormatException>(() => SpanParsableHelper<Rune>.Parse(s.AsSpan(), null));
+            Assert.False(SpanParsableHelper<Rune>.TryParse(s.AsSpan(), null, out Rune actualRune));
+            Assert.Equal(default, actualRune);
+        }
+
         [Theory]
         [InlineData(new byte[0], OperationStatus.NeedMoreData, 0xFFFD, 0)] // empty buffer
         [InlineData(new byte[] { 0x30 }, OperationStatus.Done, 0x0030, 1)] // ASCII byte
