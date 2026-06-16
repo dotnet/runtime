@@ -846,10 +846,6 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _stub._slowEntryPoint[n++] = 0xf8df;
     _stub._slowEntryPoint[n++] = 0xf000 | offset;
 
-    // nops for alignment
-    _stub._slowEntryPoint[n++] = 0xbf00;
-    _stub._slowEntryPoint[n++] = 0xbf00;
-
     _ASSERTE(n == ResolveStub::slowEntryPointLen);
 
     // ResolveStub._failEntryPoint(r0:MethodToken, r1, r2, r3, r12:IndirectionCellAndFlags)
