@@ -1393,6 +1393,105 @@ namespace System.Threading.Tasks.Tests
             return result;
         }
 
+        // Compact, single-string summary of the parsed event stream for CI failure diagnostics.
+        // CI surfaces only the assertion message (no console access), so failing assertions embed
+        // this so the event sequence shows up directly in the error. Events are listed in GLOBAL
+        // timestamp order (so cross-thread interleaving -- e.g. a V1 test-runner dispatcher
+        // interleaving with V2 events on single-threaded WASM -- is visible), each annotated with a
+        // relative timestamp (+ticks from the first event) and its OS thread.
+        // Format: "[+<deltaTicks>,T<osThreadId>]<EventId>(d<DispatcherId>[,p<ParentDispatcherId>][,f<FrameCount>]) ..."
+        // Compact, machine-readable summary of the parsed event stream for CI failure diagnostics.
+        // CI surfaces only the assertion message (no console access), so failing assertions embed
+        // this so the event sequence shows up directly in the error. Emitted as CSV (one event per
+        // line, header first) in GLOBAL timestamp order so it is both human-readable and trivially
+        // importable into a SQL table / spreadsheet (e.g. SQLite .import). Columns:
+        //   seq    - global index in timestamp order
+        //   delta  - relative timestamp (ticks from the first event); reveals inline-burst clusters vs scheduling gaps
+        //   thread - OS thread id; reveals thread hops / cross-thread interleaving (e.g. V1 runner vs V2 on single-threaded WASM)
+        //   event  - AsyncEventID name
+        //   disp   - DispatcherId
+        //   parent - ParentDispatcherId (0 if none; non-zero shows V1<->V2 parent capture)
+        //   frames - callstack FrameCount (0 for non-callstack events)
+        //   unwind - UnwindFrameCount (for UnwindAsyncException events)
+        private static string DescribeEvents(ParsedEventStream stream)
+        {
+            var ordered = stream.All.OrderBy(e => e.Timestamp).ToList();
+            long t0 = ordered.Count > 0 ? ordered[0].Timestamp : 0;
+            const string Header = "seq,delta,thread,event,disp,parent,frames,unwind";
+            var rows = ordered.Select((e, i) =>
+                $"{i},{e.Timestamp - t0},{e.OsThreadId},{e.EventId},{e.DispatcherId},{e.ParentDispatcherId},{e.FrameCount},{e.UnwindFrameCount}");
+            return "----- BEGIN ASYNC EVENTS (CSV) -----" + Environment.NewLine
+                + Header + Environment.NewLine
+                + string.Join(Environment.NewLine, rows) + Environment.NewLine
+                + "----- END ASYNC EVENTS -----";
+        }
+
+        // Lets the stream-aware asserts accept EITHER an already-parsed ParsedEventStream or the raw
+        // CollectedEvents (parsed lazily, only on failure). Tests that have a parsed stream pass it
+        // directly; tests that only have the collected events pass those. The implicit conversions
+        // keep the assert helpers to a single overload set.
+        private readonly struct EventDump
+        {
+            private readonly ParsedEventStream _stream;
+            private readonly CollectedEvents _events;
+
+            private EventDump(ParsedEventStream stream, CollectedEvents events)
+            {
+                _stream = stream;
+                _events = events;
+            }
+
+            public static implicit operator EventDump(ParsedEventStream stream) => new EventDump(stream, null);
+            public static implicit operator EventDump(CollectedEvents events) => new EventDump(null, events);
+
+            public string Describe() => DescribeEvents(_stream ?? ParseAllEvents(_events));
+        }
+
+        // Stream-aware assert helpers: thin wrappers over the corresponding xunit asserts that, on
+        // failure, append the compact event stream (DescribeEvents) to xunit's own failure message.
+        // CI surfaces only the assertion string (no console), so these make a failing assert
+        // self-diagnosing. The dump is computed lazily -- only when the assertion actually fails --
+        // so passing asserts pay nothing, and xunit's native message (e.g. Equal's expected/actual
+        // diff) is preserved. The first argument accepts either a ParsedEventStream or CollectedEvents.
+        // Every test that has either in scope should use these instead of the raw Assert.* methods so
+        // any CI failure carries the event trace.
+        private static void Wrap(EventDump dump, Action assert)
+        {
+            try
+            {
+                assert();
+            }
+            catch (Xunit.Sdk.XunitException ex)
+            {
+                throw new Xunit.Sdk.XunitException($"{ex.Message}{Environment.NewLine}{dump.Describe()}");
+            }
+        }
+
+        private static void AssertTrue(EventDump dump, bool condition, string message = null) => Wrap(dump, () => Assert.True(condition, message));
+
+        private static void AssertFalse(EventDump dump, bool condition, string message = null) => Wrap(dump, () => Assert.False(condition, message));
+
+        private static void AssertNotEmpty<T>(EventDump dump, IEnumerable<T> collection) => Wrap(dump, () => Assert.NotEmpty(collection));
+
+        private static void AssertEmpty<T>(EventDump dump, IEnumerable<T> collection) => Wrap(dump, () => Assert.Empty(collection));
+
+        private static void AssertEqual<T>(EventDump dump, T expected, T actual) => Wrap(dump, () => Assert.Equal(expected, actual));
+
+        private static void AssertNotNull(EventDump dump, object @object) => Wrap(dump, () => Assert.NotNull(@object));
+
+        private static void AssertSingle<T>(EventDump dump, IEnumerable<T> collection) => Wrap(dump, () => Assert.Single(collection));
+
+        private static void AssertContains<T>(EventDump dump, T expected, IEnumerable<T> collection) => Wrap(dump, () => Assert.Contains(expected, collection));
+
+        private static void AssertContains(EventDump dump, string expectedSubstring, string actualString) => Wrap(dump, () => Assert.Contains(expectedSubstring, actualString));
+
+        private static void AssertContains<T>(EventDump dump, IEnumerable<T> collection, Predicate<T> filter) => Wrap(dump, () => Assert.Contains(collection, filter));
+
+        private static void AssertDoesNotContain<T>(EventDump dump, T expected, IEnumerable<T> collection) => Wrap(dump, () => Assert.DoesNotContain(expected, collection));
+
+        private static void AssertAll<T>(EventDump dump, IEnumerable<T> collection, Action<T> action) => Wrap(dump, () => Assert.All(collection, action));
+
+
         private static bool HasCallstackWithExpectedFrames(List<ParsedEvent> callstacks, string[] expectedFrames)
         {
             foreach (var cs in callstacks)
@@ -1429,7 +1528,7 @@ namespace System.Threading.Tasks.Tests
             {
                 resumeStacks = stream.CallstacksWithMarker(AsyncEventID.TaskAsync_ResumeAsyncCallstack, markerMethodName);
             }
-            Assert.True(resumeStacks.Count >= 1, $"Expected at least one resume callstack with marker '{markerMethodName}'");
+            AssertTrue(stream, resumeStacks.Count >= 1, $"Expected at least one resume callstack with marker '{markerMethodName}'");
 
             ulong dispatcherId = resumeStacks[0].DispatcherId;
 
@@ -1465,7 +1564,7 @@ namespace System.Threading.Tasks.Tests
                 }
             }
 
-            Assert.Equal(0, stackDepth);
+            AssertTrue(stream, stackDepth == 0, $"Expected callstack simulation for '{markerMethodName}' (DispatcherId {dispatcherId}) to reach 0, got {stackDepth}");
         }
 
         private static void AssertExactlyOneCreateAndComplete(ParsedEventStream stream, ulong dispatcherId, string chainName)
@@ -1473,8 +1572,8 @@ namespace System.Threading.Tasks.Tests
             var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
             int creates = ids.Count(id => id is AsyncEventID.RuntimeAsync_CreateAsyncContext or AsyncEventID.TaskAsync_CreateAsyncContext);
             int completes = ids.Count(id => id is AsyncEventID.RuntimeAsync_CompleteAsyncContext or AsyncEventID.TaskAsync_CompleteAsyncContext);
-            Assert.True(creates == 1, $"Expected exactly 1 CreateAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {creates}");
-            Assert.True(completes == 1, $"Expected exactly 1 CompleteAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {completes}");
+            AssertTrue(stream, creates == 1, $"Expected exactly 1 CreateAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {creates}");
+            AssertTrue(stream, completes == 1, $"Expected exactly 1 CompleteAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {completes}");
         }
 
         // V1-friendly variant: V1's per-MoveNext dispatcher model emits one Create per await
@@ -1485,8 +1584,8 @@ namespace System.Threading.Tasks.Tests
             var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
             int creates = ids.Count(id => id == AsyncEventID.TaskAsync_CreateAsyncContext);
             int completes = ids.Count(id => id == AsyncEventID.TaskAsync_CompleteAsyncContext);
-            Assert.True(creates >= 1, $"Expected at least 1 TaskAsync_CreateAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {creates}");
-            Assert.True(creates == completes, $"Expected TaskAsync_CreateAsyncContext count == TaskAsync_CompleteAsyncContext count for {chainName} (DispatcherId {dispatcherId}), got {creates} creates and {completes} completes");
+            AssertTrue(stream, creates >= 1, $"Expected at least 1 TaskAsync_CreateAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {creates}");
+            AssertTrue(stream, creates == completes, $"Expected TaskAsync_CreateAsyncContext count == TaskAsync_CompleteAsyncContext count for {chainName} (DispatcherId {dispatcherId}), got {creates} creates and {completes} completes");
         }
 
         private sealed class InlinePostSynchronizationContext : SynchronizationContext
