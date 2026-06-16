@@ -1856,7 +1856,7 @@ namespace System.Threading.Tasks.Tests
             await RuntimeAsync_ConfigureAwaitFalse_Mid_Marker().ConfigureAwait(false);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public async Task RuntimeAsync_ConfigureAwaitFalse()
         {
             var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_ConfigureAwaitFalse_Marker);

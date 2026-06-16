@@ -122,7 +122,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(100);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_EventsEmitted()
         {
             var events = CollectEvents(CoreKeywords, () =>
@@ -136,7 +136,7 @@ namespace System.Threading.Tasks.Tests
             Assert.Contains(events.Events, e => e.EventId == AsyncEventsId);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_CreateAsyncContextEmittedOnFirstAwait()
         {
             var events = CollectEvents(CoreKeywords, () =>
@@ -159,7 +159,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(100);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_EventSequenceOrder()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -196,7 +196,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(100);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_SuspendResumeCompleteEvents()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -230,7 +230,7 @@ namespace System.Threading.Tasks.Tests
             Assert.DoesNotContain(AsyncEventID.TaskAsync_SuspendAsyncContext, ids);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_ResumeCompleteMethodEvents()
         {
             var events = CollectEvents(MethodKeywords, () =>
@@ -254,7 +254,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_ExceptionHandled();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_HandledException_EmitsUnwindAndComplete()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords | UnwindAsyncExceptionKeyword, () =>
@@ -292,7 +292,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_UnhandledExceptionOuter();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_UnhandledException_EmitsUnwindAndComplete()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords | UnwindAsyncExceptionKeyword, () =>
@@ -340,7 +340,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_DeepChain();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_MethodEventCountMatchesChainDepth()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | MethodKeywords | CoreKeywords, () =>
@@ -377,7 +377,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_ExceptionHandled();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_HandledException_MethodEventsWithUnwind()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | MethodKeywords | CoreKeywords | UnwindAsyncExceptionKeyword, () =>
@@ -421,7 +421,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_UnhandledExceptionOuter();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_UnhandledException_MethodEventsWithUnwind()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | MethodKeywords | CoreKeywords | UnwindAsyncExceptionKeyword, () =>
@@ -475,7 +475,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_DeepChain();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_ResumeAsyncCallstackEmitted()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -504,7 +504,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_Level1();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_CallstackDepthMatchesChainDepth()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -530,7 +530,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_Level1();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_CallstackFramesHaveDistinctMethodIds()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -581,7 +581,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_CallstackFramesHaveDistinctStates_Root_Marker();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_CallstackFramesHaveDistinctStates()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -640,7 +640,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_YieldAtEachLevel_CallstackShrinks_Level1_Marker();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_YieldAtEachLevel_CallstackShrinks()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -683,7 +683,7 @@ namespace System.Threading.Tasks.Tests
             await t;
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_AppendCallstack_FiresOnLateParentRegistration()
         {
             s_appendRace_proceed = new SemaphoreSlim(0, 1);
@@ -714,7 +714,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_DeepChain();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_CompleteChain_DoesNotEmitAppendEvents()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -763,7 +763,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_CustomSyncContext_EmitsContextEventsAndCallstack()
         {
             s_taskAsyncSyncContextCtx = new InlinePostSynchronizationContext();
@@ -806,7 +806,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(100);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack()
         {
             var scheduler = new InlineRunTaskScheduler();
@@ -860,7 +860,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(50);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_NoEventsWhenDisabled()
         {
             for (int i = 0; i < 50; i++)
@@ -905,7 +905,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(50);
         }
 
-        [ConditionalTheory(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalTheory(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         [MemberData(nameof(TaskAsyncKeywordGatekeepingData))]
         public void TaskAsync_KeywordGatekeeping(long keywordValue, AsyncEventID[] allowedEventIds)
         {
@@ -955,7 +955,7 @@ namespace System.Threading.Tasks.Tests
                 TaskAsync_WhenAll_TracksAllBranches_BranchC_Marker());
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_WhenAll_TracksAllBranches()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -1035,7 +1035,7 @@ namespace System.Threading.Tasks.Tests
             await Task.WhenAll(slow1, slow2);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_WhenAny_TracksAllBranches()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -1087,7 +1087,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_RecursiveChain(depth);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_CallstackDepthCappedAtMaxFrames()
         {
             // Build a chain deeper than the 255-frame cap (byte FrameCount). The deepest
@@ -1144,7 +1144,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_RecursiveChain(depth);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_CallstackStressWithVaryingDepths()
         {
             const int iterations = 100;
@@ -1215,7 +1215,7 @@ namespace System.Threading.Tasks.Tests
             await Task.WhenAll(b1, b2);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_WaitThenYield_BalancesResumeAndComplete()
         {
             var events = CollectEvents(CoreKeywords | ResumeAsyncCallstackKeyword, () =>
@@ -1276,7 +1276,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_ConfigureAwaitFalse_Mid_Marker().ConfigureAwait(false);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_ConfigureAwaitFalse()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -1326,7 +1326,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_FaultedTask()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | UnwindAsyncExceptionKeyword | CoreKeywords, () =>
@@ -1383,7 +1383,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_TaskCancellation()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | UnwindAsyncExceptionKeyword | CoreKeywords, () =>
@@ -1413,7 +1413,7 @@ namespace System.Threading.Tasks.Tests
             await ValueTaskAsync_Level1();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void ValueTaskAsync_EventSequenceOrder()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -1448,7 +1448,7 @@ namespace System.Threading.Tasks.Tests
             await ValueTaskAsync_Level1();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void ValueTaskAsync_MethodEventsEmitted()
         {
             var events = CollectEvents(MethodKeywords | CoreKeywords, () =>
@@ -1481,7 +1481,7 @@ namespace System.Threading.Tasks.Tests
             await ValueTaskAsync_Level1();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void ValueTaskAsync_CallstackDepthMatchesChainDepth()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -1507,7 +1507,7 @@ namespace System.Threading.Tasks.Tests
             await ValueTaskAsync_Level1();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void ValueTaskAsync_CallstackFramesHaveDistinctMethodIds()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
@@ -1554,7 +1554,7 @@ namespace System.Threading.Tasks.Tests
             await ValueTaskAsync_HandledException_EmitsUnwindAndComplete_Handled_Marker();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void ValueTaskAsync_HandledException_EmitsUnwindAndComplete()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords | UnwindAsyncExceptionKeyword, () =>
@@ -1608,7 +1608,7 @@ namespace System.Threading.Tasks.Tests
             await ValueTaskAsync_UnhandledException_EmitsUnwindAndComplete_UnhandledOuter_Marker();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void ValueTaskAsync_UnhandledException_EmitsUnwindAndComplete()
         {
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords | UnwindAsyncExceptionKeyword, () =>
@@ -1671,7 +1671,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_ResetContext_ReplaysPendingV1Chain_Mid_Marker();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_ResetContext_ReplaysPendingV1Chain()
         {
             var events = CollectEvents(AllKeywords, () =>
@@ -1757,7 +1757,7 @@ namespace System.Threading.Tasks.Tests
             await innerDone.Task;
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
         public void TaskAsync_ResetContext_ReplaysMultipleDispatchers()
         {
             var events = CollectEvents(AllKeywords, () =>
@@ -1871,7 +1871,7 @@ namespace System.Threading.Tasks.Tests
             await TaskAsync_SingleThread_ChainEventsAndCallstack_Mid_Marker(gate);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationSupported))]
         public async Task TaskAsync_SingleThread_ChainEventsAndCallstack()
         {
             var events = await CollectEventsAsync(ResumeAsyncCallstackKeyword | CoreKeywords | MethodKeywords, async () =>

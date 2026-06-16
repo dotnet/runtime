@@ -34,13 +34,26 @@ namespace System.Runtime.CompilerServices
         public static bool InstrumentCheckPoint
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NATIVEAOT
+            // Asyncv1 instrumentation is disabled on Native AOT until support for
+            // async callstack IP and state has been implemented in ILC. Native AOT
+            // currently have limited asyncv1 diagnostic support in tooling, we can
+            // postpone the support until proven needed.
+            get => false;
+#else
             get => AsyncInstrumentation.IsSupported && AsyncInstrumentation.ActiveFlags != AsyncInstrumentation.Flags.Disabled;
+#endif
         }
 
         public static bool AsyncProfilerInstrumentCheckPoint
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NATIVEAOT
+            // See InstrumentCheckPoint above for the rationale of disabling V1 on Native AOT.
+            get => false;
+#else
             get => InstrumentCheckPoint && AsyncInstrumentation.IsEnabled.AsyncProfiler(AsyncInstrumentation.SyncActiveFlags());
+#endif
         }
 
         internal static unsafe AsyncTaskDispatcher? GetActiveDispatcher()

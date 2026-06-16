@@ -113,6 +113,15 @@ namespace System.Threading.Tasks.Tests
         // These tests use async Task methods with await instead of Task.Run blocking.
         public static bool IsRuntimeAsyncSupported => PlatformDetection.IsRuntimeAsyncSupported;
 
+        // V1 (TaskAsync_*) async-task instrumentation is opt-out on NativeAOT to avoid
+        // ~100KB of per-state-machine generic instantiation overhead. Tests that depend
+        // on V1 events must be gated on these properties so they are skipped on NAOT.
+        public static bool IsTaskAsyncInstrumentationSupported =>
+            IsRuntimeAsyncSupported && !PlatformDetection.IsNativeAot;
+
+        public static bool IsTaskAsyncInstrumentationAndThreadingSupported =>
+            IsRuntimeAsyncAndThreadingSupported && !PlatformDetection.IsNativeAot;
+
         private const string AsyncProfilerEventSourceName = "System.Runtime.CompilerServices.AsyncProfilerEventSource";
         private const string WrapperNameTemplate = "Continuation_Wrapper_{0}";
         private static readonly string WrapperNamePrefix = WrapperNameTemplate.Substring(0, WrapperNameTemplate.IndexOf("{0}", StringComparison.Ordinal));
@@ -160,6 +169,20 @@ namespace System.Threading.Tasks.Tests
                 ? typeof(StackFrame).GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[] { typeof(IntPtr), typeof(bool) }, null)
                 : null;
 
+        // The public 1-arg MethodBase.GetMethodFromHandle resolves the method but then deliberately
+        // throws ArgumentException when the declaring type is generic. The internal
+        // RuntimeType.GetMethodBase(RuntimeMethodHandle.GetMethodInfo()) it calls underneath has no
+        // such guard, so we invoke it directly to name V1 frames on generic declaring types.
+        private static readonly MethodInfo? s_runtimeMethodHandleGetMethodInfo =
+            typeof(RuntimeMethodHandle).GetMethod("GetMethodInfo", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        private static readonly MethodInfo? s_runtimeTypeGetMethodBase =
+            // typeof(object) is a RuntimeType instance; its runtime type is System.RuntimeType.
+            typeof(object).GetType().GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+                .FirstOrDefault(m => m.Name == "GetMethodBase"
+                    && m.GetParameters() is { Length: 1 } p
+                    && p[0].ParameterType.Name == "IRuntimeMethodInfo");
+
         private static string? GetMethodNameFromMethodId(AsyncCallstackType callstackType, ulong methodId)
         {
             if (methodId != 0)
@@ -194,10 +217,17 @@ namespace System.Threading.Tasks.Tests
                         // it requires the 2-arg overload with an explicit declaring type, which
                         // we cannot recover from a bare MethodId. Real ETW/EventPipe consumers
                         // get the declaring type from method-metadata rundown events.
+                        //
+                        // As a test-only fallback, resolve via the internal
+                        // RuntimeType.GetMethodBase the public API uses before its generic guard,
+                        // which does name methods on generic declaring types. This mirrors what a
+                        // rundown-backed consumer would achieve.
+                        method = ResolveCompilerMethodOnGenericType(handle);
                     }
-                    if (method != null)
+
+                    if (method?.DeclaringType is Type declaringType)
                     {
-                        string methodName = method.DeclaringType.Name;
+                        string methodName = declaringType.Name;
 
                         int start = methodName.IndexOf('<');
                         int end = methodName.IndexOf('>');
@@ -214,6 +244,34 @@ namespace System.Threading.Tasks.Tests
             }
 
             return null;
+        }
+
+        // Test-only fallback used when a compiler (V1) MethodId handle cannot be resolved via the
+        // 1-arg MethodBase.GetMethodFromHandle because its declaring type is generic. Calls the
+        // internal RuntimeType.GetMethodBase(handle.GetMethodInfo()) the public API uses underneath,
+        // which has no generic-declaring-type guard, so it names methods on generic declaring types.
+        // Returns null if the internals are unavailable (e.g. NativeAOT) or resolution throws.
+        private static MethodBase? ResolveCompilerMethodOnGenericType(RuntimeMethodHandle handle)
+        {
+            if (s_runtimeMethodHandleGetMethodInfo is null || s_runtimeTypeGetMethodBase is null)
+            {
+                return null;
+            }
+
+            try
+            {
+                object? methodInfo = s_runtimeMethodHandleGetMethodInfo.Invoke(handle, null);
+                if (methodInfo is null)
+                {
+                    return null;
+                }
+
+                return (MethodBase?)s_runtimeTypeGetMethodBase.Invoke(null, new object[] { methodInfo });
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static TestEventListener CreateListener(EventKeywords keywords)
@@ -589,6 +647,14 @@ namespace System.Threading.Tasks.Tests
             private Dictionary<ulong, List<ParsedEvent>>? _byDispatcherId;
             private Dictionary<ulong, ulong>? _parentOfDispatcher;
             private Dictionary<ulong, List<ulong>>? _childrenOfDispatcher;
+            private Dictionary<ulong, DispatcherKind>? _dispatcherKind;
+
+            // V1 (TaskAsync_*) and V2 (RuntimeAsync_*) dispatchers can coexist on the same logical
+            // thread (e.g., a V1 test runner hosting a V2 test body). The runtime captures cross-kind
+            // parent links in that case, but a single test typically wants to walk only its own kind's
+            // subtree. Tracking the kind per dispatcher lets the chain walk stop at V1<->V2 boundaries
+            // by default.
+            internal enum DispatcherKind { Unknown, V1, V2 }
 
             public ParsedEventStream(List<ParsedEvent> events)
             {
@@ -660,6 +726,7 @@ namespace System.Threading.Tasks.Tests
 
                 _parentOfDispatcher = new Dictionary<ulong, ulong>();
                 _childrenOfDispatcher = new Dictionary<ulong, List<ulong>>();
+                _dispatcherKind = new Dictionary<ulong, DispatcherKind>();
 
                 HashSet<ulong> dispatchersWithCreate = new HashSet<ulong>();
                 foreach (var evt in _events)
@@ -687,6 +754,19 @@ namespace System.Threading.Tasks.Tests
                         continue;
                     }
 
+                    DispatcherKind kind = evt.EventId switch
+                    {
+                        AsyncEventID.TaskAsync_CreateAsyncContext => DispatcherKind.V1,
+                        AsyncEventID.RuntimeAsync_CreateAsyncContext or
+                        AsyncEventID.RuntimeAsync_CreateAsyncCallstack => DispatcherKind.V2,
+                        _ => DispatcherKind.Unknown,
+                    };
+
+                    if (kind != DispatcherKind.Unknown)
+                    {
+                        _dispatcherKind![evt.DispatcherId] = kind;
+                    }
+
                     ulong parent = evt.ParentDispatcherId;
                     if (parent == 0 || !dispatchersWithCreate.Contains(parent))
                     {
@@ -710,15 +790,27 @@ namespace System.Threading.Tasks.Tests
                 }
             }
 
+            private DispatcherKind KindOf(ulong dispatcherId) =>
+                _dispatcherKind is not null && _dispatcherKind.TryGetValue(dispatcherId, out var k)
+                    ? k
+                    : DispatcherKind.Unknown;
+
             // Returns the root DispatcherId for the chain containing dispatcherId, by walking parent pointers.
-            // If no parent information is found (no Create event), returns dispatcherId itself.
-            public ulong RootOfDispatcher(ulong dispatcherId)
+            // By default the climb stops at V1<->V2 boundaries so a V2 marker doesn't get pulled up into
+            // an enclosing V1 test-runner dispatcher (and vice versa). Pass crossKinds: true to walk to
+            // the absolute root regardless of dispatcher kind.
+            public ulong RootOfDispatcher(ulong dispatcherId, bool crossKinds = false)
             {
                 EnsureDispatcherTree();
 
+                DispatcherKind startKind = KindOf(dispatcherId);
                 ulong current = dispatcherId;
                 while (_parentOfDispatcher!.TryGetValue(current, out ulong parent) && parent != 0)
                 {
+                    if (!crossKinds && startKind != DispatcherKind.Unknown && KindOf(parent) != startKind)
+                    {
+                        break;
+                    }
                     current = parent;
                 }
 
@@ -726,12 +818,16 @@ namespace System.Threading.Tasks.Tests
             }
 
             // Returns the set of all dispatcher ids in the same chain (connected component) as dispatcherId.
-            // Walks up to the root via parent pointers, then collects all descendants via BFS.
-            public HashSet<ulong> ChainDispatcherIds(ulong dispatcherId)
+            // Walks up to the root via parent pointers, then collects all descendants via BFS. By default
+            // the walk is restricted to dispatchers of the same kind (V1 or V2) as dispatcherId so that a
+            // single test's chain doesn't span unrelated cross-kind activity (e.g., a V1 xunit test runner
+            // hosting a V2 test body). Pass crossKinds: true to walk the full connected component.
+            public HashSet<ulong> ChainDispatcherIds(ulong dispatcherId, bool crossKinds = false)
             {
                 EnsureDispatcherTree();
 
-                ulong root = RootOfDispatcher(dispatcherId);
+                DispatcherKind startKind = KindOf(dispatcherId);
+                ulong root = RootOfDispatcher(dispatcherId, crossKinds);
 
                 var chain = new HashSet<ulong> { root };
                 var queue = new Queue<ulong>();
@@ -744,6 +840,11 @@ namespace System.Threading.Tasks.Tests
                     {
                         foreach (var kid in kids)
                         {
+                            if (!crossKinds && startKind != DispatcherKind.Unknown && KindOf(kid) != startKind)
+                            {
+                                continue;
+                            }
+
                             if (chain.Add(kid))
                             {
                                 queue.Enqueue(kid);
@@ -756,9 +857,10 @@ namespace System.Threading.Tasks.Tests
             }
 
             // Returns all events whose DispatcherId is in the same chain as dispatcherId, in timestamp order.
-            public List<ParsedEvent> ChainEventsFromDispatcher(ulong dispatcherId)
+            // The chain is restricted to the same dispatcher kind by default (see ChainDispatcherIds).
+            public List<ParsedEvent> ChainEventsFromDispatcher(ulong dispatcherId, bool crossKinds = false)
             {
-                HashSet<ulong> chain = ChainDispatcherIds(dispatcherId);
+                HashSet<ulong> chain = ChainDispatcherIds(dispatcherId, crossKinds);
                 return _events.Where(e => chain.Contains(e.DispatcherId)).ToList();
             }
 
