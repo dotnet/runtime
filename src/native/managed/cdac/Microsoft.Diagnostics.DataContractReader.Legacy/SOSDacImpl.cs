@@ -7166,15 +7166,15 @@ public sealed unsafe partial class SOSDacImpl
     internal sealed unsafe partial class SOSStressLogMsgEnum : ISOSStressLogMsgEnum
     {
         private readonly Target _target;
-        private readonly IEnumerator<Contracts.StressMsgData> _enumerator;
-        private DacpStressMsgData[]? _lastBatch;
-        private Contracts.StressMsgData[]? _lastBatchRaw;
-        private bool _exhausted;
+        private readonly Contracts.StressMsgData[] _messages;
+        private uint _index;
+        private uint _lastBatchStart;
+        private uint _lastBatchCount;
 
         public SOSStressLogMsgEnum(Target target, IEnumerable<Contracts.StressMsgData> messages)
         {
             _target = target;
-            _enumerator = messages.GetEnumerator();
+            _messages = messages.ToArray();
         }
 
         int ISOSStressLogMsgEnum.Next(uint count, DacpStressMsgData[] values, uint* pFetched)
@@ -7183,20 +7183,12 @@ public sealed unsafe partial class SOSDacImpl
                 return HResults.E_POINTER;
 
             count = Math.Min(count, (uint)values.Length);
-            _lastBatch = new DacpStressMsgData[count];
-            _lastBatchRaw = new Contracts.StressMsgData[count];
+            _lastBatchStart = _index;
             uint written = 0;
 
-            while (written < count && !_exhausted)
+            while (written < count && _index < _messages.Length)
             {
-                if (!_enumerator.MoveNext())
-                {
-                    _exhausted = true;
-                    break;
-                }
-
-                Contracts.StressMsgData msg = _enumerator.Current;
-                _lastBatchRaw[written] = msg;
+                Contracts.StressMsgData msg = _messages[(int)_index++];
                 values[written] = new DacpStressMsgData
                 {
                     Facility = msg.Facility,
@@ -7205,20 +7197,12 @@ public sealed unsafe partial class SOSDacImpl
                     ArgumentCount = (uint)msg.Args.Count,
                     MessageAddress = 0,
                 };
-                _lastBatch[written] = values[written];
                 written++;
             }
 
+            _lastBatchCount = written;
             *pFetched = written;
-
-            // Shrink to actual size so GetArguments bounds check is safe
-            if (written < count)
-            {
-                Array.Resize(ref _lastBatchRaw, (int)written);
-                Array.Resize(ref _lastBatch, (int)written);
-            }
-
-            return _exhausted ? HResults.S_OK : HResults.S_FALSE;
+            return _index < _messages.Length ? HResults.S_FALSE : HResults.S_OK;
         }
 
         int ISOSStressLogMsgEnum.GetArguments(uint messageIndex, uint argCount, ClrDataAddress[] args, uint* pFetched)
@@ -7226,10 +7210,10 @@ public sealed unsafe partial class SOSDacImpl
             if (pFetched is null || args is null)
                 return HResults.E_POINTER;
 
-            if (_lastBatchRaw is null || messageIndex >= _lastBatchRaw.Length)
+            if (messageIndex >= _lastBatchCount)
                 return HResults.E_INVALIDARG;
 
-            Contracts.StressMsgData msg = _lastBatchRaw[messageIndex];
+            Contracts.StressMsgData msg = _messages[(int)(_lastBatchStart + messageIndex)];
             uint toFetch = Math.Min(argCount, (uint)msg.Args.Count);
             toFetch = Math.Min(toFetch, (uint)args.Length);
 
@@ -7242,53 +7226,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.Skip(uint count)
         {
-            for (uint i = 0; i < count && !_exhausted; i++)
-            {
-                if (!_enumerator.MoveNext())
-                    _exhausted = true;
-            }
-            return HResults.S_OK;
-        }
-
-        int ISOSEnum.Reset()
-        {
-            return HResults.E_NOTIMPL;
-        }
-
-        int ISOSEnum.GetCount(uint* pCount)
-        {
-            return HResults.E_NOTIMPL;
-        }
-    }
-
-    [GeneratedComClass]
-    internal sealed unsafe partial class SOSStressLogMemoryEnum : ISOSStressLogMemoryEnum
-    {
-        private readonly DacpStressLogMemoryRange[] _ranges;
-        private uint _index;
-
-        public SOSStressLogMemoryEnum(DacpStressLogMemoryRange[] ranges)
-        {
-            _ranges = ranges;
-        }
-
-        int ISOSStressLogMemoryEnum.Next(uint count, DacpStressLogMemoryRange[] values, uint* pFetched)
-        {
-            if (pFetched is null || values is null)
-                return HResults.E_POINTER;
-
-            count = Math.Min(count, (uint)values.Length);
-            uint written = 0;
-            while (written < count && _index < _ranges.Length)
-                values[written++] = _ranges[(int)_index++];
-
-            *pFetched = written;
-            return _index < _ranges.Length ? HResults.S_FALSE : HResults.S_OK;
-        }
-
-        int ISOSEnum.Skip(uint count)
-        {
-            _index = Math.Min(_index + count, (uint)_ranges.Length);
+            _index = Math.Min(_index + count, (uint)_messages.Length);
             return HResults.S_OK;
         }
 
@@ -7301,7 +7239,7 @@ public sealed unsafe partial class SOSDacImpl
         int ISOSEnum.GetCount(uint* pCount)
         {
             if (pCount is null) return HResults.E_POINTER;
-            *pCount = (uint)_ranges.Length;
+            *pCount = (uint)_messages.Length;
             return HResults.S_OK;
         }
     }
@@ -7421,11 +7359,6 @@ public sealed unsafe partial class SOSDacImpl
         }
 
         return hr;
-    }
-
-    int ISOSDacInterface17.GetStressLogMemoryRanges(DacComNullableByRef<ISOSStressLogMemoryEnum> ppEnum)
-    {
-        return HResults.E_NOTIMPL;
     }
 
     #endregion ISOSDacInterface17

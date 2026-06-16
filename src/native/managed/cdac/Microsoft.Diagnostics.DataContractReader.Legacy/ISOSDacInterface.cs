@@ -1231,12 +1231,6 @@ public struct DacpStressMsgData
     public ClrDataAddress MessageAddress;
 }
 
-public struct DacpStressLogMemoryRange
-{
-    public ClrDataAddress Address;
-    public ulong Size;
-}
-
 [GeneratedComInterface]
 [Guid("94a2bd3d-ab3d-43bf-81d8-3ae96b8e33cd")]
 public unsafe partial interface ISOSStressLogThreadEnum : ISOSEnum
@@ -1267,17 +1261,6 @@ public unsafe partial interface ISOSStressLogMsgEnum : ISOSEnum
 }
 
 [GeneratedComInterface]
-[Guid("8e20713e-960c-4be4-bd55-edb9a618bc8d")]
-public unsafe partial interface ISOSStressLogMemoryEnum : ISOSEnum
-{
-    [PreserveSig]
-    int Next(uint count,
-             [In, Out, MarshalUsing(CountElementName = nameof(count))]
-             DacpStressLogMemoryRange[] values,
-             uint* pFetched);
-}
-
-[GeneratedComInterface]
 [Guid("2f4bb585-ed50-479e-bbe0-10a95a5da3bb")]
 public unsafe partial interface ISOSDacInterface17
 {
@@ -1296,7 +1279,4 @@ public unsafe partial interface ISOSDacInterface17
         ClrDataAddress threadStressLogAddress,
         DacComNullableByRef<ISOSStressLogMsgEnum> ppEnum);
 
-    [PreserveSig]
-    int GetStressLogMemoryRanges(
-        DacComNullableByRef<ISOSStressLogMemoryEnum> ppEnum);
 }

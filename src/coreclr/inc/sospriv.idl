@@ -625,17 +625,6 @@ typedef struct _DacpStressMsgData
 
 cpp_quote("#endif //_DacpStressMsgData_")
 
-cpp_quote("#ifndef _DacpStressLogMemoryRange_")
-cpp_quote("#define _DacpStressLogMemoryRange_")
-
-typedef struct _DacpStressLogMemoryRange
-{
-    CLRDATA_ADDRESS Address;
-    UINT64 Size;
-} DacpStressLogMemoryRange;
-
-cpp_quote("#endif //_DacpStressLogMemoryRange_")
-
 [
     object,
     local,
@@ -668,18 +657,6 @@ interface ISOSStressLogMsgEnum : ISOSEnum
 [
     object,
     local,
-    uuid(8e20713e-960c-4be4-bd55-edb9a618bc8d)
-]
-interface ISOSStressLogMemoryEnum : ISOSEnum
-{
-    HRESULT Next([in] unsigned int count,
-                 [out, size_is(count), length_is(*pFetched)] DacpStressLogMemoryRange values[],
-                 [out] unsigned int *pFetched);
-}
-
-[
-    object,
-    local,
     uuid(2f4bb585-ed50-479e-bbe0-10a95a5da3bb)
 ]
 interface ISOSDacInterface17 : IUnknown
@@ -689,5 +666,4 @@ interface ISOSDacInterface17 : IUnknown
     HRESULT GetStressLogThreadEnumerator([out] ISOSStressLogThreadEnum **ppEnum);
     HRESULT GetStressLogMessageEnumerator([in] CLRDATA_ADDRESS threadStressLogAddress,
                                           [out] ISOSStressLogMsgEnum **ppEnum);
-    HRESULT GetStressLogMemoryRanges([out] ISOSStressLogMemoryEnum **ppEnum);
 }
