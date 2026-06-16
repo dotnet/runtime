@@ -13707,13 +13707,22 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
         bool                 isExact   = false;
         bool                 isNonNull = false;
         CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(tree->gtGetOp1(), &isExact, &isNonNull);
-        if ((cls != NO_CLASS_HANDLE) && isExact && isNonNull)
+        if ((cls != NO_CLASS_HANDLE) && isExact)
         {
             CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
             if (typeObj != nullptr)
             {
-                ValueNum handleVN   = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
-                intrinsic->gtVNPair = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), arg0VNPx);
+                ValueNum     handleVN = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
+                ValueNumPair excSet   = arg0VNPx;
+                if (!isNonNull)
+                {
+                    // We know the exact type, but not that obj is non-null, so obj.GetType() may still
+                    // throw a NullReferenceException. Fold the (non-exceptional) result to the exact
+                    // runtime type handle while preserving the null check in the exception set - otherwise
+                    // the constant value would suppress the NRE (see fgValueNumberAddExceptionSetForIndirection).
+                    excSet = vnStore->VNPExcSetUnion(excSet, fgValueNumberIndirNullCheckExceptions(tree->gtGetOp1()));
+                }
+                intrinsic->gtVNPair = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), excSet);
                 return;
             }
         }
