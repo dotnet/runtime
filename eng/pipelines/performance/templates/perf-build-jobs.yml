@@ -17,10 +17,3 @@ jobs:
     parameters:
       mono_x64: true
       monoAot_x64: true
-
-  # Disabled due to not successfully building at the moment. https://github.com/dotnet/performance/issues/4729
-  - ${{ if false }}:
-    # build PerfBDN app
-    - template: /eng/pipelines/performance/templates/perf-bdn-build-jobs.yml
-      parameters:
-        perfBranch: ${{ parameters.perfBranch }}

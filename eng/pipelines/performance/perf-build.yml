@@ -50,10 +50,6 @@ parameters:
   displayName: Build Mono Arm64 Linux
   type: boolean
   default: true
-- name: monoBDN_arm64_android
-  displayName: Build Mono Arm64 Android BDN (Not working)
-  type: boolean
-  default: false # currently not working
 - name: nativeAot_arm64_ios
   displayName: Build native AOT Arm64 iOS
   type: boolean
@@ -128,8 +124,6 @@ extends:
                 - mono_x64_linux
               - ${{ if eq(parameters.mono_arm64_linux, true) }}:
                 - mono_arm64_linux
-              - ${{ if eq(parameters.monoBDN_arm64_android, true) }}:
-                - monoBDN_arm64_android
               - ${{ if eq(parameters.nativeAot_arm64_ios, true) }}:
                 - nativeAot_arm64_ios
               - ${{ if eq(parameters.coreclr_arm64_ios, true) }}:
@@ -170,8 +164,6 @@ extends:
               - mono_x64_linux
             - ${{ if eq(parameters.mono_arm64_linux, true) }}:
               - mono_arm64_linux
-            - ${{ if eq(parameters.monoBDN_arm64_android, true) }}:
-              - monoBDN_arm64_android
             - ${{ if eq(parameters.nativeAot_arm64_ios, true) }}:
               - nativeAot_arm64_ios
             - ${{ if eq(parameters.coreclr_arm64_ios, true) }}:
@@ -218,8 +210,6 @@ extends:
                 - mono_x64_linux
               - ${{ if eq(parameters.mono_arm64_linux, true) }}:
                 - mono_arm64_linux
-              - ${{ if eq(parameters.monoBDN_arm64_android, true) }}:
-                - monoBDN_arm64_android
               - ${{ if eq(parameters.nativeAot_arm64_ios, true) }}:
                 - nativeAot_arm64_ios
               - ${{ if eq(parameters.coreclr_arm64_ios, true) }}:
