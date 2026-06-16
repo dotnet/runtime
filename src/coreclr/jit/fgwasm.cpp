@@ -1300,8 +1300,38 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 // We may have increased the loop extent (moved the end) to accommodate try regions
                 // that begin in the loop but can end outside. Find the last such block...
                 //
-                loop->VisitLoopBlocksPostOrder([&](BasicBlock* block) {
+                AddCodeDscMap* const acdMap = fgGetAddCodeDscMap();
+
+                loop->VisitLoopBlocksPostOrder([&, this](BasicBlock* block) {
                     endCursor = max(endCursor, block->bbPreorderNum + 1);
+
+                    // If this loop block is the header of a try region that requires runtime
+                    // resumption, also account for the throw-helper blocks of that try region.
+                    // Those blocks form the try interval's end-block (per VisitWasmSuccs they
+                    // are sequenced after the region's true successors), and the try interval
+                    // must perfectly nest inside this loop interval.
+                    //
+                    FlowGraphTryRegion* const innerTry = tryRegions->GetTryRegionByHeader(block);
+                    if ((acdMap != nullptr) && (innerTry != nullptr) && innerTry->RequiresRuntimeResumption())
+                    {
+                        AcdKeyDesignator dsg;
+                        const unsigned   blockData = bbThrowIndex(block, &dsg);
+                        for (const AddCodeDscKey& key : AddCodeDscMap::KeyIteration(acdMap))
+                        {
+                            if (key.Data() != blockData)
+                            {
+                                continue;
+                            }
+
+                            AddCodeDsc* acd = nullptr;
+                            acdMap->Lookup(key, &acd);
+
+                            if (acd->acdUsed && (acd->acdDstBlk != nullptr))
+                            {
+                                endCursor = max(endCursor, acd->acdDstBlk->bbPreorderNum + 1);
+                            }
+                        }
+                    }
                     return BasicBlockVisit::Continue;
                 });
 
@@ -1332,6 +1362,13 @@ PhaseStatus Compiler::fgWasmControlFlow()
             unsigned            endCursor   = cursor + tryRegion->NumBlocks();
             WasmInterval* const tryInterval = WasmInterval::NewTry(this, block, initialLayout[endCursor]);
             fgWasmIntervals->push_back(tryInterval);
+
+            // Pair the TRY with a same-range [exnref]-wrapper Block so
+            // `catch_ref TAG 0` from inside try_table has a valid target.
+            // The sort tiebreaker places the wrapper just outside the TRY.
+            //
+            WasmInterval* const wrapperInterval = WasmInterval::NewExnRefWrapper(this, block, initialLayout[endCursor]);
+            fgWasmIntervals->push_back(wrapperInterval);
         }
 
         // Now see where block branches to...
@@ -1410,6 +1447,46 @@ PhaseStatus Compiler::fgWasmControlFlow()
             JITDUMPEXEC(interval->Dump());
         }
         JITDUMP("--------------\n\n");
+    }
+
+    // Verify that try intervals perfectly nest with respect to loop intervals
+    // (either disjoint or one fully contains the other). If a try overlapped a
+    // loop, later conflict resolution would widen the try's start back past the
+    // loop header, leaving codegen unable to find GT_WASM_JEXCEPT at the try's
+    // start block.
+    //
+    for (WasmInterval* const tryI : *fgWasmIntervals)
+    {
+        if (!tryI->IsTry())
+        {
+            continue;
+        }
+
+        for (WasmInterval* const loopI : *fgWasmIntervals)
+        {
+            if (!loopI->IsLoop())
+            {
+                continue;
+            }
+
+            const unsigned ts = tryI->Start();
+            const unsigned te = tryI->End();
+            const unsigned ls = loopI->Start();
+            const unsigned le = loopI->End();
+
+            const bool disjoint     = (te <= ls) || (le <= ts);
+            const bool loopContains = (ls <= ts) && (te <= le);
+            const bool tryContains  = (ts <= ls) && (le <= te);
+
+            if (!(disjoint || loopContains || tryContains))
+            {
+                JITDUMP("Try interval ");
+                JITDUMPEXEC(tryI->Dump());
+                JITDUMP(" overlaps loop interval ");
+                JITDUMPEXEC(loopI->Dump());
+                assert(!"Try and loop intervals must perfectly nest");
+            }
+        }
     }
 #endif
 
@@ -1549,7 +1626,18 @@ PhaseStatus Compiler::fgWasmControlFlow()
             return i1->IsBlock();
         }
 
-        // Either both are blocks or both are trys.
+        // Order regular blocks before ExnRef-wrapper blocks so the wrapper
+        // sits immediately outside its paired TRY (depth 0 from catch_ref).
+        //
+        if (i1->IsBlock())
+        {
+            if (i1->IsExnRefWrapper() != i2->IsExnRefWrapper())
+            {
+                return i2->IsExnRefWrapper();
+            }
+        }
+
+        // Either both are (regular or wrapper) blocks, or both are trys.
         //
         return false;
     };
@@ -2185,14 +2273,8 @@ PhaseStatus Compiler::fgWasmEhFlow()
         assert(EHblkDsc::ebdIsSameTry(ehGetDsc(catchingTryIndex), ehGetDsc(innermostDispatchingTryIndex)));
 
         // If the continuationBlock is within the dispatching try, we have to bail out for now.
-        // Note bbFindInnermostCommonTryRegion takes and returns a biased index.
         //
-        unsigned const biasedCommonEnclosingTryIndex =
-            bbFindInnermostCommonTryRegion(innermostDispatchingTryIndex + 1, continuationBlock);
-        unsigned const commonEnclosingTryIndex =
-            (biasedCommonEnclosingTryIndex == 0) ? EHblkDsc::NO_ENCLOSING_INDEX : (biasedCommonEnclosingTryIndex - 1);
-
-        if (commonEnclosingTryIndex == innermostDispatchingTryIndex)
+        if (bbInTryRegions(innermostDispatchingTryIndex, continuationBlock))
         {
             JITDUMP("Continuation " FMT_BB " is within dispatching try EH#%02u, marking as catch resumption\n",
                     continuationBlock->bbNum, innermostDispatchingTryIndex);
@@ -2382,6 +2464,15 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         cases[i] = nullptr;
     }
 
+    // Track the unique edge per continuation block. When many cases share the
+    // same continuation (e.g. a large mutual-protect catch set whose handlers
+    // all `leave` to the same target) this avoids an O(N^2) cost in
+    // fgAddRefPred (which must do an O(preds) scan of the destination's
+    // pred list per call) -- we just bump dup counts directly for duplicates.
+    //
+    BlockToFlowEdgeMap* const continuationEdges =
+        new (this, CMK_FlowEdge) BlockToFlowEdgeMap(getAllocator(CMK_FlowEdge));
+
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
         assert(catchRetBlock->KindIs(BBJ_EHCATCHRET));
@@ -2392,13 +2483,28 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         assert(biasedCaseIndex < caseCount);
 
         JITDUMP("  case %u: " FMT_BB "\n", biasedCaseIndex, continuation->bbNum);
-        FlowEdge* caseEdge = fgAddRefPred(continuation, switchBlock);
+
+        FlowEdge* caseEdge;
+        if (continuationEdges->Lookup(continuation, &caseEdge))
+        {
+            // Edge from switchBlock to this continuation already exists; just
+            // bump the dup count (and the destination's ref count) instead of
+            // doing another linear pred-list scan via fgAddRefPred.
+            //
+            caseEdge->incrementDupCount();
+            continuation->bbRefs++;
+        }
+        else
+        {
+            caseEdge = fgAddRefPred(continuation, switchBlock);
+            continuationEdges->Set(continuation, caseEdge);
+
+            // We only get here on exception
+            caseEdge->setLikelihood(0);
+        }
 
         assert(cases[biasedCaseIndex] == nullptr);
         cases[biasedCaseIndex] = caseEdge;
-
-        // We only get here on exception
-        caseEdge->setLikelihood(0);
         caseNumber++;
     }
 
@@ -2446,7 +2552,10 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         BasicBlock* const continuation = catchRetBlock->GetTarget();
         if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
         {
-            succs[succNumber] = fgGetPredForBlock(continuation, switchBlock);
+            FlowEdge*  edge  = nullptr;
+            bool const found = continuationEdges->Lookup(continuation, &edge);
+            assert(found);
+            succs[succNumber] = edge;
             succNumber++;
         }
     }
