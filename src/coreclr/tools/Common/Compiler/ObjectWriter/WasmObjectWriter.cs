@@ -1038,7 +1038,7 @@ namespace ILCompiler.ObjectWriter
         public const int RtlRestoreContextTagIndex = 0;
 
         private static readonly WasmFuncType RtlRestoreContextTagSignature = new(
-            new([WasmValueType.I32, WasmValueType.I32]),
+            new([]),
             new([]));
 
         private WasmImport[] CreateDefaultGlobalImports()
