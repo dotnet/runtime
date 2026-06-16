@@ -177,7 +177,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         [Fact]
         public void SharedSingletonWithManyAliases_IsDisposedOnce()
         {
-            // Captures well over MaxDisposablesForLinearDedup (16) entries so BeginDispose takes the HashSet path.
+            // Captures enough entries to exercise the large-list (HashSet-based) deduplication path in BeginDispose.
             const int AliasCount = 20;
 
             var services = new ServiceCollection();
