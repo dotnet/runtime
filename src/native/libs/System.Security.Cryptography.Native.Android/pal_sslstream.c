@@ -205,7 +205,6 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus WrapAndProcessResult(JNIEnv* env, S
         goto cleanup;
 
     *handshakeStatus = GetEnumAsInt(env, resultHandshakeStatus);
-    resultHandshakeStatus = NULL;
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     *bytesConsumed = (*env)->CallIntMethod(env, result, g_SSLEngineResultBytesConsumed);
@@ -217,7 +216,6 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus WrapAndProcessResult(JNIEnv* env, S
         goto cleanup;
 
     int status = GetEnumAsInt(env, resultStatus);
-    resultStatus = NULL;
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     switch (status)
@@ -361,7 +359,6 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
         goto cleanup;
 
     *handshakeStatus = GetEnumAsInt(env, resultHandshakeStatus);
-    resultHandshakeStatus = NULL;
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     resultStatus = (*env)->CallObjectMethod(env, result, g_SSLEngineResultGetStatus);
@@ -370,7 +367,6 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
         goto cleanup;
 
     int status = GetEnumAsInt(env, resultStatus);
-    resultStatus = NULL;
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     switch (status)
@@ -944,7 +940,12 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uin
     // appOutBuffer.put(bufferByteBuffer);
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferCompact));
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-    sslStream->appOutBuffer = EnsureRemaining(env, sslStream->appOutBuffer, length);
+
+    jobject appOutBuffer = EnsureRemaining(env, sslStream->appOutBuffer, length);
+    if (appOutBuffer == NULL)
+        goto cleanup;
+
+    sslStream->appOutBuffer = appOutBuffer;
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferPutBuffer, bufferByteBuffer));
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
