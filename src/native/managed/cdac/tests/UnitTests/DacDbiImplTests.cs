@@ -271,15 +271,10 @@ public unsafe class DacDbiImplTests
 
     private static (DacDbiImpl DacDbi, TestPlaceholderTarget Target) CreateDacDbiWithExceptionMT(
         MockTarget.Architecture arch,
-        TargetPointer exceptionMT,
         Mock<IObject> mockObject,
         Mock<IRuntimeTypeSystem> mockRts)
     {
         var builder = new TestPlaceholderTarget.Builder(arch);
-        var allocator = builder.MemoryBuilder.CreateAllocator(0x0030_0000, 0x0030_1000);
-        var globalFragment = allocator.Allocate((ulong)(arch.Is64Bit ? 8 : 4), "ExceptionMethodTable");
-        new TargetTestHelpers(arch).WritePointer(globalFragment.Data, exceptionMT.Value);
-        builder.AddGlobals((Constants.Globals.ExceptionMethodTable, globalFragment.Address));
         builder.AddMockContract(mockObject);
         builder.AddMockContract(mockRts);
         var target = builder.Build();
@@ -323,6 +318,7 @@ public unsafe class DacDbiImplTests
         mockObject.Setup(o => o.GetMethodTableAddress(objectAddr)).Returns(objectMT);
 
         var mockRts = new Mock<IRuntimeTypeSystem>();
+        mockRts.Setup(r => r.GetWellKnownMethodTable(WellKnownMethodTable.Exception)).Returns(exceptionMT);
         if (intermediateMTs.Length == 0 && !isException)
         {
             mockRts.Setup(r => r.GetTypeHandle(objectMT)).Returns(new TypeHandle(objectMT));
@@ -339,7 +335,7 @@ public unsafe class DacDbiImplTests
             mockRts.Setup(r => r.GetParentMethodTable(new TypeHandle(current))).Returns(parent);
         }
 
-        var (dacDbi, _) = CreateDacDbiWithExceptionMT(arch, exceptionMT, mockObject, mockRts);
+        var (dacDbi, _) = CreateDacDbiWithExceptionMT(arch, mockObject, mockRts);
 
         Interop.BOOL result;
         int hr = dacDbi.IsExceptionObject(objectAddr.Value, &result);
