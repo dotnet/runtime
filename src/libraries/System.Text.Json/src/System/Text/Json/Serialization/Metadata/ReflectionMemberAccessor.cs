@@ -168,6 +168,14 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (object obj)
             {
+#if NET
+                return (TProperty)getMethodInfo.Invoke(
+                    obj,
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: null,
+                    culture: null)!;
+#else
                 try
                 {
                     return (TProperty)getMethodInfo.Invoke(obj, null)!;
@@ -177,6 +185,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ExceptionDispatchInfo.Capture(e.InnerException).Throw();
                     throw; // unreachable
                 }
+#endif
             };
         }
 
@@ -186,6 +195,14 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (TDeclaringType obj)
             {
+#if NET
+                return (TProperty)getMethodInfo.Invoke(
+                    obj,
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: null,
+                    culture: null)!;
+#else
                 try
                 {
                     return (TProperty)getMethodInfo.Invoke(obj, null)!;
@@ -195,6 +212,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ExceptionDispatchInfo.Capture(e.InnerException).Throw();
                     throw; // unreachable
                 }
+#endif
             };
         }
 
@@ -204,6 +222,14 @@ namespace System.Text.Json.Serialization.Metadata
 
             return delegate (object obj, TProperty value)
             {
+#if NET
+                setMethodInfo.Invoke(
+                    obj,
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: new object[] { value! },
+                    culture: null);
+#else
                 try
                 {
                     setMethodInfo.Invoke(obj, new object[] { value! });
@@ -212,6 +238,7 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     ExceptionDispatchInfo.Capture(e.InnerException).Throw();
                 }
+#endif
             };
         }
 
