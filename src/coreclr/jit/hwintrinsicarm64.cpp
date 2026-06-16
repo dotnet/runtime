@@ -2904,19 +2904,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateTrueMaskUInt64:
         {
             assert(sig->numArgs == 1);
+            assert(retType == TYP_MASK);
             op1 = impPopStack().val;
 
             // Where possible, import a constant mask to allow for optimisations.
             if (op1->IsIntegralConst())
             {
                 int64_t pattern = op1->AsIntConCommon()->IntegralValue();
-                simd_t  simdVal;
+                simdmask_t simdVal;
 
-                if (EvaluateSimdPatternToVector(simdBaseType, &simdVal, (SveMaskPattern)pattern))
+                if (EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &simdVal, (SveMaskPattern)pattern))
                 {
-                    var_types simdType = getSIMDTypeForSize(simdSize);
-                    retNode = gtNewSimdCvtVectorToMaskNode(TYP_MASK, gtNewVconNode(simdType, &simdVal), simdBaseType,
-                                                           simdSize);
+                    GenTreeMskCon* mskCon = gtNewMskConNode(retType);
+                    mskCon->gtSimdMaskVal = simdVal;
+                    retNode               = mskCon;
                     break;
                 }
             }
