@@ -129,18 +129,15 @@ namespace System.Net.Mail.Tests
         public void EncodeSingleMailAddress_WithAddressAndNonAsciiAndRangeOfChars_ShouldQEncode(Func<string, string, MailAddress> factory)
         {
             MailAddress testAddress = factory("test@example.com",
-                "\u00AE !#$%&'()+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
+                "\u00AE !\"#$%&'()+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
             string result = testAddress.Encode(0, false);
-            Assert.Equal("=?utf-8?Q?=C2=AE_=21=23=24=25=26=27=28=29=2B=2C=2D=2E=2F0123456789=3A?="
-                + "\r\n =?utf-8?Q?=3B=3C=3D=3E=3F=40ABCDEFGHIJKLMNOPQRSTUVWXYZ=5B=5C=5D=5E=5F?="
-                + "\r\n =?utf-8?Q?=60abcdefghijklmnopqrstuvwxyz=7B=7C=7D=7E?= <test@example.com>", result);
+            Assert.Equal("=?utf-8?Q?=C2=AE_=21=22=23=24=25=26=27=28=29=2B=2C=2D=2E=2F012345678?="
+                + "\r\n =?utf-8?Q?9=3A=3B=3C=3D=3E=3F=40ABCDEFGHIJKLMNOPQRSTUVWXYZ=5B=5C=5D?="
+                + "\r\n =?utf-8?Q?=5E=5F=60abcdefghijklmnopqrstuvwxyz=7B=7C=7D=7E?= <test@example.com>", result);
 
             result = testAddress.Encode(0, true);
-            // The literal '\' in the input is RFC 5322-escaped as '\\' in the
-            // resulting quoted-string when allowUnicode permits the quoted-string
-            // form (i.e. no Q-encoding).
             Assert.Equal(
-                "\"\u00AE !#$%&'()+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\" "
+                "\"\u00AE !\\\"#$%&'()+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\" "
                 + "<test@example.com>", result);
         }
 
