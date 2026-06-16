@@ -98,6 +98,14 @@ candidates:
 - `is:issue is:closed in:title "<test-name>" closed:>=<30-days-ago>` to catch a
   closed `[ci-scan]` predecessor or a human-filed report that never carried the
   KBE label.
+- `is:issue is:closed in:title "[ci-scan]" "<stem>" closed:>=<30-days-ago>`
+  to catch a closed `[ci-scan]` predecessor whose title was reworded across runs
+  (e.g. `Runtime_105619` vs a differently-phrased earlier title for the same
+  test); match on the stable test-name stem rather than the full title.
+- `is:issue is:closed in:body "<assertion-text>" closed:>=<30-days-ago>`
+  to catch a predecessor by its assertion text, which is more stable than titles
+  across runs and survives cases where the predecessor was integrity-filtered or
+  cross-linked rather than directly readable.
 
 On a closed-candidate hit, compare the failing AzDO build's `finishTime` (read
 it from the build metadata, not the queue time) against the issue's `closed_at`:

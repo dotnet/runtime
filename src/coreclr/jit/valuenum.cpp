@@ -7146,6 +7146,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                     break;
                 }
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) // TODO-WASM: Handle popcount /trailing/leading zero count
 #if defined(TARGET_XARCH)
                 case VNF_HWI_X86Base_PopCount:
                 case VNF_HWI_X86Base_X64_PopCount:
@@ -7164,6 +7165,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                     // The actual range is [0..32] or [0..64]
                     return VNVisit::Continue;
                 }
+#endif
 
                     // TODO-SVE: Various intrinsics extract scalars or test patterns and return bool
 
@@ -8115,6 +8117,7 @@ ValueNum EvaluateSimdGetElement(
     }
 }
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 ValueNum EvaluateSimdCvtMaskToVector(ValueNumStore* vns, var_types simdType, var_types baseType, ValueNum arg0VN)
 {
     simdmask_t arg0 = vns->GetConstantSimdMask(arg0VN);
@@ -8216,6 +8219,7 @@ ValueNum EvaluateSimdCvtVectorToMask(ValueNumStore* vns, var_types simdType, var
 
     return vns->VNForSimdMaskCon(result);
 }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                                                 VNFunc              func,
@@ -8234,6 +8238,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
         if (oper != GT_NONE)
         {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             if (varTypeIsMask(type))
             {
                 simdmask_t arg0 = GetConstantSimdMask(arg0VN);
@@ -8242,16 +8247,25 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 EvaluateUnaryMask(oper, isScalar, baseType, simdSize, &result, arg0);
                 return VNForSimdMaskCon(result);
             }
+#endif // FEATURE_MASKED_HW_INTRINSICS
             return EvaluateUnarySimd(this, oper, isScalar, type, baseType, arg0VN);
         }
         else if (tree->OperIsConvertMaskToVector())
         {
+#ifdef FEATURE_MASKED_HW_INTRINSICS
             return EvaluateSimdCvtMaskToVector(this, type, baseType, arg0VN);
+#else
+            unreached();
+#endif // !defined(FEATURE_MASKED_HW_INTRINSICS)
         }
         else if (tree->OperIsConvertVectorToMask())
         {
+#ifdef FEATURE_MASKED_HW_INTRINSICS
             var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
             return EvaluateSimdCvtVectorToMask(this, simdType, baseType, arg0VN);
+#else
+            unreached();
+#endif // !defined(FEATURE_MASKED_HW_INTRINSICS)
         }
 
         switch (ni)
@@ -8266,6 +8280,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 #endif
             case NI_Vector128_ExtractMostSignificantBits:
             {
+
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                 simdmask_t simdMaskVal;
 
                 switch (simdSize)
@@ -8306,6 +8322,10 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 assert(elemCount <= 32);
 
                 return VNForIntCon(static_cast<int32_t>(mask));
+#elif defined(TARGET_WASM)
+                NYI_WASM_SIMD("Vector128_ExtractMostSignificantBits");
+                break;
+#endif // FEATURE_MASKED_HW_INTRINSICS
             }
 
 #ifdef TARGET_XARCH
@@ -8329,9 +8349,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
             }
 #endif // TARGET_XARCH
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
             case NI_ArmBase_LeadingZeroCount:
-#else
+#elif defined(TARGET_XARCH)
             case NI_AVX2_LeadingZeroCount:
 #endif
             {
@@ -8353,7 +8373,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
                 return VNForIntCon(static_cast<int32_t>(result));
             }
-#else
+#elif defined(TARGET_XARCH)
             case NI_AVX2_X64_LeadingZeroCount:
             {
                 assert(varTypeIsLong(type));
@@ -8363,7 +8383,9 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 
                 return VNForLongCon(static_cast<int64_t>(result));
             }
-#endif
+#elif defined(TARGET_WASM)
+
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
 #if defined(TARGET_ARM64)
             case NI_ArmBase_ReverseElementBits:
@@ -8611,7 +8633,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
             case NI_Vector128_ToScalar:
 #ifdef TARGET_ARM64
             case NI_Vector64_ToScalar:
-#else
+#elif defined(TARGET_XARCH)
             case NI_Vector256_ToScalar:
             case NI_Vector512_ToScalar:
 #endif
@@ -8669,6 +8691,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             // We shouldn't find AND_NOT, OR_NOT or XOR_NOT nodes since it should only be produced in lowering
             assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             if (varTypeIsMask(type))
             {
                 if (varTypeIsMask(TypeOfVN(arg0VN)))
@@ -8687,6 +8710,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                     return EvaluateSimdCvtVectorToMask(this, simdType, baseType, simdResult);
                 }
             }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
             if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
             {
@@ -8743,7 +8767,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             case NI_Vector128_GetElement:
 #ifdef TARGET_ARM64
             case NI_Vector64_GetElement:
-#else
+#elif defined(TARGET_XARCH)
             case NI_Vector256_GetElement:
             case NI_Vector512_GetElement:
 #endif
@@ -9593,6 +9617,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 
     switch (ni)
     {
+#ifndef TARGET_WASM
+// TODO-WASM: Implement bitwise select case
 #if defined(TARGET_XARCH)
         case NI_Vector128_ConditionalSelect:
         case NI_Vector256_ConditionalSelect:
@@ -9661,11 +9687,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
             }
             break;
         }
+#endif // !defined(TARGET_WASM)
 
         case NI_Vector128_WithElement:
 #ifdef TARGET_ARM64
         case NI_Vector64_WithElement:
-#else
+#elif defined(TARGET_XARCH)
         case NI_Vector256_WithElement:
         case NI_Vector512_WithElement:
 #endif
