@@ -625,6 +625,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 ConstructorInfo? bestConstructor = null;
                 List<ServiceIdentifier>? bestResolvedParameters = null;
+                var resolvedParameters = new List<ServiceIdentifier>();
 
                 for (int i = 0; i < constructorCount; i++)
                 {
@@ -655,7 +656,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                     Debug.Assert(bestResolvedParameters is not null);
 
-                    var resolvedParameters = new List<ServiceIdentifier>();
+                    resolvedParameters.Clear();
                     if (CreateArgumentCallSites(
                         serviceIdentifier,
                         implementationType,

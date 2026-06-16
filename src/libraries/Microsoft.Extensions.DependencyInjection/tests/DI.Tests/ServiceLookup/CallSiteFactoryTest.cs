@@ -209,8 +209,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 new ServiceDescriptor(type, type, ServiceLifetime.Transient),
                 ServiceDescriptor.KeyedTransient<IFakeService, FakeService>("a"),
                 ServiceDescriptor.KeyedTransient<IFakeService, FakeService>("b"),
-                new ServiceDescriptor(typeof(IFakeScopedService), typeof(FakeService), ServiceLifetime.Transient),
-                new ServiceDescriptor(typeof(IFakeMultipleService), typeof(FakeService), ServiceLifetime.Transient));
+                new ServiceDescriptor(typeof(IFakeScopedService), typeof(FakeService), ServiceLifetime.Transient));
 
             // Act and Assert
             var ex = Assert.Throws<InvalidOperationException>(() => callSiteFactory(type));
@@ -1219,7 +1218,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
             }
 
-            public TypeWithSameTypeDifferentServiceKeyConstructors([FromKeyedServices("b")] IFakeService service, IFakeMultipleService multiple)
+            public TypeWithSameTypeDifferentServiceKeyConstructors([FromKeyedServices("b")] IFakeService service, IFakeScopedService scoped, int dummy = 0)
             {
             }
         }
