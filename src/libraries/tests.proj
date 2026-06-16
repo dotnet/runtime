@@ -174,7 +174,8 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Nrbf\tests\System.Formats.Nrbf.Tests.csproj" />
   </ItemGroup>
 
-  <!-- https://github.com/dotnet/runtime/issues/125495 - Long-running suites disabled on browser/CoreCLR because they exceed the default Helix work-item timeouts. Enabled for outerloop (RunLongRunningWasmTests), where the timeouts are extended. -->
+  <!-- https://github.com/dotnet/runtime/issues/125495 - Long-running suites disabled on browser/CoreCLR because they exceed the default Helix work-item timeouts. Enabled for outerloop (RunLongRunningWasmTests), where the timeouts are extended.
+       Keep this list in sync with _WasmSoloBatchSuite in sendtohelix-browser.targets, which isolates each of these suites into its own Helix batch when they run in outerloop. -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisabledWasmTests)' != 'true' and '$(RunLongRunningWasmTests)' != 'true'">
     <!-- long running suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />

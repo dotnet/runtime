@@ -416,8 +416,23 @@
       <_WasmBatchAllItems Include="@(_WasmBatchDefaultItems)" />
     </ItemGroup>
 
+    <!-- Slow [OuterLoop] suites are isolated into their own solo batch so a single
+         slow suite does not inflate the runtime of a shared batch. Mirrors the
+         long-running list gated on RunLongRunningWasmTests in tests.proj
+         (https://github.com/dotnet/runtime/issues/125495). Suites not present in the
+         archive (e.g. in innerloop, where they are excluded) are simply ignored. -->
+    <ItemGroup>
+      <_WasmSoloBatchSuite Include="System.Linq.Tests" />
+      <_WasmSoloBatchSuite Include="System.Memory.Tests" />
+      <_WasmSoloBatchSuite Include="System.Private.Uri.Functional.Tests" />
+      <_WasmSoloBatchSuite Include="System.Private.Xml.Tests" />
+      <_WasmSoloBatchSuite Include="System.Runtime.Numerics.Tests" />
+      <_WasmSoloBatchSuite Include="System.Text.Json.Tests" />
+    </ItemGroup>
+
     <!-- Assign batch IDs via greedy bin-packing -->
-    <GroupWorkItems Items="@(_WasmBatchAllItems)" BatchSize="20" LargeThreshold="$(_WasmBatchLargeThreshold)">
+    <GroupWorkItems Items="@(_WasmBatchAllItems)" BatchSize="20" LargeThreshold="$(_WasmBatchLargeThreshold)"
+                    SoloItems="@(_WasmSoloBatchSuite)">
       <Output TaskParameter="GroupedItems" ItemName="_WasmGroupedItem" />
     </GroupWorkItems>
 
