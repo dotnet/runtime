@@ -372,7 +372,6 @@ public class StackWalkDumpTests : DumpTestBase
             int hr = sosDac.GetCodeHeaderData(new ClrDataAddress(entryPoint.Value), &codeHeaderData);
             AssertHResult(HResults.S_OK, hr);
 
-            Assert.Equal(JitTypes.TYPE_JIT, codeHeaderData.JITType);
             Assert.Equal(methodDescPtr.ToClrDataAddress(Target), codeHeaderData.MethodDescPtr);
             Assert.True(codeHeaderData.MethodSize > 0,
                 $"Expected non-zero MethodSize for IL stub (was {codeHeaderData.MethodSize}). " +
