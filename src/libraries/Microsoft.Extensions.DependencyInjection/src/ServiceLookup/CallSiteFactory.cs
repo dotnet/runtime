@@ -662,18 +662,19 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     Debug.Assert(bestParametersResolvedFromCallSite is not null);
                     Debug.Assert(bestParametersResolvedFromDefault is not null);
 
-                    if (!TryResolveConstructorWithoutCreatingArgumentCallSites(
+                    if (CreateArgumentCallSites(
                         serviceIdentifier,
+                        implementationType,
                         callSiteChain,
                         parameters,
-                        bestParametersResolvedFromCallSite,
-                        bestParametersResolvedFromDefault,
-                        out bool hasNewResolvableParameter))
+                        throwIfCallSiteNotFound: false) is null)
                     {
+                        // Not all parameters are resolvable; skip this constructor.
                         continue;
                     }
 
-                    if (hasNewResolvableParameter)
+                    // All parameters resolvable; check if it's a strict subset of best.
+                    if (!ParameterSetIsSubsetOfBest(parameters, serviceIdentifier, bestParametersResolvedFromCallSite, bestParametersResolvedFromDefault))
                     {
                         throw new InvalidOperationException(string.Join(
                             Environment.NewLine,
@@ -743,107 +744,64 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return parameterCallSites;
         }
 
-        private bool TryResolveConstructorWithoutCreatingArgumentCallSites(
-            ServiceIdentifier serviceIdentifier,
-            CallSiteChain callSiteChain,
+        /// <summary>
+        /// Returns true if every parameter in <paramref name="parameters"/> resolves to a
+        /// ServiceIdentifier already present in the best constructor's resolved sets.
+        /// </summary>
+        private static bool ParameterSetIsSubsetOfBest(
             ParameterInfo[] parameters,
+            ServiceIdentifier serviceIdentifier,
             HashSet<ServiceIdentifier> bestParametersResolvedFromCallSite,
-            HashSet<ServiceIdentifier> bestParametersResolvedFromDefault,
-            out bool hasNewResolvableParameter)
+            HashSet<ServiceIdentifier> bestParametersResolvedFromDefault)
         {
-            hasNewResolvableParameter = false;
-
             for (int i = 0; i < parameters.Length; i++)
             {
-                ParameterInfo parameter = parameters[i];
-                Type parameterType = parameter.ParameterType;
-                ServiceIdentifier parameterServiceIdentifier = ServiceIdentifier.FromServiceType(parameterType);
-                bool isImmediatelyResolved = false;
+                ServiceIdentifier parameterServiceIdentifier = GetParameterServiceIdentifier(parameters[i], serviceIdentifier);
 
-                foreach (object attribute in parameter.GetCustomAttributes(true))
+                if (!bestParametersResolvedFromCallSite.Contains(parameterServiceIdentifier) &&
+                    !bestParametersResolvedFromDefault.Contains(parameterServiceIdentifier))
                 {
-                    if (serviceIdentifier.ServiceKey is not null && attribute is ServiceKeyAttribute)
-                    {
-                        if (serviceIdentifier.ServiceKey == KeyedService.AnyKey)
-                        {
-                            parameterType = typeof(object);
-                        }
-                        else if (parameterType != serviceIdentifier.ServiceKey.GetType() &&
-                            parameterType != typeof(object))
-                        {
-                            throw new InvalidOperationException(SR.InvalidServiceKeyType);
-                        }
-
-                        parameterServiceIdentifier = new ServiceIdentifier(serviceIdentifier.ServiceKey, parameterType);
-                        isImmediatelyResolved = true;
-                        break;
-                    }
-
-                    if (attribute is FromKeyedServicesAttribute fromKeyedServicesAttribute)
-                    {
-                        object? serviceKey = fromKeyedServicesAttribute.LookupMode switch
-                        {
-                            ServiceKeyLookupMode.InheritKey => serviceIdentifier.ServiceKey,
-                            ServiceKeyLookupMode.ExplicitKey => fromKeyedServicesAttribute.Key,
-                            ServiceKeyLookupMode.NullKey => null,
-                            _ => null
-                        };
-
-                        if (serviceKey is not null)
-                        {
-                            parameterServiceIdentifier = new ServiceIdentifier(serviceKey, parameterType);
-                        }
-
-                        break;
-                    }
-                }
-
-                if (isImmediatelyResolved)
-                {
-                    // [ServiceKey]: always resolvable via constant injection.
-                    if (!bestParametersResolvedFromCallSite.Contains(parameterServiceIdentifier))
-                    {
-                        hasNewResolvableParameter = true;
-                    }
-
-                    continue;
-                }
-
-                if (bestParametersResolvedFromCallSite.Contains(parameterServiceIdentifier))
-                {
-                    // Container has this service; resolvable and not new.
-                    continue;
-                }
-
-                if (bestParametersResolvedFromDefault.Contains(parameterServiceIdentifier))
-                {
-                    // Container doesn't have this (best fell back to its default).
-                    // Resolvable only if this parameter also has a default value.
-                    if (ParameterDefaultValue.TryGetDefaultValue(parameter, out _))
-                    {
-                        continue;
-                    }
-
                     return false;
                 }
-
-                // Unknown identity; must probe the container.
-                if (GetCallSite(parameterServiceIdentifier, callSiteChain) is not null)
-                {
-                    hasNewResolvableParameter = true;
-                    continue;
-                }
-
-                if (ParameterDefaultValue.TryGetDefaultValue(parameter, out _))
-                {
-                    hasNewResolvableParameter = true;
-                    continue;
-                }
-
-                return false;
             }
 
             return true;
+        }
+
+        private static ServiceIdentifier GetParameterServiceIdentifier(ParameterInfo parameter, ServiceIdentifier parentServiceIdentifier)
+        {
+            Type parameterType = parameter.ParameterType;
+
+            foreach (object attribute in parameter.GetCustomAttributes(true))
+            {
+                if (parentServiceIdentifier.ServiceKey is not null && attribute is ServiceKeyAttribute)
+                {
+                    Type keyType = parentServiceIdentifier.ServiceKey == KeyedService.AnyKey
+                        ? typeof(object)
+                        : parameterType;
+                    return new ServiceIdentifier(parentServiceIdentifier.ServiceKey, keyType);
+                }
+
+                if (attribute is FromKeyedServicesAttribute fromKeyedServicesAttribute)
+                {
+                    object? serviceKey = fromKeyedServicesAttribute.LookupMode switch
+                    {
+                        ServiceKeyLookupMode.InheritKey => parentServiceIdentifier.ServiceKey,
+                        ServiceKeyLookupMode.ExplicitKey => fromKeyedServicesAttribute.Key,
+                        ServiceKeyLookupMode.NullKey => null,
+                        _ => null
+                    };
+
+                    if (serviceKey is not null)
+                    {
+                        return new ServiceIdentifier(serviceKey, parameterType);
+                    }
+
+                    break;
+                }
+            }
+
+            return ServiceIdentifier.FromServiceType(parameterType);
         }
 
         private bool TryResolveCallSite(
