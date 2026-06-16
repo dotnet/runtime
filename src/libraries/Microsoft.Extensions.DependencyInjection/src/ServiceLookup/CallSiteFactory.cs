@@ -624,7 +624,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
 
                 ConstructorInfo? bestConstructor = null;
-                HashSet<ServiceIdentifier>? bestResolvedParameters = null;
+                List<ServiceIdentifier>? bestResolvedParameters = null;
 
                 for (int i = 0; i < constructorCount; i++)
                 {
@@ -633,7 +633,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                     if (bestConstructor is null)
                     {
-                        var currentResolvedParameters = new HashSet<ServiceIdentifier>();
+                        var currentResolvedParameters = new List<ServiceIdentifier>();
                         ServiceCallSite[]? currentParameterCallSites = CreateArgumentCallSites(
                             serviceIdentifier,
                             implementationType,
@@ -655,7 +655,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                     Debug.Assert(bestResolvedParameters is not null);
 
-                    var resolvedParameters = new HashSet<ServiceIdentifier>();
+                    var resolvedParameters = new List<ServiceIdentifier>();
                     if (CreateArgumentCallSites(
                         serviceIdentifier,
                         implementationType,
@@ -703,7 +703,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             CallSiteChain callSiteChain,
             ParameterInfo[] parameters,
             bool throwIfCallSiteNotFound,
-            HashSet<ServiceIdentifier>? resolvedParameters = null)
+            List<ServiceIdentifier>? resolvedParameters = null)
         {
             var parameterCallSites = new ServiceCallSite[parameters.Length];
 
