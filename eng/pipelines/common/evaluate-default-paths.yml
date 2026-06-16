@@ -311,7 +311,7 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
-    # Wasm except Wasm.build.Tests and debugger
+    # Wasm-specific paths excluding Wasm.Build.Tests, WASI (build/runtime/testassets), and the debugger
     - subset: wasm_specific_except_wbt_dbg
       combined: true
       include:
