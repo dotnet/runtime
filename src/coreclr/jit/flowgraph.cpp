@@ -989,11 +989,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 //
 bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
 {
-    GenTree* op = addr;
-    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
-    {
-        op = op->AsFieldAddr()->GetFldObj();
-    }
+    GenTree* op = gtPeelFieldAddrs(addr);
 
     target_ssize_t offset;
     gtPeelOffsets(&op, &offset);
@@ -3153,7 +3149,8 @@ PhaseStatus Compiler::fgCreateFunclets()
         funcInfo[i].funFramePointerReg = REG_NA;
 #endif
 #ifdef TARGET_WASM
-        funcInfo[i].funWasmLocalDecls = nullptr;
+        funcInfo[i].funWasmLocalDecls       = nullptr;
+        funcInfo[i].funWasmExnRefLocalIndex = UINT_MAX;
 #endif
     }
 #endif
@@ -7907,7 +7904,15 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
                         region->AddEntryEdge(edge);
                         region->SetHasSideEntry();
-                        regions->SetHasMultipleEntryTryRegions();
+
+                        // Only try/catch regions need to be reshaped into single-entry form for
+                        // Wasm codegen (they will be lowered to a wasm try_table). Try/fault and
+                        // try/finally are emitted differently and tolerate multi-entry.
+                        //
+                        if (dsc->HasCatchHandler())
+                        {
+                            regions->SetHasMultipleEntryTryRegions();
+                        }
                         continue;
                     }
 
