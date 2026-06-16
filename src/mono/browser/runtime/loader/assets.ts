@@ -771,11 +771,10 @@ export async function streamingCompileWasm () {
 
 export function preloadWorkers () {
     if (!WasmEnableThreads) return;
-    const jsModuleNative = resolve_single_asset_path("js-module-native");
     const loadingWorkers = [];
     for (let i = 0; i < loaderHelpers.config.pthreadPoolInitialSize!; i++) {
         const workerNumber = loaderHelpers.workerNextNumber++;
-        const worker: Partial<PThreadWorker> = new Worker(jsModuleNative.resolvedUrl!, {
+        const worker: Partial<PThreadWorker> = new Worker(loaderHelpers.scriptUrl, {
             name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
             type: "module",
         });

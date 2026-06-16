@@ -20,7 +20,7 @@ import { invokeLibraryInitializers } from "./libraryInitializers";
 import { deep_merge_config, isDebuggingSupported } from "./config";
 
 // if we are ST build or the first script loaded in the web worker, we are expected to become the sidecar
-if (typeof importScripts === "function" && (!WasmEnableThreads || !globalThis.onmessage)) {
+if (typeof importScripts === "function" && (!WasmEnableThreads)) {
     (globalThis as any).dotnetSidecar = true;
 }
 

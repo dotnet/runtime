@@ -14,7 +14,7 @@ import {
     dotnetPthreadAttached,
     WorkerThreadEventTarget
 } from "./worker-events";
-import { postRunWorker, preRunWorker } from "../startup";
+import { postRunWorker } from "../startup";
 import { mono_log_debug, mono_log_error } from "../logging";
 import { CharPtr } from "../types/emscripten";
 import { utf8ToString } from "../strings";
@@ -81,8 +81,7 @@ export function mono_wasm_pthread_on_pthread_created (): void {
     if (!WasmEnableThreads) return;
     try {
         forceThreadMemoryViewRefresh();
-        const pthread_id = tcwraps.pthread_self();
-        mono_assert(pthread_id == monoThreadInfo.pthreadId, `needs to match (pthread_ptr ${pthread_id}, threadId from thread info ${monoThreadInfo.pthreadId})`);
+        monoThreadInfo.pthreadId = tcwraps.pthread_self();
 
         monoThreadInfo.reuseCount++;
         monoThreadInfo.updateCount++;
@@ -129,7 +128,6 @@ export function mono_wasm_pthread_on_pthread_registered (pthread_id: PThreadPtr)
             monoCmd: WorkerToMainMessageType.monoRegistered,
             info: monoThreadInfo,
         });
-        preRunWorker();
     } catch (err) {
         mono_log_error("mono_wasm_pthread_on_pthread_registered () failed", err);
         loaderHelpers.mono_exit(1, err);

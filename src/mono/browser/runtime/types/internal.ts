@@ -436,7 +436,9 @@ export declare interface EmscriptenModuleInternal {
     mainScriptUrlOrBlob?: string;
     ENVIRONMENT_IS_PTHREAD?: boolean;
     FS: any;
-    wasmModule: WebAssembly.Instance | null;
+    wasmModule: WebAssembly.Module | null;
+    wasmMemory: WebAssembly.Memory | null;
+    handlers: any;
     wasmExports: any;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;

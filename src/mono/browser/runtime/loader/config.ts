@@ -194,7 +194,7 @@ export function normalizeConfig () {
     if (WasmEnableThreads) {
 
         if (!Number.isInteger(config.pthreadPoolInitialSize)) {
-            config.pthreadPoolInitialSize = 5;
+            config.pthreadPoolInitialSize = 7;
         }
         if (!Number.isInteger(config.pthreadPoolUnusedSize)) {
             config.pthreadPoolUnusedSize = 1;

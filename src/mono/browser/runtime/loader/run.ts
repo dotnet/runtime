@@ -324,9 +324,7 @@ export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((ap
 
     registerEmscriptenExitHandlers();
 
-    return emscriptenModule.ENVIRONMENT_IS_PTHREAD
-        ? createEmscriptenWorker()
-        : createEmscriptenMain();
+    return createEmscriptenMain();
 }
 
 let jsModuleRuntimePromise: Promise<RuntimeModuleExportsInternal>;
@@ -463,7 +461,21 @@ async function createEmscriptenWorker (): Promise<EmscriptenModuleInternal> {
 
     const promises = importModules();
     const es6Modules = await Promise.all(promises);
+    (globalThis as any).name = "em-pthread";
     await initializeModules(es6Modules as any);
 
+    self.dispatchEvent(new MessageEvent("message", {
+        data: {
+            cmd: "load",
+            handlers: emscriptenModule.handlers,
+            wasmMemory: emscriptenModule.wasmMemory,
+            wasmModule: emscriptenModule.wasmModule
+        }
+    }));
+
     return emscriptenModule;
+}
+
+if (ENVIRONMENT_IS_WORKER) {
+    createEmscriptenWorker();
 }
