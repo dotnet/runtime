@@ -676,7 +676,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         continue;
                     }
 
-                    // All parameters resolvable; check if it's a strict subset of best.
+                    // All parameters resolvable; check if it's a subset of best.
                     foreach (ServiceIdentifier id in resolvedParameters)
                     {
                         if (!bestResolvedParameters.Contains(id))
