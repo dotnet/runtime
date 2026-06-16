@@ -72,13 +72,7 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
         ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_InvokeLibraryInitializersApi");
         PublishProject(info, config);
         RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "InvokeLibraryInitializersTest"));
-        Assert.Collection(
-            result.TestOutput,
-            m => Assert.Equal("customHookCalled=true", m)
-        );
-        Assert.Collection(
-            result.TestOutput,
-            m => Assert.Equal("resources.libraryInitializers.length=1", m)
-        );
+        Assert.Contains("customHookCalled=true", result.TestOutput);
+        Assert.Contains("resources.libraryInitializers.length=1", result.TestOutput);
     }
 }
