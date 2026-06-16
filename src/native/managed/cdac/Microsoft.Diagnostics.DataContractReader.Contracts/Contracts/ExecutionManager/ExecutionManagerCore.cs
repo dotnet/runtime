@@ -421,7 +421,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
         IGCInfo gcInfoContract = _target.Contracts.GCInfo;
         IGCInfoHandle handle = gcInfoContract.DecodePlatformSpecificGCInfo(gcInfoAddress, gcInfoVersion);
-        return gcInfoContract.GetSizeOfStackParameterArea(handle);
+        return gcInfoContract.GetCalleePoppedArgumentsSize(handle);
     }
 
     TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)

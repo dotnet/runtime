@@ -37,6 +37,9 @@ internal sealed class GCInfoX86_1 : IGCInfo
     uint IGCInfo.GetSizeOfStackParameterArea(IGCInfoHandle gcInfoHandle)
         => AssertCorrectHandle(gcInfoHandle).GetSizeOfStackParameterArea();
 
+    uint IGCInfo.GetCalleePoppedArgumentsSize(IGCInfoHandle gcInfoHandle)
+        => AssertCorrectHandle(gcInfoHandle).GetCalleePoppedArgumentsSize();
+
     IReadOnlyList<InterruptibleRange> IGCInfo.GetInterruptibleRanges(IGCInfoHandle gcInfoHandle)
         => AssertCorrectHandle(gcInfoHandle).GetInterruptibleRanges();
 

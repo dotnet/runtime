@@ -255,9 +255,16 @@ public record X86GCInfo : IGCInfoDecoder
     }
 
     uint IGCInfoDecoder.GetSizeOfStackParameterArea()
+        => throw new NotSupportedException(
+            "x86 GC info does not encode a separate outgoing-argument scratch area; the cDAC " +
+            "GC scanner does not consume scratch-area sizing on x86 (the legacy x86 GC walker " +
+            "reasons over per-offset transitions instead).");
+
+    uint IGCInfoDecoder.GetCalleePoppedArgumentsSize()
     {
-        // VarArgs methods report 0 (caller pops, count not statically known).
-        // Mirrors the logic in EECodeManager::GetStackParameterSize on x86.
+        // Mirrors native ::GetStackParameterSize(hdrInfo) in gc_unwind_x86.inl: varargs are
+        // caller-popped (return 0); other methods report the argument size from the GC info
+        // header. Used by EECodeManager::GetStackParameterSize on x86.
         return Header.VarArgs ? 0u : Header.ArgCount * (uint)_target.PointerSize;
     }
 
