@@ -1016,7 +1016,7 @@ namespace System.Text
         {
             if (DecodeFromUtf16(s, out result, out int charsConsumed) != OperationStatus.Done || charsConsumed != s!.Length)
             {
-                result = default;
+                result = ReplacementChar;
                 return false;
             }
 
@@ -1039,7 +1039,7 @@ namespace System.Text
         {
             if (DecodeFromUtf16(s, out result, out int charsConsumed) != OperationStatus.Done || charsConsumed != s.Length)
             {
-                result = default;
+                result = ReplacementChar;
                 return false;
             }
 
