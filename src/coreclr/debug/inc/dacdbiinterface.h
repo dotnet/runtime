@@ -1497,28 +1497,51 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE HasTypeParams(VMPTR_TypeHandle th, OUT BOOL * pResult) = 0;
 
-    // Get type information for a class
+    // Callback invoked for each FieldData computed by EnumerateClassFields or
+    // EnumerateInstantiationFields.
+    //
+    // Arguments:
+    //    pFieldData - the FieldData for this field. Only valid for the duration of the
+    //                 callback; the consumer must copy the contents if it needs to keep
+    //                 them. The pointer is not null.
+    //    pUserData  - user data passed to the Enumerate* call.
+    typedef void (*FP_FIELDDATA_CALLBACK)(FieldData *pFieldData, CALLBACK_DATA pUserData);
+
+    // Enumerate the FieldData entries for a class.
     //
     // Arguments:
     //     input:  thExact       - exact type handle for type
-    //     output:
-    //             pData         - structure containing information about the class and its
-    //                             fields
+    //             fpCallback    - callback invoked once per field (in iterator order:
+    //                             regular FieldDescs first, then EnC-added instance,
+    //                             then EnC-added static).
+    //             pUserData     - opaque user data passed back to the callback.
+    //     output: pObjectSize   - size of the object in bytes for non-generic types;
+    //                             zero for open generic types. Always written on S_OK.
+    //
+    // The callback is invoked once per field and must not throw.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateClassFields(VMPTR_TypeHandle thExact,
+                                                           OUT SIZE_T *pObjectSize,
+                                                           FP_FIELDDATA_CALLBACK fpCallback,
+                                                           CALLBACK_DATA pUserData) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetClassInfo(VMPTR_TypeHandle thExact, ClassInfo * pData) = 0;
-
-    // get field information and object size for an instantiated generic
+    // Enumerate the FieldData entries for an instantiated generic type and report its
+    // instantiation-specific object size.
     //
     // Arguments:
     //     input:  vmAssembly  - module containing metadata for the type
-    //             thExact       - exact type handle for type (may be NULL)
-    //             thApprox      - approximate type handle for the type
-    //     output:
-    //             pFieldList    - array of structures containing information about the fields. Clears any previous
-    //                             contents. Allocated and initialized by this function.
-    //             pObjectSize   - size of the instantiated object
+    //             vmThExact   - exact type handle for type (may be NULL)
+    //             vmThApprox  - approximate type handle for the type
+    //             fpCallback  - callback invoked once per field.
+    //             pUserData   - opaque user data passed back to the callback.
+    //     output: pObjectSize - size of the instantiated object. Always written on S_OK.
     //
-    virtual HRESULT STDMETHODCALLTYPE GetInstantiationFieldInfo(VMPTR_Assembly vmAssembly, VMPTR_TypeHandle vmThExact, VMPTR_TypeHandle vmThApprox, OUT DacDbiArrayList<FieldData> * pFieldList, OUT SIZE_T * pObjectSize) = 0;
+    // The callback is invoked once per field and must not throw.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateInstantiationFields(VMPTR_Assembly vmAssembly,
+                                                                   VMPTR_TypeHandle vmThExact,
+                                                                   VMPTR_TypeHandle vmThApprox,
+                                                                   OUT SIZE_T *pObjectSize,
+                                                                   FP_FIELDDATA_CALLBACK fpCallback,
+                                                                   CALLBACK_DATA pUserData) = 0;
 
     // use a type handle to get the information needed to create the corresponding RS CordbType instance
     //
@@ -1717,45 +1740,41 @@ public:
     // functions to get information about reference/handle referents for ICDValue
     // ----------------------------------------------------------------------------
 
-    // Get object information for a TypedByRef object. Initializes the objRef and typedByRefType fields of
-    // pObjectData (type info for the referent).
+    // Get object information for a TypedByRef object (System.TypedReference).
     // Arguments:
-    //     input:  pTypedByRef - pointer to a TypedByRef struct
-    //     output: pObjectData - information about the object referenced by pTypedByRef
+    //     input:  pTypedByRef     - address of the TypedByRef struct
+    //     output: pObjRef         - the managed pointer value (data field of TypedByRef)
+    //             pTypedByRefType - basic type information for the referent type
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, OUT CORDB_ADDRESS * pObjRef, OUT DebuggerIPCE_BasicTypeData * pTypedByRefType) = 0;
 
     // Get the string length and offset to string base for a string object
     // Arguments:
-    //     input:  objPtr - address of a string object
-    //     output: pObjectData - fills in the string fields stringInfo.offsetToStringBase and
-    //             stringInfo.length
+    //     input:  objectAddress        - address of a string object
+    //     output: pLength              - the string length in characters
+    //             pOffsetToStringBase  - byte offset from the object base to the first character
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetStringData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetStringData(CORDB_ADDRESS objectAddress, OUT UINT * pLength, OUT UINT * pOffsetToStringBase) = 0;
 
     // Get information for an array type referent of an objRef, including rank, upper and lower bounds,
     // element size and type, and the number of elements.
     // Arguments:
     //     input:  objectAddress - the address of an array object
-    //     output: pObjectData   - fills in the array-related fields:
-    //                             arrayInfo.offsetToArrayBase,
-    //                             arrayInfo.offsetToLowerBounds,
-    //                             arrayInfo.offsetToUpperBounds,
-    //                             arrayInfo.componentCount,
-    //                             arrayInfo.rank,
-    //                             arrayInfo.elementSize,
+    //     output: pIsValidArray - FALSE if the object is not actually an array
+    //             pArrayInfo    - filled with array layout information
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetArrayData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetArrayData(CORDB_ADDRESS objectAddress, OUT BOOL * pIsValidArray, OUT DacDbiArrayInfo * pArrayInfo) = 0;
 
     // Get information about an object for which we have a reference, including the object size and
     // type information.
     // Arguments:
-    //     input:  objectAddress - address of the object for which we want information
-    //             type          - the basic type of the object (we may find more specific type
-    //                             information for the object)
-    //     output: pObjectData   - fills in the size and type information fields
+    //     input:  objectAddress    - address of the object for which we want information
+    //     output: pIsValidRef      - FALSE if the object reference is bad
+    //             pObjSize         - size of the object in bytes
+    //             pObjOffsetToVars - byte offset from the object base to the first field
+    //             pObjTypeData     - expanded type information for the object
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, OUT BOOL * pIsValidRef, OUT UINT * pObjSize, OUT UINT * pObjOffsetToVars, OUT DebuggerIPCE_ExpandedTypeData * pObjTypeData) = 0;
 
     // Get the address of the Debugger control block on the helper thread. The debugger control block
     // contains information about the status of the debugger, handles to various events and space to hold
@@ -1779,7 +1798,6 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
-    //    The VMPTR this produces can be deconstructed by GetObjectContents.
     //    This function will return a failure HRESULT if given a NULL or otherwise invalid pointer,
     //    but if given a valid address to an invalid pointer, it will produce
     //    a VMPTR_Object which points to invalid memory.
@@ -1796,7 +1814,6 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     // Notes:
-    //    The VMPTR this produces can be deconstructed by GetObjectContents.
     //    This will produce a VMPTR_Object regardless of whether the pointer is
     //    valid or not.
     virtual HRESULT STDMETHODCALLTYPE GetObject(CORDB_ADDRESS ptr, OUT VMPTR_Object * pRetVal) = 0;
@@ -1877,22 +1894,6 @@ public:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
     virtual HRESULT STDMETHODCALLTYPE GetHandleAddressFromVmHandle(VMPTR_OBJECTHANDLE vmHandle, OUT CORDB_ADDRESS * pRetVal) = 0;
-
-    // Given a VMPTR to an Object, get the target address.
-    //
-    // Arguments:
-    //    obj      - the Object VMPTR to get the address from
-    //    pRetVal - [out] The target address which obj is using.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //    The VMPTR this consumes can be reconstructed using GetObject and
-    //    providing the address stored in the returned TargetBuffer. This has
-    //    undefined behavior for invalid VMPTR_Objects.
-
-    virtual HRESULT STDMETHODCALLTYPE GetObjectContents(VMPTR_Object obj, OUT TargetBuffer * pRetVal) = 0;
 
     //
     // Get the thread which owns the monitor lock on an object and the acquisition
@@ -2231,19 +2232,6 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE EnableGCNotificationEvents(BOOL fEnable) = 0;
 
-
-    typedef enum
-    {
-        kClosedDelegate,
-        kOpenDelegate,
-        kOpenInstanceVSD,
-        kClosedStaticWithScpecialSig,
-        kTrueMulticastDelegate,
-        kWrapperDelegate,
-        kUnmanagedFunctionDelegate,
-        kUnknownDelegateType
-    } DelegateType;
-
     // Returns true if the object is a type deriving from System.MulticastDelegate
     //
     // Arguments:
@@ -2252,20 +2240,14 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE IsDelegate(VMPTR_Object vmObject, OUT BOOL * pResult) = 0;
 
-    // Get the delegate type
-    virtual HRESULT STDMETHODCALLTYPE GetDelegateType(VMPTR_Object delegateObject, DelegateType *delegateType) = 0;
-
     virtual HRESULT STDMETHODCALLTYPE GetDelegateFunctionData(
-        DelegateType delegateType,
         VMPTR_Object delegateObject,
         OUT VMPTR_Assembly *ppFunctionAssembly,
         OUT mdMethodDef *pMethodDef) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetDelegateTargetObject(
-        DelegateType delegateType,
         VMPTR_Object delegateObject,
-        OUT VMPTR_Object *ppTargetObj,
-        OUT VMPTR_AppDomain *ppTargetAppDomain) = 0;
+        OUT VMPTR_Object *ppTargetObj) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped) = 0;
 

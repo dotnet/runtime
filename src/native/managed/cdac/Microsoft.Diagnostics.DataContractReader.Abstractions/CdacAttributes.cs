@@ -53,7 +53,7 @@ public sealed class FieldAttribute : Attribute
 
     /// <summary>
     /// One or more candidate descriptor field names tried in priority order.
-    /// The cdac LayoutPair cascade tries each name against the native cdac
+    /// The cdac LayoutSet cascade tries each name against the native cdac
     /// descriptor first; if none match (or the native descriptor isn't
     /// available), it then tries each name against the managed type metadata.
     /// </summary>
@@ -115,7 +115,8 @@ public sealed class FieldAttribute : Attribute
 /// <see cref="FieldAttribute"/>: primitives use <c>target.Read&lt;T&gt;</c>
 /// (or <c>ReadLittleEndian&lt;T&gt;</c> when <see cref="LittleEndian"/> is
 /// set), <c>TargetPointer</c> uses <c>ReadPointer</c>, <c>TargetNUInt</c>
-/// uses <c>ReadNUInt</c>, <c>TargetCodePointer</c> uses <c>ReadCodePointer</c>,
+/// uses <c>ReadNUInt</c>, <c>TargetNInt</c> uses <c>ReadNInt</c>,
+/// <c>TargetCodePointer</c> uses <c>ReadCodePointer</c>,
 /// and <c>IData&lt;T&gt;</c>-typed properties use
 /// <c>target.ProcessedData.GetOrAdd&lt;T&gt;</c>.
 /// </remarks>

@@ -42,6 +42,10 @@ internal static partial class Interop
         [LibraryImport(Libraries.Kernel32)]
         internal static partial IntPtr GetCurrentThread();
 
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool SetThreadPriorityBoost(IntPtr hThread, [MarshalAs(UnmanagedType.Bool)] bool bDisablePriorityBoost);
+
         internal const int DUPLICATE_SAME_ACCESS = 2;
 
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]

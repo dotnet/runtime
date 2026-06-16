@@ -118,7 +118,7 @@ template<class T>
 inline
 void DacDbiArrayList<T>::Init(const T * pList, int count)
 {
-    _ASSERTE((m_pList == NULL) && (m_nEntries == 0));
+    Dealloc();
     if (count > 0)
     {
         Alloc(count);
@@ -640,25 +640,25 @@ void FieldData::ClearFields()
     m_fldSignatureCache = NULL;
     m_fldSignatureCacheSize = 0;
     m_fldInstanceOffset = 0;
-    m_pFldStaticAddress = (TADDR)NULL;
+    m_pFldStaticAddress = (CORDB_ADDRESS)NULL;
 }
 
 inline
 BOOL FieldData::OkToGetOrSetInstanceOffset()
 {
     return (!m_fFldIsStatic && !m_fFldIsRVA && !m_fFldIsTLS &&
-            m_fFldStorageAvailable  && (m_pFldStaticAddress == (TADDR)NULL));
+            m_fFldStorageAvailable  && (m_pFldStaticAddress == (CORDB_ADDRESS)NULL));
 }
 
 // If this is an instance field, store its offset
 inline
-void FieldData::SetInstanceOffset(SIZE_T offset)
+void FieldData::SetInstanceOffset(ULONG64 offset)
 {
     _ASSERTE(!m_fFldIsStatic);
     _ASSERTE(!m_fFldIsRVA);
     _ASSERTE(!m_fFldIsTLS);
     _ASSERTE(m_fFldStorageAvailable);
-    _ASSERTE(m_pFldStaticAddress == (TADDR)NULL);
+    _ASSERTE(m_pFldStaticAddress == (CORDB_ADDRESS)NULL);
     m_fldInstanceOffset = offset;
 }
 
@@ -671,34 +671,34 @@ BOOL FieldData::OkToGetOrSetStaticAddress()
 
 // If this is a "normal" static, store its absolute address
 inline
-void FieldData::SetStaticAddress(TADDR addr)
+void FieldData::SetStaticAddress(CORDB_ADDRESS addr)
 {
     _ASSERTE(m_fFldIsStatic);
     _ASSERTE(!m_fFldIsTLS);
     _ASSERTE(m_fFldStorageAvailable);
     _ASSERTE(m_fldInstanceOffset == 0);
-    m_pFldStaticAddress = TADDR(addr);
+    m_pFldStaticAddress = addr;
 }
 
 // Get the offset of a field
 inline
-SIZE_T FieldData::GetInstanceOffset()
+CORDB_ADDRESS FieldData::GetInstanceOffset()
 {
     _ASSERTE(!m_fFldIsStatic);
     _ASSERTE(!m_fFldIsRVA);
     _ASSERTE(!m_fFldIsTLS);
     _ASSERTE(m_fFldStorageAvailable);
-    _ASSERTE(m_pFldStaticAddress == (TADDR)NULL);
+    _ASSERTE(m_pFldStaticAddress == (CORDB_ADDRESS)NULL);
     return m_fldInstanceOffset;
 }
 
 // Get the static address for a field
 inline
-TADDR FieldData::GetStaticAddress()
+CORDB_ADDRESS FieldData::GetStaticAddress()
 {
     _ASSERTE(m_fFldIsStatic);
     _ASSERTE(!m_fFldIsTLS);
-    _ASSERTE(m_fFldStorageAvailable || (m_pFldStaticAddress == (TADDR)NULL));
+    _ASSERTE(m_fFldStorageAvailable || (m_pFldStaticAddress == (CORDB_ADDRESS)NULL));
     _ASSERTE(m_fldInstanceOffset == 0);
     return m_pFldStaticAddress;
 }

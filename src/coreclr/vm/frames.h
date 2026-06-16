@@ -791,6 +791,10 @@ inline CONTEXT * GETREDIRECTEDCONTEXT(Thread * thread) { LIMITED_METHOD_CONTRACT
 
 typedef DPTR(class TransitionFrame) PTR_TransitionFrame;
 
+#ifdef TARGET_WASM
+TADDR GetWasmVirtualIPFromStackPointer(TADDR sp);
+#endif
+
 class TransitionFrame : public Frame
 {
 #ifndef DACCESS_COMPILE
@@ -873,6 +877,18 @@ public:
     TADDR GetSP()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+#ifdef TARGET_WASM
+        TransitionBlock* pTransitionBlock = (TransitionBlock*)GetTransitionBlock();
+        if (pTransitionBlock != NULL)
+        {
+            if ((pTransitionBlock->m_ReturnAddress != 0) && (pTransitionBlock->m_StackPointer != 0))
+            {
+                // If the TransitionBlock is setup with both a return address and a stack pointer, then we can trust the stack pointer value,
+                // and it corresponds into the R2R unwind stack
+                return pTransitionBlock->m_StackPointer;
+            }
+        }
+#endif
         return GetTransitionBlock() + sizeof(TransitionBlock);
     }
 
@@ -1218,6 +1234,17 @@ public:
     TADDR GetTransitionBlock_Impl()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+#ifdef TARGET_WASM
+        TransitionBlock* pTransitionBlock = (TransitionBlock*)m_pTransitionBlock;
+        if (pTransitionBlock != NULL)
+        {
+            if (pTransitionBlock->m_ReturnAddress == 0)
+            {
+                // Lazy compute the virtual IP for the frame
+                pTransitionBlock->m_ReturnAddress = GetWasmVirtualIPFromStackPointer(pTransitionBlock->m_StackPointer);
+            }
+        }
+#endif
         return m_pTransitionBlock;
     }
 
@@ -1356,6 +1383,20 @@ public:
                                      m_ReturnAddress);
     }
 
+    PCODE GetReturnAddress_Impl()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+#if defined(TARGET_ARM64) && !defined(DACCESS_COMPILE)
+        if (m_SpForPacSign != 0)
+        {
+            return (PCODE)PacAuthPtr((void*)m_ReturnAddress, (void*)m_SpForPacSign);
+        }
+#endif
+
+        return (PCODE)m_ReturnAddress;
+    }
+
     BOOL NeedsUpdateRegDisplay_Impl()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1383,11 +1424,14 @@ public:
     // HijackFrames are created by trip functions. See OnHijackTripThread()
     // They are real C++ objects on the stack.
     // So, it's a public function -- but that doesn't mean you should make some.
-    HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args);
+    HijackFrame(LPVOID returnAddress, Thread *thread, HijackArgs *args ARM64_ARG(LPVOID spForPacSign));
 
 protected:
 
     TADDR               m_ReturnAddress;
+#if defined(TARGET_ARM64)
+    TADDR               m_SpForPacSign;
+#endif
     PTR_Thread          m_Thread;
     DPTR(HijackArgs)    m_Args;
 

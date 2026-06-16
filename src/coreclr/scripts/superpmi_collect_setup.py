@@ -479,7 +479,7 @@ def main(main_args):
                 helix_queue = "azurelinux.3.amd64.open"
         elif platform_name == "osx":
             if arch == "arm64": # public osx_arm64
-                helix_queue = "OSX.15.Arm64.Open"
+                helix_queue = "OSX.26.Arm64.Open"
             else: # public osx_x64
                 helix_queue = "OSX.15.Amd64.Open"
     else:
@@ -497,7 +497,7 @@ def main(main_args):
                 helix_queue = "azurelinux.3.amd64"
         elif platform_name == "osx":
             if arch == "arm64": # internal osx_arm64
-                helix_queue = "OSX.15.Arm64"
+                helix_queue = "OSX.26.Arm64"
             else: # internal osx_x64
                 helix_queue = "OSX.15.Amd64"
 
@@ -656,7 +656,7 @@ def main(main_args):
         if coreclr_args.collection_name == "corelib":
             # corelib is a single-assembly crossgen2 collection over a pre-built
             # System.Private.CoreLib.dll. The YAML routes InputDirectory to:
-            #   - the wasm-built corelib bin dir (artifacts/bin/coreclr/browser.wasm.Release)
+            #   - the wasm-built corelib bin dir (artifacts/bin/coreclr/browser.wasm.Release/IL)
             #     for wasm cross-target collections, or
             #   - the host release Core_Root for non-cross-target collections.
             # Build a custom one-file input directory so the partitioning logic produces

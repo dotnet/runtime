@@ -959,14 +959,6 @@ public:
 
         for (Statement* const stmt : block->Statements())
         {
-#ifdef FEATURE_SIMD
-            if (m_compiler->opts.OptimizationEnabled() && stmt->GetRootNode()->TypeIs(TYP_FLOAT) &&
-                stmt->GetRootNode()->OperIsStore())
-            {
-                m_madeChanges |= m_compiler->fgMorphCombineSIMDFieldStores(block, stmt);
-            }
-#endif
-
             VisitStmt(stmt);
         }
 
@@ -2408,114 +2400,6 @@ PhaseStatus Compiler::fgLocalMorph()
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
-
-#ifdef FEATURE_SIMD
-//-----------------------------------------------------------------------------------
-// fgMorphCombineSIMDFieldStores:
-//    If the store of the input stmt is a read for simd vector X Field, then this
-//    function will keep reading next few stmts based on the vector size(2, 3, 4).
-//    If the next stmts stores are located contiguous and values are also located
-//    contiguous, then we replace those statements with one store.
-//
-// Argument:
-//    block - BasicBlock*. block which stmt belongs to
-//    stmt  - Statement*. the stmt node we want to check
-//
-// Return Value:
-//    Whether the stores were successfully coalesced.
-//
-bool Compiler::fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt)
-{
-    GenTree* store = stmt->GetRootNode();
-    assert(store->OperIsStore());
-
-    GenTree*  prevValue    = store->Data();
-    unsigned  index        = 0;
-    var_types simdBaseType = store->TypeGet();
-    unsigned  simdSize     = 0;
-    GenTree*  simdLclAddr  = getSIMDStructFromField(prevValue, &index, &simdSize, true);
-
-    if ((simdLclAddr == nullptr) || (index != 0) || (simdBaseType != TYP_FLOAT))
-    {
-        // if the value is not from a SIMD vector field X, then there is no need to check further.
-        return false;
-    }
-
-    var_types  simdType        = getSIMDTypeForSize(simdSize);
-    int        storeCount      = simdSize / genTypeSize(simdBaseType) - 1;
-    int        remainingStores = storeCount;
-    GenTree*   prevStore       = store;
-    Statement* curStmt         = stmt->GetNextStmt();
-    Statement* lastStmt        = stmt;
-
-    while (curStmt != nullptr && remainingStores > 0)
-    {
-        if (!curStmt->GetRootNode()->OperIsStore())
-        {
-            break;
-        }
-
-        GenTree* curStore = curStmt->GetRootNode();
-        GenTree* curValue = curStore->Data();
-
-        if (!areArgumentsContiguous(prevStore, curStore) || !areArgumentsContiguous(prevValue, curValue))
-        {
-            break;
-        }
-
-        remainingStores--;
-        prevStore = curStore;
-        prevValue = curValue;
-
-        lastStmt = curStmt;
-        curStmt  = curStmt->GetNextStmt();
-    }
-
-    if (remainingStores > 0)
-    {
-        // if the left store number is bigger than zero, then this means that the stores
-        // are not assigning to the contiguous memory locations from same vector.
-        return false;
-    }
-
-    JITDUMP("\nFound contiguous stores from a SIMD vector to memory.\n");
-    JITDUMP("From " FMT_BB ", " FMT_STMT " to " FMT_STMT "\n", block->bbNum, stmt->GetID(), lastStmt->GetID());
-
-    for (int i = 0; i < storeCount; i++)
-    {
-        fgRemoveStmt(block, stmt->GetNextStmt());
-    }
-
-    GenTree* fullValue = gtNewLclvNode(simdLclAddr->AsLclVarCommon()->GetLclNum(), simdType);
-    GenTree* fullStore;
-    if (store->OperIs(GT_STORE_LCL_FLD))
-    {
-        store->gtType             = simdType;
-        store->AsLclFld()->Data() = fullValue;
-        if (!store->IsPartialLclFld(this))
-        {
-            store->gtFlags &= ~GTF_VAR_USEASG;
-        }
-
-        fullStore = store;
-    }
-    else
-    {
-        GenTree* dstAddr = CreateAddressNodeForSimdHWIntrinsicCreate(store, simdBaseType, simdSize);
-        fullStore        = gtNewStoreIndNode(simdType, dstAddr, fullValue);
-    }
-
-    JITDUMP("\n" FMT_BB " " FMT_STMT " (before):\n", block->bbNum, stmt->GetID());
-    DISPSTMT(stmt);
-
-    stmt->SetRootNode(fullStore);
-
-    JITDUMP("\nReplaced " FMT_BB " " FMT_STMT " (after):\n", block->bbNum, stmt->GetID());
-    DISPSTMT(stmt);
-
-    return true;
-}
-#endif // FEATURE_SIMD
 
 //-----------------------------------------------------------------------------------
 // fgExposeUnpropagatedLocals:

@@ -24,6 +24,26 @@ public struct COR_TYPEID
     public ulong token2;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct FieldData
+{
+    public uint m_fldMetadataToken;
+    public Interop.BOOL m_fFldStorageAvailable;
+
+    public byte m_fFldIsStatic;
+    public byte m_fFldIsRVA;
+    public byte m_fFldIsTLS;
+    public byte m_fFldIsPrimitive;
+    public byte m_fFldIsCollectibleStatic;
+
+    public ulong m_fldInstanceOffset;
+    public ulong m_pFldStaticAddress;
+    public nuint m_fldSignatureCache;
+    public uint m_fldSignatureCacheSize;
+
+    public ulong m_vmFieldDesc;
+}
+
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 
 [StructLayout(LayoutKind.Sequential)]
@@ -287,6 +307,17 @@ public unsafe struct ArgInfoList
     public int m_nEntries;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct DacDbiArrayInfo
+{
+    public uint rank;
+    public uint componentCount;
+    public uint offsetToArrayBase;
+    public uint offsetToUpperBounds;   // 0 for SZArray
+    public uint offsetToLowerBounds;   // 0 for SZArray
+    public uint elementSize;
+}
+
 public enum DynamicMethodType
 {
     kNone = 0,
@@ -536,10 +567,10 @@ public unsafe partial interface IDacDbiInterface
     int HasTypeParams(ulong vmTypeHandle, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetClassInfo(ulong thExact, nint pData);
+    int EnumerateClassFields(ulong thExact, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData);
 
     [PreserveSig]
-    int GetInstantiationFieldInfo(ulong vmAssembly, ulong vmTypeHandle, ulong vmExactMethodTable, nint pFieldList, nuint* pObjectSize);
+    int EnumerateInstantiationFields(ulong vmAssembly, ulong vmThExact, ulong vmThApprox, nuint* pObjectSize, delegate* unmanaged<FieldData*, void*, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pData);
@@ -589,16 +620,16 @@ public unsafe partial interface IDacDbiInterface
     int EnumerateRcwCachedInterfacePointers(ulong vmObject, /*FP_RCW_INTERFACE_CALLBACK*/ delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
-    int GetTypedByRefInfo(ulong pTypedByRef, nint pObjectData);
+    int GetTypedByRefInfo(ulong pTypedByRef, ulong* pObjRef, DebuggerIPCE_BasicTypeData* pTypedByRefType);
 
     [PreserveSig]
-    int GetStringData(ulong objectAddress, nint pObjectData);
+    int GetStringData(ulong objectAddress, uint* pLength, uint* pOffsetToStringBase);
 
     [PreserveSig]
-    int GetArrayData(ulong objectAddress, nint pObjectData);
+    int GetArrayData(ulong objectAddress, Interop.BOOL* pIsValidArray, DacDbiArrayInfo* pArrayInfo);
 
     [PreserveSig]
-    int GetBasicObjectInfo(ulong objectAddress, int type, nint pObjectData);
+    int GetBasicObjectInfo(ulong objectAddress, Interop.BOOL* pIsValidRef, uint* pObjSize, uint* pObjOffsetToVars, DebuggerIPCE_ExpandedTypeData* pObjTypeData);
 
     [PreserveSig]
     int GetDebuggerControlBlockAddress(ulong* pRetVal);
@@ -617,9 +648,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetHandleAddressFromVmHandle(ulong vmHandle, ulong* pRetVal);
-
-    [PreserveSig]
-    int GetObjectContents(ulong obj, DacDbiTargetBuffer* pRetVal);
 
     [PreserveSig]
     int GetThreadOwningMonitorLock(ulong vmObject, DacDbiMonitorLockInfo* pRetVal);
@@ -709,13 +737,10 @@ public unsafe partial interface IDacDbiInterface
     int IsDelegate(ulong vmObject, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int GetDelegateType(ulong delegateObject, int* delegateType);
+    int GetDelegateFunctionData(ulong delegateObject, ulong* ppFunctionAssembly, uint* pMethodDef);
 
     [PreserveSig]
-    int GetDelegateFunctionData(int delegateType, ulong delegateObject, ulong* ppFunctionAssembly, uint* pMethodDef);
-
-    [PreserveSig]
-    int GetDelegateTargetObject(int delegateType, ulong delegateObject, ulong* ppTargetObj, ulong* ppTargetAppDomain);
+    int GetDelegateTargetObject(ulong delegateObject, ulong* ppTargetObj);
 
     [PreserveSig]
     int IsModuleMapped(ulong pModule, Interop.BOOL* isModuleMapped);
