@@ -214,7 +214,7 @@ ThePreStubPatchLabel:
 // void ResolveWorkerAsmStub(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken)
 //
 // The stub dispatch thunk which transfers control to VSD_ResolveWorker.
-        NESTED_ENTRY ResolveWorkerAsmStub_FakeProlog_MethodCall_FakeProlog, _TEXT, NoHandler
+        NESTED_ENTRY ResolveWorkerAsmStub_FakeProlog, _TEXT, NoHandler
 
         // Match what the virtual dispatch slow path has pushed.
         PROLOG_PUSH  {r3}
@@ -246,7 +246,7 @@ ResolveWorkerAsmStub:
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         bx r12
 
-        NESTED_END ResolveWorkerAsmStub_FakeProlog_MethodCall_FakeProlog, _TEXT
+        NESTED_END ResolveWorkerAsmStub_FakeProlog, _TEXT
 
 // ------------------------------------------------------------------
 // void ResolveWorkerChainLookupAsmStub(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken)
