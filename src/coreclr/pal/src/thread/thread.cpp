@@ -2372,7 +2372,9 @@ CPalThread::GetStackLimit()
     int status = pthread_stackseg_np(pthread_self(), &stack);
     _ASSERT_MSG(status == 0, "pthread_stackseg_np call failed");
 
-    stackLimit = (void*)stack.ss_size;
+    // ss_sp is the stack base (highest address) and ss_size is the size, so the
+    // limit (lowest address) is ss_sp - ss_size. The stack grows down from ss_sp.
+    stackLimit = (void*)((size_t)stack.ss_sp - stack.ss_size);
 #else
     pthread_attr_t attr;
     size_t stackSize;

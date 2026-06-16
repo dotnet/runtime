@@ -927,11 +927,9 @@ pal::string_t pal::get_current_os_rid_platform()
 
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
-    char* path = minipal_getexepath();
-    if (!path)
-    {
+    pal_char_t* path = ::pal_get_own_executable_path();
+    if (path == nullptr)
         return false;
-    }
 
     recv->assign(path);
     free(path);
@@ -972,14 +970,13 @@ bool pal::get_current_module(dll_t* mod)
 bool pal::getenv(const pal::char_t* name, pal::string_t* recv)
 {
     recv->clear();
+    pal_char_t* value = ::pal_getenv(name);
+    if (value == nullptr)
+        return false;
 
-    auto result = ::getenv(name);
-    if (result != nullptr)
-    {
-        recv->assign(result);
-    }
-
-    return (recv->length() > 0);
+    recv->assign(value);
+    free(value);
+    return true;
 }
 
 extern char **environ;
@@ -1035,11 +1032,7 @@ bool pal::file_exists(const pal::string_t& path)
 
 bool pal::is_directory(const pal::string_t& path)
 {
-    struct stat sb;
-    if (::stat(path.c_str(), &sb) != 0)
-        return false;
-
-    return S_ISDIR(sb.st_mode);
+    return ::pal_directory_exists(path.c_str());
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)
