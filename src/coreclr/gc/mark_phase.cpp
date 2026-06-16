@@ -139,7 +139,6 @@ void gc_heap::make_mark_stack (mark* arr)
 #endif //MH_SC_MARK
 }
 
-inline
 gc_heap* gc_heap::heap_of_gc (uint8_t* o)
 {
 #ifdef MULTIPLE_HEAPS
