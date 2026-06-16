@@ -261,9 +261,8 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("windows")]
         public static SafeEvpPKeyHandle OpenKeyFromProvider(string providerName, string keyUri)
         {
-            ArgumentException.ThrowIfNullOrEmpty(providerName);
-            ArgumentException.ThrowIfNullOrEmpty(keyUri);
             ValidateProviderName(providerName, nameof(providerName));
+            ArgumentException.ThrowIfNullOrEmpty(keyUri);
 
             if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
             {
