@@ -12452,16 +12452,14 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     const char* ftnName = ftnDesc->GetName();
 
     forceInterpreter = true;
-    if (!strcmp(ftnName, "foo"))
+    if (!strcmp(ftnName, "foo") ||
+        !strcmp(ftnName, "s390xHw") ||
+        !strcmp(ftnName, "oneArg") ||
+        !strcmp(ftnName, "twoArgs") ||
+        !strcmp(ftnName, "addTwo"))
     {
-        printf ("Function name is %s\n", ftnName);
-	interpreterFallback = true;
-    }
-
-    else if (!strcmp(ftnName, "s390xHw"))
-    {
-        printf ("Function name is %s\n", ftnName);
-	interpreterFallback = true;
+        printf("Function name is %s\n", ftnName);
+        interpreterFallback = true;
     }
     else
 	interpreterFallback = false;

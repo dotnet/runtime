@@ -265,37 +265,31 @@
   //
   #define REG_ARG_RET_BUFF         REG_R8
   #define RBM_ARG_RET_BUFF         RBM_R8
-  #define RET_BUFF_ARGNUM          8
+  #define RET_BUFF_ARGNUM          5
 
-  #define MAX_REG_ARG              8
+  #define MAX_REG_ARG              5
   #define MAX_FLOAT_REG_ARG        8
 
-  #define REG_ARG_FIRST            REG_R0
-  #define REG_ARG_LAST             REG_R7
+  #define REG_ARG_FIRST            REG_R2
+  #define REG_ARG_LAST             REG_R6
   #define REG_ARG_FP_FIRST         REG_V0
   #define REG_ARG_FP_LAST          REG_V7
   #define INIT_ARG_STACK_SLOT      0                  // No outgoing reserved stack slots
 
-  #define REG_ARG_0                REG_R0
-  #define REG_ARG_1                REG_R1
-  #define REG_ARG_2                REG_R2
-  #define REG_ARG_3                REG_R3
-  #define REG_ARG_4                REG_R4
-  #define REG_ARG_5                REG_R5
-  #define REG_ARG_6                REG_R6
-  #define REG_ARG_7                REG_R7
+  #define REG_ARG_0                REG_R2
+  #define REG_ARG_1                REG_R3
+  #define REG_ARG_2                REG_R4
+  #define REG_ARG_3                REG_R5
+  #define REG_ARG_4                REG_R6
 
   extern const regNumber intArgRegs [MAX_REG_ARG];
   extern const regMaskTP intArgMasks[MAX_REG_ARG];
 
-  #define RBM_ARG_0                RBM_R0
-  #define RBM_ARG_1                RBM_R1
-  #define RBM_ARG_2                RBM_R2
-  #define RBM_ARG_3                RBM_R3
-  #define RBM_ARG_4                RBM_R4
-  #define RBM_ARG_5                RBM_R5
-  #define RBM_ARG_6                RBM_R6
-  #define RBM_ARG_7                RBM_R7
+  #define RBM_ARG_0                RBM_R2
+  #define RBM_ARG_1                RBM_R3
+  #define RBM_ARG_2                RBM_R4
+  #define RBM_ARG_3                RBM_R5
+  #define RBM_ARG_4                RBM_R6
 
   #define REG_FLTARG_0             REG_V0
   #define REG_FLTARG_1             REG_V1
@@ -315,7 +309,7 @@
   #define RBM_FLTARG_6             RBM_V6
   #define RBM_FLTARG_7             RBM_V7
 
-  #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1|RBM_ARG_2|RBM_ARG_3|RBM_ARG_4|RBM_ARG_5|RBM_ARG_6|RBM_ARG_7)
+  #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1|RBM_ARG_2|RBM_ARG_3|RBM_ARG_4)
   #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3|RBM_FLTARG_4|RBM_FLTARG_5|RBM_FLTARG_6|RBM_FLTARG_7)
 
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
