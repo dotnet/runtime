@@ -162,6 +162,7 @@ public enum DataType
     HijackArgs,
 
     Frame,
+    GCFrame,
     InlinedCallFrame,
     SoftwareExceptionFrame,
     FramedMethodFrame,
