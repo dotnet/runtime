@@ -47,14 +47,17 @@
 
     <!-- Per-batch Helix timeout knobs. Outerloop runs the slow [OuterLoop] suites, so
          give each batch a larger budget; innerloop keeps the original 20/30 values.
-         MaximumMinutes stays below the AzDO outerloop job timeout (minus build/send
-         overhead) so the synchronous send-to-Helix wait cannot outlast the job. -->
+         The minimum must exceed the per-suite xharness timeout (04:00:00, see
+         WasmXHarnessTestsTimeout in eng/testing/tests.wasm.targets) so a solo slow-suite
+         batch is bounded by the suite's own timeout, not by the batch floor. MaximumMinutes
+         stays below the AzDO outerloop job timeout (minus build/send overhead) so the
+         synchronous send-to-Helix wait cannot outlast the job. -->
     <_IsOuterloopTestScope Condition="'$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all'">true</_IsOuterloopTestScope>
     <_WasmBatchMinutesPerSuite Condition="'$(_WasmBatchMinutesPerSuite)' == '' and '$(_IsOuterloopTestScope)' == 'true'">40</_WasmBatchMinutesPerSuite>
     <_WasmBatchMinutesPerSuite Condition="'$(_WasmBatchMinutesPerSuite)' == ''">20</_WasmBatchMinutesPerSuite>
-    <_WasmBatchMinimumMinutes Condition="'$(_WasmBatchMinimumMinutes)' == '' and '$(_IsOuterloopTestScope)' == 'true'">60</_WasmBatchMinimumMinutes>
+    <_WasmBatchMinimumMinutes Condition="'$(_WasmBatchMinimumMinutes)' == '' and '$(_IsOuterloopTestScope)' == 'true'">270</_WasmBatchMinimumMinutes>
     <_WasmBatchMinimumMinutes Condition="'$(_WasmBatchMinimumMinutes)' == ''">30</_WasmBatchMinimumMinutes>
-    <_WasmBatchMaximumMinutes Condition="'$(_WasmBatchMaximumMinutes)' == '' and '$(_IsOuterloopTestScope)' == 'true'">240</_WasmBatchMaximumMinutes>
+    <_WasmBatchMaximumMinutes Condition="'$(_WasmBatchMaximumMinutes)' == '' and '$(_IsOuterloopTestScope)' == 'true'">300</_WasmBatchMaximumMinutes>
     <_WasmBatchMaximumMinutes Condition="'$(_WasmBatchMaximumMinutes)' == ''">1439</_WasmBatchMaximumMinutes>
 
     <HelixExtensionTargets />
@@ -417,17 +420,21 @@
     </ItemGroup>
 
     <!-- Slow [OuterLoop] suites are isolated into their own solo batch so a single
-         slow suite does not inflate the runtime of a shared batch. Mirrors the
-         long-running list gated on RunLongRunningWasmTests in tests.proj
-         (https://github.com/dotnet/runtime/issues/125495). Suites not present in the
-         archive (e.g. in innerloop, where they are excluded) are simply ignored. -->
-    <ItemGroup>
+         slow suite does not inflate the runtime of a shared batch. Gated on outerloop
+         because these suites are only slow with the [OuterLoop] tests enabled; in
+         innerloop batching is left unchanged. The first six mirror the long-running list
+         gated on RunLongRunningWasmTests in tests.proj
+         (https://github.com/dotnet/runtime/issues/125495) and are excluded from innerloop;
+         System.Xml.Linq.xNodeBuilder.Tests is an additional outerloop-slow suite that still
+         runs in innerloop. Suites not present in the archive are simply ignored. -->
+    <ItemGroup Condition="'$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all'">
       <_WasmSoloBatchSuite Include="System.Linq.Tests" />
       <_WasmSoloBatchSuite Include="System.Memory.Tests" />
       <_WasmSoloBatchSuite Include="System.Private.Uri.Functional.Tests" />
       <_WasmSoloBatchSuite Include="System.Private.Xml.Tests" />
       <_WasmSoloBatchSuite Include="System.Runtime.Numerics.Tests" />
       <_WasmSoloBatchSuite Include="System.Text.Json.Tests" />
+      <_WasmSoloBatchSuite Include="System.Xml.Linq.xNodeBuilder.Tests" />
     </ItemGroup>
 
     <!-- Assign batch IDs via greedy bin-packing -->

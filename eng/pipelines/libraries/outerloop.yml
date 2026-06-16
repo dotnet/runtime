@@ -125,10 +125,12 @@ extends:
                 testScope: outerloop
                 nameSuffix: LibraryTestsCoreCLR
                 buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) -testscope outerloop /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) /p:InstallChromeForTests=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:1
-                # Outerloop runs the slow suites, so the job waits longer than the
-                # innerloop wasm/coreclr leg (240) and longer than the per-batch Helix
-                # timeout cap (240) so the synchronous send-to-Helix wait fits in the job.
-                timeoutInMinutes: 420
+                # Outerloop runs the slow suites with a 04:00:00 per-suite xharness
+                # timeout and a per-batch Helix cap of 300 min (see
+                # eng/testing/tests.wasm.targets and src/libraries/sendtohelix-browser.targets).
+                # The job waits synchronously for the slowest batch, so it must outlast that
+                # batch plus build/queue overhead.
+                timeoutInMinutes: 600
                 includeAllPlatforms: ${{ variables['isRollingBuild'] }}
                 # extra steps, run tests
                 postBuildSteps:
