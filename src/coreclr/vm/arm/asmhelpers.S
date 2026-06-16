@@ -225,7 +225,7 @@ ResolveWorkerAsmStub:
 
         PROLOG_PUSH  {r0-r2}
 
-        PROLOG_WITH_TRANSITION_BLOCK 0, 0, DoNotPushArgRegs
+        PROLOG_WITH_TRANSITION_BLOCK 0, 1, DoNotPushArgRegs
 
         mov         r2, r12                         // token
 
