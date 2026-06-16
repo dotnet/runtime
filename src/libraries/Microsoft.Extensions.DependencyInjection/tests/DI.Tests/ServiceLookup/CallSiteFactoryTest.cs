@@ -226,7 +226,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient));
 
             // Act
-            var callSite = (ServiceCallSite)callSiteFactory(type);
+var callSite = callSiteFactory(type);
 
             // Assert
             var constructorCallSite = Assert.IsType<ConstructorCallSite>(callSite);
