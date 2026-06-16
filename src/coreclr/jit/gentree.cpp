@@ -21030,6 +21030,18 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         }
     }
 
+    if ((objClass != NO_CLASS_HANDLE) && !*pIsNonNull)
+    {
+        // NOTE: We probably want to incorporate vnStore->IsKnownNonNull into fgAddrCouldBeNull,
+        // but that would make fgAddrCouldBeNull's behavior phase-dependent, whereas it is
+        // actively used in various diagnostic asserts (e.g., checking for no extra flags on a tree).
+        if (!fgAddrCouldBeNull(tree) ||
+            ((vnStore != nullptr) && vnStore->IsKnownNonNull(optConservativeNormalVN(tree))))
+        {
+            *pIsNonNull = true;
+        }
+    }
+
     return objClass;
 }
 

@@ -4535,7 +4535,7 @@ struct AsyncCallInfo
     // Behavior where we continue for each call depends on how it was
     // configured and whether it is a task await or custom await. This field
     // records that behavior.
-    ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
+    ::ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
 
     // Tail awaits do not generate suspension points and the JIT instead
     // directly returns the callee's continuation to the caller.
@@ -8097,8 +8097,8 @@ struct GenTreeIndir : public GenTreeOp
     unsigned Scale();
     ssize_t  Offset();
 
-    unsigned  Size() const;
-    ValueSize ValueSize() const;
+    unsigned    Size() const;
+    ::ValueSize ValueSize() const;
 
     GenTreeIndir(genTreeOps oper, var_types type, GenTree* addr, GenTree* data)
         : GenTreeOp(oper, type, addr, data)

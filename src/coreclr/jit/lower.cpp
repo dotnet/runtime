@@ -6324,7 +6324,8 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 #ifdef DEBUG
                 cellAddr->AsIntCon()->SetTargetHandle((size_t)call->gtCallMethHnd);
 #endif
-                GenTree* indir = Ind(cellAddr);
+                // The cell holds a function pointer that is never null.
+                GenTree* indir = m_compiler->gtNewIndir(TYP_I_IMPL, cellAddr, GTF_IND_NONFAULTING);
                 result         = indir;
             }
             break;

@@ -370,9 +370,15 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
+    // BBF_HAS_JMP on wasm comes only from fast tail calls. The return_call already
+    // left the function, but the body still needs an INS_end if this is the last block.
     if (jmpEpilog)
     {
-        NYI_WASM("genFnEpilog: jmpEpilog");
+        if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+        {
+            instGen(INS_end);
+        }
+        return;
     }
 
     // TODO-WASM: shadow stack maintenance
@@ -553,13 +559,32 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 {
     const unsigned cursor = getBlockIndex(block);
 
-    // Pop control flow intervals that end here (at most two, block and/or loop)
-    // and emit wasm END instructions for them.
+    // Pop control flow intervals that end here and emit wasm END instructions for them.
     //
     while (!wasmControlFlowStack->Empty() && (wasmControlFlowStack->Top()->End() == cursor))
     {
         instGen(INS_end);
         WasmInterval* interval = wasmControlFlowStack->Pop();
+
+        // After a TRY's `end`, emit `unreachable` so the rest of its
+        // [exnref]-wrapper body is polymorphic — try_table itself uses void
+        // result sig, so without this the wrapper's `end` would not validate
+        // against its [exnref] sig.
+        //
+        if (interval->IsTry())
+        {
+            instGen(INS_unreachable);
+        }
+
+        // Stash the [exnref] that catch_ref pushed onto the wrapper's `end`
+        // into the per-funclet local so any later throw_ref can reload it.
+        //
+        if (interval->IsExnRefWrapper())
+        {
+            unsigned const exnRefIdx = m_compiler->funCurrentFunc()->funWasmExnRefLocalIndex;
+            assert(exnRefIdx != UINT_MAX);
+            GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, exnRefIdx);
+        }
     }
 
     // Push control flow for intervals that start here or earlier, and emit
@@ -585,52 +610,22 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
                 GenTree* const jTrue      = blockRange.LastNode();
                 assert(jTrue->OperIs(GT_WASM_JEXCEPT));
 
-                // Empty stack sig, one catch clause
+                // try_table uses void result sig; the paired [exnref]-wrapper
+                // just outside it provides the depth-0 target for catch_ref.
                 //
                 GetEmitter()->emitIns_Ty_I(INS_try_table, WasmValueType::Invalid, 1);
 
-                // Post-catch continuation dispatch block is the true target.
-                // False target should be the next block.
+                // One catch clause targeting the wrapper at depth 0. The true
+                // target of GT_WASM_JEXCEPT is passed only for disasm readability.
                 //
                 assert(block->GetFalseTarget() == block->Next());
                 BasicBlock* const target = block->GetTrueTarget();
-                unsigned          depth  = findTargetDepth(target);
-                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, depth, target);
+                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, 0, target);
             }
             else
             {
                 assert(interval->IsBlock());
-
-                bool isTryWrapper = false;
-
-#if FALSE
-                // TODO-WASM: block sig when we emit catch_ref
-
-                // If this interval exactly wraps a try, it represents the branch to the
-                // catch handlers. We need to emit an exnref block sig
-                //
-                // (TODO, perhaps ... detect this earlier and make it an interval property)
-                if ((wasmCursor + 1) < m_compiler->fgWasmIntervals->size())
-                {
-                    WasmInterval* nextInterval = m_compiler->fgWasmIntervals->at(wasmCursor + 1);
-                    if (nextInterval->IsTry())
-                    {
-                        // we should always see a wrapping block because of the
-                        // control flow added by fgWasmEhFlow
-                        //
-                        if ((nextInterval->Start() == interval->Start()) && (nextInterval->End() == interval->End()))
-                        {
-                            isTryWrapper = true;
-                        }
-                        else
-                        {
-                            assert(!"Expected block to wrap the try");
-                        }
-                    }
-                }
-#endif
-
-                if (isTryWrapper)
+                if (interval->IsExnRefWrapper())
                 {
                     GetEmitter()->emitIns_BlockTy(INS_block, WasmValueType::ExnRef);
                 }
@@ -806,6 +801,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForPhysReg(treeNode->AsPhysReg());
             break;
 
+        case GT_FRAME_SIZE:
+            genCodeForFrameSize(treeNode);
+            break;
+
         case GT_JTRUE:
             genCodeForJTrue(treeNode->AsOp());
             break;
@@ -906,9 +905,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_WASM_THROW_REF:
-            // TODO-WASM: enable when we emit catch_ref instead of catch_all
-            // GetEmitter()->emitIns(INS_throw_ref);
-            GetEmitter()->emitIns(INS_unreachable);
+            // Reload and rethrow the exnref stashed at the catch_ref landing.
+            {
+                unsigned const exnRefIdx = m_compiler->funCurrentFunc()->funWasmExnRefLocalIndex;
+                assert(exnRefIdx != UINT_MAX);
+                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, exnRefIdx);
+                GetEmitter()->emitIns(INS_throw_ref);
+            }
             break;
 
         case GT_CATCH_ARG:
@@ -1811,13 +1814,12 @@ void CodeGen::genCodeForShift(GenTree* tree)
     GenTreeOp* treeNode = tree->AsOp();
     genConsumeOperands(treeNode);
 
-    // TODO-WASM: Zero-extend the 2nd operand for shifts and rotates as needed when the 1st and 2nd operand are
-    // different types. The shift operand width in IR is always TYP_INT; the WASM operations have the same widths
-    // for both the shift and shiftee. So the shift may need to be extended (zero-extended) for TYP_LONG.
-
+    // The shift operand width in IR is always int or small int, so the operand's actual type should be TYP_INT.
+    // However, the WASM operations have the same widths for both the shift and shiftee so
+    // the shift width may need to be zero-extended if the shift result type is TYP_LONG.
     if (treeNode->TypeIs(TYP_LONG))
     {
-        assert(treeNode->gtGetOp2()->TypeIs(TYP_INT));
+        assert(genActualType(treeNode->gtGetOp2()->TypeGet()) == TYP_INT);
         // Zero-extend the shift amount to 64 bits for long shifts/rotates.
         // Wasteful if the amount was a constant, perhaps we should contain it if so.
         GetEmitter()->emitIns(INS_i64_extend_u_i32);
@@ -2522,6 +2524,22 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForFrameSize: Produce code for a GT_FRAME_SIZE node.
+//
+// Emits an i32/i64 const for compLclFrameSize, which is only known after the
+// final frame layout (well after the IR is built).
+//
+// Arguments:
+//    tree - the GT_FRAME_SIZE node
+//
+void CodeGen::genCodeForFrameSize(GenTree* tree)
+{
+    assert(tree->OperIs(GT_FRAME_SIZE));
+    GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compLclFrameSize);
+    WasmProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForIndir: Produce code for a GT_IND node.
 //
 // Arguments:
@@ -2671,17 +2689,24 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
 
-    if (call->TypeIs(TYP_STRUCT))
-    {
-        typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
-    }
-    else if (call->TypeIs(TYP_VOID))
+    // Compute the wasm-level result type for the call. Use call->gtReturnType
+    // (the call's "exact" return type) rather than call->gtType, since the latter is
+    // overwritten to TYP_VOID for fast tail calls and for retbuf calls. Calls that
+    // return via a retbuf produce no wasm-level value. For fast tail calls we rely
+    // on fgCanFastTailCall to ensure caller/callee result types are compatible.
+    const var_types callRetType = (var_types)call->gtReturnType;
+    if (call->ShouldHaveRetBufArg() || (callRetType == TYP_VOID))
     {
         typeStack.Push(CORINFO_WASM_TYPE_VOID);
     }
+    else if (callRetType == TYP_STRUCT)
+    {
+        typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
+    }
     else
     {
-        typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(TypeToWasmValueType(call->TypeGet())));
+        // Normalize small ints (bool/byte/short/...).
+        typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(ActualTypeToWasmValueType(callRetType)));
     }
 
     for (const CallArg& arg : call->gtArgs.Args())
