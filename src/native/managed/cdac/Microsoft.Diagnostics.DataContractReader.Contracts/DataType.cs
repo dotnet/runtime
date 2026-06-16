@@ -128,6 +128,7 @@ public enum DataType
     NativeCodeVersionNode,
     ProfControlBlock,
     ILCodeVersionNode,
+    InstrumentedILOffsetMapping,
     ReadyToRunInfo,
     ReadyToRunHeader,
     ReadyToRunSection,
