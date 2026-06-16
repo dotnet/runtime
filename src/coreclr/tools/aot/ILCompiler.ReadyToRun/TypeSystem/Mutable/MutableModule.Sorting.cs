@@ -16,7 +16,7 @@ namespace Internal.TypeSystem.Ecma
         int _index = Interlocked.Increment(ref s_globalIndex);
         public int CompareTo(MutableModule other)
         {
-            return _index.CompareTo(_index);
+            return _index.CompareTo(other._index);
         }
     }
 }
