@@ -95,9 +95,7 @@ public struct DacDbiTypeRefData
 [StructLayout(LayoutKind.Sequential)]
 public struct DacDbiSharedReJitInfo
 {
-    public uint state;
     public ulong pbIL;
-    public uint dwCodegenFlags;
     public uint cInstrumentedMapEntries;
     public ulong rgInstrumentedMapEntries;
 }
@@ -307,6 +305,17 @@ public unsafe struct ArgInfoList
     public int m_nEntries;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct DacDbiArrayInfo
+{
+    public uint rank;
+    public uint componentCount;
+    public uint offsetToArrayBase;
+    public uint offsetToUpperBounds;   // 0 for SZArray
+    public uint offsetToLowerBounds;   // 0 for SZArray
+    public uint elementSize;
+}
+
 public enum DynamicMethodType
 {
     kNone = 0,
@@ -400,7 +409,7 @@ public unsafe partial interface IDacDbiInterface
     int GetModuleForAssembly(ulong vmAssembly, ulong* pModule, Interop.BOOL* pIsModuleLoaded);
 
     [PreserveSig]
-    int GetAddressType(ulong address, int* pRetVal);
+    int IsManagedCode(ulong address, Interop.BOOL* pIsManaged);
 
     [PreserveSig]
     int GetCompilerFlags(ulong vmAssembly, Interop.BOOL* pfAllowJITOpts, Interop.BOOL* pfEnableEnC);
@@ -609,16 +618,16 @@ public unsafe partial interface IDacDbiInterface
     int EnumerateRcwCachedInterfacePointers(ulong vmObject, /*FP_RCW_INTERFACE_CALLBACK*/ delegate* unmanaged<ulong, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
-    int GetTypedByRefInfo(ulong pTypedByRef, nint pObjectData);
+    int GetTypedByRefInfo(ulong pTypedByRef, ulong* pObjRef, DebuggerIPCE_BasicTypeData* pTypedByRefType);
 
     [PreserveSig]
-    int GetStringData(ulong objectAddress, nint pObjectData);
+    int GetStringData(ulong objectAddress, uint* pLength, uint* pOffsetToStringBase);
 
     [PreserveSig]
-    int GetArrayData(ulong objectAddress, nint pObjectData);
+    int GetArrayData(ulong objectAddress, Interop.BOOL* pIsValidArray, DacDbiArrayInfo* pArrayInfo);
 
     [PreserveSig]
-    int GetBasicObjectInfo(ulong objectAddress, int type, nint pObjectData);
+    int GetBasicObjectInfo(ulong objectAddress, Interop.BOOL* pIsValidRef, uint* pObjSize, uint* pObjOffsetToVars, DebuggerIPCE_ExpandedTypeData* pObjTypeData);
 
     [PreserveSig]
     int GetDebuggerControlBlockAddress(ulong* pRetVal);

@@ -2280,10 +2280,12 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
                 _ASSERTE(pType != NULL);
                 _ASSERTE(cdbAppDomain != NULL);
 
-                DebuggerIPCE_ObjectData objData;
-                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, ELEMENT_TYPE_CLASS, &objData));
+                DacDbiObjectData objData = {};
+                BOOL isValidRef = FALSE;
 
-                NewHolder<CordbObjectValue> pNewObjectValue(new CordbObjectValue(cdbAppDomain, pType, TargetBuffer(addr, (ULONG)objData.objSize), &objData));
+                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, &isValidRef, &objData.objSize, &objData.objOffsetToVars, &objData.objTypeData));
+                objData.objRefBad = !isValidRef;
+                NewHolder<CordbObjectValue> pNewObjectValue(new CordbObjectValue(cdbAppDomain, pType, TargetBuffer(addr, objData.objSize), &objData));
                 hr = pNewObjectValue->Init();
 
                 if (SUCCEEDED(hr))
@@ -6660,19 +6662,6 @@ HRESULT CordbProcess::FindPatchByAddress(CORDB_ADDRESS address, bool *pfPatchFou
             if (traceType == m_runtimeOffsets.m_traceTypeUnmanaged)
             {
                 *pfPatchIsUnmanaged = true;
-
-#if defined(_DEBUG)
-                HRESULT hrDac = S_OK;
-                EX_TRY
-                {
-                    // We should be able to double check w/ DAC that this really is outside of the runtime.
-                    IDacDbiInterface::AddressType addrType;
-                    IfFailThrow(GetDAC()->GetAddressType(address, &addrType));
-                    CONSISTENCY_CHECK_MSGF(addrType == IDacDbiInterface::kAddressUnrecognized, ("Bad address type = %d", addrType));
-                }
-                EX_CATCH_HRESULT(hrDac);
-                CONSISTENCY_CHECK_MSGF(SUCCEEDED(hrDac), ("DAC::GetAddressType failed, hr=0x%08x", hrDac));
-#endif
             }
 
             break;
@@ -11913,17 +11902,14 @@ Reaction CordbProcess::Triage1stChanceNonSpecial(CordbUnmanagedThread * pUnmanag
     // Use DAC to decide if it's ours or not w/o going inproc.
     CORDB_ADDRESS address = PTR_TO_CORDB_ADDRESS(pExAddress);
 
-    IDacDbiInterface::AddressType addrType;
+    BOOL fIsManaged;
 
-    IfFailThrow(GetDAC()->GetAddressType(address, &addrType));
-    bool fIsCorCode =((addrType == IDacDbiInterface::kAddressManagedMethod) ||
-                      (addrType == IDacDbiInterface::kAddressRuntimeManagedCode) ||
-                      (addrType == IDacDbiInterface::kAddressRuntimeUnmanagedCode));
+    IfFailThrow(GetDAC()->IsManagedCode(address, &fIsManaged));
 
-    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsCorCode(0x%p)=%d\n", address, fIsCorCode);
+    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsManagedCode(0x%p)=%d\n", address, fIsManaged);
 
 
-    if (fIsCorCode)
+    if (fIsManaged)
     {
         return REACTION(cCLR);
     }

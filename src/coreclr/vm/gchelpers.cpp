@@ -180,7 +180,6 @@ EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool
 
     pFrame->Push(CURRENT_THREAD);
 
-    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -192,7 +191,6 @@ EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
-    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pFrame->Pop(CURRENT_THREAD);
 }
@@ -414,8 +412,7 @@ inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FL
         }
     }
 
-    // Verify cDAC stack references before the allocation-triggered GC (while refs haven't moved).
-    CdacStress::MaybeVerify<cdac_on_alloc>();
+    CdacStress<cdac_on_alloc>::MaybeVerify();
 
     GCStress<gc_on_alloc>::MaybeTrigger(pAllocContext);
 
@@ -483,7 +480,7 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
     if (GCHeapUtilities::UseThreadAllocationContexts())
     {
         ee_alloc_context *threadContext = GetThreadEEAllocContext();
-        CdacStress::MaybeVerify<cdac_on_alloc>();
+        CdacStress<cdac_on_alloc>::MaybeVerify();
         GCStress<gc_on_alloc>::MaybeTrigger(&threadContext->m_GCAllocContext);
         retVal = Alloc(threadContext, size, flags);
     }
@@ -491,7 +488,7 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
     {
         GlobalAllocLockHolder holder(&g_global_alloc_lock);
         ee_alloc_context *globalContext = &g_global_alloc_context;
-        CdacStress::MaybeVerify<cdac_on_alloc>();
+        CdacStress<cdac_on_alloc>::MaybeVerify();
         GCStress<gc_on_alloc>::MaybeTrigger(&globalContext->m_GCAllocContext);
         retVal = Alloc(globalContext, size, flags);
     }

@@ -54,11 +54,18 @@ best-match ranking can place noisier hits above the correct one.
    `_osx_arm64`) and type-width suffixes (`_byte_short`, `_long_ulong`,
    `_8bit`, `_16bit`, `_32bit`); search the stem in `in:title` and `in:body`.
    Catches sibling KBEs at different bit widths or instantiations.
+7. Bare signature, open issues, no label filter:
+   `is:issue is:open in:title "<test-name>"` and
+   `is:issue is:open "<assertion-text>" in:body`. Catches a pre-existing
+   human-filed report (`Test failure: ...`) that lacks both the
+   `Known Build Error` and area labels, so the label-scoped variations above
+   skip over it.
 
 Variations 4 and 5 catch sibling failures filed for the same test class on a
 different platform or runtime variant, plus pre-existing area-team trackers
 that lack the `Known Build Error` label. Variation 6 catches siblings at
-different bit widths or instantiations.
+different bit widths or instantiations. Variation 7 catches an open human
+report with no label at all.
 
 If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
@@ -77,6 +84,39 @@ On any visible hit whose title or body references the same test class on any
 platform, record `existing-kbe #<n>` (or `linked-tracker #<n>` for variation 5
 when the hit lacks the KBE label) and continue. A hit changes the final action;
 it does not end the inspection.
+
+<a id="search-recently-closed-kbe"></a>
+
+## Search recently-closed KBEs
+
+The existing-KBE search above is open-only, so a `[ci-scan]` KBE already closed
+as fixed, duplicate, or stale is invisible and a recurring signature gets
+re-filed from scratch. After the open search misses, also scan recently-closed
+candidates:
+
+- `is:issue is:closed label:"Known Build Error" "<assertion-or-test-name>" closed:>=<30-days-ago>`
+- `is:issue is:closed in:title "<test-name>" closed:>=<30-days-ago>` to catch a
+  closed `[ci-scan]` predecessor or a human-filed report that never carried the
+  KBE label.
+- `is:issue is:closed in:title "[ci-scan]" "<stem>" closed:>=<30-days-ago>`
+  to catch a closed `[ci-scan]` predecessor whose title was reworded across runs
+  (e.g. `Runtime_105619` vs a differently-phrased earlier title for the same
+  test); match on the stable test-name stem rather than the full title.
+- `is:issue is:closed in:body "<assertion-text>" closed:>=<30-days-ago>`
+  to catch a predecessor by its assertion text, which is more stable than titles
+  across runs and survives cases where the predecessor was integrity-filtered or
+  cross-linked rather than directly readable.
+
+On a closed-candidate hit, compare the failing AzDO build's `finishTime` (read
+it from the build metadata, not the queue time) against the issue's `closed_at`:
+
+- Closed **after** the failing build finished, or closed within the last 7 days:
+  the failure is already handled or under active triage. Record
+  `skipped: recently-closed dup #<n>, needs human review` and do not file.
+- The same signature reproduces in a build that finished **after** `closed_at` (a
+  genuine post-close recurrence): file a fresh KBE and name the closed
+  predecessor `#<n>` in the body so the regression is explicit, mirroring the
+  merged-fix-PR recurrence rule below.
 
 <a id="search-area-team-tracker"></a>
 
