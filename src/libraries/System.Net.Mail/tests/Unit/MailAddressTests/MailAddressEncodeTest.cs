@@ -232,9 +232,6 @@ namespace System.Net.Mail.Tests
         [MemberData(nameof(DisplayNamesWithSpecialChars))]
         public void EncodeSingleMailAddress_WithDisplayNameContainingSpecials_ShouldEscapeAsQuotedPairs(string displayName, string expectedEncodedDisplayName)
         {
-            // Regression test for https://github.com/dotnet/runtime/issues/52439:
-            // embedded '"' and '\' in the DisplayName must be escaped as quoted-pairs
-            // when produced for SMTP headers, otherwise the header is corrupted.
             string expected = $"{expectedEncodedDisplayName} <test@example.com>";
 
             MailAddress ctorAddress = new MailAddress("test@example.com", displayName);
