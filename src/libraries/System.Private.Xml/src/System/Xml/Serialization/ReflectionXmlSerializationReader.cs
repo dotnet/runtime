@@ -751,42 +751,25 @@ namespace System.Xml.Serialization
             Member? member = null;
             bool foundElement = false;
             int elementIndex = -1;
-
-            if (isSequence)
+            int currentCase = 0;
+            foreach (Member m in expectedMembers)
             {
-                // In a sequence, only the member at the current position (sequenceState[0]) is a
-                // candidate for the element currently being read. Locate that member, skipping the
-                // members that do not participate in the element sequence.
-                Member? currentMember = null;
-                int currentCase = 0;
-                foreach (Member m in expectedMembers)
+                if (m.Mapping.Xmlns != null)
+                    continue;
+                if (m.Mapping.Ignore)
+                    continue;
+                if (isSequence && (m.Mapping.IsText || m.Mapping.IsAttribute))
+                    continue;
+
+                // In a sequence the members are matched in order: only the member at the current
+                // position (sequenceState[0]) is a candidate for the element being read; the others
+                // are skipped. currentCase tracks the position of the member within the sequence.
+                if (isSequence && currentCase++ != sequenceState![0])
+                    continue;
+
+                for (int i = 0; i < m.Mapping.Elements!.Length; i++)
                 {
-                    if (m.Mapping.Xmlns != null)
-                        continue;
-                    if (m.Mapping.Ignore)
-                        continue;
-                    if (m.Mapping.IsText || m.Mapping.IsAttribute)
-                        continue;
-
-                    if (currentCase == sequenceState![0])
-                    {
-                        currentMember = m;
-                        break;
-                    }
-
-                    currentCase++;
-                }
-
-                if (currentMember == null)
-                {
-                    // The sequence has been exhausted, so no member is expecting this element.
-                    ProcessUnknownNode(elementElseAction);
-                    return;
-                }
-
-                for (int i = 0; i < currentMember.Mapping.Elements!.Length; i++)
-                {
-                    ElementAccessor ele = currentMember.Mapping.Elements[i];
+                    ElementAccessor ele = m.Mapping.Elements[i];
                     string? ns = ele.Form == XmlSchemaForm.Qualified ? ele.Namespace : string.Empty;
                     if (checkType)
                     {
@@ -806,7 +789,7 @@ namespace System.Xml.Serialization
                             foundElement = true;
                         }
                     }
-                    else if ((ele.Any && ele.AnyNamespaces == null) || (ele.Name == Reader.LocalName && ns == Reader.NamespaceURI))
+                    else if ((isSequence && ele.Any && ele.AnyNamespaces == null) || (ele.Name == Reader.LocalName && ns == Reader.NamespaceURI))
                     {
                         foundElement = true;
                     }
@@ -814,76 +797,34 @@ namespace System.Xml.Serialization
                     if (foundElement)
                     {
                         e = ele;
-                        member = currentMember;
+                        member = m;
                         elementIndex = i;
                         break;
                     }
                 }
 
-                bool isArrayLike = currentMember.Mapping.TypeDesc!.IsArrayLike;
-                if (foundElement)
+                if (isSequence)
                 {
-                    // Array-like members can match repeated elements, so the position only advances
-                    // once a non-matching element is seen. Non-array members advance after each read.
-                    if (!isArrayLike)
-                        sequenceState![0]++;
-                }
-                else
-                {
-                    // The current member did not match. Advance to the next member without consuming
-                    // the element so that it can be re-evaluated against the following member.
-                    sequenceState![0]++;
-                    return;
-                }
-            }
-            else
-            {
-                foreach (Member m in expectedMembers)
-                {
-                    if (m.Mapping.Xmlns != null)
-                        continue;
-                    if (m.Mapping.Ignore)
-                        continue;
-
-                    for (int i = 0; i < m.Mapping.Elements!.Length; i++)
-                    {
-                        ElementAccessor ele = m.Mapping.Elements[i];
-                        string? ns = ele.Form == XmlSchemaForm.Qualified ? ele.Namespace : string.Empty;
-                        if (checkType)
-                        {
-                            Type elementType;
-                            if (ele.Mapping is NullableMapping nullableMapping)
-                            {
-                                TypeDesc td = nullableMapping.BaseMapping!.TypeDesc!;
-                                elementType = td.Type!;
-                            }
-                            else
-                            {
-                                elementType = ele.Mapping!.TypeDesc!.Type!;
-                            }
-
-                            if (elementType.IsAssignableFrom(checkTypeSource!.Type))
-                            {
-                                foundElement = true;
-                            }
-                        }
-                        else if (ele.Name == Reader.LocalName && ns == Reader.NamespaceURI)
-                        {
-                            foundElement = true;
-                        }
-
-                        if (foundElement)
-                        {
-                            e = ele;
-                            member = m;
-                            elementIndex = i;
-                            break;
-                        }
-                    }
-
                     if (foundElement)
-                        break;
+                    {
+                        // Array-like members can match repeated elements, so the position only
+                        // advances once a non-matching element is seen. Non-array members advance
+                        // after a single read.
+                        if (!m.Mapping.TypeDesc!.IsArrayLike)
+                            sequenceState![0]++;
+                    }
+                    else
+                    {
+                        // The current member did not match. Advance to the next member without
+                        // consuming the element so it can be re-evaluated against the following
+                        // member on the next pass.
+                        sequenceState![0]++;
+                        return;
+                    }
                 }
+
+                if (foundElement)
+                    break;
             }
 
             if (foundElement)
