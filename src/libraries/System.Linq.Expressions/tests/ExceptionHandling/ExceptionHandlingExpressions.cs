@@ -7,7 +7,6 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Linq.Expressions.Tests
 {
@@ -1587,50 +1586,57 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("catch (Exception ex) { ... }", e7.ToString());
         }
 
+        // A user-defined boolean type with op_True/op_False and bitwise operators, used to
+        // exercise the conditional logical operators (OrElse/AndAlso). Defined locally so the
+        // required operators are not trimmed away (e.g. under NativeAOT), which would otherwise
+        // make the runtime lookup of op_True/op_False fail.
+        public sealed class UserBool
+        {
+            public bool Value { get; }
+
+            public UserBool(bool value) => Value = value;
+
+            public static readonly UserBool True = new UserBool(true);
+            public static readonly UserBool False = new UserBool(false);
+
+            public static bool operator true(UserBool b) => b.Value;
+            public static bool operator false(UserBool b) => !b.Value;
+
+            public static UserBool operator &(UserBool x, UserBool y) => new UserBool(x.Value && y.Value);
+            public static UserBool operator |(UserBool x, UserBool y) => new UserBool(x.Value || y.Value);
+
+            public override bool Equals(object obj) => obj is UserBool other && other.Value == Value;
+            public override int GetHashCode() => Value.GetHashCode();
+        }
+
         [Theory, ClassData(typeof(CompilationTypes))]
         public void TryCatchInOrElse(bool useInterpreter)
         {
-            MethodInfo orMethod = typeof(System.Data.SqlTypes.SqlBoolean).GetMethod(
-                "op_BitwiseOr",
-                new[] { typeof(System.Data.SqlTypes.SqlBoolean), typeof(System.Data.SqlTypes.SqlBoolean) })
-                ?? typeof(System.Data.SqlTypes.SqlBoolean).GetMethod(
-                    "Or",
-                    new[] { typeof(System.Data.SqlTypes.SqlBoolean), typeof(System.Data.SqlTypes.SqlBoolean) });
-
-            var expr = Expression.Lambda<Func<System.Data.SqlTypes.SqlBoolean>>(
+            var expr = Expression.Lambda<Func<UserBool>>(
                 Expression.OrElse(
-                    Expression.Constant(System.Data.SqlTypes.SqlBoolean.True),
+                    Expression.Constant(UserBool.True),
                     Expression.TryCatch(
-                        Expression.Constant(System.Data.SqlTypes.SqlBoolean.True),
+                        Expression.Constant(UserBool.True),
                         Expression.Catch(
-                            typeof(System.Data.SqlTypes.SqlTypeException),
-                            Expression.Constant(System.Data.SqlTypes.SqlBoolean.False))),
-                    orMethod));   // <-- pass the method explicitly
-            var func = expr.Compile(preferInterpretation: useInterpreter);
-            Assert.Equal(System.Data.SqlTypes.SqlBoolean.True, func());
+                            typeof(TestException),
+                            Expression.Constant(UserBool.False)))));
+            var func = expr.Compile(useInterpreter);
+            Assert.Equal(UserBool.True, func());
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void TryCatchInAndAlso(bool useInterpreter)
         {
-            MethodInfo andMethod = typeof(System.Data.SqlTypes.SqlBoolean).GetMethod(
-                "op_BitwiseAnd",
-                new[] { typeof(System.Data.SqlTypes.SqlBoolean), typeof(System.Data.SqlTypes.SqlBoolean) })
-                ?? typeof(System.Data.SqlTypes.SqlBoolean).GetMethod(
-                    "And",
-                    new[] { typeof(System.Data.SqlTypes.SqlBoolean), typeof(System.Data.SqlTypes.SqlBoolean) });
-
-            var expr = Expression.Lambda<Func<System.Data.SqlTypes.SqlBoolean>>(
+            var expr = Expression.Lambda<Func<UserBool>>(
                 Expression.AndAlso(
-                    Expression.Constant(System.Data.SqlTypes.SqlBoolean.True),
+                    Expression.Constant(UserBool.True),
                     Expression.TryCatch(
-                        Expression.Constant(System.Data.SqlTypes.SqlBoolean.True),
+                        Expression.Constant(UserBool.True),
                         Expression.Catch(
-                            typeof(System.Data.SqlTypes.SqlTypeException),
-                            Expression.Constant(System.Data.SqlTypes.SqlBoolean.False))),
-                    andMethod));
-            var func = expr.Compile(preferInterpretation: useInterpreter);
-            Assert.Equal(System.Data.SqlTypes.SqlBoolean.True, func());
+                            typeof(TestException),
+                            Expression.Constant(UserBool.False)))));
+            var func = expr.Compile(useInterpreter);
+            Assert.Equal(UserBool.True, func());
         }
     }
 }
