@@ -2910,7 +2910,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // Where possible, import a constant mask to allow for optimisations.
             if (op1->IsIntegralConst())
             {
-                int64_t pattern = op1->AsIntConCommon()->IntegralValue();
+                int64_t    pattern = op1->AsIntConCommon()->IntegralValue();
                 simdmask_t simdVal;
 
                 if (EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &simdVal, (SveMaskPattern)pattern))
