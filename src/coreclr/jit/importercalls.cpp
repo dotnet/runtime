@@ -4783,6 +4783,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                                 impPopStack(2); // Pop the dim and array object; we already have a pointer to them.
 
+                                // We're about to emit GT_MDARR_LENGTH / GT_MDARR_LOWER_BOUND,
+                                // which assert that this flag was set by the importer.
+                                optMethodFlags |= OMF_HAS_MDARRAYREF;
+
                                 // Make sure there are no global effects in the array (such as it being a function
                                 // call), so we can mark the generated indirection with GTF_IND_INVARIANT. In the
                                 // GetUpperBound case we need the cloned object, since we refer to the array
@@ -4798,42 +4802,28 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                 {
                                     case NI_System_Array_GetLength:
                                     {
-                                        // Generate *(array + offset-to-length-array + sizeof(int) * dim)
-                                        unsigned offs   = eeGetMDArrayLengthOffset(rank, dim);
-                                        GenTree* gtOffs = gtNewIconNode(offs, TYP_I_IMPL);
-                                        GenTree* gtAddr = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
-                                        retNode         = gtNewIndir(TYP_INT, gtAddr, GTF_IND_INVARIANT);
+                                        // Emit a typed GT_MDARR_LENGTH so post-import consumers (loop
+                                        // analysis, LICM, range checks) can recognize the per-dim
+                                        // length canonically. The morph-time expansion is identical to
+                                        // the bare invariant IND we used to emit here.
+                                        retNode = gtNewMDArrLen(gtArr, dim, rank);
                                         break;
                                     }
                                     case NI_System_Array_GetLowerBound:
                                     {
-                                        // Generate *(array + offset-to-bounds-array + sizeof(int) * dim)
-                                        unsigned offs   = eeGetMDArrayLowerBoundOffset(rank, dim);
-                                        GenTree* gtOffs = gtNewIconNode(offs, TYP_I_IMPL);
-                                        GenTree* gtAddr = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
-                                        retNode         = gtNewIndir(TYP_INT, gtAddr, GTF_IND_INVARIANT);
+                                        retNode = gtNewMDArrLowerBound(gtArr, dim, rank);
                                         break;
                                     }
                                     case NI_System_Array_GetUpperBound:
                                     {
                                         assert(gtArrClone != nullptr);
 
-                                        // Generate:
-                                        //    *(array + offset-to-length-array + sizeof(int) * dim) +
-                                        //    *(array + offset-to-bounds-array + sizeof(int) * dim) - 1
-                                        unsigned offs         = eeGetMDArrayLowerBoundOffset(rank, dim);
-                                        GenTree* gtOffs       = gtNewIconNode(offs, TYP_I_IMPL);
-                                        GenTree* gtAddr       = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
-                                        GenTree* gtLowerBound = gtNewIndir(TYP_INT, gtAddr, GTF_IND_INVARIANT);
-
-                                        offs              = eeGetMDArrayLengthOffset(rank, dim);
-                                        gtOffs            = gtNewIconNode(offs, TYP_I_IMPL);
-                                        gtAddr            = gtNewOperNode(GT_ADD, TYP_BYREF, gtArrClone, gtOffs);
-                                        GenTree* gtLength = gtNewIndir(TYP_INT, gtAddr, GTF_IND_INVARIANT);
-
-                                        GenTree* gtSum = gtNewOperNode(GT_ADD, TYP_INT, gtLowerBound, gtLength);
-                                        GenTree* gtOne = gtNewIconNode(1, TYP_INT);
-                                        retNode        = gtNewOperNode(GT_SUB, TYP_INT, gtSum, gtOne);
+                                        // upper = lower + length - 1
+                                        GenTree* gtLowerBound = gtNewMDArrLowerBound(gtArr, dim, rank);
+                                        GenTree* gtLength     = gtNewMDArrLen(gtArrClone, dim, rank);
+                                        GenTree* gtSum        = gtNewOperNode(GT_ADD, TYP_INT, gtLowerBound, gtLength);
+                                        GenTree* gtOne        = gtNewIconNode(1, TYP_INT);
+                                        retNode               = gtNewOperNode(GT_SUB, TYP_INT, gtSum, gtOne);
                                         break;
                                     }
                                     default:

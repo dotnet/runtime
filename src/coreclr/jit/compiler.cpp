@@ -4600,6 +4600,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     };
     DoPhase(this, PHASE_POST_MORPH, postMorphPhase);
 
+    // Morph multi-dimensional array operations. Run this unconditionally
+    // (and before the optimization phases below) so loop cloning and other
+    // post-morph passes see the per-dimension BOUNDS_CHECK / IND form
+    // rather than the still-opaque GT_ARR_ELEM super-node.
+    //
+    DoPhase(this, PHASE_MORPH_MDARR, &Compiler::fgMorphArrayOps);
+
     if (opts.OptimizationEnabled())
     {
         // Compute the block weights
@@ -4678,12 +4685,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // force fully-interruptible codegen / a frame pointer.
     //
     fgSetOptions();
-
-    // Morph multi-dimensional array operations.
-    // (Consider deferring all array operation morphing, including single-dimensional array ops,
-    // from global morph to here, so cloning doesn't have to deal with morphed forms.)
-    //
-    DoPhase(this, PHASE_MORPH_MDARR, &Compiler::fgMorphArrayOps);
 
     // Create the variable table (and compute variable ref counts)
     //
