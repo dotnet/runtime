@@ -158,13 +158,8 @@ namespace System.Diagnostics
                 return null;
             }
 
-            if (traceState.Length > MaxTraceStateEncodedLength)
-            {
-                return null;
-            }
-
             int entries = 0;
-            using ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[traceState.Length]);
+            using ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[Math.Min(traceState.Length, MaxTraceStateEncodedLength)]);
 
             ReadOnlySpan<char> traceStateSpan = traceState;
             while (true)
@@ -175,7 +170,7 @@ namespace System.Diagnostics
 
                 if (++entries > MaxTraceStateEntries)
                 {
-                    return null;
+                    break;
                 }
 
                 entry = Trim(entry);
@@ -200,6 +195,12 @@ namespace System.Diagnostics
                 if (IsInvalidTraceStateKey(key) || IsInvalidTraceStateValue(value))
                 {
                     return null;
+                }
+
+                int nextLength = vsb.Length + entry.Length + (vsb.Length > 0 ? 1 : 0);
+                if (nextLength > MaxTraceStateEncodedLength)
+                {
+                    break;
                 }
 
                 if (vsb.Length > 0)

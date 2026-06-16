@@ -59,18 +59,20 @@ namespace System.Diagnostics.Tests
             // Optional whitespace around trace state list members
             yield return new object[] { " start=1 \t, \tend=1 ", "start=1,end=1", null, null, null };
 
-            // Trace state raw length includes optional whitespace, even when the propagated value is normalized.
+            // Trace state optional whitespace is not propagated.
             yield return new object[] { $"{new string(' ', 252)}state=1{new string(' ', 253)}", "state=1", null, null, null };
-            yield return new object[] { $"{new string(' ', 253)}state=1{new string(' ', 253)}", null, null, null, null };
+            yield return new object[] { $"{new string(' ', 253)}state=1{new string(' ', 253)}", "state=1", null, null, null };
 
-            // Trace state raw length is limited to 512 characters.
-            yield return new object[] { $"{new string('a', 256)}={new string('b', 255)}", $"{new string('a', 256)}={new string('b', 255)}", null, null, null };
+            // Trace state propagation is limited to 512 characters and truncates whole entries from the end.
+            string traceStateWith512Chars = $"{new string('a', 256)}={new string('b', 255)}";
+            yield return new object[] { traceStateWith512Chars, traceStateWith512Chars, null, null, null };
+            yield return new object[] { $"{traceStateWith512Chars},c=d", traceStateWith512Chars, null, null, null };
             yield return new object[] { $"{new string('a', 256)}={new string('b', 256)}", null, null, null, null };
 
             string traceStateWith32Members = string.Join(",", Enumerable.Range(0, 32).Select(i => $"k{i}=v"));
             string traceStateWith33Members = string.Join(",", Enumerable.Range(0, 33).Select(i => $"k{i}=v"));
             yield return new object[] { traceStateWith32Members, traceStateWith32Members, null, null, null };
-            yield return new object[] { traceStateWith33Members, null, null, null, null };
+            yield return new object[] { traceStateWith33Members, traceStateWith32Members, null, null, null };
 
             // Empty and whitespace-only trace state list members are allowed, but they count toward the list-member limit.
             yield return new object[] { $"{string.Join(",", Enumerable.Repeat(" ", 31))},state=1", "state=1", null, null, null };
@@ -79,7 +81,7 @@ namespace System.Diagnostics.Tests
 
             string traceStateWith31Members = string.Join(",", Enumerable.Range(0, 31).Select(i => $"k{i}=v"));
             yield return new object[] { $"{traceStateWith31Members},", traceStateWith31Members, null, null, null };
-            yield return new object[] { $"{traceStateWith32Members},", null, null, null, null };
+            yield return new object[] { $"{traceStateWith32Members},", traceStateWith32Members, null, null, null };
 
             // trace state key longer than the max limit
             yield return new object[] { $"{new string('a', 257)}=1", null, null, null, null }; // trace state key length max is 256
