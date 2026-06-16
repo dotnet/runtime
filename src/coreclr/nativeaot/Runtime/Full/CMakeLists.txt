@@ -111,7 +111,8 @@ add_library(Runtime.ServerGC STATIC
     ${RUNTIME_ARCH_ASM_OBJECTS}
     $<TARGET_OBJECTS:Runtime.GC.Workstation>
     $<TARGET_OBJECTS:Runtime.GC.Server>)
-
+add_dependencies(Runtime.ServerGC aot_eventing_headers)
+target_link_libraries(Runtime.ServerGC PRIVATE aotminipal nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor nativeaot_gc_svr_descriptor)
 add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
 add_dependencies(standalonegc-disabled aot_eventing_headers)
 add_library(standalonegc-enabled STATIC ${STANDALONEGC_ENABLED_SOURCES})
