@@ -626,6 +626,26 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_CustomDocumentWithXmlAttributesAsNodes()
+    {
+        var customDoc = new CustomDocument();
+        var customElement = new CustomElement() { Name = "testElement" };
+        customElement.AddAttribute(customDoc.CreateAttribute("regularAttribute", "regularValue"));
+        customElement.AddAttribute(customDoc.CreateCustomAttribute("customAttribute", "customValue"));
+        customDoc.CustomItems.Add(customElement);
+        var element = customDoc.Document.CreateElement("regularElement");
+        var innerElement = customDoc.Document.CreateElement("innerElement");
+        innerElement.InnerXml = "<leafElement>innerText</leafElement>";
+        element.InnerText = "regularText";
+        element.AppendChild(innerElement);
+        element.Attributes.Append(customDoc.CreateAttribute("regularElementAttribute", "regularElementAttributeValue"));
+        customDoc.AddItem(element);
+        var actual = SerializeAndDeserialize(customDoc,
+            WithXmlHeader(@"<customElement name=""testElement"" regularAttribute=""regularValue"" customAttribute=""customValue""/>"), skipStringCompare: true);
+        Assert.NotNull(actual);
+    }
+
+    [Fact]
     public static void Xml_Struct()
     {
         var value = new WithStruct { Some = new SomeStruct { A = 1, B = 2 } };
