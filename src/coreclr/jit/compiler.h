@@ -1775,6 +1775,7 @@ struct FuncInfoDsc
 
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
     unsigned funWasmFrameSize;
+    unsigned funWasmExnRefLocalIndex = UINT_MAX;
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;
@@ -4257,6 +4258,7 @@ public:
     unsigned lvaWasmVirtualIP = BAD_VAR_NUM; // Wasm virtual IP slot
     unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm function index slot
     unsigned lvaWasmResumeIP = BAD_VAR_NUM; // Wasm catch resumption IP slot
+
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
