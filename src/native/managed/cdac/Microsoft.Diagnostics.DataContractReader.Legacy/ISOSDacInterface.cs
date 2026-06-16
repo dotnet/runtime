@@ -1194,7 +1194,7 @@ public unsafe partial interface ISOSDacInterface16
 
 // StressLog data structures for ISOSDacInterface17
 
-public struct DacpStressLogData
+public struct SOSStressLogData
 {
     public uint LoggedFacilities;
     public uint Level;
@@ -1211,7 +1211,7 @@ public struct DacpStressLogData
     public uint PointerSize;
 }
 
-public struct DacpThreadStressLogData
+public struct SOSThreadStressLogData
 {
     public ClrDataAddress ThreadLogAddress;
     public ulong ThreadId;
@@ -1222,7 +1222,7 @@ public struct DacpThreadStressLogData
     public ClrDataAddress CurrentWriteChunk;
 }
 
-public struct DacpStressMsgData
+public struct SOSStressMsgData
 {
     public uint Facility;
     public ClrDataAddress FormatString;
@@ -1238,7 +1238,7 @@ public unsafe partial interface ISOSStressLogThreadEnum : ISOSEnum
     [PreserveSig]
     int Next(uint count,
              [In, Out, MarshalUsing(CountElementName = nameof(count))]
-             DacpThreadStressLogData[] values,
+             SOSThreadStressLogData[] values,
              uint* pFetched);
 }
 
@@ -1249,7 +1249,7 @@ public unsafe partial interface ISOSStressLogMsgEnum : ISOSEnum
     [PreserveSig]
     int Next(uint count,
              [In, Out, MarshalUsing(CountElementName = nameof(count))]
-             DacpStressMsgData[] values,
+             SOSStressMsgData[] values,
              uint* pFetched);
 
     [PreserveSig]
@@ -1268,7 +1268,7 @@ public unsafe partial interface ISOSDacInterface17
     int IsStressLogAvailable();
 
     [PreserveSig]
-    int GetStressLogData(DacpStressLogData* data);
+    int GetStressLogData(SOSStressLogData* data);
 
     [PreserveSig]
     int GetStressLogThreadEnumerator(

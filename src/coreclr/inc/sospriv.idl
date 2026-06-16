@@ -573,10 +573,10 @@ interface ISOSDacInterface16 : IUnknown
     HRESULT GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode);
 }
 
-cpp_quote("#ifndef _DacpStressLogData_")
-cpp_quote("#define _DacpStressLogData_")
+cpp_quote("#ifndef _SOS_StressLogData")
+cpp_quote("#define _SOS_StressLogData")
 
-typedef struct _DacpStressLogData
+typedef struct _SOSStressLogData
 {
     unsigned int LoggedFacilities;
     unsigned int Level;
@@ -591,14 +591,14 @@ typedef struct _DacpStressLogData
     unsigned int ChunkSize;
     unsigned int MaxMessageSize;
     unsigned int PointerSize;
-} DacpStressLogData;
+} SOSStressLogData;
 
-cpp_quote("#endif //_DacpStressLogData_")
+cpp_quote("#endif //_SOS_StressLogData")
 
-cpp_quote("#ifndef _DacpThreadStressLogData_")
-cpp_quote("#define _DacpThreadStressLogData_")
+cpp_quote("#ifndef _SOS_ThreadStressLogData")
+cpp_quote("#define _SOS_ThreadStressLogData")
 
-typedef struct _DacpThreadStressLogData
+typedef struct _SOSThreadStressLogData
 {
     CLRDATA_ADDRESS ThreadLogAddress;
     UINT64 ThreadId;
@@ -607,23 +607,23 @@ typedef struct _DacpThreadStressLogData
     CLRDATA_ADDRESS ChunkListHead;
     CLRDATA_ADDRESS ChunkListTail;
     CLRDATA_ADDRESS CurrentWriteChunk;
-} DacpThreadStressLogData;
+} SOSThreadStressLogData;
 
-cpp_quote("#endif //_DacpThreadStressLogData_")
+cpp_quote("#endif //_SOS_ThreadStressLogData")
 
-cpp_quote("#ifndef _DacpStressMsgData_")
-cpp_quote("#define _DacpStressMsgData_")
+cpp_quote("#ifndef _SOS_StressMsgData")
+cpp_quote("#define _SOS_StressMsgData")
 
-typedef struct _DacpStressMsgData
+typedef struct _SOSStressMsgData
 {
     unsigned int Facility;
     CLRDATA_ADDRESS FormatString;
     UINT64 Timestamp;
     unsigned int ArgumentCount;
     CLRDATA_ADDRESS MessageAddress;
-} DacpStressMsgData;
+} SOSStressMsgData;
 
-cpp_quote("#endif //_DacpStressMsgData_")
+cpp_quote("#endif //_SOS_StressMsgData")
 
 [
     object,
@@ -633,7 +633,7 @@ cpp_quote("#endif //_DacpStressMsgData_")
 interface ISOSStressLogThreadEnum : ISOSEnum
 {
     HRESULT Next([in] unsigned int count,
-                 [out, size_is(count), length_is(*pFetched)] DacpThreadStressLogData values[],
+                 [out, size_is(count), length_is(*pFetched)] SOSThreadStressLogData values[],
                  [out] unsigned int *pFetched);
 }
 
@@ -645,7 +645,7 @@ interface ISOSStressLogThreadEnum : ISOSEnum
 interface ISOSStressLogMsgEnum : ISOSEnum
 {
     HRESULT Next([in] unsigned int count,
-                 [out, size_is(count), length_is(*pFetched)] DacpStressMsgData values[],
+                 [out, size_is(count), length_is(*pFetched)] SOSStressMsgData values[],
                  [out] unsigned int *pFetched);
 
     HRESULT GetArguments([in] unsigned int messageIndex,
@@ -662,7 +662,7 @@ interface ISOSStressLogMsgEnum : ISOSEnum
 interface ISOSDacInterface17 : IUnknown
 {
     HRESULT IsStressLogAvailable();
-    HRESULT GetStressLogData([out] DacpStressLogData *data);
+    HRESULT GetStressLogData([out] SOSStressLogData *data);
     HRESULT GetStressLogThreadEnumerator([out] ISOSStressLogThreadEnum **ppEnum);
     HRESULT GetStressLogMessageEnumerator([in] CLRDATA_ADDRESS threadStressLogAddress,
                                           [out] ISOSStressLogMsgEnum **ppEnum);

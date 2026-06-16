@@ -33,8 +33,7 @@ public sealed unsafe partial class SOSDacImpl
     : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
       ISOSDacInterface6, ISOSDacInterface7, ISOSDacInterface8, ISOSDacInterface9, ISOSDacInterface10,
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
-      ISOSDacInterface16,
-      ISOSDacInterface17
+      ISOSDacInterface16, ISOSDacInterface17
 {
     private readonly Target _target;
 
@@ -7120,15 +7119,15 @@ public sealed unsafe partial class SOSDacImpl
     [GeneratedComClass]
     internal sealed unsafe partial class SOSStressLogThreadEnum : ISOSStressLogThreadEnum
     {
-        private readonly DacpThreadStressLogData[] _threads;
+        private readonly SOSThreadStressLogData[] _threads;
         private uint _index;
 
-        public SOSStressLogThreadEnum(DacpThreadStressLogData[] threads)
+        public SOSStressLogThreadEnum(SOSThreadStressLogData[] threads)
         {
             _threads = threads;
         }
 
-        int ISOSStressLogThreadEnum.Next(uint count, DacpThreadStressLogData[] values, uint* pFetched)
+        int ISOSStressLogThreadEnum.Next(uint count, SOSThreadStressLogData[] values, uint* pFetched)
         {
             if (pFetched is null || values is null)
                 return HResults.E_POINTER;
@@ -7177,7 +7176,7 @@ public sealed unsafe partial class SOSDacImpl
             _messages = messages.ToArray();
         }
 
-        int ISOSStressLogMsgEnum.Next(uint count, DacpStressMsgData[] values, uint* pFetched)
+        int ISOSStressLogMsgEnum.Next(uint count, SOSStressMsgData[] values, uint* pFetched)
         {
             if (pFetched is null || values is null)
                 return HResults.E_POINTER;
@@ -7189,7 +7188,7 @@ public sealed unsafe partial class SOSDacImpl
             while (written < count && _index < _messages.Length)
             {
                 Contracts.StressMsgData msg = _messages[(int)_index++];
-                values[written] = new DacpStressMsgData
+                values[written] = new SOSStressMsgData
                 {
                     Facility = msg.Facility,
                     FormatString = msg.FormatString.ToClrDataAddress(_target),
@@ -7258,7 +7257,7 @@ public sealed unsafe partial class SOSDacImpl
         }
     }
 
-    int ISOSDacInterface17.GetStressLogData(DacpStressLogData* data)
+    int ISOSDacInterface17.GetStressLogData(SOSStressLogData* data)
     {
         int hr = HResults.S_OK;
         try
@@ -7305,7 +7304,7 @@ public sealed unsafe partial class SOSDacImpl
             Contracts.StressLogData logData = stressLogContract.GetStressLogData();
 
             var threads = stressLogContract.GetThreadStressLogs(logData.Logs)
-                .Select(t => new DacpThreadStressLogData
+                .Select(t => new SOSThreadStressLogData
                 {
                     ThreadLogAddress = t.Address.ToClrDataAddress(_target),
                     ThreadId = t.ThreadId,
