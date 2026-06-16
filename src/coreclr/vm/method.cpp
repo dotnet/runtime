@@ -1986,12 +1986,18 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
                                                                   pTargetMDBeforeGenericMethodArgs->GetExactClassInstantiation(TypeHandle(pObjMT))).GetMethodTable();
     }
 
+    // Pass the async variant lookup kind of the target method so that FindOrCreateAssociatedMethodDesc
+    // creates the correctly-typed instantiated method descriptor (regular async variant, return-dropping
+    // thunk, or ordinary method). Without this, a resolved async-variant or RDT target would be
+    // misidentified as an ordinary method and GetParallelMethodDesc would return the primary thunk
+    // instead, causing infinite virtual dispatch recursion for covariant-return async GVMs.
     RETURN(MethodDesc::FindOrCreateAssociatedMethodDesc(
         pTargetMDBeforeGenericMethodArgs,
         pTargetMT,
         (pTargetMT->IsValueType()), /* get unboxing entry point if a struct*/
         pStaticMD->GetMethodInstantiation(),
-        FALSE /* no allowInstParam */ ));
+        FALSE /* no allowInstParam */,
+        pTargetMDBeforeGenericMethodArgs->GetAsyncVariantLookup()));
 }
 
 PCODE MethodDesc::GetSingleCallableAddrOfCode()
