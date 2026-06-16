@@ -216,14 +216,26 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Assert.StartsWith($"Unable to activate type '{type}'. The following constructors are ambiguous:", ex.Message);
         }
 
-        [Fact]
-        public void CreateCallSite_IgnoresSmallerConstructorWhenBestUsesDefaultAndSmallerNeedsContainer()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void CreateCallSite_IgnoresSmallerConstructorWhenBestUsesDefaultAndSmallerNeedsContainer(bool registerScopedService)
         {
             // Arrange
             var type = typeof(TypeWithDefaultInBestAndNonDefaultInSmallerConstructors);
-            var callSiteFactory = GetCallSiteFactory(
-                new ServiceDescriptor(type, type, ServiceLifetime.Transient),
-                new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient));
+            ServiceDescriptor[] descriptors = registerScopedService
+                ? new[]
+                {
+                    new ServiceDescriptor(type, type, ServiceLifetime.Transient),
+                    new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient),
+                    new ServiceDescriptor(typeof(IFakeScopedService), typeof(FakeService), ServiceLifetime.Transient),
+                }
+                : new[]
+                {
+                    new ServiceDescriptor(type, type, ServiceLifetime.Transient),
+                    new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient),
+                };
+            var callSiteFactory = GetCallSiteFactory(descriptors);
 
             // Act
             var callSite = callSiteFactory(type);
@@ -250,7 +262,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 : new[] { typeof(IFakeService) };
 
             // Act
-            var callSite = (ServiceCallSite)callSiteFactory(type);
+            var callSite = callSiteFactory(type);
 
             // Assert
             Assert.Equal(CallSiteResultCacheLocation.Dispose, callSite.Cache.Location);
