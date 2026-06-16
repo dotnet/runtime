@@ -664,7 +664,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                     if (!TryResolveConstructorWithoutCreatingArgumentCallSites(
                         serviceIdentifier,
-                        implementationType,
                         callSiteChain,
                         parameters,
                         bestParametersResolvedFromCallSite,
@@ -720,7 +719,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     callSiteChain,
                     parameters[index],
                     throwIfCallSiteNotFound,
-                    createCallSite: true,
                     out ServiceIdentifier parameterServiceIdentifier,
                     out ParameterResolutionKind parameterResolutionKind,
                     out ServiceCallSite? callSite))
@@ -747,7 +745,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private bool TryResolveConstructorWithoutCreatingArgumentCallSites(
             ServiceIdentifier serviceIdentifier,
-            Type implementationType,
             CallSiteChain callSiteChain,
             ParameterInfo[] parameters,
             HashSet<ServiceIdentifier> bestParametersResolvedFromCallSite,
@@ -758,44 +755,92 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             for (int i = 0; i < parameters.Length; i++)
             {
-                if (!TryResolveCallSite(
-                    serviceIdentifier,
-                    implementationType,
-                    callSiteChain,
-                    parameters[i],
-                    throwIfCallSiteNotFound: false,
-                    createCallSite: false,
-                    out ServiceIdentifier parameterServiceIdentifier,
-                    out ParameterResolutionKind parameterResolutionKind,
-                    out _))
+                ParameterInfo parameter = parameters[i];
+                Type parameterType = parameter.ParameterType;
+                ServiceIdentifier parameterServiceIdentifier = ServiceIdentifier.FromServiceType(parameterType);
+                bool isImmediatelyResolved = false;
+
+                foreach (object attribute in parameter.GetCustomAttributes(true))
                 {
-                    return false;
+                    if (serviceIdentifier.ServiceKey is not null && attribute is ServiceKeyAttribute)
+                    {
+                        if (serviceIdentifier.ServiceKey == KeyedService.AnyKey)
+                        {
+                            parameterType = typeof(object);
+                        }
+                        else if (parameterType != serviceIdentifier.ServiceKey.GetType() &&
+                            parameterType != typeof(object))
+                        {
+                            throw new InvalidOperationException(SR.InvalidServiceKeyType);
+                        }
+
+                        parameterServiceIdentifier = new ServiceIdentifier(serviceIdentifier.ServiceKey, parameterType);
+                        isImmediatelyResolved = true;
+                        break;
+                    }
+
+                    if (attribute is FromKeyedServicesAttribute fromKeyedServicesAttribute)
+                    {
+                        object? serviceKey = fromKeyedServicesAttribute.LookupMode switch
+                        {
+                            ServiceKeyLookupMode.InheritKey => serviceIdentifier.ServiceKey,
+                            ServiceKeyLookupMode.ExplicitKey => fromKeyedServicesAttribute.Key,
+                            ServiceKeyLookupMode.NullKey => null,
+                            _ => null
+                        };
+
+                        if (serviceKey is not null)
+                        {
+                            parameterServiceIdentifier = new ServiceIdentifier(serviceKey, parameterType);
+                        }
+
+                        break;
+                    }
                 }
 
-                if (parameterResolutionKind == ParameterResolutionKind.FromCallSite)
+                if (isImmediatelyResolved)
                 {
-                    if (bestParametersResolvedFromCallSite.Contains(parameterServiceIdentifier))
+                    // [ServiceKey]: always resolvable via constant injection.
+                    if (!bestParametersResolvedFromCallSite.Contains(parameterServiceIdentifier))
+                    {
+                        hasNewResolvableParameter = true;
+                    }
+
+                    continue;
+                }
+
+                if (bestParametersResolvedFromCallSite.Contains(parameterServiceIdentifier))
+                {
+                    // Container has this service; resolvable and not new.
+                    continue;
+                }
+
+                if (bestParametersResolvedFromDefault.Contains(parameterServiceIdentifier))
+                {
+                    // Container doesn't have this (best fell back to its default).
+                    // Resolvable only if this parameter also has a default value.
+                    if (ParameterDefaultValue.TryGetDefaultValue(parameter, out _))
                     {
                         continue;
                     }
 
-                    if (bestParametersResolvedFromDefault.Contains(parameterServiceIdentifier))
-                    {
-                        return false;
-                    }
+                    return false;
+                }
 
+                // Unknown identity; must probe the container.
+                if (GetCallSite(parameterServiceIdentifier, callSiteChain) is not null)
+                {
                     hasNewResolvableParameter = true;
                     continue;
                 }
 
-                Debug.Assert(parameterResolutionKind == ParameterResolutionKind.FromDefaultValue);
-                if (bestParametersResolvedFromCallSite.Contains(parameterServiceIdentifier) ||
-                    bestParametersResolvedFromDefault.Contains(parameterServiceIdentifier))
+                if (ParameterDefaultValue.TryGetDefaultValue(parameter, out _))
                 {
+                    hasNewResolvableParameter = true;
                     continue;
                 }
 
-                hasNewResolvableParameter = true;
+                return false;
             }
 
             return true;
@@ -807,7 +852,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             CallSiteChain callSiteChain,
             ParameterInfo parameter,
             bool throwIfCallSiteNotFound,
-            bool createCallSite,
             out ServiceIdentifier parameterServiceIdentifier,
             out ParameterResolutionKind parameterResolutionKind,
             out ServiceCallSite? callSite)
@@ -832,7 +876,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                     parameterServiceIdentifier = new ServiceIdentifier(serviceIdentifier.ServiceKey, parameterType);
                     parameterResolutionKind = ParameterResolutionKind.FromCallSite;
-                    callSite = createCallSite ? new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey) : null;
+                    callSite = new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey);
                     return true;
                 }
 
@@ -857,14 +901,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             if (parameterCallSite is not null)
             {
                 parameterResolutionKind = ParameterResolutionKind.FromCallSite;
-                callSite = createCallSite ? parameterCallSite : null;
+                callSite = parameterCallSite;
                 return true;
             }
 
             if (ParameterDefaultValue.TryGetDefaultValue(parameter, out object? defaultValue))
             {
                 parameterResolutionKind = ParameterResolutionKind.FromDefaultValue;
-                callSite = createCallSite ? new ConstantCallSite(parameterType, defaultValue) : null;
+                callSite = new ConstantCallSite(parameterType, defaultValue);
                 return true;
             }
 
