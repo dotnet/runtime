@@ -73,8 +73,8 @@ EEClassHashTable *EEClassHashTable::Create(Module *pModule, DWORD dwNumBuckets, 
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
 

@@ -584,8 +584,8 @@ VOID ClassLoader::PopulateAvailableClassHashTable(Module* pModule,
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;

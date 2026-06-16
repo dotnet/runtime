@@ -6094,7 +6094,7 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     CONTRACTL
     {
         NOTHROW;
-        DISABLED(GC_TRIGGERS);  // due to UnwindFrameChain from NOTRIGGER areas
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStartFrame));
         PRECONDITION(CheckPointer(pvLimitSP));
