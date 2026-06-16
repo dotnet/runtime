@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
         public static void EmptyUriThroughNullCharacter()
         {
-            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider("default", "\0"));
+            Assert.Throws<ArgumentException>("keyUri", () => SafeEvpPKeyHandle.OpenKeyFromProvider("default", "\0"));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
@@ -144,6 +144,10 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ArgumentException>(
                 "keyUri",
                 () => SafeEvpPKeyHandle.OpenKeyFromProvider(["default"], ""));
+
+            Assert.Throws<ArgumentException>(
+                "keyUri",
+                () => SafeEvpPKeyHandle.OpenKeyFromProvider(["default"], "\0"));
 
             Assert.Throws<ArgumentException>(
                 "propertyQuery",

@@ -130,6 +130,7 @@ Load a key by URI from specified OSSL_PROVIDERs.
 Returns a valid EVP_PKEY* on success, NULL on failure.
 extraHandle is an in/out parameter for an opaque context. When extraHandle points to NULL, a new context is created.
 If the return value is non-NULL, it *must* be cached and re-used for each set of providers.
+propertyQuery is passed to OSSL_STORE_open_ex as the propq argument. It may be NULL.
 *haveProvider is 1 if OpenSSL providers are supported, otherwise 0.
 */
 PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char** providerNames,

@@ -237,6 +237,8 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ArgumentException">
         ///   <paramref name="providerName"/> or <paramref name="keyUri"/> is the empty string.
+        ///   -or-
+        ///   <paramref name="providerName"/> or <paramref name="keyUri"/> contains an embedded null character.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   the key could not be opened via the specified named <c>OSSL_PROVIDER</c>.
@@ -262,7 +264,7 @@ namespace System.Security.Cryptography
         public static SafeEvpPKeyHandle OpenKeyFromProvider(string providerName, string keyUri)
         {
             ValidateProviderName(providerName, nameof(providerName));
-            ArgumentException.ThrowIfNullOrEmpty(keyUri);
+            ValidateKeyUri(keyUri);
 
             if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
             {
@@ -306,7 +308,7 @@ namespace System.Security.Cryptography
         ///   -or-
         ///   <paramref name="propertyQuery"/> contains an embedded null character.
         ///   -or-
-        ///   <paramref name="keyUri"/> is the empty string.
+        ///   <paramref name="keyUri"/> is the empty string or contains an embedded null character.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   The key could not be opened via the specified named <c>OSSL_PROVIDER</c>s.
@@ -340,7 +342,7 @@ namespace System.Security.Cryptography
             string? propertyQuery = null)
         {
             ArgumentNullException.ThrowIfNull(providerNames);
-            ArgumentException.ThrowIfNullOrEmpty(keyUri);
+            ValidateKeyUri(keyUri);
             ThrowIfPropertyQueryContainsNullCharacter(propertyQuery);
 
             if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
@@ -419,6 +421,16 @@ namespace System.Security.Cryptography
             if (providerName.Contains('\0'))
             {
                 throw new ArgumentException(SR.Argument_InvalidValue, paramName);
+            }
+        }
+
+        private static void ValidateKeyUri(string keyUri)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(keyUri);
+
+            if (keyUri.Contains('\0'))
+            {
+                throw new ArgumentException(SR.Argument_InvalidValue, nameof(keyUri));
             }
         }
 
