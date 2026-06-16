@@ -56,8 +56,65 @@ namespace System.Threading
             UseSlowPath = 2
         };
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern HeaderLockResult AcquireInternal(object obj);
+        // Try acquiring the thin-lock in a single attempt.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe HeaderLockResult Acquire(object obj)
+        {
+            int currentThreadID = ManagedThreadId.Current;
+
+            fixed (byte* pObjectData = &obj.GetRawData())
+            {
+                int* pHeader = GetHeaderPtr(pObjectData);
+                int oldBits = *pHeader;
+
+                int newBits;
+
+                // If there is no hashcode/syncblock index, the header is not spin-locked and
+                // the lock is free (no owning thread id and no recursion level), we can take it.
+                if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK | SBLK_MASK_LOCK_THREADID | SBLK_MASK_LOCK_RECLEVEL)) == 0)
+                {
+                    // does thread ID fit?
+                    if (currentThreadID > SBLK_MASK_LOCK_THREADID)
+                    {
+                        return HeaderLockResult.UseSlowPath;
+                    }
+
+                    newBits = oldBits | currentThreadID;
+                }
+                else
+                {
+                    // The header either has a hashcode or syncblock index, or is in the process of
+                    // upgrading to one (spin lock). In any of these cases we cannot use a thin-lock.
+                    if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0)
+                    {
+                        return HeaderLockResult.UseSlowPath;
+                    }
+
+                    // We have the thin-lock layout but the lock is not free.
+                    // If we do not already own it, the lock is held by somebody else.
+                    if ((oldBits & SBLK_MASK_LOCK_THREADID) != currentThreadID)
+                    {
+                        return HeaderLockResult.Failure;
+                    }
+
+                    // We own the lock. Try incrementing the recursion level and check for overflow.
+                    newBits = oldBits + SBLK_LOCK_RECLEVEL_INC;
+                    if ((newBits & SBLK_MASK_LOCK_RECLEVEL) == 0)
+                    {
+                        // overflow, need to transition to a fat Lock
+                        return HeaderLockResult.UseSlowPath;
+                    }
+                }
+
+                if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
+                {
+                    return HeaderLockResult.Success;
+                }
+
+                // Someone else touched the header bits. Let the caller retry/spin or inflate.
+                return HeaderLockResult.Failure;
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe HeaderLockResult Release(object obj)
@@ -163,7 +220,7 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            HeaderLockResult result = AcquireInternal(obj);
+            HeaderLockResult result = Acquire(obj);
             if (result == HeaderLockResult.Failure)
             {
                 return TryAcquireThinLockSpin(obj);
