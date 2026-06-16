@@ -5,10 +5,11 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { } from "../globals";
-import { MonoWorkerToMainMessage, monoThreadInfo, mono_wasm_pthread_ptr, update_thread_info, worker_empty_prefix } from "./shared";
+import { MonoWorkerToMainMessage, monoThreadInfo, update_thread_info, worker_empty_prefix } from "./shared";
 import { Module, ENVIRONMENT_IS_WORKER, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
 import { PThreadLibrary, MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
 import { mono_log_info, mono_log_debug, mono_log_warn } from "../logging";
+import { threads_c_functions as tcwraps } from "../cwraps";
 
 const threadPromises: Map<PThreadPtr, PromiseController<Thread>[]> = new Map();
 
@@ -142,7 +143,7 @@ export async function mono_wasm_init_threads () {
     if (!WasmEnableThreads) return;
 
     // setup the UI thread
-    runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = mono_wasm_pthread_ptr();
+    runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = tcwraps.pthread_self();
     monoThreadInfo.threadName = "UI Thread";
     monoThreadInfo.isUI = true;
     monoThreadInfo.isRunning = true;
@@ -281,9 +282,9 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
 function allocateUnusedWorker (): PThreadWorker {
     if (!WasmEnableThreads) return null as any;
 
-    const asset = loaderHelpers.resolve_single_asset_path("js-module-threads");
+    const asset = loaderHelpers.resolve_single_asset_path("js-module-native");
     const uri = asset.resolvedUrl;
-    mono_assert(uri !== undefined, "could not resolve the uri for the js-module-threads asset");
+    mono_assert(uri !== undefined, "could not resolve the uri for the js-module-native asset");
     const workerNumber = loaderHelpers.workerNextNumber++;
     const worker = new Worker(uri, {
         name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
