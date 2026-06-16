@@ -154,8 +154,8 @@ namespace System.Buffers
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
-            int bytesRead = Read(buffer.Span);
-            return new ValueTask<int>(bytesRead);
+            int n = Read(buffer.Span);
+            return new ValueTask<int>(n);
         }
 
         /// <inheritdoc />
@@ -240,13 +240,11 @@ namespace System.Buffers
                 _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin))
             };
 
-            // Negative positions are invalid
             if (absolutePosition < 0)
             {
                 throw new IOException(SR.IO_SeekBeforeBegin);
             }
 
-            // Update position - seeking past end is allowed
             if (absolutePosition >= _sequence.Length)
             {
                 _position = _sequence.End;

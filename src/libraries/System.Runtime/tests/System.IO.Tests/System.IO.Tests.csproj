@@ -38,6 +38,7 @@
     <Compile Include="ReadOnlyMemoryStream\ReadOnlyMemoryStreamConformanceTests.cs" />
     <Compile Include="ReadOnlyMemoryStream\ReadOnlyMemoryStreamTests.cs" />
     <Compile Include="StringStream\StringStreamConformanceTests.cs" />
+    <Compile Include="StringStream\StringStreamTestBase.cs" />
     <Compile Include="StringStream\StringStreamTests_Memory.cs" />
     <Compile Include="StringStream\StringStreamTests_String.cs" />
     <Compile Include="StreamReader\StreamReader.CtorTests.cs" />

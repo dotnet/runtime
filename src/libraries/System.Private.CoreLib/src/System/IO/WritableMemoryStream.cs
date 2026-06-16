@@ -118,7 +118,7 @@ public sealed class WritableMemoryStream : MemoryStream
         }
 
         int bytesToRead = Math.Min(remaining, buffer.Length);
-        ((ReadOnlyMemory<byte>)_buffer).Span.Slice(_position, bytesToRead).CopyTo(buffer);
+        _buffer.Span.Slice(_position, bytesToRead).CopyTo(buffer);
         _position += bytesToRead;
 
         return bytesToRead;
@@ -159,7 +159,7 @@ public sealed class WritableMemoryStream : MemoryStream
 
         if (_length > _position)
         {
-            destination.Write(((ReadOnlyMemory<byte>)_buffer).Span.Slice(_position, _length - _position));
+            destination.Write(_buffer.Span.Slice(_position, _length - _position));
             _position = _length;
         }
     }
@@ -172,7 +172,7 @@ public sealed class WritableMemoryStream : MemoryStream
 
         if (_length > _position)
         {
-            ReadOnlyMemory<byte> content = ((ReadOnlyMemory<byte>)_buffer).Slice(_position, _length - _position);
+            ReadOnlyMemory<byte> content = _buffer.Slice(_position, _length - _position);
             _position = _length;
 
             return destination.WriteAsync(content, cancellationToken).AsTask();
@@ -234,42 +234,29 @@ public sealed class WritableMemoryStream : MemoryStream
     public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
         ValidateBufferArguments(buffer, offset, count);
+        EnsureNotClosed();
 
         if (cancellationToken.IsCancellationRequested)
         {
             return Task.FromCanceled(cancellationToken);
         }
 
-        try
-        {
-            Write(buffer, offset, count);
-
-            return Task.CompletedTask;
-        }
-        catch (Exception exception)
-        {
-            return Task.FromException(exception);
-        }
+        Write(buffer, offset, count);
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc/>
     public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
     {
+        EnsureNotClosed();
+
         if (cancellationToken.IsCancellationRequested)
         {
             return ValueTask.FromCanceled(cancellationToken);
         }
 
-        try
-        {
-            Write(buffer.Span);
-
-            return default;
-        }
-        catch (Exception exception)
-        {
-            return ValueTask.FromException(exception);
-        }
+        Write(buffer.Span);
+        return default;
     }
 
     /// <inheritdoc/>
@@ -321,7 +308,7 @@ public sealed class WritableMemoryStream : MemoryStream
         }
 
         byte[] copy = GC.AllocateUninitializedArray<byte>(_length);
-        ((ReadOnlyMemory<byte>)_buffer).Span.Slice(0, _length).CopyTo(copy);
+        _buffer.Span.Slice(0, _length).CopyTo(copy);
         return copy;
     }
 
@@ -333,7 +320,7 @@ public sealed class WritableMemoryStream : MemoryStream
 
         if (_length > 0)
         {
-            stream.Write(((ReadOnlyMemory<byte>)_buffer).Span.Slice(0, _length));
+            stream.Write(_buffer.Span.Slice(0, _length));
         }
     }
 

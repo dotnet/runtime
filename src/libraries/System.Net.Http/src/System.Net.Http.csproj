@@ -128,8 +128,6 @@
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
              Link="Common\System\IO\DelegatingStream.cs" />
-    <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs"
-             Link="Common\System\IO\ReadOnlyMemoryStream.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
              Link="Common\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
