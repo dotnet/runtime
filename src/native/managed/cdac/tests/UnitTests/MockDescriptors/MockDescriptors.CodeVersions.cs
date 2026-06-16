@@ -162,7 +162,7 @@ internal sealed class MockILCodeVersionNode : TypedView
             .AddPointerField(NextFieldName)
             .AddUInt32Field(RejitStateFieldName)
             .AddPointerField(ILAddressFieldName)
-            .AddNUIntField(InstrumentedILMapFieldName)
+            .AddUInt32Field(InstrumentedILMapFieldName)
             .AddPointerField(InstrumentedILMapEntriesFieldName)
             .AddUInt32Field(DeoptimizedFieldName)
             .Build<MockILCodeVersionNode>();
