@@ -214,12 +214,26 @@ ThePreStubPatchLabel:
 // void ResolveWorkerAsmStub(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken)
 //
 // The stub dispatch thunk which transfers control to VSD_ResolveWorker.
-        NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
+        NESTED_ENTRY ResolveWorkerAsmStub_FakeProlog_MethodCall_FakeProlog, _TEXT, NoHandler
+
+        // Match what the virtual dispatch slow path has pushed.
+        PROLOG_PUSH  {r3}
+
+        // This is where execution really starts.
+ResolveWorkerAsmStub:
+        .global ResolveWorkerAsmStub
+
+        PROLOG_PUSH  {r0-r2}
+
+        PROLOG_WITH_TRANSITION_BLOCK 0, 0, DoNotPushArgRegs
 
         mov         r2, r12                         // token
-        ldr         r12, [sp], #4                   // pop indirection cell and flags
 
-        PROLOG_WITH_TRANSITION_BLOCK
+        // Load the indirection cell and flags
+        ldr         r12, [sp,#(__PWTB_TransitionBlock+12*4)]
+
+        // Spill the actual method argument
+        str         r3, [sp,#(__PWTB_TransitionBlock+12*4)]
 
         add         r0, sp, #__PWTB_TransitionBlock // pTransitionBlock
         bic         r1, r12, #3                     // indirection cell
@@ -232,7 +246,7 @@ ThePreStubPatchLabel:
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         bx r12
 
-        NESTED_END ResolveWorkerAsmStub, _TEXT
+        NESTED_END ResolveWorkerAsmStub_FakeProlog_MethodCall_FakeProlog, _TEXT
 
 // ------------------------------------------------------------------
 // void ResolveWorkerChainLookupAsmStub(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken)
