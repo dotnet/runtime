@@ -13,6 +13,7 @@ namespace System.Diagnostics
     {
         internal static DistributedContextPropagator Instance { get; } = new W3CPropagator();
 
+        // W3C Baggage propagation limits: https://www.w3.org/TR/baggage/#limits
         private const int MaxBaggageEntriesToEmit = 64;
         private const int MaxBaggageEncodedLength = 8192;
 
