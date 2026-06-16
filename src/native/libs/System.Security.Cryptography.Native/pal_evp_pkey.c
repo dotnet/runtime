@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <assert.h>
+#include <stdlib.h>
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_slh_dsa.h"
 #include "pal_utilities.h"
@@ -847,12 +848,20 @@ EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const cha
     return NULL;
 }
 
-EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider)
+EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char** providerNames,
+                                           int32_t providerNameCount,
+                                           const char* keyUri,
+                                           const char* propertyQuery,
+                                           void** extraHandle,
+                                           int32_t* haveProvider)
 {
     ERR_clear_error();
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (!API_EXISTS(OSSL_LIB_CTX_new) || !API_EXISTS(OSSL_PROVIDER_load) || !API_EXISTS(OSSL_STORE_open_ex))
+    if (!API_EXISTS(OSSL_LIB_CTX_new) ||
+        !API_EXISTS(OSSL_PROVIDER_load) ||
+        !API_EXISTS(OSSL_PROVIDER_unload) ||
+        !API_EXISTS(OSSL_STORE_open_ex))
     {
         *extraHandle = NULL;
         *haveProvider = 0;
@@ -866,6 +875,8 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char*
     EVP_PKEY* ret = NULL;
     OSSL_STORE_CTX* store = NULL;
     OSSL_STORE_INFO* firstPubKey = NULL;
+    OSSL_PROVIDER** loadedProviders = NULL;
+    int32_t loadedProviderCount = 0;
 
     if (libCtx == NULL)
     {
@@ -876,20 +887,33 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char*
             goto end;
         }
 
-        // This provider gets loaded into the OSSL_LIB_CTX and never unloaded.
-        OSSL_PROVIDER* loadedProvider = OSSL_PROVIDER_load(libCtx, providerName);
+        loadedProviders = (OSSL_PROVIDER**)calloc(Int32ToSizeT(providerNameCount), sizeof(OSSL_PROVIDER*));
 
-        if (loadedProvider == NULL)
+        if (loadedProviders == NULL)
         {
             OSSL_LIB_CTX_free(libCtx);
             libCtx = NULL;
             goto end;
         }
 
+        for (int32_t i = 0; i < providerNameCount; i++)
+        {
+            // If all providers load successfully, these providers are cached in the OSSL_LIB_CTX and never unloaded.
+            OSSL_PROVIDER* loadedProvider = OSSL_PROVIDER_load(libCtx, providerNames[i]);
+
+            if (loadedProvider == NULL)
+            {
+                goto end;
+            }
+
+            loadedProviders[loadedProviderCount++] = loadedProvider;
+        }
+
+        // Only set the extraHandle value after all providers are loaded to indicate that the full set of providers loaded.
         *extraHandle = libCtx;
     }
 
-    store = OSSL_STORE_open_ex(keyUri, libCtx, NULL, NULL, NULL, NULL, NULL, NULL);
+    store = OSSL_STORE_open_ex(keyUri, libCtx, propertyQuery, NULL, NULL, NULL, NULL, NULL);
     if (store == NULL)
     {
         goto end;
@@ -946,10 +970,28 @@ end:
         OSSL_STORE_close(store);
     }
 
+    if (loadedProviders != NULL)
+    {
+        // We didn't get all of the providers loaded, unload them.
+        if (*extraHandle == NULL)
+        {
+            for (int32_t i = loadedProviderCount - 1; i >= 0; i--)
+            {
+                OSSL_PROVIDER_unload(loadedProviders[i]);
+            }
+
+            OSSL_LIB_CTX_free(libCtx);
+        }
+
+        free(loadedProviders);
+    }
+
     return ret;
 #else
-    (void)providerName;
+    (void)providerNames;
+    (void)providerNameCount;
     (void)keyUri;
+    (void)propertyQuery;
     *extraHandle = NULL;
     *haveProvider = 0;
     ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Test.Cryptography;
@@ -87,7 +88,7 @@ namespace System.Security.Cryptography.Tests
 
             if (OpenSslNamedKeysHelpers.ProvidersSupported)
             {
-                Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider("\0", "foo"));
+                Assert.Throws<ArgumentException>("providerName", () => SafeEvpPKeyHandle.OpenKeyFromProvider("\0", "foo"));
             }
         }
 
@@ -95,6 +96,61 @@ namespace System.Security.Cryptography.Tests
         public static void EmptyUriThroughNullCharacter()
         {
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider("default", "\0"));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
+        public static void ProviderCollection_ArgumentValidation()
+        {
+            Assert.Throws<ArgumentNullException>(
+                "providerNames",
+                () => SafeEvpPKeyHandle.OpenKeyFromProvider(
+                    (IEnumerable<string>)null,
+                    OpenSslNamedKeysHelpers.AnyProviderKeyUri));
+
+            Assert.Throws<ArgumentNullException>(
+                "keyUri",
+                () => SafeEvpPKeyHandle.OpenKeyFromProvider(["default"], null));
+
+            Assert.Throws<ArgumentException>(
+                "providerNames",
+                () => SafeEvpPKeyHandle.OpenKeyFromProvider(
+                    [],
+                    OpenSslNamedKeysHelpers.AnyProviderKeyUri));
+
+            Assert.Throws<ArgumentNullException>(
+                "providerNames",
+                () => SafeEvpPKeyHandle.OpenKeyFromProvider(
+                    new string[] { null },
+                    OpenSslNamedKeysHelpers.AnyProviderKeyUri));
+
+            Assert.Throws<ArgumentException>(
+                "providerNames",
+                () => SafeEvpPKeyHandle.OpenKeyFromProvider(
+                    [""],
+                    OpenSslNamedKeysHelpers.AnyProviderKeyUri));
+
+            Assert.Throws<ArgumentException>(
+                "providerNames",
+                () => SafeEvpPKeyHandle.OpenKeyFromProvider(
+                    ["\0"],
+                    OpenSslNamedKeysHelpers.AnyProviderKeyUri));
+
+            Assert.Throws<ArgumentException>(
+                "providerNames",
+                () => SafeEvpPKeyHandle.OpenKeyFromProvider(
+                    ["default", "default"],
+                    OpenSslNamedKeysHelpers.AnyProviderKeyUri));
+
+            Assert.Throws<ArgumentException>(
+                "keyUri",
+                () => SafeEvpPKeyHandle.OpenKeyFromProvider(["default"], ""));
+
+            Assert.Throws<ArgumentException>(
+                "propertyQuery",
+                () => SafeEvpPKeyHandle.OpenKeyFromProvider(
+                    ["default"],
+                    OpenSslNamedKeysHelpers.AnyProviderKeyUri,
+                    "\0"));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
@@ -123,8 +179,12 @@ namespace System.Security.Cryptography.Tests
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider(OpenSslNamedKeysHelpers.Tpm2ProviderName, OpenSslNamedKeysHelpers.NonExistingEngineOrProviderKeyName));
         }
 
-        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
-        public static void Provider_Default_RSASignAndDecrypt()
+        [ConditionalTheory(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
+        [InlineData(false, null)]
+        [InlineData(true, null)]
+        [InlineData(true, "?provider=default")]
+        [InlineData(true, "potato!")]
+        public static void Provider_Default_RSASignAndDecrypt(bool useCollection, string? propertyQuery)
         {
             using RSA originalKey = RSA.Create();
             string pem = originalKey.ExportRSAPrivateKeyPem();
@@ -132,7 +192,7 @@ namespace System.Security.Cryptography.Tests
             using TempFileHolder pemFile = new TempFileHolder(Encoding.UTF8.GetBytes(pem));
             Uri fileUri = new Uri(pemFile.FilePath);
             string keyUri = fileUri.AbsoluteUri;
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("default", keyUri);
+            using SafeEvpPKeyHandle priKeyHandle = OpenKeyFromDefaultProvider(keyUri, useCollection, propertyQuery);
             using RSA rsaPri = new RSAOpenSsl(priKeyHandle);
             byte[] data = new byte[] { 1, 2, 3, 1, 1, 2, 3 };
             byte[] signature = rsaPri.SignData(data, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
@@ -143,8 +203,11 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(data, decrypted);
         }
 
-        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
-        public static void Provider_Default_ECDsaSignAndVerify()
+        [ConditionalTheory(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
+        [InlineData(false, null)]
+        [InlineData(true, null)]
+        [InlineData(true, "?provider=default")]
+        public static void Provider_Default_ECDsaSignAndVerify(bool useCollection, string? propertyQuery)
         {
             using ECDsa originalKey = ECDsa.Create();
             string pem = originalKey.ExportECPrivateKeyPem();
@@ -152,15 +215,18 @@ namespace System.Security.Cryptography.Tests
             using TempFileHolder pemFile = new TempFileHolder(Encoding.UTF8.GetBytes(pem));
             Uri fileUri = new Uri(pemFile.FilePath);
             string keyUri = fileUri.AbsoluteUri;
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("default", keyUri);
+            using SafeEvpPKeyHandle priKeyHandle = OpenKeyFromDefaultProvider(keyUri, useCollection, propertyQuery);
             using ECDsa ecdsaPri = new ECDsaOpenSsl(priKeyHandle);
             byte[] data = new byte[] { 1, 2, 3, 1, 1, 2, 3 };
             byte[] signature = ecdsaPri.SignData(data, HashAlgorithmName.SHA256);
             Assert.True(originalKey.VerifyData(data, signature, HashAlgorithmName.SHA256), "signature does not verify with the right key");
         }
 
-        [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
-        public static void Provider_Default_ECDHKeyExchange()
+        [ConditionalTheory(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
+        [InlineData(false, null)]
+        [InlineData(true, null)]
+        [InlineData(true, "?provider=default")]
+        public static void Provider_Default_ECDHKeyExchange(bool useCollection, string? propertyQuery)
         {
             using ECDiffieHellman originalAliceKey = ECDiffieHellman.Create();
             string pem = originalAliceKey.ExportECPrivateKeyPem();
@@ -168,7 +234,7 @@ namespace System.Security.Cryptography.Tests
             using TempFileHolder pemFile = new TempFileHolder(Encoding.UTF8.GetBytes(pem));
             Uri fileUri = new Uri(pemFile.FilePath);
             string keyUri = fileUri.AbsoluteUri;
-            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider("default", keyUri);
+            using SafeEvpPKeyHandle priKeyHandle = OpenKeyFromDefaultProvider(keyUri, useCollection, propertyQuery);
             using ECDiffieHellman alicePri = new ECDiffieHellmanOpenSsl(priKeyHandle);
             using ECDiffieHellman bobPri = ECDiffieHellman.Create(alicePri.ExportParameters(false).Curve);
 
@@ -179,6 +245,26 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(sharedSecret1, sharedSecret2);
             Assert.Equal(sharedSecret1, sharedSecret3);
         }
+
+        [ConditionalTheory(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ProvidersSupported))]
+        [InlineData("provider=bogus")]
+        [InlineData("provider!=default")]
+        public static void Provider_Default_NegativePropertyQuery(string propertyQuery)
+        {
+            using RSA originalKey = RSA.Create();
+            string pem = originalKey.ExportRSAPrivateKeyPem();
+
+            using TempFileHolder pemFile = new TempFileHolder(Encoding.UTF8.GetBytes(pem));
+            Uri fileUri = new Uri(pemFile.FilePath);
+            string keyUri = fileUri.AbsoluteUri;
+
+            Assert.ThrowsAny<CryptographicException>(() => OpenKeyFromDefaultProvider(keyUri, useCollection: true, propertyQuery));
+        }
+
+        private static SafeEvpPKeyHandle OpenKeyFromDefaultProvider(string keyUri, bool useCollection, string? propertyQuery) =>
+            useCollection ?
+                SafeEvpPKeyHandle.OpenKeyFromProvider(["default"], keyUri, propertyQuery) :
+                SafeEvpPKeyHandle.OpenKeyFromProvider("default", keyUri);
 
         [ConditionalFact(typeof(OpenSslNamedKeysHelpers), nameof(OpenSslNamedKeysHelpers.ShouldRunEngineTests))]
         public static void Engine_OpenExistingPrivateKey()
