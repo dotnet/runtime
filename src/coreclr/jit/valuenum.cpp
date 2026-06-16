@@ -1638,19 +1638,9 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
             }
 
             VNFuncApp funcApp;
-            if (GetVNFunc(vn, &funcApp))
+            if (GetVNFunc(vn, &funcApp) && ((s_vnfOpAttribs[funcApp.GetFunc()] & VNFOA_KnownNonNull) != 0))
             {
-                // The address of an array element is non-null: on the non-exceptional path
-                // the array itself is non-null, so &array[index] cannot be null.
-                if (funcApp.FuncIs(VNF_PtrToArrElem))
-                {
-                    return VNVisit::Continue;
-                }
-
-                if ((s_vnfOpAttribs[funcApp.GetFunc()] & VNFOA_KnownNonNull) != 0)
-                {
-                    return VNVisit::Continue;
-                }
+                return VNVisit::Continue;
             }
         }
         return VNVisit::Abort;
