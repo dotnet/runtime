@@ -6460,7 +6460,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, GenTree* opB)
 {
     if (opB->OperIs(GT_CNS_INT))
     {
-        return ExtendPtrVN(opA, opB->AsIntCon()->gtFieldSeq, opB->AsIntCon()->IconValue());
+        return ExtendPtrVN(opA, opB->AsIntCon()->GetFieldSeq(), opB->AsIntCon()->IconValue());
     }
 
     return NoVN;
@@ -12357,13 +12357,13 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 const GenTreeIntCon* cns         = tree->AsIntCon();
                 const GenTreeFlags   handleFlags = tree->GetIconHandleFlag();
                 tree->gtVNPair.SetBoth(vnStore->VNForHandle(cns->IconValue(), handleFlags));
-                if ((handleFlags == GTF_ICON_CLASS_HDL) && (cns->gtCompileTimeHandle != 0))
+                if ((handleFlags == GTF_ICON_CLASS_HDL) && (cns->GetCompileTimeHandle() != 0))
                 {
                     // Skip registration when gtCompileTimeHandle is unknown (e.g., the node was created by
                     // BashToConst+gtFlags|=GTF_ICON_CLASS_HDL in optConstantAssertionProp). Overwriting an
                     // existing valid mapping with 0 would poison the map for any constant assertion-based
                     // re-flagging that happens to share the same iconValue as a real embedded handle node.
-                    vnStore->AddToEmbeddedHandleMap(cns->IconValue(), cns->gtCompileTimeHandle);
+                    vnStore->AddToEmbeddedHandleMap(cns->IconValue(), cns->GetCompileTimeHandle());
                 }
             }
             else if ((typ == TYP_LONG) || (typ == TYP_ULONG))
@@ -12506,18 +12506,18 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 //
 void Compiler::fgValueNumberRegisterConstFieldSeq(GenTreeIntCon* tree)
 {
-    if (tree->gtFieldSeq == nullptr)
+    if (tree->GetFieldSeq() == nullptr)
     {
         return;
     }
 
-    if (tree->gtFieldSeq->GetKind() != FieldSeq::FieldKind::SimpleStaticKnownAddress)
+    if (tree->GetFieldSeq()->GetKind() != FieldSeq::FieldKind::SimpleStaticKnownAddress)
     {
         return;
     }
 
     // For now we're interested only in SimpleStaticKnownAddress
-    vnStore->AddToFieldAddressToFieldSeqMap(tree->gtVNPair.GetLiberal(), tree->gtFieldSeq);
+    vnStore->AddToFieldAddressToFieldSeqMap(tree->gtVNPair.GetLiberal(), tree->GetFieldSeq());
 }
 
 //------------------------------------------------------------------------
@@ -12736,10 +12736,10 @@ bool Compiler::fgGetStaticFieldSeqAndAddress(ValueNumStore* vnStore,
     if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsCnsIntOrI() && !tree->gtGetOp2()->IsIconHandle())
     {
         GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
-        if ((cns2->gtFieldSeq != nullptr) && (cns2->gtFieldSeq->GetKind() == FieldSeq::FieldKind::SimpleStatic))
+        if ((cns2->GetFieldSeq() != nullptr) && (cns2->GetFieldSeq()->GetKind() == FieldSeq::FieldKind::SimpleStatic))
         {
-            *byteOffset = cns2->IconValue() - cns2->gtFieldSeq->GetOffset();
-            *pFseq      = cns2->gtFieldSeq;
+            *byteOffset = cns2->IconValue() - cns2->GetFieldSeq()->GetOffset();
+            *pFseq      = cns2->GetFieldSeq();
             return true;
         }
     }
@@ -13230,10 +13230,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // Special case: for initialized non-null 'static readonly' fields we want to keep field
                         // sequence to be able to fold their value
                         if ((loadFunc == VNF_InvariantNonNullLoad) && addr->IsIconHandle(GTF_ICON_CONST_PTR) &&
-                            (addr->AsIntCon()->gtFieldSeq != nullptr) &&
-                            (addr->AsIntCon()->gtFieldSeq->GetOffset() == addr->AsIntCon()->IconValue()))
+                            (addr->AsIntCon()->GetFieldSeq() != nullptr) &&
+                            (addr->AsIntCon()->GetFieldSeq()->GetOffset() == addr->AsIntCon()->IconValue()))
                         {
-                            addrNvnp.SetBoth(vnStore->VNForFieldSeq(addr->AsIntCon()->gtFieldSeq));
+                            addrNvnp.SetBoth(vnStore->VNForFieldSeq(addr->AsIntCon()->GetFieldSeq()));
                         }
 
                         tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), loadFunc, addrNvnp);
@@ -13707,13 +13707,22 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
         bool                 isExact   = false;
         bool                 isNonNull = false;
         CORINFO_CLASS_HANDLE cls       = gtGetClassHandle(tree->gtGetOp1(), &isExact, &isNonNull);
-        if ((cls != NO_CLASS_HANDLE) && isExact && isNonNull)
+        if ((cls != NO_CLASS_HANDLE) && isExact)
         {
             CORINFO_OBJECT_HANDLE typeObj = info.compCompHnd->getRuntimeTypePointer(cls);
             if (typeObj != nullptr)
             {
-                ValueNum handleVN   = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
-                intrinsic->gtVNPair = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), arg0VNPx);
+                ValueNum     handleVN = vnStore->VNForHandle((ssize_t)typeObj, GTF_ICON_OBJ_HDL);
+                ValueNumPair excSet   = arg0VNPx;
+                if (!isNonNull)
+                {
+                    // We know the exact type, but not that obj is non-null, so obj.GetType() may still
+                    // throw a NullReferenceException. Fold the (non-exceptional) result to the exact
+                    // runtime type handle while preserving the null check in the exception set - otherwise
+                    // the constant value would suppress the NRE (see fgValueNumberAddExceptionSetForIndirection).
+                    excSet = vnStore->VNPExcSetUnion(excSet, fgValueNumberIndirNullCheckExceptions(tree->gtGetOp1()));
+                }
+                intrinsic->gtVNPair = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), excSet);
                 return;
             }
         }

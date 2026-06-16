@@ -197,6 +197,7 @@ async function preRunAsync (userPreRun: ((module:EmscriptenModule) => void)[]) {
 }
 
 async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:EmscriptenModule) => void) {
+    let keepAlivePushed = false;
     try {
         // wait for previous stage
         await runtimeHelpers.afterPreRun.promise;
@@ -227,7 +228,10 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:Emsc
             setTimeout(maybeSaveInterpPgoTable, (runtimeHelpers.config.interpreterPgoSaveDelay || 15) * 1000);
 
 
+        // this push is unbalanced for short while until runtimeReady = true. Accepted trade-off.
         Module.runtimeKeepalivePush();
+        keepAlivePushed = true;
+
         if (WasmEnableThreads && BuildConfiguration === "Debug" && globalThis.setInterval) globalThis.setInterval(() => {
             mono_log_info("UI thread is alive!");
         }, 3000);
@@ -291,7 +295,7 @@ async function onRuntimeInitializedAsync (userOnRuntimeInitialized: (module:Emsc
         await mono_wasm_after_user_runtime_initialized();
         endMeasure(mark, MeasuredBlock.onRuntimeInitialized);
     } catch (err) {
-        Module.runtimeKeepalivePop();
+        if (keepAlivePushed && !runtimeHelpers.runtimeReady) Module.runtimeKeepalivePop();
         mono_log_error("onRuntimeInitializedAsync() failed", err);
         loaderHelpers.mono_exit(1, err);
         throw err;
