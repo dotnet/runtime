@@ -63,6 +63,7 @@
 // R2R Version 21 updates GC info version to 5 which adds isAsync to x86 GC info
 // R2R Version 22 changes NativeVarInfo encoding to include CALL_RETURN_VALUE
 // R2R Version 23 changes ARM32 virtual stub dispatch hidden parameter register to R12
+// R2R Version 23 changes delegate layout to have target before methodPtr
 
 struct READYTORUN_CORE_HEADER
 {
