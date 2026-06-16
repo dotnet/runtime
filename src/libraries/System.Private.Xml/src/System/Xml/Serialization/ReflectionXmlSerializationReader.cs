@@ -975,33 +975,28 @@ namespace System.Xml.Serialization
                         break;
                     case TypeKind.Serializable:
                         SerializableMapping sm = (SerializableMapping)element.Mapping;
-                        // check to see if we need to do the derivation
-                        bool flag = true;
+                        bool isWrappedAny = !element.Any && IsWildcard(sm);
+                        // Check to see if we need to do the derivation, i.e. the actual xsi:type
+                        // refers to a type derived from the declared SerializableMapping type.
                         if (sm.DerivedMappings != null)
                         {
                             XmlQualifiedName? tser = GetXsiType();
-                            if (tser == null || QNameEqual(tser, sm.XsiType!.Name, defaultNamespace))
+                            if (tser == null || QNameEqual(tser, sm.XsiType!.Name, sm.XsiType.Namespace))
                             {
+                                value = ReadSerializable((IXmlSerializable)ReflectionCreateObject(sm.TypeDesc!.Type!)!, isWrappedAny);
+                            }
+                            else if (ReadDerivedSerializable(sm, sm, tser, isWrappedAny, out object? derivedValue))
+                            {
+                                value = derivedValue;
                             }
                             else
                             {
-                                flag = false;
+                                UnknownNode(null);
                             }
                         }
-
-                        if (flag)
+                        else
                         {
-                            bool isWrappedAny = !element.Any && IsWildcard(sm);
                             value = ReadSerializable((IXmlSerializable)ReflectionCreateObject(sm.TypeDesc!.Type!)!, isWrappedAny);
-                        }
-
-                        if (sm.DerivedMappings != null)
-                        {
-                            // https://github.com/dotnet/runtime/issues/1401:
-                            // To Support SpecialMapping Types Having DerivedMappings
-                            throw new NotImplementedException("sm.DerivedMappings != null");
-                            //WriteDerivedSerializable(sm, sm, source, isWrappedAny);
-                            //WriteUnknownNode("UnknownNode", "null", null, true);
                         }
                         break;
                     default:
@@ -1026,6 +1021,39 @@ namespace System.Xml.Serialization
             }
 
             return value;
+        }
+
+        // Walks the SerializableMapping derivation tree looking for the mapping whose XsiType matches
+        // the supplied xsi:type. Mirrors XmlSerializationReaderILGen.WriteDerivedSerializable. Returns
+        // true and the deserialized object when a derived mapping matches; otherwise false.
+        private bool ReadDerivedSerializable(SerializableMapping head, SerializableMapping mapping, XmlQualifiedName? tser, bool isWrappedAny, out object? value)
+        {
+            for (SerializableMapping? derived = mapping.DerivedMappings; derived != null; derived = derived.NextDerivedMapping)
+            {
+                if (tser == null || QNameEqual(tser, derived.XsiType!.Name, derived.XsiType.Namespace))
+                {
+                    if (derived.Type == null)
+                    {
+                        throw CreateMissingIXmlSerializableType(derived.XsiType!.Name, derived.XsiType.Namespace, head.Type!.FullName);
+                    }
+
+                    if (!head.Type!.IsAssignableFrom(derived.Type))
+                    {
+                        throw CreateBadDerivationException(derived.XsiType!.Name, derived.XsiType.Namespace, head.XsiType!.Name, head.XsiType.Namespace, derived.Type.FullName, head.Type.FullName);
+                    }
+
+                    value = ReadSerializable((IXmlSerializable)ReflectionCreateObject(derived.TypeDesc!.Type!)!, isWrappedAny);
+                    return true;
+                }
+
+                if (ReadDerivedSerializable(head, derived, tser, isWrappedAny, out value))
+                {
+                    return true;
+                }
+            }
+
+            value = null;
+            return false;
         }
 
         private XmlSerializationReadCallback CreateXmlSerializationReadCallback(TypeMapping mapping)

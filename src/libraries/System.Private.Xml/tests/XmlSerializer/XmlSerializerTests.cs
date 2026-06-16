@@ -716,6 +716,26 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_DerivedIXmlSerializable()
+    {
+        var dClass = new XmlSerializableDerivedClass() { AttributeString = "derivedIXmlSerTest", DateTimeValue = DateTime.Parse("Dec 31, 1999"), BoolValue = true };
+
+        var expectedXml = WithXmlHeader(@$"<BaseIXmlSerializable xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:type=""DerivedIXmlSerializable"" AttributeString=""derivedIXmlSerTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""True"" xmlns=""{XmlSerializableBaseClass.XmlNamespace}"" />");
+        var fromBase = SerializeAndDeserialize(dClass, expectedXml, () => new XmlSerializer(typeof(XmlSerializableBaseClass), new Type[] { typeof(XmlSerializableDerivedClass) }));
+        Assert.Equal(dClass.AttributeString, fromBase.AttributeString);
+        Assert.Equal(dClass.DateTimeValue, fromBase.DateTimeValue);
+        Assert.Equal(dClass.BoolValue, fromBase.BoolValue);
+
+        // Derived class does not apply XmlRoot attribute to force itself to be emitted with the base class element name, so update expected xml accordingly.
+        // Since we can't smartly emit xsi:type during serialization though, it is still there even though it isn't needed.
+        expectedXml = WithXmlHeader(@"<DerivedIXmlSerializable xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:type=""DerivedIXmlSerializable"" AttributeString=""derivedIXmlSerTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""True"" />");
+        var fromDerived = SerializeAndDeserialize(dClass, expectedXml, () => new XmlSerializer(typeof(XmlSerializableDerivedClass)));
+        Assert.Equal(dClass.AttributeString, fromDerived.AttributeString);
+        Assert.Equal(dClass.DateTimeValue, fromDerived.DateTimeValue);
+        Assert.Equal(dClass.BoolValue, fromDerived.BoolValue);
+    }
+
+    [Fact]
     public static void Xml_StructImplementingIXmlSerializableWithoutParameterlessConstructor()
     {
         StructImplementingIXmlSerializableWithoutParameterlessConstructor value = new()
