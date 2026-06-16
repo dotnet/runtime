@@ -597,11 +597,11 @@ namespace System.Threading.Tasks.Tests
             Assert.NotEmpty(markerCallstacks);
 
             // The deepest callstack (on the final Delay resume) should have 4 frames:
-            // Leaf (state=3), Middle (state=2), Root (state=1), Marker (state=0)
+            // Leaf (state=0), Middle (state=2), Root (state=1), Marker (state=0)
             var deepest = markerCallstacks.MaxBy(cs => cs.FrameCount)!;
             Assert.Equal(4, deepest.FrameCount);
 
-            // Each frame should have a different state reflecting its suspend point
+            // Each frame's state should reflect its suspend point (values may repeat across frames).
             var states = deepest.Frames.Select(f => f.State).ToList();
             Assert.Equal(0, states[0]); // Leaf: suspended at 1st await (state=0)
             Assert.Equal(2, states[1]); // Middle: suspended at 3rd await (state=2)
@@ -1848,6 +1848,67 @@ namespace System.Threading.Tasks.Tests
                 "Expected at least one OS thread with a ResetAsyncThreadContext event " +
                 "followed by >= 2 ResumeAsyncContext events in the same reset window, " +
                 "proving the reset-replay walker traversed multiple nested dispatchers.");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task TaskAsync_ResetContext_ReplayResumeCompleteBalance_Inner_Marker()
+        {
+            using var dummy = new TestEventListener();
+            dummy.AddSource(AsyncProfilerEventSourceName, EventLevel.Informational, EventKeywords.None);
+            await Task.Yield();
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task TaskAsync_ResetContext_ReplayResumeCompleteBalance_Mid_Marker()
+        {
+            await TaskAsync_ResetContext_ReplayResumeCompleteBalance_Inner_Marker();
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task TaskAsync_ResetContext_ReplayResumeCompleteBalance_Outer_Marker()
+        {
+            await TaskAsync_ResetContext_ReplayResumeCompleteBalance_Mid_Marker();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsTaskAsyncInstrumentationAndThreadingSupported))]
+        public void TaskAsync_ResetContext_ReplayResumeCompleteBalance()
+        {
+            var events = CollectEvents(AllKeywords, () =>
+            {
+                RunScenarioAndFlush(() => TaskAsync_ResetContext_ReplayResumeCompleteBalance_Outer_Marker());
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            // Locate the replayed marker ResumeAsyncCallstack: the reset (triggered by the dummy
+            // listener inside the inner marker) replays the suspended V1 chain, producing a
+            // callstack carrying the marker frames.
+            var markerCallstacks = stream.CallstacksWithMarker(
+                AsyncEventID.TaskAsync_ResumeAsyncCallstack, "TaskAsync_ResetContext_ReplayResumeCompleteBalance");
+            Assert.NotEmpty(markerCallstacks);
+
+            // Resume/Complete balance across the replay boundary. V1 uses a per-MoveNext dispatcher
+            // model, so the marker chain spans a dispatcher tree whose deepest replayed callstack
+            // has N frames; each of those N resumed async methods must eventually complete. Balance
+            // is NOT preserved per reset epoch by design (a Resume can land in one epoch and its
+            // Complete in a later epoch once a config change bumps the revision mid-chain), so the
+            // count is reconstructed over the whole trace, scoped to the marker dispatcher's chain.
+            // Using >= keeps the assertion robust against additional method events from the harness.
+            var deepest = markerCallstacks.OrderByDescending(c => c.FrameCount).First();
+            ulong leafDispatcherId = deepest.DispatcherId;
+
+            int completeMethodCount = stream.ChainEventsFromDispatcher(leafDispatcherId)
+                .Count(e => e.EventId == AsyncEventID.TaskAsync_CompleteAsyncMethod);
+
+            Assert.True(completeMethodCount >= deepest.FrameCount,
+                $"Expected at least {deepest.FrameCount} TaskAsync_CompleteAsyncMethod events across the " +
+                $"trace for marker dispatcher chain {leafDispatcherId} to balance the replayed callstack of " +
+                $"depth {deepest.FrameCount}, but found {completeMethodCount}.");
         }
 
         [RuntimeAsyncMethodGeneration(false)]

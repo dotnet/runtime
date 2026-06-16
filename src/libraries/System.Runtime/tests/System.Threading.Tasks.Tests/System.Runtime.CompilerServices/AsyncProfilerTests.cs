@@ -973,9 +973,20 @@ namespace System.Threading.Tasks.Tests
                 }
 
                 ulong osThreadId = header.Value.OsThreadId;
-                ulong currentDispatcherId = 0;
-                ulong currentParentDispatcherId = 0;
-                var dispatcherStack = new Stack<(ulong DispatcherId, ulong ParentDispatcherId)>();
+                // V1 (TaskAsync_*) and V2 (RuntimeAsync_*) are independent context dimensions that can
+                // interleave within a single thread's buffer (e.g. a V1 test-runner dispatcher active
+                // while a V2 test runs, which always happens on single-threaded WASM where everything
+                // shares one thread). Context-scoped events (Resume/Suspend/Complete context, the
+                // method events, and unwind events) omit the dispatcher id from the wire and inherit it
+                // from the enclosing Resume context, so each kind needs its own current-context stack.
+                // A single shared stack would let a TaskAsync_* Resume/Complete hijack the current
+                // dispatcher and mis-attribute interleaved RuntimeAsync_* events (and vice versa).
+                ulong v2CurrentDispatcherId = 0;
+                ulong v2CurrentParentDispatcherId = 0;
+                ulong v1CurrentDispatcherId = 0;
+                ulong v1CurrentParentDispatcherId = 0;
+                var v2DispatcherStack = new Stack<(ulong DispatcherId, ulong ParentDispatcherId)>();
+                var v1DispatcherStack = new Stack<(ulong DispatcherId, ulong ParentDispatcherId)>();
                 int index = HeaderSize;
                 long baseTimestamp = (long)header.Value.StartTimestamp;
 
@@ -998,45 +1009,65 @@ namespace System.Threading.Tasks.Tests
                         AsyncEventID.RuntimeAsync_CreateAsyncContext or AsyncEventID.TaskAsync_CreateAsyncContext =>
                             ParseCreateContextEvent(eventId, baseTimestamp, osThreadId, buffer, ref index),
 
-                        AsyncEventID.RuntimeAsync_ResumeAsyncContext or AsyncEventID.TaskAsync_ResumeAsyncContext =>
+                        AsyncEventID.RuntimeAsync_ResumeAsyncContext =>
                             ParseResumeContextEvent(eventId, baseTimestamp, osThreadId, buffer, ref index,
-                                ref currentDispatcherId, ref currentParentDispatcherId, dispatcherStack),
+                                ref v2CurrentDispatcherId, ref v2CurrentParentDispatcherId, v2DispatcherStack),
 
-                        AsyncEventID.RuntimeAsync_CompleteAsyncContext or AsyncEventID.TaskAsync_CompleteAsyncContext or
-                        AsyncEventID.RuntimeAsync_SuspendAsyncContext or AsyncEventID.TaskAsync_SuspendAsyncContext =>
+                        AsyncEventID.TaskAsync_ResumeAsyncContext =>
+                            ParseResumeContextEvent(eventId, baseTimestamp, osThreadId, buffer, ref index,
+                                ref v1CurrentDispatcherId, ref v1CurrentParentDispatcherId, v1DispatcherStack),
+
+                        AsyncEventID.RuntimeAsync_CompleteAsyncContext or AsyncEventID.RuntimeAsync_SuspendAsyncContext =>
                             ParseEndContextEvent(eventId, baseTimestamp, osThreadId,
-                                ref currentDispatcherId, ref currentParentDispatcherId, dispatcherStack),
+                                ref v2CurrentDispatcherId, ref v2CurrentParentDispatcherId, v2DispatcherStack),
 
-                        AsyncEventID.RuntimeAsync_ResumeAsyncMethod or AsyncEventID.RuntimeAsync_CompleteAsyncMethod or
+                        AsyncEventID.TaskAsync_CompleteAsyncContext or AsyncEventID.TaskAsync_SuspendAsyncContext =>
+                            ParseEndContextEvent(eventId, baseTimestamp, osThreadId,
+                                ref v1CurrentDispatcherId, ref v1CurrentParentDispatcherId, v1DispatcherStack),
+
+                        AsyncEventID.RuntimeAsync_ResumeAsyncMethod or AsyncEventID.RuntimeAsync_CompleteAsyncMethod =>
+                            new ParsedEvent
+                            {
+                                EventId = eventId,
+                                Timestamp = baseTimestamp,
+                                OsThreadId = osThreadId,
+                                ParentDispatcherId = v2CurrentParentDispatcherId,
+                                DispatcherId = v2CurrentDispatcherId,
+                            },
+
                         AsyncEventID.TaskAsync_ResumeAsyncMethod or AsyncEventID.TaskAsync_CompleteAsyncMethod =>
                             new ParsedEvent
                             {
                                 EventId = eventId,
                                 Timestamp = baseTimestamp,
                                 OsThreadId = osThreadId,
-                                ParentDispatcherId = currentParentDispatcherId,
-                                DispatcherId = currentDispatcherId,
+                                ParentDispatcherId = v1CurrentParentDispatcherId,
+                                DispatcherId = v1CurrentDispatcherId,
                             },
 
                         AsyncEventID.ResetAsyncThreadContext or AsyncEventID.ResetAsyncContinuationWrapperIndex =>
                             ParseResetEvent(eventId, baseTimestamp, osThreadId,
-                                ref currentDispatcherId, ref currentParentDispatcherId, dispatcherStack),
+                                ref v2CurrentDispatcherId, ref v2CurrentParentDispatcherId, v2DispatcherStack,
+                                ref v1CurrentDispatcherId, ref v1CurrentParentDispatcherId, v1DispatcherStack),
 
                         AsyncEventID.RuntimeAsync_CreateAsyncCallstack or AsyncEventID.RuntimeAsync_ResumeAsyncCallstack or
                         AsyncEventID.RuntimeAsync_SuspendAsyncCallstack or
                         AsyncEventID.TaskAsync_ResumeAsyncCallstack or AsyncEventID.TaskAsync_AppendAsyncCallstack =>
                             ParseCallstackEvent(eventId, baseTimestamp, osThreadId, buffer, ref index),
 
-                        AsyncEventID.RuntimeAsync_UnwindAsyncException or AsyncEventID.TaskAsync_UnwindAsyncException =>
-                            ParseUnwindEvent(eventId, baseTimestamp, osThreadId, currentDispatcherId, currentParentDispatcherId, buffer, ref index),
+                        AsyncEventID.RuntimeAsync_UnwindAsyncException =>
+                            ParseUnwindEvent(eventId, baseTimestamp, osThreadId, v2CurrentDispatcherId, v2CurrentParentDispatcherId, buffer, ref index),
+
+                        AsyncEventID.TaskAsync_UnwindAsyncException =>
+                            ParseUnwindEvent(eventId, baseTimestamp, osThreadId, v1CurrentDispatcherId, v1CurrentParentDispatcherId, buffer, ref index),
 
                         AsyncEventID.AsyncProfilerMetadata =>
-                            ParseMetadataEvent(baseTimestamp, osThreadId, currentDispatcherId, currentParentDispatcherId, buffer, ref index),
+                            ParseMetadataEvent(baseTimestamp, osThreadId, 0, 0, buffer, ref index),
 
                         AsyncEventID.AsyncProfilerSyncClock =>
-                            ParseSyncClockEvent(baseTimestamp, osThreadId, currentDispatcherId, currentParentDispatcherId, buffer, ref index),
+                            ParseSyncClockEvent(baseTimestamp, osThreadId, 0, 0, buffer, ref index),
 
-                        _ => ParseUnknownEvent(eventId, baseTimestamp, osThreadId, currentDispatcherId, currentParentDispatcherId, buffer, ref index)
+                        _ => ParseUnknownEvent(eventId, baseTimestamp, osThreadId, 0, 0, buffer, ref index)
                     };
 
                     Assert.Equal(payloadLength, index - payloadStartIndex);
@@ -1113,16 +1144,20 @@ namespace System.Threading.Tasks.Tests
             }
 
             static ParsedEvent ParseResetEvent(AsyncEventID eventId, long timestamp, ulong osThreadId,
-                ref ulong currentDispatcherId, ref ulong currentParentDispatcherId,
-                Stack<(ulong DispatcherId, ulong ParentDispatcherId)> dispatcherStack)
+                ref ulong v2CurrentDispatcherId, ref ulong v2CurrentParentDispatcherId,
+                Stack<(ulong DispatcherId, ulong ParentDispatcherId)> v2DispatcherStack,
+                ref ulong v1CurrentDispatcherId, ref ulong v1CurrentParentDispatcherId,
+                Stack<(ulong DispatcherId, ulong ParentDispatcherId)> v1DispatcherStack)
             {
-                ulong prevDispatcherId = currentDispatcherId;
-                ulong prevParentDispatcherId = currentParentDispatcherId;
+                // ResetAsyncThreadContext is a thread-level reset and clears both kind contexts.
                 if (eventId == AsyncEventID.ResetAsyncThreadContext)
                 {
-                    dispatcherStack.Clear();
-                    currentDispatcherId = 0;
-                    currentParentDispatcherId = 0;
+                    v2DispatcherStack.Clear();
+                    v2CurrentDispatcherId = 0;
+                    v2CurrentParentDispatcherId = 0;
+                    v1DispatcherStack.Clear();
+                    v1CurrentDispatcherId = 0;
+                    v1CurrentParentDispatcherId = 0;
                 }
 
                 return new ParsedEvent
@@ -1130,8 +1165,8 @@ namespace System.Threading.Tasks.Tests
                     EventId = eventId,
                     Timestamp = timestamp,
                     OsThreadId = osThreadId,
-                    ParentDispatcherId = prevParentDispatcherId,
-                    DispatcherId = prevDispatcherId,
+                    ParentDispatcherId = 0,
+                    DispatcherId = 0,
                 };
             }
 

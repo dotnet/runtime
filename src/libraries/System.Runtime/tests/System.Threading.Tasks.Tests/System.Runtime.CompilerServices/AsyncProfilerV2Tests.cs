@@ -814,7 +814,7 @@ namespace System.Threading.Tasks.Tests
         {
             var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackSimulation_HandledException_Marker);
 
-            DumpAllEvents(events);
+            // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
             AssertCallstackSimulationReachesZero(stream, nameof(RuntimeAsync_CallstackSimulation_HandledException_Marker));
@@ -1861,7 +1861,7 @@ namespace System.Threading.Tasks.Tests
         {
             var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_ConfigureAwaitFalse_Marker);
 
-            DumpAllEvents(events);
+            // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
@@ -2450,6 +2450,175 @@ namespace System.Threading.Tasks.Tests
                 "Expected at least one OS thread with a ResetAsyncThreadContext event " +
                 "followed by >= 2 ResumeAsyncContext events in the same reset window, " +
                 "proving the reset-replay walker traversed multiple stacked V2 dispatcher infos.");
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_ResetContext_ReplayResumeCompleteBalance_Inner_Marker()
+        {
+            using var dummy = new TestEventListener();
+            dummy.AddSource(AsyncProfilerEventSourceName, EventLevel.Informational, EventKeywords.None);
+            await Task.Yield();
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_ResetContext_ReplayResumeCompleteBalance_Mid_Marker()
+        {
+            await RuntimeAsync_ResetContext_ReplayResumeCompleteBalance_Inner_Marker();
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_ResetContext_ReplayResumeCompleteBalance_Outer_Marker()
+        {
+            await RuntimeAsync_ResetContext_ReplayResumeCompleteBalance_Mid_Marker();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        public async Task RuntimeAsync_ResetContext_ReplayResumeCompleteBalance()
+        {
+            var events = await CollectEventsAsync(AllKeywords, RuntimeAsync_ResetContext_ReplayResumeCompleteBalance_Outer_Marker);
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            // Locate the replayed marker ResumeAsyncCallstack (the reset replays the suspended
+            // Outer->Mid->Inner chain, producing a callstack carrying the marker frames).
+            var markerCallstacks = stream.CallstacksWithMarker(
+                AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, "RuntimeAsync_ResetContext_ReplayResumeCompleteBalance");
+            Assert.NotEmpty(markerCallstacks);
+
+            // Resume/Complete balance across the replay boundary: the whole Outer->Mid->Inner chain
+            // is a single V2 dispatcher whose deepest replayed callstack has N frames, so N async
+            // methods must each eventually complete. Balance is NOT preserved per reset epoch by
+            // design (a Resume can land in one epoch and its Complete in a later epoch once a config
+            // change bumps the revision mid-chain), so the count must be reconstructed over the whole
+            // trace, scoped to the dispatcher rather than to a single epoch. Assert the marker
+            // dispatcher emits at least N CompleteAsyncMethod events across the entire trace. Using
+            // >= keeps the assertion robust against additional method events from the harness.
+            var deepest = markerCallstacks.OrderByDescending(c => c.FrameCount).First();
+            ulong markerDispatcherId = deepest.DispatcherId;
+
+            int completeMethodCount = stream.ChainEventsFromDispatcher(markerDispatcherId)
+                .Count(e => e.EventId == AsyncEventID.RuntimeAsync_CompleteAsyncMethod);
+
+            Assert.True(completeMethodCount >= deepest.FrameCount,
+                $"Expected at least {deepest.FrameCount} RuntimeAsync_CompleteAsyncMethod events across the " +
+                $"trace for marker dispatcher {markerDispatcherId} to balance the replayed callstack of depth " +
+                $"{deepest.FrameCount}, but found {completeMethodCount}.");
+        }
+
+        // Regular async (V1, Task-based) inner. When it calls innerDone.SetResult() it inline-resumes
+        // the V2 outer while this V1 dispatcher's AsyncTaskDispatcherInfo is still on t_current,
+        // co-stacking a V1 and a V2 dispatcher info at the moment the reset replay walker runs.
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_ResetContext_ReplaysMixedV1V2ChainInAddressOrder_V1Inner_Marker(
+            Task gate,
+            ManualResetEventSlim block,
+            Action onBlocked,
+            TaskCompletionSource innerDone)
+        {
+            await gate;
+            onBlocked();
+            block.Wait();
+            innerDone.SetResult();
+        }
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_ResetContext_ReplaysMixedV1V2ChainInAddressOrder_V2Outer_Marker(TaskCompletionSource innerDone)
+        {
+            await innerDone.Task;
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        public async Task RuntimeAsync_ResetContext_ReplaysMixedV1V2ChainInAddressOrder()
+        {
+            var events = await CollectEventsAsync(AllKeywords, async () =>
+            {
+                var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                var block = new ManualResetEventSlim(false);
+                var blocked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                // No RunContinuationsAsynchronously: innerDone.SetResult() inline-resumes the V2
+                // outer while the V1 inner dispatcher is still on t_current, producing a mixed
+                // V1+V2 chain for the reset replay walker to merge.
+                var innerDone = new TaskCompletionSource();
+
+                Task inner = RuntimeAsync_ResetContext_ReplaysMixedV1V2ChainInAddressOrder_V1Inner_Marker(gate.Task, block, () => blocked.SetResult(), innerDone);
+                Task outer = RuntimeAsync_ResetContext_ReplaysMixedV1V2ChainInAddressOrder_V2Outer_Marker(innerDone);
+
+                _ = Task.Run(() => gate.SetResult());
+
+                await blocked.Task;
+
+                var dummy = new TestEventListener();
+                try
+                {
+                    dummy.AddSource(AsyncProfilerEventSourceName, EventLevel.Informational, EventKeywords.None);
+
+                    block.Set();
+
+                    await outer;
+                    await inner;
+                }
+                finally
+                {
+                    dummy.Dispose();
+                }
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            // The merge walker traverses both the V1 (AsyncTaskDispatcherInfo) and V2
+            // (AsyncDispatcherInfo) t_current chains, recursing on the smaller-address node first
+            // to emit oldest-first. Decisive proof that both branches of the merge ran: within a
+            // single reset window on one thread, both a TaskAsync_ResumeAsyncContext (V1) and a
+            // RuntimeAsync_ResumeAsyncContext (V2) are replayed.
+            var resetsByThread = stream.All
+                .Where(e => e.EventId == AsyncEventID.ResetAsyncThreadContext && e.OsThreadId != 0)
+                .GroupBy(e => e.OsThreadId)
+                .ToList();
+            Assert.NotEmpty(resetsByThread);
+
+            bool found = false;
+            foreach (var threadResets in resetsByThread)
+            {
+                ulong threadId = threadResets.Key;
+                var orderedResets = threadResets.OrderBy(e => e.Timestamp).ToList();
+
+                for (int i = 0; i < orderedResets.Count && !found; i++)
+                {
+                    long windowStart = orderedResets[i].Timestamp;
+                    long windowEnd = (i + 1 < orderedResets.Count)
+                        ? orderedResets[i + 1].Timestamp
+                        : long.MaxValue;
+
+                    bool hasV1Resume = stream.All.Any(e => e.EventId == AsyncEventID.TaskAsync_ResumeAsyncContext
+                        && e.OsThreadId == threadId && e.Timestamp >= windowStart && e.Timestamp < windowEnd);
+                    bool hasV2Resume = stream.All.Any(e => e.EventId == AsyncEventID.RuntimeAsync_ResumeAsyncContext
+                        && e.OsThreadId == threadId && e.Timestamp >= windowStart && e.Timestamp < windowEnd);
+
+                    if (hasV1Resume && hasV2Resume)
+                    {
+                        found = true;
+                    }
+                }
+
+                if (found)
+                {
+                    break;
+                }
+            }
+
+            Assert.True(found,
+                "Expected a single ResetAsyncThreadContext window containing both a TaskAsync_ResumeAsyncContext " +
+                "(V1) and a RuntimeAsync_ResumeAsyncContext (V2), proving the reset-replay merge walker traversed " +
+                "a mixed V1+V2 chain and exercised both branches of its address-ordered recursion.");
         }
     }
 }
