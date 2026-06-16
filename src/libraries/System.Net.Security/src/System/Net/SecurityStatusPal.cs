@@ -34,6 +34,7 @@ namespace System.Net
         Renegotiate,
         TryAgain,
         HandshakeStarted,
+        CertValidationNeeded,
 
         // Errors
         OutOfMemory,
@@ -74,6 +75,7 @@ namespace System.Net
         NoRenegotiation,
         KeySetDoesNotExist,
         ContextExpiredError,
+        CertValidationFailed,
         MutualAuthFailed
     }
 }

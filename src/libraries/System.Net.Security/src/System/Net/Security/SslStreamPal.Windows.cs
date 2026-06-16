@@ -57,6 +57,11 @@ namespace System.Net.Security
         internal const bool CanEncryptEmptyMessage = true;
         internal const bool CanGenerateCustomAlerts = true;
 
+        internal static bool CanGenerateCustomAlertsForContext(SafeDeleteContext? _)
+        {
+            return CanGenerateCustomAlerts;
+        }
+
         private static readonly byte[] s_sessionTokenBuffer = InitSessionTokenBuffer();
 
         private static byte[] InitSessionTokenBuffer()

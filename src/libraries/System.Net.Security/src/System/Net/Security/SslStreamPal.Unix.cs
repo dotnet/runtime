@@ -22,6 +22,11 @@ namespace System.Net.Security
         internal const bool CanEncryptEmptyMessage = false;
         internal const bool CanGenerateCustomAlerts = false;
 
+        internal static bool CanGenerateCustomAlertsForContext(SafeDeleteContext? _)
+        {
+            return CanGenerateCustomAlerts;
+        }
+
         public static void VerifyPackageInfo()
         {
         }

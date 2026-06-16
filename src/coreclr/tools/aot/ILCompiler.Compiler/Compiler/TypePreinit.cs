@@ -3295,34 +3295,34 @@ namespace ILCompiler
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk"u8);
 
-                    // _firstParameter
-                    builder.EmitPointerReloc(thisNode);
-
                     // _helperObject
                     builder.EmitZeroPointer();
 
-                    // _extraFunctionPointerOrData
-                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
+                    // _firstParameter
+                    builder.EmitPointerReloc(thisNode);
 
                     // _functionPointer
                     Debug.Assert(creationInfo.Thunk != null);
                     builder.EmitPointerReloc(creationInfo.Thunk);
+
+                    // _extraFunctionPointerOrData
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
                 }
                 else
                 {
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance"u8);
 
-                    // _firstParameter
-                    _firstParameter.WriteFieldData(ref builder, factory);
-
                     // _helperObject
                     builder.EmitZeroPointer();
 
-                    // _extraFunctionPointerOrData
-                    builder.EmitZeroPointer();
+                    // _firstParameter
+                    _firstParameter.WriteFieldData(ref builder, factory);
 
                     // _functionPointer
                     builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
+
+                    // _extraFunctionPointerOrData
+                    builder.EmitZeroPointer();
                 }
             }
 
