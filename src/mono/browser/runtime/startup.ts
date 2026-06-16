@@ -25,7 +25,7 @@ import { mono_log_debug, mono_log_error, mono_log_info, mono_log_warn } from "./
 // threads
 import { populateEmscriptenPool, mono_wasm_init_threads } from "./pthreads";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads";
-import { mono_wasm_pthread_ptr, update_thread_info } from "./pthreads";
+import { update_thread_info } from "./pthreads";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
 import { localHeapViewU8, malloc, setU32, fixupPointer } from "./memory";
 import { assertNoProxies } from "./gc-handles";
@@ -146,6 +146,7 @@ async function instantiateWasmWorker (
     const instance = new WebAssembly.Instance(Module.wasmModule!, imports);
     successCallback(instance, undefined);
     Module.wasmModule = null;
+    preRunWorker();
 }
 
 
@@ -473,7 +474,7 @@ export async function start_runtime () {
             monoThreadInfo.isAttached = true;
             monoThreadInfo.isRunning = true;
             monoThreadInfo.isRegistered = true;
-            runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
+            runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = tcwraps.pthread_self();
             update_thread_info();
             runtimeHelpers.isManagedRunningOnCurrentThread = true;
         }

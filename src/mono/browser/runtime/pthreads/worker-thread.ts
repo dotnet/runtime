@@ -6,7 +6,7 @@
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { ENVIRONMENT_IS_PTHREAD, Module, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
-import { PThreadSelf, monoThreadInfo, mono_wasm_pthread_ptr, postMessageToMain, update_thread_info } from "./shared";
+import { PThreadSelf, monoThreadInfo, postMessageToMain, update_thread_info } from "./shared";
 import { PThreadLibrary, MonoThreadMessage, PThreadInfo, PThreadPtr, WorkerToMainMessageType } from "../types/internal";
 import {
     makeWorkerThreadEvent,
@@ -14,11 +14,12 @@ import {
     dotnetPthreadAttached,
     WorkerThreadEventTarget
 } from "./worker-events";
-import { postRunWorker, preRunWorker } from "../startup";
+import { postRunWorker } from "../startup";
 import { mono_log_debug, mono_log_error } from "../logging";
 import { CharPtr } from "../types/emscripten";
 import { utf8ToString } from "../strings";
 import { forceThreadMemoryViewRefresh } from "../memory";
+import { threads_c_functions as tcwraps } from "../cwraps";
 
 // re-export some of the events types
 export {
@@ -80,8 +81,7 @@ export function mono_wasm_pthread_on_pthread_created (): void {
     if (!WasmEnableThreads) return;
     try {
         forceThreadMemoryViewRefresh();
-        const pthread_id = mono_wasm_pthread_ptr();
-        mono_assert(pthread_id == monoThreadInfo.pthreadId, `needs to match (mono_wasm_pthread_ptr ${pthread_id}, threadId from thread info ${monoThreadInfo.pthreadId})`);
+        monoThreadInfo.pthreadId = tcwraps.pthread_self();
 
         monoThreadInfo.reuseCount++;
         monoThreadInfo.updateCount++;
@@ -128,7 +128,6 @@ export function mono_wasm_pthread_on_pthread_registered (pthread_id: PThreadPtr)
             monoCmd: WorkerToMainMessageType.monoRegistered,
             info: monoThreadInfo,
         });
-        preRunWorker();
     } catch (err) {
         mono_log_error("mono_wasm_pthread_on_pthread_registered () failed", err);
         loaderHelpers.mono_exit(1, err);

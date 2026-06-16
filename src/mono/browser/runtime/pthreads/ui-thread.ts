@@ -5,10 +5,11 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { } from "../globals";
-import { MonoWorkerToMainMessage, monoThreadInfo, mono_wasm_pthread_ptr, update_thread_info, worker_empty_prefix } from "./shared";
+import { MonoWorkerToMainMessage, monoThreadInfo, update_thread_info, worker_empty_prefix } from "./shared";
 import { Module, ENVIRONMENT_IS_WORKER, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "../globals";
 import { PThreadLibrary, MainToWorkerMessageType, MonoThreadMessage, PThreadInfo, PThreadPtr, PThreadPtrNull, PThreadWorker, PromiseController, Thread, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
 import { mono_log_info, mono_log_debug, mono_log_warn } from "../logging";
+import { threads_c_functions as tcwraps } from "../cwraps";
 
 const threadPromises: Map<PThreadPtr, PromiseController<Thread>[]> = new Map();
 
@@ -53,7 +54,7 @@ export function resolveThreadPromises (pthreadPtr: PThreadPtr, thread?: Thread):
 }
 
 // handler that runs in the main thread when a message is received from a pthread worker
-function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>): void {
+function monoWorkerMessageHandler (worker: PThreadWorker, wasmModule: WebAssembly.Module, ev: MessageEvent<any>): void {
     if (!WasmEnableThreads) return;
     let pthreadId: PThreadPtr;
     // this is emscripten message
@@ -74,6 +75,14 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
     let thread: Thread;
     pthreadId = message.info?.pthreadId ?? 0;
     worker.info = Object.assign({}, worker.info, message.info);
+    const wasmMemory = runtimeHelpers.getMemory();
+    const handlers = [];
+    const knownHandlers = ["onExit", "onAbort", "print", "printErr"];
+    for (const handler of knownHandlers) {
+        if (Object.prototype.propertyIsEnumerable.call(Module, handler)) {
+            handlers.push(handler);
+        }
+    }
     switch (message.monoCmd) {
         case WorkerToMainMessageType.preload:
             // this one shot port from setupPreloadChannelToMainThread
@@ -82,6 +91,9 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
                 cmd: MainToWorkerMessageType.applyConfig,
                 config: JSON.stringify(runtimeHelpers.config),
                 monoThreadInfo: JSON.stringify(worker.info),
+                handlers,
+                wasmMemory,
+                wasmModule
             });
             break;
         case WorkerToMainMessageType.pthreadCreated:
@@ -117,17 +129,6 @@ function monoWorkerMessageHandler (worker: PThreadWorker, ev: MessageEvent<any>)
     }
 }
 
-/// Called by Emscripten internals on the browser thread when a new pthread worker is created and added to the pthread worker pool.
-/// At this point the worker doesn't have any pthread assigned to it, yet.
-export function onWorkerLoadInitiated (worker: PThreadWorker, loaded: Promise<Worker>): void {
-    if (!WasmEnableThreads) return;
-    worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, ev));
-    loaded.then(() => {
-        worker.info.isLoaded = true;
-    });
-}
-
-
 export async function populateEmscriptenPool (): Promise<void> {
     if (!WasmEnableThreads) return;
     const unused = getUnusedWorkerPool();
@@ -142,7 +143,7 @@ export async function mono_wasm_init_threads () {
     if (!WasmEnableThreads) return;
 
     // setup the UI thread
-    runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = mono_wasm_pthread_ptr();
+    runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = tcwraps.pthread_self();
     monoThreadInfo.threadName = "UI Thread";
     monoThreadInfo.isUI = true;
     monoThreadInfo.isRunning = true;
@@ -210,9 +211,13 @@ export function replaceEmscriptenPThreadUI (modulePThread: PThreadLibrary): void
     const originalLoadWasmModuleToWorker = modulePThread.loadWasmModuleToWorker;
     const originalReturnWorkerToPool = modulePThread.returnWorkerToPool;
 
-    modulePThread.loadWasmModuleToWorker = (worker: PThreadWorker): Promise<PThreadWorker> => {
+    modulePThread.loadWasmModuleToWorker = async (worker: PThreadWorker): Promise<PThreadWorker> => {
+        const wasmModule = await loaderHelpers.wasmCompilePromise.promise;
+        worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, wasmModule, ev));
         const afterLoaded = originalLoadWasmModuleToWorker(worker);
-        onWorkerLoadInitiated(worker, afterLoaded);
+        afterLoaded.then(() => {
+            worker.info.isLoaded = true;
+        });
         if (loaderHelpers.config.exitOnUnhandledError) {
             worker.onerror = (e) => {
                 loaderHelpers.mono_exit(1, e);
