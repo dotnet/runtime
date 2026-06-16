@@ -232,7 +232,7 @@ struct ResolveStub
 private:
     friend struct ResolveHolder;
     const static int resolveEntryPointLen = 32;
-    const static int slowEntryPointLen = 7;
+    const static int slowEntryPointLen = 8;
     const static int failEntryPointLen = 14;
 
     WORD _resolveEntryPoint[resolveEntryPointLen];
