@@ -1267,8 +1267,7 @@ namespace System.Diagnostics
                     {
                         SetChildHandlesForPseudoTerminal(startInfo.PseudoTerminal, ref childInputHandle, ref childOutputHandle, ref childErrorHandle);
                     }
-
-                    if (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
+                    else if (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
                     {
                         if (startInfo.StartDetached)
                         {

@@ -33,22 +33,21 @@ namespace System.Diagnostics
 
         private static PseudoTerminal CreateCore(PseudoTerminalOptions options)
         {
-            short columns = (short)options.Columns;
-            short rows = (short)options.Rows;
-
-            // Create pipes for communication with the pseudo console.
-            // The "input" pipe: we write to inputWritePipe, the console reads from inputReadPipe.
-            // The "output" pipe: the console writes to outputWritePipe, we read from outputReadPipe.
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle inputReadPipe, out SafeFileHandle inputWritePipe);
-            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle outputReadPipe, out SafeFileHandle outputWritePipe);
+            SafeFileHandle? inputReadPipe = null, inputWritePipe = null, outputReadPipe = null, outputWritePipe = null;
 
             try
             {
                 Interop.Kernel32.PseudoConsoleCoord size = new()
                 {
-                    X = columns,
-                    Y = rows
+                    X = (short)options.Columns,
+                    Y = (short)options.Rows
                 };
+
+                // Create pipes for communication with the pseudo console.
+                // The "input" pipe: we write to inputWritePipe, the console reads from inputReadPipe.
+                // The "output" pipe: the console writes to outputWritePipe, we read from outputReadPipe.
+                SafeFileHandle.CreateAnonymousPipe(out inputReadPipe, out inputWritePipe);
+                SafeFileHandle.CreateAnonymousPipe(out outputReadPipe, out outputWritePipe);
 
                 int hr = Interop.Kernel32.CreatePseudoConsole(size, inputReadPipe, outputWritePipe, 0, out IntPtr hPC);
                 if (hr != 0)
@@ -66,10 +65,10 @@ namespace System.Diagnostics
             }
             catch
             {
-                inputReadPipe.Dispose();
-                inputWritePipe.Dispose();
-                outputReadPipe.Dispose();
-                outputWritePipe.Dispose();
+                inputReadPipe?.Dispose();
+                inputWritePipe?.Dispose();
+                outputReadPipe?.Dispose();
+                outputWritePipe?.Dispose();
                 throw;
             }
         }

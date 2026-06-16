@@ -17,7 +17,7 @@ internal static partial class Interop
             string filename, string[] argv, IDictionary<string, string?> env, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd,
-            bool startDetached, bool killOnParentExit, bool usePty = false, SafeHandle[]? inheritedHandles = null)
+            ProcessStartInfo startInfo, SafeHandle[]? inheritedHandles)
         {
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
@@ -76,8 +76,12 @@ internal static partial class Interop
                         filename, argvPtr, envpPtr, cwd,
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
                         out lpChildPid, stdinRawFd, stdoutRawFd, stderrRawFd,
-                        pInheritedFds, inheritedFdCount, startDetached ? 1 : 0, killOnParentExit ? 1 : 0,
-                        usePty ? stdinRawFd : -1);
+                        pInheritedFds, inheritedFdCount,
+                        startInfo.StartDetached ? 1 : 0,
+#pragma warning disable CA1416 // KillOnParentExit getter works on all platforms; the native shim is a no-op where unsupported
+                        startInfo.KillOnParentExit ? 1 : 0,
+#pragma warning restore CA1416
+                        startInfo.PseudoTerminal is not null ? stdinRawFd : -1);
                 }
                 return result == 0 ? 0 : Marshal.GetLastPInvokeError();
             }

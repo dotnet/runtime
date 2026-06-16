@@ -120,13 +120,55 @@ namespace System.Diagnostics.Tests
 
             Process process = CreateProcess(static () =>
             {
-                Assert.False(Console.IsOutputRedirected);
                 Assert.False(Console.IsInputRedirected);
+                Assert.False(Console.IsOutputRedirected);
                 Assert.False(Console.IsErrorRedirected);
+
                 return RemoteExecutor.SuccessExitCode;
             });
-
             process.StartInfo.PseudoTerminal = pty;
+
+            Assert.True(process.Start());
+            Assert.True(process.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void StartProcess_WithPseudoTerminal_ConsoleIsCharacterDevice()
+        {
+            using PseudoTerminal pty = PseudoTerminal.Create(s_testOptions);
+
+            Process process = CreateProcess(static () =>
+            {
+                Assert.Equal(FileHandleType.CharacterDevice, Console.OpenStandardInputHandle().Type);
+                Assert.Equal(FileHandleType.CharacterDevice, Console.OpenStandardOutputHandle().Type);
+                Assert.Equal(FileHandleType.CharacterDevice, Console.OpenStandardErrorHandle().Type);
+
+                return RemoteExecutor.SuccessExitCode;
+            });
+            process.StartInfo.PseudoTerminal = pty;
+
+            Assert.True(process.Start());
+            Assert.True(process.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void StartProcess_WithPseudoTerminal_DoesNotInheritParentHandles()
+        {
+            using PseudoTerminal pty = PseudoTerminal.Create(s_testOptions);
+
+            Process process = CreateProcess(static (stdIn, stdOut) =>
+            {
+                Assert.NotEqual(nint.Parse(stdIn), Console.OpenStandardInputHandle().DangerousGetHandle());
+                Assert.NotEqual(nint.Parse(stdOut), Console.OpenStandardOutputHandle().DangerousGetHandle());
+
+                return RemoteExecutor.SuccessExitCode;
+            },
+            Console.OpenStandardInputHandle().DangerousGetHandle().ToString(),
+            Console.OpenStandardOutputHandle().DangerousGetHandle().ToString());
+            process.StartInfo.PseudoTerminal = pty;
+
             Assert.True(process.Start());
             Assert.True(process.WaitForExit(WaitInMS));
             Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
@@ -139,7 +181,7 @@ namespace System.Diagnostics.Tests
 
             Process process = CreateProcess(static () =>
             {
-                Console.Write("hello from child");
+                Console.WriteLine("hello from child");
                 return RemoteExecutor.SuccessExitCode;
             });
 
@@ -147,11 +189,11 @@ namespace System.Diagnostics.Tests
             Assert.True(process.Start());
 
             Assert.NotNull(process.StandardOutput);
-            string output = process.StandardOutput.ReadToEnd();
-            Assert.Contains("hello from child", output);
-
             Assert.True(process.WaitForExit(WaitInMS));
             Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
+
+            string output = process.StandardOutput.ReadLine();
+            Assert.Contains("hello from child", output);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

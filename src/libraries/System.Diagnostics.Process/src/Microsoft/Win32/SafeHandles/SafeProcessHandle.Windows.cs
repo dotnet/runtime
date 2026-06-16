@@ -117,7 +117,7 @@ namespace Microsoft.Win32.SafeHandles
                 return s_startWithShellExecute!(startInfo);
             }
 
-            Debug.Assert(stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null, "All of the standard handles must be provided.");
+            Debug.Assert(startInfo.PseudoTerminal is not null || (stdinHandle is not null && stdoutHandle is not null && stderrHandle is not null), "All of the standard handles must be provided.");
 
             // See knowledge base article Q190351 for an explanation of the following code.  Noteworthy tricky points:
             //    * The handles are duplicated as inheritable before they are passed to CreateProcess so
@@ -132,7 +132,7 @@ namespace Microsoft.Win32.SafeHandles
             SafeProcessHandle procSH = new SafeProcessHandle();
 
             // Inheritable copies of the child handles for CreateProcess
-            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
+            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false, pseudoConsoleRefAdded = false;
             bool restrictInheritedHandles = inheritedHandles is not null;
             bool killOnParentExit = startInfo.KillOnParentExit;
             bool logon = !string.IsNullOrEmpty(startInfo.UserName);
@@ -158,14 +158,18 @@ namespace Microsoft.Win32.SafeHandles
             SafeHandle?[]? handlesToRelease = null;
             IntPtr* handlesToInherit = null;
             IntPtr* jobHandles = null;
+            nint pseudoConsoleHandle = 0;
 
             try
             {
                 startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFO);
 
-                ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref startupInfoEx.StartupInfo.hStdInput, ref stdinRefAdded);
-                ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref startupInfoEx.StartupInfo.hStdOutput, ref stdoutRefAdded);
-                ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref startupInfoEx.StartupInfo.hStdError, ref stderrRefAdded);
+                if (startInfo.PseudoTerminal is null)
+                {
+                    ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle!, ref startupInfoEx.StartupInfo.hStdInput, ref stdinRefAdded);
+                    ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle!, ref startupInfoEx.StartupInfo.hStdOutput, ref stdoutRefAdded);
+                    ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle!, ref startupInfoEx.StartupInfo.hStdError, ref stderrRefAdded);
+                }
 
                 // If STARTF_USESTDHANDLES is not set, the new process will inherit the standard handles.
                 startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
@@ -202,7 +206,11 @@ namespace Microsoft.Win32.SafeHandles
                 // Extended Startup Info can be configured only for the non-logon path
                 if (!logon)
                 {
-                    SafePseudoConsoleHandle? pseudoConsoleHandle = startInfo.PseudoTerminal?.PseudoConsole;
+                    if (startInfo.PseudoTerminal is not null)
+                    {
+                        startInfo.PseudoTerminal.PseudoConsole.DangerousAddRef(ref pseudoConsoleRefAdded);
+                        pseudoConsoleHandle = startInfo.PseudoTerminal.PseudoConsole.DangerousGetHandle();
+                    }
                     if (ConfigureExtendedStartupInfo(inheritedHandles, killOnParentExit,
                         pseudoConsoleHandle,
                         in startupInfoEx, ref attributeListBuffer,
@@ -347,19 +355,22 @@ namespace Microsoft.Win32.SafeHandles
                 // Otherwise if we created a valid duplicate, close it.
 
                 if (stdinRefAdded)
-                    stdinHandle.DangerousRelease();
+                    stdinHandle!.DangerousRelease();
                 else if (!IsInvalidHandle(startupInfoEx.StartupInfo.hStdInput))
                     Interop.Kernel32.CloseHandle(startupInfoEx.StartupInfo.hStdInput);
 
                 if (stdoutRefAdded)
-                    stdoutHandle.DangerousRelease();
+                    stdoutHandle!.DangerousRelease();
                 else if (!IsInvalidHandle(startupInfoEx.StartupInfo.hStdOutput))
                     Interop.Kernel32.CloseHandle(startupInfoEx.StartupInfo.hStdOutput);
 
                 if (stderrRefAdded)
-                    stderrHandle.DangerousRelease();
+                    stderrHandle!.DangerousRelease();
                 else if (!IsInvalidHandle(startupInfoEx.StartupInfo.hStdError))
                     Interop.Kernel32.CloseHandle(startupInfoEx.StartupInfo.hStdError);
+
+                if (pseudoConsoleRefAdded)
+                    startInfo.PseudoTerminal!.PseudoConsole.DangerousRelease();
 
                 NativeMemory.Free(handlesToInherit);
                 NativeMemory.Free(jobHandles);
@@ -527,8 +538,7 @@ namespace Microsoft.Win32.SafeHandles
             handlesToInherit[handleCount++] = handle;
         }
 
-        private static unsafe bool ConfigureExtendedStartupInfo(SafeHandle[]? inheritedHandles, bool killOnParentExit,
-            SafePseudoConsoleHandle? pseudoConsoleHandle,
+        private static unsafe bool ConfigureExtendedStartupInfo(SafeHandle[]? inheritedHandles, bool killOnParentExit, nint pseudoConsoleHandle,
             in Interop.Kernel32.STARTUPINFOEX startupInfoEx, ref void* attributeListBuffer,
             ref nint* handlesToInherit, ref SafeHandle?[]? handlesToRelease, ref bool bInheritHandles,
             ref nint* jobHandles)
@@ -570,7 +580,7 @@ namespace Microsoft.Win32.SafeHandles
                 attributeCount++; // PROC_THREAD_ATTRIBUTE_JOB_LIST
             }
 
-            if (pseudoConsoleHandle is not null)
+            if (pseudoConsoleHandle != 0)
             {
                 attributeCount++; // PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE
             }
@@ -613,29 +623,18 @@ namespace Microsoft.Win32.SafeHandles
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
 
-            if (pseudoConsoleHandle is not null)
+            if (pseudoConsoleHandle != 0)
             {
-                bool pseudoConsoleRefAdded = false;
-                pseudoConsoleHandle.DangerousAddRef(ref pseudoConsoleRefAdded);
-                try
+                if (!Interop.Kernel32.UpdateProcThreadAttribute(
+                    attributeListBuffer,
+                    0,
+                    Interop.Kernel32.PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
+                    (void*)pseudoConsoleHandle,
+                    (nuint)IntPtr.Size,
+                    null,
+                    null))
                 {
-                    nint pcHandle = pseudoConsoleHandle.DangerousGetHandle();
-                    if (!Interop.Kernel32.UpdateProcThreadAttribute(
-                        attributeListBuffer,
-                        0,
-                        (IntPtr)Interop.Kernel32.PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE,
-                        (nint*)&pcHandle,
-                        (nuint)sizeof(IntPtr),
-                        null,
-                        null))
-                    {
-                        throw new Win32Exception(Marshal.GetLastWin32Error());
-                    }
-                }
-                finally
-                {
-                    if (pseudoConsoleRefAdded)
-                        pseudoConsoleHandle.DangerousRelease();
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
             }
 

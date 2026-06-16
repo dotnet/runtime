@@ -27,10 +27,7 @@ namespace System.Diagnostics
 
         private static PseudoTerminal CreateCore(PseudoTerminalOptions options)
         {
-            int columns = options.Columns;
-            int rows = options.Rows;
-
-            int result = Interop.Sys.OpenPseudoTerminal(out SafeFileHandle primary, out SafeFileHandle secondary, columns, rows);
+            int result = Interop.Sys.OpenPseudoTerminal(out SafeFileHandle primary, out SafeFileHandle secondary, options.Columns, options.Rows);
             if (result != 0)
             {
                 primary.Dispose();
