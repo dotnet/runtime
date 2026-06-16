@@ -27,7 +27,6 @@ const worker_empty_prefix = "          -    ";
 const jsRuntimeModulesAssetTypes: {
     [k: string]: boolean
 } = {
-    "js-module-threads": true,
     "js-module-runtime": true,
     "js-module-dotnet": true,
     "js-module-native": true,
@@ -294,15 +293,11 @@ export function prepareAssets () {
         mono_assert(resources.wasmNative, "resources.wasmNative must be defined");
         mono_assert(resources.jsModuleNative, "resources.jsModuleNative must be defined");
         mono_assert(resources.jsModuleRuntime, "resources.jsModuleRuntime must be defined");
-        mono_assert(!WasmEnableThreads || resources.jsModuleWorker, "resources.jsModuleWorker must be defined");
         convert_single_asset(assetsToLoad, resources.wasmNative, "dotnetwasm");
         convert_single_asset(modulesAssets, resources.jsModuleNative, "js-module-native");
         convert_single_asset(modulesAssets, resources.jsModuleRuntime, "js-module-runtime");
         if (resources.jsModuleDiagnostics) {
             convert_single_asset(modulesAssets, resources.jsModuleDiagnostics, "js-module-diagnostics");
-        }
-        if (WasmEnableThreads) {
-            convert_single_asset(modulesAssets, resources.jsModuleWorker, "js-module-threads");
         }
 
         const addAsset = (asset: Asset, behavior: AssetBehaviors, isCore: boolean) => {
@@ -704,8 +699,7 @@ const monoToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType | u
     "dotnetwasm": "dotnetwasm",
     "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
-    "js-module-runtime": "dotnetjs",
-    "js-module-threads": "dotnetjs"
+    "js-module-runtime": "dotnetjs"
 };
 
 function invokeLoadBootResource (asset: AssetEntryInternal): string | Promise<Response> | Promise<BootModule> | null | undefined {
@@ -777,11 +771,11 @@ export async function streamingCompileWasm () {
 
 export function preloadWorkers () {
     if (!WasmEnableThreads) return;
-    const jsModuleWorker = resolve_single_asset_path("js-module-threads");
+    const jsModuleNative = resolve_single_asset_path("js-module-native");
     const loadingWorkers = [];
     for (let i = 0; i < loaderHelpers.config.pthreadPoolInitialSize!; i++) {
         const workerNumber = loaderHelpers.workerNextNumber++;
-        const worker: Partial<PThreadWorker> = new Worker(jsModuleWorker.resolvedUrl!, {
+        const worker: Partial<PThreadWorker> = new Worker(jsModuleNative.resolvedUrl!, {
             name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
             type: "module",
         });
