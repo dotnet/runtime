@@ -297,6 +297,7 @@ public:
 // forward declarations needed for the friends declared in Signature
 struct FrameInfo;
 struct VASigCookie;
+struct AsyncMethodData;
 #if defined(DACCESS_COMPILE)
 class  DacDbiInterfaceImpl;
 #endif // DACCESS_COMPILE
@@ -354,6 +355,7 @@ public:
 
 private:
     friend struct ::cdac_data<VASigCookie>;
+    friend struct ::cdac_data<AsyncMethodData>;
 
     PCCOR_SIGNATURE m_pSig;
     DWORD           m_cbSig;

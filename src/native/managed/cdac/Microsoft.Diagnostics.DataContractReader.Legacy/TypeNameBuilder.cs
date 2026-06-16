@@ -136,13 +136,12 @@ public struct TypeNameBuilder
         {
             ReadOnlySpan<byte> signature;
             MetadataReader? reader = default;
-            if (!runtimeTypeSystem.IsStoredSigMethodDesc(method, out signature))
+            if (runtimeTypeSystem.TryGetMethodSignature(method, out signature))
             {
-                reader = target.Contracts.EcmaMetadata.GetMetadata(module);
-                if (reader is not null)
+                // Stored signature methods don't have metadata to resolve type references
+                if (!runtimeTypeSystem.IsStoredSigMethodDesc(method, out _))
                 {
-                    MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
-                    signature = reader.GetBlobBytes(methodDef.Signature);
+                    reader = target.Contracts.EcmaMetadata.GetMetadata(module);
                 }
             }
 

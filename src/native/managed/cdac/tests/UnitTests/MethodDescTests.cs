@@ -32,6 +32,8 @@ public class MethodDescTests
                 Fields = new Dictionary<string, Target.FieldInfo>
                 {
                     [nameof(Data.AsyncMethodData.Flags)] = new Target.FieldInfo { Offset = 0 },
+                    [nameof(Data.AsyncMethodData.Sig)] = new Target.FieldInfo { Offset = (int)methodDescBuilder.TargetTestHelpers.PointerSize },
+                    [nameof(Data.AsyncMethodData.cSig)] = new Target.FieldInfo { Offset = (int)methodDescBuilder.TargetTestHelpers.PointerSize * 2 },
                 },
             },
             [DataType.ArrayMethodDesc] = new Target.TypeInfo { Size = methodDescBuilder.ArrayMethodDescSize },

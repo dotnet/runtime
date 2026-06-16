@@ -16,10 +16,13 @@ public sealed unsafe partial class DacDbiImpl
     // This does not include other implicit arguments or varargs.
     private uint GetArgCount(ulong vmMethodDesc)
     {
-        MethodDescHandle mdh = _target.Contracts.RuntimeTypeSystem.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
-        MethodDescInfoHelpers.GetMethodInfo(_target, mdh, out MetadataReader mdReader, out MethodDefinition methodDef, out _, out _);
-        MethodDescInfoHelpers.GetMethodSignatureInfo(mdReader, methodDef, out _, out uint numArgs);
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle mdh = rts.GetMethodDescHandle(new TargetPointer(vmMethodDesc));
 
+        if (!rts.TryGetMethodSignature(mdh, out ReadOnlySpan<byte> signature))
+            throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+        MethodDescInfoHelpers.GetSignatureInfo(signature, out _, out uint numArgs);
         return numArgs;
     }
 

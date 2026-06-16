@@ -60,7 +60,7 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
 
-// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of Thunk, None.
+// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of Thunk, None, IsAsyncVariant.
 enum class AsyncMethodFlags
 {
     // Method uses CORINFO_CALLCONV_ASYNCCALL call convention.
@@ -141,6 +141,14 @@ struct AsyncMethodData
 };
 
 typedef DPTR(struct AsyncMethodData) PTR_AsyncMethodData;
+
+template<>
+struct cdac_data<AsyncMethodData>
+{
+    static constexpr size_t Flags = offsetof(AsyncMethodData, flags);
+    static constexpr size_t Sig = offsetof(AsyncMethodData, sig) + offsetof(Signature, m_pSig);
+    static constexpr size_t cSig = offsetof(AsyncMethodData, sig) + offsetof(Signature, m_cbSig);
+};
 
 //=============================================================
 // Splits methoddef token into two pieces for

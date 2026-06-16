@@ -1232,6 +1232,9 @@ We depend on the following data descriptors:
 | `StoredSigMethodDesc` | `cSig` | Count of bytes in the metadata signature |
 | `StoredSigMethodDesc` | `ExtendedFlags` | Flags field for the `StoredSigMethodDesc` |
 | `DynamicMethodDesc` | `MethodName` | Pointer to Null-terminated UTF8 string describing the Method desc |
+| `AsyncMethodData` | `Flags` | Async method flags |
+| `AsyncMethodData` | `Sig` | Pointer to the async variant's signature blob |
+| `AsyncMethodData` | `cSig` | Count of bytes in the async variant's signature blob |
 | `GCCoverageInfo` | `SavedCode` | Pointer to the GCCover saved code copy, if supported |
 
 The following data descriptor types are used only for their sizes when computing the total size of a `MethodDesc` instance.

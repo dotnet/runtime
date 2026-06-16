@@ -646,7 +646,9 @@ CDAC_TYPE_END(NativeCodeSlot)
 
 CDAC_TYPE_BEGIN(AsyncMethodData)
 CDAC_TYPE_SIZE(sizeof(AsyncMethodData))
-CDAC_TYPE_FIELD(AsyncMethodData, T_UINT32, Flags, offsetof(AsyncMethodData, flags))
+CDAC_TYPE_FIELD(AsyncMethodData, T_UINT32, Flags, cdac_data<AsyncMethodData>::Flags)
+CDAC_TYPE_FIELD(AsyncMethodData, T_POINTER, Sig, cdac_data<AsyncMethodData>::Sig)
+CDAC_TYPE_FIELD(AsyncMethodData, T_UINT32, cSig, cdac_data<AsyncMethodData>::cSig)
 CDAC_TYPE_END(AsyncMethodData)
 
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)

@@ -44,17 +44,20 @@ internal static class MethodDescInfoHelpers
     }
 
     /// <summary>
-    /// Parses the method signature to determine argument count and signature header.
+    /// Parses raw signature bytes to determine the signature header and argument count.
     /// </summary>
-    public static void GetMethodSignatureInfo(MetadataReader mdReader, MethodDefinition methodDef, out SignatureHeader header, out uint numArgs)
+    public static unsafe void GetSignatureInfo(ReadOnlySpan<byte> signature, out SignatureHeader header, out uint numArgs)
     {
-        BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
-        header = blobReader.ReadSignatureHeader();
-        if (header.Kind != SignatureKind.Method)
-            throw new BadImageFormatException();
-        if (header.IsGeneric)
-            blobReader.ReadCompressedInteger(); // skip generic arity
-        uint paramCount = (uint)blobReader.ReadCompressedInteger();
-        numArgs = paramCount + (header.IsInstance ? 1u : 0u);
+        fixed (byte* pSig = signature)
+        {
+            BlobReader blobReader = new BlobReader(pSig, signature.Length);
+            header = blobReader.ReadSignatureHeader();
+            if (header.Kind != SignatureKind.Method)
+                throw new BadImageFormatException();
+            if (header.IsGeneric)
+                blobReader.ReadCompressedInteger(); // skip generic arity
+            uint paramCount = (uint)blobReader.ReadCompressedInteger();
+            numArgs = paramCount + (header.IsInstance ? 1u : 0u);
+        }
     }
 }

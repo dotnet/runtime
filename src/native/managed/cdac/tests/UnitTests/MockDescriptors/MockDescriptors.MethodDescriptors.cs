@@ -259,7 +259,7 @@ internal partial class MockDescriptors
         public uint NonVtableSlotSize => (uint)TargetTestHelpers.PointerSize;
         public uint MethodImplSize => (uint)(TargetTestHelpers.PointerSize * 2);
         public uint NativeCodeSlotSize => (uint)TargetTestHelpers.PointerSize;
-        public uint AsyncMethodDataSize => (uint)(TargetTestHelpers.PointerSize * 2);
+        public uint AsyncMethodDataSize => (uint)(TargetTestHelpers.PointerSize * 3);
         public uint ArrayMethodDescSize => (uint)StoredSigMethodDescLayout.Size;
         public uint FCallMethodDescSize => (uint)(MethodDescLayout.Size + TargetTestHelpers.PointerSize);
         public uint PInvokeMethodDescSize => (uint)(MethodDescLayout.Size + TargetTestHelpers.PointerSize);

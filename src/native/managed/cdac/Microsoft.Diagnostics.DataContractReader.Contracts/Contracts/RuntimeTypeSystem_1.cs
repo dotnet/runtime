@@ -143,6 +143,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         None = 0,
         AsyncCall = 0x1,
+        IsAsyncVariant = 0x4,
         Thunk = 16,
     }
 
@@ -1514,6 +1515,50 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         signature = AsStoredSigMethodDesc(methodDesc).Signature;
+        return true;
+    }
+
+    public bool TryGetMethodSignature(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification is MethodClassification.Dynamic or MethodClassification.EEImpl or MethodClassification.Array)
+        {
+            signature = AsStoredSigMethodDesc(methodDesc).Signature;
+            return true;
+        }
+
+        if (methodDesc.HasAsyncMethodData)
+        {
+            Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(methodDesc.GetAddressOfAsyncMethodData());
+            if (((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.IsAsyncVariant))
+            {
+                byte[] sig = new byte[asyncData.cSig];
+                _target.ReadBuffer(asyncData.Sig, sig.AsSpan());
+                signature = sig;
+                return true;
+            }
+        }
+
+        uint token = methodDesc.Token;
+        if (EcmaMetadataUtils.GetRowId(token) == 0)
+        {
+            signature = default;
+            return false;
+        }
+
+        TargetPointer modulePtr = GetOrCreateMethodTable(methodDesc).Module;
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (mdReader is null)
+        {
+            signature = default;
+            return false;
+        }
+
+        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token));
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+        signature = mdReader.GetBlobBytes(methodDef.Signature);
         return true;
     }
 
