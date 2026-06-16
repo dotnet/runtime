@@ -1357,50 +1357,6 @@ struct MSLAYOUT DebuggerIPCE_TypeArgData
     Portable<UINT> numTypeArgs; // number of immediate children on the type tree
 };
 
-
-//
-// DebuggerIPCE_ObjectData holds the results of a
-// GetAndSendObjectInfo, i.e., all the info about an object that the
-// Right Side would need to access it. (This include array, string,
-// and nstruct info.)
-//
-struct MSLAYOUT DebuggerIPCE_ObjectData
-{
-    void           *objRef;
-    bool            objRefBad;
-    SIZE_T          objSize;
-
-    // Offset from the beginning of the object to the beginning of the first field
-    SIZE_T          objOffsetToVars;
-
-    // The type of the object....
-    struct DebuggerIPCE_ExpandedTypeData objTypeData;
-
-    union MSLAYOUT
-    {
-        struct MSLAYOUT
-        {
-            SIZE_T          length;
-            SIZE_T          offsetToStringBase;
-        } stringInfo;
-
-        struct MSLAYOUT
-        {
-            SIZE_T          rank;
-            SIZE_T          offsetToArrayBase;
-            SIZE_T          offsetToLowerBounds; // 0 if not present
-            SIZE_T          offsetToUpperBounds; // 0 if not present
-            SIZE_T          componentCount;
-            SIZE_T          elementSize;
-        } arrayInfo;
-
-        struct MSLAYOUT
-        {
-            struct DebuggerIPCE_BasicTypeData typedByrefType; // the type of the thing contained in a typedByref...
-        } typedByrefInfo;
-    };
-};
-
 //
 // Remote enregistered info used by CordbValues and for passing
 // variable homes between the left and right sides during a func eval.

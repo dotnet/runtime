@@ -491,7 +491,7 @@ public:
     inline DWORD GetNumComponents() const;
 
     // Get pointer to elements, handles any number of dimensions
-    PTR_BYTE GetDataPtr(BOOL inGC = FALSE) const {
+    PTR_BYTE GetGCSafeDataPtr() const {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 #ifdef _DEBUG
@@ -500,7 +500,21 @@ public:
 #endif
 #endif
         return dac_cast<PTR_BYTE>(this) +
-                        GetDataPtrOffset(inGC ? GetGCSafeMethodTable() : GetMethodTable());
+                        GetDataPtrOffset(GetGCSafeMethodTable());
+    }
+
+    PTR_BYTE GetDataPtr() const {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+#ifdef _DEBUG
+#ifndef DACCESS_COMPILE
+        EnableStressHeapHelper();
+#endif
+#endif
+        PTR_BYTE result = dac_cast<PTR_BYTE>(this) +
+                        GetDataPtrOffset(GetMethodTable());
+        _ASSERTE(result == GetGCSafeDataPtr());
+        return result;
     }
 
     // The component size is actually 16-bit WORD, but this method is returning SIZE_T to ensure
@@ -586,24 +600,14 @@ class Array : public ArrayBase
   public:
 
     typedef DPTR(KIND) PTR_KIND;
-    typedef DPTR(const KIND) PTR_CKIND;
 
     KIND          m_Array[1];
 
-    PTR_KIND        GetDirectPointerToNonObjectElements()
+    PTR_KIND        GetDirectPointerToNonObjectElements() const
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        // return m_Array;
-        return PTR_KIND(GetDataPtr()); // This also handles arrays of dim 1 with lower bounds present
-
-    }
-
-    PTR_CKIND  GetDirectConstPointerToNonObjectElements() const
-    {
-        WRAPPER_NO_CONTRACT;
-        // return m_Array;
-        return PTR_CKIND(GetDataPtr()); // This also handles arrays of dim 1 with lower bounds present
+        return dac_cast<PTR_KIND>(PTR_HOST_MEMBER_TADDR(Array, this, m_Array));
     }
 };
 
@@ -1777,8 +1781,8 @@ public:
     // BCL for this object.
 private:
     // System.Delegate
-    OBJECTREF   _target;
     OBJECTREF   _methodBase;
+    OBJECTREF   _target;
     PCODE       _methodPtr;
     PCODE       _methodPtrAux;
     // System.MulticastDelegate
@@ -1786,8 +1790,8 @@ private:
     INT_PTR     _invocationCount;
 };
 
-#define OFFSETOF__DelegateObject__target          OBJECT_SIZE /* m_pMethTab */
-#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */ + TARGET_POINTER_SIZE /* _methodBase */)
+#define OFFSETOF__DelegateObject__target          (OBJECT_SIZE /* m_pMethTab */ + TARGET_POINTER_SIZE /* _methodBase */)
+#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
 #define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
 
 template<>
@@ -1952,7 +1956,7 @@ private:
         WRAPPER_NO_CONTRACT;
         _ASSERTE(!!m_array);
 
-        return const_cast<I1ARRAYREF &>(m_array)->GetDirectPointerToNonObjectElements();
+        return m_array->GetDirectPointerToNonObjectElements();
     }
 
     PTR_INT8 GetRaw()

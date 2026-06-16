@@ -2572,11 +2572,6 @@ public:
     MethodTable *LookupDispatchMapType(DispatchMapTypeID typeID);
     bool DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, MethodTable* pMT);
 
-    // Determines whether all methods in the given interface have their final implementing
-    // slot in a parent class. I.e. if this returns TRUE, it is trivial (no VSD lookup) to
-    // dispatch pItfMT methods on this class if one knows how to dispatch them on pParentMT.
-    BOOL ImplementsInterfaceWithSameSlotsAsParent(MethodTable *pItfMT, MethodTable *pParentMT);
-
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
     MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level);
