@@ -2407,13 +2407,16 @@ PhaseStatus Compiler::fgLocalMorph()
 //
 // Notes:
 //   For each STORE V = x, V is a "no-gc value" candidate if x is direct
-//   no-gc (constant, LCL_ADDR, frozen object handle, static handle) or
+//   no-gc (constant, LCL_ADDR, frozen object handle, GT_LCLHEAP) or
 //   if x is a LCL_VAR V' that is itself a no-gc value candidate. The
 //   per-local property is the AND over all stores, so the lattice only
 //   ever flips from true to false; iteration terminates in at most one
 //   round per chain depth. Walks the per-statement local thread that
 //   was established by LocalSequencer in local morph rather than the
 //   full IR.
+//
+//   Runs after physical promotion so forward sub and promotion have
+//   simplified the IR.
 //
 //   Params, implicitly-referenced locals, and address-exposed locals
 //   have defs we cannot see (call-site initialization, runtime writes,
