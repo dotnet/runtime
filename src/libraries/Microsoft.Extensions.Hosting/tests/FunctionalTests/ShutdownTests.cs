@@ -76,7 +76,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 var output = string.Empty;
                 deployer.OutputReceived += (sender, args) =>
                 {
-                    if (!string.IsNullOrEmpty(args.Data) && args.Data.StartsWith(StartedMessage))
+                    if (!string.IsNullOrEmpty(args.Data) && args.Data.StartsWith(StartedMessage, StringComparison.Ordinal))
                     {
                         output += args.Data.Substring(StartedMessage.Length) + '\n';
                         started.TrySetResult(0);
