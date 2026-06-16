@@ -1187,7 +1187,8 @@ ep_enable (
 		stream,
 		sync_callback,
 		callback_additional_data,
-		0);
+		0,
+		EP_BUFFERING_MODE_DROP);
 
 	sessionId = ep_enable_3 (&options);
 
@@ -1317,7 +1318,8 @@ ep_session_options_init (
 	IpcStream* stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void* callback_additional_data,
-	int user_events_data_fd)
+	int user_events_data_fd,
+	EventPipeBufferingMode buffering_mode)
 {
 	EP_ASSERT (options != NULL);
 
@@ -1333,7 +1335,7 @@ ep_session_options_init (
 	options->sync_callback = sync_callback;
 	options->callback_additional_data = callback_additional_data;
 	options->user_events_data_fd = user_events_data_fd;
-	options->buffering_mode = EP_BUFFERING_MODE_DROP;
+	options->buffering_mode = buffering_mode;
 }
 
 void

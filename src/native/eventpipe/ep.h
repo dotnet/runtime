@@ -128,7 +128,7 @@ typedef struct EventPipeSessionOptions {
 	uint64_t rundown_keyword;
 	bool stackwalk_requested;
 	int user_events_data_fd;
-	// Buffering mode opt-in; defaults to DROP (set by ep_session_options_init).
+	// Buffering mode for the session: DROP (lossy, the default) or BLOCK (non-lossy).
 	EventPipeBufferingMode buffering_mode;
 } EventPipeSessionOptions;
 
@@ -146,7 +146,8 @@ ep_session_options_init (
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data,
-	int user_events_data_fd);
+	int user_events_data_fd,
+	EventPipeBufferingMode buffering_mode);
 
 void
 ep_session_options_fini (EventPipeSessionOptions* options);
