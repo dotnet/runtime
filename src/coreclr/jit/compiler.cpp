@@ -5035,7 +5035,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering->Run();
 
 #if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
-    DoPhase(this, PHASE_ARM64_CONSTANT_MASK_REUSE, &Compiler::fgOptimizeConstantMaskReuse);
+    DoPhase(this, PHASE_CONSTANT_REUSE, &Compiler::fgOptimizeConstantMaskReuse);
 #endif
 
     DoPhase(this, PHASE_POST_LOWERING, &Compiler::fgPostLowering);
