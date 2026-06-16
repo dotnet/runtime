@@ -2900,6 +2900,152 @@ namespace System.Net.Http.Functional.Tests
             await VerifySendTasks(sendTasks);
         }
 
+        [ConditionalTheory(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Http2_MultipleConnectionsEnabled_ManyRequestsEnqueuedSimultaneously_MultipleConnectionAttemptsStartedInParallel(bool extraConnectionsSucceed)
+        {
+            // Use a low per-connection stream limit so that we only need a small number of queued requests to exceed the
+            // pool's threshold for opening additional connections in parallel. The pool opens another connection attempt
+            // once the queue exceeds (pendingConnections * MaxConcurrentStreams).
+            const int MaxConcurrentStreams = 4;
+            const int ParallelConnectionAttempts = 3;
+            const int RequestCount = MaxConcurrentStreams * ParallelConnectionAttempts;
+
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            server.AllowMultipleConnections = true;
+
+            int startedConnectionAttempts = 0;
+            TaskCompletionSource parallelConnectionAttemptsStarted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using SocketsHttpHandler handler = CreateHandler();
+            handler.ConnectCallback = async (context, ct) =>
+            {
+                // The first connection is the warm-up connection used to learn the server's low MAX_CONCURRENT_STREAMS value.
+                // Block every subsequent connection attempt until we've observed the expected number of them in flight at the same time.
+                int attempt = Interlocked.Increment(ref startedConnectionAttempts);
+                if (attempt > 1)
+                {
+                    if (attempt == 1 + ParallelConnectionAttempts)
+                    {
+                        parallelConnectionAttemptsStarted.SetResult();
+                    }
+
+                    await parallelConnectionAttemptsStarted.Task.WaitAsync(ct).ConfigureAwait(false);
+                }
+
+                return await DefaultConnectCallback(context.DnsEndPoint, ct).ConfigureAwait(false);
+            };
+
+            HttpClient client = CreateHttpClient(handler);
+
+            // Establish a first connection so the pool observes the server's advertised (low) MAX_CONCURRENT_STREAMS value.
+            // The pool only starts opening connections in parallel once it has seen an advertised limit, and this also
+            // memorizes the low value as the per-connection estimate. Then fill the connection's streams so it can no
+            // longer serve any of the requests we enqueue next.
+            Http2LoopbackConnection warmUpConnection = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+
+            List<Task<HttpResponseMessage>> blockedTasks = new();
+            AcquireAllStreamSlots(server, client, blockedTasks, MaxConcurrentStreams);
+            int[] warmUpStreamIds = await AcceptRequests(warmUpConnection, MaxConcurrentStreams).ConfigureAwait(false);
+
+            // Now enqueue enough additional requests to force multiple new connection attempts to be started in parallel.
+            List<Task<HttpResponseMessage>> overflowTasks = new();
+            AcquireAllStreamSlots(server, client, overflowTasks, RequestCount);
+
+            // The expected number of overflow connection attempts must be in flight at the same time for this to complete.
+            await parallelConnectionAttemptsStarted.Task.WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+
+            // Exclude 1 to account for the existing connection
+            Assert.Equal(ParallelConnectionAttempts, Volatile.Read(ref startedConnectionAttempts) - 1);
+
+            List<Http2LoopbackConnection> connections = [];
+
+            if (extraConnectionsSucceed)
+            {
+                // Accept the parallel connection attempts the pool opened and serve the overflow requests across them.
+                // The warm-up connection stays full (we respond to its blocked requests last) so it can't take any overflow.
+                for (int i = 0; i < ParallelConnectionAttempts; i++)
+                {
+                    var concurrencySetting = new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = MaxConcurrentStreams };
+                    connections.Add(await server.EstablishConnectionAsync(timeout: null, ackTimeout: TestHelper.PassingTestTimeout, settingsEntries: concurrencySetting).ConfigureAwait(false));
+                }
+
+                foreach (Http2LoopbackConnection connection in connections)
+                {
+                    int[] streamIds = await AcceptRequests(connection, MaxConcurrentStreams).ConfigureAwait(false);
+                    await SendResponses(connection, streamIds).ConfigureAwait(false);
+                }
+
+                // Now let the requests that were blocking the warm-up connection complete.
+                await SendResponses(warmUpConnection, warmUpStreamIds).ConfigureAwait(false);
+            }
+            else
+            {
+                // The extra connection attempts are never accepted by the server, so the overflow requests fall back to the
+                // warm-up connection. Free it by responding to the blocked requests, then serve the overflow in waves.
+                await SendResponses(warmUpConnection, warmUpStreamIds).ConfigureAwait(false);
+
+                for (int i = 0; i < ParallelConnectionAttempts; i++)
+                {
+                    int[] streamIds = await AcceptRequests(warmUpConnection, MaxConcurrentStreams).ConfigureAwait(false);
+                    await SendResponses(warmUpConnection, streamIds).ConfigureAwait(false);
+                }
+            }
+
+            connections.Add(warmUpConnection);
+
+            foreach (Task<HttpResponseMessage> sendTask in blockedTasks.Concat(overflowTasks))
+            {
+                await sendTask.ConfigureAwait(false);
+            }
+
+            foreach (Http2LoopbackConnection connection in connections)
+            {
+                await connection.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+
+        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
+        public async Task Http2_MultipleConnectionsDisabled_ManyRequestsEnqueuedSimultaneously_OnlyOneConnectionOpened()
+        {
+            const int MaxConcurrentStreams = 100;
+            const int RequestCount = 2 * MaxConcurrentStreams;
+
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            server.AllowMultipleConnections = true;
+
+            int startedConnectionAttempts = 0;
+
+            using SocketsHttpHandler handler = CreateHandler();
+            handler.EnableMultipleHttp2Connections = false;
+            handler.ConnectCallback = async (context, ct) =>
+            {
+                Interlocked.Increment(ref startedConnectionAttempts);
+                return await DefaultConnectCallback(context.DnsEndPoint, ct).ConfigureAwait(false);
+            };
+
+            using HttpClient client = CreateHttpClient(handler);
+
+            List<Task<HttpResponseMessage>> sendTasks = new();
+
+            AcquireAllStreamSlots(server, client, sendTasks, RequestCount);
+
+            await using Http2LoopbackConnection connection = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = MaxConcurrentStreams });
+
+            // The single connection multiplexes all the requests in two waves, since only MaxConcurrentStreams can be active at once.
+            int[] streamIds = await AcceptRequests(connection, MaxConcurrentStreams);
+            await SendResponses(connection, streamIds);
+
+            streamIds = await AcceptRequests(connection, MaxConcurrentStreams);
+            await SendResponses(connection, streamIds);
+
+            await VerifySendTasks(sendTasks);
+
+            // With EnableMultipleHttp2Connections disabled, only a single connection should ever be opened.
+            Assert.Equal(1, startedConnectionAttempts);
+        }
+
         [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
         public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemainingRequestsAreHandledByNewConnection()
         {
@@ -3072,7 +3218,7 @@ namespace System.Net.Http.Functional.Tests
             const int MaxConcurrentStreams = 1;
             const int RequestCount = 10;
 
-            Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            Http2LoopbackServer server = Http2LoopbackServer.CreateServer(new Http2Options { ListenBacklog = RequestCount });
             server.AllowMultipleConnections = true;
 
             using SocketsHttpHandler handler = CreateHandler();

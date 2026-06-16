@@ -149,11 +149,14 @@ namespace System.Net.Http
 
             _writeChannel = Channel.CreateUnbounded<WriteQueueEntry>(s_channelOptions);
 
+            _streamsInUse = 0;
             _nextStream = 1;
             _initialServerStreamWindowSize = DefaultInitialWindowSize;
 
-            _maxConcurrentStreams = pool._lastSeenHttp2MaxConcurrentStreams;
-            _streamsInUse = 0;
+            // _lastSeenHttp2MaxConcurrentStreams is 0 until the pool has observed the server's advertised limit;
+            // optimistically allow InitialMaxConcurrentStreams streams until this connection sees the SETTINGS frame.
+            uint lastSeenMaxConcurrentStreams = pool._lastSeenHttp2MaxConcurrentStreams;
+            _maxConcurrentStreams = lastSeenMaxConcurrentStreams == 0 ? InitialMaxConcurrentStreams : lastSeenMaxConcurrentStreams;
 
             _pendingWindowUpdate = 0;
 
