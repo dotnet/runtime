@@ -126,10 +126,6 @@ static
 bool
 check_options_valid (const EventPipeSessionOptions *options);
 
-static
-void
-dispatch_session_provider_callbacks (EventPipeSession *session);
-
 /*
  * Global volatile variables, only to be accessed through inlined volatile access functions.
  */
@@ -1064,31 +1060,6 @@ ipc_stream_factory_any_suspended_ports (void)
 	return _ep_ipc_stream_factory_suspended_ports_callback ? _ep_ipc_stream_factory_suspended_ports_callback () : false;
 }
 
-// Invoke and free the provider-enable callbacks enable() collected onto the session.
-static
-void
-dispatch_session_provider_callbacks (EventPipeSession *session)
-{
-	EP_ASSERT (session != NULL);
-	ep_requires_lock_not_held ();
-
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_session_get_provider_callbacks (session);
-	if (provider_callback_data_queue == NULL)
-		return;
-
-	ep_session_set_provider_callbacks (session, NULL);
-
-	EventPipeProviderCallbackData provider_callback_data;
-	while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
-		ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
-		provider_invoke_callback (&provider_callback_data);
-		ep_provider_callback_data_fini (&provider_callback_data);
-	}
-
-	ep_provider_callback_data_queue_fini (provider_callback_data_queue);
-	ep_rt_object_free (provider_callback_data_queue);
-}
-
 #ifdef EP_CHECKED_BUILD
 void
 ep_requires_lock_held (void)
@@ -1378,6 +1349,7 @@ ep_start_streaming (EventPipeSessionID session_id)
 
 	bool streaming_started = false;
 	EventPipeSession *const session = (EventPipeSession *)(uintptr_t)session_id;
+	EventPipeProviderCallbackDataQueue *provider_callbacks = NULL;
 
 	EP_LOCK_ENTER (section1)
 		ep_raise_error_if_nok_holding_lock (is_session_id_in_collection (session_id), section1);
@@ -1387,17 +1359,35 @@ ep_start_streaming (EventPipeSessionID session_id)
 		}
 		else
 			dn_vector_push_back (_ep_deferred_enable_session_ids, session_id);
+
+		// Detach the callback queue under the lock so a concurrent disable's ep_session_dec_ref sees
+		// NULL and won't also free it; this thread now owns the queue and frees it below.
+		provider_callbacks = ep_session_get_provider_callbacks (session);
+		ep_session_set_provider_callbacks (session, NULL);
 	EP_LOCK_EXIT (section1)
 
-	// The single site where every session's provider-enable callbacks are invoked (ep_enable_3 only sets
-	// the session up). If we started the drain thread, wait until it is running first: a blocking
-	// GCHeapSnapshot session's GC heap walk parks producers on a full buffer and needs the drain thread
-	// live to consume. If streaming was parked for early startup, invoke inline - the heap walk no-ops
-	// until the GC is fully initialized, so it can't deadlock.
-	if (ep_session_get_provider_callbacks (session) != NULL) {
+	if (provider_callbacks != NULL) {
+		// If we started the drain thread, wait until it is running before invoking. A blocking
+		// GCHeapSnapshot callback forces a stop-the-world heap walk that parks the cooperative producer
+		// on a full buffer; only the drain thread frees capacity, and it drains in preemptive mode so it
+		// keeps consuming through the suspension. Dispatching before it exists would park with no drainer
+		// and deadlock. A startup-parked session has no drain thread, but its heap walk no-ops until the
+		// GC is initialized, so skipping the wait there can't deadlock.
+		//
+		// The session read below is safe against a concurrent disable freeing it: disable joins the drain
+		// thread before freeing, and the thread sets "started" before exiting, so we observe it first.
 		if (streaming_started)
 			EP_YIELD_WHILE (!ep_session_has_started (session));
-		dispatch_session_provider_callbacks (session);
+
+		// Invoke, then free the queue (heap-allocated in enable, owned here after the detach above).
+		EventPipeProviderCallbackData provider_callback_data;
+		while (ep_provider_callback_data_queue_try_dequeue (provider_callbacks, &provider_callback_data)) {
+			ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
+			provider_invoke_callback (&provider_callback_data);
+			ep_provider_callback_data_fini (&provider_callback_data);
+		}
+		ep_provider_callback_data_queue_fini (provider_callbacks);
+		ep_rt_object_free (provider_callbacks);
 	}
 
 ep_on_exit:
