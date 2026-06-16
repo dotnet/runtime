@@ -1,6 +1,6 @@
 # Contract GCInfo
 
-This contract is for fetching information related to GCInfo associated with native code. Currently, this contract does not support x86 architecture.
+This contract is for fetching information related to GCInfo associated with native code.
 
 The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is not currently supported by this contract.
 
@@ -25,10 +25,19 @@ uint GetCodeLength(IGCInfoHandle handle);
 // Returns the stack base register number decoded from GCInfo
 uint GetStackBaseRegister(IGCInfoHandle handle);
 
+// Returns the size in bytes of stack-passed parameters at the call to the method.
+// Always returns 0 except on x86 (mirrors EECodeManager::GetStackParameterSize); on x86 it
+// returns 0 for varargs methods (caller-popped) and otherwise returns the argument size
+// encoded in the GC info header.
+uint GetSizeOfStackParameterArea(IGCInfoHandle handle);
+
 // Returns the list of interruptible code offset ranges from the GCInfo
+// (not implemented for x86 — x86 encodes per-offset transitions rather than explicit ranges).
 IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle);
 
 // Returns all live GC slots at the given instruction offset
+// (not implemented for x86 — see X86GCInfo for the underlying transition data; the cDAC
+// adapter is future work).
 IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options);
 ```
 

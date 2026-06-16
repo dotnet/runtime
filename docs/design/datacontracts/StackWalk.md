@@ -663,6 +663,8 @@ The x86 platform has some major differences to other platforms. In general this 
 #### GCInfo Parsing
 The GCInfo structure is encoded using a variety of formats to optimize for speed of decoding and size on disk. For information on decoding and parsing refer to [GC Information Encoding for x86](../coreclr/jit/jit-gc-info-x86.md).
 
+The x86 GCInfo decoder lives under the [GCInfo contract](GCInfo.md) at `src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/GCInfo/X86/` (`X86GCInfo` and the supporting `InfoHdr`, `GCArgTable`, `GCTransition`, `CallPattern`, `GCInfoTargetExtensions` types). It is shared between the GCInfo contract (which exposes the offset-independent queries `GetCodeLength` / `GetStackBaseRegister` / `GetSizeOfStackParameterArea` for SOS callers) and the x86 stack walker (which constructs `X86GCInfo` directly with a `relativeOffset` to access offset-bound state — `IsInProlog`, `IsInEpilog`, `PrologOffset`, `EpilogOffset`, `PushedArgSize` — that is not exposed through `IGCInfoDecoder`).
+
 #### Unwinding Algorithm
 
 The x86 architecture uses a custom unwinding algorithm defined in `gc_unwind_x86.inl`. The cDAC uses a copy of this algorithm ported to managed code in `X86Unwinder.cs`.

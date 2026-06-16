@@ -7,7 +7,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers.X86;
 
 [Flags]
 public enum RegMask
@@ -27,7 +27,7 @@ public enum RegMask
     RM_CALLEE_TRASHED = RM_ALL & ~RM_CALLEE_SAVED,
 }
 
-public record GCInfo
+public record X86GCInfo : IGCInfoDecoder
 {
     private const uint MINIMUM_SUPPORTED_GCINFO_VERSION = 4;
     private const uint MAXIMUM_SUPPORTED_GCINFO_VERSION = 5;
@@ -69,7 +69,7 @@ public record GCInfo
     public uint PushedArgSize => _pushedArgSize.Value;
     private readonly Lazy<uint> _pushedArgSize;
 
-    public GCInfo(Target target, TargetPointer gcInfoAddress, uint gcInfoVersion, uint relativeOffset)
+    public X86GCInfo(Target target, TargetPointer gcInfoAddress, uint gcInfoVersion, uint relativeOffset = 0)
     {
         if (gcInfoVersion < MINIMUM_SUPPORTED_GCINFO_VERSION)
         {
@@ -242,4 +242,28 @@ public record GCInfo
 
         return (uint)(depth * _target.PointerSize);
     }
+
+    uint IGCInfoDecoder.GetCodeLength() => MethodSize;
+
+    uint IGCInfoDecoder.GetStackBaseRegister()
+    {
+        // x86 ModRM register encoding: ESP = 4, EBP = 5. EBP is the stack base for
+        // EBP-frames and double-aligned frames; otherwise stack base is ESP.
+        const uint REG_ESP = 4;
+        const uint REG_EBP = 5;
+        return (Header.EbpFrame || Header.DoubleAlign) ? REG_EBP : REG_ESP;
+    }
+
+    uint IGCInfoDecoder.GetSizeOfStackParameterArea()
+    {
+        // VarArgs methods report 0 (caller pops, count not statically known).
+        // Mirrors the logic in EECodeManager::GetStackParameterSize on x86.
+        return Header.VarArgs ? 0u : Header.ArgCount * (uint)_target.PointerSize;
+    }
+
+    IReadOnlyList<InterruptibleRange> IGCInfoDecoder.GetInterruptibleRanges()
+        => throw new NotSupportedException("x86 GC info does not encode explicit interruptible ranges; per-offset transitions are used instead. Decoding for the cDAC IGCInfoDecoder consumers is not yet implemented.");
+
+    IReadOnlyList<LiveSlot> IGCInfoDecoder.EnumerateLiveSlots(uint instructionOffset, GcSlotEnumerationOptions options)
+        => throw new NotSupportedException("x86 GC info live-slot enumeration through IGCInfoDecoder is not yet implemented; the underlying InfoHdr/Transitions data is decoded but the IGCInfoDecoder.EnumerateLiveSlots adapter is future work.");
 }
