@@ -433,9 +433,9 @@ namespace System.Security.Cryptography
 
         private static string CreateProviderCacheKey(string[] providerNames)
         {
-            // U+0000 is not valid in provider names, is it's a valid discriminator between provider names. The cache
-            // key is never given to native code, it's only used on the managed side. This way if two provider sets
-            // of [foo, bar] is distinct from [fo, obar] since it results in foo\0bar and fo\0obar, respectively.
+            // U+0000 is not valid in provider names, so it's a valid discriminator between provider names. The cache
+            // key is never given to native code; it's only used on the managed side. This way provider sets
+            // [foo, bar] and [fo, obar] are distinct since they result in foo\0bar and fo\0obar, respectively.
             return string.Join('\0', providerNames);
         }
     }
