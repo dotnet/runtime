@@ -4363,7 +4363,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             if (pData is null)
                 throw new ArgumentException("Output pointer cannot be null.", nameof(pData));
-            if (_target.Contracts.TryGetContract<IReJIT>(out IReJIT rejit))
+            *pData = default;
+            if (_target.Contracts.TryGetContract<IReJIT>(out _))
             {
                 ICodeVersions codeVersions = _target.Contracts.CodeVersions;
                 ILCodeVersionHandle ilCodeVersion = ILCodeVersionHandle.CreateExplicit(ilCodeVersionNode);
