@@ -7,12 +7,12 @@
 #include <unixasmmacros.inc>
 
 // Dispatching version of RhpResolveInterfaceMethod
-LEAF_ENTRY RhpInterfaceDispatch, _TEXT
 
-        // r12 currently contains the indirection cell address. But we need more scratch registers and
-        // we may A/V on a null this. Store r1 and r2 in red zone.
-        str         r1, [sp, #-8]
-        str         r2, [sp, #-4]
+NESTED_ENTRY RhpInterfaceDispatch, _TEXT, NoHandler
+
+        // r12 currently contains the indirection cell address. We need scratch registers.
+        // Allocate stack frame for register spills.
+        PROLOG_PUSH "{r1,r2}"
 
         // Load the MethodTable from the object instance in r0.
         // The label marks the location of a potential nullref for the unwinder.
@@ -25,25 +25,18 @@ LEAF_ENTRY RhpInterfaceDispatch, _TEXT
         bne         LOCAL_LABEL(Hashtable)
 
         // Fast path: restore r1/r2 before jumping to cached code.
-        ldr         r1, [sp, #-8]
-        ldr         r2, [sp, #-4]
+        EPILOG_POP "{r1,r2}"
         // dmb ensures that the Code load below sees the value written before
         // MethodTable. ARM32 has no load-acquire instruction (LDAR is ARMv8 only).
         dmb
         ldr         r12, [r12, #4]          // load the cached monomorphic resolved code address
-        bx          r12
+        EPILOG_BRANCH_REG r12
 
 LOCAL_LABEL(Hashtable):
 
         // r1 = MethodTable, r12 = indirection cell address
         // Look up the target in the dispatch cache hashtable (GenericCache<Key, nint>).
-        // Spill additional registers to the red zone below sp
-        // so we don't modify sp (this is a LEAF_ENTRY with no unwind info).
-        str         r3,  [sp, #-12]
-        str         lr,  [sp, #-16]
-        str         r4,  [sp, #-20]
-        str         r5,  [sp, #-24]
-        str         r6,  [sp, #-28]
+        push        {r3,r4,r5,r6,r8,lr}
 
         // Load the _table field (Entry[]) from the cache struct.
         PREPARE_EXTERNAL_VAR_INDIRECT g_pDispatchCache, r2
@@ -53,13 +46,13 @@ LOCAL_LABEL(Hashtable):
         // hash = (RotateLeft(dispatchCell, 16) ^ objectType) * GoldenRatio
         ror         r3, r12, #16
         eor         r3, r3, r1
-        movw        lr, #0x79B9
-        movt        lr, #0x9E37             // lr = 0x9E3779B9
-        mul         r3, r3, lr
+        movw        r8, #0x79B9
+        movt        r8, #0x9E37             // r8 = 0x9E3779B9
+        mul         r3, r3, r8
 
         // HashToBucket: bucket = hash >> hashShift
-        ldrb        lr, [r2, #8]
-        lsr         r3, r3, lr
+        ldrb        r8, [r2, #8]
+        lsr         r3, r3, r8
 
         mov         r4, #0                  // i = 0
 
@@ -75,15 +68,15 @@ LOCAL_LABEL(ProbeLoop):
         dmb
 
         // Compare key (dispatchCell, objectType)
-        ldr         lr, [r5, #4]
-        cmp         r12, lr
+        ldr         r8, [r5, #4]
+        cmp         r12, r8
         bne         LOCAL_LABEL(ProbeMiss)
-        ldr         lr, [r5, #8]
-        cmp         r1, lr
+        ldr         r8, [r5, #8]
+        cmp         r1, r8
         bne         LOCAL_LABEL(ProbeMiss)
 
         // Read the cached code pointer, then re-verify the version has not changed.
-        ldr         lr, [r5, #12]
+        ldr         r8, [r5, #12]
         dmb
 
         // Verify: (original version & ~1) == re-read version.
@@ -94,17 +87,12 @@ LOCAL_LABEL(ProbeLoop):
         bne         LOCAL_LABEL(CacheMiss)
 
         // Dispatch to cached target.
-        mov         r12, lr
+        mov         r12, r8
 
-        ldr         r6, [sp, #-28]
-        ldr         r5, [sp, #-24]
-        ldr         r4, [sp, #-20]
-        ldr         r3, [sp, #-12]
-        ldr         lr, [sp, #-16]
-        ldr         r1, [sp, #-8]
-        ldr         r2, [sp, #-4]
+        pop         {r3,r4,r5,r6,r8,lr}
+        EPILOG_POP "{r1,r2}"
 
-        bx          r12
+        EPILOG_BRANCH_REG r12
 
 LOCAL_LABEL(ProbeMiss):
         // If version is zero the rest of the bucket is unclaimed — stop probing.
@@ -114,28 +102,25 @@ LOCAL_LABEL(ProbeMiss):
         // Quadratic reprobe: i++; index = (index + i) & tableMask
         add         r4, r4, #1
         add         r3, r3, r4
-        ldr         lr, [r2, #4]
-        sub         lr, lr, #2
-        and         r3, r3, lr
+        ldr         r8, [r2, #4]
+        sub         r8, r8, #2
+        and         r3, r3, r8
         cmp         r4, #8
         blt         LOCAL_LABEL(ProbeLoop)
 
 LOCAL_LABEL(CacheMiss):
-        ldr         r6, [sp, #-28]
-        ldr         r5, [sp, #-24]
-        ldr         r4, [sp, #-20]
+        pop         {r3,r4,r5,r6,r8,lr}
 
-LOCAL_LABEL(SlowPath):
-        // restore original value of r1, r2, r3, lr
-        ldr         r3, [sp, #-12]
-        ldr         lr, [sp, #-16]
-        ldr         r1, [sp, #-8]
-        ldr         r2, [sp, #-4]
+        // restore original value of r1, r2
+        EPILOG_POP "{r1,r2}"
 
-        str         r12, [sp, #-8]
+        // Push args for RhpUniversalTransitionTailCall:
+        // [sp+0] = extra arg (indirection cell), [sp+4] = target fn (RhpCidResolve)
+        sub         sp, sp, #8
+        str         r12, [sp, #0]
         PREPARE_EXTERNAL_VAR RhpCidResolve, r12
-        str         r12, [sp, #-4]
+        str         r12, [sp, #4]
 
         b           C_FUNC(RhpUniversalTransitionTailCall)
 
-LEAF_END RhpInterfaceDispatch, _TEXT
+NESTED_END RhpInterfaceDispatch, _TEXT

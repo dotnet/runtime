@@ -327,9 +327,8 @@ static uintptr_t UnwindSimpleHelperToCaller(
 #elif defined(HOST_ARM) || defined(HOST_ARM64)
     uintptr_t adjustedFaultingIP = pContext->GetLr();
 #if defined(HOST_ARM)
-    // Interface dispatch stubs allocate stack space (PROLOG_STACK_ALLOC 8) before the AV
-    // location. We must restore SP to the caller's original value so the exception handler
-    // sees the correct frame.
+    // Interface dispatch pushes {r1,r2} (8 bytes) before the potential null-this AV.
+    // Restore SP to the caller's original value.
     if (InInterfaceDispatchHelper(pContext->GetIp()))
         pContext->SetSp(pContext->GetSp() + 8);
 #endif
