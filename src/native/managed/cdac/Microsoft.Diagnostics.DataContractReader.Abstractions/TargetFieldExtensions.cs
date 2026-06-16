@@ -212,8 +212,8 @@ public static class TargetFieldExtensions
     [Conditional("DEBUG")]
     private static void AssertPointerType(Target.FieldInfo field, string fieldName)
     {
-        // Managed types express raw pointers as IntPtr/UIntPtr, which the contract descriptor
-        // reports as "nint"/"nuint" (there is no way to mark a managed field as "pointer").
+        // Managed field signatures report IntPtr/UIntPtr as native ints, which the contract descriptor maps to
+        // "nint"/"nuint" (as distinct from raw pointer element types which map to "pointer").
         // Accept those in addition to "pointer" so pointer-valued fields on managed types can be
         // read via ReadPointer, which reads the value unsigned at full pointer width.
         Debug.Assert(
