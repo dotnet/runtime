@@ -200,11 +200,10 @@ namespace System.Text.Tests
             Assert.Equal(expectedRuneValue, actualRune.Value);
             Assert.Equal(expectedCharsConsumed, actualCharsConsumed);
 
-            // Parse / TryParse succeed iff the entire input decodes to a single scalar.
-            bool shouldParseSucceed = expectedOperationStatus == OperationStatus.Done && expectedCharsConsumed == data.Length;
             string s = new string(data);
 
-            if (shouldParseSucceed)
+            // Parse / TryParse succeed iff the entire input decodes to a single scalar.
+            if (expectedOperationStatus == OperationStatus.Done && expectedCharsConsumed == data.Length)
             {
                 Assert.Equal(expectedRuneValue, ParsableHelper<Rune>.Parse(s, null).Value);
                 Assert.True(ParsableHelper<Rune>.TryParse(s, null, out Rune parsedFromString));
@@ -274,9 +273,7 @@ namespace System.Text.Tests
             Assert.Equal(expectedBytesConsumed, actualBytesConsumed);
 
             // Parse / TryParse succeed iff the entire input decodes to a single scalar.
-            bool shouldParseSucceed = expectedOperationStatus == OperationStatus.Done && expectedBytesConsumed == data.Length;
-
-            if (shouldParseSucceed)
+            if (expectedOperationStatus == OperationStatus.Done && expectedBytesConsumed == data.Length)
             {
                 Assert.Equal(expectedRuneValue, Utf8SpanParsableHelper<Rune>.Parse(data, null).Value);
                 Assert.True(Utf8SpanParsableHelper<Rune>.TryParse(data, null, out Rune parsedFromUtf8));
