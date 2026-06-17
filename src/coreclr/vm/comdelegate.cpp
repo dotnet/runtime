@@ -2699,7 +2699,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // 2- Instance open non-virt        delegate        shuffle thunk           target method       null                0
     // 3- Instance open virtual         delegate        Virtual-stub dispatch   method id           null                0
     // 4- Static closed                 first arg       target method           null                null                0
-    // 5- Static closed (special sig)   delegate        specialSig thunk        target method       null                0
+    // 5- Static closed (special sig)   delegate        specialSig thunk        null                null                0
     // 6- Static opened                 delegate        shuffle thunk           target method       null                0
     //
     // Delegate invoke arg count == target method arg count - 2, 3, 6
