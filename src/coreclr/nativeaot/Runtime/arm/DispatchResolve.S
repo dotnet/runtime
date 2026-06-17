@@ -89,8 +89,8 @@ LOCAL_LABEL(ProbeLoop):
         // Dispatch to cached target.
         mov         r12, r8
 
-        EPILOG_POP   "{r3,r4,r5,r6,r8}"
-        EPILOG_POP "{r1,r2}"
+        EPILOG_POP  "{r3,r4,r5,r6,r8}"
+        EPILOG_POP  "{r1,r2}"
 
         EPILOG_BRANCH_REG r12
 
