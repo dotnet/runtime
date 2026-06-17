@@ -729,7 +729,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void ECDsa_Export_DefaultKeyStorePermitsUnencryptedExports_ExportParameters(bool explicitParameters)
         {
-            if (explicitParameters && !ECDsaFactory.ExplicitCurvesSupported)
+            if (explicitParameters && !DefaultECDsaProvider.Instance.ExplicitCurvesSupported)
             {
                 return;
             }
@@ -756,7 +756,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "The PKCS#12 Exportable flag is not supported on iOS/MacCatalyst/tvOS")]
         public static void ECDH_Export_DefaultKeyStorePermitsUnencryptedExports_ExportParameters(bool explicitParameters)
         {
-            if (explicitParameters && !ECDsaFactory.ExplicitCurvesSupported)
+            if (explicitParameters && !DefaultECDsaProvider.Instance.ExplicitCurvesSupported)
             {
                 return;
             }

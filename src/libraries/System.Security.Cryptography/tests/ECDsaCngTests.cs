@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Security.Cryptography.EcDsa.Tests;
 using System.Security.Cryptography.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -11,6 +12,8 @@ namespace System.Security.Cryptography.Cng.Tests
 {
     public class ECDsaCngTests : ECDsaTestsBase
     {
+        protected override ECDsaProvider ECDsaFactory { get; } = ECDsaCngProvider.Instance;
+
         [Fact]
         public static void TestNegativeVerify256()
         {
@@ -164,9 +167,11 @@ namespace System.Security.Cryptography.Cng.Tests
             Verify256(e, true);
         }
 
-        [Theory, MemberData(nameof(TestCurves))]
+        [ConditionalTheory, MemberData(nameof(PublicTestCurves))]
         public static void TestKeyPropertyFromNamedCurve(CurveDef curveDef)
         {
+            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDsaCngProvider.Instance));
+
             ECDsaCng e = new ECDsaCng(curveDef.Curve);
             CngKey key1 = e.Key;
             VerifyKey(key1);
@@ -200,7 +205,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [Theory, MemberData(nameof(SpecialNistKeys))]
-        public static void TestSpecialNistKeys(int keySize, string curveName, CngAlgorithm algorithm)
+        public void TestSpecialNistKeys(int keySize, string curveName, CngAlgorithm algorithm)
         {
             using (ECDsaCng cng = (ECDsaCng)ECDsaFactory.Create(keySize))
             {

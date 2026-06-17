@@ -22,20 +22,15 @@ namespace System.Security.Cryptography.Tests
         internal const string ECDSA_P521_OID_VALUE = "1.3.132.0.35"; // Also called nistP521 or secP521r1
         internal const string ECDSA_Sect193r1_OID_VALUE = "1.3.132.0.24"; //Char-2 curve
 
-        public static IEnumerable<object[]> TestCurvesFull
+        public static IEnumerable<object[]> AllTestCurves
         {
             get
             {
-                var curveDefs =
-                    from curveDef in TestCurvesRaw
-                    where curveDef.IsCurveValidOnPlatform == true
-                    select curveDef;
-
-                foreach (CurveDef cd in curveDefs)
+                foreach (CurveDef cd in PublicTestCurvesRaw)
                     yield return new[] { cd };
 
                 // return again with IncludePrivate = true
-                foreach (CurveDef cd in curveDefs)
+                foreach (CurveDef cd in PublicTestCurvesRaw)
                 {
                     cd.IncludePrivate = true;
                     yield return new[] { cd };
@@ -43,51 +38,16 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public static IEnumerable<object[]> TestCurves
+        public static IEnumerable<object[]> PublicTestCurves
         {
             get
             {
-                var curveDefs =
-                    from curveDef in TestCurvesRaw
-                    where curveDef.IsCurveValidOnPlatform == true
-                    select curveDef;
-
-                foreach (CurveDef curveDef in curveDefs)
-                    yield return new[] { curveDef };
+                foreach (CurveDef cd in PublicTestCurvesRaw)
+                    yield return new[] { cd };
             }
         }
 
-        public static IEnumerable<object[]> TestInvalidCurves
-        {
-            get
-            {
-                var curveDefs =
-                    from curveDef in TestCurvesRaw
-                    where curveDef.IsCurveValidOnPlatform == false
-                    select curveDef;
-
-                foreach (CurveDef curveDef in curveDefs)
-                    yield return new[] { curveDef };
-            }
-        }
-
-        public static IEnumerable<object[]> TestNewCurves
-        {
-            get
-            {
-                var curveDefs =
-                    from curveDef in TestCurvesRaw
-                    where
-                        curveDef.IsCurveValidOnPlatform == true &&
-                        curveDef.RequiredOnPlatform == false
-                    select curveDef;
-
-                foreach (CurveDef curveDef in curveDefs)
-                    yield return new[] { curveDef };
-            }
-        }
-
-        private static IEnumerable<CurveDef> TestCurvesRaw
+        protected static IEnumerable<CurveDef> PublicTestCurvesRaw
         {
             get
             {

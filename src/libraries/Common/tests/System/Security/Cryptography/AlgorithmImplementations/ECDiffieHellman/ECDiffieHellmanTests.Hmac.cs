@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using System.Security.Cryptography.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -14,7 +16,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         private static readonly byte[] s_sampleHmacKey = { 0, 1, 2, 3, 4, 5 };
 
         [Fact]
-        public static void HmacDerivation_OtherKeyRequired()
+        public void HmacDerivation_OtherKeyRequired()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             {
@@ -23,9 +25,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(MismatchedKeysizes))]
-        public static void HmacDerivation_SameSizeOtherKeyRequired(int aliceSize, int bobSize)
+        [Fact]
+        public void HmacDerivation_SameSizeOtherKeyRequired() => ForEachMismatchedKeySize(HmacDerivation_SameSizeOtherKeyRequiredImpl);
+
+        private void HmacDerivation_SameSizeOtherKeyRequiredImpl(int aliceSize, int bobSize)
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(aliceSize))
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create(bobSize))
@@ -36,9 +39,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(EveryKeysize))]
-        public static void SymmetricDerivation_Hmac(int keySize)
+        [Fact]
+        public void SymmetricDerivation_Hmac() => ForEachKeySize(SymmetricDerivation_HmacImpl);
+
+        private void SymmetricDerivation_HmacImpl(int keySize)
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(keySize))
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create(keySize))
@@ -53,7 +57,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void HmacDerivationVariesOnPublicKey()
+        public void HmacDerivationVariesOnPublicKey()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create())
@@ -70,7 +74,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void HmacDerivationVariesOnAlgorithm()
+        public void HmacDerivationVariesOnAlgorithm()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create())
@@ -85,7 +89,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void HmacDerivationVariesOnKey()
+        public void HmacDerivationVariesOnKey()
         {
             byte[] hmacKeyAlice = { 0, 1, 2, 3, 4, 5 };
             byte[] hmacKeyBob = { 10, 1, 2, 3, 4, 5 };
@@ -102,9 +106,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(EveryKeysize))]
-        public static void SymmetricDerivation_HmacPrepend(int keySize)
+        [Fact]
+        public void SymmetricDerivation_HmacPrepend() => ForEachKeySize(SymmetricDerivation_HmacPrependImpl);
+
+        private void SymmetricDerivation_HmacPrependImpl(int keySize)
         {
             byte[] prefix = new byte[10];
 
@@ -121,7 +126,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void HmacDerivationVariesOnPrepend()
+        public void HmacDerivationVariesOnPrepend()
         {
             byte[] alicePrefix = new byte[10];
             byte[] bobPrefix = new byte[alicePrefix.Length];
@@ -139,9 +144,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(EveryKeysize))]
-        public static void SymmetricDerivation_HmacAppend(int keySize)
+        [Fact]
+        public void SymmetricDerivation_HmacAppend() => ForEachKeySize(SymmetricDerivation_HmacAppendImpl);
+
+        private void SymmetricDerivation_HmacAppendImpl(int keySize)
         {
             byte[] suffix = new byte[10];
 
@@ -158,7 +164,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void HmacDerivationVariesOnAppend()
+        public void HmacDerivationVariesOnAppend()
         {
             byte[] aliceSuffix = new byte[10];
             byte[] bobSuffix = new byte[aliceSuffix.Length];
@@ -177,7 +183,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void HmacDerivationIsStable()
+        public void HmacDerivationIsStable()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create())
@@ -190,9 +196,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(EveryKeysize))]
-        public static void SymmetricDerivation_HmacNullKey(int keySize)
+        [Fact]
+        public void SymmetricDerivation_HmacNullKey() => ForEachKeySize(SymmetricDerivation_HmacNullKeyImpl);
+
+        private void SymmetricDerivation_HmacNullKeyImpl(int keySize)
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create(keySize))
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create(keySize))
@@ -207,7 +214,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void HmacNullKeyDerivationIsStable()
+        public void HmacNullKeyDerivationIsStable()
         {
             using (ECDiffieHellman alice = ECDiffieHellmanFactory.Create())
             using (ECDiffieHellman bob = ECDiffieHellmanFactory.Create())
@@ -221,7 +228,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void SimpleHmacMethodForwardsNull()
+        public void SimpleHmacMethodForwardsNull()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             using (ECDiffieHellmanPublicKey publicKey = ecdh.PublicKey)
@@ -234,7 +241,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
 
         [Fact]
-        public static void SimpleHmacNullKeyForwardsNull()
+        public void SimpleHmacNullKeyForwardsNull()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             using (ECDiffieHellmanPublicKey publicKey = ecdh.PublicKey)
@@ -311,54 +318,54 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
                 "AE3CD974F262B199B0859D9F933207D2F6E3E04434D60089FE0BE801ED38D370",
             };
 
-            if (ECDiffieHellmanFactory.SupportsSha3)
+            // SHA3 test cases - skipped at runtime if not supported
+
+            // Created with:
+            // (echo -n -e '\x01\x03\0x05'; openssl pkeyutl -derive -inkey private.key -peerkey public.key; echo -n -e '\x02\x04\0x06\0x08') | openssl sha3-256 -mac HMAC -macopt hexkey:030609
+            yield return new object[]
             {
-                // Created with:
-                // (echo -n -e '\x01\x03\0x05'; openssl pkeyutl -derive -inkey private.key -peerkey public.key; echo -n -e '\x02\x04\0x06\0x08') | openssl sha3-256 -mac HMAC -macopt hexkey:030609
-                yield return new object[]
-                {
-                    HashAlgorithmName.SHA3_256,
-                    "030609",
-                    "010305",
-                    "02040608",
-                    "23E7E5648EF46D537F4159F7F40E686279D89ADFD7EF6CFA110034F42EC8CEF7",
-                };
+                HashAlgorithmName.SHA3_256,
+                "030609",
+                "010305",
+                "02040608",
+                "23E7E5648EF46D537F4159F7F40E686279D89ADFD7EF6CFA110034F42EC8CEF7",
+            };
 
-                // Created with:
-                // (echo -n -e '\x01\x03\0x05'; openssl pkeyutl -derive -inkey private.key -peerkey public.key; echo -n -e '\x02\x04\0x06\0x08') | openssl sha3-384 -mac HMAC -macopt hexkey:030609
-                yield return new object[]
-                {
-                    HashAlgorithmName.SHA3_384,
-                    "030609",
-                    "010305",
-                    "02040608",
-                    "FD0F7B11489F641DE0964F81D83EF90E33C46D1628C51FA79A85AD1034A9CAD36F8A38C3925704AC0E404BC6FE50ECA4",
-                };
+            // Created with:
+            // (echo -n -e '\x01\x03\0x05'; openssl pkeyutl -derive -inkey private.key -peerkey public.key; echo -n -e '\x02\x04\0x06\0x08') | openssl sha3-384 -mac HMAC -macopt hexkey:030609
+            yield return new object[]
+            {
+                HashAlgorithmName.SHA3_384,
+                "030609",
+                "010305",
+                "02040608",
+                "FD0F7B11489F641DE0964F81D83EF90E33C46D1628C51FA79A85AD1034A9CAD36F8A38C3925704AC0E404BC6FE50ECA4",
+            };
 
-                // Created with:
-                // (echo -n -e '\x01\x03\0x05'; openssl pkeyutl -derive -inkey private.key -peerkey public.key; echo -n -e '\x02\x04\0x06\0x08') | openssl sha3-512 -mac HMAC -macopt hexkey:030609
-                yield return new object[]
-                {
-                    HashAlgorithmName.SHA3_512,
-                    "030609",
-                    "010305",
-                    "02040608",
-                    "2C32BBFBF8A41118AAD3BAA94C8995B5B027246EA3D972937C1BFD9F460C6492" +
-                        "44EEC68EF570B4BB74B0D3BBD463F18526400A77211B5CB39311CDE21104E209",
-                };
-            }
+            // Created with:
+            // (echo -n -e '\x01\x03\0x05'; openssl pkeyutl -derive -inkey private.key -peerkey public.key; echo -n -e '\x02\x04\0x06\0x08') | openssl sha3-512 -mac HMAC -macopt hexkey:030609
+            yield return new object[]
+            {
+                HashAlgorithmName.SHA3_512,
+                "030609",
+                "010305",
+                "02040608",
+                "2C32BBFBF8A41118AAD3BAA94C8995B5B027246EA3D972937C1BFD9F460C6492" +
+                    "44EEC68EF570B4BB74B0D3BBD463F18526400A77211B5CB39311CDE21104E209",
+            };
         }
 
-#if NET
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(HmacDerivationTestCases))]
-        public static void HmacDerivation_KnownResults(
+        public void HmacDerivation_KnownResults(
             HashAlgorithmName hashAlgorithm,
             string hmacKeyBytes,
             string prependBytes,
             string appendBytes,
             string answerBytes)
         {
+            SkipTestException.ThrowWhen(hashAlgorithm.Name.StartsWith("SHA3", StringComparison.Ordinal) && !ECDiffieHellmanFactory.SupportsSha3);
+
             byte[] hmacKey = hmacKeyBytes?.HexToByteArray();
             byte[] prepend = prependBytes?.HexToByteArray();
             byte[] append = appendBytes?.HexToByteArray();
@@ -373,6 +380,5 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 
             Assert.Equal(answer, output);
         }
-#endif
     }
 }

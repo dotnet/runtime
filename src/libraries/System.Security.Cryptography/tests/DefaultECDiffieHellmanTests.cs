@@ -7,24 +7,24 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public partial class ECDiffieHellmanTests
+    public sealed class DefaultECDiffieHellmanTests
     {
         [Fact]
-        public static void ECCurve_ctor()
+        public void ECCurve_ctor()
         {
-            using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(ECCurve.NamedCurves.nistP256))
+            using (ECDiffieHellman ecdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
             {
                 Assert.Equal(256, ecdh.KeySize);
                 ecdh.Exercise();
             }
 
-            using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(ECCurve.NamedCurves.nistP384))
+            using (ECDiffieHellman ecdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP384))
             {
                 Assert.Equal(384, ecdh.KeySize);
                 ecdh.Exercise();
             }
 
-            using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(ECCurve.NamedCurves.nistP521))
+            using (ECDiffieHellman ecdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP521))
             {
                 Assert.Equal(521, ecdh.KeySize);
                 ecdh.Exercise();
@@ -35,10 +35,10 @@ namespace System.Security.Cryptography.Tests
         [InlineData("1.3.132.0.35", 521)] //secp521r1
         [InlineData("1.3.132.0.34", 384)] //secp384r1
         [InlineData("1.2.840.10045.3.1.7", 256)] //secp256v1
-        public static void ECCurve_ctor_SEC2_OID_From_Value(string oidValue, int expectedKeySize)
+        public void ECCurve_ctor_SEC2_OID_From_Value(string oidValue, int expectedKeySize)
         {
             ECCurve ecCurve = ECCurve.CreateFromValue(oidValue);
-            using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(ecCurve))
+            using (ECDiffieHellman ecdh = ECDiffieHellman.Create(ecCurve))
             {
                 Assert.Equal(expectedKeySize, ecdh.KeySize);
                 ecdh.Exercise();
@@ -54,9 +54,9 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void Equivalence_Hash()
+        public void Equivalence_Hash()
         {
-            using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
+            using (ECDiffieHellman ecdh = ECDiffieHellman.Create())
             using (ECDiffieHellmanPublicKey publicKey = ecdh.PublicKey)
             {
                 byte[] newWay = ecdh.DeriveKeyFromHash(publicKey, HashAlgorithmName.SHA256, null, null);
