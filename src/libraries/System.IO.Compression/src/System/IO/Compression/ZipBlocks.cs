@@ -198,7 +198,7 @@ namespace System.IO.Compression
                 totalBytesConsumed += currBytesConsumed;
 
                 if (TryGetZip64BlockFromGenericExtraField(currentExtraField, readUncompressedSize,
-                    readCompressedSize, readLocalHeaderOffset, readStartDiskNumber, out zip64Field, isInLocalHeader))
+                    readCompressedSize, readLocalHeaderOffset, readStartDiskNumber, isInLocalHeader, out zip64Field))
                 {
                     return zip64Field;
                 }
@@ -218,7 +218,7 @@ namespace System.IO.Compression
         private static bool TryGetZip64BlockFromGenericExtraField(ZipGenericExtraField extraField,
             bool readUncompressedSize, bool readCompressedSize,
             bool readLocalHeaderOffset, bool readStartDiskNumber,
-            out Zip64ExtraField zip64Block, bool isInLocalHeader)
+            bool isInLocalHeader, out Zip64ExtraField zip64Block)
         {
             const int MaximumExtraFieldLength = FieldLengths.UncompressedSize + FieldLengths.CompressedSize + FieldLengths.LocalHeaderOffset + FieldLengths.StartDiskNumber;
             zip64Block = new()
@@ -353,7 +353,7 @@ namespace System.IO.Compression
                     if (!zip64FieldFound)
                     {
                         if (TryGetZip64BlockFromGenericExtraField(ef, readUncompressedSize, readCompressedSize,
-                                    readLocalHeaderOffset, readStartDiskNumber, out zip64Field, isInLocalHeader))
+                                    readLocalHeaderOffset, readStartDiskNumber, isInLocalHeader, out zip64Field))
                         {
                             zip64FieldFound = true;
                         }
