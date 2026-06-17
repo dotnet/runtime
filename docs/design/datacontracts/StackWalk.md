@@ -87,10 +87,9 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress);
 // This is the primary API for GC reference enumeration, used by SOSDacImpl.GetStackReferences.
 IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData);
 
-// Fills a context for the thread, trying (in order): the debugger filter context,
-// the OS thread context, or a context derived from the explicit Frame chain. The caller
-// owns the buffer and must ensure it is at least sizeof(CONTEXT) bytes.
-void GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags, Span<byte> contextBuffer);
+// Returns a context for the thread, trying (in order): the debugger filter context,
+// the OS thread context, or a context derived from the explicit Frame chain.
+byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags);
 
 // Returns the saved TargetContext pointer carried by the head Frame, if applicable.
 TargetPointer GetRedirectedContextPointer(ThreadData threadData);
@@ -487,7 +486,7 @@ byte[] GetRawContext(
 ```
 
 ##### `StackwalkFlag.X86ESPIgnoresCalleePoppedArgs`
-See [text](https://github.com/dotnet/runtime/blob/main/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L1016-L1063)
+See [comment](https://github.com/dotnet/runtime/blob/7f8276da27a20943339702df0abdfc02e21110a4/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L1016-L1063)
 
 
 `GetFrameAddress` gets the address of the current capital "F" Frame. This is only valid if the `IStackDataFrameHandle` is at a point where the context is based on a capital "F" Frame. For example, it is not valid when when the current context was created by using the stack frame unwinder.
@@ -612,11 +611,11 @@ IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData)
 
 The implementation uses the same stack walk algorithm as `CreateStackWalk`, but integrates the GC-aware `Filter` directly (rather than consuming pre-generated frames) and performs GC reference enumeration at each frame. See [GC Stack Reference Scanning](#gc-stack-reference-scanning) for details.
 
-`GetContext` fills the caller-provided buffer with a thread context by trying three sources in order: (1) the debugger filter context from `ThreadData.DebuggerFilterContext` (when `ThreadContextSource.Debugger` is requested), (2) the OS thread context via `TryGetThreadContext`, or (3) a context derived from walking the explicit Frame chain (`Thread::Frame` linked list), returning the first frame that yields a usable context:
-* If the current Frame is an `InterpreterFrame`, clear the context and update it from the Frame. Write the resulting bytes to the destination.
+`GetContext` returns a thread context by trying three sources in order: (1) the debugger filter context from `ThreadData.DebuggerFilterContext` (when `ThreadContextSource.Debugger` is requested), (2) the OS thread context via `TryGetThreadContext`, or (3) a context derived from walking the explicit Frame chain (`Thread::Frame` linked list), returning the first frame that yields a usable context:
+* If the current Frame is an `InterpreterFrame`, clear the context and update it from the Frame. Return the resulting bytes.
 * Otherwise, clear the context and update it from the current Frame; accept the context when both the stack pointer and instruction pointer are non-zero (e.g. `RedirectedThreadFrame`, `InlinedCallFrame`, `DynamicHelperFrame`). Mark `RawContextFlags = FullContextFlags` so callers know SP/PC/FP are valid.
 
-If no Frame in the chain produces a usable context (thread is not running managed code), the destination is left zero-initialized (it is cleared by `GetContext` before any source writes into it).
+If no Frame in the chain produces a usable context (thread is not running managed code), a zeroed context of the target architecture's size is returned.
 
 The caller owns the buffer and must ensure it is at least `IPlatformAgnosticContext.Size` bytes.
 

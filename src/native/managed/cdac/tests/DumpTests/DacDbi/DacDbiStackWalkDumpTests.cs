@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -65,23 +63,12 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         }
 
         uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(Target).AllContextFlags;
+        byte[] contractContext = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.Debugger, allFlags);
 
         IPlatformAgnosticContext dbiCtx = IPlatformAgnosticContext.GetContextForPlatform(Target);
         IPlatformAgnosticContext contractCtx = IPlatformAgnosticContext.GetContextForPlatform(Target);
         dbiCtx.FillFromBuffer(dbiContextBuffer);
-
-        // CONTEXT requires 16-byte alignment for the OS GetThreadContext path.
-        byte* pContract = (byte*)NativeMemory.AlignedAlloc(contextSize, IPlatformAgnosticContext.ContextAlignment);
-        try
-        {
-            Span<byte> contractContext = new(pContract, (int)contextSize);
-            Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.Debugger, allFlags, contractContext);
-            contractCtx.FillFromBuffer(contractContext);
-        }
-        finally
-        {
-            NativeMemory.AlignedFree(pContract);
-        }
+        contractCtx.FillFromBuffer(contractContext);
 
         Assert.Equal(contractCtx.InstructionPointer, dbiCtx.InstructionPointer);
         Assert.Equal(contractCtx.StackPointer, dbiCtx.StackPointer);
@@ -97,24 +84,17 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(Target).Size;
         uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(Target).AllContextFlags;
+        byte[] leafContext = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags);
 
-        // CONTEXT requires 16-byte alignment for the OS GetThreadContext path.
-        byte* pContext = (byte*)NativeMemory.AlignedAlloc(contextSize, IPlatformAgnosticContext.ContextAlignment);
-        try
+        Interop.BOOL result;
+        fixed (byte* pContext = leafContext)
         {
-            Span<byte> leafContext = new(pContext, (int)contextSize);
-            Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags, leafContext);
-            Interop.BOOL result;
             int hr = dbi.IsLeafFrame(crashingThread.ThreadAddress, pContext, &result);
             Assert.Equal(System.HResults.S_OK, hr);
-            Assert.Equal(Interop.BOOL.TRUE, result);
         }
-        finally
-        {
-            NativeMemory.AlignedFree(pContext);
-        }
+
+        Assert.Equal(Interop.BOOL.TRUE, result);
     }
 
     [ConditionalTheory]
@@ -127,22 +107,10 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(Target).Size;
         uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(Target).AllContextFlags;
+        byte[] leafContext = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags);
         IPlatformAgnosticContext leafCtx = IPlatformAgnosticContext.GetContextForPlatform(Target);
-
-        // CONTEXT requires 16-byte alignment for the OS GetThreadContext path.
-        byte* pLeaf = (byte*)NativeMemory.AlignedAlloc(contextSize, IPlatformAgnosticContext.ContextAlignment);
-        try
-        {
-            Span<byte> leafContext = new(pLeaf, (int)contextSize);
-            Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags, leafContext);
-            leafCtx.FillFromBuffer(leafContext);
-        }
-        finally
-        {
-            NativeMemory.AlignedFree(pLeaf);
-        }
+        leafCtx.FillFromBuffer(leafContext);
 
         IStackWalk sw = Target.Contracts.StackWalk;
 

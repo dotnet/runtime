@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
@@ -339,26 +338,19 @@ public class StackWalkDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
-    public unsafe void GetContext_ReturnsNonEmptyContext(TestConfiguration config)
+    public void GetContext_ReturnsNonEmptyContext(TestConfiguration config)
     {
         InitializeDumpTest(config);
 
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
-        var ctx = Contracts.StackWalkHelpers.IPlatformAgnosticContext.GetContextForPlatform(Target);
-        uint allFlags = ctx.AllContextFlags;
+        uint allFlags = Contracts.StackWalkHelpers.IPlatformAgnosticContext.GetContextForPlatform(Target).AllContextFlags;
+        byte[] context = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags);
 
-        // CONTEXT requires 16-byte alignment for the OS GetThreadContext path.
-        byte* pContext = (byte*)NativeMemory.AlignedAlloc(ctx.Size, Contracts.StackWalkHelpers.IPlatformAgnosticContext.ContextAlignment);
-        try
-        {
-            Span<byte> context = new(pContext, (int)ctx.Size);
-            Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags, context);
-            ctx.FillFromBuffer(context);
-            Assert.NotEqual(TargetPointer.Null, ctx.InstructionPointer);
-        }
-        finally
-        {
-            NativeMemory.AlignedFree(pContext);
-        }
+        Assert.NotNull(context);
+        Assert.True(context.Length > 0, "Expected non-empty context");
+
+        var ctx = Contracts.StackWalkHelpers.IPlatformAgnosticContext.GetContextForPlatform(Target);
+        ctx.FillFromBuffer(context);
+        Assert.NotEqual(TargetPointer.Null, ctx.InstructionPointer);
     }
 }

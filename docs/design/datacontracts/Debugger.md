@@ -9,6 +9,15 @@ record struct DebuggerData(bool IsLeftSideInitialized, uint DefinesBitField, uin
 ```
 
 ```csharp
+enum HijackKind
+{
+   None,
+   UnhandledException,
+   Other
+}
+```
+
+```csharp
 bool TryGetDebuggerData(out DebuggerData data);
 int GetAttachStateFlags();
 void MarkDebuggerAttachPending();
@@ -18,12 +27,6 @@ void RequestSyncAtEvent();
 void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC);
 TargetPointer GetDebuggerControlBlockAddress();
 void EnableGCNotificationEvents(bool fEnable);
-enum HijackKind
-{
-   None,
-   UnhandledException,
-   Other
-}
 HijackKind GetHijackKind(TargetCodePointer controlPC);
 ```
 
@@ -37,7 +40,7 @@ The contract depends on the following globals
 | `CLRJitAttachState` | TargetPointer | Pointer to the CLR JIT attach state flags |
 | `CORDebuggerControlFlags` | TargetPointer | Pointer to `g_CORDebuggerControlFlags` |
 | `MetadataUpdatesApplied` | TargetPointer | Pointer to the g_metadataUpdatesApplied flag |
-| `MaxHijackFunctions` | uint32 | Number of entries in the hijack function array. Zero on platforms/configurations where the hijack-function table is not present. |
+| `MaxHijackFunctions` | uint32 | Number of entries in the hijack function array. |
 
 The contract additionally depends on these data descriptors
 

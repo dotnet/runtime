@@ -1072,12 +1072,11 @@ internal partial class StackWalk_1 : IStackWalk
         return new DebuggerEvalData(debuggerEval.MethodToken, debuggerEval.AssemblyPtr);
     }
 
-    void IStackWalk.GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags, Span<byte> contextBuffer)
+    byte[] IStackWalk.GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags)
     {
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
-        Span<byte> buffer = contextBuffer.Slice(0, (int)context.Size);
-
-        buffer.Clear();
+        byte[] bytes = new byte[context.Size];
+        Span<byte> buffer = new Span<byte>(bytes);
 
         TargetPointer filterContext = TargetPointer.Null;
 
@@ -1087,18 +1086,18 @@ internal partial class StackWalk_1 : IStackWalk
         if (filterContext != TargetPointer.Null)
         {
             _target.ReadBuffer(filterContext.Value, buffer);
-            return;
+            return bytes;
         }
 
         bool success = _target.TryGetThreadContext(threadData.OSId.Value, contextFlags, buffer);
         if (!success)
         {
-            WriteContextFromFrames(threadData, buffer);
+            return GetContextFromFrames(threadData);
         }
-        return;
+        return bytes;
     }
 
-    private void WriteContextFromFrames(ThreadData threadData, Span<byte> destination)
+    private byte[] GetContextFromFrames(ThreadData threadData)
     {
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
 
@@ -1111,8 +1110,7 @@ internal partial class StackWalk_1 : IStackWalk
             {
                 context.Clear();
                 _frameHelpers.UpdateContextFromFrame(iterator.CurrentFrame, context);
-                context.GetBytes().CopyTo(destination);
-                return;
+                return context.GetBytes();
             }
 
             // For other frames, look for the first (deepest) frame that yields a context
@@ -1123,15 +1121,15 @@ internal partial class StackWalk_1 : IStackWalk
             if (context.StackPointer.Value != 0 && context.InstructionPointer.Value != 0)
             {
                 context.RawContextFlags = context.FullContextFlags;
-                context.GetBytes().CopyTo(destination);
-                return;
+                return context.GetBytes();
             }
 
             iterator.Next();
         }
 
-        // The thread is not running managed code: leave destination zero-initialized
-        // (already cleared by the GetContext caller).
+        // The thread is not running managed code: return a zeroed context.
+        context.Clear();
+        return context.GetBytes();
     }
 
     TargetPointer IStackWalk.GetRedirectedContextPointer(ThreadData threadData)
@@ -1158,15 +1156,13 @@ internal partial class StackWalk_1 : IStackWalk
         return false;
     }
 
-    private unsafe void FillContextFromThread(IPlatformAgnosticContext context, ThreadData threadData, uint flags)
+    private void FillContextFromThread(IPlatformAgnosticContext context, ThreadData threadData, uint flags)
     {
-        Span<byte> buffer = new byte[context.Size];
-        ((IStackWalk)this).GetContext(
+        byte[] bytes = ((IStackWalk)this).GetContext(
             threadData,
             ThreadContextSource.Debugger,
-            flags,
-            buffer);
-        context.FillFromBuffer(buffer);
+            flags);
+        context.FillFromBuffer(bytes);
     }
 
     private static StackDataFrameHandle AssertCorrectHandle(IStackDataFrameHandle stackDataFrameHandle)

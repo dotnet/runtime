@@ -1297,8 +1297,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
             uint allFlags = ctx.AllContextFlags;
             ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
-            Span<byte> seedSpan = new(pInternalContextBuffer, (int)ctx.Size);
-            _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags, seedSpan);
+            byte[] seedContext = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags);
+            seedContext.AsSpan().CopyTo(new Span<byte>(pInternalContextBuffer, seedContext.Length));
 
             handleData = new StackWalkHandleData(_target.Contracts.StackWalk, threadData);
             SeedHandleFromNativeContext(handleData, pInternalContextBuffer, isFirst: true);
@@ -1312,12 +1312,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null && LegacyFallbackHelper.CanFallback())
         {
             uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
-            byte* pLocal = (byte*)NativeMemory.AlignedAlloc(contextSize, IPlatformAgnosticContext.ContextAlignment);
+            byte[] localContextBuf = new byte[contextSize];
             nuint legacyHandle = 0;
-            try
+            fixed (byte* pLocal = localContextBuf)
             {
-                new Span<byte>(pLocal, (int)contextSize).Clear();
-
                 int hrLocal = _legacy.CreateStackWalk(vmThread, pLocal, &legacyHandle);
                 Debug.ValidateHResult(hr, hrLocal);
 
@@ -1336,10 +1334,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 {
                     _legacy.DeleteStackWalk(legacyHandle);
                 }
-            }
-            finally
-            {
-                NativeMemory.AlignedFree(pLocal);
             }
         }
         return hr;
@@ -1422,10 +1416,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null && legacyHandle != 0)
         {
-            byte* pLocal = (byte*)NativeMemory.AlignedAlloc(contextSize, IPlatformAgnosticContext.ContextAlignment);
-            try
+            byte[] localContextBuf = new byte[contextSize];
+            fixed (byte* pLocal = localContextBuf)
             {
-                new Span<byte>(pLocal, (int)contextSize).Clear();
                 int hrLocal = _legacy.GetStackWalkCurrentContext(legacyHandle, pLocal);
                 Debug.ValidateHResult(hr, hrLocal);
                 if (hr == HResults.S_OK)
@@ -1435,10 +1428,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     if (!cdacBytes.SequenceEqual(legacyBytes))
                         Debug.Fail(DescribeContextDiff(cdacBytes, legacyBytes));
                 }
-            }
-            finally
-            {
-                NativeMemory.AlignedFree(pLocal);
             }
         }
 #endif
@@ -1809,22 +1798,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IPlatformAgnosticContext leafCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
             uint allFlags = leafCtx.AllContextFlags;
             ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
+            byte[] leafContext = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, allFlags);
+            leafCtx.FillFromBuffer(leafContext);
 
-            byte* pLeaf = (byte*)NativeMemory.AlignedAlloc(leafCtx.Size, IPlatformAgnosticContext.ContextAlignment);
-            try
-            {
-                Span<byte> leafBuffer = new(pLeaf, (int)leafCtx.Size);
-                _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, allFlags, leafBuffer);
-                leafCtx.FillFromBuffer(leafBuffer);
-            }
-            finally
-            {
-                NativeMemory.AlignedFree(pLeaf);
-            }
-
-            // Read the given context from the native buffer.
             IPlatformAgnosticContext givenCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
-            givenCtx.FillFromBuffer(new Span<byte>(pContext, (int)leafCtx.Size));
+            givenCtx.FillFromBuffer(new Span<byte>(pContext, leafContext.Length));
 
             *pResult = givenCtx.StackPointer == leafCtx.StackPointer
                 && givenCtx.InstructionPointer == leafCtx.InstructionPointer
@@ -1852,11 +1830,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
-            uint allFlags = ctx.AllContextFlags;
+            uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(_target).AllContextFlags;
             ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
-            Span<byte> destination = new(pContextBuffer, (int)ctx.Size);
-            _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags, destination);
+            byte[] context = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags);
+            context.AsSpan().CopyTo(new Span<byte>(pContextBuffer, context.Length));
         }
         catch (System.Exception ex)
         {
@@ -1866,25 +1843,21 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null)
         {
             uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
-            byte* pLocal = (byte*)NativeMemory.AlignedAlloc(contextSize, IPlatformAgnosticContext.ContextAlignment);
-            try
+            byte[] localContextBuf = new byte[contextSize];
+            fixed (byte* pLocal = localContextBuf)
             {
-                new Span<byte>(pLocal, (int)contextSize).Clear();
-
                 int hrLocal = _legacy.GetContext(vmThread, pLocal);
                 Debug.ValidateHResult(hr, hrLocal);
 
                 if (hr == HResults.S_OK)
                 {
-                    ReadOnlySpan<byte> cdacBytes = new(pContextBuffer, (int)contextSize);
-                    ReadOnlySpan<byte> legacyBytes = new(pLocal, (int)contextSize);
-                    if (!cdacBytes.SequenceEqual(legacyBytes))
-                        Debug.Fail(DescribeContextDiff(cdacBytes, legacyBytes));
+                    IPlatformAgnosticContext contextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
+                    IPlatformAgnosticContext localContextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
+                    contextStruct.FillFromBuffer(new Span<byte>(pContextBuffer, (int)contextSize));
+                    localContextStruct.FillFromBuffer(localContextBuf);
+
+                    Debug.Assert(contextStruct.Equals(localContextStruct));
                 }
-            }
-            finally
-            {
-                NativeMemory.AlignedFree(pLocal);
             }
         }
 #endif

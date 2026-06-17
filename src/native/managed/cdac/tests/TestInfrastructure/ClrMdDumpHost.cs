@@ -51,7 +51,7 @@ public sealed class ClrMdDumpHost : IDisposable
 
     /// <summary>
     /// Read memory from the dump at the specified address.
-    /// Returns S_OK on success, E_FAIL on failure.
+    /// Returns 0 on success, non-zero on failure.
     /// </summary>
     public int ReadFromTarget(ulong address, Span<byte> buffer)
     {
@@ -59,7 +59,7 @@ public sealed class ClrMdDumpHost : IDisposable
         {
             int bytesRead = _dataTarget.DataReader.Read(address, buffer);
             if (bytesRead == buffer.Length)
-                return 0;
+                return 0; // success
 
             // If we couldn't read the full buffer, maybe it's in a PE image
             ModuleInfo? info = GetModuleForAddress(address);
@@ -106,7 +106,7 @@ public sealed class ClrMdDumpHost : IDisposable
 
     /// <summary>
     /// Get a thread's register context from the dump.
-    /// Returns S_OK on success, E_FAIL on failure.
+    /// Returns 0 on success, -1 on failure.
     /// </summary>
     public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
     {
