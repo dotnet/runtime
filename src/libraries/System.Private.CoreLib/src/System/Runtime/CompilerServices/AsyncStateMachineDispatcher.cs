@@ -9,17 +9,17 @@ using System.Threading.Tasks;
 namespace System.Runtime.CompilerServices
 {
     [StructLayout(LayoutKind.Explicit)]
-    internal unsafe ref struct AsyncTaskDispatcherInfo
+    internal unsafe ref struct AsyncStateMachineDispatcherInfo
     {
         [FieldOffset(0)]
-        public AsyncTaskDispatcherInfo* Next;
+        public AsyncStateMachineDispatcherInfo* Next;
 
 #if TARGET_64BIT
         [FieldOffset(8)]
 #else
         [FieldOffset(4)]
 #endif
-        public AsyncTaskDispatcher? Dispatcher;
+        public AsyncStateMachineDispatcher? Dispatcher;
 
 #if TARGET_64BIT
         [FieldOffset(16)]
@@ -29,7 +29,7 @@ namespace System.Runtime.CompilerServices
         public AsyncProfiler.Info AsyncProfilerInfo;
 
         [ThreadStatic]
-        internal static unsafe AsyncTaskDispatcherInfo* t_current;
+        internal static unsafe AsyncStateMachineDispatcherInfo* t_current;
 
         public static bool InstrumentCheckPoint
         {
@@ -56,26 +56,57 @@ namespace System.Runtime.CompilerServices
 #endif
         }
 
-        internal static unsafe AsyncTaskDispatcher? GetActiveDispatcher()
+        internal static unsafe AsyncStateMachineDispatcher? GetActiveDispatcher()
         {
-            AsyncTaskDispatcherInfo* current = AsyncTaskDispatcherInfo.t_current;
-            return current != null ? current->Dispatcher : null;
+            AsyncStateMachineDispatcherInfo* info = AsyncStateMachineDispatcherInfo.t_current;
+            return info != null ? info->Dispatcher : null;
+        }
+
+        internal static unsafe AsyncStateMachineDispatcher CreateDispatcher(IAsyncStateMachineBox box)
+        {
+            if (box is AsyncStateMachineDispatcher existing)
+            {
+                return existing;
+            }
+
+            AsyncStateMachineDispatcherInfo* info = AsyncStateMachineDispatcherInfo.t_current;
+            AsyncStateMachineDispatcher? activeDispatcher = info != null ? info->Dispatcher : null;
+
+            AsyncStateMachineDispatcher dispatcher = new AsyncStateMachineDispatcher(box);
+
+            AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
+            if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
+            {
+                ulong parentDispatcherId = AsyncProfiler.DispatcherIds.CaptureParentDispatcherId();
+                ulong dispatcherId = AsyncProfiler.DispatcherIds.GetDispatcherId(dispatcher);
+
+                if (activeDispatcher != null)
+                {
+                    AsyncProfiler.CreateAsyncContext.Create(activeDispatcher, ref info->AsyncProfilerInfo, parentDispatcherId, dispatcherId);
+                }
+                else
+                {
+                    AsyncProfiler.CreateAsyncContext.Create(parentDispatcherId, dispatcherId);
+                }
+            }
+
+            return dispatcher;
         }
 
         internal static unsafe void UnwindAsyncFrame()
         {
-            AsyncTaskDispatcherInfo* current = t_current;
-            if (current != null)
+            AsyncStateMachineDispatcherInfo* info = t_current;
+            if (info != null)
             {
-                AsyncProfiler.AsyncMethodException.UnwindFrames(ref *current, 1);
+                AsyncProfiler.AsyncMethodException.UnwindFrames(ref *info, 1);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void ResumeAsyncMethod(IAsyncStateMachineBox box, AsyncInstrumentation.Flags flags)
         {
-            AsyncTaskDispatcherInfo* current = t_current;
-            AsyncTaskDispatcher? activeDispatcher = current != null ? current->Dispatcher : null;
+            AsyncStateMachineDispatcherInfo* info = t_current;
+            AsyncStateMachineDispatcher? activeDispatcher = info != null ? info->Dispatcher : null;
             if (activeDispatcher == null)
             {
                 return;
@@ -83,7 +114,7 @@ namespace System.Runtime.CompilerServices
 
             activeDispatcher.CurrentContinuation = box;
 
-            AsyncProfiler.SyncPoint.Check(ref current->AsyncProfilerInfo);
+            AsyncProfiler.SyncPoint.Check(ref info->AsyncProfilerInfo);
 
             bool methodEventEnabled = AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags);
             bool callstackEnabled = AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags);
@@ -92,10 +123,10 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
-            ResumeAsyncMethod(activeDispatcher, current, box, methodEventEnabled, callstackEnabled);
+            ResumeAsyncMethod(activeDispatcher, info, box, methodEventEnabled, callstackEnabled);
         }
 
-        private static unsafe void ResumeAsyncMethod(AsyncTaskDispatcher activeDispatcher, AsyncTaskDispatcherInfo* info, IAsyncStateMachineBox box, bool methodEventEnabled, bool callstackEnabled)
+        private static unsafe void ResumeAsyncMethod(AsyncStateMachineDispatcher activeDispatcher, AsyncStateMachineDispatcherInfo* info, IAsyncStateMachineBox box, bool methodEventEnabled, bool callstackEnabled)
         {
             bool callstackEventEnabled = callstackEnabled && activeDispatcher.ReachedLastContinuation;
 
@@ -113,15 +144,15 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void CompleteAsyncMethod()
         {
-            AsyncTaskDispatcherInfo* current = t_current;
-            if (current != null)
+            AsyncStateMachineDispatcherInfo* info = t_current;
+            if (info != null)
             {
-                AsyncProfiler.CompleteAsyncMethod.Complete(ref *current);
+                AsyncProfiler.CompleteAsyncMethod.Complete(ref *info);
             }
         }
     }
 
-    internal sealed class AsyncTaskDispatcher : Task<VoidTaskResult>, IAsyncStateMachineBox
+    internal sealed class AsyncStateMachineDispatcher : Task<VoidTaskResult>, IAsyncStateMachineBox
     {
         private IAsyncStateMachineBox? _inner;
         private Action? _moveNextAction;
@@ -134,41 +165,10 @@ namespace System.Runtime.CompilerServices
 
         internal bool ContinuationChainChanged => LastContinuation?.ContinuationForDiagnostics != null;
 
-        internal AsyncTaskDispatcher(IAsyncStateMachineBox inner) : base()
+        internal AsyncStateMachineDispatcher(IAsyncStateMachineBox inner) : base()
         {
             _inner = inner;
             CurrentContinuation = inner;
-        }
-
-        internal static unsafe AsyncTaskDispatcher Create(IAsyncStateMachineBox box)
-        {
-            if (box is AsyncTaskDispatcher existing)
-            {
-                return existing;
-            }
-
-            AsyncTaskDispatcherInfo* current = AsyncTaskDispatcherInfo.t_current;
-            AsyncTaskDispatcher? activeDispatcher = current != null ? current->Dispatcher : null;
-
-            AsyncTaskDispatcher dispatcher = new AsyncTaskDispatcher(box);
-
-            AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
-            if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
-            {
-                ulong parentDispatcherId = AsyncProfiler.DispatcherIds.CaptureParentDispatcherId();
-                ulong dispatcherId = AsyncProfiler.DispatcherIds.GetDispatcherId(dispatcher);
-
-                if (activeDispatcher != null)
-                {
-                    AsyncProfiler.CreateAsyncContext.Create(activeDispatcher, ref current->AsyncProfilerInfo, parentDispatcherId, dispatcherId);
-                }
-                else
-                {
-                    AsyncProfiler.CreateAsyncContext.Create(parentDispatcherId, dispatcherId);
-                }
-            }
-
-            return dispatcher;
         }
 
         internal sealed override void ExecuteDirectly(Thread? threadPoolThread) => MoveNext();
@@ -181,20 +181,20 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
-            AsyncTaskDispatcherInfo dispatcherInfo;
-            ref AsyncTaskDispatcherInfo* refCurrent = ref AsyncTaskDispatcherInfo.t_current;
-            AsyncTaskDispatcherInfo* previous = refCurrent;
-            refCurrent = &dispatcherInfo;
-            dispatcherInfo.Next = previous;
+            AsyncStateMachineDispatcherInfo info;
+            ref AsyncStateMachineDispatcherInfo* refInfo = ref AsyncStateMachineDispatcherInfo.t_current;
+            AsyncStateMachineDispatcherInfo* refPreviousInfo = refInfo;
+            refInfo = &info;
+            info.Next = refPreviousInfo;
 
-            dispatcherInfo.Dispatcher = this;
+            info.Dispatcher = this;
 
             AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
-            AsyncProfiler.InitInfo(ref dispatcherInfo.AsyncProfilerInfo);
+            AsyncProfiler.InitInfo(ref info.AsyncProfilerInfo);
 
             if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
             {
-                AsyncProfiler.ResumeAsyncContext.Resume(ref dispatcherInfo);
+                AsyncProfiler.ResumeAsyncContext.Resume(ref info);
             }
 
             try
@@ -205,10 +205,10 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags))
                 {
-                    AsyncProfiler.CompleteAsyncContext.Complete(this, ref dispatcherInfo.AsyncProfilerInfo);
+                    AsyncProfiler.CompleteAsyncContext.Complete(this, ref info.AsyncProfilerInfo);
                 }
 
-                refCurrent = dispatcherInfo.Next;
+                refInfo = info.Next;
 
                 if (IsCompleted)
                 {

@@ -16,29 +16,44 @@ namespace System.Runtime.CompilerServices
 
         public static class Keywords // this name is important for EventSource
         {
-            public const EventKeywords CreateAsyncContext = (EventKeywords)0x1;
-            public const EventKeywords ResumeAsyncContext = (EventKeywords)0x2;
-            public const EventKeywords SuspendAsyncContext = (EventKeywords)0x4;
-            public const EventKeywords CompleteAsyncContext = (EventKeywords)0x8;
-            public const EventKeywords UnwindAsyncException = (EventKeywords)0x10;
-            public const EventKeywords CreateAsyncCallstack = (EventKeywords)0x20;
-            public const EventKeywords ResumeAsyncCallstack = (EventKeywords)0x40;
-            public const EventKeywords SuspendAsyncCallstack = (EventKeywords)0x80;
-            public const EventKeywords ResumeAsyncMethod = (EventKeywords)0x100;
-            public const EventKeywords CompleteAsyncMethod = (EventKeywords)0x200;
+            public const EventKeywords CreateRuntimeAsyncContext = (EventKeywords)0x1;
+            public const EventKeywords ResumeRuntimeAsyncContext = (EventKeywords)0x2;
+            public const EventKeywords SuspendRuntimeAsyncContext = (EventKeywords)0x4;
+            public const EventKeywords CompleteRuntimeAsyncContext = (EventKeywords)0x8;
+            public const EventKeywords UnwindRuntimeAsyncException = (EventKeywords)0x10;
+            public const EventKeywords CreateRuntimeAsyncCallstack = (EventKeywords)0x20;
+            public const EventKeywords ResumeRuntimeAsyncCallstack = (EventKeywords)0x40;
+            public const EventKeywords SuspendRuntimeAsyncCallstack = (EventKeywords)0x80;
+            public const EventKeywords ResumeRuntimeAsyncMethod = (EventKeywords)0x100;
+            public const EventKeywords CompleteRuntimeAsyncMethod = (EventKeywords)0x200;
+            public const EventKeywords CreateStateMachineAsyncContext = (EventKeywords)0x400;
+            public const EventKeywords ResumeStateMachineAsyncContext = (EventKeywords)0x800;
+            public const EventKeywords CompleteStateMachineAsyncContext = (EventKeywords)0x1000;
+            public const EventKeywords UnwindStateMachineAsyncException = (EventKeywords)0x2000;
+            public const EventKeywords ResumeStateMachineAsyncCallstack = (EventKeywords)0x4000;
+            public const EventKeywords ResumeStateMachineAsyncMethod = (EventKeywords)0x8000;
+            public const EventKeywords CompleteStateMachineAsyncMethod = (EventKeywords)0x10000;
         }
 
         public const EventKeywords AsyncEventKeywords =
-            Keywords.CreateAsyncContext |
-            Keywords.ResumeAsyncContext |
-            Keywords.SuspendAsyncContext |
-            Keywords.CompleteAsyncContext |
-            Keywords.CreateAsyncCallstack |
-            Keywords.ResumeAsyncCallstack |
-            Keywords.SuspendAsyncCallstack |
-            Keywords.UnwindAsyncException |
-            Keywords.ResumeAsyncMethod |
-            Keywords.CompleteAsyncMethod;
+            Keywords.CreateRuntimeAsyncContext |
+            Keywords.ResumeRuntimeAsyncContext |
+            Keywords.SuspendRuntimeAsyncContext |
+            Keywords.CompleteRuntimeAsyncContext |
+            Keywords.CreateRuntimeAsyncCallstack |
+            Keywords.ResumeRuntimeAsyncCallstack |
+            Keywords.SuspendRuntimeAsyncCallstack |
+            Keywords.UnwindRuntimeAsyncException |
+            Keywords.ResumeRuntimeAsyncMethod |
+            Keywords.CompleteRuntimeAsyncMethod |
+            Keywords.CreateStateMachineAsyncContext |
+            Keywords.ResumeStateMachineAsyncContext |
+            Keywords.CompleteStateMachineAsyncContext |
+            Keywords.UnwindStateMachineAsyncException |
+            Keywords.ResumeStateMachineAsyncCallstack |
+            Keywords.ResumeStateMachineAsyncMethod |
+            Keywords.CompleteStateMachineAsyncMethod;
+
 
         public const int FlushCommand = 1;
 

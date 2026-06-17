@@ -2,20 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
-    // Tests for V2 (runtime-async) async profiler event emission. All scenario methods use
+    // Tests for Runtime (runtime-async) async profiler event emission. All scenario methods use
     // [RuntimeAsyncMethodGeneration(true)] to ensure they exercise the runtime-async path.
-    // V2 emits Create/Resume/Suspend/Complete callstacks natively from the runtime dispatch
-    // loop, unlike V1 which uses the AsyncStateMachineBox dispatcher wrapper.
+    // Runtime emits Create/Resume/Suspend/Complete callstacks natively from the runtime dispatch
+    // loop, unlike StateMachine which uses the AsyncStateMachineBox dispatcher wrapper.
     public partial class AsyncProfilerTests
     {
         [RuntimeAsyncMethodGeneration(true)]
@@ -199,7 +196,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_EventBufferHeaderFormat()
         {
-            var events = await CollectEventsAsync(CoreKeywords, RuntimeAsync_SingleYield);
+            var events = await CollectEventsAsync(RuntimeAsyncCoreKeywords, RuntimeAsync_SingleYield);
 
             // DumpAllEvents(events);
 
@@ -236,7 +233,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_EventsEmitted()
         {
-            var events = await CollectEventsAsync(AllKeywords, RuntimeAsync_SingleYield);
+            var events = await CollectEventsAsync(AllRuntimeAsyncKeywords, RuntimeAsync_SingleYield);
 
             // DumpAllEvents(events);
 
@@ -255,23 +252,23 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendResumeCompleteEvents()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_SuspendResumeCompleteEvents_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_SuspendResumeCompleteEvents_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
             // Find our context via marker callstack.
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_SuspendResumeCompleteEvents_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_SuspendResumeCompleteEvents_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             ulong dispatcherId = markerCallstacks[0].DispatcherId;
             var taskEvts = stream.ChainEventsFromDispatcher(dispatcherId);
             var ids = taskEvts.Select(e => e.EventId).ToList();
 
-            AssertContains(stream, AsyncEventID.RuntimeAsync_ResumeAsyncContext, ids);
-            AssertContains(stream, AsyncEventID.RuntimeAsync_SuspendAsyncContext, ids);
-            AssertContains(stream, AsyncEventID.RuntimeAsync_CompleteAsyncContext, ids);
+            AssertContains(stream, AsyncEventID.ResumeRuntimeAsyncContext, ids);
+            AssertContains(stream, AsyncEventID.SuspendRuntimeAsyncContext, ids);
+            AssertContains(stream, AsyncEventID.CompleteRuntimeAsyncContext, ids);
         }
 
 
@@ -286,14 +283,14 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ContextEventIdLifecycle()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_ContextEventIdLifecycle_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_ContextEventIdLifecycle_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
             // Find events in the context that contains our marker method.
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_ContextEventIdLifecycle_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_ContextEventIdLifecycle_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             ulong dispatcherId = markerCallstacks[0].DispatcherId;
@@ -302,8 +299,8 @@ namespace System.Threading.Tasks.Tests
             var taskEvts = stream.ChainEventsFromDispatcher(dispatcherId);
             var ids = taskEvts.Select(e => e.EventId).ToList();
 
-            int createIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
-            int resumeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_ResumeAsyncContext);
+            int createIdx = ids.IndexOf(AsyncEventID.CreateRuntimeAsyncContext);
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeRuntimeAsyncContext);
             AssertTrue(stream, createIdx >= 0, "Expected CreateAsyncContext in context events");
             AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeAsyncContext after CreateAsyncContext");
         }
@@ -311,14 +308,14 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ResumeCompleteMethodEvents()
         {
-            var events = await CollectEventsAsync(MethodKeywords, RuntimeAsync_ChainedYield);
+            var events = await CollectEventsAsync(RuntimeAsyncMethodKeywords, RuntimeAsync_ChainedYield);
 
             // DumpAllEvents(events);
 
             var ids = ParseAllEvents(events).EventIds;
 
-            AssertContains(events, AsyncEventID.RuntimeAsync_ResumeAsyncMethod, ids);
-            AssertContains(events, AsyncEventID.RuntimeAsync_CompleteAsyncMethod, ids);
+            AssertContains(events, AsyncEventID.ResumeRuntimeAsyncMethod, ids);
+            AssertContains(events, AsyncEventID.CompleteRuntimeAsyncMethod, ids);
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
@@ -332,14 +329,14 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_EventSequenceOrder()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_EventSequenceOrder_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_EventSequenceOrder_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
             // Find our context via marker callstack.
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_EventSequenceOrder_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_EventSequenceOrder_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             ulong dispatcherId = markerCallstacks[0].DispatcherId;
@@ -347,28 +344,28 @@ namespace System.Threading.Tasks.Tests
             var ids = taskEvts.Select(e => e.EventId).ToList();
 
             // Verify the expected lifecycle sequence exists in order.
-            int resumeIdx1 = ids.IndexOf(AsyncEventID.RuntimeAsync_ResumeAsyncContext);
+            int resumeIdx1 = ids.IndexOf(AsyncEventID.ResumeRuntimeAsyncContext);
             AssertTrue(stream, resumeIdx1 >= 0, "Expected first ResumeAsyncContext");
 
-            int suspendIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_SuspendAsyncContext, resumeIdx1 + 1);
+            int suspendIdx = ids.IndexOf(AsyncEventID.SuspendRuntimeAsyncContext, resumeIdx1 + 1);
             AssertTrue(stream, suspendIdx > resumeIdx1, "Expected SuspendAsyncContext after first Resume");
 
-            int resumeIdx2 = ids.IndexOf(AsyncEventID.RuntimeAsync_ResumeAsyncContext, suspendIdx + 1);
+            int resumeIdx2 = ids.IndexOf(AsyncEventID.ResumeRuntimeAsyncContext, suspendIdx + 1);
             AssertTrue(stream, resumeIdx2 > suspendIdx, "Expected second ResumeAsyncContext after Suspend");
 
-            int completeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CompleteAsyncContext, resumeIdx2 + 1);
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteRuntimeAsyncContext, resumeIdx2 + 1);
             AssertTrue(stream, completeIdx > resumeIdx2, "Expected CompleteAsyncContext after second Resume");
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateAsyncContextEmittedOnFirstAwait()
         {
-            var events = await CollectEventsAsync(CreateAsyncContextKeyword | CompleteAsyncContextKeyword, RuntimeAsync_SingleYield);
+            var events = await CollectEventsAsync(CreateRuntimeAsyncContextKeyword | CompleteRuntimeAsyncContextKeyword, RuntimeAsync_SingleYield);
 
             // DumpAllEvents(events);
 
             var ids = ParseAllEvents(events).EventIds;
-            AssertContains(events, AsyncEventID.RuntimeAsync_CreateAsyncContext, ids);
+            AssertContains(events, AsyncEventID.CreateRuntimeAsyncContext, ids);
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
@@ -381,12 +378,12 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var createCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_CreateAsyncCallstack, nameof(RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait_Marker));
+            var createCallstacks = stream.CallstacksWithMarker(AsyncEventID.CreateRuntimeAsyncCallstack, nameof(RuntimeAsync_CreateAsyncCallstackEmittedOnFirstAwait_Marker));
 
             AssertNotEmpty(stream, createCallstacks);
             AssertAll(stream, createCallstacks, cs =>
@@ -408,12 +405,12 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateCallstackDepthMatchesChain()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CreateCallstackDepthMatchesChain_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CreateCallstackDepthMatchesChain_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var createCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_CreateAsyncCallstack, nameof(RuntimeAsync_CreateCallstackDepthMatchesChain_Marker));
+            var createCallstacks = stream.CallstacksWithMarker(AsyncEventID.CreateRuntimeAsyncCallstack, nameof(RuntimeAsync_CreateCallstackDepthMatchesChain_Marker));
 
             // The expected [NoInlining] frames in order (innermost first):
             // RuntimeAsync_InnerYield -> RuntimeAsync_ChainedYield -> RuntimeAsync_CreateCallstackDepthMatchesChain_Marker
@@ -436,12 +433,12 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var suspendCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_SuspendAsyncCallstack, nameof(RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait_Marker));
+            var suspendCallstacks = stream.CallstacksWithMarker(AsyncEventID.SuspendRuntimeAsyncCallstack, nameof(RuntimeAsync_SuspendAsyncCallstackEmittedOnAwait_Marker));
 
             AssertNotEmpty(stream, suspendCallstacks);
             AssertAll(stream, suspendCallstacks, cs =>
@@ -463,12 +460,12 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendCallstackDepthMatchesChain()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_SuspendCallstackDepthMatchesChain_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_SuspendCallstackDepthMatchesChain_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var suspendCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_SuspendAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackDepthMatchesChain_Marker));
+            var suspendCallstacks = stream.CallstacksWithMarker(AsyncEventID.SuspendRuntimeAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackDepthMatchesChain_Marker));
 
             // The expected [NoInlining] frames in order (innermost first):
             // RuntimeAsync_InnerYield -> RuntimeAsync_ChainedYield -> RuntimeAsync_SuspendCallstackDepthMatchesChain_Marker
@@ -491,14 +488,14 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendCallstackPrecedesComplete()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_SuspendCallstackPrecedesComplete_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_SuspendCallstackPrecedesComplete_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
             // Find the suspend callstack via marker to get the context ID
-            var suspendStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_SuspendAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackPrecedesComplete_Marker));
+            var suspendStacks = stream.CallstacksWithMarker(AsyncEventID.SuspendRuntimeAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackPrecedesComplete_Marker));
             AssertNotEmpty(stream, suspendStacks);
 
             ulong dispatcherId = suspendStacks[0].DispatcherId;
@@ -507,8 +504,8 @@ namespace System.Threading.Tasks.Tests
             var taskEvts = stream.ChainEventsFromDispatcher(dispatcherId);
             var ids = taskEvts.Select(e => e.EventId).ToList();
 
-            int suspendIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_SuspendAsyncCallstack);
-            int completeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CompleteAsyncContext);
+            int suspendIdx = ids.IndexOf(AsyncEventID.SuspendRuntimeAsyncCallstack);
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteRuntimeAsyncContext);
 
             AssertTrue(stream, suspendIdx >= 0, "Expected SuspendAsyncCallstack in context events");
             AssertTrue(stream, completeIdx >= 0, "Expected CompleteAsyncContext in context events");
@@ -526,13 +523,13 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_SuspendCallstackDeeperThanInitialResume()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_SuspendCallstackDeeperThanInitialResume_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_SuspendCallstackDeeperThanInitialResume_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackDeeperThanInitialResume_Marker));
-            var suspendStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_SuspendAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackDeeperThanInitialResume_Marker));
+            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackDeeperThanInitialResume_Marker));
+            var suspendStacks = stream.CallstacksWithMarker(AsyncEventID.SuspendRuntimeAsyncCallstack, nameof(RuntimeAsync_SuspendCallstackDeeperThanInitialResume_Marker));
 
             AssertNotEmpty(stream, resumeStacks);
             AssertNotEmpty(stream, suspendStacks);
@@ -555,13 +552,13 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateCallstackPrecedesResumeCallstack()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CreateCallstackPrecedesResumeCallstack_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CreateCallstackPrecedesResumeCallstack_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var createStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_CreateAsyncCallstack, nameof(RuntimeAsync_CreateCallstackPrecedesResumeCallstack_Marker));
-            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_CreateCallstackPrecedesResumeCallstack_Marker));
+            var createStacks = stream.CallstacksWithMarker(AsyncEventID.CreateRuntimeAsyncCallstack, nameof(RuntimeAsync_CreateCallstackPrecedesResumeCallstack_Marker));
+            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_CreateCallstackPrecedesResumeCallstack_Marker));
 
             AssertNotEmpty(stream, createStacks);
             AssertNotEmpty(stream, resumeStacks);
@@ -592,13 +589,13 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CreateAndFirstResumeCallstacksMatch()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CreateAndFirstResumeCallstacksMatch_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CreateAndFirstResumeCallstacksMatch_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var createStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_CreateAsyncCallstack, nameof(RuntimeAsync_CreateAndFirstResumeCallstacksMatch_Marker));
-            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_CreateAndFirstResumeCallstacksMatch_Marker));
+            var createStacks = stream.CallstacksWithMarker(AsyncEventID.CreateRuntimeAsyncCallstack, nameof(RuntimeAsync_CreateAndFirstResumeCallstacksMatch_Marker));
+            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_CreateAndFirstResumeCallstacksMatch_Marker));
 
             AssertNotEmpty(stream, createStacks);
             AssertNotEmpty(stream, resumeStacks);
@@ -633,12 +630,12 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackEmittedOnResume()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackEmittedOnResume_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackEmittedOnResume_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var callstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_CallstackEmittedOnResume_Marker));
+            var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_CallstackEmittedOnResume_Marker));
 
             AssertNotEmpty(stream, callstacks);
             AssertAll(stream, callstacks, cs =>
@@ -660,12 +657,12 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackDepthMatchesChain()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackDepthMatchesChain_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackDepthMatchesChain_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var callstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_CallstackDepthMatchesChain_Marker));
+            var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_CallstackDepthMatchesChain_Marker));
 
             // The expected [NoInlining] frames in order (innermost first):
             // RuntimeAsync_InnerYield -> RuntimeAsync_CallstackDepthMatchesChain_Marker
@@ -687,7 +684,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_MethodEventCountMatchesChainDepth()
         {
-            var events = await CollectEventsAsync(CallstackKeywords | MethodKeywords, RuntimeAsync_MethodEventCountMatchesChainDepth_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords | RuntimeAsyncMethodKeywords, RuntimeAsync_MethodEventCountMatchesChainDepth_Marker);
 
             // DumpAllEvents(events);
 
@@ -696,7 +693,7 @@ namespace System.Threading.Tasks.Tests
             // Marker -> DeepChain -> Level1 -> Level2 -> Level3
             const int ExpectedChainDepth = 5;
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_MethodEventCountMatchesChainDepth_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_MethodEventCountMatchesChainDepth_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             AssertEqual(stream, ExpectedChainDepth, markerCallstacks[0].Frames.Count);
@@ -704,10 +701,10 @@ namespace System.Threading.Tasks.Tests
             ulong chainDispatcherId = markerCallstacks[0].DispatcherId;
             var chainEvents = stream.ChainEventsFromDispatcher(chainDispatcherId);
 
-            int resumeCount = chainEvents.Count(e => e.EventId == AsyncEventID.RuntimeAsync_ResumeAsyncMethod);
+            int resumeCount = chainEvents.Count(e => e.EventId == AsyncEventID.ResumeRuntimeAsyncMethod);
             AssertEqual(stream, ExpectedChainDepth, resumeCount);
 
-            int completeCount = chainEvents.Count(e => e.EventId == AsyncEventID.RuntimeAsync_CompleteAsyncMethod);
+            int completeCount = chainEvents.Count(e => e.EventId == AsyncEventID.CompleteRuntimeAsyncMethod);
             AssertEqual(stream, ExpectedChainDepth, completeCount);
         }
 
@@ -721,13 +718,13 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackFramesHaveDistinctMethodIds()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackFramesHaveDistinctMethodIds_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackFramesHaveDistinctMethodIds_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_CallstackFramesHaveDistinctMethodIds_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_CallstackFramesHaveDistinctMethodIds_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             // Frames in the same callstack should have distinct methodIds (one per async method in the chain).
@@ -770,13 +767,13 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_YieldAtEachLevel_CallstackShrinks()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_YieldAtEachLevel_CallstackShrinks_Marker));
 
             // After Task.Delay resumes: full chain (Level3, Level2, Level1, Marker) = 4 frames
             // After Level3's yield resumes: Level3 completes, chain is (Level2, Level1, Marker) = 3 frames
@@ -797,7 +794,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackSimulation_NormalCompletion()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackSimulation_NormalCompletion_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackSimulation_NormalCompletion_Marker);
 
             // DumpAllEvents(events);
 
@@ -815,7 +812,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackSimulation_HandledException()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackSimulation_HandledException_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackSimulation_HandledException_Marker);
 
             // DumpAllEvents(events);
 
@@ -846,7 +843,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_CallstackSimulation_UnhandledException()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackSimulation_UnhandledException_Catcher_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackSimulation_UnhandledException_Catcher_Marker);
 
             // DumpAllEvents(events);
 
@@ -877,12 +874,12 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_UnhandledExceptionUnwind()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_UnhandledExceptionUnwind_Catcher_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_UnhandledExceptionUnwind_Catcher_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_UnhandledExceptionUnwind_Marker));
+            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_UnhandledExceptionUnwind_Marker));
             AssertNotEmpty(stream, resumeStacks);
 
             ulong dispatcherId = resumeStacks[0].DispatcherId;
@@ -890,13 +887,13 @@ namespace System.Threading.Tasks.Tests
             var taskEvts = stream.ChainEventsFromDispatcher(dispatcherId);
             var eventIds = taskEvts.Select(e => e.EventId).ToList();
 
-            AssertContains(stream, AsyncEventID.RuntimeAsync_ResumeAsyncContext, eventIds);
-            AssertContains(stream, AsyncEventID.RuntimeAsync_UnwindAsyncException, eventIds);
-            AssertContains(stream, AsyncEventID.RuntimeAsync_CompleteAsyncContext, eventIds);
+            AssertContains(stream, AsyncEventID.ResumeRuntimeAsyncContext, eventIds);
+            AssertContains(stream, AsyncEventID.UnwindRuntimeAsyncException, eventIds);
+            AssertContains(stream, AsyncEventID.CompleteRuntimeAsyncContext, eventIds);
 
             // Verify unwind frame count for this task
             // Marker -> RuntimeAsync_DeepUnhandledOuter -> RuntimeAsync_DeepUnhandledMiddle -> RuntimeAsync_DeepUnhandledInnerThrows, 4 frames deep after the initial resume.
-            var unwindEvents = taskEvts.Where(e => e.EventId == AsyncEventID.RuntimeAsync_UnwindAsyncException).ToList();
+            var unwindEvents = taskEvts.Where(e => e.EventId == AsyncEventID.UnwindRuntimeAsyncException).ToList();
             AssertNotEmpty(stream, unwindEvents);
             AssertAll(stream, unwindEvents, e => Assert.Equal(4u, e.UnwindFrameCount));
         }
@@ -911,12 +908,12 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_HandledExceptionUnwind()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_HandledExceptionUnwind_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_HandledExceptionUnwind_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_HandledExceptionUnwind_Marker));
+            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_HandledExceptionUnwind_Marker));
             AssertNotEmpty(stream, resumeStacks);
 
             ulong dispatcherId = resumeStacks[0].DispatcherId;
@@ -924,13 +921,13 @@ namespace System.Threading.Tasks.Tests
             var taskEvts = stream.ChainEventsFromDispatcher(dispatcherId);
             var eventIds = taskEvts.Select(e => e.EventId).ToList();
 
-            AssertContains(stream, AsyncEventID.RuntimeAsync_ResumeAsyncContext, eventIds);
-            AssertContains(stream, AsyncEventID.RuntimeAsync_UnwindAsyncException, eventIds);
-            AssertContains(stream, AsyncEventID.RuntimeAsync_CompleteAsyncContext, eventIds);
+            AssertContains(stream, AsyncEventID.ResumeRuntimeAsyncContext, eventIds);
+            AssertContains(stream, AsyncEventID.UnwindRuntimeAsyncException, eventIds);
+            AssertContains(stream, AsyncEventID.CompleteRuntimeAsyncContext, eventIds);
 
             // Verify unwind frame count for this task
             // RuntimeAsync_DeepMiddle -> RuntimeAsync_DeepInnerThrows, 2 frames deep after the initial resume.
-            var unwindEvents = taskEvts.Where(e => e.EventId == AsyncEventID.RuntimeAsync_UnwindAsyncException).ToList();
+            var unwindEvents = taskEvts.Where(e => e.EventId == AsyncEventID.UnwindRuntimeAsyncException).ToList();
             AssertNotEmpty(stream, unwindEvents);
             AssertAll(stream, unwindEvents, e => Assert.Equal(2u, e.UnwindFrameCount));
         }
@@ -947,7 +944,7 @@ namespace System.Threading.Tasks.Tests
         {
             var captures = new List<(string MethodName, int WrapperSlot)>();
 
-            var events = CollectEvents(ResumeAsyncCallstackKeyword, () =>
+            var events = CollectEvents(ResumeRuntimeAsyncCallstackKeyword, () =>
             {
                 RunScenarioAndFlush(async () =>
                 {
@@ -974,7 +971,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_WrapperIndexResetEmitted()
         {
-            var events = CollectEvents(AllKeywords, () =>
+            var events = CollectEvents(AllRuntimeAsyncKeywords, () =>
             {
                 // Recursive chain 34 levels deep crosses the 32-slot boundary,
                 // triggering at least one ResetAsyncContinuationWrapperIndex event.
@@ -996,7 +993,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public void RuntimeAsync_WrapperIndexNoResetUnder32()
         {
-            var events = CollectEvents(AllKeywords, () =>
+            var events = CollectEvents(AllRuntimeAsyncKeywords, () =>
             {
                 // A shallow chain stays within the first 32 slots --
                 // no reset event should be emitted.
@@ -1020,12 +1017,12 @@ namespace System.Threading.Tasks.Tests
         public void RuntimeAsync_PeriodicTimerFlush()
         {
             static bool IsRequestedEvent(AsyncEventID id) =>
-                id == AsyncEventID.RuntimeAsync_CreateAsyncContext ||
-                id == AsyncEventID.RuntimeAsync_ResumeAsyncContext ||
-                id == AsyncEventID.RuntimeAsync_SuspendAsyncContext ||
-                id == AsyncEventID.RuntimeAsync_CompleteAsyncContext;
+                id == AsyncEventID.CreateRuntimeAsyncContext ||
+                id == AsyncEventID.ResumeRuntimeAsyncContext ||
+                id == AsyncEventID.SuspendRuntimeAsyncContext ||
+                id == AsyncEventID.CompleteRuntimeAsyncContext;
 
-            var events = CollectEvents(CoreKeywords, (collectedEvents, _) =>
+            var events = CollectEvents(RuntimeAsyncCoreKeywords, (collectedEvents, _) =>
             {
                 // Run scenario - do NOT flush explicitly afterwards.
                 RunScenario(async () =>
@@ -1074,7 +1071,7 @@ namespace System.Threading.Tasks.Tests
             var firstFlushSeen = new ManualResetEventSlim(false);
             var events = new CollectedEvents();
 
-            using (var listener = CreateListener(CoreKeywords))
+            using (var listener = CreateListener(RuntimeAsyncCoreKeywords))
             {
                 listener.RunWithCallback(e =>
                 {
@@ -1153,7 +1150,7 @@ namespace System.Threading.Tasks.Tests
             // There must be at least 2 such buffers (one per RuntimeAsync_SingleYield() call), and ALL of them must
             // have the worker's OsThreadId - proving the timer flush didn't corrupt the header.
             var stream = ParseAllEvents(events);
-            var createEvents = stream.OfType(AsyncEventID.RuntimeAsync_CreateAsyncContext).ToList();
+            var createEvents = stream.OfType(AsyncEventID.CreateRuntimeAsyncContext).ToList();
             AssertTrue(stream, createEvents.Count >= 2, $"Expected at least 2 CreateAsyncContext events from the worker thread, got {createEvents.Count}");
             AssertAll(stream, createEvents, e => Assert.Equal(workerOsThreadId, e.OsThreadId));
         }
@@ -1165,12 +1162,12 @@ namespace System.Threading.Tasks.Tests
         public void RuntimeAsync_DeadThreadFlush()
         {
             static bool IsRequestedEvent(AsyncEventID id) =>
-                id == AsyncEventID.RuntimeAsync_CreateAsyncContext ||
-                id == AsyncEventID.RuntimeAsync_ResumeAsyncContext ||
-                id == AsyncEventID.RuntimeAsync_SuspendAsyncContext ||
-                id == AsyncEventID.RuntimeAsync_CompleteAsyncContext;
+                id == AsyncEventID.CreateRuntimeAsyncContext ||
+                id == AsyncEventID.ResumeRuntimeAsyncContext ||
+                id == AsyncEventID.SuspendRuntimeAsyncContext ||
+                id == AsyncEventID.CompleteRuntimeAsyncContext;
 
-            var events = CollectEvents(CoreKeywords, (collectedEvents, _) =>
+            var events = CollectEvents(RuntimeAsyncCoreKeywords, (collectedEvents, _) =>
             {
                 // Spawn a dedicated thread that runs async work then exits.
                 // Its thread-local buffer becomes orphaned when the thread dies.
@@ -1215,7 +1212,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_NoSyncClockEventBeforeInterval()
         {
-            var events = await CollectEventsAsync(CoreKeywords, RuntimeAsync_SingleYield);
+            var events = await CollectEventsAsync(RuntimeAsyncCoreKeywords, RuntimeAsync_SingleYield);
 
             var ids = ParseAllEvents(events).EventIds;
 
@@ -1237,28 +1234,28 @@ namespace System.Threading.Tasks.Tests
 
             // Now attach listener but don't run any RuntimeAsync work inside --
             // just call a synchronous no-op. Verify no stale events from above leak through.
-            var events = await CollectEventsAsync(CoreKeywords, () => Task.CompletedTask);
+            var events = await CollectEventsAsync(RuntimeAsyncCoreKeywords, () => Task.CompletedTask);
 
             // There may be meta data related events, but there should be no suspend/resume/complete events from the earlier work.
             var ids = ParseAllEvents(events).EventIds;
 
-            int contextEvents = ids.Count(id => id == AsyncEventID.RuntimeAsync_ResumeAsyncContext || id == AsyncEventID.RuntimeAsync_SuspendAsyncContext || id == AsyncEventID.RuntimeAsync_CompleteAsyncContext);
+            int contextEvents = ids.Count(id => id == AsyncEventID.ResumeRuntimeAsyncContext || id == AsyncEventID.SuspendRuntimeAsyncContext || id == AsyncEventID.CompleteRuntimeAsyncContext);
 
             AssertEqual(events, 0, contextEvents);
         }
 
         public static IEnumerable<object[]> KeywordGatekeepingData()
         {
-            yield return new object[] { (long)CreateAsyncContextKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.RuntimeAsync_CreateAsyncContext, AsyncEventID.TaskAsync_CreateAsyncContext, AsyncEventID.AsyncProfilerMetadata } };
-            yield return new object[] { (long)ResumeAsyncContextKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.RuntimeAsync_ResumeAsyncContext, AsyncEventID.TaskAsync_ResumeAsyncContext, AsyncEventID.AsyncProfilerMetadata } };
-            yield return new object[] { (long)SuspendAsyncContextKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.RuntimeAsync_SuspendAsyncContext, AsyncEventID.TaskAsync_SuspendAsyncContext, AsyncEventID.AsyncProfilerMetadata } };
-            yield return new object[] { (long)CompleteAsyncContextKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.RuntimeAsync_CompleteAsyncContext, AsyncEventID.TaskAsync_CompleteAsyncContext, AsyncEventID.AsyncProfilerMetadata } };
-            yield return new object[] { (long)UnwindAsyncExceptionKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.RuntimeAsync_UnwindAsyncException, AsyncEventID.TaskAsync_UnwindAsyncException, AsyncEventID.AsyncProfilerMetadata } };
-            yield return new object[] { (long)CreateAsyncCallstackKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.RuntimeAsync_CreateAsyncCallstack, AsyncEventID.AsyncProfilerMetadata } };
-            yield return new object[] { (long)ResumeAsyncCallstackKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, AsyncEventID.TaskAsync_ResumeAsyncCallstack, AsyncEventID.TaskAsync_AppendAsyncCallstack, AsyncEventID.AsyncProfilerMetadata } };
-            yield return new object[] { (long)SuspendAsyncCallstackKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.RuntimeAsync_SuspendAsyncCallstack, AsyncEventID.AsyncProfilerMetadata } };
-            yield return new object[] { (long)ResumeAsyncMethodKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.RuntimeAsync_ResumeAsyncMethod, AsyncEventID.TaskAsync_ResumeAsyncMethod, AsyncEventID.AsyncProfilerMetadata } };
-            yield return new object[] { (long)CompleteAsyncMethodKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.RuntimeAsync_CompleteAsyncMethod, AsyncEventID.TaskAsync_CompleteAsyncMethod, AsyncEventID.AsyncProfilerMetadata } };
+            yield return new object[] { (long)CreateRuntimeAsyncContextKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.CreateRuntimeAsyncContext, AsyncEventID.AsyncProfilerMetadata } };
+            yield return new object[] { (long)ResumeRuntimeAsyncContextKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.ResumeRuntimeAsyncContext, AsyncEventID.AsyncProfilerMetadata } };
+            yield return new object[] { (long)SuspendRuntimeAsyncContextKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.SuspendRuntimeAsyncContext, AsyncEventID.AsyncProfilerMetadata } };
+            yield return new object[] { (long)CompleteRuntimeAsyncContextKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.CompleteRuntimeAsyncContext, AsyncEventID.AsyncProfilerMetadata } };
+            yield return new object[] { (long)UnwindRuntimeAsyncExceptionKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.UnwindRuntimeAsyncException, AsyncEventID.AsyncProfilerMetadata } };
+            yield return new object[] { (long)CreateRuntimeAsyncCallstackKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.CreateRuntimeAsyncCallstack, AsyncEventID.AsyncProfilerMetadata } };
+            yield return new object[] { (long)ResumeRuntimeAsyncCallstackKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.ResumeRuntimeAsyncCallstack, AsyncEventID.AsyncProfilerMetadata } };
+            yield return new object[] { (long)SuspendRuntimeAsyncCallstackKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.SuspendRuntimeAsyncCallstack, AsyncEventID.AsyncProfilerMetadata } };
+            yield return new object[] { (long)ResumeRuntimeAsyncMethodKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.ResumeRuntimeAsyncMethod, AsyncEventID.AsyncProfilerMetadata } };
+            yield return new object[] { (long)CompleteRuntimeAsyncMethodKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.CompleteRuntimeAsyncMethod, AsyncEventID.AsyncProfilerMetadata } };
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
@@ -1267,6 +1264,7 @@ namespace System.Threading.Tasks.Tests
         {
             await RuntimeAsync_OuterCatches();
             await RuntimeAsync_ChainedYield();
+            await StateMachineAsync_SingleYield();
         }
 
         // This test is sensitive to event noise - it asserts that ONLY the expected event
@@ -1296,7 +1294,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ResetAsyncThreadContextEvent()
         {
-            var events = await CollectEventsAsync(CoreKeywords, RuntimeAsync_SingleYield);
+            var events = await CollectEventsAsync(RuntimeAsyncCoreKeywords, RuntimeAsync_SingleYield);
 
             // DumpAllEvents(events);
 
@@ -1308,7 +1306,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_MetadataEventEmittedOnEnable()
         {
-            var events = await CollectEventsAsync(AllKeywords, RuntimeAsync_SingleYield);
+            var events = await CollectEventsAsync(AllRuntimeAsyncKeywords, RuntimeAsync_SingleYield);
 
             // DumpAllEvents(events);
 
@@ -1332,7 +1330,7 @@ namespace System.Threading.Tasks.Tests
         {
             const int threadCount = 8;
 
-            var events = CollectEvents(AllKeywords, () =>
+            var events = CollectEvents(AllRuntimeAsyncKeywords, () =>
             {
                 using var barrier = new Barrier(threadCount);
                 var tasks = new Task[threadCount];
@@ -1372,10 +1370,10 @@ namespace System.Threading.Tasks.Tests
             // methods at different JIT-assigned addresses, the deltas between consecutive
             // NativeIPs will naturally span both directions. This exercises the full
             // zigzag + LEB128 encode/decode path through the production serializer.
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CallstackNativeIPDeltaRoundtrip_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_CallstackNativeIPDeltaRoundtrip_Marker);
 
             var stream = ParseAllEvents(events);
-            var callstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_CallstackNativeIPDeltaRoundtrip_Marker));
+            var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_CallstackNativeIPDeltaRoundtrip_Marker));
             AssertNotEmpty(stream, callstacks);
 
             // Find callstacks with 3+ frames -- enough depth for meaningful deltas.
@@ -1438,7 +1436,7 @@ namespace System.Threading.Tasks.Tests
             for (int i = 0; i < iterations; i++)
                 depths[i] = rng.Next(1, 120);
 
-            var events = CollectEvents(CallstackKeywords, () =>
+            var events = CollectEvents(RuntimeAsyncCallstackKeywords, () =>
             {
                 RunScenarioAndFlush(async () =>
                 {
@@ -1450,7 +1448,7 @@ namespace System.Threading.Tasks.Tests
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var callstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_CallstackStressWithVaryingDepths_Marker));
+            var callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_CallstackStressWithVaryingDepths_Marker));
 
             // Verify all callstacks have valid frame data that resolves to managed methods.
             foreach (var cs in callstacks)
@@ -1511,7 +1509,7 @@ namespace System.Threading.Tasks.Tests
                 for (int i = 0; i < iterations; i++)
                     depths[i] = rng.Next(50, 250);
 
-                var events = CollectEvents(AllKeywords, () =>
+                var events = CollectEvents(AllRuntimeAsyncKeywords, () =>
                 {
                     RunScenarioAndFlush(async () =>
                     {
@@ -1550,9 +1548,9 @@ namespace System.Threading.Tasks.Tests
                     _ = ReadPayloadLengthPrefix(buffer, firstId, ref index);
 
                     byte frameCount = 0;
-                    if (firstId == AsyncEventID.RuntimeAsync_ResumeAsyncCallstack ||
-                        firstId == AsyncEventID.RuntimeAsync_CreateAsyncCallstack ||
-                        firstId == AsyncEventID.RuntimeAsync_SuspendAsyncCallstack)
+                    if (firstId == AsyncEventID.ResumeRuntimeAsyncCallstack ||
+                        firstId == AsyncEventID.CreateRuntimeAsyncCallstack ||
+                        firstId == AsyncEventID.SuspendRuntimeAsyncCallstack)
                     {
                         // Callstack payload: callstackId(1) + continuationIndex(1) + frameCount(1) + compressed parentDispatcherId + compressed dispatcherId + frames...
                         index++; // callstack ID (reserved)
@@ -1583,9 +1581,9 @@ namespace System.Threading.Tasks.Tests
                         uint remaining = bufferCapacity - (uint)current.UsedSize;
                         bool currentNotFull = remaining > 0;
                         bool nextStartsWithLargeCallstack =
-                            (next.FirstEventId == AsyncEventID.RuntimeAsync_ResumeAsyncCallstack ||
-                             next.FirstEventId == AsyncEventID.RuntimeAsync_CreateAsyncCallstack ||
-                             next.FirstEventId == AsyncEventID.RuntimeAsync_SuspendAsyncCallstack) &&
+                            (next.FirstEventId == AsyncEventID.ResumeRuntimeAsyncCallstack ||
+                             next.FirstEventId == AsyncEventID.CreateRuntimeAsyncCallstack ||
+                             next.FirstEventId == AsyncEventID.SuspendRuntimeAsyncCallstack) &&
                             next.FirstFrameCount > 30;
 
                         if (currentNotFull && nextStartsWithLargeCallstack)
@@ -1602,7 +1600,7 @@ namespace System.Threading.Tasks.Tests
                 // Validate all large callstacks in the stream have correct frames.
                 if (overflowDetected)
                 {
-                    var largeCallstacks = stream.OfType(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack)
+                    var largeCallstacks = stream.OfType(AsyncEventID.ResumeRuntimeAsyncCallstack)
                         .Where(e => e.FrameCount > 30)
                         .ToList();
 
@@ -1636,7 +1634,7 @@ namespace System.Threading.Tasks.Tests
             // RuntimeAsync_RecursiveChain(300) produces a 300-deep chain + 1 lambda = 301 frames.
             const int requestedDepth = 300;
 
-            var events = CollectEvents(ResumeAsyncCallstackKeyword, () =>
+            var events = CollectEvents(ResumeRuntimeAsyncCallstackKeyword, () =>
             {
                 RunScenarioAndFlush(async () =>
                 {
@@ -1647,7 +1645,7 @@ namespace System.Threading.Tasks.Tests
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
-            var callstacks = stream.OfType(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack).ToList();
+            var callstacks = stream.OfType(AsyncEventID.ResumeRuntimeAsyncCallstack).ToList();
             AssertTrue(stream, callstacks.Count >= 1, "Expected at least one callstack");
 
             // Find the callstack from our deep RuntimeAsync_RecursiveChain call.
@@ -1670,7 +1668,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_MetadataMatchesWrapperMethods()
         {
-            var events = await CollectEventsAsync(AllKeywords, RuntimeAsync_SingleYield);
+            var events = await CollectEventsAsync(AllRuntimeAsyncKeywords, RuntimeAsync_SingleYield);
 
             var stream = ParseAllEvents(events);
             var metadataList = stream.MetadataEvents;
@@ -1736,7 +1734,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_WhenAll_TracksAllBranches()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_WhenAll_TracksAllBranches_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_WhenAll_TracksAllBranches_Marker);
 
             // DumpAllEvents(events);
 
@@ -1744,16 +1742,16 @@ namespace System.Threading.Tasks.Tests
 
             // Each branch awaits a (staggered) Task.Delay, so it always suspends and produces its own
             // tracked chain with a Resume callstack containing the branch frame.
-            var branchACallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchA_Marker));
-            var branchBCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchB_Marker));
-            var branchCCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchC_Marker));
+            var branchACallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchA_Marker));
+            var branchBCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchB_Marker));
+            var branchCCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchC_Marker));
             AssertNotEmpty(stream, branchACallstacks);
             AssertNotEmpty(stream, branchBCallstacks);
             AssertNotEmpty(stream, branchCCallstacks);
 
             // Because every branch suspends on a pending Task.Delay, Task.WhenAll is always pending when
             // the outer marker awaits it, so the marker also suspends and gets its own tracked chain.
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             // Each tracked chain (3 branches + outer marker) must see exactly one Create and one Complete on its own DispatcherId.
@@ -1766,11 +1764,11 @@ namespace System.Threading.Tasks.Tests
             ulong markerDispatcherId = markerCallstacks[0].DispatcherId;
             var markerIds = stream.ChainEventsFromDispatcher(markerDispatcherId).Select(e => e.EventId).ToList();
 
-            int createIdx = markerIds.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
-            int resumeIdx = markerIds.IndexOf(AsyncEventID.RuntimeAsync_ResumeAsyncContext, createIdx + 1);
+            int createIdx = markerIds.IndexOf(AsyncEventID.CreateRuntimeAsyncContext);
+            int resumeIdx = markerIds.IndexOf(AsyncEventID.ResumeRuntimeAsyncContext, createIdx + 1);
             AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeAsyncContext after Create on the outer marker");
 
-            int completeIdx = markerIds.IndexOf(AsyncEventID.RuntimeAsync_CompleteAsyncContext, resumeIdx + 1);
+            int completeIdx = markerIds.IndexOf(AsyncEventID.CompleteRuntimeAsyncContext, resumeIdx + 1);
             AssertTrue(stream, completeIdx > resumeIdx, "Expected CompleteAsyncContext after Resume on the outer marker");
         }
 
@@ -1810,20 +1808,20 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_WhenAny_TracksAllBranches()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_WhenAny_TracksAllBranches_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_WhenAny_TracksAllBranches_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             // All branches - including the slow ones whose completion the outer is no longer
             // strictly waiting on after WhenAny returned - must produce their own Resume callstacks.
-            var fastCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Fast_Marker));
-            var slow1Callstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Slow1_Marker));
-            var slow2Callstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Slow2_Marker));
+            var fastCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Fast_Marker));
+            var slow1Callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Slow1_Marker));
+            var slow2Callstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_WhenAny_TracksAllBranches_Slow2_Marker));
             AssertNotEmpty(stream, fastCallstacks);
             AssertNotEmpty(stream, slow1Callstacks);
             AssertNotEmpty(stream, slow2Callstacks);
@@ -1837,7 +1835,7 @@ namespace System.Threading.Tasks.Tests
             // The outer marker should also be resumed at least once.
             ulong markerDispatcherId = markerCallstacks[0].DispatcherId;
             var markerIds = stream.ChainEventsFromDispatcher(markerDispatcherId).Select(e => e.EventId).ToList();
-            int resumeCountForMarker = markerIds.Count(id => id == AsyncEventID.RuntimeAsync_ResumeAsyncContext);
+            int resumeCountForMarker = markerIds.Count(id => id == AsyncEventID.ResumeRuntimeAsyncContext);
             AssertTrue(stream, resumeCountForMarker >= 1, $"Expected outer marker to be resumed at least once, got {resumeCountForMarker}");
         }
 
@@ -1865,13 +1863,13 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public async Task RuntimeAsync_ConfigureAwaitFalse()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_ConfigureAwaitFalse_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_ConfigureAwaitFalse_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_ConfigureAwaitFalse_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_ConfigureAwaitFalse_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             var deepest = markerCallstacks.OrderByDescending(cs => cs.FrameCount).First();
@@ -1916,16 +1914,16 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_TaskCancellation()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_TaskCancellation_Marker);
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_TaskCancellation_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_TaskCancellation_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_TaskCancellation_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
-            var innerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_TaskCancellation_Inner_Marker));
+            var innerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_TaskCancellation_Inner_Marker));
             AssertNotEmpty(stream, innerCallstacks);
 
             // Inner cancelled task + outer marker must each see exactly one Create and one Complete on their own DispatcherId.
@@ -1941,7 +1939,7 @@ namespace System.Threading.Tasks.Tests
         {
             // Install a non-default SynchronizationContext on this thread so the await captures it.
             // The await's continuation will be routed via SynchronizationContextAwaitTaskContinuation,
-            // which the V2 runtime-async dispatch loop should honor when resuming the chain.
+            // which the Runtime runtime-async dispatch loop should honor when resuming the chain.
             int callerThreadId = Environment.CurrentManagedThreadId;
             SynchronizationContext? prev = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(s_runtimeAsyncSyncContextCtx);
@@ -1968,7 +1966,7 @@ namespace System.Threading.Tasks.Tests
         {
             s_runtimeAsyncSyncContextCtx = new InlinePostSynchronizationContext();
 
-            var events = await CollectEventsAsync(CallstackKeywords, () => RunIsolatedScenarioAsync(RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker));
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, () => RunIsolatedScenarioAsync(RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker));
 
             // DumpAllEvents(events);
 
@@ -1979,7 +1977,7 @@ namespace System.Threading.Tasks.Tests
             var stream = ParseAllEvents(events);
 
             // The marker frame should appear in the Resume callstack.
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             // The marker's chain should see exactly one Create and one Complete on its own DispatcherId.
@@ -1989,11 +1987,11 @@ namespace System.Threading.Tasks.Tests
             ulong dispatcherId = markerCallstacks[0].DispatcherId;
             var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
 
-            int createIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
-            int resumeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_ResumeAsyncContext, createIdx + 1);
+            int createIdx = ids.IndexOf(AsyncEventID.CreateRuntimeAsyncContext);
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeRuntimeAsyncContext, createIdx + 1);
             AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeAsyncContext after Create");
 
-            int completeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CompleteAsyncContext, resumeIdx + 1);
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteRuntimeAsyncContext, resumeIdx + 1);
             AssertTrue(stream, completeIdx > resumeIdx, "Expected CompleteAsyncContext after Resume");
         }
 
@@ -2009,7 +2007,7 @@ namespace System.Threading.Tasks.Tests
         {
             var scheduler = new InlineRunTaskScheduler();
 
-            var events = await CollectEventsAsync(CallstackKeywords, async () =>
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, async () =>
             {
                 // Start the marker on the custom scheduler so the resulting Task is queued through it.
                 await Task.Factory.StartNew(
@@ -2027,7 +2025,7 @@ namespace System.Threading.Tasks.Tests
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             // The marker's chain should see exactly one Create and one Complete on its own DispatcherId.
@@ -2037,11 +2035,11 @@ namespace System.Threading.Tasks.Tests
             ulong dispatcherId = markerCallstacks[0].DispatcherId;
             var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
 
-            int createIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
-            int resumeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_ResumeAsyncContext, createIdx + 1);
+            int createIdx = ids.IndexOf(AsyncEventID.CreateRuntimeAsyncContext);
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeRuntimeAsyncContext, createIdx + 1);
             AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeAsyncContext after Create");
 
-            int completeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CompleteAsyncContext, resumeIdx + 1);
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteRuntimeAsyncContext, resumeIdx + 1);
             AssertTrue(stream, completeIdx > resumeIdx, "Expected CompleteAsyncContext after Resume");
         }
 
@@ -2055,25 +2053,25 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ValueTask_EventSequenceOrder()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () => await RuntimeAsync_ValueTask_EventSequenceOrder_Marker());
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, async () => await RuntimeAsync_ValueTask_EventSequenceOrder_Marker());
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_EventSequenceOrder_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_ValueTask_EventSequenceOrder_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             ulong dispatcherId = markerCallstacks[0].DispatcherId;
             var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
 
-            int createIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
+            int createIdx = ids.IndexOf(AsyncEventID.CreateRuntimeAsyncContext);
             AssertTrue(stream, createIdx >= 0, "Expected CreateAsyncContext");
 
-            int resumeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_ResumeAsyncContext, createIdx + 1);
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeRuntimeAsyncContext, createIdx + 1);
             AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeAsyncContext after Create");
 
-            int completeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CompleteAsyncContext, resumeIdx + 1);
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteRuntimeAsyncContext, resumeIdx + 1);
             AssertTrue(stream, completeIdx > resumeIdx, "Expected CompleteAsyncContext after Resume");
         }
 
@@ -2087,19 +2085,19 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ValueTask_MethodEventsEmitted()
         {
-            var events = await CollectEventsAsync(MethodKeywords | CoreKeywords, async () => await RuntimeAsync_ValueTask_MethodEventsEmitted_Marker());
+            var events = await CollectEventsAsync(RuntimeAsyncMethodKeywords | RuntimeAsyncCoreKeywords, async () => await RuntimeAsync_ValueTask_MethodEventsEmitted_Marker());
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
             var methodEvents = stream.All
-                .Where(e => e.EventId is AsyncEventID.RuntimeAsync_ResumeAsyncMethod or AsyncEventID.RuntimeAsync_CompleteAsyncMethod)
+                .Where(e => e.EventId is AsyncEventID.ResumeRuntimeAsyncMethod or AsyncEventID.CompleteRuntimeAsyncMethod)
                 .Select(e => e.EventId)
                 .ToList();
 
-            int resumeCount = methodEvents.Count(id => id == AsyncEventID.RuntimeAsync_ResumeAsyncMethod);
-            int completeCount = methodEvents.Count(id => id == AsyncEventID.RuntimeAsync_CompleteAsyncMethod);
+            int resumeCount = methodEvents.Count(id => id == AsyncEventID.ResumeRuntimeAsyncMethod);
+            int completeCount = methodEvents.Count(id => id == AsyncEventID.CompleteRuntimeAsyncMethod);
 
             // Marker -> Level1 -> Level2 -> Level3
             AssertTrue(stream, resumeCount >= 4, $"Expected at least 4 ResumeAsyncMethod events for ValueTask chain, got {resumeCount}");
@@ -2116,13 +2114,13 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth()
         {
-            var events = await CollectValueTaskEventsAsync(CallstackKeywords, RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker);
+            var events = await CollectValueTaskEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_ValueTask_CallstackDepthMatchesChainDepth_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             // Marker -> Level1 -> Level2 -> Level3.
@@ -2139,13 +2137,13 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ValueTask_CallstackFramesHaveDistinctMethodIds()
         {
-            var events = await CollectEventsAsync(CallstackKeywords, async () => await RuntimeAsync_ValueTask_CallstackFramesHaveDistinctMethodIds_Marker());
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, async () => await RuntimeAsync_ValueTask_CallstackFramesHaveDistinctMethodIds_Marker());
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_CallstackFramesHaveDistinctMethodIds_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_ValueTask_CallstackFramesHaveDistinctMethodIds_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             var methodIds = markerCallstacks[0].Frames.Select(f => f.MethodId).ToList();
@@ -2183,28 +2181,28 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ValueTask_HandledException_EmitsUnwindAndComplete()
         {
-            var events = await CollectEventsAsync(CallstackKeywords | UnwindAsyncExceptionKeyword, async () => await RuntimeAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Marker());
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords | UnwindRuntimeAsyncExceptionKeyword, async () => await RuntimeAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Marker());
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_ValueTask_HandledException_EmitsUnwindAndComplete_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             ulong dispatcherId = markerCallstacks[0].DispatcherId;
             var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
 
-            int createIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
+            int createIdx = ids.IndexOf(AsyncEventID.CreateRuntimeAsyncContext);
             AssertTrue(stream, createIdx >= 0, "Expected CreateAsyncContext");
 
-            int resumeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_ResumeAsyncContext, createIdx + 1);
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeRuntimeAsyncContext, createIdx + 1);
             AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeAsyncContext after Create");
 
-            int unwindIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_UnwindAsyncException, resumeIdx + 1);
+            int unwindIdx = ids.IndexOf(AsyncEventID.UnwindRuntimeAsyncException, resumeIdx + 1);
             AssertTrue(stream, unwindIdx > resumeIdx, "Expected UnwindAsyncException after Resume");
 
-            int completeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CompleteAsyncContext, unwindIdx + 1);
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteRuntimeAsyncContext, unwindIdx + 1);
             AssertTrue(stream, completeIdx > unwindIdx, "Expected CompleteAsyncContext after Unwind");
         }
 
@@ -2233,7 +2231,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete()
         {
-            var events = await CollectEventsAsync(CallstackKeywords | UnwindAsyncExceptionKeyword, async () =>
+            var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords | UnwindRuntimeAsyncExceptionKeyword, async () =>
             {
                 try
                 {
@@ -2248,22 +2246,22 @@ namespace System.Threading.Tasks.Tests
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_Marker));
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, nameof(RuntimeAsync_ValueTask_UnhandledException_EmitsUnwindAndComplete_Marker));
             AssertNotEmpty(stream, markerCallstacks);
 
             ulong dispatcherId = markerCallstacks[0].DispatcherId;
             var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
 
-            int createIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CreateAsyncContext);
+            int createIdx = ids.IndexOf(AsyncEventID.CreateRuntimeAsyncContext);
             AssertTrue(stream, createIdx >= 0, "Expected CreateAsyncContext");
 
-            int resumeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_ResumeAsyncContext, createIdx + 1);
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeRuntimeAsyncContext, createIdx + 1);
             AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeAsyncContext after Create");
 
-            int unwindIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_UnwindAsyncException, resumeIdx + 1);
+            int unwindIdx = ids.IndexOf(AsyncEventID.UnwindRuntimeAsyncException, resumeIdx + 1);
             AssertTrue(stream, unwindIdx > resumeIdx, "Expected UnwindAsyncException after Resume");
 
-            int completeIdx = ids.IndexOf(AsyncEventID.RuntimeAsync_CompleteAsyncContext, unwindIdx + 1);
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteRuntimeAsyncContext, unwindIdx + 1);
             AssertTrue(stream, completeIdx > unwindIdx, "Expected CompleteAsyncContext after Unwind");
         }
 
@@ -2293,15 +2291,15 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ResetContext_ReplaysPendingV2Chain()
         {
-            var events = await CollectEventsAsync(AllKeywords, RuntimeAsync_ResetContext_ReplaysPendingV2Chain_Outer_Marker);
+            var events = await CollectEventsAsync(AllRuntimeAsyncKeywords, RuntimeAsync_ResetContext_ReplaysPendingV2Chain_Outer_Marker);
 
             // DumpAllEvents(events);
 
             var stream = ParseAllEvents(events);
 
-            // Locate the V2 dispatcher driving the marker chain via its ResumeAsyncCallstack
+            // Locate the Runtime dispatcher driving the marker chain via its ResumeAsyncCallstack
             // events (which carry the marker frames in their callstack).
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, "RuntimeAsync_ResetContext_ReplaysPendingV2Chain");
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, "RuntimeAsync_ResetContext_ReplaysPendingV2Chain");
             AssertNotEmpty(stream, markerCallstacks);
 
             // Thread-scoped replay assertion: at least one OS thread must have seen two
@@ -2310,7 +2308,7 @@ namespace System.Threading.Tasks.Tests
             // in the trace can accumulate two resets (e.g. the test thread re-enables on
             // its initial event then again later), so we have to look at each candidate
             // thread, not just the first one. The thread that actually drove the replay
-            // is the one the V2 continuation resumed onto.
+            // is the one the Runtime continuation resumed onto.
             var resetsByThread = stream.All
                 .Where(e => e.EventId == AsyncEventID.ResetAsyncThreadContext && e.OsThreadId != 0)
                 .GroupBy(e => e.OsThreadId)
@@ -2334,7 +2332,7 @@ namespace System.Threading.Tasks.Tests
 
                 var replayDispatcherIds = postResetMarkerCallstacks.Select(c => c.DispatcherId).ToHashSet();
                 var postResetResumeContext = stream.All
-                    .Where(e => e.EventId == AsyncEventID.RuntimeAsync_ResumeAsyncContext
+                    .Where(e => e.EventId == AsyncEventID.ResumeRuntimeAsyncContext
                                 && e.OsThreadId == threadId
                                 && e.Timestamp >= lastResetTimestamp
                                 && replayDispatcherIds.Contains(e.DispatcherId))
@@ -2376,7 +2374,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
         public async Task RuntimeAsync_ResetContext_ReplaysMultipleDispatchers()
         {
-            var events = await CollectEventsAsync(AllKeywords, async () =>
+            var events = await CollectEventsAsync(AllRuntimeAsyncKeywords, async () =>
             {
                 var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 var block = new ManualResetEventSlim(false);
@@ -2410,12 +2408,12 @@ namespace System.Threading.Tasks.Tests
 
             var stream = ParseAllEvents(events);
 
-            // The replay must emit at least one ResumeAsyncCallstack carrying a V2 marker chain.
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, "RuntimeAsync_ResetContext_ReplaysMultipleDispatchers");
+            // The replay must emit at least one ResumeAsyncCallstack carrying a Runtime marker chain.
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, "RuntimeAsync_ResetContext_ReplaysMultipleDispatchers");
             AssertNotEmpty(stream, markerCallstacks);
 
             // Decisive proof: find an OS thread where a single ResetAsyncThreadContext is
-            // followed by >= 2 ResumeAsyncContext events before the next reset. A normal V2
+            // followed by >= 2 ResumeAsyncContext events before the next reset. A normal Runtime
             // dispatch loop emits only one ResumeAsyncContext per dispatcher entry, so two
             // in one reset window can only come from the walker traversing two stacked
             // asyncDispatcherInfo entries on t_current.
@@ -2439,7 +2437,7 @@ namespace System.Threading.Tasks.Tests
                         : long.MaxValue;
 
                     int resumeContextCount = stream.All
-                        .Count(e => e.EventId == AsyncEventID.RuntimeAsync_ResumeAsyncContext
+                        .Count(e => e.EventId == AsyncEventID.ResumeRuntimeAsyncContext
                                     && e.OsThreadId == threadId
                                     && e.Timestamp >= windowStart
                                     && e.Timestamp < windowEnd);
@@ -2460,7 +2458,7 @@ namespace System.Threading.Tasks.Tests
             AssertTrue(stream, found,
                 "Expected at least one OS thread with a ResetAsyncThreadContext event " +
                 "followed by >= 2 ResumeAsyncContext events in the same reset window, " +
-                "proving the reset-replay walker traversed multiple stacked V2 dispatcher infos.");
+                "proving the reset-replay walker traversed multiple stacked Runtime dispatcher infos.");
         }
 
         [RuntimeAsyncMethodGeneration(true)]
@@ -2489,7 +2487,7 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
         public async Task RuntimeAsync_ResetContext_ReplayResumeCompleteBalance()
         {
-            var events = await CollectEventsAsync(AllKeywords, RuntimeAsync_ResetContext_ReplayResumeCompleteBalance_Outer_Marker);
+            var events = await CollectEventsAsync(AllRuntimeAsyncKeywords, RuntimeAsync_ResetContext_ReplayResumeCompleteBalance_Outer_Marker);
 
             // DumpAllEvents(events);
 
@@ -2498,11 +2496,11 @@ namespace System.Threading.Tasks.Tests
             // Locate the replayed marker ResumeAsyncCallstack (the reset replays the suspended
             // Outer->Mid->Inner chain, producing a callstack carrying the marker frames).
             var markerCallstacks = stream.CallstacksWithMarker(
-                AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, "RuntimeAsync_ResetContext_ReplayResumeCompleteBalance");
+                AsyncEventID.ResumeRuntimeAsyncCallstack, "RuntimeAsync_ResetContext_ReplayResumeCompleteBalance");
             AssertNotEmpty(stream, markerCallstacks);
 
             // Resume/Complete balance across the replay boundary: the whole Outer->Mid->Inner chain
-            // is a single V2 dispatcher whose deepest replayed callstack has N frames, so N async
+            // is a single Runtime dispatcher whose deepest replayed callstack has N frames, so N async
             // methods must each eventually complete. Balance is NOT preserved per reset epoch by
             // design (a Resume can land in one epoch and its Complete in a later epoch once a config
             // change bumps the revision mid-chain), so the count must be reconstructed over the whole
@@ -2513,17 +2511,17 @@ namespace System.Threading.Tasks.Tests
             ulong markerDispatcherId = deepest.DispatcherId;
 
             int completeMethodCount = stream.ChainEventsFromDispatcher(markerDispatcherId)
-                .Count(e => e.EventId == AsyncEventID.RuntimeAsync_CompleteAsyncMethod);
+                .Count(e => e.EventId == AsyncEventID.CompleteRuntimeAsyncMethod);
 
             AssertTrue(stream, completeMethodCount >= deepest.FrameCount,
-                $"Expected at least {deepest.FrameCount} RuntimeAsync_CompleteAsyncMethod events across the " +
+                $"Expected at least {deepest.FrameCount} CompleteRuntimeAsyncMethod events across the " +
                 $"trace for marker dispatcher {markerDispatcherId} to balance the replayed callstack of depth " +
                 $"{deepest.FrameCount}, but found {completeMethodCount}.");
         }
 
-        // Regular async (V1, Task-based) inner. When it calls innerDone.SetResult() it inline-resumes
-        // the V2 outer while this V1 dispatcher's AsyncTaskDispatcherInfo is still on t_current,
-        // co-stacking a V1 and a V2 dispatcher info at the moment the reset replay walker runs.
+        // StateMachine async inner. When it calls innerDone.SetResult() it inline-resumes
+        // the Runtime outer while this StateMachine dispatcher's AsyncStateMachineDispatcherInfo is still on t_current,
+        // co-stacking a StateMachine and a Runtime dispatcher info at the moment the reset replay walker runs.
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static async Task RuntimeAsync_ResetContext_ReplaysMixedV1V2ChainInAddressOrder_V1Inner_Marker(
@@ -2553,9 +2551,9 @@ namespace System.Threading.Tasks.Tests
                 var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 var block = new ManualResetEventSlim(false);
                 var blocked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                // No RunContinuationsAsynchronously: innerDone.SetResult() inline-resumes the V2
-                // outer while the V1 inner dispatcher is still on t_current, producing a mixed
-                // V1+V2 chain for the reset replay walker to merge.
+                // No RunContinuationsAsynchronously: innerDone.SetResult() inline-resumes the Runtime
+                // outer while the StateMachine inner dispatcher is still on t_current, producing a mixed
+                // StateMachine+Runtime chain for the reset replay walker to merge.
                 var innerDone = new TaskCompletionSource();
 
                 Task inner = RuntimeAsync_ResetContext_ReplaysMixedV1V2ChainInAddressOrder_V1Inner_Marker(gate.Task, block, () => blocked.SetResult(), innerDone);
@@ -2585,11 +2583,11 @@ namespace System.Threading.Tasks.Tests
 
             var stream = ParseAllEvents(events);
 
-            // The merge walker traverses both the V1 (AsyncTaskDispatcherInfo) and V2
+            // The merge walker traverses both the StateMachine (AsyncStateMachineDispatcherInfo) and Runtime
             // (AsyncDispatcherInfo) t_current chains, recursing on the smaller-address node first
             // to emit oldest-first. Decisive proof that both branches of the merge ran: within a
-            // single reset window on one thread, both a TaskAsync_ResumeAsyncContext (V1) and a
-            // RuntimeAsync_ResumeAsyncContext (V2) are replayed.
+            // single reset window on one thread, both a ResumeStateMachineAsyncContextKeyword (StateMachine) and a
+            // ResumeRuntimeAsyncContext (Runtime) are replayed.
             var resetsByThread = stream.All
                 .Where(e => e.EventId == AsyncEventID.ResetAsyncThreadContext && e.OsThreadId != 0)
                 .GroupBy(e => e.OsThreadId)
@@ -2609,9 +2607,9 @@ namespace System.Threading.Tasks.Tests
                         ? orderedResets[i + 1].Timestamp
                         : long.MaxValue;
 
-                    bool hasV1Resume = stream.All.Any(e => e.EventId == AsyncEventID.TaskAsync_ResumeAsyncContext
+                    bool hasV1Resume = stream.All.Any(e => e.EventId == AsyncEventID.ResumeStateMachineAsyncContext
                         && e.OsThreadId == threadId && e.Timestamp >= windowStart && e.Timestamp < windowEnd);
-                    bool hasV2Resume = stream.All.Any(e => e.EventId == AsyncEventID.RuntimeAsync_ResumeAsyncContext
+                    bool hasV2Resume = stream.All.Any(e => e.EventId == AsyncEventID.ResumeRuntimeAsyncContext
                         && e.OsThreadId == threadId && e.Timestamp >= windowStart && e.Timestamp < windowEnd);
 
                     if (hasV1Resume && hasV2Resume)
@@ -2627,9 +2625,9 @@ namespace System.Threading.Tasks.Tests
             }
 
             AssertTrue(stream, found,
-                "Expected a single ResetAsyncThreadContext window containing both a TaskAsync_ResumeAsyncContext " +
-                "(V1) and a RuntimeAsync_ResumeAsyncContext (V2), proving the reset-replay merge walker traversed " +
-                "a mixed V1+V2 chain and exercised both branches of its address-ordered recursion.");
+                "Expected a single ResetAsyncThreadContext window containing both a ResumeStateMachineAsyncContextKeyword " +
+                "(StateMachine) and a ResumeRuntimeAsyncContext (Runtime), proving the reset-replay merge walker traversed " +
+                "a mixed StateMachine+Runtime chain and exercised both branches of its address-ordered recursion.");
         }
     }
 }

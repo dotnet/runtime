@@ -94,9 +94,9 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-                if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
                 {
-                    box = AsyncTaskDispatcher.Create(box);
+                    box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box);
                 }
 
                 Unsafe.As<IValueTaskSource>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);
@@ -181,9 +181,9 @@ namespace System.Runtime.CompilerServices
             }
             else if (obj != null)
             {
-                if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
                 {
-                    box = AsyncTaskDispatcher.Create(box);
+                    box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box);
                 }
 
                 Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token, ValueTaskSourceOnCompletedFlags.UseSchedulingContext);

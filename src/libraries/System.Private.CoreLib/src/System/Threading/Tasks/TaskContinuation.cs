@@ -782,9 +782,9 @@ namespace System.Threading.Tasks
             // If we're not allowed to run here, schedule the action
             if (!allowInlining || !IsValidLocationForInlining)
             {
-                if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
                 {
-                    box = AsyncTaskDispatcher.Create(box);
+                    box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box);
                 }
 
                 // If logging is disabled, we can simply queue the box itself as a custom work

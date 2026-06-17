@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Linq;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
@@ -16,39 +15,38 @@ namespace System.Threading.Tasks.Tests
     // Mirrors AsyncProfiler.AsyncEventID from the runtime (which is internal and inaccessible from tests).
     public enum AsyncEventID : byte
     {
-        // V2 (RuntimeAsync) events.
-        RuntimeAsync_CreateAsyncContext = 1,
-        RuntimeAsync_ResumeAsyncContext = 2,
-        RuntimeAsync_SuspendAsyncContext = 3,
-        RuntimeAsync_CompleteAsyncContext = 4,
-        RuntimeAsync_UnwindAsyncException = 5,
-        RuntimeAsync_CreateAsyncCallstack = 6,
-        RuntimeAsync_ResumeAsyncCallstack = 7,
-        RuntimeAsync_SuspendAsyncCallstack = 8,
-        RuntimeAsync_ResumeAsyncMethod = 9,
-        RuntimeAsync_CompleteAsyncMethod = 10,
+        // Runtime (RuntimeAsync) events.
+        CreateRuntimeAsyncContext = 1,
+        ResumeRuntimeAsyncContext = 2,
+        SuspendRuntimeAsyncContext = 3,
+        CompleteRuntimeAsyncContext = 4,
+        UnwindRuntimeAsyncException = 5,
+        CreateRuntimeAsyncCallstack = 6,
+        ResumeRuntimeAsyncCallstack = 7,
+        SuspendRuntimeAsyncCallstack = 8,
+        ResumeRuntimeAsyncMethod = 9,
+        CompleteRuntimeAsyncMethod = 10,
 
-        // V1 (TaskAsync) events.
-        TaskAsync_CreateAsyncContext = 11,
-        TaskAsync_ResumeAsyncContext = 12,
-        TaskAsync_SuspendAsyncContext = 13,
-        TaskAsync_CompleteAsyncContext = 14,
-        TaskAsync_UnwindAsyncException = 15,
-        TaskAsync_ResumeAsyncCallstack = 16,
-        TaskAsync_ResumeAsyncMethod = 17,
-        TaskAsync_CompleteAsyncMethod = 18,
-        TaskAsync_AppendAsyncCallstack = 19,
+        // StateMachine (StateMachineAsync) events.
+        CreateStateMachineAsyncContext = 11,
+        ResumeStateMachineAsyncContext = 12,
+        CompleteStateMachineAsyncContext = 13,
+        UnwindStateMachineAsyncException = 14,
+        ResumeStateMachineAsyncCallstack = 15,
+        ResumeStateMachineAsyncMethod = 16,
+        CompleteStateMachineAsyncMethod = 17,
+        AppendStateMachineAsyncCallstack = 18,
 
         // Neutral profiler events.
-        ResetAsyncThreadContext = 20,
-        ResetAsyncContinuationWrapperIndex = 21,
-        AsyncProfilerMetadata = 22,
-        AsyncProfilerSyncClock = 23,
+        ResetAsyncThreadContext = 19,
+        ResetAsyncContinuationWrapperIndex = 20,
+        AsyncProfilerMetadata = 21,
+        AsyncProfilerSyncClock = 22,
     }
 
     public enum AsyncCallstackType : byte
     {
-        Compiler = 0x1,
+        StateMachine = 0x1,
         Runtime = 0x2,
     }
 
@@ -69,26 +67,25 @@ namespace System.Threading.Tasks.Tests
 
             return
             [
-                new EventManifestEntry(AsyncEventID.RuntimeAsync_CreateAsyncContext, 1, BytePayloadLength),
-                new EventManifestEntry(AsyncEventID.RuntimeAsync_ResumeAsyncContext, 1, BytePayloadLength),
-                new EventManifestEntry(AsyncEventID.RuntimeAsync_SuspendAsyncContext, 1, NoPayload),
-                new EventManifestEntry(AsyncEventID.RuntimeAsync_CompleteAsyncContext, 1, NoPayload),
-                new EventManifestEntry(AsyncEventID.RuntimeAsync_UnwindAsyncException, 1, BytePayloadLength),
-                new EventManifestEntry(AsyncEventID.RuntimeAsync_CreateAsyncCallstack, 1, UShortPayloadLength),
-                new EventManifestEntry(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, 1, UShortPayloadLength),
-                new EventManifestEntry(AsyncEventID.RuntimeAsync_SuspendAsyncCallstack, 1, UShortPayloadLength),
-                new EventManifestEntry(AsyncEventID.RuntimeAsync_ResumeAsyncMethod, 1, NoPayload),
-                new EventManifestEntry(AsyncEventID.RuntimeAsync_CompleteAsyncMethod, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.CreateRuntimeAsyncContext, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.ResumeRuntimeAsyncContext, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.SuspendRuntimeAsyncContext, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.CompleteRuntimeAsyncContext, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.UnwindRuntimeAsyncException, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.CreateRuntimeAsyncCallstack, 1, UShortPayloadLength),
+                new EventManifestEntry(AsyncEventID.ResumeRuntimeAsyncCallstack, 1, UShortPayloadLength),
+                new EventManifestEntry(AsyncEventID.SuspendRuntimeAsyncCallstack, 1, UShortPayloadLength),
+                new EventManifestEntry(AsyncEventID.ResumeRuntimeAsyncMethod, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.CompleteRuntimeAsyncMethod, 1, NoPayload),
 
-                new EventManifestEntry(AsyncEventID.TaskAsync_CreateAsyncContext, 1, BytePayloadLength),
-                new EventManifestEntry(AsyncEventID.TaskAsync_ResumeAsyncContext, 1, BytePayloadLength),
-                new EventManifestEntry(AsyncEventID.TaskAsync_SuspendAsyncContext, 1, NoPayload),
-                new EventManifestEntry(AsyncEventID.TaskAsync_CompleteAsyncContext, 1, NoPayload),
-                new EventManifestEntry(AsyncEventID.TaskAsync_UnwindAsyncException, 1, BytePayloadLength),
-                new EventManifestEntry(AsyncEventID.TaskAsync_ResumeAsyncCallstack, 1, UShortPayloadLength),
-                new EventManifestEntry(AsyncEventID.TaskAsync_ResumeAsyncMethod, 1, NoPayload),
-                new EventManifestEntry(AsyncEventID.TaskAsync_CompleteAsyncMethod, 1, NoPayload),
-                new EventManifestEntry(AsyncEventID.TaskAsync_AppendAsyncCallstack, 1, UShortPayloadLength),
+                new EventManifestEntry(AsyncEventID.CreateStateMachineAsyncContext, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.ResumeStateMachineAsyncContext, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.CompleteStateMachineAsyncContext, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.UnwindStateMachineAsyncException, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.ResumeStateMachineAsyncCallstack, 1, UShortPayloadLength),
+                new EventManifestEntry(AsyncEventID.ResumeStateMachineAsyncMethod, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.CompleteStateMachineAsyncMethod, 1, NoPayload),
+                new EventManifestEntry(AsyncEventID.AppendStateMachineAsyncCallstack, 1, UShortPayloadLength),
 
                 new EventManifestEntry(AsyncEventID.ResetAsyncThreadContext, 1, NoPayload),
                 new EventManifestEntry(AsyncEventID.ResetAsyncContinuationWrapperIndex, 1, NoPayload),
@@ -113,13 +110,13 @@ namespace System.Threading.Tasks.Tests
         // These tests use async Task methods with await instead of Task.Run blocking.
         public static bool IsRuntimeAsyncSupported => PlatformDetection.IsRuntimeAsyncSupported;
 
-        // V1 (TaskAsync_*) async-task instrumentation is opt-out on NativeAOT to avoid
+        // StateMachine (StateMachineAsync_*) async-task instrumentation is opt-out on NativeAOT to avoid
         // ~100KB of per-state-machine generic instantiation overhead. Tests that depend
-        // on V1 events must be gated on these properties so they are skipped on NAOT.
-        public static bool IsTaskAsyncInstrumentationSupported =>
+        // on StateMachine events must be gated on these properties so they are skipped on NAOT.
+        public static bool IsStateMachineAsyncInstrumentationSupported =>
             IsRuntimeAsyncSupported && !PlatformDetection.IsNativeAot;
 
-        public static bool IsTaskAsyncInstrumentationAndThreadingSupported =>
+        public static bool IsStateMachineAsyncInstrumentationAndThreadingSupported =>
             IsRuntimeAsyncAndThreadingSupported && !PlatformDetection.IsNativeAot;
 
         private const string AsyncProfilerEventSourceName = "System.Runtime.CompilerServices.AsyncProfilerEventSource";
@@ -130,34 +127,86 @@ namespace System.Threading.Tasks.Tests
         private const int HeaderSize = 1 + sizeof(uint) + sizeof(uint) + sizeof(ulong) + sizeof(uint) + sizeof(ulong) + sizeof(ulong);
 
         // AsyncProfilerEventSource Keywords matching the event source definition
-        private const EventKeywords CreateAsyncContextKeyword = (EventKeywords)0x1;
-        private const EventKeywords ResumeAsyncContextKeyword = (EventKeywords)0x2;
-        private const EventKeywords SuspendAsyncContextKeyword = (EventKeywords)0x4;
-        private const EventKeywords CompleteAsyncContextKeyword = (EventKeywords)0x8;
-        private const EventKeywords UnwindAsyncExceptionKeyword = (EventKeywords)0x10;
-        private const EventKeywords CreateAsyncCallstackKeyword = (EventKeywords)0x20;
-        private const EventKeywords ResumeAsyncCallstackKeyword = (EventKeywords)0x40;
-        private const EventKeywords SuspendAsyncCallstackKeyword = (EventKeywords)0x80;
-        private const EventKeywords ResumeAsyncMethodKeyword = (EventKeywords)0x100;
-        private const EventKeywords CompleteAsyncMethodKeyword = (EventKeywords)0x200;
+        private const EventKeywords CreateRuntimeAsyncContextKeyword = (EventKeywords)0x1;
+        private const EventKeywords ResumeRuntimeAsyncContextKeyword = (EventKeywords)0x2;
+        private const EventKeywords SuspendRuntimeAsyncContextKeyword = (EventKeywords)0x4;
+        private const EventKeywords CompleteRuntimeAsyncContextKeyword = (EventKeywords)0x8;
+        private const EventKeywords UnwindRuntimeAsyncExceptionKeyword = (EventKeywords)0x10;
+        private const EventKeywords CreateRuntimeAsyncCallstackKeyword = (EventKeywords)0x20;
+        private const EventKeywords ResumeRuntimeAsyncCallstackKeyword = (EventKeywords)0x40;
+        private const EventKeywords SuspendRuntimeAsyncCallstackKeyword = (EventKeywords)0x80;
+        private const EventKeywords ResumeRuntimeAsyncMethodKeyword = (EventKeywords)0x100;
+        private const EventKeywords CompleteRuntimeAsyncMethodKeyword = (EventKeywords)0x200;
+        private const EventKeywords CreateStateMachineAsyncContextKeyword = (EventKeywords)0x400;
+        private const EventKeywords ResumeStateMachineAsyncContextKeyword = (EventKeywords)0x800;
+        private const EventKeywords CompleteStateMachineAsyncContextKeyword = (EventKeywords)0x1000;
+        private const EventKeywords UnwindStateMachineAsyncExceptionKeyword = (EventKeywords)0x2000;
+        private const EventKeywords ResumeStateMachineAsyncCallstackKeyword = (EventKeywords)0x4000;
+        private const EventKeywords ResumeStateMachineAsyncMethodKeyword = (EventKeywords)0x8000;
+        private const EventKeywords CompleteStateMachineAsyncMethodKeyword = (EventKeywords)0x10000;
+
+        private const EventKeywords AllRuntimeAsyncKeywords =
+            CreateRuntimeAsyncContextKeyword |
+            ResumeRuntimeAsyncContextKeyword |
+            SuspendRuntimeAsyncContextKeyword |
+            CompleteRuntimeAsyncContextKeyword |
+            UnwindRuntimeAsyncExceptionKeyword |
+            CreateRuntimeAsyncCallstackKeyword |
+            ResumeRuntimeAsyncCallstackKeyword |
+            SuspendRuntimeAsyncCallstackKeyword |
+            ResumeRuntimeAsyncMethodKeyword |
+            CompleteRuntimeAsyncMethodKeyword;
+
+        private const EventKeywords AllStateMachineAsyncKeywords =
+            CreateStateMachineAsyncContextKeyword |
+            ResumeStateMachineAsyncContextKeyword |
+            CompleteStateMachineAsyncContextKeyword |
+            UnwindStateMachineAsyncExceptionKeyword |
+            ResumeStateMachineAsyncCallstackKeyword |
+            ResumeStateMachineAsyncMethodKeyword |
+            CompleteStateMachineAsyncMethodKeyword;
 
         private const EventKeywords AllKeywords =
-            CreateAsyncContextKeyword | ResumeAsyncContextKeyword | SuspendAsyncContextKeyword |
-            CompleteAsyncContextKeyword | UnwindAsyncExceptionKeyword |
-            CreateAsyncCallstackKeyword | ResumeAsyncCallstackKeyword | SuspendAsyncCallstackKeyword |
-            ResumeAsyncMethodKeyword | CompleteAsyncMethodKeyword;
+            AllRuntimeAsyncKeywords |
+            AllStateMachineAsyncKeywords;
 
-        private const EventKeywords CoreKeywords =
-            CreateAsyncContextKeyword | ResumeAsyncContextKeyword | SuspendAsyncContextKeyword | CompleteAsyncContextKeyword;
+        private const EventKeywords RuntimeAsyncCoreKeywords =
+            CreateRuntimeAsyncContextKeyword |
+            ResumeRuntimeAsyncContextKeyword |
+            SuspendRuntimeAsyncContextKeyword |
+            CompleteRuntimeAsyncContextKeyword;
 
-        private const EventKeywords MethodKeywords =
-            ResumeAsyncMethodKeyword | CompleteAsyncMethodKeyword;
+        private const EventKeywords StateMachineAsyncCoreKeywords =
+            CreateStateMachineAsyncContextKeyword |
+            ResumeStateMachineAsyncContextKeyword |
+            CompleteStateMachineAsyncContextKeyword;
 
-        private const EventKeywords CallstackKeywords =
-            CreateAsyncContextKeyword | CreateAsyncCallstackKeyword |
-            ResumeAsyncContextKeyword | ResumeAsyncCallstackKeyword |
-            SuspendAsyncContextKeyword | SuspendAsyncCallstackKeyword |
-            CompleteAsyncContextKeyword | CompleteAsyncMethodKeyword | UnwindAsyncExceptionKeyword;
+        private const EventKeywords RuntimeAsyncMethodKeywords =
+            ResumeRuntimeAsyncMethodKeyword |
+            CompleteRuntimeAsyncMethodKeyword;
+
+        private const EventKeywords StateMachineAsyncMethodKeywords =
+            ResumeStateMachineAsyncMethodKeyword |
+            CompleteStateMachineAsyncMethodKeyword;
+
+        private const EventKeywords RuntimeAsyncCallstackKeywords =
+            CreateRuntimeAsyncContextKeyword |
+            CreateRuntimeAsyncCallstackKeyword |
+            ResumeRuntimeAsyncContextKeyword |
+            ResumeRuntimeAsyncCallstackKeyword |
+            SuspendRuntimeAsyncContextKeyword |
+            SuspendRuntimeAsyncCallstackKeyword |
+            CompleteRuntimeAsyncContextKeyword |
+            CompleteRuntimeAsyncMethodKeyword |
+            UnwindRuntimeAsyncExceptionKeyword;
+
+        private const EventKeywords StateMachineAsyncCallstackKeywords =
+            CreateStateMachineAsyncContextKeyword |
+            ResumeStateMachineAsyncContextKeyword |
+            ResumeStateMachineAsyncCallstackKeyword |
+            CompleteStateMachineAsyncContextKeyword |
+            CompleteStateMachineAsyncMethodKeyword |
+            UnwindStateMachineAsyncExceptionKeyword;
 
         // CoreCLR has StackFrame.GetMethodFromNativeIP (static, non-public).
         private static readonly MethodInfo? s_getMethodFromNativeIPMethod =
@@ -172,7 +221,7 @@ namespace System.Threading.Tasks.Tests
         // The public 1-arg MethodBase.GetMethodFromHandle resolves the method but then deliberately
         // throws ArgumentException when the declaring type is generic. The internal
         // RuntimeType.GetMethodBase(RuntimeMethodHandle.GetMethodInfo()) it calls underneath has no
-        // such guard, so we invoke it directly to name V1 frames on generic declaring types.
+        // such guard, so we invoke it directly to name StateMachine frames on generic declaring types.
         private static readonly MethodInfo? s_runtimeMethodHandleGetMethodInfo =
             typeof(RuntimeMethodHandle).GetMethod("GetMethodInfo", BindingFlags.Instance | BindingFlags.NonPublic);
 
@@ -202,7 +251,7 @@ namespace System.Threading.Tasks.Tests
                         return diagInfo?.Name;
                     }
                 }
-                else if (callstackType == AsyncCallstackType.Compiler)
+                else if (callstackType == AsyncCallstackType.StateMachine)
                 {
                     System.RuntimeMethodHandle handle = RuntimeMethodHandle.FromIntPtr((IntPtr)methodId);
                     MethodBase? method = null;
@@ -246,7 +295,7 @@ namespace System.Threading.Tasks.Tests
             return null;
         }
 
-        // Test-only fallback used when a compiler (V1) MethodId handle cannot be resolved via the
+        // Test-only fallback used when a compiler (StateMachine) MethodId handle cannot be resolved via the
         // 1-arg MethodBase.GetMethodFromHandle because its declaring type is generic. Calls the
         // internal RuntimeType.GetMethodBase(handle.GetMethodInfo()) the public API uses underneath,
         // which has no generic-declaring-type guard, so it names methods on generic declaring types.
@@ -421,43 +470,42 @@ namespace System.Threading.Tasks.Tests
         {
             switch (eventId)
             {
-                case AsyncEventID.RuntimeAsync_CreateAsyncContext:
-                case AsyncEventID.TaskAsync_CreateAsyncContext:
+                case AsyncEventID.CreateRuntimeAsyncContext:
+                case AsyncEventID.CreateStateMachineAsyncContext:
                 {
                     ReadCompressedUInt64(buffer, ref index); // parentDispatcherId
                     ReadCompressedUInt64(buffer, ref index); // dispatcherId
                     return true;
                 }
-                case AsyncEventID.RuntimeAsync_ResumeAsyncContext:
-                case AsyncEventID.TaskAsync_ResumeAsyncContext:
+                case AsyncEventID.ResumeRuntimeAsyncContext:
+                case AsyncEventID.ResumeStateMachineAsyncContext:
                 {
                     ReadCompressedUInt64(buffer, ref index); // dispatcherId
                     return true;
                 }
-                case AsyncEventID.RuntimeAsync_SuspendAsyncContext:
-                case AsyncEventID.RuntimeAsync_CompleteAsyncContext:
-                case AsyncEventID.RuntimeAsync_ResumeAsyncMethod:
-                case AsyncEventID.RuntimeAsync_CompleteAsyncMethod:
-                case AsyncEventID.TaskAsync_SuspendAsyncContext:
-                case AsyncEventID.TaskAsync_CompleteAsyncContext:
-                case AsyncEventID.TaskAsync_ResumeAsyncMethod:
-                case AsyncEventID.TaskAsync_CompleteAsyncMethod:
+                case AsyncEventID.SuspendRuntimeAsyncContext:
+                case AsyncEventID.CompleteRuntimeAsyncContext:
+                case AsyncEventID.ResumeRuntimeAsyncMethod:
+                case AsyncEventID.CompleteRuntimeAsyncMethod:
+                case AsyncEventID.CompleteStateMachineAsyncContext:
+                case AsyncEventID.ResumeStateMachineAsyncMethod:
+                case AsyncEventID.CompleteStateMachineAsyncMethod:
                 case AsyncEventID.ResetAsyncThreadContext:
                 case AsyncEventID.ResetAsyncContinuationWrapperIndex:
                 {
                     return true;
                 }
-                case AsyncEventID.RuntimeAsync_UnwindAsyncException:
-                case AsyncEventID.TaskAsync_UnwindAsyncException:
+                case AsyncEventID.UnwindRuntimeAsyncException:
+                case AsyncEventID.UnwindStateMachineAsyncException:
                 {
                     ReadCompressedUInt32(buffer, ref index);
                     return true;
                 }
-                case AsyncEventID.RuntimeAsync_CreateAsyncCallstack:
-                case AsyncEventID.RuntimeAsync_ResumeAsyncCallstack:
-                case AsyncEventID.RuntimeAsync_SuspendAsyncCallstack:
-                case AsyncEventID.TaskAsync_ResumeAsyncCallstack:
-                case AsyncEventID.TaskAsync_AppendAsyncCallstack:
+                case AsyncEventID.CreateRuntimeAsyncCallstack:
+                case AsyncEventID.ResumeRuntimeAsyncCallstack:
+                case AsyncEventID.SuspendRuntimeAsyncCallstack:
+                case AsyncEventID.ResumeStateMachineAsyncCallstack:
+                case AsyncEventID.AppendStateMachineAsyncCallstack:
                 {
                     SkipCallstackPayload(buffer, ref index, eventId, CallstackTypeFromEventId(eventId));
                     return true;
@@ -509,8 +557,8 @@ namespace System.Threading.Tasks.Tests
             index++; // Reserved callstack ID (for future callstack interning).
             continuationIndex = buffer[index++];
             frameCount = buffer[index++];
-            // parentDispatcherId is only present on RuntimeAsync_CreateAsyncCallstack.
-            parentDispatcherId = eventId == AsyncEventID.RuntimeAsync_CreateAsyncCallstack
+            // parentDispatcherId is only present on CreateRuntimeAsyncCallstack.
+            parentDispatcherId = eventId == AsyncEventID.CreateRuntimeAsyncCallstack
                 ? ReadCompressedUInt64(buffer, ref index)
                 : 0;
             dispatcherId = ReadCompressedUInt64(buffer, ref index);
@@ -522,7 +570,7 @@ namespace System.Threading.Tasks.Tests
                 return;
             }
 
-            bool readState = callstackType == AsyncCallstackType.Compiler;
+            bool readState = callstackType == AsyncCallstackType.StateMachine;
 
             ulong currentMethodId = ReadCompressedUInt64(buffer, ref index);
             int state = readState ? ReadCompressedInt32(buffer, ref index) : 0;
@@ -538,12 +586,12 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Derive callstack type from the event id:
-        // V1 (TaskAsync_*) events carry compiler-built state machine frames;
-        // V2 (RuntimeAsync_*) events carry runtime-async frames.
+        // StateMachine (StateMachineAsync*) events carry compiler-built state machine frames;
+        // Runtime (RuntimeAsync_*) events carry runtime-async frames.
         private static AsyncCallstackType CallstackTypeFromEventId(AsyncEventID eventId)
-            => eventId is AsyncEventID.TaskAsync_ResumeAsyncCallstack
-                       or AsyncEventID.TaskAsync_AppendAsyncCallstack
-                ? AsyncCallstackType.Compiler
+            => eventId is AsyncEventID.ResumeStateMachineAsyncCallstack
+                       or AsyncEventID.AppendStateMachineAsyncCallstack
+                ? AsyncCallstackType.StateMachine
                 : AsyncCallstackType.Runtime;
 
         private static int ReadCompressedInt32(ReadOnlySpan<byte> buffer, ref int index)
@@ -649,12 +697,12 @@ namespace System.Threading.Tasks.Tests
             private Dictionary<ulong, List<ulong>>? _childrenOfDispatcher;
             private Dictionary<ulong, DispatcherKind>? _dispatcherKind;
 
-            // V1 (TaskAsync_*) and V2 (RuntimeAsync_*) dispatchers can coexist on the same logical
-            // thread (e.g., a V1 test runner hosting a V2 test body). The runtime captures cross-kind
+            // StateMachine (StateMachineAsync_*) and Runtime (RuntimeAsync_*) dispatchers can coexist on the same logical
+            // thread (e.g., a StateMachine test runner hosting a Runtime test body). The runtime captures cross-kind
             // parent links in that case, but a single test typically wants to walk only its own kind's
-            // subtree. Tracking the kind per dispatcher lets the chain walk stop at V1<->V2 boundaries
+            // subtree. Tracking the kind per dispatcher lets the chain walk stop at StateMachine<->Runtime boundaries
             // by default.
-            internal enum DispatcherKind { Unknown, V1, V2 }
+            internal enum DispatcherKind { Unknown, StateMachine, Runtime }
 
             public ParsedEventStream(List<ParsedEvent> events)
             {
@@ -738,9 +786,9 @@ namespace System.Threading.Tasks.Tests
                 foreach (var evt in _events)
                 {
                     bool isCreate = evt.EventId is
-                        AsyncEventID.TaskAsync_CreateAsyncContext or
-                        AsyncEventID.RuntimeAsync_CreateAsyncContext or
-                        AsyncEventID.RuntimeAsync_CreateAsyncCallstack;
+                        AsyncEventID.CreateStateMachineAsyncContext or
+                        AsyncEventID.CreateRuntimeAsyncContext or
+                        AsyncEventID.CreateRuntimeAsyncCallstack;
 
                     if (isCreate && evt.DispatcherId != 0)
                     {
@@ -751,9 +799,9 @@ namespace System.Threading.Tasks.Tests
                 foreach (var evt in _events)
                 {
                     bool isCreate = evt.EventId is
-                        AsyncEventID.TaskAsync_CreateAsyncContext or
-                        AsyncEventID.RuntimeAsync_CreateAsyncContext or
-                        AsyncEventID.RuntimeAsync_CreateAsyncCallstack;
+                        AsyncEventID.CreateStateMachineAsyncContext or
+                        AsyncEventID.CreateRuntimeAsyncContext or
+                        AsyncEventID.CreateRuntimeAsyncCallstack;
 
                     if (!isCreate || evt.DispatcherId == 0)
                     {
@@ -762,9 +810,9 @@ namespace System.Threading.Tasks.Tests
 
                     DispatcherKind kind = evt.EventId switch
                     {
-                        AsyncEventID.TaskAsync_CreateAsyncContext => DispatcherKind.V1,
-                        AsyncEventID.RuntimeAsync_CreateAsyncContext or
-                        AsyncEventID.RuntimeAsync_CreateAsyncCallstack => DispatcherKind.V2,
+                        AsyncEventID.CreateStateMachineAsyncContext => DispatcherKind.StateMachine,
+                        AsyncEventID.CreateRuntimeAsyncContext or
+                        AsyncEventID.CreateRuntimeAsyncCallstack => DispatcherKind.Runtime,
                         _ => DispatcherKind.Unknown,
                     };
 
@@ -802,8 +850,8 @@ namespace System.Threading.Tasks.Tests
                     : DispatcherKind.Unknown;
 
             // Returns the root DispatcherId for the chain containing dispatcherId, by walking parent pointers.
-            // By default the climb stops at V1<->V2 boundaries so a V2 marker doesn't get pulled up into
-            // an enclosing V1 test-runner dispatcher (and vice versa). Pass crossKinds: true to walk to
+            // By default the climb stops at StateMachine<->Runtime boundaries so a Runtime marker doesn't get pulled up into
+            // an enclosing StateMachine test-runner dispatcher (and vice versa). Pass crossKinds: true to walk to
             // the absolute root regardless of dispatcher kind.
             public ulong RootOfDispatcher(ulong dispatcherId, bool crossKinds = false)
             {
@@ -825,9 +873,9 @@ namespace System.Threading.Tasks.Tests
 
             // Returns the set of all dispatcher ids in the same chain (connected component) as dispatcherId.
             // Walks up to the root via parent pointers, then collects all descendants via BFS. By default
-            // the walk is restricted to dispatchers of the same kind (V1 or V2) as dispatcherId so that a
-            // single test's chain doesn't span unrelated cross-kind activity (e.g., a V1 xunit test runner
-            // hosting a V2 test body). Pass crossKinds: true to walk the full connected component.
+            // the walk is restricted to dispatchers of the same kind (StateMachine or Runtime) as dispatcherId so that a
+            // single test's chain doesn't span unrelated cross-kind activity (e.g., a StateMachine xunit test runner
+            // hosting a Runtime test body). Pass crossKinds: true to walk the full connected component.
             public HashSet<ulong> ChainDispatcherIds(ulong dispatcherId, bool crossKinds = false)
             {
                 EnsureDispatcherTree();
@@ -879,7 +927,7 @@ namespace System.Threading.Tasks.Tests
             // AppendAsyncCallstack events for the same context, up until the next Suspend/Complete on that
             // context.
             //
-            // V1 dispatchers may emit a partial Resume callstack when the parent continuation hasn't yet
+            // StateMachine dispatchers may emit a partial Resume callstack when the parent continuation hasn't yet
             // registered (race between dispatcher pickup and parent's AwaitUnsafeOnCompleted). Frames that
             // register later are emitted as AppendAsyncCallstack at the next hook point. Merging produces
             // the complete chain that was observable during the dispatcher's lifetime.
@@ -894,16 +942,15 @@ namespace System.Threading.Tasks.Tests
                 {
                     switch (evt.EventId)
                     {
-                        case AsyncEventID.RuntimeAsync_SuspendAsyncContext:
-                        case AsyncEventID.RuntimeAsync_CompleteAsyncContext:
-                        case AsyncEventID.TaskAsync_SuspendAsyncContext:
-                        case AsyncEventID.TaskAsync_CompleteAsyncContext:
+                        case AsyncEventID.SuspendRuntimeAsyncContext:
+                        case AsyncEventID.CompleteRuntimeAsyncContext:
+                        case AsyncEventID.CompleteStateMachineAsyncContext:
                         {
                             openByDispatcherId.Remove(evt.DispatcherId);
                             break;
                         }
-                        case AsyncEventID.RuntimeAsync_ResumeAsyncCallstack:
-                        case AsyncEventID.TaskAsync_ResumeAsyncCallstack:
+                        case AsyncEventID.ResumeRuntimeAsyncCallstack:
+                        case AsyncEventID.ResumeStateMachineAsyncCallstack:
                         {
                             var merged = new ParsedEvent
                             {
@@ -923,7 +970,7 @@ namespace System.Threading.Tasks.Tests
 
                             break;
                         }
-                        case AsyncEventID.TaskAsync_AppendAsyncCallstack:
+                        case AsyncEventID.AppendStateMachineAsyncCallstack:
                         {
                             if (openByDispatcherId.TryGetValue(evt.DispatcherId, out int idx))
                             {
@@ -979,13 +1026,13 @@ namespace System.Threading.Tasks.Tests
                 }
 
                 ulong osThreadId = header.Value.OsThreadId;
-                // V1 (TaskAsync_*) and V2 (RuntimeAsync_*) are independent context dimensions that can
-                // interleave within a single thread's buffer (e.g. a V1 test-runner dispatcher active
-                // while a V2 test runs, which always happens on single-threaded WASM where everything
+                // StateMachine (StateMachineAsync_*) and Runtime (RuntimeAsync_*) are independent context dimensions that can
+                // interleave within a single thread's buffer (e.g. a StateMachine test-runner dispatcher active
+                // while a Runtime test runs, which always happens on single-threaded WASM where everything
                 // shares one thread). Context-scoped events (Resume/Suspend/Complete context, the
                 // method events, and unwind events) omit the dispatcher id from the wire and inherit it
                 // from the enclosing Resume context, so each kind needs its own current-context stack.
-                // A single shared stack would let a TaskAsync_* Resume/Complete hijack the current
+                // A single shared stack would let a StateMachineAsync_* Resume/Complete hijack the current
                 // dispatcher and mis-attribute interleaved RuntimeAsync_* events (and vice versa).
                 ulong v2CurrentDispatcherId = 0;
                 ulong v2CurrentParentDispatcherId = 0;
@@ -1012,26 +1059,26 @@ namespace System.Threading.Tasks.Tests
 
                     ParsedEvent evt = eventId switch
                     {
-                        AsyncEventID.RuntimeAsync_CreateAsyncContext or AsyncEventID.TaskAsync_CreateAsyncContext =>
+                        AsyncEventID.CreateRuntimeAsyncContext or AsyncEventID.CreateStateMachineAsyncContext =>
                             ParseCreateContextEvent(eventId, baseTimestamp, osThreadId, buffer, ref index),
 
-                        AsyncEventID.RuntimeAsync_ResumeAsyncContext =>
+                        AsyncEventID.ResumeRuntimeAsyncContext =>
                             ParseResumeContextEvent(eventId, baseTimestamp, osThreadId, buffer, ref index,
                                 ref v2CurrentDispatcherId, ref v2CurrentParentDispatcherId, v2DispatcherStack),
 
-                        AsyncEventID.TaskAsync_ResumeAsyncContext =>
+                        AsyncEventID.ResumeStateMachineAsyncContext =>
                             ParseResumeContextEvent(eventId, baseTimestamp, osThreadId, buffer, ref index,
                                 ref v1CurrentDispatcherId, ref v1CurrentParentDispatcherId, v1DispatcherStack),
 
-                        AsyncEventID.RuntimeAsync_CompleteAsyncContext or AsyncEventID.RuntimeAsync_SuspendAsyncContext =>
+                        AsyncEventID.CompleteRuntimeAsyncContext or AsyncEventID.SuspendRuntimeAsyncContext =>
                             ParseEndContextEvent(eventId, baseTimestamp, osThreadId,
                                 ref v2CurrentDispatcherId, ref v2CurrentParentDispatcherId, v2DispatcherStack),
 
-                        AsyncEventID.TaskAsync_CompleteAsyncContext or AsyncEventID.TaskAsync_SuspendAsyncContext =>
+                        AsyncEventID.CompleteStateMachineAsyncContext =>
                             ParseEndContextEvent(eventId, baseTimestamp, osThreadId,
                                 ref v1CurrentDispatcherId, ref v1CurrentParentDispatcherId, v1DispatcherStack),
 
-                        AsyncEventID.RuntimeAsync_ResumeAsyncMethod or AsyncEventID.RuntimeAsync_CompleteAsyncMethod =>
+                        AsyncEventID.ResumeRuntimeAsyncMethod or AsyncEventID.CompleteRuntimeAsyncMethod =>
                             new ParsedEvent
                             {
                                 EventId = eventId,
@@ -1041,7 +1088,7 @@ namespace System.Threading.Tasks.Tests
                                 DispatcherId = v2CurrentDispatcherId,
                             },
 
-                        AsyncEventID.TaskAsync_ResumeAsyncMethod or AsyncEventID.TaskAsync_CompleteAsyncMethod =>
+                        AsyncEventID.ResumeStateMachineAsyncMethod or AsyncEventID.CompleteStateMachineAsyncMethod =>
                             new ParsedEvent
                             {
                                 EventId = eventId,
@@ -1056,15 +1103,15 @@ namespace System.Threading.Tasks.Tests
                                 ref v2CurrentDispatcherId, ref v2CurrentParentDispatcherId, v2DispatcherStack,
                                 ref v1CurrentDispatcherId, ref v1CurrentParentDispatcherId, v1DispatcherStack),
 
-                        AsyncEventID.RuntimeAsync_CreateAsyncCallstack or AsyncEventID.RuntimeAsync_ResumeAsyncCallstack or
-                        AsyncEventID.RuntimeAsync_SuspendAsyncCallstack or
-                        AsyncEventID.TaskAsync_ResumeAsyncCallstack or AsyncEventID.TaskAsync_AppendAsyncCallstack =>
+                        AsyncEventID.CreateRuntimeAsyncCallstack or AsyncEventID.ResumeRuntimeAsyncCallstack or
+                        AsyncEventID.SuspendRuntimeAsyncCallstack or
+                        AsyncEventID.ResumeStateMachineAsyncCallstack or AsyncEventID.AppendStateMachineAsyncCallstack =>
                             ParseCallstackEvent(eventId, baseTimestamp, osThreadId, buffer, ref index),
 
-                        AsyncEventID.RuntimeAsync_UnwindAsyncException =>
+                        AsyncEventID.UnwindRuntimeAsyncException =>
                             ParseUnwindEvent(eventId, baseTimestamp, osThreadId, v2CurrentDispatcherId, v2CurrentParentDispatcherId, buffer, ref index),
 
-                        AsyncEventID.TaskAsync_UnwindAsyncException =>
+                        AsyncEventID.UnwindStateMachineAsyncException =>
                             ParseUnwindEvent(eventId, baseTimestamp, osThreadId, v1CurrentDispatcherId, v1CurrentParentDispatcherId, buffer, ref index),
 
                         AsyncEventID.AsyncProfilerMetadata =>
@@ -1327,10 +1374,10 @@ namespace System.Threading.Tasks.Tests
 
         private static void RunScenarioAndFlush(Func<Task> scenario)
         {
-            // V1 (task-based) async: the dispatcher's finally block emits CompleteAsyncContext
+            // StateMachine (task-based) async: the dispatcher's finally block emits CompleteAsyncContext
             // after inner.MoveNext() returns, but MoveNext() already set the task result which
             // unblocks this thread. Brief sleep ensures the pool thread's finally completes.
-            // V2 (runtime-async) does not have this issue -- Complete fires inside the dispatch
+            // Runtime (runtime-async) does not have this issue -- Complete fires inside the dispatch
             // loop before the task is signaled.
             //
             // Clear SynchronizationContext so RuntimeAsync continuations don't capture
@@ -1437,8 +1484,8 @@ namespace System.Threading.Tasks.Tests
         // Compact, single-string summary of the parsed event stream for CI failure diagnostics.
         // CI surfaces only the assertion message (no console access), so failing assertions embed
         // this so the event sequence shows up directly in the error. Events are listed in GLOBAL
-        // timestamp order (so cross-thread interleaving -- e.g. a V1 test-runner dispatcher
-        // interleaving with V2 events on single-threaded WASM -- is visible), each annotated with a
+        // timestamp order (so cross-thread interleaving -- e.g. a StateMachine test-runner dispatcher
+        // interleaving with Runtime events on single-threaded WASM -- is visible), each annotated with a
         // relative timestamp (+ticks from the first event) and its OS thread.
         // Format: "[+<deltaTicks>,T<osThreadId>]<EventId>(d<DispatcherId>[,p<ParentDispatcherId>][,f<FrameCount>]) ..."
         // Compact, machine-readable summary of the parsed event stream for CI failure diagnostics.
@@ -1448,10 +1495,10 @@ namespace System.Threading.Tasks.Tests
         // importable into a SQL table / spreadsheet (e.g. SQLite .import). Columns:
         //   seq    - global index in timestamp order
         //   delta  - relative timestamp (ticks from the first event); reveals inline-burst clusters vs scheduling gaps
-        //   thread - OS thread id; reveals thread hops / cross-thread interleaving (e.g. V1 runner vs V2 on single-threaded WASM)
+        //   thread - OS thread id; reveals thread hops / cross-thread interleaving (e.g. StateMachine runner vs Runtime on single-threaded WASM)
         //   event  - AsyncEventID name
         //   disp   - DispatcherId
-        //   parent - ParentDispatcherId (0 if none; non-zero shows V1<->V2 parent capture)
+        //   parent - ParentDispatcherId (0 if none; non-zero shows StateMachine<->Runtime parent capture)
         //   frames - callstack FrameCount (0 for non-callstack events)
         //   unwind - UnwindFrameCount (for UnwindAsyncException events)
         private static string DescribeEvents(ParsedEventStream stream)
@@ -1577,13 +1624,13 @@ namespace System.Threading.Tasks.Tests
         // For a given context, simulates the async callstack depth by walking events in order:
         // ResumeAsyncCallstack sets the depth to frame count, CompleteAsyncMethod decrements,
         // UnwindAsyncException subtracts unwound frames. Asserts depth reaches zero.
-        // Handles both V1 (TaskAsync_*) and V2 (RuntimeAsync) event ids.
+        // Handles both StateMachine (StateMachineAsync_*) and Runtime (RuntimeAsync) event ids.
         private static void AssertCallstackSimulationReachesZero(ParsedEventStream stream, string markerMethodName)
         {
-            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, markerMethodName);
+            var resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeRuntimeAsyncCallstack, markerMethodName);
             if (resumeStacks.Count == 0)
             {
-                resumeStacks = stream.CallstacksWithMarker(AsyncEventID.TaskAsync_ResumeAsyncCallstack, markerMethodName);
+                resumeStacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, markerMethodName);
             }
             AssertTrue(stream, resumeStacks.Count >= 1, $"Expected at least one resume callstack with marker '{markerMethodName}'");
 
@@ -1596,14 +1643,14 @@ namespace System.Threading.Tasks.Tests
             {
                 switch (evt.EventId)
                 {
-                    case AsyncEventID.RuntimeAsync_ResumeAsyncCallstack:
-                    case AsyncEventID.TaskAsync_ResumeAsyncCallstack:
+                    case AsyncEventID.ResumeRuntimeAsyncCallstack:
+                    case AsyncEventID.ResumeStateMachineAsyncCallstack:
                     {
                         stackDepth = (int)evt.FrameCount;
                         break;
                     }
-                    case AsyncEventID.RuntimeAsync_CompleteAsyncMethod:
-                    case AsyncEventID.TaskAsync_CompleteAsyncMethod:
+                    case AsyncEventID.CompleteRuntimeAsyncMethod:
+                    case AsyncEventID.CompleteStateMachineAsyncMethod:
                     {
                         if (stackDepth > 0)
                         {
@@ -1612,8 +1659,8 @@ namespace System.Threading.Tasks.Tests
 
                         break;
                     }
-                    case AsyncEventID.RuntimeAsync_UnwindAsyncException:
-                    case AsyncEventID.TaskAsync_UnwindAsyncException:
+                    case AsyncEventID.UnwindRuntimeAsyncException:
+                    case AsyncEventID.UnwindStateMachineAsyncException:
                     {
                         stackDepth = Math.Max(0, stackDepth - (int)evt.UnwindFrameCount);
                         break;
@@ -1627,22 +1674,22 @@ namespace System.Threading.Tasks.Tests
         private static void AssertExactlyOneCreateAndComplete(ParsedEventStream stream, ulong dispatcherId, string chainName)
         {
             var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
-            int creates = ids.Count(id => id is AsyncEventID.RuntimeAsync_CreateAsyncContext or AsyncEventID.TaskAsync_CreateAsyncContext);
-            int completes = ids.Count(id => id is AsyncEventID.RuntimeAsync_CompleteAsyncContext or AsyncEventID.TaskAsync_CompleteAsyncContext);
+            int creates = ids.Count(id => id is AsyncEventID.CreateRuntimeAsyncContext or AsyncEventID.CreateStateMachineAsyncContext);
+            int completes = ids.Count(id => id is AsyncEventID.CompleteRuntimeAsyncContext or AsyncEventID.CompleteStateMachineAsyncContext);
             AssertTrue(stream, creates == 1, $"Expected exactly 1 CreateAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {creates}");
             AssertTrue(stream, completes == 1, $"Expected exactly 1 CompleteAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {completes}");
         }
 
-        // V1-friendly variant: V1's per-MoveNext dispatcher model emits one Create per await
+        // StateMachine-friendly variant: StateMachine's per-MoveNext dispatcher model emits one Create per await
         // suspension, so a method with N awaits produces N dispatchers / N Creates within the
         // same dispatcher tree. The invariant we can still assert is creates == completes (both >= 1).
         private static void AssertCreateEqualsCompleteInChain(ParsedEventStream stream, ulong dispatcherId, string chainName)
         {
             var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
-            int creates = ids.Count(id => id == AsyncEventID.TaskAsync_CreateAsyncContext);
-            int completes = ids.Count(id => id == AsyncEventID.TaskAsync_CompleteAsyncContext);
-            AssertTrue(stream, creates >= 1, $"Expected at least 1 TaskAsync_CreateAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {creates}");
-            AssertTrue(stream, creates == completes, $"Expected TaskAsync_CreateAsyncContext count == TaskAsync_CompleteAsyncContext count for {chainName} (DispatcherId {dispatcherId}), got {creates} creates and {completes} completes");
+            int creates = ids.Count(id => id == AsyncEventID.CreateStateMachineAsyncContext);
+            int completes = ids.Count(id => id == AsyncEventID.CompleteStateMachineAsyncContext);
+            AssertTrue(stream, creates >= 1, $"Expected at least 1 CreateStateMachineAsyncContextKeyword for {chainName} (DispatcherId {dispatcherId}), got {creates}");
+            AssertTrue(stream, creates == completes, $"Expected CreateStateMachineAsyncContextKeyword count == CompleteStateMachineAsyncContextKeyword count for {chainName} (DispatcherId {dispatcherId}), got {creates} creates and {completes} completes");
         }
 
         private sealed class InlinePostSynchronizationContext : SynchronizationContext
@@ -1817,26 +1864,25 @@ namespace System.Threading.Tasks.Tests
                     {
                         index += eventId switch
                         {
-                            AsyncEventID.RuntimeAsync_CreateAsyncContext => OutputCreateAsyncContextEvent(buffer.Slice(index)),
-                            AsyncEventID.RuntimeAsync_ResumeAsyncContext => OutputResumeAsyncContextEvent(buffer.Slice(index)),
-                            AsyncEventID.RuntimeAsync_SuspendAsyncContext => OutputSuspendAsyncContextEvent(),
-                            AsyncEventID.RuntimeAsync_CompleteAsyncContext => OutputCompleteAsyncContextEvent(),
-                            AsyncEventID.RuntimeAsync_UnwindAsyncException => OutputUnwindAsyncExceptionEvent(buffer.Slice(index)),
-                            AsyncEventID.RuntimeAsync_CreateAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
-                            AsyncEventID.RuntimeAsync_ResumeAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
-                            AsyncEventID.RuntimeAsync_SuspendAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
-                            AsyncEventID.RuntimeAsync_ResumeAsyncMethod => OutputResumeAsyncMethodEvent(),
-                            AsyncEventID.RuntimeAsync_CompleteAsyncMethod => OutputCompleteAsyncMethodEvent(),
+                            AsyncEventID.CreateRuntimeAsyncContext => OutputCreateAsyncContextEvent(buffer.Slice(index)),
+                            AsyncEventID.ResumeRuntimeAsyncContext => OutputResumeAsyncContextEvent(buffer.Slice(index)),
+                            AsyncEventID.SuspendRuntimeAsyncContext => OutputSuspendAsyncContextEvent(),
+                            AsyncEventID.CompleteRuntimeAsyncContext => OutputCompleteAsyncContextEvent(),
+                            AsyncEventID.UnwindRuntimeAsyncException => OutputUnwindAsyncExceptionEvent(buffer.Slice(index)),
+                            AsyncEventID.CreateRuntimeAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
+                            AsyncEventID.ResumeRuntimeAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
+                            AsyncEventID.SuspendRuntimeAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
+                            AsyncEventID.ResumeRuntimeAsyncMethod => OutputResumeAsyncMethodEvent(),
+                            AsyncEventID.CompleteRuntimeAsyncMethod => OutputCompleteAsyncMethodEvent(),
 
-                            AsyncEventID.TaskAsync_CreateAsyncContext => OutputCreateAsyncContextEvent(buffer.Slice(index)),
-                            AsyncEventID.TaskAsync_ResumeAsyncContext => OutputResumeAsyncContextEvent(buffer.Slice(index)),
-                            AsyncEventID.TaskAsync_SuspendAsyncContext => OutputSuspendAsyncContextEvent(),
-                            AsyncEventID.TaskAsync_CompleteAsyncContext => OutputCompleteAsyncContextEvent(),
-                            AsyncEventID.TaskAsync_UnwindAsyncException => OutputUnwindAsyncExceptionEvent(buffer.Slice(index)),
-                            AsyncEventID.TaskAsync_ResumeAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
-                            AsyncEventID.TaskAsync_ResumeAsyncMethod => OutputResumeAsyncMethodEvent(),
-                            AsyncEventID.TaskAsync_CompleteAsyncMethod => OutputCompleteAsyncMethodEvent(),
-                            AsyncEventID.TaskAsync_AppendAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
+                            AsyncEventID.CreateStateMachineAsyncContext => OutputCreateAsyncContextEvent(buffer.Slice(index)),
+                            AsyncEventID.ResumeStateMachineAsyncContext => OutputResumeAsyncContextEvent(buffer.Slice(index)),
+                            AsyncEventID.CompleteStateMachineAsyncContext => OutputCompleteAsyncContextEvent(),
+                            AsyncEventID.UnwindStateMachineAsyncException => OutputUnwindAsyncExceptionEvent(buffer.Slice(index)),
+                            AsyncEventID.ResumeStateMachineAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
+                            AsyncEventID.ResumeStateMachineAsyncMethod => OutputResumeAsyncMethodEvent(),
+                            AsyncEventID.CompleteStateMachineAsyncMethod => OutputCompleteAsyncMethodEvent(),
+                            AsyncEventID.AppendStateMachineAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),
 
                             AsyncEventID.ResetAsyncThreadContext => OutputResetAsyncThreadContextEvent(),
                             AsyncEventID.ResetAsyncContinuationWrapperIndex => OutputResetAsyncContinuationWrapperIndexEvent(),
@@ -2002,20 +2048,20 @@ namespace System.Threading.Tasks.Tests
                 byte asyncCallstackLength;
                 int index = 0;
 
-                AsyncCallstackType type = (eventId is AsyncEventID.TaskAsync_ResumeAsyncCallstack
-                                                   or AsyncEventID.TaskAsync_AppendAsyncCallstack)
-                    ? AsyncCallstackType.Compiler
+                AsyncCallstackType type = (eventId is AsyncEventID.ResumeStateMachineAsyncCallstack
+                                                   or AsyncEventID.AppendStateMachineAsyncCallstack)
+                    ? AsyncCallstackType.StateMachine
                     : AsyncCallstackType.Runtime;
                 callstackId = buffer[index++];
                 continuationIndex = buffer[index++];
                 asyncCallstackLength = buffer[index++];
-                if (eventId == AsyncEventID.RuntimeAsync_CreateAsyncCallstack)
+                if (eventId == AsyncEventID.CreateRuntimeAsyncCallstack)
                 {
                     Deserializer.ReadCompressedUInt64(buffer, ref index, out parentDispatcherId);
                 }
                 Deserializer.ReadCompressedUInt64(buffer, ref index, out dispatcherId);
 
-                if (eventId == AsyncEventID.RuntimeAsync_CreateAsyncCallstack)
+                if (eventId == AsyncEventID.CreateRuntimeAsyncCallstack)
                 {
                     Console.WriteLine($"  ParentDispatcherId: {parentDispatcherId}");
                 }
@@ -2033,7 +2079,7 @@ namespace System.Threading.Tasks.Tests
                 ulong currentMethodId;
                 int state = 0;
 
-                bool readState = type == AsyncCallstackType.Compiler;
+                bool readState = type == AsyncCallstackType.StateMachine;
 
                 Deserializer.ReadCompressedUInt64(buffer, ref index, out currentMethodId);
                 if (readState)
@@ -2061,7 +2107,7 @@ namespace System.Threading.Tasks.Tests
             private static void OutputAsyncFrame(AsyncCallstackType type, ulong methodId, int state, int frameIndex)
             {
                 string asyncMethodName = GetMethodNameFromMethodId(type, methodId) ?? "??";
-                if (type == AsyncCallstackType.Compiler)
+                if (type == AsyncCallstackType.StateMachine)
                 {
                     Console.WriteLine($"    [{frameIndex}] {asyncMethodName} (0x{methodId:X}) (state={state})");
                 }

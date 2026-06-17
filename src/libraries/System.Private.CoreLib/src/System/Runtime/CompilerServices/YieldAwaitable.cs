@@ -116,9 +116,9 @@ namespace System.Runtime.CompilerServices
             {
                 Debug.Assert(box != null);
 
-                if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
                 {
-                    box = AsyncTaskDispatcher.Create(box);
+                    box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box);
                 }
 
                 // If tracing is enabled, delegate the Action-based implementation.

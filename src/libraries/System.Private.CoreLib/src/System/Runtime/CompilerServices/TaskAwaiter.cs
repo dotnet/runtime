@@ -194,11 +194,11 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(stateMachineBox != null);
 
-            if (AsyncTaskDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+            if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
             {
                 if (task is not IAsyncStateMachineBox)
                 {
-                    stateMachineBox = AsyncTaskDispatcher.Create(stateMachineBox);
+                    stateMachineBox = AsyncStateMachineDispatcherInfo.CreateDispatcher(stateMachineBox);
                 }
                 else if (continueOnCapturedContext)
                 {
@@ -206,7 +206,7 @@ namespace System.Runtime.CompilerServices
                     bool customTaskScheduler = TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default;
                     if (customSyncContext || customTaskScheduler)
                     {
-                        stateMachineBox = AsyncTaskDispatcher.Create(stateMachineBox);
+                        stateMachineBox = AsyncStateMachineDispatcherInfo.CreateDispatcher(stateMachineBox);
                     }
                 }
             }
