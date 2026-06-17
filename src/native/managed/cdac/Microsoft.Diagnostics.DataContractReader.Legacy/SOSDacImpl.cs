@@ -7282,10 +7282,6 @@ public sealed unsafe partial class SOSDacImpl
             data->StartTimestamp = logData.StartTimestamp;
             data->StartTime = logData.StartTime;
             data->Logs = logData.Logs.ToClrDataAddress(_target);
-            data->StressMsgHeaderSize = _target.GetTypeInfo(DataType.StressMsgHeader).Size ?? 0;
-            data->ChunkSize = _target.ReadGlobal<uint>(Constants.Globals.StressLogChunkSize);
-            data->MaxMessageSize = _target.ReadGlobal<uint>(Constants.Globals.StressLogMaxMessageSize);
-            data->PointerSize = (uint)_target.PointerSize;
         }
         catch (System.Exception ex)
         {

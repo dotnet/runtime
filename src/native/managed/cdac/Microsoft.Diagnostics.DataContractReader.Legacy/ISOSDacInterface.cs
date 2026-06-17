@@ -1205,10 +1205,6 @@ public struct SOSStressLogData
     public ulong StartTimestamp;
     public ulong StartTime;
     public ClrDataAddress Logs;
-    public uint StressMsgHeaderSize;
-    public uint ChunkSize;
-    public uint MaxMessageSize;
-    public uint PointerSize;
 }
 
 public struct SOSThreadStressLogData

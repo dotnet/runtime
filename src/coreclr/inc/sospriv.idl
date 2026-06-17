@@ -587,10 +587,6 @@ typedef struct _SOSStressLogData
     UINT64 StartTimestamp;
     UINT64 StartTime;
     CLRDATA_ADDRESS Logs;
-    unsigned int StressMsgHeaderSize;
-    unsigned int ChunkSize;
-    unsigned int MaxMessageSize;
-    unsigned int PointerSize;
 } SOSStressLogData;
 
 cpp_quote("#endif //_SOS_StressLogData")
