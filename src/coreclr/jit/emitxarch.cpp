@@ -2040,6 +2040,10 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 #if defined(DEBUG)
             if (m_compiler->DoJitStressPromotedEvexEncoding())
             {
+                if (insIsCMOV(ins))
+                {
+                    return false;
+                }
                 return true;
             }
 #endif // DEBUG
