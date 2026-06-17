@@ -106,7 +106,7 @@ public sealed class ClrMdDumpHost : IDisposable
 
     /// <summary>
     /// Get a thread's register context from the dump.
-    /// Returns 0 on success, -1 on failure.
+    /// Returns 0 on success, non-zero on failure.
     /// </summary>
     public int GetThreadContext(uint threadId, uint contextFlags, Span<byte> buffer)
     {

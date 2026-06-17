@@ -1801,6 +1801,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             byte[] leafContext = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.None, allFlags);
             leafCtx.FillFromBuffer(leafContext);
 
+            // Read the given context from the native buffer.
             IPlatformAgnosticContext givenCtx = IPlatformAgnosticContext.GetContextForPlatform(_target);
             givenCtx.FillFromBuffer(new Span<byte>(pContext, leafContext.Length));
 
@@ -1833,6 +1834,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(_target).AllContextFlags;
             ThreadData threadData = _target.Contracts.Thread.GetThreadData(new TargetPointer(vmThread));
             byte[] context = _target.Contracts.StackWalk.GetContext(threadData, ThreadContextSource.Debugger, allFlags);
+
             context.AsSpan().CopyTo(new Span<byte>(pContextBuffer, context.Length));
         }
         catch (System.Exception ex)

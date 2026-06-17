@@ -617,8 +617,6 @@ The implementation uses the same stack walk algorithm as `CreateStackWalk`, but 
 
 If no Frame in the chain produces a usable context (thread is not running managed code), a zeroed context of the target architecture's size is returned.
 
-The caller owns the buffer and must ensure it is at least `IPlatformAgnosticContext.Size` bytes.
-
 `GetRedirectedContextPointer` returns the saved `TargetContext` pointer carried by the head Frame when that Frame is a `RedirectedThreadFrame` (a `ResumableFrame`). Otherwise it returns `TargetPointer.Null`.
 
 #### CreateStackWalk with a caller-provided CONTEXT
