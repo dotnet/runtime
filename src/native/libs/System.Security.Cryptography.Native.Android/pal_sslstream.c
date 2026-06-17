@@ -339,8 +339,10 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
     }
 
     // netInBuffer.flip();
-    // SSLEngineResult result = sslEngine.unwrap(netInBuffer, appInBuffer);
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferFlip));
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // SSLEngineResult result = sslEngine.unwrap(netInBuffer, appInBuffer);
     result = (*env)->CallObjectMethod(
         env, sslStream->sslEngine, g_SSLEngineUnwrap, sslStream->netInBuffer, sslStream->appInBuffer);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);

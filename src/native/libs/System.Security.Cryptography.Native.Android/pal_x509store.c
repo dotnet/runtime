@@ -397,7 +397,7 @@ static bool SystemAliasFilter(JNIEnv* env, jstring alias)
     const char* aliasPtr = (*env)->GetStringUTFChars(env, alias, NULL);
     if (aliasPtr == NULL)
     {
-        TryClearJNIExceptions(env);
+        CheckJNIExceptions(env);
         return false;
     }
     bool isSystem = (strncmp(aliasPtr, systemPrefix, prefixLen) == 0);
