@@ -24,9 +24,9 @@ namespace System
         // 4. Collectible delegates
         internal object? _invocationList; // Initialized by VM as needed
 
-        // _firstParameter is the object we will invoke on; null if static delegate
-        // Keep _firstParameter and _methodPtr next to each other for optimal delegate invoke performance
-        internal object? _firstParameter;
+        // _target is the object we will invoke on; null if static delegate
+        // Keep _target and _methodPtr next to each other for optimal delegate invoke performance
+        internal object? _target;
 
         // _methodPtr is a pointer to the method we will invoke
         // It could be a small thunk if this is a static or UM call
@@ -146,7 +146,7 @@ namespace System
             Delegate other = Unsafe.AsAssert<Delegate>(obj);
 
             // do an optimistic check first. This is hopefully cheap enough to be worth
-            if (_firstParameter == other._firstParameter &&
+            if (_target == other._target &&
                 _methodPtr == other._methodPtr &&
                 _methodPtrAux == other._methodPtrAux)
                 return true;
@@ -163,7 +163,7 @@ namespace System
                     return false; // different delegate kind
 
                 // they are both closed over the first arg
-                if (_firstParameter != other._firstParameter)
+                if (_target != other._target)
                     return false;
 
                 // fall through method handle check
@@ -187,16 +187,16 @@ namespace System
         public override int GetHashCode()
         {
             int hashCode = MethodDesc.GetHashCode();
-            if (_methodPtrAux == 0 && _firstParameter != null)
+            if (_methodPtrAux == 0 && _target != null)
             {
-                hashCode += RuntimeHelpers.GetHashCode(_firstParameter) * 33;
+                hashCode += RuntimeHelpers.GetHashCode(_target) * 33;
             }
             return hashCode;
         }
 
         internal virtual object? GetTarget()
         {
-            return _methodPtrAux == 0 ? _firstParameter : null;
+            return _methodPtrAux == 0 ? _target : null;
         }
 
         protected virtual MethodInfo GetMethodImpl()
@@ -263,7 +263,7 @@ namespace System
                         // walking won't be we compare using the generic type definition forms instead.
                         Type targetType = declaringType.GetGenericTypeDefinition();
                         Type? currentType;
-                        for (currentType = _firstParameter!.GetType(); currentType != null; currentType = currentType.BaseType)
+                        for (currentType = _target!.GetType(); currentType != null; currentType = currentType.BaseType)
                         {
                             if (currentType.IsGenericType &&
                                 currentType.GetGenericTypeDefinition() == targetType)
@@ -279,7 +279,7 @@ namespace System
                         // The targetType may also be an interface with a Default interface method (DIM).
                         Debug.Assert(
                             currentType != null
-                            || _firstParameter.GetType().IsCOMObject
+                            || _target.GetType().IsCOMObject
                             || targetType.IsInterface, "The class hierarchy should declare the method or be a DIM");
                     }
                     else

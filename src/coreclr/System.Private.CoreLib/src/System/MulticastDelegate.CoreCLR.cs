@@ -95,7 +95,7 @@ namespace System
             MulticastDelegate dd = (MulticastDelegate)previous;
             return dd._methodPtr == d._methodPtr &&
                    dd._methodPtrAux == d._methodPtrAux &&
-                   dd._firstParameter == d._firstParameter;
+                   dd._target == d._target;
         }
 
         private unsafe MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
@@ -115,7 +115,7 @@ namespace System
                 result._methodPtr = GetMulticastInvoke();
                 result._methodPtrAux = GetInvokeMethod();
             }
-            result._firstParameter = result;
+            result._target = result;
             result._invocationList = invocationList;
             result._invocationCount = invocationCount;
 
@@ -424,7 +424,7 @@ namespace System
         {
             if (target == null)
                 ThrowNullThisInDelegateToInstance();
-            _firstParameter = target;
+            _target = target;
             _methodPtr = (nuint)methodPtr;
         }
 
@@ -432,7 +432,7 @@ namespace System
         [DebuggerStepThrough]
         private void CtorClosedStatic(object target, IntPtr methodPtr)
         {
-            _firstParameter = target;
+            _target = target;
             _methodPtr = (nuint)methodPtr;
         }
 
@@ -442,7 +442,7 @@ namespace System
         {
             if (target == null)
                 ThrowNullThisInDelegateToInstance();
-            _firstParameter = target;
+            _target = target;
             _methodPtr = (nuint)AdjustTarget(target, methodPtr);
         }
 
@@ -450,7 +450,7 @@ namespace System
         [DebuggerStepThrough]
         private void CtorOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
-            _firstParameter = this;
+            _target = this;
             _methodPtr = (nuint)shuffleThunk;
             _methodPtrAux = methodPtr;
         }
@@ -459,7 +459,7 @@ namespace System
         [DebuggerStepThrough]
         private void CtorVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
-            _firstParameter = this;
+            _target = this;
             _methodPtr = (nuint)shuffleThunk;
             InitializeVirtualCallStub(methodPtr);
         }
@@ -468,7 +468,7 @@ namespace System
         [DebuggerStepThrough]
         private void CtorCollectibleClosedStatic(object target, IntPtr methodPtr, IntPtr gchandle)
         {
-            _firstParameter = target;
+            _target = target;
             _methodPtr = (nuint)methodPtr;
             _invocationList = GCHandle.InternalGet(gchandle);
             Debug.Assert(InvocationListLogicallyNull);
@@ -478,7 +478,7 @@ namespace System
         [DebuggerStepThrough]
         private void CtorCollectibleOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
-            _firstParameter = this;
+            _target = this;
             _methodPtr = (nuint)shuffleThunk;
             _methodPtrAux = methodPtr;
             _invocationList = GCHandle.InternalGet(gchandle);
@@ -489,7 +489,7 @@ namespace System
         [DebuggerStepThrough]
         private void CtorCollectibleVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
-            _firstParameter = this;
+            _target = this;
             _methodPtr = (nuint)shuffleThunk;
             _invocationList = GCHandle.InternalGet(gchandle);
             Debug.Assert(InvocationListLogicallyNull);
