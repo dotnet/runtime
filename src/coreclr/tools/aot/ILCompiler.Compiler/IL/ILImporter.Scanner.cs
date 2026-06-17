@@ -82,7 +82,6 @@ namespace Internal.IL
 
         public ILImporter(ILScanner compilation, MethodDesc method, MethodIL methodIL = null)
         {
-
             if (methodIL == null)
             {
                 methodIL = compilation.GetMethodIL(method);
