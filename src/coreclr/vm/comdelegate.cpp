@@ -2699,7 +2699,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // 2- Instance open non-virt        delegate        shuffle thunk           target method       null                0
     // 3- Instance open virtual         delegate        Virtual-stub dispatch   method id           null                0
     // 4- Static closed                 first arg       target method           null                null                0
-    // 5- Static closed (special sig)   delegate        specialSig thunk        null                null                0
+    // 5- Static closed (retbuf)         delegate        retbuf thunk            null                null                0
     // 6- Static opened                 delegate        shuffle thunk           target method       null                0
     //
     // Delegate invoke arg count == target method arg count - 2, 3, 6
@@ -2707,7 +2707,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     //
     // 1        - CtorClosed (or CtorRTClosed for value-type instance targets needing runtime lookup)
     // 4        - CtorClosedStatic
-    // 5        - Special-signature static closed form (not differentiated on this fast path; see TODO below)
+    // 5        - Retbuf static closed form (not differentiated on this fast path; see TODO below)
     // 2, 6     - CtorOpened
     // 3        - CtorVirtualDispatch
     // Collectible delegates use the corresponding CtorCollectible* variants.
@@ -2726,7 +2726,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     if (invokeArgCount == methodArgCount)
     {
         // case 2, 3, 6
-        //@TODO:NEWVTWORK: Might need changing.
         // The virtual dispatch stub doesn't work on unboxed value type objects which don't have MT pointers.
         // Since open virtual (delegate kind 3) delegates on value type methods require unboxed objects we cannot use the
         // virtual dispatch stub for them. On the other hand, virtual methods on value types don't need
