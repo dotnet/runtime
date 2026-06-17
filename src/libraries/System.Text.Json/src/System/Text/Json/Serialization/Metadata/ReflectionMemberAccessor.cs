@@ -327,7 +327,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (accessor is null)
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException($"Failed to create union accessor for type '{entry.Key}'.");
                 }
 
                 chain[i] = (UnionTryGetValueAccessor<TUnion>)accessor;
