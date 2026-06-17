@@ -182,6 +182,7 @@ internal sealed class MockThread : TypedView
     private const string PreemptiveGCDisabledFieldName = "PreemptiveGCDisabled";
     private const string RuntimeThreadLocalsFieldName = "RuntimeThreadLocals";
     private const string FrameFieldName = "Frame";
+    private const string GCFrameFieldName = "GCFrame";
     private const string CachedStackBaseFieldName = "CachedStackBase";
     private const string CachedStackLimitFieldName = "CachedStackLimit";
     private const string ExposedObjectFieldName = "ExposedObject";
@@ -206,6 +207,7 @@ internal sealed class MockThread : TypedView
             .AddUInt32Field(PreemptiveGCDisabledFieldName)
             .AddPointerField(RuntimeThreadLocalsFieldName)
             .AddPointerField(FrameFieldName)
+            .AddPointerField(GCFrameFieldName)
             .AddPointerField(CachedStackBaseFieldName)
             .AddPointerField(CachedStackLimitFieldName)
             .AddPointerField(ExposedObjectFieldName)
@@ -299,6 +301,16 @@ internal sealed class MockThread : TypedView
     {
         get => ReadPointerField(FrameFieldName);
         set => WritePointerField(FrameFieldName, value);
+    }
+
+    /// <summary>
+    /// The value of the Thread's m_pGCFrame field - the head of the GCFrame (GCPROTECT)
+    /// chain.
+    /// </summary>
+    public ulong GCFrame
+    {
+        get => ReadPointerField(GCFrameFieldName);
+        set => WritePointerField(GCFrameFieldName, value);
     }
 
     public uint DebuggerControlledThreadState

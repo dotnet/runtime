@@ -1865,8 +1865,8 @@ int32_t SystemNative_ReadThreadInfo(int32_t pid, int32_t tid, ThreadInfo* thread
 
     lwpsinfo_t pr;
     int result = Common_Read(fd, &pr, sizeof(pr));
-    close(fd);
-    if (result < sizeof (pr))
+    close(ToFileDescriptor(fd));
+    if (result < (int)sizeof(pr))
     {
         errno = EIO;
         return -1;
@@ -1913,8 +1913,8 @@ int32_t SystemNative_ReadProcessInfo(int32_t pid, ProcessInfo* processInfo, uint
 
     psinfo_t pr;
     int result = Common_Read(fd, &pr, sizeof(pr));
-    close(fd);
-    if (result < sizeof (pr))
+    close(ToFileDescriptor(fd));
+    if (result < (int)sizeof(pr))
     {
         errno = EIO;
         return -1;
