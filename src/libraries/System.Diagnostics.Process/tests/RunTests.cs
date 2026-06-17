@@ -51,28 +51,26 @@ namespace System.Diagnostics.Tests
         [InlineData(true, true)]
         public async Task Run_WithFileName_Silent_OutputIsDiscarded(bool useAsync, bool silent)
         {
-            // Process B writes to stdout and stderr.
-            using Process innerTemplate = CreateProcess(static () =>
+            // Process A starts process B that writes large output to stdout and stderr.
+            // When silent is true, B's output is redirected to the null device.
+            // A's stdout/stderr are redirected so we can verify whether B's output leaked through.
+            using Process outerTemplate = CreateProcess((string silentArg) =>
             {
-                Console.Write("stdout from inner");
-                Console.Error.Write("stderr from inner");
-                return RemoteExecutor.SuccessExitCode;
-            });
-            string innerFileName = innerTemplate.StartInfo.FileName;
-            string innerArguments = innerTemplate.StartInfo.Arguments;
+                bool silentValue = bool.Parse(silentArg);
 
-            // Process A starts process B with the given silent setting, then returns B's exit code.
-            using Process outerTemplate = CreateProcess(static (string fileName, string silentAndArguments) =>
-            {
-                int separator = silentAndArguments.IndexOf('|');
-                bool silent = bool.Parse(silentAndArguments.AsSpan(0, separator));
-                string arguments = silentAndArguments.Substring(separator + 1);
-                List<string>? args = Helpers.MapToArgumentList(new ProcessStartInfo(fileName) { Arguments = arguments });
-                ProcessExitStatus status = Process.Run(fileName, args, silent: silent);
+                using Process innerTemplate = CreateProcess(() =>
+                {
+                    Console.Write(new string('a', 100_000));
+                    Console.Error.Write(new string('b', 100_000));
+                    return RemoteExecutor.SuccessExitCode;
+                });
+
+                List<string>? args = Helpers.MapToArgumentList(innerTemplate.StartInfo);
+                ProcessExitStatus status = Process.Run(innerTemplate.StartInfo.FileName, args, silent: silentValue);
+
                 return status.ExitCode;
-            }, innerFileName, $"{silent}|{innerArguments}");
+            }, silent.ToString());
 
-            // Start process A with redirected output/error so we can capture them.
             outerTemplate.StartInfo.RedirectStandardOutput = true;
             outerTemplate.StartInfo.RedirectStandardError = true;
 
@@ -90,8 +88,8 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                Assert.Equal("stdout from inner", result.StandardOutput);
-                Assert.Equal("stderr from inner", result.StandardError);
+                Assert.Equal(new string('a', 100_000), result.StandardOutput);
+                Assert.Equal(new string('b', 100_000), result.StandardError);
             }
         }
 
