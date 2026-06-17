@@ -213,11 +213,20 @@ export function replaceEmscriptenPThreadUI (modulePThread: PThreadLibrary): void
 
     modulePThread.loadWasmModuleToWorker = async (worker: PThreadWorker): Promise<PThreadWorker> => {
         const wasmModule = await loaderHelpers.wasmCompilePromise.promise;
-        for (const ev in worker.queue) {
-            monoWorkerMessageHandler(worker, wasmModule, worker.queue[ev]);
+
+        // Stop queueing once we can process messages synchronously.
+        if (worker.handler) {
+            worker.removeEventListener("message", worker.handler);
         }
+
+        for (const queuedEvent of worker.queue) {
+            monoWorkerMessageHandler(worker, wasmModule, queuedEvent);
+        }
+
         worker.queue.length = 0;
-        worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, wasmModule, ev));
+        worker.handler = (ev) => monoWorkerMessageHandler(worker, wasmModule, ev);
+        worker.addEventListener("message", worker.handler);
+
         const afterLoaded = originalLoadWasmModuleToWorker(worker);
         afterLoaded.then(() => {
             worker.info.isLoaded = true;
