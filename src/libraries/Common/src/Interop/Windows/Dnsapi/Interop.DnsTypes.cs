@@ -132,9 +132,15 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct DNS_AAAA_DATA
+        internal struct DNS_AAAA_DATA
         {
-            public fixed byte Ip6Address[16];
+            public Ip6AddressBytes Ip6Address;
+        }
+
+        [System.Runtime.CompilerServices.InlineArray(16)]
+        internal struct Ip6AddressBytes
+        {
+            private byte _element0;
         }
 
         [StructLayout(LayoutKind.Sequential)]

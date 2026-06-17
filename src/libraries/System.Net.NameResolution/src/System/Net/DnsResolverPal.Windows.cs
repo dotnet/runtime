@@ -248,7 +248,7 @@ namespace System.Net
             if (a.Records.Count > 0 || b.Records.Count > 0)
             {
                 AddressRecord[] merged = [.. a.Records, .. b.Records];
-                TimeSpan mergedTtl = Math.Min(a.NegativeCacheTtl, b.NegativeCacheTtl);
+                TimeSpan mergedTtl = a.NegativeCacheTtl < b.NegativeCacheTtl ? a.NegativeCacheTtl : b.NegativeCacheTtl;
                 return new DnsResult<AddressRecord>(DnsResponseCode.NoError, merged, mergedTtl);
             }
 
@@ -259,11 +259,23 @@ namespace System.Net
             return new DnsResult<AddressRecord>(chosenRc, null, negTtl);
         }
 
-        private static unsafe bool TryParseAddress(ushort recordType, IntPtr dataPtr, out IPAddress? address)
+        private static bool TryParseAddress(ushort recordType, IntPtr dataPtr, out IPAddress? address)
         {
-            if (recordType is Interop.Dnsapi.DNS_TYPE_A or Interop.Dnsapi.DNS_TYPE_AAAA)
+            if (recordType == Interop.Dnsapi.DNS_TYPE_A)
             {
-                address = new IPAddress(new ReadOnlySpan<byte>((byte*)dataPtr, recordType == Interop.Dnsapi.DNS_TYPE_A ? 4 : 16));
+                // DNS_A_DATA holds the IPv4 address as a uint already in network byte
+                // order, which is exactly the layout the IPAddress(long) ctor expects.
+                Interop.Dnsapi.DNS_A_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_A_DATA>(dataPtr);
+                address = new IPAddress((long)data.IpAddress);
+                return true;
+            }
+
+            if (recordType == Interop.Dnsapi.DNS_TYPE_AAAA)
+            {
+                // DNS_AAAA_DATA holds the 16 raw IPv6 address bytes; the InlineArray
+                // field exposes them as a span without any pointer arithmetic.
+                Interop.Dnsapi.DNS_AAAA_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_AAAA_DATA>(dataPtr);
+                address = new IPAddress((ReadOnlySpan<byte>)data.Ip6Address);
                 return true;
             }
 
@@ -313,7 +325,7 @@ namespace System.Net
             return Task.FromResult(DnsQueryExSync(servers, name, queryType, cancellationToken));
         }
 
-        private static unsafe string? PtrToString(IntPtr p) =>
+        private static string? PtrToString(IntPtr p) =>
             p == IntPtr.Zero ? null : Marshal.PtrToStringUni(p);
 
         // ---- Asynchronous DnsQueryEx state machine ----
@@ -637,24 +649,25 @@ namespace System.Net
             int totalSize = checked(headerSize + addrSize * count);
 
             arrayPtr = Marshal.AllocHGlobal(totalSize);
-            NativeMemory.Clear((void*)arrayPtr, (nuint)totalSize);
 
-            Interop.Dnsapi.DNS_ADDR_ARRAY* arr = (Interop.Dnsapi.DNS_ADDR_ARRAY*)arrayPtr;
-            arr->MaxCount = (uint)count;
-            arr->AddrCount = (uint)count;
-            arr->Family = (ushort)(family == AddressFamily.InterNetwork ? Interop.Dnsapi.AF_INET : Interop.Dnsapi.AF_INET6);
+            // Wrap the unmanaged buffer in a span and populate it without pointer arithmetic.
+            Span<byte> buffer = new Span<byte>((void*)arrayPtr, totalSize);
+            buffer.Clear();
 
-            byte* addrBase = (byte*)arrayPtr + headerSize;
+            ref Interop.Dnsapi.DNS_ADDR_ARRAY arr = ref MemoryMarshal.AsRef<Interop.Dnsapi.DNS_ADDR_ARRAY>(buffer);
+            arr.MaxCount = (uint)count;
+            arr.AddrCount = (uint)count;
+            arr.Family = (ushort)(family == AddressFamily.InterNetwork ? Interop.Dnsapi.AF_INET : Interop.Dnsapi.AF_INET6);
+
             for (int i = 0; i < count; i++)
             {
-                byte* sa = addrBase + (i * addrSize);
-                WriteSockAddr(sa, servers[i].Address);
+                WriteSockAddr(buffer.Slice(headerSize + (i * addrSize), addrSize), servers[i].Address);
             }
         }
 
         // Writes a SOCKADDR_IN or SOCKADDR_IN6 representation into the destination buffer.
         // The buffer must be at least 28 bytes (sizeof sockaddr_in6).
-        private static unsafe void WriteSockAddr(byte* dest, IPAddress address)
+        private static void WriteSockAddr(Span<byte> dest, IPAddress address)
         {
             // DnsQueryEx always queries DNS servers on port 53 and requires the sockaddr
             // port field to be left as 0. Supplying a non-zero port (even 53) is rejected
@@ -663,21 +676,21 @@ namespace System.Net
             if (address.AddressFamily == AddressFamily.InterNetwork)
             {
                 // sockaddr_in: ushort family, ushort port (net order), uint addr, 8 bytes zero
-                *(ushort*)(dest + 0) = Interop.Dnsapi.AF_INET;
+                BinaryPrimitives.WriteUInt16LittleEndian(dest, Interop.Dnsapi.AF_INET);
                 // dest[2..3] (port) left zero
-                address.TryWriteBytes(new Span<byte>(dest + 4, 4), out _);
+                address.TryWriteBytes(dest.Slice(4, 4), out _);
                 // dest[8..15] left zero
             }
             else if (address.AddressFamily == AddressFamily.InterNetworkV6)
             {
                 // sockaddr_in6: ushort family, ushort port, uint flowinfo, 16-byte addr, uint scope_id
-                *(ushort*)(dest + 0) = Interop.Dnsapi.AF_INET6;
+                BinaryPrimitives.WriteUInt16LittleEndian(dest, Interop.Dnsapi.AF_INET6);
                 // dest[2..3] (port) left zero
                 // flowinfo (dest[4..7]) left zero
-                address.TryWriteBytes(new Span<byte>(dest + 8, 16), out _);
+                address.TryWriteBytes(dest.Slice(8, 16), out _);
                 // scope_id (dest[24..27]) is in host byte order; this code is Windows-only
                 // (always little-endian), so write it as little-endian.
-                BinaryPrimitives.WriteUInt32LittleEndian(new Span<byte>(dest + 24, 4), (uint)address.ScopeId);
+                BinaryPrimitives.WriteUInt32LittleEndian(dest.Slice(24, 4), (uint)address.ScopeId);
             }
             else
             {
