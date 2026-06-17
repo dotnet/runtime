@@ -86,18 +86,18 @@
       <Sha>02fe27cd6a9b001c8feb7938e6ef4b3799745759</Sha>
       <SourceBuild RepoName="command-line-api" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.26158.1">
+    <Dependency Name="Microsoft.DotNet.Cecil" Version="0.11.4-alpha.26281.3">
       <Uri>https://github.com/dotnet/cecil</Uri>
-      <Sha>dc12f3e6ccb3fd7b76c0d5ee3365e6b58d796de0</Sha>
+      <Sha>fca1a685c57d208f52fd7e7ba48e2059e3bf0c34</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100" Version="8.0.28">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100" Version="8.0.29">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>35ebe6f3e6953f878ed92f637ad8d7f27202f7a6</Sha>
+      <Sha>ac9f8092f4f527cb3ace4aac03f8d1dbadc39983</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="8.0.28-servicing.26258.2">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.emsdk" Version="8.0.29-servicing.26303.5">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>35ebe6f3e6953f878ed92f637ad8d7f27202f7a6</Sha>
+      <Sha>ac9f8092f4f527cb3ace4aac03f8d1dbadc39983</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-assets" Version="8.0.0-alpha.1.26208.5">
