@@ -770,15 +770,31 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_AdvSimd_BitwiseClear:
         case NI_Sve_BitwiseClear:
+        {
+            assert(sig->numArgs == 2);
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            // We don't want to support creating AND_NOT nodes prior to LIR
+            // as it can break important optimizations. We'll produce this
+            // in lowering instead so decompose into the individual operations
+            // on import
+
+            op2     = gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseType, simdSize);
+            retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseType, simdSize);
+            break;
+        }
+
+        case NI_AdvSimd_BitwiseClear:
         case NI_Vector64_AndNot:
         case NI_Vector128_AndNot:
         {
             assert(sig->numArgs == 2);
 
             // We don't want to support creating AND_NOT nodes prior to LIR
-            // as it can break important optimizations. We'll produces this
+            // as it can break important optimizations. We'll produce this
             // in lowering instead so decompose into the individual operations
             // on import
 

@@ -2785,6 +2785,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_And_Predicates:
+            case NI_Sve_BitwiseClear_Predicates:
+            {
+                assert(intrin.numOperands == 2);
+                GetEmitter()->emitInsSve_R_R_R_R(ins, emitSize, targetReg, op1Reg, op1Reg, op2Reg, INS_OPTS_SCALABLE_B);
+                break;
+            }
+
             case NI_Sve_CreateBreakAfterPropagateMask:
             case NI_Sve_CreateBreakBeforePropagateMask:
             case NI_Sve_ConditionalSelect_Predicates:
