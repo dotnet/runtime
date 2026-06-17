@@ -162,7 +162,7 @@ unsafe class FatalErrorHandlerTest
     {
         StringBuilder stderrBuilder = new();
 
-        Process child = new();
+        using Process child = new();
         child.StartInfo.FileName = Environment.ProcessPath;
 
         // For NativeAOT, Assembly.Location is empty — the process IS the test binary.
