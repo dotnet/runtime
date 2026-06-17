@@ -13,6 +13,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="columns">The number of columns for the pseudo-terminal window size.</param>
         /// <param name="rows">The number of rows for the pseudo-terminal window size.</param>
+        /// <remarks>The dimensions are capped at <see cref="short.MaxValue"/> because the native PTY window-size fields are 16-bit values.</remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="columns"/> or <paramref name="rows"/> is less than or equal to zero, or greater than <see cref="short.MaxValue"/>.</exception>
         public PseudoTerminalOptions(int columns, int rows)
         {

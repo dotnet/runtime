@@ -10,7 +10,7 @@ using Xunit;
 namespace System.Diagnostics.Tests
 {
     [ConditionalClass(typeof(PseudoTerminalTests), nameof(IsPseudoTerminalSupported))]
-    public class PseudoTerminalTests : ProcessTestBase
+    public partial class PseudoTerminalTests : ProcessTestBase
     {
         public static bool IsPseudoTerminalSupported =>
             RemoteExecutor.IsSupported &&
@@ -290,11 +290,10 @@ namespace System.Diagnostics.Tests
                 return string.Empty;
             }
 
-            IntPtr ttyName = NativeTtyName(fileDescriptor);
-            return ttyName != IntPtr.Zero ? Marshal.PtrToStringAnsi(ttyName)! : string.Empty;
+            return NativeTtyName(fileDescriptor) ?? string.Empty;
         }
 
-        [DllImport("libc", EntryPoint = "ttyname")]
-        private static extern IntPtr NativeTtyName(int fd);
+        [LibraryImport("libc", EntryPoint = "ttyname", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial string? NativeTtyName(int fd);
     }
 }

@@ -456,6 +456,7 @@ namespace System.Diagnostics
             PseudoTerminal pty = startInfo.PseudoTerminal!;
             // On Unix, the primary fd is bidirectional (read + write).
             // Create non-owning file handles since the PseudoTerminal owns the primary fd lifetime.
+            // Both handles intentionally reference the same underlying fd.
             SafeFileHandle writeHandle = new(pty.Primary.DangerousGetHandle(), ownsHandle: false);
             SafeFileHandle readHandle = new(pty.Primary.DangerousGetHandle(), ownsHandle: false);
             _standardInput = new StreamWriter(new FileStream(writeHandle, FileAccess.Write, StreamBufferSize, isAsync: pty.Primary.IsAsync),
