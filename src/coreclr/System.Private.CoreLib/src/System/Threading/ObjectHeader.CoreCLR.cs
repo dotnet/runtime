@@ -57,21 +57,13 @@ namespace System.Threading
         };
 
         // Try acquiring the thin-lock in a single attempt.
-        // Only the common, uncontended case (the lock is free) is handled inline. Inflated (fat)
-        // locks, recursive acquisition and contention are rarer and far less performance sensitive,
-        // so they are handled out of line in AcquireUncommon to keep this inlined fast path small.
+        // The common cases (free lock, fat lock) are handled inline. Recursive acquisition and
+        // contention are rarer and less performance sensitive, so they are handled out of line in
+        // AcquireUncommon to keep this inlined fast path small.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe HeaderLockResult Acquire(object obj)
         {
             int currentThreadID = ManagedThreadId.Current;
-
-            // A thin lock can only store a thread id that is initialized (non-zero) and fits in the
-            // thread-id field. A single unsigned comparison rules out both the uninitialized 0 id and
-            // ids that are too large; such threads must use the slow/fat path.
-            if ((uint)(currentThreadID - 1) >= (uint)SBLK_MASK_LOCK_THREADID)
-            {
-                return HeaderLockResult.UseSlowPath;
-            }
 
             fixed (byte* pObjectData = &obj.GetRawData())
             {
@@ -81,27 +73,45 @@ namespace System.Threading
                 // Common case: the header has no hashcode/syncblock index, is not spin-locked and the
                 // lock is free (no owning thread id and no recursion level). Take it by storing our
                 // thread id with a single CAS.
-                if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK | SBLK_MASK_LOCK_THREADID | SBLK_MASK_LOCK_RECLEVEL)) == 0 &&
-                    Interlocked.CompareExchange(pHeader, oldBits | currentThreadID, oldBits) == oldBits)
+                if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK | SBLK_MASK_LOCK_THREADID | SBLK_MASK_LOCK_RECLEVEL)) == 0)
                 {
-                    return HeaderLockResult.Success;
+                    // Thread IDs are allocated sequentially starting from 1 and recycled, so it's
+                    // unusual to have a thread ID that doesn't fit in the thin-lock field.
+                    // Check here rather than at entry to keep the hot path as tight as possible.
+                    // The uninitialized 0 id is also ruled out by this check.
+                    if ((uint)(currentThreadID - 1) >= (uint)SBLK_MASK_LOCK_THREADID)
+                    {
+                        return HeaderLockResult.UseSlowPath;
+                    }
+
+                    if (Interlocked.CompareExchange(pHeader, oldBits | currentThreadID, oldBits) == oldBits)
+                    {
+                        return HeaderLockResult.Success;
+                    }
                 }
 
-                // Anything else - an inflated (fat) lock, a recursive acquire, contention or a lost
-                // race - is uncommon and handled out of line.
+                // Another common case: the header has a hashcode or syncblock index, or another thread
+                // is upgrading it (spin lock). We cannot use a thin-lock.
+                if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0)
+                {
+                    return HeaderLockResult.UseSlowPath;
+                }
+
+                // Everything else - a recursive acquire, contention or a lost race - is uncommon and
+                // handled out of line.
                 return AcquireUncommon(pHeader, oldBits, currentThreadID);
             }
         }
 
-        // Handles the uncommon thin-lock acquire cases: inflated (fat) locks, recursive acquisition
-        // and contention. 'oldBits' is the header value that prevented the inline fast path in
-        // Acquire from completing. Kept out of line so the common path stays small.
+        // Handles the uncommon thin-lock acquire cases: recursive acquisition and contention.
+        // 'oldBits' is the header value that prevented the inline fast path in Acquire from
+        // completing. Kept out of line so the common path stays small.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe HeaderLockResult AcquireUncommon(int* pHeader, int oldBits, int currentThreadID)
         {
-            // If the header has a hashcode or syncblock index, or another thread is upgrading it
-            // (spin lock), we cannot use a thin-lock.
-            if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0)
+            // Thread IDs that don't fit in the thin-lock field cannot use thin locks. This check is
+            // deferred to here (rather than at entry) because it is unusual to be true.
+            if ((uint)(currentThreadID - 1) >= (uint)SBLK_MASK_LOCK_THREADID)
             {
                 return HeaderLockResult.UseSlowPath;
             }

@@ -293,41 +293,46 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            // if thread ID is uninitialized or too big, we do "uncommon" part.
-            // A thin lock can only store a thread id in [1, SBLK_MASK_LOCK_THREADID]; the single
-            // unsigned comparison rules out both the uninitialized 0 id and ids that do not fit
-            // (including SBLK_MASK_LOCK_THREADID + 1, which would overflow into the recursion bits).
-            if ((uint)(currentThreadID - 1) < (uint)SBLK_MASK_LOCK_THREADID)
+            // for an object used in locking there are two common cases:
+            // - header bits are unused or
+            // - there is a sync entry
+            fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
             {
-                // for an object used in locking there are two common cases:
-                // - header bits are unused or
-                // - there is a sync entry
-                fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
+                int* pHeader = GetHeaderPtr(ppMethodTable);
+                int oldBits = *pHeader;
+                // if unused for anything, try setting our thread id
+                // N.B. hashcode, thread ID and sync index are never 0, and hashcode is largest of all
+                if ((oldBits & MASK_HASHCODE_INDEX) == 0)
                 {
-                    int* pHeader = GetHeaderPtr(ppMethodTable);
-                    int oldBits = *pHeader;
-                    // if unused for anything, try setting our thread id
-                    // N.B. hashcode, thread ID and sync index are never 0, and hashcode is largest of all
-                    if ((oldBits & MASK_HASHCODE_INDEX) == 0)
+                    // Thread IDs are allocated sequentially starting from 1 and recycled, so it's
+                    // unusual to have a thread ID that doesn't fit in the thin-lock field.
+                    // Check here rather than at entry to keep the hot path as tight as possible.
+                    // The uninitialized 0 id is also ruled out by this check.
+                    // If the id doesn't fit, we fall through and call TryAcquireUncommon outside the
+                    // fixed block to avoid keeping the object pinned while potentially blocking.
+                    if ((uint)(currentThreadID - 1) < (uint)SBLK_MASK_LOCK_THREADID)
                     {
                         if (Interlocked.CompareExchange(pHeader, oldBits | currentThreadID, oldBits) == oldBits)
                         {
                             return -1;
                         }
                     }
-                    else if (GetSyncEntryIndex(oldBits, out int syncIndex))
+                }
+                else if (GetSyncEntryIndex(oldBits, out int syncIndex))
+                {
+                    if (SyncTable.GetLockObject(syncIndex).TryEnterOneShot(currentThreadID))
                     {
-                        if (SyncTable.GetLockObject(syncIndex).TryEnterOneShot(currentThreadID))
-                        {
-                            return -1;
-                        }
-
-                        // has sync entry -> slow path
-                        return syncIndex;
+                        return -1;
                     }
+
+                    // has sync entry -> slow path
+                    return syncIndex;
                 }
             }
 
+            // Everything else (id doesn't fit, lost race, hashcode, etc.) is handled by uncommon.
+            // This call is outside the fixed block to avoid keeping the object pinned while
+            // potentially blocking in the spin loop.
             return TryAcquireUncommon(obj, currentThreadID, isOneShot);
         }
 
@@ -335,12 +340,14 @@ namespace System.Threading
         // -1 - success
         // 0 - failed
         // syncIndex - retry with the Lock
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe int TryAcquireUncommon(object obj, int currentThreadID, bool isOneShot)
         {
             if (currentThreadID == 0)
                 currentThreadID = Environment.CurrentManagedThreadId;
 
-            // does thread ID fit?
+            // Thread IDs that don't fit in the thin-lock field cannot use thin locks. This check is
+            // deferred to here (rather than at entry) because it is unusual to be true.
             if (currentThreadID > SBLK_MASK_LOCK_THREADID)
                 return GetSyncIndex(obj);
 
