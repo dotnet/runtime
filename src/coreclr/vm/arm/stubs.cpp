@@ -592,10 +592,10 @@ void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorke
 void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT)
 {
     // Called directly by JITTED code
-    // DispatchHolder._stub._entryPoint(r0:object, r1, r2, r3, r12:scratch)
+    // DispatchHolder._stub._entryPoint(r0:object, r1, r2, r3, r12:IndirectionCell)
     // {
     //     if (r0.methodTable == this._expectedMT) (this._implTarget)(r0, r1, r2, r3);
-    //     else (this._failTarget)(r0, r1, r2, r3, r12:MethodTable);
+    //     else (this._failTarget)(r0, r1, r2, r3, r12:IndirectionCell);
     // }
 
     int n = 0;
@@ -667,7 +667,7 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
                                 void * cacheAddr, INT32 * counterAddr)
 {
     // Called directly by JITTED code
-    // ResolveStub._resolveEntryPoint(r0:Object*, r1, r2, r3, r12:IndirectionCellAndFlags)
+    // ResolveStub._resolveEntryPoint(r0:Object*, r1, r2, r3, r12:IndirectionCell)
     // {
     //    MethodTable mt = r0.m_pMethTab;
     //    int i = ((mt + mt >> 12) ^ this._hashedToken) & this._cacheMask
@@ -677,7 +677,7 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     //        if (mt == e.pMT && this._token == e.token) (e.target)(r0, r1, r2, r3);
     //        e = e.pNext;
     //    } while (e != null)
-    //    (this._slowEntryPoint)(r0, r1, r2, r3, r12);
+    //    (this._slowEntryPoint)(r0, r1, r2, r3, r12:IndirectionCell);
     // }
     //
 
@@ -817,11 +817,7 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
 
     // ResolveStub._slowEntryPoint(r0:MethodToken, r1, r2, r3, r12:IndirectionCellAndFlags)
     // {
-    //     push(r12);
-    //     r12 = this._tokenSlow;
-    //     // _resolveWorkerTarget pops hidden IndirectionCellAndFlags from the stack and
-    //     // takes dispatch token in r12.
-    //     this._resolveWorkerTarget(r0, r1, r2, r3, r12);
+    //     this._resolveWorkerTarget(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken);
     // }
 
     // The following macro relies on this entry point being DWORD-aligned. We've already asserted that the
