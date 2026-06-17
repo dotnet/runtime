@@ -16,6 +16,11 @@ parameters:
   SuperPmiCollect: ''
   SuperPmiCollectionType: ''
   SuperPmiCollectionName: ''
+  # When false, Helix work item and test failures do not fail the build, so the "Send to Helix"
+  # step still succeeds. Unlike shouldContinueOnError (which only marks the build as
+  # partiallySucceeded), this produces a fully successful build. Scheduled builds with
+  # always:false set this so that flaky tests don't cause AzDO to re-queue the same commit daily.
+  failOnTestFailures: true
 
 steps:
   - script: $(_msbuildCommand) $(_warnAsErrorParamHelixOverride) -restore
@@ -29,6 +34,8 @@ steps:
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)
+            /p:FailOnWorkItemFailure=${{ parameters.failOnTestFailures }}
+            /p:FailOnTestFailure=${{ parameters.failOnTestFailures }}
             ${{ parameters.extraHelixArguments }}
             /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: Send to Helix
