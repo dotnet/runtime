@@ -217,7 +217,7 @@ ThePreStubPatchLabel:
         NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
         // Match what the virtual dispatch slow path has pushed.
-        .save r3
+        .save {r3}
 
         PROLOG_PUSH  {r0-r2}
 
