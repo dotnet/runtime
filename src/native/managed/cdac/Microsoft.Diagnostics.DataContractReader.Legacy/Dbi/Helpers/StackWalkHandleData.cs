@@ -47,7 +47,7 @@ internal sealed class StackWalkHandleData
     public nuint GetHandle()
     {
         GCHandle gcHandle = GCHandle.Alloc(this);
-        return (nuint)GCHandle.ToIntPtr(gcHandle).ToInt64();
+        return (nuint)GCHandle.ToIntPtr(gcHandle);
     }
 
     public void Dispose() => _enumerator?.Dispose();
