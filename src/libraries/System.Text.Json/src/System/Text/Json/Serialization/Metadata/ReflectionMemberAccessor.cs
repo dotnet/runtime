@@ -315,8 +315,8 @@ namespace System.Text.Json.Serialization.Metadata
                     .MakeGenericMethod(typeof(TUnion), entry.Key)
 #if NET
                     .Invoke(
-                        obj: null,
-                        invokeAttr: BindingFlags.DoNotWrapExceptions,
+                        null,
+                        BindingFlags.DoNotWrapExceptions,
                         binder: null,
                         parameters: new object[] { entry.Value },
                         culture: null)!;
