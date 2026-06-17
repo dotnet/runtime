@@ -22,7 +22,7 @@ namespace System.Diagnostics.Tests
                 RedirectStandardError = true
             };
 
-            using Process process = Process.Start(startInfo, (ProcessStartArguments args) =>
+            using Process process = UnixProcessStartArguments.Start(startInfo, (UnixProcessStartArguments args) =>
             {
                 int result;
 

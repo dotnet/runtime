@@ -115,7 +115,7 @@ namespace System.Diagnostics.Tests
                 RedirectStandardError = true
             };
 
-            using Process process = Process.Start(startInfo, (ProcessStartArguments args) =>
+            using Process process = WindowsProcessStartArguments.Start(startInfo, (WindowsProcessStartArguments args) =>
             {
                 Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
                 Interop.Kernel32.PROCESS_INFORMATION processInfo = default;

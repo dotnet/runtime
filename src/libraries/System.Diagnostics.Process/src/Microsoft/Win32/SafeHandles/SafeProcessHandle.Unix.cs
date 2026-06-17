@@ -213,7 +213,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         internal static unsafe SafeProcessHandle StartWithCallback(ProcessStartInfo startInfo, SafeFileHandle? stdinFd, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
-            Func<ProcessStartArguments, SafeProcessHandle> callback, out ProcessWaitState.Holder? waitStateHolder)
+            Func<UnixProcessStartArguments, SafeProcessHandle> callback, out ProcessWaitState.Holder? waitStateHolder)
         {
             waitStateHolder = null;
             ProcessUtils.EnsureInitialized();
@@ -254,7 +254,7 @@ namespace Microsoft.Win32.SafeHandles
                     stderrRawFd = stderrHandle.DangerousGetHandle();
                 }
 
-                ProcessStartArguments args = new()
+                UnixProcessStartArguments args = new()
                 {
                     ResolvedPath = resolvedPathMarshaller.ToUnmanaged(),
                     Arguments = argvPtr,

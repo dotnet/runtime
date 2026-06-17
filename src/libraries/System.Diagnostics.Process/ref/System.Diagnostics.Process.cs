@@ -218,10 +218,6 @@ namespace System.Diagnostics
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
-        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, System.Func<System.Diagnostics.ProcessStartArguments, Microsoft.Win32.SafeHandles.SafeProcessHandle> callback) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")] // this needs to come after the ios attribute due to limitations in the platform analyzer
         public static System.Diagnostics.Process Start(string fileName) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
@@ -292,20 +288,38 @@ namespace System.Diagnostics
         public bool StandardError { get { throw null; } }
         public override string ToString() { throw null; }
     }
-    public ref partial struct ProcessStartArguments
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+    public ref struct WindowsProcessStartArguments
     {
-        public ProcessStartArguments() { }
+        public WindowsProcessStartArguments() { }
         [System.CLSCompliantAttribute(false)]
-        public unsafe void* Arguments { get { throw null; } set { } }
+        public unsafe char* Arguments { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
-        public unsafe void* EnvironmentVariables { get { throw null; } set { } }
+        public unsafe char* EnvironmentVariables { get { throw null; } }
+        public System.Diagnostics.ProcessStartInfo ProcessStartInfo { get { throw null; } }
+        public System.IntPtr StandardError { get { throw null; } }
+        public System.IntPtr StandardInput { get { throw null; } }
+        public System.IntPtr StandardOutput { get { throw null; } }
+        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Diagnostics.WindowsProcessStartArguments, Microsoft.Win32.SafeHandles.SafeProcessHandle> callback) { throw null; }
+    }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+    public ref struct UnixProcessStartArguments
+    {
+        public UnixProcessStartArguments() { }
         [System.CLSCompliantAttribute(false)]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
-        public unsafe byte* ResolvedPath { get { throw null; } set { } }
-        public System.Diagnostics.ProcessStartInfo ProcessStartInfo { get { throw null; } set { } }
-        public System.IntPtr StandardError { get { throw null; } set { } }
-        public System.IntPtr StandardInput { get { throw null; } set { } }
-        public System.IntPtr StandardOutput { get { throw null; } set { } }
+        public unsafe byte* ResolvedPath { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe byte** Arguments { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe byte** EnvironmentVariables { get { throw null; } }
+        public System.Diagnostics.ProcessStartInfo ProcessStartInfo { get { throw null; } }
+        public System.IntPtr StandardError { get { throw null; } }
+        public System.IntPtr StandardInput { get { throw null; } }
+        public System.IntPtr StandardOutput { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Diagnostics.UnixProcessStartArguments, Microsoft.Win32.SafeHandles.SafeProcessHandle> callback) { throw null; }
     }
     public enum ProcessPriorityClass
     {

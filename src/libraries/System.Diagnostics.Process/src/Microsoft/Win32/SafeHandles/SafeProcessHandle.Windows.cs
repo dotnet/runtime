@@ -357,7 +357,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         internal static unsafe SafeProcessHandle StartWithCallback(ProcessStartInfo startInfo, SafeFileHandle stdinHandle, SafeFileHandle stdoutHandle, SafeFileHandle stderrHandle,
-            Func<ProcessStartArguments, SafeProcessHandle> callback)
+            Func<WindowsProcessStartArguments, SafeProcessHandle> callback)
         {
             ValueStringBuilder commandLine = new(stackalloc char[256]);
             ProcessUtils.BuildCommandLine(startInfo, ref commandLine);
@@ -381,7 +381,7 @@ namespace Microsoft.Win32.SafeHandles
                 ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref stdout, ref stdoutRefAdded);
                 ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref stderr, ref stderrRefAdded);
 
-                ProcessStartArguments args = new()
+                WindowsProcessStartArguments args = new()
                 {
                     StandardInput = stdin,
                     StandardOutput = stdout,
