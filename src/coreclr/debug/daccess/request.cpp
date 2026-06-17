@@ -2429,23 +2429,23 @@ ClrDataAccess::GetAppDomainStoreData(struct DacpAppDomainStoreData *adsData)
 HRESULT
 ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *appdomainData)
 {
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     SOSDacEnter();
 
-    if (addr == 0)
+    PTR_AppDomain pAppDomain = AppDomain::GetCurrentDomain();
+    if (pAppDomain == NULL)
     {
-        hr = E_INVALIDARG;
+        hr = E_FAIL;
     }
     else
     {
         ZeroMemory(appdomainData, sizeof(DacpAppDomainData));
-        appdomainData->AppDomainPtr = addr;
+        appdomainData->AppDomainPtr = HOST_CDADDR(pAppDomain);
         PTR_LoaderAllocator pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         appdomainData->pHighFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
         appdomainData->pLowFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
         appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
         appdomainData->appDomainStage = STAGE_OPEN;
-
-        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
 
         appdomainData->dwId = DefaultADID;
 
@@ -2550,37 +2550,42 @@ ClrDataAccess::GetFailedAssemblyDisplayName(CLRDATA_ADDRESS assembly, unsigned i
 HRESULT
 ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS values[], int *pNeeded)
 {
-    if (addr == (CLRDATA_ADDRESS)NULL)
-        return E_INVALIDARG;
-
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     SOSDacEnter();
 
-    PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-    AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
-        (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-    CollectibleAssemblyHolder<Assembly *> pAssembly;
-
-    int n = 0;
-    if (values)
+    PTR_AppDomain pAppDomain = AppDomain::GetCurrentDomain();
+    if (pAppDomain == NULL)
     {
-        while (i.Next(pAssembly.This()) && (n < count))
-        {
-            if (pAssembly->IsLoaded())
-            {
-                // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-                values[n++] = HOST_CDADDR(pAssembly.Extract());
-            }
-        }
+        hr = E_FAIL;
     }
     else
     {
-        while (i.Next(pAssembly.This()))
-            if (pAssembly->IsLoaded())
-                n++;
-    }
+        AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
+            (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
 
-    if (pNeeded)
-        *pNeeded = n;
+        int n = 0;
+        if (values)
+        {
+            while (i.Next(pAssembly.This()) && (n < count))
+            {
+                if (pAssembly->IsLoaded())
+                {
+                    // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
+                    values[n++] = HOST_CDADDR(pAssembly.Extract());
+                }
+            }
+        }
+        else
+        {
+            while (i.Next(pAssembly.This()))
+                if (pAssembly->IsLoaded())
+                    n++;
+        }
+
+        if (pNeeded)
+            *pNeeded = n;
+    }
 
     SOSDacLeave();
     return hr;
@@ -2618,39 +2623,46 @@ ClrDataAccess::GetFailedAssemblyList(CLRDATA_ADDRESS appDomain, int count,
 HRESULT
 ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *name, unsigned int *pNeeded)
 {
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     SOSDacEnter();
 
-    PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-
-    size_t countAsSizeT = count;
-    if (pAppDomain->m_friendlyName.IsValid())
+    PTR_AppDomain pAppDomain = AppDomain::GetCurrentDomain();
+    if (pAppDomain == NULL)
     {
-        LPCWSTR friendlyName = (LPCWSTR)pAppDomain->m_friendlyName;
-        size_t friendlyNameLen = u16_strlen(friendlyName);
-
-        if (pNeeded)
-        {
-            *pNeeded = (unsigned int)(friendlyNameLen + 1);
-        }
-
-        if (name && count > 0)
-        {
-            if (countAsSizeT > (friendlyNameLen + 1))
-            {
-                countAsSizeT = friendlyNameLen + 1;
-            }
-            memcpy(name, friendlyName, countAsSizeT * sizeof(WCHAR));
-            name[countAsSizeT - 1] = 0;
-        }
+        hr = E_FAIL;
     }
     else
     {
-        if (pNeeded)
-            *pNeeded = 1;
-        if (name && count > 0)
-            name[0] = 0;
+        size_t countAsSizeT = count;
+        if (pAppDomain->m_friendlyName.IsValid())
+        {
+            LPCWSTR friendlyName = (LPCWSTR)pAppDomain->m_friendlyName;
+            size_t friendlyNameLen = u16_strlen(friendlyName);
 
-        hr = S_OK;
+            if (pNeeded)
+            {
+                *pNeeded = (unsigned int)(friendlyNameLen + 1);
+            }
+
+            if (name && count > 0)
+            {
+                if (countAsSizeT > (friendlyNameLen + 1))
+                {
+                    countAsSizeT = friendlyNameLen + 1;
+                }
+                memcpy(name, friendlyName, countAsSizeT * sizeof(WCHAR));
+                name[countAsSizeT - 1] = 0;
+            }
+        }
+        else
+        {
+            if (pNeeded)
+                *pNeeded = 1;
+            if (name && count > 0)
+                name[0] = 0;
+
+            hr = S_OK;
+        }
     }
 
     SOSDacLeave();
