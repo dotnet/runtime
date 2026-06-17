@@ -45,27 +45,32 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task Run_WithFileName_Silent_OutputIsDiscarded(bool useAsync)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Run_WithFileName_Silent_OutputIsDiscarded(bool useAsync, bool silent)
         {
             // Process B writes to stdout and stderr.
             using Process innerTemplate = CreateProcess(static () =>
             {
-                Console.Write("this should be discarded");
-                Console.Error.Write("this error should be discarded");
+                Console.Write("stdout from inner");
+                Console.Error.Write("stderr from inner");
                 return RemoteExecutor.SuccessExitCode;
             });
             string innerFileName = innerTemplate.StartInfo.FileName;
             string innerArguments = innerTemplate.StartInfo.Arguments;
 
-            // Process A starts process B with silent: true, then returns B's exit code.
-            using Process outerTemplate = CreateProcess(static (string fileName, string arguments) =>
+            // Process A starts process B with the given silent setting, then returns B's exit code.
+            using Process outerTemplate = CreateProcess(static (string fileName, string silentAndArguments) =>
             {
+                int separator = silentAndArguments.IndexOf('|');
+                bool silent = bool.Parse(silentAndArguments.AsSpan(0, separator));
+                string arguments = silentAndArguments.Substring(separator + 1);
                 List<string>? args = Helpers.MapToArgumentList(new ProcessStartInfo(fileName) { Arguments = arguments });
-                ProcessExitStatus status = Process.Run(fileName, args, silent: true);
+                ProcessExitStatus status = Process.Run(fileName, args, silent: silent);
                 return status.ExitCode;
-            }, innerFileName, innerArguments);
+            }, innerFileName, $"{silent}|{innerArguments}");
 
             // Start process A with redirected output/error so we can capture them.
             outerTemplate.StartInfo.RedirectStandardOutput = true;
@@ -77,8 +82,17 @@ namespace System.Diagnostics.Tests
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, result.ExitStatus.ExitCode);
             Assert.False(result.ExitStatus.Canceled);
-            Assert.Equal(string.Empty, result.StandardOutput);
-            Assert.Equal(string.Empty, result.StandardError);
+
+            if (silent)
+            {
+                Assert.Equal(string.Empty, result.StandardOutput);
+                Assert.Equal(string.Empty, result.StandardError);
+            }
+            else
+            {
+                Assert.Equal("stdout from inner", result.StandardOutput);
+                Assert.Equal("stderr from inner", result.StandardError);
+            }
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
