@@ -495,7 +495,7 @@ namespace System.Diagnostics.Tests
                 {
                     fieldValue = "cc-12345678901234567890123456789012-1234567890123456-01.what-the-future-will-be-like";
                 }
-            }, out string? traceId, out string? traceState);
+            }, out string? traceId, out string? _);
 
             Assert.Null(traceId);
         }
