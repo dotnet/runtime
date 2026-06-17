@@ -1920,13 +1920,13 @@ namespace System.Net.WebSockets
         {
             if (messageType is not (WebSocketMessageType.Text or WebSocketMessageType.Binary))
             {
-                ThrowInvalidMessageType(paramName);
+                ThrowInvalidMessageType(messageType, paramName);
             }
 
-            static void ThrowInvalidMessageType(string? paramName) =>
+            static void ThrowInvalidMessageType(WebSocketMessageType messageType, string? paramName) =>
                 throw new ArgumentException(SR.Format(
                     SR.net_WebSockets_Argument_InvalidMessageType,
-                    nameof(WebSocketMessageType.Close), nameof(SendAsync), nameof(WebSocketMessageType.Binary), nameof(WebSocketMessageType.Text), nameof(CloseOutputAsync)),
+                    messageType, nameof(SendAsync), nameof(WebSocketMessageType.Binary), nameof(WebSocketMessageType.Text), nameof(CloseOutputAsync)),
                     paramName);
         }
 
