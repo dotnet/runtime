@@ -13,14 +13,34 @@ public static class WasmWebcilModule
         return left + right;
     }
 
-    // Reads static data, which forces the JIT to materialize the image-base and table-base
-    // addresses via 'global.get' of the wasm base globals. Those are emitted as
-    // WASM_GLOBAL_INDEX_LEB relocations that the R2R object writer must self-resolve back to
-    // their fixed global indices; if that resolution regresses, crossgen2 throws while emitting
-    // this method.
+    // Reads static data, which forces the JIT to materialize the image-base address via a
+    // 'global.get' of the wasm image-base base global. That global is referenced through a
+    // WASM_GLOBAL_INDEX_LEB relocation the R2R object writer must self-resolve back to the fixed
+    // image-base global index; if that resolution regresses, the emitted 'global.get' encoding
+    // changes (or crossgen2 throws while emitting this method).
     public static int SumStaticData(int index)
     {
         s_counter += 1;
         return s_primes[index] + s_counter;
+    }
+
+    // A try/finally makes the JIT emit a call to the 'finally' funclet (genCallFinally), which
+    // computes the funclet's address from the wasm table-base base global via a 'global.get'.
+    // Like the image base, that table-base global is referenced through a WASM_GLOBAL_INDEX_LEB
+    // relocation the R2R object writer must self-resolve back to the fixed table-base global
+    // index; if that resolution regresses, the emitted 'global.get' encoding changes (or
+    // crossgen2 throws while emitting this method).
+    public static int SumWithFinally(int index)
+    {
+        int total = 0;
+        try
+        {
+            total = s_primes[index];
+        }
+        finally
+        {
+            s_counter++;
+        }
+        return total + s_counter;
     }
 }
