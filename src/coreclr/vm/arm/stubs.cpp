@@ -849,7 +849,7 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     // ResolveStub._failEntryPoint(r0:MethodToken, r1, r2, r3, r12:IndirectionCellAndFlags)
     // {
     //     if(--*(this._pCounter) < 0) r12 = r12 | SDF_ResolveBackPatch;
-    //     this._resolveEntryPoint(r0, r1, r2, r3, r12);
+    //     this._resolveEntryPoint(r0, r1, r2, r3, r12:IndirectionCellAndFlags);
     // }
 
     // The following macro relies on this entry point being DWORD-aligned. We've already asserted that the
