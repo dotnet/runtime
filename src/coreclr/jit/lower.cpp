@@ -4312,6 +4312,50 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 BlockRange().Remove(cast);
             }
         }
+#ifdef TARGET_XARCH
+        else if ((castToType == TYP_BYTE) && FitsIn<INT8>(op2Value))
+        {
+            //
+            // Mirror the TYP_UBYTE case above for signed byte casts. Removing the cast lets
+            // codegen emit a single byte-sized `cmp` (e.g. `cmp cl, 0xC0`) instead of first
+            // sign-extending the operand with `movsx`. The compare stays signed because
+            // TYP_BYTE is a signed small type, so LowerCompare's small-unsigned promotion
+            // does not apply.
+            //
+            // Bail out for `x < 0` / `x >= 0` against a zero constant: codegen has a
+            // sign-bit-shift optimization (`mov + shr`) that assumes the operand is
+            // sign-extended to the full register width. After narrowing the operand to
+            // TYP_BYTE, the register no longer carries that sign extension and the shift
+            // amount would be wrong (it uses `emitActualTypeSize` which is still 4 for
+            // TYP_BYTE). Letting the cast survive keeps that path correct.
+            //
+            const bool isSignBitTest = (op2Value == 0) && cmp->OperIs(GT_LT, GT_GE);
+            bool       removeCast    = !isSignBitTest && (castOp->OperIs(GT_LCL_VAR, GT_CALL, GT_OR, GT_XOR, GT_AND) ||
+                                                 IsContainableMemoryOp(castOp));
+
+            if (removeCast)
+            {
+                assert(!castOp->gtOverflowEx()); // Must not be an overflow checking operation
+
+                castOp->gtType = castToType;
+                op2->gtType    = castToType;
+
+                // If we have any contained memory ops on castOp, they must now not be contained.
+                castOp->ClearContained();
+
+                if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
+                {
+                    castOp->gtGetOp1()->ClearContained();
+                    castOp->gtGetOp2()->ClearContained();
+                    ContainCheckBinary(castOp->AsOp());
+                }
+
+                cmp->AsOp()->gtOp1 = castOp;
+
+                BlockRange().Remove(cast);
+            }
+        }
+#endif // TARGET_XARCH
     }
     else if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
     {
