@@ -85,6 +85,9 @@ namespace System.Diagnostics
         internal AsyncStreamReader? _error;
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
+        private static UTF8Encoding? s_utf8EncodingWithoutBom;
+
+        private static UTF8Encoding Utf8EncodingWithoutBom => s_utf8EncodingWithoutBom ??= new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
         /// <devdoc>
         ///    <para>

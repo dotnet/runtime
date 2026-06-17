@@ -409,8 +409,6 @@ namespace System.Diagnostics
             return new AnonymousPipeClientStream(direction, safePipeHandle);
         }
 
-        private static readonly UTF8Encoding s_utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
-
         private static Encoding GetStandardInputEncoding() => Encoding.Default;
 
         private static Encoding GetStandardOutputEncoding() => Encoding.Default;
@@ -462,12 +460,12 @@ namespace System.Diagnostics
             SafeFileHandle writeHandle = new(pty.Primary.DangerousGetHandle(), ownsHandle: false);
             SafeFileHandle readHandle = new(pty.Primary.DangerousGetHandle(), ownsHandle: false);
             _standardInput = new StreamWriter(new FileStream(writeHandle, FileAccess.Write, StreamBufferSize, isAsync: pty.Primary.IsAsync),
-                startInfo.StandardInputEncoding ?? s_utf8WithoutBom, StreamBufferSize)
+                startInfo.StandardInputEncoding ?? Utf8EncodingWithoutBom, StreamBufferSize)
             {
                 AutoFlush = true
             };
             _standardOutput = new StreamReader(new FileStream(readHandle, FileAccess.Read, StreamBufferSize, isAsync: pty.Primary.IsAsync),
-                startInfo.StandardOutputEncoding ?? s_utf8WithoutBom, true, StreamBufferSize);
+                startInfo.StandardOutputEncoding ?? Utf8EncodingWithoutBom, true, StreamBufferSize);
         }
 
     }
