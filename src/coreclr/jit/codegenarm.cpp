@@ -1103,10 +1103,6 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
     else // an integer divide operation
     {
         // Generate the required runtime checks for the integer divide.
-        emitAttr size = EA_ATTR(genTypeSize(genActualType(tree->TypeGet())));
-
-        regNumber divisorReg = src2->GetRegNum();
-
         ExceptionSetFlags exSetFlags = tree->OperExceptions(m_compiler);
 
         // (AnyVal / 0) => DivideByZeroException
@@ -1133,30 +1129,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         // (MinInt / -1) => ArithmeticException
         if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
         {
-            // Signed-division might overflow.
-
-            assert(tree->OperIs(GT_DIV));
-            assert(!src2->IsIntegralConst(0));
-
-            BasicBlock* sdivLabel = genCreateTempLabel();
-
-            // Check if the divisor is not -1 branch to 'sdivLabel'
-            emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
-
-            inst_JMP(EJ_ne, sdivLabel);
-            // If control flow continues past here the 'divisorReg' is known to be -1
-
-            regNumber dividendReg = src1->GetRegNum();
-            // At this point the divisor is known to be -1
-            //
-            // Issue the 'cmp dividendReg, 1' instruction.
-            // 'cmp' computes 'dividendReg - 1' and updates only the condition flags,
-            // setting the V (overflow) flag exactly when dividendReg is MinInt.
-            //
-            emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
-            genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
-                                                          // ArithmeticException
-            genDefineTempLabel(sdivLabel);
+            genCodeForDivModOverflowCheck(tree);
         }
 
         emit->emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());

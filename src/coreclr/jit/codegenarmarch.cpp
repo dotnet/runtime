@@ -4143,6 +4143,42 @@ void CodeGen::genCodeForMulLong(GenTreeOp* mul)
 }
 
 //------------------------------------------------------------------------
+// genCodeForDivModOverflowCheck: Emit the (MinInt / -1) overflow check for a signed integer divide, throwing ArithmeticException.
+//
+// Arguments:
+//    tree - the GT_DIV node
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genCodeForDivModOverflowCheck(GenTreeOp* tree)
+{
+    // Signed-division might overflow.
+    assert(tree->OperIs(GT_DIV));
+    assert(!tree->gtGetOp2()->IsIntegralConst(0));
+
+    emitter*  emit        = GetEmitter();
+    emitAttr  size        = EA_ATTR(genTypeSize(genActualType(tree->TypeGet())));
+    regNumber divisorReg  = tree->gtGetOp2()->GetRegNum();
+    regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
+
+    BasicBlock* sdivLabel = genCreateTempLabel();
+
+    // Check if the divisor is not -1; if so branch to 'sdivLabel'.
+    emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
+    inst_JMP(EJ_ne, sdivLabel);
+    // If control flow continues past here the 'divisorReg' is known to be -1.
+    //
+    // Issue the 'cmp dividendReg, 1' instruction.
+    // 'cmp' computes 'dividendReg - 1' and updates only the condition flags,
+    // setting the V (overflow) flag exactly when dividendReg is MinInt.
+    emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
+    genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flag is set throw ArithmeticException
+
+    genDefineTempLabel(sdivLabel);
+}
+
+//------------------------------------------------------------------------
 // genLeaInstruction: Produce code for a GT_LEA node.
 //
 // Arguments:
