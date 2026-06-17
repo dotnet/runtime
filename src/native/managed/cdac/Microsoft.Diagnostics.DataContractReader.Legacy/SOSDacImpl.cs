@@ -7135,6 +7135,7 @@ public sealed unsafe partial class SOSDacImpl
                 if (pFetched is null || values is null)
                     throw new NullReferenceException();
 
+                *pFetched = 0;
                 count = Math.Min(count, (uint)values.Length);
                 uint written = 0;
                 while (written < count && _index < _threads.Length)
@@ -7194,6 +7195,7 @@ public sealed unsafe partial class SOSDacImpl
                 if (pFetched is null || values is null)
                     throw new NullReferenceException();
 
+                *pFetched = 0;
                 count = Math.Min(count, (uint)values.Length);
                 _lastBatchStart = _index;
                 uint written = 0;
@@ -7227,6 +7229,8 @@ public sealed unsafe partial class SOSDacImpl
         {
             if (pFetched is null || args is null)
                 return HResults.E_POINTER;
+
+            *pFetched = 0;
 
             if (messageIndex >= _lastBatchCount)
                 return HResults.E_INVALIDARG;
