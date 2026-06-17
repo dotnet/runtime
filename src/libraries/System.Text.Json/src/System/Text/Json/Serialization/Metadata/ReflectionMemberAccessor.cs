@@ -66,17 +66,16 @@ namespace System.Text.Json.Serialization.Metadata
                     argsToPass[i] = arguments[i];
                 }
 
+#if NET
+                return (T)constructor.Invoke(
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: argsToPass,
+                    culture: null);
+#else
                 try
                 {
-#if NET
-                    return (T)constructor.Invoke(
-                        BindingFlags.DoNotWrapExceptions,
-                        binder: null,
-                        parameters: argsToPass,
-                        culture: null);
-#else
                     return (T)constructor.Invoke(argsToPass);
-#endif
                 }
                 catch (TargetInvocationException e)
                 {
@@ -85,6 +84,7 @@ namespace System.Text.Json.Serialization.Metadata
                     // This doesn't apply to the method below as it supports a max of 4 constructor params.
                     throw e.InnerException ?? e;
                 }
+#endif
             };
         }
 
@@ -149,22 +149,22 @@ namespace System.Text.Json.Serialization.Metadata
 
             return value =>
             {
+#if NET
+                return (T)constructor.Invoke(
+                    BindingFlags.DoNotWrapExceptions,
+                    binder: null,
+                    parameters: new object?[] { value },
+                    culture: null);
+#else
                 try
                 {
-#if NET
-                    return (T)constructor.Invoke(
-                        BindingFlags.DoNotWrapExceptions,
-                        binder: null,
-                        parameters: new object?[] { value },
-                        culture: null);
-#else
                     return (T)constructor.Invoke(new object?[] { value });
-#endif
                 }
                 catch (TargetInvocationException e)
                 {
                     throw e.InnerException ?? e;
                 }
+#endif
             };
         }
 
