@@ -49,7 +49,7 @@ namespace System
                 switch (_invocationList)
                 {
                     case object[]:
-                        return GetInvocationsUnchecked().SequenceEqual(other.GetInvocationsUnchecked());
+                        return other._invocationList is object[] && GetInvocationsUnchecked().SequenceEqual(other.GetInvocationsUnchecked());
                     // this is a wrapper delegate so we need to unwrap and check the inner one
                     case Delegate wrapper:
                         return wrapper.Equals(other);
