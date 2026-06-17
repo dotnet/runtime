@@ -364,6 +364,12 @@ void SystemNative_Exit(int32_t exitCode)
 }
 
 __attribute__((noreturn))
+void SystemNative__Exit(int32_t exitCode)
+{
+    _exit(exitCode);
+}
+
+__attribute__((noreturn))
 void SystemNative_Abort(void)
 {
     abort();

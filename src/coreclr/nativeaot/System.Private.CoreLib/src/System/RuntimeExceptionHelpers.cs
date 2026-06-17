@@ -463,7 +463,7 @@ namespace System
 #if TARGET_WINDOWS
                     Interop.Kernel32.ExitProcess(errorCode);
 #else
-                    Interop.Sys.Exit(errorCode);
+                    Interop.Sys._Exit(errorCode);
 #endif
                 }
             }

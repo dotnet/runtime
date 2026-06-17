@@ -264,6 +264,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle)
     DllImportEntry(SystemNative_SchedGetCpu)
     DllImportEntry(SystemNative_Exit)
+    DllImportEntry(SystemNative__Exit)
     DllImportEntry(SystemNative_Abort)
     DllImportEntry(SystemNative_UTimensat)
     DllImportEntry(SystemNative_FUTimens)
