@@ -815,7 +815,7 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _ASSERTE(_stub._resolveEntryPoint + n == _stub._slowEntryPoint);
     _ASSERTE(n == ResolveStub::resolveEntryPointLen);
 
-    // ResolveStub._slowEntryPoint(r0:MethodToken, r1, r2, r3, r12:IndirectionCellAndFlags)
+    // ResolveStub._slowEntryPoint(r0, r1, r2, r3, r12:IndirectionCellAndFlags)
     // {
     //     this._resolveWorkerTarget(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken);
     // }
