@@ -36,18 +36,13 @@ TargetPointer GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPoin
 | `EnCSyncBlockInfo`     | `List`                   | Head of the linked list of `EnCAddedField` entries for the EnC-added instance fields associated with an object. |
 | `SyncBlock`            | `EnCInfo`                | Pointer to the `EnCSyncBlockInfo` for this object (NULL if the object has no added EnC fields). Optional: only present when EditAndContinue is configured. |
 | `FieldDesc`            | `DWord2`                 | Packed flags/offset word containing the field's offset; the EnC-new sentinel `FieldOffsetNewEnc` is stored here for fields that have been added but do not yet have storage assigned. |
+| `System.Diagnostics.EditAndContinueHelper` | `_objectReference` | Holds the per-field storage for an EnC-added instance field. |
 
 ### Globals used
 
 | Global Name           | Type   | Purpose |
 | ---                   | ---    | --- |
 | `FieldOffsetNewEnc`   | uint   | Sentinel offset value stored in `FieldDesc::DWord2` for added fields whose storage has not yet been allocated. |
-
-### Managed types used
-
-| Fully-qualified name | Module | Members read | Purpose |
-| --- | --- | --- | --- |
-| `System.Diagnostics.EditAndContinueHelper` | `System.Private.CoreLib` | `_objectReference` (slot address) | Holds the per-field storage for an EnC-added instance field. |
 
 ### Required contracts
 
