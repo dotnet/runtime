@@ -644,7 +644,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
         public void LargeKeyCryptRoundtrip()
         {
             byte[] output;

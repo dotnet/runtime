@@ -486,6 +486,7 @@ CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg,
 //
 // Arguments:
 //    varDsc       - the variable it is desired to build the "siVarLoc".
+//    offset       - offset into the variable to add
 //    stackLevel   - the current stack level. If the stack pointer changes in
 //                   the function, we must adjust stack pointer-based local
 //                   variable offsets to compensate.
@@ -494,12 +495,12 @@ CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg,
 //    A "siVarLoc" representing the variable location, which could live
 //    in a register, an stack position, or a combination of both.
 //
-CodeGenInterface::siVarLoc CodeGenInterface::getSiVarLoc(const LclVarDsc* varDsc, unsigned int stackLevel) const
+CodeGenInterface::siVarLoc CodeGenInterface::getSiVarLoc(const LclVarDsc* varDsc, int offset, int stackLevel) const
 {
     // For stack vars, find the base register, and offset
 
     regNumber baseReg;
-    signed    offset = varDsc->GetStackOffset();
+    offset += varDsc->GetStackOffset();
 
     if (!varDsc->lvFramePointerBased)
     {
@@ -1080,7 +1081,7 @@ void CodeGenInterface::VariableLiveKeeper::siStartVariableLiveRange(const LclVar
     {
         // Build siVarLoc for this born "varDsc"
         CodeGenInterface::siVarLoc varLocation =
-            m_compiler->codeGen->getSiVarLoc(varDsc, m_compiler->codeGen->getCurrentStackLevel());
+            m_compiler->codeGen->getSiVarLoc(varDsc, 0, (int)m_compiler->codeGen->getCurrentStackLevel());
 
         VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];
         // this variable live range is valid from this point
@@ -1149,7 +1150,7 @@ void CodeGenInterface::VariableLiveKeeper::siUpdateVariableLiveRange(const LclVa
     {
         // Build the location of the variable
         CodeGenInterface::siVarLoc siVarLoc =
-            m_compiler->codeGen->getSiVarLoc(varDsc, m_compiler->codeGen->getCurrentStackLevel());
+            m_compiler->codeGen->getSiVarLoc(varDsc, 0, (int)m_compiler->codeGen->getCurrentStackLevel());
 
         // Report the home change for this variable
         VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];
@@ -1781,22 +1782,21 @@ void CodeGen::genSetScopeInfo()
     }
 #endif
 
-    unsigned varsLocationsCount = 0;
-
-    varsLocationsCount = (unsigned int)varLiveKeeper->getLiveRangesCount();
+    unsigned varsLocationsCount = (unsigned int)(varLiveKeeper->getLiveRangesCount() + emittedCallReturnInfo->size());
 
     if (varsLocationsCount == 0)
     {
         // No variable home to report
-        m_compiler->eeSetLVcount(0);
+        m_compiler->eeAllocateLVs(0);
         m_compiler->eeSetLVdone();
         return;
     }
 
-    noway_assert(m_compiler->opts.compScopeInfo && (m_compiler->info.compVarScopesCount > 0));
+    noway_assert((m_compiler->opts.compScopeInfo && (m_compiler->info.compVarScopesCount > 0)) ||
+                 (varLiveKeeper->getLiveRangesCount() == 0));
 
     // Initialize the table where the reported variables' home will be placed.
-    m_compiler->eeSetLVcount(varsLocationsCount);
+    m_compiler->eeAllocateLVs(varsLocationsCount);
 
 #ifdef DEBUG
     genTrnslLocalVarCount = varsLocationsCount;
@@ -1806,11 +1806,18 @@ void CodeGen::genSetScopeInfo()
     }
 #endif
 
-    // We can have one of both flags defined, both, or none. Specially if we need to compare both
-    // both results. But we cannot report both to the debugger, since there would be overlapping
-    // intervals, and may not indicate the same variable location.
+    if (varLiveKeeper->getLiveRangesCount() > 0)
+    {
+        genSetScopeInfoUsingVariableRanges();
+    }
 
-    genSetScopeInfoUsingVariableRanges();
+    for (const EmittedCallReturnInfo& callReturnInfo : *emittedCallReturnInfo)
+    {
+        UNATIVE_OFFSET retOffset = callReturnInfo.returnLocation.CodeOffset(GetEmitter());
+
+        m_compiler->eeSetLVinfo(m_compiler->eeVarsCount++, retOffset, retOffset + 1, callReturnInfo.callILOffset,
+                                ICorDebugInfo::CALL_RETURN_ILNUM, callReturnInfo.returnValueLoc);
+    }
 
     m_compiler->eeSetLVdone();
 }
@@ -2001,7 +2008,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
 #endif // DEBUG
 
-    m_compiler->eeSetLVinfo(which, startOffs, length, ilVarNum, *varLoc);
+    m_compiler->eeSetLVinfo(which, startOffs, startOffs + length, 0, ilVarNum, *varLoc);
 }
 
 /*****************************************************************************/

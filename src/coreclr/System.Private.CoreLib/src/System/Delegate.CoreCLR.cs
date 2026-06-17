@@ -14,12 +14,12 @@ namespace System
     [ComVisible(true)]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
-        // _target is the object we will invoke on
-        internal object? _target; // Initialized by VM as needed; null if static delegate
-
         // MethodBase, either cached after first request or assigned from a DynamicMethod
         // For open delegates to collectible types, this may be a LoaderAllocator object
-        internal object? _methodBase; // Initialized by VM as needed
+        internal object? _methodBase;
+
+        // _target is the object we will invoke on; null if static delegate
+        internal object? _target; // Keep _target and _methodPtr next to each other for optimal delegate invoke performance
 
         // _methodPtr is a pointer to the method we will invoke
         // It could be a small thunk if this is a static or UM call

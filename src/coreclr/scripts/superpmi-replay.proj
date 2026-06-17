@@ -139,6 +139,13 @@
     <SPMI_Partition Include="linux-x64-6" Platform="linux" Architecture="x64" Partition="6" PartitionCount="6"/>
   </ItemGroup>
 
+  <!-- wasm replay is a cross-target altjit run on a windows_x64 host. Replay runs against
+       the wasm MCH(s) collected by the crossgen2-corelib-wasm collection. A single partition
+       is used because there is only one configuration in superpmi_replay.py. -->
+  <ItemGroup Condition="'$(SuperPmiReplayType)' == 'wasm' and '$(Architecture)' == 'x64'">
+    <SPMI_Partition Include="browser-wasm-1" Platform="browser" Architecture="wasm" Partition="1" PartitionCount="1"/>
+  </ItemGroup>
+
   <ItemGroup>
     <HelixWorkItem Include="@(SPMI_Partition)">
       <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform) -partition %(HelixWorkItem.Partition) -partition_count %(HelixWorkItem.PartitionCount) -log_directory $(SuperpmiLogsLocation)</Command>

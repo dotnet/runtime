@@ -217,12 +217,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     assert(params.callType < EC_COUNT);
     assert((params.callType == EC_FUNC_TOKEN) || (params.addr == nullptr));
 
-    /* Managed RetVal: emit sequence point for the call */
-    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
-    }
-
     assert(params.wasmSignature != nullptr);
 
     /*
@@ -721,9 +715,8 @@ unsigned emitter::instrDesc::idCodeSize() const
         {
             // no opcode, this is part of a try_table
 
-            size = 1; // catch kind
-            // TODO-WASM: tag index
-            // size += PADDED_RELOC_SIZE;                 // catch type tag
+            size = 1;                                  // catch kind
+            size += PADDED_RELOC_SIZE;                 // catch type tag (RtlRestoreContext tag index)
             size += SizeOfULEB128(emitGetInsSC(this)); // control flow stack offset
             break;
         }
@@ -858,7 +851,9 @@ size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
 size_t emitter::emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType)
 {
     emitRecordRelocationWithAddlDelta(destination, emitCodeBlock, relocType, (int32_t)emitGetInsSC(id));
-    return emitOutputPaddedReloc(destination);
+    // emitRecordRelocationWithAddlDelta writes the relocation addend and padding,
+    // so we don't need to write anything else here.
+    return PADDED_RELOC_SIZE;
 }
 
 size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType)
@@ -1044,11 +1039,16 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_CATCH_DECL:
         {
-            // TODO-WASM: this should be Kind 1: catch_ref with type tag
-            uint8_t catchKind = 2;
+            // Kind 1: catch_ref with type tag. The tag is the well-known
+            // CoreCLR RtlRestoreContext exception tag exported by the runtime;
+            // crossgen2's WasmObjectWriter resolves this reloc to the tag index
+            // of the module's imported `rtlRestoreContextTag`.
+            uint8_t catchKind = 1;
             dst += emitOutputByte(dst, catchKind);
-            // TODO-WASM: figure out how to get proper tag index here
-            // dst += emitOutputPaddedReloc(dst);
+
+            emitRecordRelocation(dst, emitCodeBlock, CorInfoReloc::WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB);
+            dst += emitOutputPaddedReloc(dst);
+
             dst += emitOutputULEB128(dst, (int64_t)emitGetInsSC(id));
             break;
         }
@@ -1339,8 +1339,8 @@ void emitter::emitDispIns(
 
         case IF_CATCH_DECL:
         {
-            // TODO: catch type
-            // target label
+            // catch_ref RtlRestoreContextTag, depth
+            printf(" RtlRestoreContextTag");
             dispJumpTargetIfAny();
         }
         break;

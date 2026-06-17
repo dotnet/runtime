@@ -38,6 +38,7 @@ public static class Constants
         public const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
         public const string ObjectMethodTable = nameof(ObjectMethodTable);
         public const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);
+        public const string MulticastDelegateMethodTable = nameof(MulticastDelegateMethodTable);
         public const string StringMethodTable = nameof(StringMethodTable);
 
         public const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
@@ -88,12 +89,12 @@ public static class Constants
         public const string EEJitManagerAddress = nameof(EEJitManagerAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
 
-        public const string DefaultADID = nameof(DefaultADID);
         public const string StaticsPointerMask = nameof(StaticsPointerMask);
         public const string PtrArrayOffsetToDataArray = nameof(PtrArrayOffsetToDataArray);
         public const string NumberOfTlsOffsetsNotUsedInNoncollectibleArray = nameof(NumberOfTlsOffsetsNotUsedInNoncollectibleArray);
         public const string MaxClrNotificationArgs = nameof(MaxClrNotificationArgs);
         public const string ClrNotificationArguments = nameof(ClrNotificationArguments);
+        public const string FieldOffsetNewEnc = nameof(FieldOffsetNewEnc);
         public const string FieldOffsetBigRVA = nameof(FieldOffsetBigRVA);
         public const string FieldOffsetDynamicRVA = nameof(FieldOffsetDynamicRVA);
         public const string PlatformMetadata = nameof(PlatformMetadata);

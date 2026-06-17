@@ -199,6 +199,9 @@ internal sealed class TestTarget : Target
     public override TargetNUInt ReadNUInt(ulong address)
         => new TargetNUInt(PointerSize == 8 ? Read<ulong>(address) : Read<uint>(address));
 
+    public override TargetNInt ReadNInt(ulong address)
+        => new TargetNInt(PointerSize == 8 ? Read<long>(address) : Read<int>(address));
+
     public override void Write<T>(ulong address, T value)
     {
         Span<byte> span = GetSpan(address, System.Runtime.CompilerServices.Unsafe.SizeOf<T>());
@@ -283,7 +286,7 @@ internal sealed class TestTarget : Target
         public override void Register<TContract>(string version, Func<Target, TContract> creator)
             => throw new NotImplementedException();
 
-        public override void Flush() { }
+        public override void Flush(FlushScope scope) { }
     }
 
     // --- Trivial IDataCache for ReadDataField support ----------------

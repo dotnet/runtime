@@ -85,24 +85,6 @@ namespace System.Net.Security
             }
         }
 
-        private ProtocolToken EncryptData(ReadOnlyMemory<byte> buffer)
-        {
-            ThrowIfExceptionalOrNotAuthenticated();
-
-            lock (_handshakeLock)
-            {
-                if (_handshakeWaiter != null)
-                {
-                    ProtocolToken token = default;
-                    // avoid waiting under lock.
-                    token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
-                    return token;
-                }
-
-                return Encrypt(buffer);
-            }
-        }
-
         //
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
@@ -390,6 +372,14 @@ namespace System.Net.Security
                         {
                             // Improve generic message and show details if we failed because of TLS Alert.
                             throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastFrame.AlertDescription.ToString()), token.GetException());
+                        }
+
+                        if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CertValidationFailed && token.GetException() is Exception certException)
+                        {
+                            // The cert-validation path carries the user-visible exception directly;
+                            // throw it without wrapping to preserve parity with the SendAuthResetSignal
+                            // path used after handshake completion on all platforms.
+                            ExceptionDispatchInfo.Throw(certException);
                         }
 
                         throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
@@ -809,6 +799,7 @@ namespace System.Net.Security
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> EnsureFullTlsFrameAsync<TIOAdapter>(CancellationToken cancellationToken, int estimatedSize)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -856,47 +847,8 @@ namespace System.Net.Security
             return frameSize;
         }
 
-        private SecurityStatusPal DecryptData(int frameSize)
-        {
-            SecurityStatusPal status;
-
-            lock (_handshakeLock)
-            {
-                ThrowIfExceptionalOrNotAuthenticated();
-
-                // Decrypt will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
-                status = Decrypt(_buffer.EncryptedSpanSliced(frameSize), out int decryptedOffset, out int decryptedCount);
-                _buffer.OnDecrypted(decryptedOffset, decryptedCount, frameSize);
-
-                if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
-                {
-                    // The status indicates that peer wants to renegotiate. (Windows only)
-                    // In practice, there can be some other reasons too - like TLS1.3 session creation
-                    // of alert handling. We need to pass the data to lsass and it is not safe to do parallel
-                    // write any more as that can change TLS state and the EncryptData() can fail in strange ways.
-
-                    // To handle this we call DecryptData() under lock and we create TCS waiter.
-                    // EncryptData() checks that under same lock and if it exist it will not call low-level crypto.
-                    // Instead it will wait synchronously or asynchronously and it will try again after the wait.
-                    // The result will be set when ReplyOnReAuthenticationAsync() is finished e.g. lsass business is over.
-                    // If that happen before EncryptData() runs, _handshakeWaiter will be set to null
-                    // and EncryptData() will work normally e.g. no waiting, just exclusion with DecryptData()
-
-                    if (_sslAuthenticationOptions.AllowRenegotiation || SslProtocol == SslProtocols.Tls13 || _nestedAuth != NestedState.StreamNotInUse)
-                    {
-                        // create TCS only if we plan to proceed. If not, we will throw later outside of the lock.
-                        // Tls1.3 does not have renegotiation. However on Windows this error code is used
-                        // for session management e.g. anything lsass needs to see.
-                        // We also allow it when explicitly requested using RenegotiateAsync().
-                        _handshakeWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    }
-                }
-            }
-
-            return status;
-        }
-
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
@@ -955,7 +907,13 @@ namespace System.Net.Security
                         break;
                     }
 
-                    SecurityStatusPal status = DecryptData(payloadBytes);
+                    // Pass the user buffer to DecryptData so PALs that support it can decrypt directly
+                    // into the destination, avoiding a CopyDecryptedData memcpy. When the renegotiate
+                    // path is in flight we suppress the direct path by passing an empty span - the PAL
+                    // will fall back to in-place decrypt and the existing CopyDecryptedData path runs.
+                    Span<byte> destination = _handshakeWaiter == null ? buffer.Span : default;
+                    SecurityStatusPal status = DecryptData(payloadBytes, destination, out int directWritten);
+
                     if (status.ErrorCode != SecurityStatusPalErrorCode.OK)
                     {
                         byte[]? extraBuffer = null;
@@ -990,7 +948,16 @@ namespace System.Net.Security
                         }
                     }
 
-                    if (_buffer.DecryptedLength > 0)
+                    if (directWritten > 0)
+                    {
+                        processedLength += directWritten;
+                        buffer = buffer.Slice(directWritten);
+                        if (buffer.IsEmpty)
+                        {
+                            break;
+                        }
+                    }
+                    else if (_buffer.DecryptedLength > 0)
                     {
                         // This will either copy data from rented buffer or adjust final buffer as needed.
                         // In both cases _decryptedBytesOffset and _decryptedBytesCount will be updated as needed.

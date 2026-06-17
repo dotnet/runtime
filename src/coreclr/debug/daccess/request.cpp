@@ -23,6 +23,10 @@
 #include <interoplibabi.h>
 #endif // FEATURE_COMWRAPPERS
 
+#if defined(FEATURE_OBJCMARSHAL)
+#include <interoplibinterface.h>
+#endif // FEATURE_OBJCMARSHAL
+
 #ifndef TARGET_UNIX
 // It is unfortunate having to include this header just to get the definition of GenericModeBlock
 #include <msodw.h>
@@ -1609,11 +1613,8 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
                 stringData[0] = W('\0');
             }
         }
-        else
-        {
-            hr = E_INVALIDARG;
-        }
 
+        // A size-only query (no output buffer) reports the needed size via pNeeded and succeeds.
         if (pNeeded)
             *pNeeded = needed;
     }
@@ -2351,7 +2352,7 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
                 objectData->ElementTypeHandle = (CLRDATA_ADDRESS)(thElem.AsTAddr());
                 objectData->dwRank = mt->GetRank();
                 objectData->dwNumComponents = pArrayObj->GetNumComponents ();
-                objectData->ArrayDataPtr = PTR_CDADDR(pArrayObj->GetDataPtr (TRUE));
+                objectData->ArrayDataPtr = PTR_CDADDR(pArrayObj->GetGCSafeDataPtr());
                 objectData->ArrayBoundsPtr = HOST_CDADDR(pArrayObj->GetBoundsPtr());
                 objectData->ArrayLowerBoundsPtr = HOST_CDADDR(pArrayObj->GetLowerBoundsPtr());
             }
@@ -2413,7 +2414,7 @@ ClrDataAccess::GetAppDomainStoreData(struct DacpAppDomainStoreData *adsData)
 {
     SOSDacEnter();
 
-    adsData->systemDomain = HOST_CDADDR(SystemDomain::System());
+    adsData->systemDomain = (CLRDATA_ADDRESS)NULL;
     adsData->sharedDomain = (CLRDATA_ADDRESS)NULL;
 
     // Get an accurate count of appdomains.
@@ -2444,29 +2445,26 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
         appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
         appdomainData->appDomainStage = STAGE_OPEN;
 
-        if (addr != HOST_CDADDR(SystemDomain::System()))
+        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
+
+        appdomainData->dwId = DefaultADID;
+
+        AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
+            kIncludeLoading | kIncludeLoaded | kIncludeExecution));
+        CollectibleAssemblyHolder<Assembly *> pAssembly;
+
+        while (i.Next(pAssembly.This()))
         {
-            PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-
-            appdomainData->dwId = DefaultADID;
-
-            AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
-                kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-            CollectibleAssemblyHolder<Assembly *> pAssembly;
-
-            while (i.Next(pAssembly.This()))
+            if (pAssembly->IsLoaded())
             {
-                if (pAssembly->IsLoaded())
-                {
-                    appdomainData->AssemblyCount++;
-                }
+                appdomainData->AssemblyCount++;
             }
+        }
 
-            AppDomain::FailedAssemblyIterator j = pAppDomain->IterateFailedAssembliesEx();
-            while (j.Next())
-            {
-                appdomainData->FailedAssemblyCount++;
-            }
+        AppDomain::FailedAssemblyIterator j = pAppDomain->IterateFailedAssembliesEx();
+        while (j.Next())
+        {
+            appdomainData->FailedAssemblyCount++;
         }
     }
 
@@ -2557,40 +2555,32 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
 
     SOSDacEnter();
 
-    if (addr == HOST_CDADDR(SystemDomain::System()))
+    PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
+    AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
+        (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
+    CollectibleAssemblyHolder<Assembly *> pAssembly;
+
+    int n = 0;
+    if (values)
     {
-        // We shouldn't be asking for the assemblies in SystemDomain
-        hr = E_INVALIDARG;
+        while (i.Next(pAssembly.This()) && (n < count))
+        {
+            if (pAssembly->IsLoaded())
+            {
+                // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
+                values[n++] = HOST_CDADDR(pAssembly.Extract());
+            }
+        }
     }
     else
     {
-        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
-        AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(
-            (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<Assembly *> pAssembly;
-
-        int n = 0;
-        if (values)
-        {
-            while (i.Next(pAssembly.This()) && (n < count))
-            {
-                if (pAssembly->IsLoaded())
-                {
-                    // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-                    values[n++] = HOST_CDADDR(pAssembly.Extract());
-                }
-            }
-        }
-        else
-        {
-            while (i.Next(pAssembly.This()))
-                if (pAssembly->IsLoaded())
-                    n++;
-        }
-
-        if (pNeeded)
-            *pNeeded = n;
+        while (i.Next(pAssembly.This()))
+            if (pAssembly->IsLoaded())
+                n++;
     }
+
+    if (pNeeded)
+        *pNeeded = n;
 
     SOSDacLeave();
     return hr;
@@ -2630,48 +2620,37 @@ ClrDataAccess::GetAppDomainName(CLRDATA_ADDRESS addr, unsigned int count, _Inout
 {
     SOSDacEnter();
 
-    if (addr == HOST_CDADDR(SystemDomain::System()))
+    PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
+
+    size_t countAsSizeT = count;
+    if (pAppDomain->m_friendlyName.IsValid())
     {
-        // SystemDomain doesn't have this field.
+        LPCWSTR friendlyName = (LPCWSTR)pAppDomain->m_friendlyName;
+        size_t friendlyNameLen = u16_strlen(friendlyName);
+
+        if (pNeeded)
+        {
+            *pNeeded = (unsigned int)(friendlyNameLen + 1);
+        }
+
+        if (name && count > 0)
+        {
+            if (countAsSizeT > (friendlyNameLen + 1))
+            {
+                countAsSizeT = friendlyNameLen + 1;
+            }
+            memcpy(name, friendlyName, countAsSizeT * sizeof(WCHAR));
+            name[countAsSizeT - 1] = 0;
+        }
+    }
+    else
+    {
         if (pNeeded)
             *pNeeded = 1;
         if (name && count > 0)
             name[0] = 0;
-    }
-    else
-    {
-        PTR_AppDomain pAppDomain = PTR_AppDomain(TO_TADDR(addr));
 
-        size_t countAsSizeT = count;
-        if (pAppDomain->m_friendlyName.IsValid())
-        {
-            LPCWSTR friendlyName = (LPCWSTR)pAppDomain->m_friendlyName;
-            size_t friendlyNameLen = u16_strlen(friendlyName);
-
-            if (pNeeded)
-            {
-                *pNeeded = (unsigned int)(friendlyNameLen + 1);
-            }
-
-            if (name && count > 0)
-            {
-                if (countAsSizeT > (friendlyNameLen + 1))
-                {
-                    countAsSizeT = friendlyNameLen + 1;
-                }
-                memcpy(name, friendlyName, countAsSizeT * sizeof(WCHAR));
-                name[countAsSizeT - 1] = 0;
-            }
-        }
-        else
-        {
-            if (pNeeded)
-                *pNeeded = 1;
-            if (name && count > 0)
-                name[0] = 0;
-
-            hr = S_OK;
-        }
+        hr = S_OK;
     }
 
     SOSDacLeave();
@@ -5393,21 +5372,26 @@ namespace
 #ifdef FEATURE_OBJCMARSHAL
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
         {
-            PTR_SyncBlock pSyncBlk = DACGetSyncBlockFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(objAddr), target);
-            if (pSyncBlk != NULL)
+            if (g_ObjectiveCTrackingInfoTable != NULL)
             {
-                PTR_InteropSyncBlockInfo pInfo = pSyncBlk->GetInteropInfoNoCreate();
-                if (pInfo != NULL)
+                CONDITIONAL_WEAK_TABLE_REF trackingTable = (CONDITIONAL_WEAK_TABLE_REF)ObjectFromHandle(g_ObjectiveCTrackingInfoTable);
+                if (trackingTable != NULL)
                 {
-                    CLRDATA_ADDRESS taggedMemoryLocal = PTR_CDADDR(pInfo->GetTaggedMemory());
-                    if (taggedMemoryLocal != NULL)
+                    OBJECTREF object = OBJECTREF(CLRDATA_ADDRESS_TO_TADDR(objAddr));
+                    OBJC_TRACKING_INFO_REF trackingInfo = NULL;
+                    if (trackingTable->TryGetValue(object, &trackingInfo) && trackingInfo != NULL)
                     {
-                        hasTaggedMemory = TRUE;
-                        if (taggedMemory)
-                            *taggedMemory = taggedMemoryLocal;
+                        TADDR memory = (TADDR)trackingInfo->_memory;
+                        if (memory != NULL)
+                        {
+                            hasTaggedMemory = TRUE;
+                            if (taggedMemory)
+                                *taggedMemory = (CLRDATA_ADDRESS)memory;
 
-                        if (taggedMemorySizeInBytes)
-                            *taggedMemorySizeInBytes = pInfo->GetTaggedMemorySizeInBytes();
+                            constexpr int TAGGED_MEMORY_SIZE_IN_POINTERS = 2;
+                            if (taggedMemorySizeInBytes)
+                                *taggedMemorySizeInBytes = TAGGED_MEMORY_SIZE_IN_POINTERS * sizeof(TADDR);
+                        }
                     }
                 }
             }
