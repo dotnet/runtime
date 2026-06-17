@@ -112,7 +112,7 @@ LOCAL_LABEL(CacheMiss):
         EPILOG_POP  "{r3,r4,r5,r6,r8}"
 
         // restore original value of r1, r2
-        EPILOG_POP "{r1,r2}"
+        EPILOG_POP  "{r1,r2}"
 
         // Push args for RhpUniversalTransitionTailCall:
         // [sp+0] = extra arg (indirection cell), [sp+4] = target fn (RhpCidResolve)
