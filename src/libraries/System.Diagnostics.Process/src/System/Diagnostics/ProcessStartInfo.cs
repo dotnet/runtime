@@ -298,6 +298,8 @@ namespace System.Diagnostics
         /// <para>
         /// When set, the child process will be spawned with the specified pseudo-terminal as its controlling terminal.
         /// All standard streams (stdin, stdout, stderr) of the child process will be connected to the PTY.
+        /// The <see cref="Process.StandardError"/> stream is not opened separately; stderr is available through
+        /// <see cref="Process.StandardOutput"/> together with stdout.
         /// </para>
         /// <para>
         /// This property cannot be used together with <see cref="UseShellExecute"/>,
@@ -425,11 +427,13 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.FileNameMissing);
             }
-            if (StandardInputEncoding != null && !RedirectStandardInput)
+            bool usesPseudoTerminal = PseudoTerminal is not null;
+
+            if (StandardInputEncoding != null && !RedirectStandardInput && !usesPseudoTerminal)
             {
                 throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
             }
-            if (StandardOutputEncoding != null && !RedirectStandardOutput)
+            if (StandardOutputEncoding != null && !RedirectStandardOutput && !usesPseudoTerminal)
             {
                 throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
             }
@@ -460,7 +464,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.CantRedirectStreams);
             }
 
-            if (PseudoTerminal is not null && (UseShellExecute || anyRedirection || anyHandle))
+            if (usesPseudoTerminal && (UseShellExecute || anyRedirection || anyHandle))
             {
                 throw new InvalidOperationException(SR.PseudoTerminalCannotBeCombined);
             }

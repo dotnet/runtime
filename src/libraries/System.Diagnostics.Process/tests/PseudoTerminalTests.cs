@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -115,6 +116,44 @@ namespace System.Diagnostics.Tests
             }
 
             Assert.Throws<InvalidOperationException>(() => process.Start());
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void StartProcess_WithPseudoTerminal_AllowsStandardInputAndOutputEncodings()
+        {
+            using PseudoTerminal pty = PseudoTerminal.Create(s_testOptions);
+            using Process process = CreateProcess(RemotelyInvokable.Dummy);
+            process.StartInfo.PseudoTerminal = pty;
+
+            Encoding inputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            Encoding outputEncoding = Encoding.Unicode;
+            process.StartInfo.StandardInputEncoding = inputEncoding;
+            process.StartInfo.StandardOutputEncoding = outputEncoding;
+
+            Assert.True(process.Start());
+            Assert.NotNull(process.StandardInput);
+            Assert.NotNull(process.StandardOutput);
+            Assert.Equal(inputEncoding.CodePage, process.StandardInput.Encoding.CodePage);
+            Assert.Equal(outputEncoding.CodePage, process.StandardOutput.CurrentEncoding.CodePage);
+            Assert.True(process.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void StartProcess_WithPseudoTerminal_DefaultEncodingIsUtf8()
+        {
+            using PseudoTerminal pty = PseudoTerminal.Create(s_testOptions);
+            using Process process = CreateProcess(RemotelyInvokable.Dummy);
+            process.StartInfo.PseudoTerminal = pty;
+
+            Assert.True(process.Start());
+            Assert.NotNull(process.StandardInput);
+            Assert.NotNull(process.StandardOutput);
+            Assert.Equal(Encoding.UTF8.CodePage, process.StandardInput.Encoding.CodePage);
+            Assert.Equal(Encoding.UTF8.CodePage, process.StandardOutput.CurrentEncoding.CodePage);
+            Assert.True(process.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
