@@ -25,7 +25,7 @@ NESTED_ENTRY RhpInterfaceDispatch, _TEXT, NoHandler
         bne         LOCAL_LABEL(Hashtable)
 
         // Fast path: restore r1/r2 before jumping to cached code.
-        EPILOG_POP "{r1,r2}"
+        EPILOG_POP  "{r1,r2}"
         // dmb ensures that the Code load below sees the value written before
         // MethodTable. ARM32 has no load-acquire instruction (LDAR is ARMv8 only).
         dmb
