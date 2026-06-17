@@ -939,7 +939,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         // On entry r0 holds the delegate instance. Look up the real target address stored in the MethodPtrAux
         // field and stash it in r12.
         //  ldr r12, [r0, #offsetof(DelegateObject, _methodPtrAux)]
-        ThumbEmitLoadRegIndirect(ThumbReg(12), ThumbReg(0), DelegateObject::GetOffsetOfExtraFunctionPointerOrData());
+        ThumbEmitLoadRegIndirect(ThumbReg(12), ThumbReg(0), DelegateObject::GetOffsetOfMethodPtrAux());
 
         // Emit the instructions to rewrite the argument registers. Most will be register-to-register (e.g.
         // move r1 to r0) but one or two of them might move values from the top of the incoming stack
@@ -997,7 +997,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     // On entry r0 holds the delegate instance. Look up the real target address stored in the MethodPtrAux
     // field and stash it in r12.
     //  ldr r12, [r0, #offsetof(DelegateObject, _methodPtrAux)]
-    ThumbEmitLoadRegIndirect(ThumbReg(12), ThumbReg(0), DelegateObject::GetOffsetOfExtraFunctionPointerOrData());
+    ThumbEmitLoadRegIndirect(ThumbReg(12), ThumbReg(0), DelegateObject::GetOffsetOfMethodPtrAux());
 
     // As we copy slots from lower in the argument stack to higher we need to keep track of source and
     // destination pointers into those arguments (if we just use offsets from SP we get into trouble with

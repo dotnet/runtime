@@ -2207,7 +2207,7 @@ void PInvokeStubLinker::Begin(DWORD dwStubFlags)
             m_pcsDispatch->EmitADD();
             m_pcsDispatch->EmitLDIND_I();      // get OBJECTHANDLE
             m_pcsDispatch->EmitLDIND_REF();    // get Delegate object
-            m_pcsDispatch->EmitLDFLD(GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__HELPER_OBJECT)));
+            m_pcsDispatch->EmitLDFLD(GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__TARGET)));
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
         }
     }
@@ -2407,7 +2407,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (SF_IsDelegateStub(dwStubFlags)) // reverse P/Invoke via delegate
         {
-            int tokDelegate_methodPtr = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__FUNCTION_POINTER));
+            int tokDelegate_methodPtr = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
 
             EmitLoadStubContext(pcsEmit, dwStubFlags);
             pcsEmit->EmitLDC(offsetof(UMEntryThunkData, m_pObjectHandle));

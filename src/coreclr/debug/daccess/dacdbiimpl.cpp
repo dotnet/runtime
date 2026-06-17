@@ -3269,7 +3269,7 @@ DacDbiInterfaceImpl::DelegateType DacDbiInterfaceImpl::GetDelegateType(VMPTR_Obj
         // If this delegate points to a static function or this is a open virtual delegate, this should be non-null
         // Special case: This might fail in a VSD delegate (instance open virtual)...
         // TODO: There is the special signatures cases missing.
-        TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetExtraFunctionPointerOrData());
+        TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
         if (targetMethodPtr == (TADDR)NULL)
         {
             // Static extension methods, other closed static delegates, and instance delegates fall into this category.
@@ -3306,10 +3306,10 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateFunctionData(
         switch (GetDelegateType(delegateObject))
         {
             case kClosedDelegate:
-                targetMethodPtr = PCODEToPINSTR(pDelObj->GetFunctionPointer());
+                targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtr());
                 break;
             case kOpenDelegate:
-                targetMethodPtr = PCODEToPINSTR(pDelObj->GetExtraFunctionPointerOrData());
+                targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
                 break;
             default:
                 ThrowHR(CORDBG_E_UNSUPPORTED_DELEGATE);
@@ -3345,7 +3345,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetDelegateTargetObject(
         {
             case kClosedDelegate:
             {
-                PTR_Object pRemoteTargetObj = OBJECTREFToObject(pDelObj->GetFirstParameter());
+                PTR_Object pRemoteTargetObj = OBJECTREFToObject(pDelObj->GetTarget());
                 ppTargetObj->SetDacTargetPtr(pRemoteTargetObj.GetAddr());
                 break;
             }

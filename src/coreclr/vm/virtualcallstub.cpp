@@ -1446,7 +1446,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    OBJECTREF delegateObj = ObjectToOBJECTREF((Object*)(((BYTE*)ppMethodPtrAuxField) - DelegateObject::GetOffsetOfExtraFunctionPointerOrData()));
+    OBJECTREF delegateObj = ObjectToOBJECTREF((Object*)(((BYTE*)ppMethodPtrAuxField) - DelegateObject::GetOffsetOfMethodPtrAux()));
     MAKE_CURRENT_THREAD_AVAILABLE();
 
 #ifdef _DEBUG

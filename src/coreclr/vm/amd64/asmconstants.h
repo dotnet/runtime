@@ -443,9 +443,9 @@ ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, Th
 #define Thread__ObjectRefFlush  ?ObjectRefFlush@Thread@@SAXPEAV1@@Z
 
 
-#define                     DELEGATE_FIELD_OFFSET__EXTRA_FUNCTION_POINTER_OR_DATA           0x20
-ASMCONSTANTS_RUNTIME_ASSERT(DELEGATE_FIELD_OFFSET__EXTRA_FUNCTION_POINTER_OR_DATA == Object::GetOffsetOfFirstField() +
-        CoreLibBinder::GetFieldOffset(FIELD__DELEGATE__EXTRA_FUNCTION_POINTER_OR_DATA));
+#define                     DELEGATE_FIELD_OFFSET__METHOD_AUX           0x20
+ASMCONSTANTS_RUNTIME_ASSERT(DELEGATE_FIELD_OFFSET__METHOD_AUX == Object::GetOffsetOfFirstField() +
+        CoreLibBinder::GetFieldOffset(FIELD__DELEGATE__METHOD_PTR_AUX));
 
 
 #define               MAX_STRING_LENGTH 0x3FFFFFDF

@@ -887,9 +887,9 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     static const IntReg t6 = 31, t5 = 30, a0 = argRegBase + 0;
     // On entry a0 holds the delegate instance. Look up the real target address stored in the MethodPtrAux
     // field and saved in t6. Tailcall to the target method after re-arranging the arguments
-    EmitLoad(t6, a0, DelegateObject::GetOffsetOfExtraFunctionPointerOrData());
+    EmitLoad(t6, a0, DelegateObject::GetOffsetOfMethodPtrAux());
     // load the indirection cell into t5 used by ResolveWorkerAsmStub
-    EmitAddImm(t5, a0, DelegateObject::GetOffsetOfExtraFunctionPointerOrData());
+    EmitAddImm(t5, a0, DelegateObject::GetOffsetOfMethodPtrAux());
 
     const ShuffleEntry* entry = pShuffleEntryArray;
     // Shuffle integer argument registers

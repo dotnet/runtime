@@ -4,8 +4,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -44,11 +42,11 @@ namespace System
             if (IsSpecialDelegate)
             {
                 // there are 4 kind of delegate kinds that fall into this bucket
-                // 1- Multicast (_helperObject is Object[])
-                // 2- Wrapper (_helperObject is Delegate)
-                // 3- Unmanaged FntPtr (_helperObject == null)
-                // 4- Open virtual (_invocationCount == MethodDesc of target, _helperObject == null, LoaderAllocator, or DynamicResolver)
-                switch (_helperObject)
+                // 1- Multicast (_invocationList is Object[])
+                // 2- Wrapper (_invocationList is Delegate)
+                // 3- Unmanaged FntPtr (_invocationList == null)
+                // 4- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
+                switch (_invocationList)
                 {
                     case object[]:
                         return GetInvocationsUnchecked().SequenceEqual(other.GetInvocationsUnchecked());
@@ -59,21 +57,21 @@ namespace System
                         if (IsUnmanagedFunctionPtr)
                         {
                             return other.IsUnmanagedFunctionPtr &&
-                                   _functionPointer == other._functionPointer &&
-                                   _extraFunctionPointerOrData == other._extraFunctionPointerOrData;
+                                   _methodPtr == other._methodPtr &&
+                                   _methodPtrAux == other._methodPtrAux;
                         }
 
                         // now we know 'this' is not a special one, so we can work out what the other is
                         // this is a wrapper delegate so we need to unwrap and check the inner one
-                        return other._helperObject is Delegate ? Equals(other._helperObject) : base.Equals(obj);
+                        return other._invocationList is Delegate ? Equals(other._invocationList) : base.Equals(obj);
                 }
             }
 
             Debug.Assert(InvocationListLogicallyNull);
             // now we know 'this' is not a special one, so we can work out what the other is
-            return other._helperObject is Delegate ?
+            return other._invocationList is Delegate ?
                 // this is a wrapper delegate so we need to unwrap and check the inner one
-                Equals(other._helperObject) :
+                Equals(other._invocationList) :
                 // we can call on the base
                 base.Equals(other);
         }
@@ -95,8 +93,8 @@ namespace System
 
             MulticastDelegate d = (MulticastDelegate)o;
             MulticastDelegate dd = (MulticastDelegate)previous;
-            return dd._functionPointer == d._functionPointer &&
-                   dd._extraFunctionPointerOrData == d._extraFunctionPointerOrData &&
+            return dd._methodPtr == d._methodPtr &&
+                   dd._methodPtrAux == d._methodPtrAux &&
                    dd._firstParameter == d._firstParameter;
         }
 
@@ -106,19 +104,19 @@ namespace System
             MulticastDelegate result = Unsafe.AsAssert<MulticastDelegate>(RuntimeTypeHandle.InternalAllocNoChecks(RuntimeHelpers.GetMethodTable(this)));
 
             // Performance optimization - if this already points to a true multicast delegate,
-            // copy _functionPointer and _functionPointerAux fields rather than calling into the EE to get them
+            // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
             if (thisIsMultiCastAlready)
             {
-                result._functionPointer = _functionPointer;
-                result._extraFunctionPointerOrData = _extraFunctionPointerOrData;
+                result._methodPtr = _methodPtr;
+                result._methodPtrAux = _methodPtrAux;
             }
             else
             {
-                result._functionPointer = GetMulticastInvoke();
-                result._extraFunctionPointerOrData = GetInvokeMethod();
+                result._methodPtr = GetMulticastInvoke();
+                result._methodPtrAux = GetInvokeMethod();
             }
             result._firstParameter = result;
-            result._helperObject = invocationList;
+            result._invocationList = invocationList;
             result._invocationCount = invocationCount;
 
             return result;
@@ -143,12 +141,12 @@ namespace System
             MulticastDelegate dFollow = (MulticastDelegate)follow;
             object[]? resultList;
             int followCount = 1;
-            object[]? followList = dFollow._helperObject as object[];
+            object[]? followList = dFollow._invocationList as object[];
             if (followList != null)
                 followCount = (int)dFollow._invocationCount;
 
             int resultCount;
-            if (_helperObject is not object[] invocationList)
+            if (_invocationList is not object[] invocationList)
             {
                 resultCount = 1 + followCount;
                 resultList = new object[resultCount];
@@ -217,7 +215,7 @@ namespace System
 
         private object[] DeleteFromInvocationList(object[] invocationList, int invocationCount, int deleteIndex, int deleteCount)
         {
-            object[]? thisInvocationList = Unsafe.AsAssert<object[]>(_helperObject);
+            object[]? thisInvocationList = Unsafe.AsAssert<object[]>(_invocationList);
             Debug.Assert(thisInvocationList is not null);
 
             int allocCount = thisInvocationList.Length;
@@ -261,11 +259,11 @@ namespace System
 
             if (!v.HasSingleTarget)
             {
-                if (_helperObject is object[] invocationList)
+                if (_invocationList is object[] invocationList)
                 {
                     int invocationCount = (int)_invocationCount;
                     int vInvocationCount = (int)v._invocationCount;
-                    object[] vInvocationList = (object[])v._helperObject!;
+                    object[] vInvocationList = (object[])v._invocationList!;
                     for (int i = invocationCount - vInvocationCount; i >= 0; i--)
                     {
                         if (!EqualInvocationLists(invocationList, vInvocationList, i, vInvocationCount))
@@ -292,7 +290,7 @@ namespace System
             }
             else
             {
-                if (_helperObject is object[] invocationList)
+                if (_invocationList is object[] invocationList)
                 {
                     int invocationCount = (int)_invocationCount;
                     for (int i = invocationCount; --i >= 0;)
@@ -326,7 +324,7 @@ namespace System
         // This method returns the Invocation list of this multicast delegate.
         public sealed override Delegate[] GetInvocationList()
         {
-            if (_helperObject is not object[])
+            if (_invocationList is not object[])
             {
                 return [this];
             }
@@ -339,7 +337,7 @@ namespace System
             return del;
         }
 
-        internal new bool HasSingleTarget => _helperObject is not object[];
+        internal new bool HasSingleTarget => _invocationList is not object[];
 
         // Used by delegate invocation list enumerator
         internal MulticastDelegate? TryGetAt(int index)
@@ -362,11 +360,11 @@ namespace System
         public sealed override int GetHashCode()
         {
             if (IsUnmanagedFunctionPtr)
-                return HashCode.Combine(_functionPointer, _functionPointer);
+                return HashCode.Combine(_methodPtr, _methodPtr);
 
             if (IsSpecialDelegate)
             {
-                switch (_helperObject)
+                switch (_invocationList)
                 {
                     case object[]:
                     {
@@ -402,7 +400,7 @@ namespace System
                     return null;
                 }
 
-                switch (_helperObject)
+                switch (_invocationList)
                 {
                     case object[]:
                         return GetLastInvocationUnchecked().Target;
@@ -427,7 +425,7 @@ namespace System
             if (target == null)
                 ThrowNullThisInDelegateToInstance();
             _firstParameter = target;
-            _functionPointer = (nuint)methodPtr;
+            _methodPtr = (nuint)methodPtr;
         }
 
         [DebuggerNonUserCode]
@@ -435,7 +433,7 @@ namespace System
         private void CtorClosedStatic(object target, IntPtr methodPtr)
         {
             _firstParameter = target;
-            _functionPointer = (nuint)methodPtr;
+            _methodPtr = (nuint)methodPtr;
         }
 
         [DebuggerNonUserCode]
@@ -445,7 +443,7 @@ namespace System
             if (target == null)
                 ThrowNullThisInDelegateToInstance();
             _firstParameter = target;
-            _functionPointer = (nuint)AdjustTarget(target, methodPtr);
+            _methodPtr = (nuint)AdjustTarget(target, methodPtr);
         }
 
         [DebuggerNonUserCode]
@@ -453,8 +451,8 @@ namespace System
         private void CtorOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
             _firstParameter = this;
-            _functionPointer = (nuint)shuffleThunk;
-            _extraFunctionPointerOrData = methodPtr;
+            _methodPtr = (nuint)shuffleThunk;
+            _methodPtrAux = methodPtr;
         }
 
         [DebuggerNonUserCode]
@@ -462,7 +460,7 @@ namespace System
         private void CtorVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
             _firstParameter = this;
-            _functionPointer = (nuint)shuffleThunk;
+            _methodPtr = (nuint)shuffleThunk;
             InitializeVirtualCallStub(methodPtr);
         }
 
@@ -471,8 +469,8 @@ namespace System
         private void CtorCollectibleClosedStatic(object target, IntPtr methodPtr, IntPtr gchandle)
         {
             _firstParameter = target;
-            _functionPointer = (nuint)methodPtr;
-            _helperObject = GCHandle.InternalGet(gchandle);
+            _methodPtr = (nuint)methodPtr;
+            _invocationList = GCHandle.InternalGet(gchandle);
             Debug.Assert(InvocationListLogicallyNull);
         }
 
@@ -481,9 +479,9 @@ namespace System
         private void CtorCollectibleOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
             _firstParameter = this;
-            _functionPointer = (nuint)shuffleThunk;
-            _extraFunctionPointerOrData = methodPtr;
-            _helperObject = GCHandle.InternalGet(gchandle);
+            _methodPtr = (nuint)shuffleThunk;
+            _methodPtrAux = methodPtr;
+            _invocationList = GCHandle.InternalGet(gchandle);
             Debug.Assert(InvocationListLogicallyNull);
         }
 
@@ -492,8 +490,8 @@ namespace System
         private void CtorCollectibleVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
             _firstParameter = this;
-            _functionPointer = (nuint)shuffleThunk;
-            _helperObject = GCHandle.InternalGet(gchandle);
+            _methodPtr = (nuint)shuffleThunk;
+            _invocationList = GCHandle.InternalGet(gchandle);
             Debug.Assert(InvocationListLogicallyNull);
             InitializeVirtualCallStub(methodPtr);
         }

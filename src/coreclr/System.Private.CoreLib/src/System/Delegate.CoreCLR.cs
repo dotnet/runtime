@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -23,21 +22,21 @@ namespace System
         // 2. Wrapper delegate
         // 3. Method cache
         // 4. Collectible delegates
-        internal object? _helperObject; // Initialized by VM as needed
+        internal object? _invocationList; // Initialized by VM as needed
 
         // _firstParameter is the object we will invoke on; null if static delegate
-        // Keep _firstParameter and _functionPointer next to each other for optimal delegate invoke performance
+        // Keep _firstParameter and _methodPtr next to each other for optimal delegate invoke performance
         internal object? _firstParameter;
 
-        // _functionPointer is a pointer to the method we will invoke
+        // _methodPtr is a pointer to the method we will invoke
         // It could be a small thunk if this is a static or UM call
-        internal nuint _functionPointer;
+        internal nuint _methodPtr;
 
         // In the case of a static method passed to a delegate, this field stores
-        // whatever _functionPointer would have stored: and _functionPointer points to a
+        // whatever _methodPtr would have stored: and _methodPtr points to a
         // small thunk which removes the "this" pointer before going on
-        // to _functionPointer.
-        internal nint _extraFunctionPointerOrData;
+        // to _methodPtr.
+        internal nint _methodPtrAux;
 
         internal nint _invocationCount;
 
@@ -57,13 +56,13 @@ namespace System
 
         internal bool IsUnmanagedFunctionPtr => _invocationCount == -1;
 
-        internal bool InvocationListLogicallyNull => _helperObject is not (object[] or Delegate);
+        internal bool InvocationListLogicallyNull => _invocationList is not (object[] or Delegate);
 
         private object[] GetObjectArray()
         {
             Debug.Assert(IsSpecialDelegate);
 
-            object[]? invocationList = Unsafe.AsAssert<object[]>(_helperObject);
+            object[]? invocationList = Unsafe.AsAssert<object[]>(_invocationList);
 
             Debug.Assert(invocationList is not null);
             Debug.Assert(invocationList.Length > 1);
@@ -148,8 +147,8 @@ namespace System
 
             // do an optimistic check first. This is hopefully cheap enough to be worth
             if (_firstParameter == other._firstParameter &&
-                _functionPointer == other._functionPointer &&
-                _extraFunctionPointerOrData == other._extraFunctionPointerOrData)
+                _methodPtr == other._methodPtr &&
+                _methodPtrAux == other._methodPtrAux)
                 return true;
 
             // even though the fields were not all equals the delegates may still match
@@ -158,9 +157,9 @@ namespace System
             // It may also happen that the method pointer was not jitted when creating one delegate and jitted in the other
             // if that's the case the delegates may still be equals but we need to make a more complicated check
 
-            if (_extraFunctionPointerOrData == 0)
+            if (_methodPtrAux == 0)
             {
-                if (other._extraFunctionPointerOrData != 0)
+                if (other._methodPtrAux != 0)
                     return false; // different delegate kind
 
                 // they are both closed over the first arg
@@ -171,12 +170,12 @@ namespace System
             }
             else
             {
-                if (other._extraFunctionPointerOrData == 0)
+                if (other._methodPtrAux == 0)
                     return false; // different delegate kind
 
                 // Ignore the target as it will be the delegate instance, though it may be a different one
 
-                if (_extraFunctionPointerOrData == other._extraFunctionPointerOrData)
+                if (_methodPtrAux == other._methodPtrAux)
                     return true;
 
                 // fall through method handle check
@@ -188,7 +187,7 @@ namespace System
         public override int GetHashCode()
         {
             int hashCode = MethodDesc.GetHashCode();
-            if (_extraFunctionPointerOrData == 0 && _firstParameter != null)
+            if (_methodPtrAux == 0 && _firstParameter != null)
             {
                 hashCode += RuntimeHelpers.GetHashCode(_firstParameter) * 33;
             }
@@ -197,12 +196,12 @@ namespace System
 
         internal virtual object? GetTarget()
         {
-            return _extraFunctionPointerOrData == 0 ? _firstParameter : null;
+            return _methodPtrAux == 0 ? _firstParameter : null;
         }
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            return _helperObject switch
+            return _invocationList switch
             {
                 MethodInfo methodInfo => methodInfo,
                 object[] => GetLastInvocationUnchecked().Method,
@@ -218,7 +217,7 @@ namespace System
                 MethodInfo method = GetMethodImplCore();
                 Debug.Assert(method is not null);
 
-                Volatile.Write(ref _helperObject, method);
+                Volatile.Write(ref _invocationList, method);
                 return method;
             }
         }
@@ -250,7 +249,7 @@ namespace System
                 bool isStatic = (RuntimeMethodHandle.GetAttributes(method) & MethodAttributes.Static) != 0;
                 if (!isStatic)
                 {
-                    if (_extraFunctionPointerOrData == 0)
+                    if (_methodPtrAux == 0)
                     {
                         // The target may be of a derived type that doesn't have visibility onto the
                         // target method. We don't want to call RuntimeType.GetMethodBase below with that
@@ -301,13 +300,13 @@ namespace System
                 Debug.Assert(!IsUnmanagedFunctionPtr, "dynamic method and unmanaged fntptr delegate combined");
 
                 // must be a secure/wrapper one, unwrap and save
-                Delegate d = ((Delegate?)_helperObject)!;
+                Delegate d = ((Delegate?)_invocationList)!;
                 d.StoreDynamicMethod(dynamicMethod);
                 return;
             }
 
             Debug.Assert(InvocationListLogicallyNull, "dynamic method with invocation list");
-            _helperObject = dynamicMethod;
+            _invocationList = dynamicMethod;
         }
 
         public object? Target => GetTarget();

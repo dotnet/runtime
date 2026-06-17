@@ -10324,18 +10324,18 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
 
 #ifndef CROSSBITNESS_COMPILE
     // The assertions must hold in every non-crossbitness scenario
-    _ASSERTE(OFFSETOF__DelegateObject__firstParameter             == DelegateObject::GetOffsetOfFirstParameter());
-    _ASSERTE(OFFSETOF__DelegateObject__functionPointer            == DelegateObject::GetOffsetOfFunctionPointer());
-    _ASSERTE(OFFSETOF__DelegateObject__extraFunctionPointerOrData == DelegateObject::GetOffsetOfExtraFunctionPointerOrData());
-    _ASSERTE(OFFSETOF__PtrArray__m_Array_                         == PtrArray::GetDataOffset());
+    _ASSERTE(OFFSETOF__DelegateObject__target       == DelegateObject::GetOffsetOfTarget());
+    _ASSERTE(OFFSETOF__DelegateObject__methodPtr    == DelegateObject::GetOffsetOfMethodPtr());
+    _ASSERTE(OFFSETOF__DelegateObject__methodPtrAux == DelegateObject::GetOffsetOfMethodPtrAux());
+    _ASSERTE(OFFSETOF__PtrArray__m_Array_           == PtrArray::GetDataOffset());
 #endif
 
     // Delegate offsets
-    pEEInfoOut->offsetOfDelegateInstance    = OFFSETOF__DelegateObject__firstParameter;
-    pEEInfoOut->offsetOfDelegateFirstTarget = OFFSETOF__DelegateObject__functionPointer;
+    pEEInfoOut->offsetOfDelegateInstance    = OFFSETOF__DelegateObject__target;
+    pEEInfoOut->offsetOfDelegateFirstTarget = OFFSETOF__DelegateObject__methodPtr;
 
     // Wrapper delegate offsets
-    pEEInfoOut->offsetOfWrapperDelegateIndirectCell = OFFSETOF__DelegateObject__extraFunctionPointerOrData;
+    pEEInfoOut->offsetOfWrapperDelegateIndirectCell = OFFSETOF__DelegateObject__methodPtrAux;
 
     pEEInfoOut->sizeOfReversePInvokeFrame = TARGET_POINTER_SIZE * READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits;
 

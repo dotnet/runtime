@@ -783,9 +783,9 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     // On entry x0 holds the delegate instance. Look up the real target address stored in the MethodPtrAux
     // field and save it in x16(ip). Tailcall to the target method after re-arranging the arguments
     // ldr x16, [x0, #offsetof(DelegateObject, _methodPtrAux)]
-    EmitLoadStoreRegImm(eLOAD, IntReg(16), IntReg(0), DelegateObject::GetOffsetOfExtraFunctionPointerOrData());
-    //add x11, x0, DelegateObject::GetOffsetOfExtraFunctionPointerOrData() - load the indirection cell into x11 used by ResolveWorkerAsmStub
-    EmitAddImm(IntReg(11), IntReg(0), DelegateObject::GetOffsetOfExtraFunctionPointerOrData());
+    EmitLoadStoreRegImm(eLOAD, IntReg(16), IntReg(0), DelegateObject::GetOffsetOfMethodPtrAux());
+    //add x11, x0, DelegateObject::GetOffsetOfMethodPtrAux() - load the indirection cell into x11 used by ResolveWorkerAsmStub
+    EmitAddImm(IntReg(11), IntReg(0), DelegateObject::GetOffsetOfMethodPtrAux());
 
     for (ShuffleEntry* pEntry = pShuffleEntryArray; pEntry->srcofs != ShuffleEntry::SENTINEL; pEntry++)
     {

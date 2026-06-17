@@ -1903,9 +1903,9 @@ HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32
     //
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     DELEGATEREF del = (DELEGATEREF)objRef;
-    if ((del->GetInvocationCount() == 0) && (del->GetExtraFunctionPointerOrData() == (PCODE)NULL))
+    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == (PCODE)NULL))
     {
-        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetFunctionPointer());
+        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
         if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
         {
             pRecordedMD = pMD;
@@ -1949,9 +1949,9 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
     //
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     DELEGATEREF del = (DELEGATEREF)objRef;
-    if ((del->GetInvocationCount() == 0) && (del->GetExtraFunctionPointerOrData() == (PCODE)NULL))
+    if ((del->GetInvocationCount() == 0) && (del->GetMethodPtrAux() == (PCODE)NULL))
     {
-        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetFunctionPointer());
+        MethodDesc* pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
         if ((pMD != nullptr) && !pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
         {
             pRecordedMD = pMD;

@@ -8262,7 +8262,7 @@ void DebuggerStepper::TriggerMulticastDelegate(DELEGATEREF pDel, INT32 delegateC
     TraceDestination trace;
     FramePointer fp = LEAF_MOST_FRAME;
 
-    PTRARRAYREF pDelInvocationList = (PTRARRAYREF) pDel->GetHelperObject();
+    PTRARRAYREF pDelInvocationList = (PTRARRAYREF) pDel->GetInvocationList();
     DELEGATEREF pCurrentInvokeDel = (DELEGATEREF) pDelInvocationList->GetAt(delegateCount);
 
     StubLinkStubManager::TraceDelegateObject((BYTE*)OBJECTREFToObject(pCurrentInvokeDel), &trace);
