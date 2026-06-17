@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
+using System.IO;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
@@ -190,7 +190,7 @@ namespace System.Diagnostics.Tests
                 // Process is suspended, should not have written anything yet.
                 processHandle.Resume();
 
-                using System.IO.StreamReader streamReader = new(new System.IO.FileStream(outputReadPipe, System.IO.FileAccess.Read, bufferSize: 1, outputReadPipe.IsAsync));
+                using StreamReader streamReader = new(new FileStream(outputReadPipe, FileAccess.Read, bufferSize: 1, outputReadPipe.IsAsync));
                 Assert.Equal("hello", streamReader.ReadLine());
 
                 ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(30));
