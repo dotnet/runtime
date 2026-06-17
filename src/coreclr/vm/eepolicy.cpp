@@ -675,9 +675,9 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
 
 #include <public/FatalErrorHandling.h>
 
-using FatalErrorHandlerFunc = int(*)(int hresult, void* errorData);
+using FatalErrorHandlerFunc = int (DOTNET_CALLCONV *)(int hresult, void* errorData);
 
-static void GetFatalErrorLogCallback(FatalErrorInfo* errorData, FatalErrorLogAction pfnLogAction, void* userContext)
+static void DOTNET_CALLCONV GetFatalErrorLogCallback(FatalErrorInfo* errorData, FatalErrorLogAction pfnLogAction, void* userContext)
 {
     LIMITED_METHOD_CONTRACT;
 

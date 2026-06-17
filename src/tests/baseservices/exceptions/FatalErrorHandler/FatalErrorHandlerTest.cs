@@ -172,8 +172,9 @@ unsafe class FatalErrorHandlerTest
             ? $"\"{assemblyLocation}\" {scenario}"
             : $" {scenario}";
 
+        child.StartInfo.UseShellExecute = false;
         child.StartInfo.RedirectStandardError = true;
-        child.StartInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
+        child.StartInfo.Environment["DOTNET_DbgEnableMiniDump"] = "0";
         child.ErrorDataReceived += (_, e) =>
         {
             if (!string.IsNullOrEmpty(e.Data))

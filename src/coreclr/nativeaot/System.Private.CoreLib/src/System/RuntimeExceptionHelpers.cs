@@ -64,8 +64,7 @@ namespace System
                 ReadOnlySpan<char> source = text.AsSpan();
                 Span<byte> destination = s_crashLogBuffer.AsSpan(s_crashLogLength, remaining);
 
-                Encoding.UTF8.GetEncoder().Convert(source, destination, flush: true,
-                    out _, out int bytesUsed, out _);
+                int bytesUsed = Encoding.UTF8.GetBytes(source, destination);
                 s_crashLogLength += bytesUsed;
             }
             catch

@@ -71,7 +71,7 @@ namespace System.Runtime.ExceptionServices
 #if MONO
             throw new PlatformNotSupportedException();
 #else
-            ArgumentNullException.ThrowIfNull(handler);
+            ArgumentNullException.ThrowIfNull((void*)handler);
 
             if (Interlocked.CompareExchange(ref s_fatalErrorHandler, (IntPtr)handler, IntPtr.Zero) != IntPtr.Zero)
             {
