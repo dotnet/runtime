@@ -613,8 +613,7 @@ void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTa
 
     // r0 : object. It can be null as well.
     // when it is null the code causes an AV. This AV is seen by the VM's personality routine
-    // and it converts it into nullRef. We want the AV to happen before modifying the stack so that we can get the
-    // call stack in windbg at the point of AV. So therefore "ldr r6, [r0]" should be the first instruction.
+    // and it converts it into nullRef.
 
     // ldr r6, [r0 + #Object.m_pMethTab]
     _stub._entryPoint[n++] = DISPATCH_STUB_FIRST_WORD;
