@@ -87,7 +87,6 @@ typedef int CorDebugUserState;
 typedef int CorDebugSetContextFlag;
 typedef int CorDebugNGENPolicy;
 typedef int CorElementType;
-typedef int AddressType;
 typedef int SymbolFormat;
 typedef int AreValueTypesBoxed;
 typedef int DynamicMethodType;
@@ -215,7 +214,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetModuleForAssembly([in] VMPTR_Assembly vmAssembly, [out] VMPTR_Module * pModule, [out] BOOL * pIsModuleLoaded);
 
     // Address
-    HRESULT GetAddressType([in] CORDB_ADDRESS address, [out] AddressType * pRetVal);
+    HRESULT IsManagedCode([in] CORDB_ADDRESS address, [out] BOOL * pIsManaged);
 
     // Compiler
     HRESULT GetCompilerFlags([in] VMPTR_Assembly vmAssembly, [out] BOOL * pfAllowJITOpts, [out] BOOL * pfEnableEnC);

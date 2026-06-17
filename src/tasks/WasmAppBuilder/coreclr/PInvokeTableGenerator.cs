@@ -40,16 +40,23 @@ internal sealed class PInvokeTableGenerator
             _pinvokeCollector.CollectPInvokes(pinvokes, callbacks, signatures, type);
     }
 
-    public IEnumerable<string> Generate(string[] pinvokeModules, string outputPathPInvoke, string outputPathReversePInvoke)
+    public IEnumerable<string> Generate(string[] pinvokeModules, string[] ignoredPInvokeModules, string outputPathPInvoke, string outputPathReversePInvoke)
     {
+        var ignoredModules = new HashSet<string>(ignoredPInvokeModules, StringComparer.Ordinal);
         var modules = new SortedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var module in pinvokeModules)
-            modules[module] = module;
+        {
+            if (!ignoredModules.Contains(module))
+                modules[module] = module;
+        }
+
+        foreach (var module in ignoredModules.OrderBy(module => module, StringComparer.Ordinal))
+            Log.LogMessage(MessageImportance.Low, $"Ignoring PInvoke module {module}");
 
         using TempFileName tmpFileNamePInvoke = new();
         using (var w = new JoinedStringStreamWriter(tmpFileNamePInvoke.Path, false))
         {
-            EmitPInvokeTable(w, modules, pinvokes);
+            EmitPInvokeTable(w, modules, ignoredModules, pinvokes);
         }
 
         using TempFileName tmpFileNameReversePInvoke = new();
@@ -71,11 +78,13 @@ internal sealed class PInvokeTableGenerator
         return signatures;
     }
 
-    private void EmitPInvokeTable(StreamWriter w, SortedDictionary<string, string> modules, List<PInvoke> pinvokes)
+    private void EmitPInvokeTable(StreamWriter w, SortedDictionary<string, string> modules, HashSet<string> ignoredModules, List<PInvoke> pinvokes)
     {
         foreach (var pinvoke in pinvokes)
         {
             if (modules.ContainsKey(pinvoke.Module))
+                continue;
+            if (ignoredModules.Contains(pinvoke.Module))
                 continue;
             // Handle special modules, and add them to the list of modules
             // otherwise, skip them and throw an exception at runtime if they
