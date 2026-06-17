@@ -34,6 +34,9 @@ NESTED_ENTRY RhpInterfaceDispatch, _TEXT, NoHandler
 
 LOCAL_LABEL(Hashtable):
 
+        // Match what the fast path has pushed.
+        .save {r1,r2}
+
         // r1 = MethodTable, r12 = indirection cell address
         // Look up the target in the dispatch cache hashtable (GenericCache<Key, nint>).
         PROLOG_PUSH  "{r3,r4,r5,r6,r8}"
