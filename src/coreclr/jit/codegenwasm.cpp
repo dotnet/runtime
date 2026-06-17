@@ -3483,6 +3483,14 @@ void CodeGen::genCallFinally(BasicBlock* block)
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
         GetEmitter()->emitIns(INS_unreachable);
+
+        // A retless BBJ_CALLFINALLY can be the last block of a wasm function/funclet;
+        // every wasm function body must end with `end`.
+        //
+        if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+        {
+            GetEmitter()->emitIns(INS_end);
+        }
     }
 }
 
