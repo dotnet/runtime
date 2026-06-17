@@ -1847,11 +1847,11 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     if (count != 0)
     {
         // this is one of the following:
-        // - multicast - _helperObject is Array && _invocationCount != 0
-        // - unamanaged ftn ptr - _helperObject == NULL && _invocationCount == -1
-        // - wrapper delegate - _helperObject is Delegate && _invocationCount != NULL
-        // - virtual delegate - _helperObject == null && _invocationCount == (target MethodDesc)
-        //                    or _helperObject points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Wrapper Delegate)
+        // - multicast - _invocationList is Array && _invocationCount != 0
+        // - unamanaged ftn ptr - _invocationList == NULL && _invocationCount == -1
+        // - wrapper delegate - _invocationList is Delegate && _invocationCount != NULL
+        // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
+        //                    or _invocationList points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Wrapper Delegate)
         // in the wrapper delegate case we want to unwrap and return the method desc of the inner delegate
         // in the other cases we return the method desc for the invoke
         bool fOpenVirtualDelegate = false;
@@ -1922,8 +1922,8 @@ OBJECTREF COMDelegate::GetTargetObject(OBJECTREF obj)
         // - multicast
         // - unmanaged ftn ptr
         // - wrapper delegate
-        // - virtual delegate - _helperObject == null && _invocationCount == (target MethodDesc)
-        //                    or _helperObject points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Wrapper Delegate)
+        // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
+        //                    or _invocationList points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Wrapper Delegate)
         // in the wrapper delegate case we want to unwrap and return the object of the inner delegate
         OBJECTREF innerDel = thisDel->GetInvocationList();
         if (innerDel != NULL)
@@ -2081,7 +2081,7 @@ BOOL COMDelegate::NeedsWrapperDelegate(MethodDesc* pTargetMD)
 
 
 // to create a wrapper delegate wrapper we need:
-// - the delegate to forward to         -> _helperObject
+// - the delegate to forward to         -> _invocationList
 // - the delegate invoke MethodDesc     -> _count
 // the 2 fields used for invocation will contain:
 // - the delegate itself                -> _pORField
@@ -2794,7 +2794,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     BOOL isCollectible = pTargetMethodLoaderAllocator->IsCollectible();
     // A method that may be instantiated over a collectible type, and is static will require a delegate
     // that has the LoaderAllocator of the collectible assembly associated with the instantiation
-    // stored in the _helperObject field.
+    // stored in the _invocationList field.
     BOOL fMaybeCollectibleAndStatic = FALSE;
 
     if (isStatic)
@@ -2858,27 +2858,27 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
 
     // DELEGATE KINDS TABLE
     //
-    //                                  _helperObject   _firstParameter _functionPointer      _extraFunctionPointerOrData _invocationCount
+    //                                  _invocationList _target        _methodPtr            _methodPtrAux     _invocationCount
     //
-    // 1- Instance closed               null            'this' ptr      target method         null                        0
-    // 2- Instance open non-virt        null            delegate        shuffle thunk         target method               0
-    // 3- Instance open virtual         null            delegate        Virtual-stub dispatch method id                   0
-    // 4- Static closed                 null            first arg       target method         null                        0
-    // 5- Static closed (special sig)   null            first arg       ThisPtrRetBuf precode null                        0
-    // 6- Static opened                 null            delegate        shuffle thunk         target method               0
-    // 7- Wrapper                       target delegate other delegate  call thunk            MethodDesc (frame)          (arm only, VSD indirection cell address)
+    // 1- Instance closed               null            'this' ptr     target method         null               0
+    // 2- Instance open non-virt        null            delegate       shuffle thunk         target method      0
+    // 3- Instance open virtual         null            delegate       Virtual-stub dispatch method id          0
+    // 4- Static closed                 null            first arg      target method         null               0
+    // 5- Static closed (special sig)   null            first arg      ThisPtrRetBuf precode null               0
+    // 6- Static opened                 null            delegate       shuffle thunk         target method      0
+    // 7- Wrapper                       target delegate other delegate call thunk            MethodDesc (frame) (arm only, VSD indirection cell address)
     //
     // Delegate invoke arg count == target method arg count - 2, 3, 6
     // Delegate invoke arg count == 1 + target method arg count - 1, 4, 5
     //
-    // 1, 4     - MulticastDelegate.ctor1 (simply assign _firstParameter and _functionPointer)
+    // 1, 4     - MulticastDelegate.ctor1 (simply assign _target and _methodPtr)
     // 5        - MulticastDelegate.ctor2 (see table, takes 3 args)
     // 2, 6     - MulticastDelegate.ctor3 (take shuffle thunk)
     // 3        - MulticastDelegate.ctor4 (take shuffle thunk, retrieve MethodDesc) ???
     //
     // 7 - Needs special handling
     //
-    // With collectible types, we need to fill the _helperObject field in with a value that represents the LoaderAllocator of the target method
+    // With collectible types, we need to fill the _invocationList field in with a value that represents the LoaderAllocator of the target method
     // if the delegate is not a closed instance delegate.
     //
     // There are two techniques that will work for this.
