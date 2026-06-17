@@ -1171,16 +1171,15 @@ namespace System.Globalization
                             // do nothing. we'll fallback
                         }
                         localizedCountry ??= NativeCountryName;
-                        _sLocalizedCountry = localizedCountry;
                     }
                     else
                     {
                         localizedCountry = NativeCountryName;
-                        _sLocalizedCountry = localizedCountry;
                     }
+                    _sLocalizedCountry = localizedCountry;
                 }
 
-                return localizedCountry!;
+                return localizedCountry;
             }
         }
 
