@@ -105,11 +105,14 @@ namespace System.Threading.RateLimiting
                 }
                 else if (entry.IsValueCreated)
                 {
-                    // For subsequent accesses on an already-materialized entry, refresh the timestamp
-                    // under the lock so the Heartbeat won't observe a stale value and concurrently evict
-                    // a limiter that's actively being used. Use Volatile.Write so the write is atomic
-                    // on 32-bit platforms where the outside-lock read in Heartbeat may otherwise tear.
-                    Volatile.Write(ref entry.Value.LastAccessTimestamp, Stopwatch.GetTimestamp());
+                    LimiterEntry limiterEntry = entry.Value;
+
+                    if (limiterEntry.Limiter is NoopLimiter)
+                    {
+                        // Refresh the timestamp under the lock so Heartbeat won't evict a limiter that's actively being used.
+                        // Use Volatile.Write so the write is atomic on 32-bit platforms where the outside-lock read in Heartbeat may otherwise tear.
+                        Volatile.Write(ref limiterEntry.LastAccessTimestamp, Stopwatch.GetTimestamp());
+                    }
                 }
             }
 
