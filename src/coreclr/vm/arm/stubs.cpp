@@ -693,13 +693,13 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
 #undef PC_REL_OFFSET
 #define PC_REL_OFFSET(_field) (WORD)(offsetof(ResolveStub, _field) - ((offsetof(ResolveStub, _resolveEntryPoint) + sizeof(*ResolveStub::_resolveEntryPoint) * (n + 2)) & 0xfffffffc))
 
-    // ldr r4, [r0 + #Object.m_pMethTab]
-    _stub._resolveEntryPoint[n++] = RESOLVE_STUB_FIRST_WORD;
-    _stub._resolveEntryPoint[n++] = 0x4000;
-
     // ;; We need three scratch registers, r4, r5 and r6
     // push {r4,r5,r6}
     _stub._resolveEntryPoint[n++] = 0xb470;
+
+    // ldr r4, [r0 + #Object.m_pMethTab]
+    _stub._resolveEntryPoint[n++] = RESOLVE_STUB_FIRST_WORD;
+    _stub._resolveEntryPoint[n++] = 0x4000;
 
     // ;; Compute i = ((mt + mt >> 12) ^ this._hashedToken) & this._cacheMask
 
