@@ -3,16 +3,18 @@
 
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Diagnostics.Tests
 {
+    [ConditionalClass(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public class StartSuspendedTests : ProcessTestBase
     {
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact]
         public void StartSuspended_ResumeCompletes()
         {
             Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
@@ -26,12 +28,11 @@ namespace System.Diagnostics.Tests
 
             processHandle.Resume();
 
-            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(30));
+            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
             Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact]
         public void StartSuspended_ProcessIdIsValid()
         {
             Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
@@ -46,12 +47,11 @@ namespace System.Diagnostics.Tests
             finally
             {
                 processHandle.Resume();
-                processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(30));
+                processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
             }
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact]
         public void Resume_CalledTwice_ThrowsInvalidOperationException()
         {
             Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
@@ -63,11 +63,10 @@ namespace System.Diagnostics.Tests
 
             Assert.Throws<InvalidOperationException>(() => processHandle.Resume());
 
-            processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(30));
+            processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact]
         public void Resume_OnNonSuspendedProcess_ThrowsInvalidOperationException()
         {
             Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
@@ -76,11 +75,10 @@ namespace System.Diagnostics.Tests
 
             Assert.Throws<InvalidOperationException>(() => processHandle.Resume());
 
-            processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(30));
+            processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact]
         public void StartSuspended_KillWithoutResume_Succeeds()
         {
             Process process = CreateProcess(static () =>
@@ -95,12 +93,11 @@ namespace System.Diagnostics.Tests
             // Kill the suspended process without resuming it first.
             processHandle.Kill();
 
-            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(30));
+            ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
             Assert.NotEqual(0, exitStatus.ExitCode);
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact]
         public void StartSuspended_DisposeWithoutResume_DoesNotThrow()
         {
             Process process = CreateProcess(static () =>
@@ -117,18 +114,16 @@ namespace System.Diagnostics.Tests
             processHandle.Dispose();
 
             // Clean up the orphaned process.
-            try
+            Assert.True(Process.TryGetProcessById(processId, out Process? orphaned));
+
+            using (orphaned)
             {
-                using Process orphaned = Process.GetProcessById(processId);
                 orphaned.Kill();
                 orphaned.WaitForExit(WaitInMS);
             }
-            catch (ArgumentException) { } // Process may have already exited.
-            catch (InvalidOperationException) { }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact]
         public void StartSuspended_WithUseShellExecute_ThrowsInvalidOperationException()
         {
             ProcessStartInfo startInfo = new("cmd")
@@ -140,14 +135,14 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => SafeProcessHandle.Start(startInfo));
         }
 
-        [Fact]
+        [ConditionalFact]
         public void StartSuspended_PropertyDefaultsToFalse()
         {
             ProcessStartInfo startInfo = new();
             Assert.False(startInfo.StartSuspended);
         }
 
-        [Fact]
+        [ConditionalFact]
         public void StartSuspended_CanSetAndGet()
         {
             ProcessStartInfo startInfo = new()
@@ -158,16 +153,7 @@ namespace System.Diagnostics.Tests
             Assert.True(startInfo.StartSuspended);
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Resume throws PlatformNotSupportedException on non-Windows")]
-        public void Resume_OnNonWindows_ThrowsPlatformNotSupportedException()
-        {
-            using SafeProcessHandle handle = new();
-            Assert.Throws<PlatformNotSupportedException>(() => handle.Resume());
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact]
         public void StartSuspended_WithPipeRedirection_Works()
         {
             Process process = CreateProcess(static () =>
@@ -187,15 +173,34 @@ namespace System.Diagnostics.Tests
                 using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
                 outputWritePipe.Close();
 
-                // Process is suspended, should not have written anything yet.
+                // Verify nothing has been written yet while the process is suspended.
+                using FileStream readStream = new(outputReadPipe, FileAccess.Read, bufferSize: 1, outputReadPipe.IsAsync);
+                byte[] buffer = new byte[1];
+                Task<int> readTask = readStream.ReadAsync(buffer, 0, 1);
+                Assert.False(readTask.Wait(50), "Suspended process should not have written any output yet.");
+
                 processHandle.Resume();
 
-                using StreamReader streamReader = new(new FileStream(outputReadPipe, FileAccess.Read, bufferSize: 1, outputReadPipe.IsAsync));
-                Assert.Equal("hello", streamReader.ReadLine());
+                using StreamReader streamReader = new(readStream);
+                // The first byte was already read into the buffer by the async read.
+                string firstChar = System.Text.Encoding.UTF8.GetString(buffer, 0, readTask.GetAwaiter().GetResult());
+                string? rest = streamReader.ReadLine();
+                Assert.Equal("hello", firstChar + rest);
 
-                ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromSeconds(30));
+                ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
                 Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
             }
+        }
+    }
+
+    public class StartSuspendedTests_NonWindows : ProcessTestBase
+    {
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "Resume throws PlatformNotSupportedException on non-Windows")]
+        public void Resume_OnNonWindows_ThrowsPlatformNotSupportedException()
+        {
+            using SafeProcessHandle handle = new();
+            Assert.Throws<PlatformNotSupportedException>(() => handle.Resume());
         }
     }
 }
