@@ -46,8 +46,9 @@ namespace System.Diagnostics
                 // Create pipes for communication with the pseudo console.
                 // The "input" pipe: we write to inputWritePipe, the console reads from inputReadPipe.
                 // The "output" pipe: the console writes to outputWritePipe, we read from outputReadPipe.
-                SafeFileHandle.CreateAnonymousPipe(out inputReadPipe, out inputWritePipe);
-                SafeFileHandle.CreateAnonymousPipe(out outputReadPipe, out outputWritePipe);
+                // Enable async IO to avoid blocking Thread Pool threads when reading/writing to the pipes.
+                SafeFileHandle.CreateAnonymousPipe(out inputReadPipe, out inputWritePipe, asyncWrite: true);
+                SafeFileHandle.CreateAnonymousPipe(out outputReadPipe, out outputWritePipe, asyncRead: true);
 
                 int hr = Interop.Kernel32.CreatePseudoConsole(size, inputReadPipe, outputWritePipe, 0, out IntPtr hPC);
                 if (hr != 0)

@@ -864,17 +864,22 @@ namespace System.Diagnostics
         private void OpenPseudoTerminalStreams(ProcessStartInfo startInfo)
         {
             PseudoTerminal pty = startInfo.PseudoTerminal!;
+
             // On Windows, Input is a write pipe (to send data to the console) and Output is a read pipe (to receive from the console).
-            // Use non-owning handles since the PseudoTerminal owns the pipe lifetime.
-            SafeFileHandle inputHandle = new(pty.Input.DangerousGetHandle(), ownsHandle: false);
-            SafeFileHandle outputHandle = new(pty.Output.DangerousGetHandle(), ownsHandle: false);
-            _standardInput = new StreamWriter(new FileStream(inputHandle, FileAccess.Write, StreamBufferSize, isAsync: pty.Input.IsAsync),
-                startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
+            // The PseudoTerminal owns the pipe lifetime, but we can't use non-owning handles because there is no public API to transfer ThreadPoolBinding.
+            // So we use leaveOpen: true and suspend the finalizers to prevent the handles from being closed when the FileStream is finalized.
+            FileStream inputStream = new(pty.Input, FileAccess.Write, bufferSize: 1, isAsync: pty.Input.IsAsync);
+            GC.SuppressFinalize(inputStream);
+            FileStream outputStream = new(pty.Output, FileAccess.Read, bufferSize: 1, isAsync: pty.Output.IsAsync);
+            GC.SuppressFinalize(outputStream);
+
+            UTF8Encoding encoding = new(encoderShouldEmitUTF8Identifier: false); // Don't emit BOM.
+            // We don't use any buffering, as we want all the data to be sent to the console immediately, and we want to receive data from the console as soon as it's available.
+            _standardInput = new StreamWriter(inputStream, encoding, bufferSize: 1, leaveOpen: true)
             {
                 AutoFlush = true
             };
-            _standardOutput = new StreamReader(new FileStream(outputHandle, FileAccess.Read, StreamBufferSize, isAsync: pty.Output.IsAsync),
-                startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            _standardOutput = new StreamReader(outputStream, encoding, false, bufferSize: 1, leaveOpen: true);
         }
     }
 }
