@@ -54,8 +54,7 @@ AdjustContextForVirtualStub(
     else
     if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
     {
-        if ((*PTR_WORD(pInstr) != RESOLVE_STUB_FIRST_WORD) ||
-            (*PTR_WORD(pInstr + sizeof(WORD)) != RESOLVE_STUB_SECOND_WORD))
+        if (*PTR_WORD(pInstr) != RESOLVE_STUB_FIRST_WORD)
         {
             _ASSERTE(!"AV in ResolveStub at unknown instruction");
             return FALSE;
