@@ -260,7 +260,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void SignAndVerifyDataExplicit2048()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             SignAndVerify(DSATestData.HelloBytes, "SHA256", DSATestData.GetDSA2048Params(), 64);
         }
@@ -268,7 +268,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void VerifyKnown_2048_SHA256()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             byte[] signature =
             {
@@ -294,7 +294,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void VerifyKnown_2048_SHA384()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             byte[] signature =
             {
@@ -320,7 +320,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void VerifyKnown_2048_SHA512()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             byte[] signature =
             {
@@ -365,7 +365,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Sign2048WithSha1()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             byte[] data = { 1, 2, 3, 4 };
 
@@ -382,7 +382,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Verify2048WithSha1()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             byte[] data = { 1, 2, 3, 4 };
 

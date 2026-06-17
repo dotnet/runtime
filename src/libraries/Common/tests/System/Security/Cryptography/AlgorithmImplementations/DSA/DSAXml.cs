@@ -188,7 +188,7 @@ S      9      R      /       j       6       9        C        v        C
         [ConditionalFact]
         public void TestRead2048Parameters_Public()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             DSAParameters expectedParameters = DSATestData.Dsa2048DeficientXParameters;
             expectedParameters.X = null;
@@ -230,7 +230,7 @@ S      9      R      /       j       6       9        C        v        C
         [ConditionalFact]
         public void TestRead2048Parameters_Private_CryptoBinary()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             TestReadXml(
                 // Bonus trait of this XML: The X parameter is encoded as a CryptoBinary,
@@ -270,7 +270,7 @@ S      9      R      /       j       6       9        C        v        C
         [ConditionalFact]
         public void TestRead2048Parameters_Private_Base64Binary()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             TestReadXml(
                 // Bonus trait of this XML: The X parameter is encoded as a Base64Binary,
@@ -387,7 +387,7 @@ S      9      R      /       j       6       9        C        v        C
         [InlineData(false)]
         public void TestWriteDeficientXParameters(bool includePrivateParameters)
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             TestWriteXml(
                 DSATestData.Dsa2048DeficientXParameters,

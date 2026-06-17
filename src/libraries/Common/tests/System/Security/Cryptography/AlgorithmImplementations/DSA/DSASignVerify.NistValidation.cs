@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L1024_N160_SHA256_1()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L1024_N160_SHA384_1()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L1024_N160_SHA384_4()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -176,7 +176,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L1024_N160_SHA512_1()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -218,7 +218,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L1024_N160_SHA512_4()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -260,7 +260,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L2048_N256_SHA256_1()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -319,7 +319,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L2048_N256_SHA384_1()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -378,7 +378,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L2048_N256_SHA1_1()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -437,7 +437,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L2048_N256_SHA384_3()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -496,7 +496,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L3072_N256_SHA256_1()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -567,7 +567,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L3072_N256_SHA384_1()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -638,7 +638,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L3072_N256_SHA512_1()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -709,7 +709,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [ConditionalFact]
         public void Fips186_3_L3072_N256_SHA512_12()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt

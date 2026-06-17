@@ -90,7 +90,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
         [ConditionalFact]
         public void ReadWriteDsa2048DeficientXPkcs8()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             ReadWriteBase64Pkcs8(
                 @"
@@ -197,7 +197,7 @@ CU+l4wPQR0rRmYHIJJIvFh5OXk84pV0crsOrekw7tHeNU6DMzw==",
         [ConditionalFact]
         public void ReadWriteDsa2048EncryptedPkcs8()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             ReadBase64EncryptedPkcs8(
                 @"
@@ -226,7 +226,7 @@ EDVKgNkAxxCnPVjTUalttxCxTv7FC/vxfN7ulB2uKzicegsf6t/nS6i2dpJjUYDF
         [ConditionalFact]
         public void ReadWriteDsa2048DeficientXEncryptedPkcs8()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             ReadBase64EncryptedPkcs8(
                 @"
@@ -287,7 +287,7 @@ pfTBO6zjtLRN4Q==",
         [ConditionalFact]
         public void ReadWriteDsa2048SubjectPublicKeyInfo()
         {
-            DSAFactory.ThrowSkipTestExceptionIfFips186_3IsNotSupported();
+            DSAFactory.SkipUnlessSupportsFips186_3();
 
             ReadWriteBase64SubjectPublicKeyInfo(
                 @"

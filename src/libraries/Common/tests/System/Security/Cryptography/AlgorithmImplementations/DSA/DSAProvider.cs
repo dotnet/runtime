@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             return dsa;
         }
 
-        public void ThrowSkipTestExceptionIfFips186_3IsNotSupported()
+        public void SkipUnlessSupportsFips186_3()
         {
             if (!SupportsFips186_3)
             {
