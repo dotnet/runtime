@@ -8,9 +8,9 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal static class ConsoleControlCharacterSanitizer
     {
-        public static string? Sanitize(string? value, bool sanitizeControlCharacters)
+        public static string? Sanitize(string? value)
         {
-            if (!sanitizeControlCharacters || string.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(value))
             {
                 return value;
             }
@@ -56,8 +56,31 @@ namespace Microsoft.Extensions.Logging.Console
 
         private static bool ShouldEscape(char c)
         {
-            UnicodeCategory category = char.GetUnicodeCategory(c);
-            return category == UnicodeCategory.Control || category == UnicodeCategory.Format;
+            return c switch
+            {
+                '\u001B' => true, // ESC - ANSI escape sequences
+                '\u0007' => true, // BEL - terminal bell
+                '\u0008' => true, // BS  - backspace
+                '\u007F' => true, // DEL - delete
+                '\u009B' => true, // CSI - control sequence introducer (8-bit)
+                '\u009C' => true, // ST  - string terminator (8-bit)
+                '\u009D' => true, // OSC - operating system command (8-bit)
+                '\u200B' => true, // zero-width space
+                '\u200C' => true, // zero-width non-joiner
+                '\u200D' => true, // zero-width joiner
+                '\u200E' => true, // left-to-right mark
+                '\u200F' => true, // right-to-left mark
+                '\u202A' => true, // left-to-right embedding
+                '\u202B' => true, // right-to-left embedding
+                '\u202C' => true, // pop directional formatting
+                '\u202D' => true, // left-to-right override
+                '\u202E' => true, // right-to-left override
+                '\u2066' => true, // left-to-right isolate
+                '\u2067' => true, // right-to-left isolate
+                '\u2068' => true, // first strong isolate
+                '\u2069' => true, // pop directional isolate
+                _ => false,
+            };
         }
     }
 }

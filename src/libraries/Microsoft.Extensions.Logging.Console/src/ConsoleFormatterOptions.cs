@@ -41,14 +41,6 @@ namespace Microsoft.Extensions.Logging.Console
         /// </value>
         public bool UseUtcTimestamp { get; set; }
 
-        /// <summary>
-        /// Gets or sets a value that indicates whether control and formatting characters are escaped in log output.
-        /// </summary>
-        /// <value>
-        /// The default is <see langword="true" />.
-        /// </value>
-        public bool SanitizeControlCharacters { get; set; } = true;
-
         internal virtual void Configure(IConfiguration configuration) => configuration.Bind(this);
     }
 }

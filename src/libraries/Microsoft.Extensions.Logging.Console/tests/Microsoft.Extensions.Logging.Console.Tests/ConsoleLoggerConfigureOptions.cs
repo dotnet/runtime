@@ -22,9 +22,9 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
             BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
             Assert.Equal(9, typeof(ConsoleLoggerOptions).GetProperties(flags).Length);
-            Assert.Equal(4, typeof(ConsoleFormatterOptions).GetProperties(flags).Length);
-            Assert.Equal(6, typeof(SimpleConsoleFormatterOptions).GetProperties(flags).Length);
-            Assert.Equal(5, typeof(JsonConsoleFormatterOptions).GetProperties(flags).Length);
+            Assert.Equal(3, typeof(ConsoleFormatterOptions).GetProperties(flags).Length);
+            Assert.Equal(5, typeof(SimpleConsoleFormatterOptions).GetProperties(flags).Length);
+            Assert.Equal(4, typeof(JsonConsoleFormatterOptions).GetProperties(flags).Length);
             Assert.Equal(7, typeof(JsonWriterOptions).GetProperties(flags).Length);
         }
 
@@ -33,7 +33,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [InlineData("Console:MaxQueueLength", "notANumber")]
         [InlineData("Console:QueueFullMode", "invalid")]
         [InlineData("Console:FormatterOptions:IncludeScopes", "not a bool")]
-        [InlineData("Console:FormatterOptions:SanitizeControlCharacters", "not a bool")]
         [InlineData("Console:FormatterOptions:UseUtcTimestamp", "not a bool")]
         [InlineData("Console:FormatterOptions:ColorBehavior", "not a behavior")]
         [InlineData("Console:FormatterOptions:SingleLine", "not a bool")]

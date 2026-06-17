@@ -56,12 +56,6 @@ namespace Microsoft.Extensions.Logging.Console
             string category, int eventId, string? exception, bool hasState, string? stateMessage, IReadOnlyList<KeyValuePair<string, object?>>? stateProperties,
             DateTimeOffset stamp)
         {
-            bool sanitizeControlCharacters = FormatterOptions.SanitizeControlCharacters;
-            message = ConsoleControlCharacterSanitizer.Sanitize(message, sanitizeControlCharacters);
-            category = ConsoleControlCharacterSanitizer.Sanitize(category, sanitizeControlCharacters)!;
-            exception = ConsoleControlCharacterSanitizer.Sanitize(exception, sanitizeControlCharacters);
-            stateMessage = ConsoleControlCharacterSanitizer.Sanitize(stateMessage, sanitizeControlCharacters);
-
             const int DefaultBufferSize = 1024;
             using (var output = new PooledByteBufferWriter(DefaultBufferSize))
             {
@@ -71,7 +65,7 @@ namespace Microsoft.Extensions.Logging.Console
                     var timestampFormat = FormatterOptions.TimestampFormat;
                     if (timestampFormat != null)
                     {
-                        writer.WriteString("Timestamp", ConsoleControlCharacterSanitizer.Sanitize(stamp.ToString(timestampFormat), sanitizeControlCharacters));
+                        writer.WriteString("Timestamp", stamp.ToString(timestampFormat));
                     }
                     writer.WriteNumber(nameof(LogEntry<object>.EventId), eventId);
                     writer.WriteString(nameof(LogEntry<object>.LogLevel), GetLogLevelString(logLevel));
@@ -97,12 +91,12 @@ namespace Microsoft.Extensions.Logging.Console
                         {
                             foreach (KeyValuePair<string, object?> item in stateProperties)
                             {
-                                WriteItem(writer, item, sanitizeControlCharacters);
+                                WriteItem(writer, item);
                             }
                         }
                         writer.WriteEndObject();
                     }
-                    WriteScopeInformation(writer, scopeProvider, sanitizeControlCharacters);
+                    WriteScopeInformation(writer, scopeProvider);
                     writer.WriteEndObject();
                     writer.Flush();
                 }
@@ -136,7 +130,7 @@ namespace Microsoft.Extensions.Logging.Console
             };
         }
 
-        private void WriteScopeInformation(Utf8JsonWriter writer, IExternalScopeProvider? scopeProvider, bool sanitizeControlCharacters)
+        private void WriteScopeInformation(Utf8JsonWriter writer, IExternalScopeProvider? scopeProvider)
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {
@@ -146,25 +140,25 @@ namespace Microsoft.Extensions.Logging.Console
                     if (scope is IEnumerable<KeyValuePair<string, object?>> scopeItems)
                     {
                         state.WriteStartObject();
-                        state.WriteString("Message", ConsoleControlCharacterSanitizer.Sanitize(scope.ToString(), sanitizeControlCharacters));
+                        state.WriteString("Message", scope.ToString());
                         foreach (KeyValuePair<string, object?> item in scopeItems)
                         {
-                            WriteItem(state, item, sanitizeControlCharacters);
+                            WriteItem(state, item);
                         }
                         state.WriteEndObject();
                     }
                     else
                     {
-                        state.WriteStringValue(ConsoleControlCharacterSanitizer.Sanitize(ToInvariantString(scope), sanitizeControlCharacters));
+                        state.WriteStringValue(ToInvariantString(scope));
                     }
                 }, writer);
                 writer.WriteEndArray();
             }
         }
 
-        private static void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object?> item, bool sanitizeControlCharacters)
+        private static void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object?> item)
         {
-            string key = ConsoleControlCharacterSanitizer.Sanitize(item.Key, sanitizeControlCharacters)!;
+            string key = item.Key;
             switch (item.Value)
             {
                 case bool boolValue:
@@ -177,7 +171,7 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteNumber(key, sbyteValue);
                     break;
                 case char charValue:
-                    writer.WriteString(key, ConsoleControlCharacterSanitizer.Sanitize(new string(charValue, 1), sanitizeControlCharacters));
+                    writer.WriteString(key, new string(charValue, 1));
                     break;
                 case decimal decimalValue:
                     writer.WriteNumber(key, decimalValue);
@@ -210,7 +204,7 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteNull(key);
                     break;
                 default:
-                    writer.WriteString(key, ConsoleControlCharacterSanitizer.Sanitize(ToInvariantString(item.Value), sanitizeControlCharacters));
+                    writer.WriteString(key, ToInvariantString(item.Value));
                     break;
             }
         }

@@ -190,22 +190,19 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        [MemberData(nameof(FormatterNames))]
-        public void Log_ControlCharacters_AreSanitized(string formatterName)
+        [MemberData(nameof(NonJsonFormatterNames))]
+        public void Log_DangerousControlCharacters_AreSanitized(string formatterName)
         {
-            // Arrange
             using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = formatterName },
-                new SimpleConsoleFormatterOptions { SanitizeControlCharacters = true, ColorBehavior = LoggerColorBehavior.Enabled },
-                new ConsoleFormatterOptions { SanitizeControlCharacters = true },
-                new JsonConsoleFormatterOptions { SanitizeControlCharacters = true });
+                new SimpleConsoleFormatterOptions { ColorBehavior = LoggerColorBehavior.Enabled },
+                new ConsoleFormatterOptions(),
+                new JsonConsoleFormatterOptions());
             var logger = (ILogger)t.Logger;
             var sink = t.Sink;
 
-            // Act
             logger.LogInformation("Payload: {Value}", "prefix\u001b[31mtext\u0008\u202E\r\n\tsuffix");
 
-            // Assert
             string output = GetMessage(sink.Writes);
             Assert.DoesNotContain('\u001b', output);
             Assert.DoesNotContain('\u0008', output);
@@ -213,30 +210,25 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Contains("\\u001B", output);
             Assert.Contains("\\u0008", output);
             Assert.Contains("\\u202E", output);
-            Assert.Contains("\\u000D", output);
-            Assert.Contains("\\u000A", output);
-            Assert.Contains("\\u0009", output);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(NonJsonFormatterNames))]
-        public void Log_ControlCharacters_SanitizationCanBeDisabled(string formatterName)
+        public void Log_SafeWhitespace_IsPreserved(string formatterName)
         {
-            // Arrange
             using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = formatterName },
-                new SimpleConsoleFormatterOptions { SanitizeControlCharacters = false, ColorBehavior = LoggerColorBehavior.Enabled },
-                new ConsoleFormatterOptions { SanitizeControlCharacters = false },
-                new JsonConsoleFormatterOptions { SanitizeControlCharacters = false });
+                new SimpleConsoleFormatterOptions { ColorBehavior = LoggerColorBehavior.Enabled },
+                new ConsoleFormatterOptions(),
+                new JsonConsoleFormatterOptions());
             var logger = (ILogger)t.Logger;
             var sink = t.Sink;
 
-            // Act
-            logger.LogInformation("Payload: {Value}", "prefix\u202Esuffix");
+            logger.LogInformation("Line1\nLine2\tIndented");
 
-            // Assert
             string output = GetMessage(sink.Writes);
-            Assert.Contains('\u202E', output);
+            Assert.DoesNotContain("\\u000A", output);
+            Assert.DoesNotContain("\\u0009", output);
         }
 
         private class NullNameConsoleFormatter : ConsoleFormatter

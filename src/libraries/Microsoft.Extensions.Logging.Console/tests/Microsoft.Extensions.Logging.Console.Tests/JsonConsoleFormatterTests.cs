@@ -526,10 +526,12 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
         static string GetContent(Exception exception)
         {
+            // Depending on OS, Environment.NewLine is either '\r\n' OR '\n'
+            string newLineReplacement = Environment.NewLine.Length == 2 ? "\\r\\n" : "\\n";
+
             return exception.ToString()
                 .Replace(@"\", @"\\") // for paths in json content
-                .Replace("\r", "\\\\u000D")
-                .Replace("\n", "\\\\u000A");
+                .Replace(Environment.NewLine, newLineReplacement);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]

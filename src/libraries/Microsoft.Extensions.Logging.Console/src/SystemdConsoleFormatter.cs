@@ -58,10 +58,9 @@ namespace Microsoft.Extensions.Logging.Console
         private void WriteInternal(IExternalScopeProvider? scopeProvider, TextWriter textWriter, string message, LogLevel logLevel, string category,
             int eventId, string? exception, DateTimeOffset stamp)
         {
-            bool sanitizeControlCharacters = FormatterOptions.SanitizeControlCharacters;
-            message = ConsoleControlCharacterSanitizer.Sanitize(message, sanitizeControlCharacters)!;
-            exception = ConsoleControlCharacterSanitizer.Sanitize(exception, sanitizeControlCharacters);
-            category = ConsoleControlCharacterSanitizer.Sanitize(category, sanitizeControlCharacters)!;
+            message = ConsoleControlCharacterSanitizer.Sanitize(message)!;
+            exception = ConsoleControlCharacterSanitizer.Sanitize(exception);
+            category = ConsoleControlCharacterSanitizer.Sanitize(category)!;
 
             // systemd reads messages from standard out line-by-line in a '<pri>message' format.
             // newline characters are treated as message delimiters, so we must replace them.
@@ -87,7 +86,7 @@ namespace Microsoft.Extensions.Logging.Console
             textWriter.Write(']');
 
             // scope information
-            WriteScopeInformation(textWriter, scopeProvider, sanitizeControlCharacters);
+            WriteScopeInformation(textWriter, scopeProvider);
 
             // message
             if (!string.IsNullOrEmpty(message))
@@ -137,14 +136,14 @@ namespace Microsoft.Extensions.Logging.Console
             };
         }
 
-        private void WriteScopeInformation(TextWriter textWriter, IExternalScopeProvider? scopeProvider, bool sanitizeControlCharacters)
+        private void WriteScopeInformation(TextWriter textWriter, IExternalScopeProvider? scopeProvider)
         {
             if (FormatterOptions.IncludeScopes && scopeProvider != null)
             {
                 scopeProvider.ForEachScope((scope, state) =>
                 {
                     state.Write(" => ");
-                    string? scopeMessage = ConsoleControlCharacterSanitizer.Sanitize(scope?.ToString(), sanitizeControlCharacters);
+                    string? scopeMessage = ConsoleControlCharacterSanitizer.Sanitize(scope?.ToString());
                     state.Write(scopeMessage);
                 }, textWriter);
             }

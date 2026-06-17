@@ -715,7 +715,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Equal(
                         levelPrefix + ": test[0]" + Environment.NewLine +
                         _paddingString + "This is a test, and {curly braces} are just fine!" + Environment.NewLine +
-                        _paddingString + "System.Exception: Exception message\\u000Awith a second line" + Environment.NewLine,
+                        _paddingString + "System.Exception: Exception message" + Environment.NewLine +
+                        _paddingString + "with a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
@@ -725,7 +726,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Equal(
                         levelPrefix + "test[0]" + " " +
                         "This is a test, and {curly braces} are just fine!" + " " +
-                        "System.Exception: Exception message\\u000Awith a second line" + Environment.NewLine,
+                        "System.Exception: Exception message" + " " +
+                        "with a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
@@ -1115,7 +1117,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Equal(2, sink.Writes.Count);
                     Assert.Equal(
                         levelPrefix + ": test[0]" + Environment.NewLine +
-                        _paddingString + "System.Exception: Exception message\\u000Awith a second line" + Environment.NewLine,
+                        _paddingString + "System.Exception: Exception message" + Environment.NewLine +
+                        _paddingString + "with a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
@@ -1124,48 +1127,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     Assert.Single(sink.Writes);
                     Assert.Equal(
                         levelPrefix + "test[0]" + " " +
-                        "System.Exception: Exception message\\u000Awith a second line" + Environment.NewLine,
-                        GetMessage(sink.Writes));
-                }
-                break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(format));
-            }
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
-        [MemberData(nameof(FormatsAndLevels))]
-        public void WriteCore_EmptyMessageWithException(ConsoleLoggerFormat format, LogLevel level)
-        {
-            // Arrange
-            using var t = SetUp(new ConsoleLoggerOptions { Format = format });
-            var levelPrefix = t.GetLevelPrefix(level);
-            var logger = t.Logger;
-            var sink = t.Sink;
-            var ex = new Exception("Exception message" + Environment.NewLine + "with a second line");
-            string message = string.Empty;
-
-            // Act
-            logger.Log(level, 0, message, ex, (s, e) => s);
-
-            // Assert
-            switch (format)
-            {
-                case ConsoleLoggerFormat.Default:
-                {
-                    Assert.Equal(2, sink.Writes.Count);
-                    Assert.Equal(
-                        levelPrefix + ": test[0]" + Environment.NewLine +
-                        _paddingString + "System.Exception: Exception message\\u000Awith a second line" + Environment.NewLine,
-                        GetMessage(sink.Writes));
-                }
-                break;
-                case ConsoleLoggerFormat.Systemd:
-                {
-                    Assert.Single(sink.Writes);
-                    Assert.Equal(
-                        levelPrefix + "test[0]" + " " +
-                        "System.Exception: Exception message\\u000Awith a second line" + Environment.NewLine,
+                        "System.Exception: Exception message" + " " +
+                        "with a second line" + Environment.NewLine,
                         GetMessage(sink.Writes));
                 }
                 break;
