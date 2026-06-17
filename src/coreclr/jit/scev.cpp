@@ -1451,7 +1451,18 @@ GenTree* ScalarEvolutionContext::Materialize(Scev* scev)
 {
     ValueNumPair vnp;
     GenTree*     result;
-    return Materialize(scev, true, &result, &vnp) ? result : nullptr;
+
+    // Materializing IR may create nodes before failing partway through (e.g.
+    // when a subexpression cannot be materialized). Snapshot the gen tree ID so
+    // that we can roll it back and avoid leaking IDs for the orphaned nodes.
+    unsigned prevGenTreeID = m_compiler->compGenTreeID;
+    if (Materialize(scev, true, &result, &vnp))
+    {
+        return result;
+    }
+
+    m_compiler->compGenTreeID = prevGenTreeID;
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
