@@ -155,11 +155,11 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact]
-        public void StartSuspended_WithPipeRedirection_Works()
+        public async Task StartSuspended_WithPipeRedirection_Works()
         {
             Process process = CreateProcess(static () =>
             {
-                Console.WriteLine("hello");
+                Console.Write("hello");
                 return RemoteExecutor.SuccessExitCode;
             });
 
@@ -176,17 +176,15 @@ namespace System.Diagnostics.Tests
 
                 // Verify nothing has been written yet while the process is suspended.
                 using FileStream readStream = new(outputReadPipe, FileAccess.Read, bufferSize: 1, outputReadPipe.IsAsync);
-                byte[] buffer = new byte[1];
-                Task<int> readTask = readStream.ReadAsync(buffer, 0, 1);
+                byte[] buffer = new byte[10];
+                Task<int> readTask = readStream.ReadAsync(buffer);
                 Assert.False(readTask.Wait(50), "Suspended process should not have written any output yet.");
 
                 processHandle.Resume();
 
-                using StreamReader streamReader = new(readStream);
-                // The first byte was already read into the buffer by the async read.
-                string firstChar = Encoding.UTF8.GetString(buffer, 0, readTask.GetAwaiter().GetResult());
-                string? rest = streamReader.ReadLine();
-                Assert.Equal("hello", firstChar + rest);
+                int bytesRead = await readTask;
+                string content = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                Assert.Equal("hello", content);
 
                 ProcessExitStatus exitStatus = processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
                 Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
