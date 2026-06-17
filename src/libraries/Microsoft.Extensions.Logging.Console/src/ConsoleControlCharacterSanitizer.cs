@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Globalization;
 using System.Text;
 
@@ -21,8 +22,8 @@ namespace Microsoft.Extensions.Logging.Console
                 return value;
             }
 
-            var sanitized = new StringBuilder(value.Length + 8);
-            sanitized.Append(value, 0, firstEscapedCharacterIndex);
+            var sanitized = new ValueStringBuilder(stackalloc char[256]);
+            sanitized.Append(value.AsSpan(0, firstEscapedCharacterIndex));
 
             for (int i = firstEscapedCharacterIndex; i < value.Length; i++)
             {
