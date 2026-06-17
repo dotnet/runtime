@@ -771,6 +771,7 @@ namespace System.Net.WebSockets
         /// <param name="cancellationToken">The CancellationToken used to cancel the websocket.</param>
         /// <returns>Information about the received message.</returns>
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<TResult> ReceiveAsyncPrivate<TResult>(Memory<byte> payloadBuffer, CancellationToken cancellationToken)
         {
             // This is a long method.  While splitting it up into pieces would arguably help with readability, doing so would
@@ -1599,6 +1600,7 @@ namespace System.Net.WebSockets
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask EnsureBufferContainsAsync(int minimumRequiredBytes, CancellationToken cancellationToken)
         {
             Debug.Assert(minimumRequiredBytes <= _receiveBuffer.Length, $"Requested number of bytes {minimumRequiredBytes} must not exceed {_receiveBuffer.Length}");
@@ -1918,13 +1920,13 @@ namespace System.Net.WebSockets
         {
             if (messageType is not (WebSocketMessageType.Text or WebSocketMessageType.Binary))
             {
-                ThrowInvalidMessageType(paramName);
+                ThrowInvalidMessageType(messageType, paramName);
             }
 
-            static void ThrowInvalidMessageType(string? paramName) =>
+            static void ThrowInvalidMessageType(WebSocketMessageType messageType, string? paramName) =>
                 throw new ArgumentException(SR.Format(
                     SR.net_WebSockets_Argument_InvalidMessageType,
-                    nameof(WebSocketMessageType.Close), nameof(SendAsync), nameof(WebSocketMessageType.Binary), nameof(WebSocketMessageType.Text), nameof(CloseOutputAsync)),
+                    messageType, nameof(SendAsync), nameof(WebSocketMessageType.Binary), nameof(WebSocketMessageType.Text), nameof(CloseOutputAsync)),
                     paramName);
         }
 

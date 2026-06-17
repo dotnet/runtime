@@ -268,6 +268,14 @@ internal partial class StackWalk_1 : IStackWalk
             }
         }
 
+        // Report the thread's GCFrame (GCPROTECT) chain: each GCFrame keeps a set of object
+        // references alive across a runtime operation, so report them as roots.
+        ReportGCFrameRoots(threadData, scanContext);
+
+        // Report the thread's exception-tracking (ExInfo) chain: the current in-flight exception
+        // and any superseded/nested ones are kept alive by the runtime, so report them as roots.
+        ReportExceptionTrackerRoots(threadData, scanContext);
+
         return scanContext.StackRefs.Select(r => new StackReferenceData
         {
             HasRegisterInformation = r.HasRegisterInformation,
@@ -277,10 +285,69 @@ internal partial class StackWalk_1 : IStackWalk
             Address = r.Address,
             Object = r.Object,
             Flags = (uint)r.Flags,
-            IsStackSourceFrame = r.SourceType == StackRefData.SourceTypes.StackSourceFrame,
+            SourceType = r.SourceType switch
+            {
+                StackRefData.SourceTypes.StackSourceIP => StackSourceType.InstructionPointer,
+                StackRefData.SourceTypes.StackSourceFrame => StackSourceType.Frame,
+                _ => StackSourceType.Other,
+            },
             Source = r.Source,
             StackPointer = r.StackPointer,
         }).ToList();
+    }
+
+    // Reports each in-flight exception object held on the thread's exception-tracking (ExInfo)
+    // chain: the current exception and any superseded/nested ones. The GC reports the same set in
+    // gcenv.ee.cpp ScanStackRoots.
+    private void ReportExceptionTrackerRoots(ThreadData threadData, GcScanContext scanContext)
+    {
+        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadData.ThreadAddress);
+        TargetPointer pExInfo = _target.ReadPointer(thread.ExceptionTracker);
+        if (pExInfo == TargetPointer.Null)
+            return;
+
+        IException exceptionContract = _target.Contracts.Exception;
+        HashSet<TargetPointer> seen = new();
+        while (pExInfo != TargetPointer.Null)
+        {
+            if (!seen.Add(pExInfo))
+                throw new InvalidOperationException($"Found a cycle when processing ExInfo.");
+
+            // GetNestedExceptionInfo yields the address of the thrown-object slot (ExInfo::m_exception)
+            // and the previous (nested) ExInfo; GCReportCallback reads the object through that slot.
+            // ExInfo lives on the stack but is not a Frame, so it is treated specially here.
+            exceptionContract.GetNestedExceptionInfo(pExInfo, out TargetPointer previous, out TargetPointer thrownObjectSlot);
+            scanContext.UpdateScanContext(pExInfo, TargetPointer.Null, pExInfo, StackRefData.SourceTypes.StackSourceOther);
+            scanContext.GCReportCallback(thrownObjectSlot, GcScanFlags.None);
+            pExInfo = previous;
+        }
+    }
+
+    // Reports each object reference protected by the thread's GCFrame (GCPROTECT) chain.
+    // GCFrame::GcScanRoots reports m_pObjRefs[0..m_numObjRefs), using an interior promotion when
+    // m_gcFlags != 0; the GC reports the same set in gcenv.ee.cpp ScanStackRoots.
+    private void ReportGCFrameRoots(ThreadData threadData, GcScanContext scanContext)
+    {
+        ulong pointerSize = (ulong)_target.PointerSize;
+        HashSet<TargetPointer> seen = [];
+        TargetPointer pGCFrame = threadData.GCFrame;
+        while (pGCFrame != TargetPointer.Null)
+        {
+            if (!seen.Add(pGCFrame))
+                throw new InvalidOperationException($"Found a cycle when processing ThreadData.GCFrame list.");
+
+            Data.GCFrame gcFrame = _target.ProcessedData.GetOrAdd<Data.GCFrame>(pGCFrame);
+
+            // A GCFrame node lives on the stack but is a separate chain from the explicit Frame chain.
+            scanContext.UpdateScanContext(pGCFrame, TargetPointer.Null, pGCFrame, StackRefData.SourceTypes.StackSourceOther);
+            GcScanFlags flags = (GcScanFlags)gcFrame.GCFlags;
+            for (uint i = 0; i < gcFrame.NumObjRefs; i++)
+            {
+                TargetPointer slot = new(gcFrame.ObjRefs.Value + (ulong)i * pointerSize);
+                scanContext.GCReportCallback(slot, flags);
+            }
+            pGCFrame = gcFrame.Next;
+        }
     }
 
     private record GCFrameData

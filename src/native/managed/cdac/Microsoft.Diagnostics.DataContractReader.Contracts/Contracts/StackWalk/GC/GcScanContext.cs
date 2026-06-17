@@ -16,17 +16,42 @@ internal class GcScanContext
     public TargetPointer InstructionPointer { get; private set; }
     public TargetPointer Frame { get; private set; }
 
+    // When set, overrides the default IP/Frame source-type classification for reported roots.
+    // Used to mark roots reported outside the frame walk (GCFrame/GCPROTECT and ExInfo chains)
+    // as StackSourceOther, since their Source is a node address rather than a capital-F Frame.
+    private StackRefData.SourceTypes? _sourceTypeOverride;
+
     public GcScanContext(Target target, bool resolveInteriorPointers)
     {
         _target = target;
         ResolveInteriorPointers = resolveInteriorPointers;
     }
 
-    public void UpdateScanContext(TargetPointer sp, TargetPointer ip, TargetPointer frame)
+    public void UpdateScanContext(TargetPointer sp, TargetPointer ip, TargetPointer frame, StackRefData.SourceTypes? sourceTypeOverride = null)
     {
         StackPointer = sp;
         InstructionPointer = ip;
         Frame = frame;
+        _sourceTypeOverride = sourceTypeOverride;
+    }
+
+    private void SetSource(StackRefData data)
+    {
+        if (_sourceTypeOverride is StackRefData.SourceTypes sourceType)
+        {
+            data.SourceType = sourceType;
+            data.Source = Frame;
+        }
+        else if (Frame != TargetPointer.Null)
+        {
+            data.SourceType = StackRefData.SourceTypes.StackSourceFrame;
+            data.Source = Frame;
+        }
+        else
+        {
+            data.SourceType = StackRefData.SourceTypes.StackSourceIP;
+            data.Source = InstructionPointer;
+        }
     }
 
     public void RecordDeferredFrame(TargetPointer frameAddress)
@@ -81,16 +106,7 @@ internal class GcScanContext
             StackPointer = StackPointer,
         };
 
-        if (Frame != TargetPointer.Null)
-        {
-            data.SourceType = StackRefData.SourceTypes.StackSourceFrame;
-            data.Source = Frame;
-        }
-        else
-        {
-            data.SourceType = StackRefData.SourceTypes.StackSourceIP;
-            data.Source = InstructionPointer;
-        }
+        SetSource(data);
 
         StackRefs.Add(data);
     }
@@ -104,8 +120,7 @@ internal class GcScanContext
             throw new NotImplementedException();
         }
 
-        // Read the object pointer from the stack slot, matching legacy DAC behavior
-        // (DacStackReferenceWalker::GCReportCallback in daccess.cpp)
+        // Read the object pointer from the stack slot.
         TargetPointer obj = _target.ReadPointer(ppObj);
 
         StackRefData data = new()
@@ -120,16 +135,7 @@ internal class GcScanContext
             StackPointer = StackPointer,
         };
 
-        if (Frame != TargetPointer.Null)
-        {
-            data.SourceType = StackRefData.SourceTypes.StackSourceFrame;
-            data.Source = Frame;
-        }
-        else
-        {
-            data.SourceType = StackRefData.SourceTypes.StackSourceIP;
-            data.Source = InstructionPointer;
-        }
+        SetSource(data);
 
         StackRefs.Add(data);
     }

@@ -139,7 +139,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Store(0));
 
             // Build the arguments for the R2R call_indirect.
-            // Target R2R wasm params: ($sp, [retbuf], [this], explicit_params..., portableEntrypoint)
+            // Target R2R wasm params: ($sp, [this], [retbuf], explicit_params..., portableEntrypoint)
+            // (matches Compiler::lvaInitArgs / WasmR2RToInterpreterThunkNode local order.)
             // We track targetParamIndex to look up the correct wasm type for each arg.
             int targetParamIndex = 0;
 
@@ -154,13 +155,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(Global.Get(WasmObjectWriter.StackPointerGlobalIndex));
             targetParamIndex++;
 
-            // If the R2R function takes a return buffer, pass pRet directly as the retbuf arg
-            if (hasRetBuffArg)
-            {
-                expressions.Add(Local.Get(LocalPRet));
-                targetParamIndex++;
-            }
-
             // If the method has a 'this' pointer, load it from pArgs at offset 0
             // (ArgIterator offset for this = OffsetOfArgumentRegisters = SizeOfTransitionBlock)
             if (hasThis)
@@ -168,6 +162,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 int thisInterpOffset = transitionBlock.OffsetOfArgumentRegisters - sizeOfTransitionBlock;
                 expressions.Add(Local.Get(LocalPArgs));
                 expressions.Add(I32.Load((ulong)thisInterpOffset));
+                targetParamIndex++;
+            }
+
+            // If the R2R function takes a return buffer, pass pRet directly as the retbuf arg
+            if (hasRetBuffArg)
+            {
+                expressions.Add(Local.Get(LocalPRet));
                 targetParamIndex++;
             }
 

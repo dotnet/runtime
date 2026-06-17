@@ -4388,7 +4388,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (op4->IsIntegralConst())
             {
-                uint8_t                 control  = static_cast<uint8_t>(op4->AsIntCon()->gtIconVal);
+                uint8_t                 control  = static_cast<uint8_t>(op4->AsIntCon()->IconValue());
                 const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
                 TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
 
@@ -4756,7 +4756,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                     *val2 = gtNewZeroConNode(retType);
                                 }
 
-                                op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~0xAA);
+                                op4->AsIntCon()->SetIconValue(static_cast<uint8_t>(~0xAA));
                                 break;
                             }
 
@@ -4812,7 +4812,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                     *val1 = gtNewZeroConNode(retType);
                                 }
 
-                                op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~0xCC | 0xAA);
+                                op4->AsIntCon()->SetIconValue(static_cast<uint8_t>(~0xCC | 0xAA));
                             }
                             break;
                         }
@@ -4855,7 +4855,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                 *val1 = gtNewZeroConNode(retType);
                             }
 
-                            op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~(0xCC & 0xAA));
+                            op4->AsIntCon()->SetIconValue(static_cast<uint8_t>(~(0xCC & 0xAA)));
                             break;
                         }
 
@@ -4897,7 +4897,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                 *val1 = gtNewZeroConNode(retType);
                             }
 
-                            op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~(0xCC | 0xAA));
+                            op4->AsIntCon()->SetIconValue(static_cast<uint8_t>(~(0xCC | 0xAA)));
                             break;
                         }
 
@@ -4939,7 +4939,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                 *val1 = gtNewZeroConNode(retType);
                             }
 
-                            op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~(0xCC ^ 0xAA));
+                            op4->AsIntCon()->SetIconValue(static_cast<uint8_t>(~(0xCC ^ 0xAA)));
                             break;
                         }
 

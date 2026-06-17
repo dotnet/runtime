@@ -184,7 +184,6 @@ class DacDbiInterfaceImpl;
 // whenever we compare it to a PTR_Frame value (the usual use of the value).
 #define FRAME_TOP_VALUE  ~0     // we want to say -1 here, but gcc has trouble with the signed value
 #define FRAME_TOP (PTR_Frame(FRAME_TOP_VALUE))
-#define GCFRAME_TOP (PTR_GCFrame(FRAME_TOP_VALUE))
 
 
 enum class FrameIdentifier : TADDR
@@ -1808,6 +1807,17 @@ private:
 #ifdef FEATURE_INTERPRETER
     PTR_VOID      m_osStackLocation;
 #endif
+
+    friend struct ::cdac_data<GCFrame>;
+};
+
+template<>
+struct cdac_data<GCFrame>
+{
+    static constexpr size_t Next = offsetof(GCFrame, m_Next);
+    static constexpr size_t ObjRefs = offsetof(GCFrame, m_pObjRefs);
+    static constexpr size_t NumObjRefs = offsetof(GCFrame, m_numObjRefs);
+    static constexpr size_t GCFlags = offsetof(GCFrame, m_gcFlags);
 };
 
 //-----------------------------------------------------------------------------
