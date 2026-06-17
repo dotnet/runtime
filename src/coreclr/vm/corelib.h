@@ -1008,6 +1008,9 @@ DEFINE_CLASS(EXCEPTION_DISPATCH_INFO, ExceptionServices,      ExceptionDispatchI
 DEFINE_METHOD(EXCEPTION_DISPATCH_INFO, CAPTURE, Capture, NoSig)
 DEFINE_METHOD(EXCEPTION_DISPATCH_INFO, THROW, Throw, IM_RetVoid)
 
+DEFINE_CLASS(EXCEPTION_HANDLING, ExceptionServices,         ExceptionHandling)
+DEFINE_FIELD(EXCEPTION_HANDLING, FATAL_ERROR_HANDLER,       s_fatalErrorHandler)
+
 DEFINE_CLASS_U(Loader,             AssemblyLoadContext,           AssemblyLoadContextBaseObject)
 DEFINE_FIELD_U(_unloadLock,                 AssemblyLoadContextBaseObject, _unloadLock)
 DEFINE_FIELD_U(_resolvingUnmanagedDll,      AssemblyLoadContextBaseObject, _resolvingUnmanagedDll)

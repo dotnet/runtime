@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -163,7 +164,14 @@ unsafe class FatalErrorHandlerTest
 
         Process child = new();
         child.StartInfo.FileName = Environment.ProcessPath;
-        child.StartInfo.Arguments = scenario;
+
+        // For NativeAOT, Assembly.Location is empty — the process IS the test binary.
+        // For CoreCLR, we need to pass the DLL path as the first argument to corerun.
+        string assemblyLocation = Assembly.GetExecutingAssembly().Location;
+        child.StartInfo.Arguments = !string.IsNullOrEmpty(assemblyLocation)
+            ? $"\"{assemblyLocation}\" {scenario}"
+            : $" {scenario}";
+
         child.StartInfo.RedirectStandardError = true;
         child.StartInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
         child.ErrorDataReceived += (_, e) =>

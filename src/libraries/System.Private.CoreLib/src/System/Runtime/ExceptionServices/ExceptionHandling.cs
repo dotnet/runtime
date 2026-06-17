@@ -11,9 +11,7 @@ namespace System.Runtime.ExceptionServices
     public static class ExceptionHandling
     {
         private static Func<Exception, bool>? s_handler;
-#if !MONO && !CORECLR
         internal static IntPtr s_fatalErrorHandler;
-#endif
 
         internal static bool IsHandledByGlobalHandler(Exception ex)
         {
@@ -70,7 +68,7 @@ namespace System.Runtime.ExceptionServices
         [CLSCompliant(false)]
         public static unsafe void SetFatalErrorHandler(delegate* unmanaged<int, void*, int> handler)
         {
-#if MONO || CORECLR
+#if MONO
             throw new PlatformNotSupportedException();
 #else
             ArgumentNullException.ThrowIfNull(handler);

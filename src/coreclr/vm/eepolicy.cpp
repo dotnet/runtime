@@ -668,6 +668,72 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
     }
 }
 
+//
+// Fatal error handler invocation support.
+// Uses the public FatalErrorHandling.h header for shared type definitions.
+//
+
+#include <public/FatalErrorHandling.h>
+
+using FatalErrorHandlerFunc = int(*)(int hresult, void* errorData);
+
+static void GetFatalErrorLogCallback(FatalErrorInfo* errorData, FatalErrorLogAction pfnLogAction, void* userContext)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    size_t length = 0;
+    char* buffer = GetCrashLogBuffer(&length);
+    if (length > 0 && pfnLogAction != nullptr)
+        pfnLogAction(buffer, userContext);
+}
+
+// Invokes the user-registered fatal error handler if one has been set.
+// Returns true if the handler indicated that default handling should be skipped.
+static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address, PEXCEPTION_POINTERS pExceptionInfo)
+{
+    WRAPPER_NO_CONTRACT;
+
+    // We are in a fatal error path — suppress all contract enforcement.
+    CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
+
+    bool skipDefault = false;
+
+    EX_TRY
+    {
+        FatalErrorHandlerFunc pfnHandler;
+        {
+            // CoreLibBinder::GetField requires GC_TRIGGERS and
+            // GetCurrentStaticAddress requires MODE_COOPERATIVE.
+            GCX_COOP();
+            FieldDesc* pFD = CoreLibBinder::GetField(FIELD__EXCEPTION_HANDLING__FATAL_ERROR_HANDLER);
+            pfnHandler = reinterpret_cast<FatalErrorHandlerFunc>(pFD->GetStaticValuePtr());
+        }
+        if (pfnHandler != NULL)
+        {
+            GCX_PREEMP();
+            FatalErrorInfo errorInfo{};
+            errorInfo.size = sizeof(FatalErrorInfo);
+            errorInfo.address = reinterpret_cast<void*>(address);
+            if (pExceptionInfo != NULL)
+            {
+                errorInfo.info = pExceptionInfo->ExceptionRecord;
+                errorInfo.context = pExceptionInfo->ContextRecord;
+            }
+            errorInfo.pfnGetFatalErrorLog = GetFatalErrorLogCallback;
+
+            // Call user-defined fatal error handler.
+            int result = pfnHandler(static_cast<int>(exitCode), &errorInfo);
+            skipDefault = (result == SkipDefaultHandler);
+        }
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH
+
+    return skipDefault;
+}
+
 void DisplayStackOverflowException()
 {
     LIMITED_METHOD_CONTRACT;
@@ -697,6 +763,8 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     GCStressPolicy::InhibitHolder iholder;
 
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleFatalStackOverflow\n");
+
+    EnableCrashLogCapture();
 
     FaultingExceptionFrame fef;
     if (pExceptionInfo->ContextRecord)
@@ -845,6 +913,13 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     if (g_LogStackOverflowExit)
         PrintToStdErrA("@Terminating the process.\n");
 #endif
+
+    UINT_PTR soAddress = pExceptionInfo->ContextRecord ? GetIP(pExceptionInfo->ContextRecord) : 0;
+    if (InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress, pExceptionInfo))
+    {
+        _exit(COR_E_STACKOVERFLOW);
+    }
+
     CrashDumpAndTerminateProcess(COR_E_STACKOVERFLOW);
     UNREACHABLE();
 }
@@ -927,8 +1002,16 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 
         g_fFastExitProcess = 2;
 
+        EnableCrashLogCapture();
+
         STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
         LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
+
+        if (InvokeFatalErrorHandler(exitCode, address, pExceptionInfo))
+        {
+            _exit(exitCode);
+        }
+
         SafeExitProcess(exitCode, SCA_TerminateProcessWhenShutdownComplete);
     }
 

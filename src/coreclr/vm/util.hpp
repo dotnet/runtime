@@ -188,6 +188,9 @@ class CQuickHeap
 void PrintToStdErrA(const char *pszString);
 void PrintToStdErrW(const WCHAR *pwzString);
 
+void EnableCrashLogCapture();
+char* GetCrashLogBuffer(size_t* pLength);
+
 #include "nativevaraccessors.h"
 
 // --------------------------------------------------------------------------------

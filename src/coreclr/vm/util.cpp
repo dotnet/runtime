@@ -120,6 +120,30 @@ LPVOID CQuickHeap::Alloc(UINT sz)
 // Output functions that avoid the crt's.
 //----------------------------------------------------------------------------
 
+static char s_crashLogBuffer[8192];
+static size_t s_crashLogPos = 0;
+static bool s_crashLogActive = false;
+
+void EnableCrashLogCapture()
+{
+    LIMITED_METHOD_CONTRACT;
+    s_crashLogActive = true;
+}
+
+char* GetCrashLogBuffer(size_t* pLength)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Ensure null termination when requested.
+    size_t nullTerminatorPos = (s_crashLogPos < ARRAY_SIZE(s_crashLogBuffer))
+        ? s_crashLogPos
+        : ARRAY_SIZE(s_crashLogBuffer) - 1;
+    s_crashLogBuffer[nullTerminatorPos] = '\0';
+
+    *pLength = s_crashLogPos;
+    return s_crashLogBuffer;
+}
+
 void PrintToStdErrA(const char *pszString)
 {
     CONTRACTL
@@ -131,6 +155,19 @@ void PrintToStdErrA(const char *pszString)
     CONTRACTL_END
 
     minipal_log_write_error(pszString);
+
+    if (s_crashLogActive)
+    {
+        size_t len = strlen(pszString);
+        size_t remaining = ARRAY_SIZE(s_crashLogBuffer) - s_crashLogPos;
+        if (len > remaining)
+            len = remaining;
+        if (len > 0)
+        {
+            memcpy(s_crashLogBuffer + s_crashLogPos, pszString, len);
+            s_crashLogPos += len;
+        }
+    }
 }
 
 void PrintToStdErrW(const WCHAR *pwzString)
