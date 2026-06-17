@@ -174,13 +174,21 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         case GT_CNS_DBL:
         {
             emitter*  emit       = GetEmitter();
-            double    constValue = tree->AsDblCon()->DconValue();
             regNumber tmpReg     = internalRegisters.GetSingle(tree);
-        
-            int64_t bits = *reinterpret_cast<int64_t*>(&constValue);
+            int64_t bits;
+
+            if (targetType == TYP_FLOAT)
+            {
+                float constValue = (float)tree->AsDblCon()->DconValue();
+                bits = (uint64_t)*reinterpret_cast<uint32_t*>(&constValue) << 32;
+            }
+            else
+            {
+                double constValue = tree->AsDblCon()->DconValue();
+                bits = *reinterpret_cast<int64_t*>(&constValue);
+            }
             instGen_Set_Reg_To_Imm(EA_8BYTE, tmpReg, bits);
             emit->emitIns_R_R(INS_ldgr, EA_8BYTE, targetReg, tmpReg);
-        
             regSet.verifyRegUsed(targetReg);
         }
         break;

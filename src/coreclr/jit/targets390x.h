@@ -46,8 +46,8 @@
 
   #define REG_FP_FIRST             REG_F0
   #define REG_FP_LAST              REG_F15
-  #define FIRST_FP_ARGREG          REG_V0
-  #define LAST_FP_ARGREG           REG_V15
+  #define FIRST_FP_ARGREG          REG_F0
+  #define LAST_FP_ARGREG           REG_F15
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
@@ -235,9 +235,9 @@
   #define REG_INTRET_1             REG_R3
   #define RBM_INTRET_1             RBM_R3
 
-  #define REG_FLOATRET             REG_V0
-  #define RBM_FLOATRET             RBM_V0
-  #define RBM_DOUBLERET            RBM_V0
+  #define REG_FLOATRET             REG_F0
+  #define RBM_FLOATRET             RBM_F0
+  #define RBM_DOUBLERET            RBM_F0
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
   #define RBM_STOP_FOR_GC_TRASH    RBM_CALLEE_TRASH
@@ -272,8 +272,8 @@
 
   #define REG_ARG_FIRST            REG_R2
   #define REG_ARG_LAST             REG_R6
-  #define REG_ARG_FP_FIRST         REG_V0
-  #define REG_ARG_FP_LAST          REG_V7
+  #define REG_ARG_FP_FIRST         REG_F0
+  #define REG_ARG_FP_LAST          REG_F7
   #define INIT_ARG_STACK_SLOT      0                  // No outgoing reserved stack slots
 
   #define REG_ARG_0                REG_R2
@@ -291,23 +291,23 @@
   #define RBM_ARG_3                RBM_R5
   #define RBM_ARG_4                RBM_R6
 
-  #define REG_FLTARG_0             REG_V0
-  #define REG_FLTARG_1             REG_V1
-  #define REG_FLTARG_2             REG_V2
-  #define REG_FLTARG_3             REG_V3
-  #define REG_FLTARG_4             REG_V4
-  #define REG_FLTARG_5             REG_V5
-  #define REG_FLTARG_6             REG_V6
-  #define REG_FLTARG_7             REG_V7
+  #define REG_FLTARG_0             REG_F0
+  #define REG_FLTARG_1             REG_F1
+  #define REG_FLTARG_2             REG_F2
+  #define REG_FLTARG_3             REG_F3
+  #define REG_FLTARG_4             REG_F4
+  #define REG_FLTARG_5             REG_F5
+  #define REG_FLTARG_6             REG_F6
+  #define REG_FLTARG_7             REG_F7
 
-  #define RBM_FLTARG_0             RBM_V0
-  #define RBM_FLTARG_1             RBM_V1
-  #define RBM_FLTARG_2             RBM_V2
-  #define RBM_FLTARG_3             RBM_V3
-  #define RBM_FLTARG_4             RBM_V4
-  #define RBM_FLTARG_5             RBM_V5
-  #define RBM_FLTARG_6             RBM_V6
-  #define RBM_FLTARG_7             RBM_V7
+  #define RBM_FLTARG_0             RBM_F0
+  #define RBM_FLTARG_1             RBM_F1
+  #define RBM_FLTARG_2             RBM_F2
+  #define RBM_FLTARG_3             RBM_F3
+  #define RBM_FLTARG_4             RBM_F4
+  #define RBM_FLTARG_5             RBM_F5
+  #define RBM_FLTARG_6             RBM_F6
+  #define RBM_FLTARG_7             RBM_F7
 
   #define RBM_ARG_REGS            (RBM_ARG_0|RBM_ARG_1|RBM_ARG_2|RBM_ARG_3|RBM_ARG_4)
   #define RBM_FLTARG_REGS         (RBM_FLTARG_0|RBM_FLTARG_1|RBM_FLTARG_2|RBM_FLTARG_3|RBM_FLTARG_4|RBM_FLTARG_5|RBM_FLTARG_6|RBM_FLTARG_7)
