@@ -309,7 +309,7 @@ namespace System.Threading
                     // Check here rather than at entry to keep the hot path as tight as possible.
                     // The uninitialized 0 id is also ruled out by this check.
                     // If the id doesn't fit, we fall through and call TryAcquireUncommon outside the
-                    // fixed block to avoid keeping the object pinned while potentially blocking.
+                    // fixed block to avoid keeping the object pinned while potentially spinning.
                     if ((uint)(currentThreadID - 1) < (uint)SBLK_MASK_LOCK_THREADID)
                     {
                         if (Interlocked.CompareExchange(pHeader, oldBits | currentThreadID, oldBits) == oldBits)
@@ -332,7 +332,7 @@ namespace System.Threading
 
             // Everything else (id doesn't fit, lost race, hashcode, etc.) is handled by uncommon.
             // This call is outside the fixed block to avoid keeping the object pinned while
-            // potentially blocking in the spin loop.
+            // potentially spinning.
             return TryAcquireUncommon(obj, currentThreadID, isOneShot);
         }
 

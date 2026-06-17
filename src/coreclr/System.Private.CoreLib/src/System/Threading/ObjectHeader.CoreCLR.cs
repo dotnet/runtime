@@ -93,29 +93,17 @@ namespace System.Threading
         //
 
         // Try acquiring the thin-lock.
+        // The common cases (free lock, fat lock) are handled inline. A thread id that doesn't fit,
+        // recursive acquisition, contention and lost races are rarer and less performance sensitive,
+        // so they are handled out of line in AcquireUncommon to keep this inlined fast path small.
         // The public entry point spins by default (e.g. a blocking Monitor.Enter). Callers that want a
         // single attempt (e.g. Monitor.TryEnter) pass isOneShot: true to succeed only if the lock is
         // currently unowned.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static HeaderLockResult AcquireThinLock(object obj, bool isOneShot = false)
+        public static unsafe HeaderLockResult AcquireThinLock(object obj, bool isOneShot = false)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            HeaderLockResult result = Acquire(obj);
-            if (result == HeaderLockResult.Failure && !isOneShot)
-            {
-                return TryAcquireThinLockSpin(obj);
-            }
-            return result;
-        }
-
-        // Try acquiring the thin-lock in a single attempt.
-        // The common cases (free lock, fat lock) are handled inline. Recursive acquisition and
-        // contention are rarer and less performance sensitive, so they are handled out of line in
-        // AcquireUncommon to keep this inlined fast path small.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe HeaderLockResult Acquire(object obj)
-        {
             int currentThreadID = ManagedThreadId.Current;
 
             fixed (byte* pObjectData = &obj.GetRawData())
@@ -132,80 +120,49 @@ namespace System.Threading
                     // unusual to have a thread ID that doesn't fit in the thin-lock field.
                     // Check here rather than at entry to keep the hot path as tight as possible.
                     // The uninitialized 0 id is also ruled out by this check.
-                    if ((uint)(currentThreadID - 1) >= (uint)SBLK_MASK_LOCK_THREADID)
+                    // If the id doesn't fit, we fall through and call AcquireUncommon outside the
+                    // fixed block to avoid keeping the object pinned while potentially spinning.
+                    if ((uint)(currentThreadID - 1) < (uint)SBLK_MASK_LOCK_THREADID)
                     {
-                        return HeaderLockResult.UseSlowPath;
-                    }
-
-                    if (Interlocked.CompareExchange(pHeader, oldBits | currentThreadID, oldBits) == oldBits)
-                    {
-                        return HeaderLockResult.Success;
+                        if (Interlocked.CompareExchange(pHeader, oldBits | currentThreadID, oldBits) == oldBits)
+                        {
+                            return HeaderLockResult.Success;
+                        }
                     }
                 }
-
                 // Another common case: the header has a hashcode or syncblock index, or another thread
                 // is upgrading it (spin lock). We cannot use a thin-lock.
-                if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0)
+                else if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0)
                 {
                     return HeaderLockResult.UseSlowPath;
                 }
-
-                // Everything else - a recursive acquire, contention or a lost race - is uncommon and
-                // handled out of line.
-                return AcquireUncommon(pHeader, oldBits, currentThreadID);
             }
+
+            // Everything else (id doesn't fit, lost race, recursive acquire, contention) is handled by
+            // AcquireUncommon. This call is outside the fixed block to avoid keeping the object pinned
+            // while potentially spinning.
+            return AcquireUncommon(obj, currentThreadID, isOneShot);
         }
 
-        // Handles the uncommon thin-lock acquire cases: recursive acquisition and contention.
-        // 'oldBits' is the header value that prevented the inline fast path in Acquire from
-        // completing. Kept out of line so the common path stays small.
+        // Handles the uncommon thin-lock acquire cases: a thread id that doesn't fit, recursive
+        // acquisition, contention and lost races. The spin loop used while the lock is owned by
+        // another thread is folded in here. Kept out of line so the common path stays small.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe HeaderLockResult AcquireUncommon(int* pHeader, int oldBits, int currentThreadID)
+        private static unsafe HeaderLockResult AcquireUncommon(object obj, int currentThreadID, bool isOneShot)
         {
-            // Thread IDs that don't fit in the thin-lock field cannot use thin locks. This check is
-            // deferred to here (rather than at entry) because it is unusual to be true.
-            if ((uint)(currentThreadID - 1) >= (uint)SBLK_MASK_LOCK_THREADID)
-            {
-                return HeaderLockResult.UseSlowPath;
-            }
-
-            // We have the thin-lock layout but the lock is not free.
-            // If we do not already own it, the lock is held by somebody else.
-            if ((oldBits & SBLK_MASK_LOCK_THREADID) != currentThreadID)
-            {
-                return HeaderLockResult.Failure;
-            }
-
-            // We own the lock: this is a recursive acquire. Increment the recursion level and check
-            // for overflow.
-            int newBits = oldBits + SBLK_LOCK_RECLEVEL_INC;
-            if ((newBits & SBLK_MASK_LOCK_RECLEVEL) == 0)
-            {
-                // overflow, need to transition to a fat Lock
-                return HeaderLockResult.UseSlowPath;
-            }
-
-            if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
-            {
-                return HeaderLockResult.Success;
-            }
-
-            // Someone else touched the header bits. Let the caller retry/spin or inflate.
-            return HeaderLockResult.Failure;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe HeaderLockResult TryAcquireThinLockSpin(object obj)
-        {
-            int currentThreadID = ManagedThreadId.Current;
-
             // A thin lock can only store a thread id that is initialized (non-zero) and fits in the
             // thread-id field. A single unsigned comparison rules out both the uninitialized 0 id and
-            // ids that are too large; such threads must use the slow/fat path.
+            // ids that are too large; such threads must use the slow/fat path. This check is deferred
+            // to here (rather than at entry) because it is unusual to be true.
             if ((uint)(currentThreadID - 1) >= (uint)SBLK_MASK_LOCK_THREADID)
                 return HeaderLockResult.UseSlowPath;
 
-            int retries = Lock.IsSingleProcessor ? 0 : 16;
+            // A one-shot acquire does not spin while the lock is owned by another thread, but it still
+            // retries the rare CAS failures below where the lock is not owned by somebody else: a caller
+            // that knows the lock is unowned expects a one-shot acquire to succeed.
+            // Lock.IsSingleProcessor is lazily initialized at the first contended acquire; until then it
+            // is false and we assume a multicore machine.
+            int retries = isOneShot || Lock.IsSingleProcessor ? 0 : 16;
 
             // retry when the lock is owned by somebody else.
             // this loop will spinwait between iterations.
