@@ -214,14 +214,10 @@ ThePreStubPatchLabel:
 // void ResolveWorkerAsmStub(r0, r1, r2, r3, [sp]:IndirectionCellAndFlags, r12:DispatchToken)
 //
 // The stub dispatch thunk which transfers control to VSD_ResolveWorker.
-        NESTED_ENTRY ResolveWorkerAsmStub_FakeProlog, _TEXT, NoHandler
+        NESTED_ENTRY ResolveWorkerAsmStub, _TEXT, NoHandler
 
         // Match what the virtual dispatch slow path has pushed.
-        PROLOG_PUSH  {r3}
-
-        // This is where execution really starts.
-ResolveWorkerAsmStub:
-        .global ResolveWorkerAsmStub
+        .save r3
 
         PROLOG_PUSH  {r0-r2}
 
