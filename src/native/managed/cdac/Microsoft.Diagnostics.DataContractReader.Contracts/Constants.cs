@@ -114,6 +114,7 @@ public static class Constants
 
         public const string Architecture = nameof(Architecture);
         public const string OperatingSystem = nameof(OperatingSystem);
+        public const string RuntimeFlavor = nameof(RuntimeFlavor);
 
         public const string GCInfoVersion = nameof(GCInfoVersion);
         public const string GCLowestAddress = nameof(GCLowestAddress);

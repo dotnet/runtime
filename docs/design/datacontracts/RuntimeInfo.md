@@ -24,6 +24,14 @@ public enum RuntimeInfoOperatingSystem : uint
     Browser,
     Apple,
 }
+
+public enum RuntimeInfoRuntimeFlavor : uint
+{
+    Unknown = 0,
+    Coreclr,
+    Mono,
+    NativeAot,
+}
 ```
 
 ```csharp
@@ -32,6 +40,10 @@ RuntimeInfoArchitecture GetTargetArchitecture();
 
 // Gets the targets operating system. If this information is not available returns Unknown.
 RuntimeInfoOperatingSystem GetTargetOperatingSystem();
+
+// Gets the target's runtime flavor. If this information is not
+// available returns Unknown.
+RuntimeInfoRuntimeFlavor GetRuntimeFlavor();
 
 // Returns the runtime's RecommendedReaderVersion global. Returns 0 if the global is absent.
 uint GetRecommendedReaderVersion();
@@ -47,10 +59,12 @@ Global variables used:
 | --- | --- | --- |
 | Architecture | string | Target architecture |
 | OperatingSystem | string | Target operating system |
+| RuntimeFlavor | string | Target runtime flavor |
 | RecommendedReaderVersion | uint32 | Incremented when an update to the latest contracts is recommended |
 
-The contract implementation returns the architecture and operating system global values parsed as the
-respective enum case-insensitively. If these globals are not available, the contract returns Unknown.
+The contract implementation returns the architecture, operating system, and runtime flavor global
+values parsed as the respective enum case-insensitively. If these globals are not available, the
+contract returns Unknown.
 
 `Apple` covers all Apple platforms (macOS, iOS, tvOS, MacCatalyst) — i.e. any target where the
 runtime is compiled with `TARGET_APPLE` defined. It is distinct from `Unix` so that consumers which
