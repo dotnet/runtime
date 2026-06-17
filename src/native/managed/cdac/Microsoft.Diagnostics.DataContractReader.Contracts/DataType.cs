@@ -128,6 +128,7 @@ public enum DataType
     NativeCodeVersionNode,
     ProfControlBlock,
     ILCodeVersionNode,
+    InstrumentedILOffsetMapping,
     ReadyToRunInfo,
     ReadyToRunHeader,
     ReadyToRunSection,
@@ -162,6 +163,7 @@ public enum DataType
     HijackArgs,
 
     Frame,
+    GCFrame,
     InlinedCallFrame,
     SoftwareExceptionFrame,
     FramedMethodFrame,

@@ -915,6 +915,13 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
         return E_FAIL;
     }
 #else //USE_REGIONS
+    // Large page emulation mode is not supported on the segments path.
+    // Silently disable large pages when emulation is requested.
+    if (large_pages_emulation_mode_p)
+    {
+        use_large_pages_p = false;
+        large_pages_emulation_mode_p = false;
+    }
     bool separated_poh_p = use_large_pages_p &&
                            heap_hard_limit_oh[soh] &&
                            (GCConfig::GetGCHeapHardLimitPOH() == 0) &&
