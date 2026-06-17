@@ -4262,6 +4262,13 @@ public:
     unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm function index slot
     unsigned lvaWasmResumeIP = BAD_VAR_NUM; // Wasm catch resumption IP slot
 
+    struct WasmSpillSlot
+    {
+        unsigned lclNum;
+        bool     byRef;
+        bool     inUse;
+    };
+    jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -4664,6 +4671,7 @@ public:
     unsigned lvaTrackedIndexToLclNum(unsigned trackedIndex)
     {
         assert(trackedIndex < lvaTrackedCount);
+        assert(trackedIndex < lvaTrackedToVarNumSize);
         unsigned lclNum = lvaTrackedToVarNum[trackedIndex];
         assert(lclNum < lvaCount);
         return lclNum;
@@ -6773,6 +6781,7 @@ public:
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmSpillRefs();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();
