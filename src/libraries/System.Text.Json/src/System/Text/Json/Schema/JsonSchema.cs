@@ -146,6 +146,22 @@ namespace System.Text.Json.Schema
             {
                 Type |= JsonSchemaType.Null;
             }
+            else if (AnyOf is { } anyOf)
+            {
+                // The schema is an "anyOf" composition (e.g. a floating-point type under
+                // AllowNamedFloatingPointLiterals). Since such schemas carry no top-level
+                // type keyword, add a dedicated null branch to the union unless one of the
+                // existing branches already permits null.
+                foreach (JsonSchema branch in anyOf)
+                {
+                    if ((branch.Type & JsonSchemaType.Null) != 0)
+                    {
+                        return;
+                    }
+                }
+
+                anyOf.Add(new JsonSchema { Type = JsonSchemaType.Null });
+            }
         }
 
         public JsonNode ToJsonNode(JsonSchemaExporterOptions options)

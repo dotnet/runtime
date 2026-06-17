@@ -285,6 +285,62 @@ namespace System.Text.Json.Schema.Tests
                     }
                 """);
 
+            // Regression test for https://github.com/dotnet/runtime/issues/129432
+            // Nullable floating-point types under AllowNamedFloatingPointLiterals must retain the null branch.
+            yield return new TestData<double?>(
+                Value: 3.14,
+                AdditionalValues: [null, double.NaN, double.PositiveInfinity, double.NegativeInfinity],
+                ExpectedJsonSchema: """
+                    {
+                        "anyOf": [
+                            { "type": "number" },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] },
+                            { "type": "null" }
+                        ]
+                    }
+                    """,
+                SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
+
+            yield return new TestData<float?>(
+                Value: 1.2f,
+                AdditionalValues: [null, float.NaN, float.PositiveInfinity, float.NegativeInfinity],
+                ExpectedJsonSchema: """
+                    {
+                        "anyOf": [
+                            { "type": "number" },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] },
+                            { "type": "null" }
+                        ]
+                    }
+                    """,
+                SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
+
+            yield return new TestData<PocoWithNullableFloatingPoint>(
+                Value: new() { Latitude = 3.14, Longitude = 1.2f },
+                AdditionalValues: [new() { Latitude = null, Longitude = null }],
+                ExpectedJsonSchema: """
+                    {
+                        "type": ["object","null"],
+                        "properties": {
+                            "Latitude": {
+                                "anyOf": [
+                                    { "type": "number" },
+                                    { "enum": ["NaN", "Infinity", "-Infinity"] },
+                                    { "type": "null" }
+                                ]
+                            },
+                            "Longitude": {
+                                "anyOf": [
+                                    { "type": "number" },
+                                    { "enum": ["NaN", "Infinity", "-Infinity"] },
+                                    { "type": "null" }
+                                ]
+                            }
+                        }
+                    }
+                    """,
+                SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
+
             yield return new TestData<PocoWithRecursiveMembers>(
                 Value: new() { Value = 1, Next = new() { Value = 2, Next = new() { Value = 3 } } },
                 AdditionalValues: [new() { Value = 1, Next = null }],
@@ -1288,6 +1344,12 @@ namespace System.Text.Json.Schema.Tests
 
             [JsonNumberHandling(JsonNumberHandling.AllowNamedFloatingPointLiterals | JsonNumberHandling.AllowReadingFromString)]
             public decimal DecimalAllowingFloatingPointLiteralsAndReadingFromString { get; set; }
+        }
+
+        public class PocoWithNullableFloatingPoint
+        {
+            public double? Latitude { get; set; }
+            public float? Longitude { get; set; }
         }
 
         public class PocoWithRecursiveMembers
