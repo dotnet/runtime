@@ -246,9 +246,9 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
-            // transform uninitialized ID into -1, so it will not match any possible lock owner
-            currentThreadID |= (currentThreadID - 1) >> 31;
+            // In CoreCLR, the managed ID is set by the runtime, thus we do not
+            // call CurrentManagedThreadIdUnchecked like we do in NativeAOT
+            int currentThreadID = ManagedThreadId.Current;
 
             fixed (byte* pObjectData = &obj.GetRawData())
             {

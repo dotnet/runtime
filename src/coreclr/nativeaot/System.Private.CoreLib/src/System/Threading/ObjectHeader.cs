@@ -351,8 +351,11 @@ namespace System.Threading
             if (currentThreadID > SBLK_MASK_LOCK_THREADID)
                 return GetSyncIndex(obj);
 
-            // Lock.IsSingleProcessor gets a value that is lazy-initialized at the first contended acquire.
-            // Until then it is false and we assume we have multicore machine.
+            // A one-shot acquire does not spin while the lock is owned by another thread, but it still
+            // retries the rare CAS failures below where the lock is not owned by somebody else: a caller
+            // that knows the lock is unowned expects a one-shot acquire to succeed.
+            // Lock.IsSingleProcessor is lazily initialized at the first contended acquire; until then it
+            // is false and we assume a multicore machine.
             int retries = isOneShot || Lock.IsSingleProcessor ? 0 : 16;
 
             // retry when the lock is owned by somebody else.
@@ -369,35 +372,13 @@ namespace System.Threading
                     {
                         int oldBits = *pHeader;
 
-                        // if unused for anything, try setting our thread id
-                        // N.B. hashcode, thread ID and sync index are never 0, and hashcode is largest of all
-                        if ((oldBits & MASK_HASHCODE_INDEX) == 0)
-                        {
-                            int newBits = oldBits | currentThreadID;
-                            if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
-                            {
-                                return -1;
-                            }
-
-                            // contention on a lock that noone owned,
-                            // but we do not know if there is an owner yet, so try again
-                            continue;
-                        }
-
-                        // has sync entry -> slow path
-                        if (GetSyncEntryIndex(oldBits, out int syncIndex))
-                        {
-                            return syncIndex;
-                        }
-
                         // has hashcode -> slow path
                         if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
                         {
                             return SyncTable.AssignEntry(obj, pHeader);
                         }
-
-                        // we own the lock already
-                        if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
+                        // If we already own the lock, try incrementing recursion level.
+                        else if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
                         {
                             // try incrementing recursion level, check for overflow
                             int newBits = oldBits + SBLK_LOCK_RECLEVEL_INC;
@@ -415,13 +396,28 @@ namespace System.Threading
                             }
                             else
                             {
-                                // overflow, transition to a fat Lock
+                                // overflow, need to transition to a fat Lock
                                 return SyncTable.AssignEntry(obj, pHeader);
                             }
                         }
+                        // If no one owns the lock, try acquiring it.
+                        else if ((oldBits & SBLK_MASK_LOCK_THREADID) == 0)
+                        {
+                            int newBits = oldBits | currentThreadID;
+                            if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
+                            {
+                                return -1;
+                            }
 
-                        // someone else owns.
-                        break;
+                            // rare contention on lock.
+                            // Try again in case the finalization bits were touched.
+                            continue;
+                        }
+                        else
+                        {
+                            // Owned by somebody else. Now we spinwait and retry.
+                            break;
+                        }
                     }
                 }
 
