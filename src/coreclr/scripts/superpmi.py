@@ -348,13 +348,13 @@ replay_common_parser.add_argument("-private_store", action="append", help=privat
 replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 replay_common_parser.add_argument("--produce_repro", action="store_true", help=produce_repro_help)
 replay_common_parser.add_argument("-details", help="Specify full path to details file")
-replay_common_parser.add_argument("--skip_if_no_mch", action="store_true", help="Treat no matching MCH files as a successful no-op.")
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
 
 replay_parser.add_argument("-jit_path", help="Path to clrjit. Defaults to Core_Root JIT.")
 replay_parser.add_argument("-jitoption", action="append", help="Pass option through to the jit. Format is key=value, where key is the option name without leading `DOTNET_`. `key#value` is also accepted.")
+replay_parser.add_argument("--skip_if_no_mch", action="store_true", help="Treat no matching MCH files as a successful no-op.")
 
 # common subparser for asmdiffs and throughput
 base_diff_parser = argparse.ArgumentParser(add_help=False)
@@ -5213,11 +5213,6 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set details")
 
-        coreclr_args.verify(args,
-                            "skip_if_no_mch",
-                            lambda unused: True,
-                            "Unable to set skip_if_no_mch")
-
     def verify_base_diff_args():
 
         coreclr_args.verify(args,
@@ -5542,6 +5537,11 @@ def setup_args(args):
         verify_target_args()
         verify_superpmi_common_args()
         verify_replay_common_args()
+
+        coreclr_args.verify(args,
+                            "skip_if_no_mch",
+                            lambda unused: True,
+                            "Unable to set skip_if_no_mch")
 
         coreclr_args.verify(args,
                             "jit_path",
