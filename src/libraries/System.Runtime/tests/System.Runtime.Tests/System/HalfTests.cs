@@ -556,6 +556,7 @@ namespace System.Tests
         [MemberData(nameof(ExplicitConversion_FromSingle_TestData))]
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/103347", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS, TestRuntimes.Mono)]
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)f;
@@ -654,6 +655,7 @@ namespace System.Tests
 
         [MemberData(nameof(ExplicitConversion_FromDouble_TestData))]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS, TestRuntimes.Mono)]
         public static void ExplicitConversion_FromDouble(double d, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)d;
