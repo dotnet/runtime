@@ -86,18 +86,6 @@ namespace System
             }
             else
             {
-                // among the several kind of delegates falling into this bucket one has got a non
-                // empty _invocationList (open static with special sig)
-                // to be equals we need to check that _invocationList matches (both null is fine)
-                // and call the base.Equals()
-                if (!InvocationListLogicallyNull())
-                {
-                    if (!_invocationList!.Equals(d._invocationList))
-                        return false;
-                    return base.Equals(d);
-                }
-
-                // now we can call on the base
                 return base.Equals(d);
             }
         }
@@ -457,14 +445,11 @@ namespace System
 
         protected override MethodInfo GetMethodImpl()
         {
-            if (_invocationCount != 0 && _invocationList != null)
+            if (_invocationList is object[] invocationList)
             {
                 // multicast case
-                if (_invocationList is object[] invocationList)
-                {
-                    int index = (int)_invocationCount - 1;
-                    return ((Delegate)invocationList[index]).Method;
-                }
+                int index = (int)_invocationCount - 1;
+                return ((Delegate)invocationList[index]).Method;
             }
             else if (IsUnmanagedFunctionPtr())
             {
