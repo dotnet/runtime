@@ -219,7 +219,7 @@ ThePreStubPatchLabel:
         // Match what the virtual dispatch slow path has pushed.
         .save {r3}
 
-        PROLOG_PUSH  {r0-r2}
+        PROLOG_PUSH  "{r0-r2}"
 
         PROLOG_WITH_TRANSITION_BLOCK 0, 1, DoNotPushArgRegs
 
