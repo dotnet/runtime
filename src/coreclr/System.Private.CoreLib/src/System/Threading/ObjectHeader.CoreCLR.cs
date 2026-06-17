@@ -246,10 +246,10 @@ namespace System.Threading
         //
 
         // Try acquiring the thin-lock.
-        // The public entry point is one-shot by default. Callers that want to wait for a thin lock
-        // owned by another thread (e.g. a blocking Monitor.Enter) pass isOneShot: false to spin
-        // briefly before giving up.
-        public static unsafe HeaderLockResult AcquireThinLock(object obj, bool isOneShot = true)
+        // The public entry point spins by default (e.g. a blocking Monitor.Enter). Callers that want a
+        // single attempt (e.g. Monitor.TryEnter) pass isOneShot: true to succeed only if the lock is
+        // currently unowned.
+        public static unsafe HeaderLockResult AcquireThinLock(object obj, bool isOneShot = false)
         {
             ArgumentNullException.ThrowIfNull(obj);
 

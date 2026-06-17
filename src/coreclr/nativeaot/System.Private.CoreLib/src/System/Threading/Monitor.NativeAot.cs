@@ -37,7 +37,7 @@ namespace System.Threading
         public static void Enter(object obj)
         {
             int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
-            int resultOrIndex = ObjectHeader.AcquireThinLock(obj, currentThreadID, isOneShot: false);
+            int resultOrIndex = ObjectHeader.AcquireThinLock(obj, currentThreadID);
             if (resultOrIndex < 0)
                 return;
 
@@ -52,7 +52,7 @@ namespace System.Threading
         public static bool TryEnter(object obj)
         {
             int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
-            int resultOrIndex = ObjectHeader.AcquireThinLock(obj, currentThreadID);
+            int resultOrIndex = ObjectHeader.AcquireThinLock(obj, currentThreadID, isOneShot: true);
             if (resultOrIndex < 0)
                 return true;
 
@@ -75,7 +75,7 @@ namespace System.Threading
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
             int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
-            int resultOrIndex = ObjectHeader.AcquireThinLock(obj, currentThreadID);
+            int resultOrIndex = ObjectHeader.AcquireThinLock(obj, currentThreadID, isOneShot: true);
             if (resultOrIndex < 0)
                 return true;
 
@@ -109,7 +109,7 @@ namespace System.Threading
         {
             // Inlined Monitor.Enter with a few tweaks
             int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
-            int resultOrIndex = ObjectHeader.AcquireThinLock(obj, currentThreadID, isOneShot: false);
+            int resultOrIndex = ObjectHeader.AcquireThinLock(obj, currentThreadID);
             if (resultOrIndex < 0)
             {
                 lockTaken = true;
