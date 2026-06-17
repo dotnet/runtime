@@ -95,9 +95,7 @@ public struct DacDbiTypeRefData
 [StructLayout(LayoutKind.Sequential)]
 public struct DacDbiSharedReJitInfo
 {
-    public uint state;
     public ulong pbIL;
-    public uint dwCodegenFlags;
     public uint cInstrumentedMapEntries;
     public ulong rgInstrumentedMapEntries;
 }
