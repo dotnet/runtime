@@ -658,8 +658,14 @@ namespace System.Threading.Tasks.Tests
 
             public ParsedEventStream(List<ParsedEvent> events)
             {
-                _events = events;
-                _events.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
+                // Stable sort by timestamp: events that share a Stopwatch tick keep their original
+                // parse (emission) order, which preserves each thread's relative event order. The
+                // input list is built in emission order by the parser. List<T>.Sort is an UNSTABLE
+                // sort and would scramble same-timestamp events, breaking the ordering-sensitive
+                // assertions (e.g. Suspend-before-Complete, Create-before-Resume) on platforms where
+                // many events share a timestamp (e.g. single-threaded WASM). Enumerable.OrderBy is a
+                // documented stable sort.
+                _events = events.OrderBy(e => e.Timestamp).ToList();
             }
 
             // All events in timestamp order.
@@ -1284,6 +1290,41 @@ namespace System.Threading.Tasks.Tests
             EventBuffer.DumpAllEvents(events);
         }
 
+        // Runs a scenario whose synchronous prefix may install a custom SynchronizationContext (or
+        // TaskScheduler) on the running thread. On multi-threaded platforms the prefix runs on a
+        // dedicated, short-lived thread so that any context it installs -- and leaves in place when
+        // the await suspends -- dies with that throwaway thread instead of leaking onto a shared
+        // thread-pool thread. On single-threaded platforms (e.g. WASM) threads can't be created and
+        // the await resumes on the same (only) thread, so the scenario's own same-thread-guarded
+        // finally restores the context; there the scenario is simply run inline.
+        private static Task RunIsolatedScenarioAsync(Func<Task> scenario)
+        {
+            if (!PlatformDetection.IsMultithreadingSupported)
+            {
+                return scenario();
+            }
+
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    scenario().GetAwaiter().GetResult();
+                    tcs.SetResult();
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+            })
+            {
+                IsBackground = true,
+                Name = "AsyncProfilerIsolatedScenario"
+            };
+            thread.Start();
+            return tcs.Task;
+        }
+
         private static void RunScenarioAndFlush(Func<Task> scenario)
         {
             // V1 (task-based) async: the dispatcher's finally block emits CompleteAsyncContext
@@ -1415,11 +1456,27 @@ namespace System.Threading.Tasks.Tests
         //   unwind - UnwindFrameCount (for UnwindAsyncException events)
         private static string DescribeEvents(ParsedEventStream stream)
         {
-            var ordered = stream.All.OrderBy(e => e.Timestamp).ToList();
+            // stream.All is already stably sorted by timestamp (ties keep emission/thread order).
+            var ordered = stream.All;
             long t0 = ordered.Count > 0 ? ordered[0].Timestamp : 0;
             const string Header = "seq,delta,thread,event,disp,parent,frames,unwind";
-            var rows = ordered.Select((e, i) =>
-                $"{i},{e.Timestamp - t0},{e.OsThreadId},{e.EventId},{e.DispatcherId},{e.ParentDispatcherId},{e.FrameCount},{e.UnwindFrameCount}");
+            // Emit a strictly increasing delta so the CSV stays correctly ordered if it is re-sorted
+            // by the delta column downstream (e.g. after importing into a table): consecutive events
+            // that shared a timestamp get successive deltas instead of duplicates. A real timing gap
+            // still shows as a large jump, so cluster-vs-gap readability is preserved.
+            var rows = new List<string>(ordered.Count);
+            long prevDelta = long.MinValue;
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                var e = ordered[i];
+                long delta = e.Timestamp - t0;
+                if (delta <= prevDelta)
+                {
+                    delta = prevDelta + 1;
+                }
+                prevDelta = delta;
+                rows.Add($"{i},{delta},{e.OsThreadId},{e.EventId},{e.DispatcherId},{e.ParentDispatcherId},{e.FrameCount},{e.UnwindFrameCount}");
+            }
             return "----- BEGIN ASYNC EVENTS (CSV) -----" + Environment.NewLine
                 + Header + Environment.NewLine
                 + string.Join(Environment.NewLine, rows) + Environment.NewLine

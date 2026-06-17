@@ -1706,21 +1706,21 @@ namespace System.Threading.Tasks.Tests
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static async Task RuntimeAsync_WhenAll_TracksAllBranches_BranchA_Marker()
         {
-            await Task.Yield();
+            await Task.Delay(100);
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static async Task RuntimeAsync_WhenAll_TracksAllBranches_BranchB_Marker()
         {
-            await Task.Yield();
+            await Task.Delay(120);
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         private static async Task RuntimeAsync_WhenAll_TracksAllBranches_BranchC_Marker()
         {
-            await Task.Yield();
+            await Task.Delay(140);
         }
 
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
@@ -1742,16 +1742,19 @@ namespace System.Threading.Tasks.Tests
 
             var stream = ParseAllEvents(events);
 
-            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_Marker));
-            AssertNotEmpty(stream, markerCallstacks);
-
-            // Each branch is its own async chain; its inner await of Task.Yield produces a Resume callstack containing the branch frame.
+            // Each branch awaits a (staggered) Task.Delay, so it always suspends and produces its own
+            // tracked chain with a Resume callstack containing the branch frame.
             var branchACallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchA_Marker));
             var branchBCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchB_Marker));
             var branchCCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchC_Marker));
             AssertNotEmpty(stream, branchACallstacks);
             AssertNotEmpty(stream, branchBCallstacks);
             AssertNotEmpty(stream, branchCCallstacks);
+
+            // Because every branch suspends on a pending Task.Delay, Task.WhenAll is always pending when
+            // the outer marker awaits it, so the marker also suspends and gets its own tracked chain.
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.RuntimeAsync_ResumeAsyncCallstack, nameof(RuntimeAsync_WhenAll_TracksAllBranches_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
 
             // Each tracked chain (3 branches + outer marker) must see exactly one Create and one Complete on its own DispatcherId.
             AssertExactlyOneCreateAndComplete(stream, branchACallstacks[0].DispatcherId, nameof(RuntimeAsync_WhenAll_TracksAllBranches_BranchA_Marker));
@@ -1948,6 +1951,11 @@ namespace System.Threading.Tasks.Tests
             }
             finally
             {
+                // The await may resume on a different thread; only restore on the original (install)
+                // thread. On multi-threaded platforms this method runs on a dedicated throwaway
+                // thread (see RunIsolatedScenarioAsync), so a skipped restore can't leak the context
+                // onto a shared thread-pool thread. On single-threaded platforms the resume is on
+                // this same thread, so the restore always runs here.
                 if (Environment.CurrentManagedThreadId == callerThreadId)
                 {
                     SynchronizationContext.SetSynchronizationContext(prev);
@@ -1960,7 +1968,7 @@ namespace System.Threading.Tasks.Tests
         {
             s_runtimeAsyncSyncContextCtx = new InlinePostSynchronizationContext();
 
-            var events = await CollectEventsAsync(CallstackKeywords, RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker);
+            var events = await CollectEventsAsync(CallstackKeywords, () => RunIsolatedScenarioAsync(RuntimeAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker));
 
             // DumpAllEvents(events);
 

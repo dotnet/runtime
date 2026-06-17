@@ -756,6 +756,11 @@ namespace System.Threading.Tasks.Tests
             }
             finally
             {
+                // The await may resume on a different thread; only restore on the original (install)
+                // thread. On multi-threaded platforms this method runs on a dedicated throwaway
+                // thread (see RunIsolatedScenarioAsync), so a skipped restore can't leak the context
+                // onto a shared thread-pool thread. On single-threaded platforms the resume is on
+                // this same thread, so the restore always runs here.
                 if (Environment.CurrentManagedThreadId == callerThreadId)
                 {
                     SynchronizationContext.SetSynchronizationContext(prev);
@@ -770,7 +775,7 @@ namespace System.Threading.Tasks.Tests
 
             var events = CollectEvents(ResumeAsyncCallstackKeyword | CoreKeywords, () =>
             {
-                RunScenarioAndFlush(() => TaskAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker());
+                RunScenarioAndFlush(() => RunIsolatedScenarioAsync(TaskAsync_CustomSyncContext_EmitsContextEventsAndCallstack_Marker));
             });
 
             // DumpAllEvents(events);
