@@ -335,9 +335,10 @@ public class StackWalkDumpTests : DumpTestBase
 
     /// <summary>
     /// Exercises <see cref="ISOSDacInterface.GetCodeHeaderData"/> for the IL stub MethodDesc
-    /// that ships a vararg P/Invoke. This is the path SOS <c>!clru</c> uses after <c>!IP2MD</c>:
-    /// it takes the JIT-emitted native code address of the IL stub and expects to get back
-    /// a populated <see cref="DacpCodeHeaderData"/> with non-zero <c>MethodSize</c>. Regression
+    /// that ships a vararg P/Invoke, passing the live instruction pointer of an executing
+    /// IL stub frame. This is the path SOS <c>!clru</c> uses after <c>!IP2MD</c>: the IP is
+    /// inside the JIT-emitted code body, so <c>GetCodeHeaderData</c> takes the full path
+    /// through <c>IGCInfo.GetCodeLength</c> rather than the precode/stub fallback. Regression
     /// coverage for the x86 cDAC GetCodeHeaderData failure where the IGCInfo contract had no
     /// x86 implementation and threw NotImplementedException, breaking <c>!clru</c> on .NET 11.
     /// </summary>
@@ -357,6 +358,9 @@ public class StackWalkDumpTests : DumpTestBase
 
         foreach (IStackDataFrameHandle frame in frames)
         {
+            if (frame.State != StackWalkState.Frameless)
+                continue;
+
             TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
             if (methodDescPtr == TargetPointer.Null)
                 continue;
@@ -365,13 +369,14 @@ public class StackWalkDumpTests : DumpTestBase
             if (!rts.IsILStub(mdHandle))
                 continue;
 
-            TargetCodePointer entryPoint = rts.GetMethodEntryPointIfExists(mdHandle);
-            Assert.NotEqual(TargetCodePointer.Null, entryPoint);
+            TargetPointer ip = stackWalk.GetInstructionPointer(frame);
+            Assert.NotEqual(TargetPointer.Null, ip);
 
             DacpCodeHeaderData codeHeaderData;
-            int hr = sosDac.GetCodeHeaderData(new ClrDataAddress(entryPoint.Value), &codeHeaderData);
+            int hr = sosDac.GetCodeHeaderData(new ClrDataAddress(ip.Value), &codeHeaderData);
             AssertHResult(HResults.S_OK, hr);
 
+            Assert.Equal(JitTypes.TYPE_JIT, codeHeaderData.JITType);
             Assert.Equal(methodDescPtr.ToClrDataAddress(Target), codeHeaderData.MethodDescPtr);
             Assert.True(codeHeaderData.MethodSize > 0,
                 $"Expected non-zero MethodSize for IL stub (was {codeHeaderData.MethodSize}). " +
@@ -382,7 +387,7 @@ public class StackWalkDumpTests : DumpTestBase
             return;
         }
 
-        Assert.Fail("Expected to find an IL stub MethodDesc on the crashing thread stack");
+        Assert.Fail("Expected to find an IL stub Frameless frame on the crashing thread stack");
     }
 
     // ========== GetContext API tests ==========
