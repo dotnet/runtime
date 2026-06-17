@@ -349,9 +349,6 @@ namespace System.Runtime.CompilerServices
         }
 #endif
 
-#if !RUNTIME_ASYNC_SUPPORTED
-        [BypassReadyToRun]
-#endif
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void AwaitTask(Task task, ConfigureAwaitOptions options)
         {
@@ -386,9 +383,6 @@ namespace System.Runtime.CompilerServices
             AsyncSuspend(taskCont);
         }
 
-#if !RUNTIME_ASYNC_SUPPORTED
-        [BypassReadyToRun]
-#endif
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T AwaitTask<T>(Task<T> task, ConfigureAwaitOptions options)
         {
@@ -434,9 +428,6 @@ namespace System.Runtime.CompilerServices
         /// awaiting a completion of an underlying Task or ValueTaskSource.
         /// </summary>
         /// <param name="valueTask">ValueTask whose completion we are awaiting.</param>
-#if !RUNTIME_ASYNC_SUPPORTED
-        [BypassReadyToRun]
-#endif
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void TransparentAwaitValueTask(ValueTask valueTask)
         {
@@ -485,9 +476,6 @@ namespace System.Runtime.CompilerServices
             AsyncSuspend(nextCont);
         }
 
-#if !RUNTIME_ASYNC_SUPPORTED
-        [BypassReadyToRun]
-#endif
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void AwaitValueTaskSource(IValueTaskSource source, short token, bool continueOnCapturedContext)
         {
@@ -524,9 +512,6 @@ namespace System.Runtime.CompilerServices
             AsyncSuspend(vtsCont);
         }
 
-#if !RUNTIME_ASYNC_SUPPORTED
-        [BypassReadyToRun]
-#endif
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T TransparentAwaitValueTaskOfT<T>(ValueTask<T> valueTask)
         {
@@ -575,9 +560,6 @@ namespace System.Runtime.CompilerServices
             return default!;
         }
 
-#if !RUNTIME_ASYNC_SUPPORTED
-        [BypassReadyToRun]
-#endif
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T AwaitValueTaskSource<T>(IValueTaskSource<T> source, short token, bool continueOnCapturedContext)
         {
@@ -619,9 +601,6 @@ namespace System.Runtime.CompilerServices
         /// Used by internal thunks that implement awaiting on Task.
         /// </summary>
         /// <param name="task">Task whose completion we are awaiting.</param>
-#if !RUNTIME_ASYNC_SUPPORTED
-        [BypassReadyToRun]
-#endif
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe void TransparentAwait(Task task)
         {
@@ -651,9 +630,6 @@ namespace System.Runtime.CompilerServices
         /// Used by internal thunks that implement awaiting on Task.
         /// </summary>
         /// <param name="task">Task whose completion we are awaiting.</param>
-#if !RUNTIME_ASYNC_SUPPORTED
-        [BypassReadyToRun]
-#endif
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T TransparentAwaitOfT<T>(Task<T> task)
         {
