@@ -479,7 +479,7 @@
       </trans-unit>
       <trans-unit id="IidParameterIndexUnsupportedConfigurationName">
         <source>{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</source>
-        <target state="new">{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</target>
+        <target state="translated">{0} (solo se admite en los parámetros de objeto de salida [MarshalAs(UnmanagedType.Interface)])</target>
         <note>Configuration name reported via the 'configuration not supported' diagnostic when 'MarshalAs.IidParameterIndex' is used on an unsupported parameter shape. {0} is the dotted attribute member name, e.g. 'MarshalAsAttribute.IidParameterIndex'.</note>
       </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">

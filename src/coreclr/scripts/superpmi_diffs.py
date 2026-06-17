@@ -370,6 +370,10 @@ class Diff:
             for v in self.coreclr_args.diff_jit_options.split(';'):
                 options += "-diff_jit_option", v
 
+        # The wasm jit is a cross-target altjit; superpmi must be told to load it as one.
+        if self.arch_name == "wasm":
+            options += ["--altjit"]
+
         return options
 
     def summarize(self):

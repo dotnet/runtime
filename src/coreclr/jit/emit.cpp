@@ -1054,7 +1054,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     assert((ig->igFlags & IGF_PLACEHOLDER) == 0);
     ig->igData = id;
-    INDEBUG(ig->igDataSize = gs;)
+    INDEBUG(ig->igDataSize = sz;)
 
     memcpy(id, emitCurIGfreeBase, sz);
 
@@ -10728,10 +10728,7 @@ regMaskTP emitter::emitGetGCRegsSavedOrModified(CORINFO_METHOD_HANDLE methHnd)
 // emitGetGCRegsKilledByNoGCCall: Gets a register mask that represents the set of registers that no longer
 // contain GC or byref pointers, for "NO GC" helper calls. This is used by the emitter when determining
 // what registers to remove from the current live GC/byref sets (and thus what to report as dead in the
-// GC info). Note that for the CORINFO_HELP_ASSIGN_BYREF helper, in particular, the kill set reported by
-// compHelperCallKillSet() doesn't match this kill set. compHelperCallKillSet() reports the dst/src
-// address registers as killed for liveness purposes, since their values change. However, they still are
-// valid byref pointers after the call, so the dst/src address registers are NOT reported as killed here.
+// GC info).
 //
 // Note: This list may not be complete and defaults to the default RBM_CALLEE_TRASH_NOGC registers.
 //
@@ -10750,10 +10747,6 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
         case CORINFO_HELP_ASSIGN_REF:
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
             result = RBM_CALLEE_GCTRASH_WRITEBARRIER;
-            break;
-
-        case CORINFO_HELP_ASSIGN_BYREF:
-            result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)

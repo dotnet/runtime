@@ -1775,6 +1775,7 @@ struct FuncInfoDsc
 
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
     unsigned funWasmFrameSize;
+    unsigned funWasmExnRefLocalIndex = UINT_MAX;
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;
@@ -2002,6 +2003,11 @@ struct NaturalLoopIterInfo
     // allowMissingBaseCase=true.
     bool NeedsZeroTripGuard : 1;
 
+    // Constant peeled from the loop limit so that the effective limit is
+    // `LimitBase() + LimitOffset`. Non-zero only for HasInvariantLocalLimit
+    // and HasArrayLengthLimit.
+    int LimitOffset = 0;
+
     NaturalLoopIterInfo()
         : ExitedOnTrue(false)
         , HasConstInit(false)
@@ -2021,6 +2027,7 @@ struct NaturalLoopIterInfo
     bool IsDecreasingLoop();
     GenTree* Iterator();
     GenTree* Limit();
+    GenTree* LimitBase();
     int ConstLimit();
     unsigned VarLimit();
     bool ArrLenLimit(Compiler* comp, ArrIndex* index);
@@ -3238,6 +3245,10 @@ public:
     GenTreeColon* gtNewColonNode(var_types type, GenTree* thenNode, GenTree* elseNode);
     GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
+#if defined(TARGET_ARM64)
+    GenTreeBfm* gtNewBfxNode(var_types type, GenTree* base, unsigned offset, unsigned width);
+#endif
+
     GenTree* gtNewLargeOperNode(genTreeOps oper,
                                 var_types  type = TYP_I_IMPL,
                                 GenTree*   op1  = nullptr,
@@ -3936,6 +3947,9 @@ public:
 
     void gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq = nullptr) const;
 
+    GenTree*       gtPeelFieldAddrs(GenTree* addr) const;
+    const GenTree* gtPeelFieldAddrs(const GenTree* addr) const;
+
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
     bool gtIsRecursiveCall(GenTreeCall* call, bool useInlineRoot = true)
@@ -3993,8 +4007,11 @@ public:
 
 #if defined(FEATURE_HW_INTRINSICS)
     GenTree* gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree);
-    GenTreeMskCon* gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon);
 #endif // FEATURE_HW_INTRINSICS
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(FEATURE_MASKED_HW_INTRINSICS)
+    GenTreeMskCon* gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
     enum BoxRemovalOptions
@@ -4245,6 +4262,14 @@ public:
     unsigned lvaWasmVirtualIP = BAD_VAR_NUM; // Wasm virtual IP slot
     unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm function index slot
     unsigned lvaWasmResumeIP = BAD_VAR_NUM; // Wasm catch resumption IP slot
+
+    struct WasmSpillSlot
+    {
+        unsigned lclNum;
+        bool     byRef;
+        bool     inUse;
+    };
+    jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -4647,6 +4672,7 @@ public:
     unsigned lvaTrackedIndexToLclNum(unsigned trackedIndex)
     {
         assert(trackedIndex < lvaTrackedCount);
+        assert(trackedIndex < lvaTrackedToVarNumSize);
         unsigned lclNum = lvaTrackedToVarNum[trackedIndex];
         assert(lclNum < lvaCount);
         return lclNum;
@@ -4973,6 +4999,34 @@ public:
                              bool                    isExplicitTailCall,
                              IL_OFFSET               ilOffset = BAD_IL_OFFSET);
 
+    // Information needed to turn a resolved devirtualization target into a direct call.
+    struct DevirtualizedCallInfo
+    {
+        CORINFO_CONTEXT_HANDLE  tokenLookupContext;      // The class context or method context
+        CORINFO_RESOLVED_TOKEN* pResolvedToken;          // Resolved token for the target method, used by R2R.
+        CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token for the unboxed entry, used by R2R.
+        CORINFO_LOOKUP*         pInstParamLookup;        // All the information needed for the instantiation parameter lookup.
+        CORINFO_SIG_INFO*       pMethSig;                // The devirted method signature.
+        bool                    objIsNonNull;            // True if the receiver is known non-null.
+        bool                    hadImplicitNullCheck;    // True if the original call's null check was implicit.
+        bool                    isDelegateCall;          // True when transforming a delegate invoke into a direct call.
+        bool                    isExplicitTailCall;      // True for explicit tail calls.
+        bool                    objClassIsExact;         // True if the receiver type is exact.
+        bool                    objClassIsFinal;         // True if the receiver type is final.
+        IL_OFFSET               ilOffset;                // IL offset of the original call.
+    };
+
+    void impTransformDevirtualizedCall(GenTreeCall*            call,
+                                       CORINFO_METHOD_HANDLE*  method,
+                                       unsigned*               methodFlags,
+                                       DevirtualizedCallInfo*  dcInfo,
+                                       BasicBlock*             block,
+                                       CORINFO_CONTEXT_HANDLE* contextHandle
+#if defined(DEBUG)
+                                     , CORINFO_METHOD_HANDLE   baseMethod
+#endif // defined(DEBUG)
+    );
+
     bool impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset);
 
     enum class GDVProbeType
@@ -5225,7 +5279,8 @@ protected:
     GenTree* impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
-                                        CORINFO_SIG_INFO*     sig,
+                                        CORINFO_SIG_INFO*     sig
+                                        R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                         bool                  mustExpand);
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -5907,6 +5962,8 @@ public:
 
     PhaseStatus fgInline();
 
+    PhaseStatus fgPostInlineNoReturnCleanup();
+
     PhaseStatus fgResolveGDVs();
 
     PhaseStatus fgRemoveEmptyTry();
@@ -5924,8 +5981,6 @@ public:
     BasicBlock* fgCloneTryRegion(BasicBlock* tryEntry, CloneTryInfo& info, BasicBlock** insertAfter = nullptr);
 
     void fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum);
-
-    PhaseStatus fgTailMergeThrows();
 
     bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
                                                   BasicBlock*      handler,
@@ -6727,6 +6782,7 @@ public:
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmSpillRefs();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();
@@ -7069,19 +7125,6 @@ private:
 
     void fgMarkAddrModeForFieldAddr(GenTreeIndir* indir);
 
-#ifdef FEATURE_SIMD
-    GenTree* getSIMDStructFromField(GenTree*  tree,
-                                    unsigned* indexOut,
-                                    unsigned* simdSizeOut,
-                                    bool      ignoreUsedInSIMDIntrinsic = false);
-    bool fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt);
-    void impMarkContiguousSIMDFieldStores(Statement* stmt);
-
-    // fgPreviousCandidateSIMDFieldStoreStmt is only used for tracking previous simd field store
-    // in function: Compiler::impMarkContiguousSIMDFieldStores.
-    Statement* fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
-
-#endif // FEATURE_SIMD
     GenTree* fgMorphIndexAddr(GenTreeIndexAddr* tree);
     GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclToFieldList(GenTreeLclVar* lcl);
@@ -7117,13 +7160,11 @@ private:
     GenTree* fgCreateCallDispatcherAndGetResult(GenTreeCall*          origCall,
                                                 CORINFO_METHOD_HANDLE callTargetStubHnd,
                                                 CORINFO_METHOD_HANDLE dispatcherHnd);
-    GenTree* getLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                           CORINFO_LOOKUP*         pLookup,
-                           GenTreeFlags            handleFlags,
-                           void*                   compileTimeHandle);
-    GenTree* getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                  CORINFO_LOOKUP*         pLookup,
-                                  void*                   compileTimeHandle);
+    GenTree* getLookupTree(CORINFO_LOOKUP* pLookup,
+                           GenTreeFlags    handleFlags,
+                           void*           compileTimeHandle);
+    GenTree* getRuntimeLookupTree(CORINFO_LOOKUP* pLookup,
+                                  void*           compileTimeHandle);
     GenTree* getVirtMethodPointerTree(GenTree*                thisPtr,
                                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                       CORINFO_CALL_INFO*      pCallInfo);
@@ -7369,6 +7410,7 @@ private:
     PhaseStatus fgForwardSub();
     bool fgForwardSubBlock(BasicBlock* block);
     bool fgForwardSubStatement(Statement* statement);
+    bool fgForwardSubMultiUse(Statement* nextStmt, unsigned lclNum, GenTree* fwdSubNode);
     bool fgForwardSubHasStoreInterference(Statement* defStmt, Statement* nextStmt, GenTree* nextStmtUse);
     void fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* newSubListLast);
 
@@ -7542,6 +7584,7 @@ public:
 
     PhaseStatus optCloneLoops();
     PhaseStatus optRangeCheckCloning();
+    PhaseStatus optBoundsCheckCoalesce();
     void optCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     bool optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR);
@@ -8017,17 +8060,17 @@ public:
 
     bool isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gdvTarget);
 
-    void addGuardedDevirtualizationCandidate(GenTreeCall*           call,
-                                             CORINFO_METHOD_HANDLE  methodHandle,
-                                             CORINFO_CLASS_HANDLE   classHandle,
-                                             CORINFO_CONTEXT_HANDLE contextHandle,
-                                             unsigned               methodAttr,
-                                             unsigned               classAttr,
-                                             unsigned               likelihood,
-                                             bool                   arrayInterface,
-                                             bool                   instantiatingStub,
-                                             CORINFO_METHOD_HANDLE  originalMethodHandle,
-                                             CORINFO_CONTEXT_HANDLE originalContextHandle);
+    void addGuardedDevirtualizationCandidate(GenTreeCall*            call,
+                                             CORINFO_METHOD_HANDLE   methodHandle,
+                                             CORINFO_CLASS_HANDLE    classHandle,
+                                             CORINFO_CONTEXT_HANDLE  contextHandle,
+                                             unsigned                methodAttr,
+                                             unsigned                classAttr,
+                                             unsigned                likelihood,
+                                             const CORINFO_LOOKUP*   instParamLookup,
+                                             CORINFO_METHOD_HANDLE   originalMethodHandle,
+                                             CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                             CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken);
 
     int getGDVMaxTypeChecks()
     {
@@ -8520,11 +8563,6 @@ public:
             return KindIs(OAK_NOT_EQUAL) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN) && GetOp2().IsNullConstant();
         }
 
-        bool CanPropBndsCheck() const
-        {
-            return GetOp1().KindIs(O1K_VN);
-        }
-
         bool CanPropSubRange() const
         {
             if (KindIs(OAK_SUBRANGE))
@@ -8965,13 +9003,14 @@ public:
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);
 
-            AssertionDsc dsc           = CreateEmptyAssertion(comp);
-            dsc.m_assertionKind        = FromVNFunc(relop);
-            dsc.m_op1.m_kind           = O1K_VN;
-            dsc.m_op1.m_vn             = op1VN;
-            dsc.m_op2.m_kind           = O2K_VN_ADD_CNS;
-            dsc.m_op2.m_vn             = checkedBndVN;
-            dsc.m_op2.m_icon.m_iconVal = cns;
+            AssertionDsc dsc              = CreateEmptyAssertion(comp);
+            dsc.m_assertionKind           = FromVNFunc(relop);
+            dsc.m_op1.m_kind              = O1K_VN;
+            dsc.m_op1.m_vn                = op1VN;
+            dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
+            dsc.m_op2.m_vn                = checkedBndVN;
+            dsc.m_op2.m_icon.m_iconVal    = cns;
+            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNNeverNegative(checkedBndVN);
             return dsc;
         }
 
@@ -9010,7 +9049,7 @@ public:
             dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn                = op2VN;
             dsc.m_op2.m_icon.m_iconVal    = 0; // TODO-CQ: consider decomposing VN to VN* + CNS if beneficial.
-            dsc.m_op2.m_isVNNeverNegative = false;
+            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNNeverNegative(op2VN);
             return dsc;
         }
     };
@@ -9034,10 +9073,6 @@ protected:
     bool           optCrossBlockLocalAssertionProp;
     unsigned       optAssertionOverflow;
     bool           optCanPropLclVar;
-    bool           optCanPropEqual;
-    bool           optCanPropNonNull;
-    bool           optCanPropBndsChk;
-    bool           optCanPropSubRange;
 
     RangeCheck* optRangeCheck = nullptr;
     RangeCheck* GetRangeCheck();
@@ -9069,7 +9104,6 @@ public:
     // Assertion prop data flow functions.
     PhaseStatus optAssertionPropMain();
     Statement*  optVNAssertionPropCurStmt(BasicBlock* block, Statement* stmt);
-    bool        optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pConstant, GenTreeFlags* pIconFlags);
     ASSERT_TP*  optInitAssertionDataflowFlags();
     ASSERT_TP*  optComputeAssertionGen();
 
@@ -9201,6 +9235,7 @@ public:
     };
 
     bool optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum);
+    bool optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
     bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
     bool optExtractSpanIndex(GenTree* tree, SpanIndex* result);
     bool optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
@@ -9538,19 +9573,22 @@ public:
 
     void eeGetVars();
 
-    unsigned eeVarsCount;
+    unsigned eeVarsCount    = 0;
+    unsigned eeVarsCapacity = 0;
 
     struct VarResultInfo
     {
         UNATIVE_OFFSET             startOffset;
         UNATIVE_OFFSET             endOffset;
+        uint32_t                   callReturnValueILOffset;
         DWORD                      varNumber;
         CodeGenInterface::siVarLoc loc;
     }*   eeVars;
-    void eeSetLVcount(unsigned count);
+    void eeAllocateLVs(unsigned count);
     void eeSetLVinfo(unsigned                          which,
                      UNATIVE_OFFSET                    startOffs,
-                     UNATIVE_OFFSET                    length,
+                     UNATIVE_OFFSET                    endOffs,
+                     uint32_t                          callReturnValILOffs,
                      unsigned                          varNum,
                      const CodeGenInterface::siVarLoc& loc);
     void eeSetLVdone();
@@ -10136,12 +10174,7 @@ private:
 
     GenTree* impSIMDPopStack();
 
-    void     setLclRelatedToSIMDIntrinsic(GenTree* tree);
-    bool     areFieldsContiguous(GenTreeIndir* op1, GenTreeIndir* op2);
-    bool     areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* second);
-    bool     areArrayElementsContiguous(GenTree* op1, GenTree* op2);
-    bool     areArgumentsContiguous(GenTree* op1, GenTree* op2);
-    GenTree* CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_types simdBaseType, unsigned simdSize);
+    void setLclRelatedToSIMDIntrinsic(GenTree* tree);
 
     // Get the size of the SIMD type in bytes
     int getSIMDTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)
@@ -10211,6 +10244,9 @@ public:
 
                 return FP_REGSIZE_BYTES;
             }
+#elif defined(TARGET_WASM)
+        // TODO-WASM: Verify if we need a more complicated condition here
+        return FP_REGSIZE_BYTES;
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");
         unreached();
@@ -10241,7 +10277,7 @@ public:
         {
             return XMM_REGSIZE_BYTES;
         }
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
         return FP_REGSIZE_BYTES;
 #else
         assert(!"getMaxVectorByteLength() unimplemented on target arch");
@@ -10339,7 +10375,7 @@ public:
 
         // Return 0 if size is even less than XMM, otherwise - XMM
         return (size >= XMM_REGSIZE_BYTES) ? XMM_REGSIZE_BYTES : 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
         assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
         return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
 #else
@@ -11528,7 +11564,6 @@ public:
         STRESS_MODE(IF_CONVERSION_COST)                                                         \
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
-        STRESS_MODE(STORE_BLOCK_UNROLLING)                                                      \
         STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
         STRESS_MODE(COUNT)
 

@@ -1450,7 +1450,7 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
         !incr->AsOp()->gtOp1->OperIs(GT_LCL_VAR) ||
         (incr->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() != lvar) ||
         !incr->AsOp()->gtOp2->OperIs(GT_CNS_INT) ||
-        (incr->AsOp()->gtOp2->AsIntCon()->gtIconVal != iterInc) ||
+        (incr->AsOp()->gtOp2->AsIntCon()->IconValue() != iterInc) ||
 
         (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree))
     {
@@ -1904,14 +1904,54 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     // There may be multiple exits, and one of the other exits may also be a
     // latch. That latch could be preferable to leave (for example because it
-    // is an IV test).
-    NaturalLoopIterInfo iterInfo;
-    if (loop->AnalyzeIteration(&iterInfo) &&
-        (iterInfo.TestBlock->TrueTargetIs(loop->GetHeader()) != iterInfo.TestBlock->FalseTargetIs(loop->GetHeader())))
-    {
-        // Test block is both a latch and exit, so the loop is already inverted in a preferable way.
-        JITDUMP("No loop-inversion for " FMT_LP " since it is already inverted (with an IV test)\n", loop->GetIndex());
+    // is an IV test). The general BBJ_COND-latch-that-exits check below
+    // subsumes the IV-test case.
+
+    // If the loop is already bottom-tested (has a BBJ_COND latch that exits the loop),
+    // there is no need to invert. Also handle the canonical multi-backedge case, where
+    // optCanonicalizeBackedges has installed a BBJ_ALWAYS latch whose in-loop predecessors
+    // are the original bottom tests.
+    //
+    auto isExitingCondLatch = [&](BasicBlock* block) -> bool {
+        if ((block == condBlock) || !block->KindIs(BBJ_COND))
+        {
+            return false;
+        }
+        for (FlowEdge* const exitEdge : loop->ExitEdges())
+        {
+            if (exitEdge->getSourceBlock() == block)
+            {
+                return true;
+            }
+        }
         return false;
+    };
+
+    for (FlowEdge* const backEdge : loop->BackEdges())
+    {
+        BasicBlock* const latch = backEdge->getSourceBlock();
+
+        if (isExitingCondLatch(latch))
+        {
+            JITDUMP("No loop-inversion for " FMT_LP "; latch " FMT_BB " already makes it bottom-tested\n",
+                    loop->GetIndex(), latch->bbNum);
+            return false;
+        }
+
+        if (latch->KindIs(BBJ_ALWAYS) && latch->isEmpty())
+        {
+            for (FlowEdge* const predEdge : latch->PredEdges())
+            {
+                BasicBlock* const pred = predEdge->getSourceBlock();
+                if (loop->ContainsBlock(pred) && isExitingCondLatch(pred))
+                {
+                    JITDUMP("No loop-inversion for " FMT_LP "; predecessor " FMT_BB " of canonical latch " FMT_BB
+                            " already makes it bottom-tested\n",
+                            loop->GetIndex(), pred->bbNum, latch->bbNum);
+                    return false;
+                }
+            }
+        }
     }
 
     JITDUMP("Condition in block " FMT_BB " of loop " FMT_LP " is a candidate for duplication to invert the loop\n",
@@ -3121,7 +3161,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
             case GT_CNS_INT:
 
                 ssize_t ival;
-                ival = tree->AsIntCon()->gtIconVal;
+                ival = tree->AsIntCon()->IconValue();
                 ssize_t imask;
                 imask = 0;
 
@@ -3159,8 +3199,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 #ifdef TARGET_64BIT
                 if (doit)
                 {
-                    tree->gtType                = TYP_INT;
-                    tree->AsIntCon()->gtIconVal = (int)ival;
+                    tree->gtType = TYP_INT;
+                    tree->AsIntCon()->SetIconValue((int)ival);
 
                     fgUpdateConstTreeValueNumber(tree);
                 }
@@ -3348,14 +3388,27 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 }
 #endif
 
-                if ((tree->CastToType() != srct) || tree->gtOverflow())
+                // We are called recursively to push a narrowing cast down through `tree`.
+                // In this GT_CAST case, `tree` is an inner cast whose result feeds the outer
+                // narrowing operation; `srct` is that result type (the inner cast's TypeGet)
+                // and `dstt` is the type we are narrowing to.
+                //
+                // We recognize the pattern (simplified):
+                //     CAST<dstt <- srct>( CAST<srct <- op1>(op1) )       e.g. (int)(long)x
+                // and below rewrite the inner cast to int<->int so the chain folds away.
+                //
+                // CastToType carries signedness independently of tree->TypeGet() (e.g.
+                // CAST_LONG <- ULONG <- uint has CastToType=ULONG while tree->TypeGet()==LONG).
+                // Use genActualType on both sides of the compare so an unsigned-widening inner
+                // cast still matches a LONG `srct`.
+                if ((genActualType(tree->CastToType()) != genActualType(srct)) || tree->gtOverflow())
                 {
                     return false;
                 }
 
                 if (varTypeIsInt(op1) && varTypeIsInt(dstt) && tree->TypeIs(TYP_LONG))
                 {
-                    // We have a CAST that converts into to long while dstt is int.
+                    // We have a CAST that converts int to long while dstt is int.
                     // so we can just convert the cast to int -> int and someone will clean it up.
                     if (doit)
                     {
@@ -4939,9 +4992,9 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
     VNMemoryPhiDef memoryPhiDef;
     if (vnStore->GetVNFunc(vn, &funcApp))
     {
-        if (funcApp.m_func == VNF_MemOpaque)
+        if (funcApp.FuncIs(VNF_MemOpaque))
         {
-            const unsigned loopIndex = funcApp.m_args[0];
+            const unsigned loopIndex = funcApp.GetArg(0);
 
             // Check for the special "ambiguous" loop index.
             // This is considered variant in every loop.
@@ -4963,17 +5016,17 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
         }
         else
         {
-            for (unsigned i = 0; i < funcApp.m_arity; i++)
+            for (unsigned i = 0; i < funcApp.GetArity(); i++)
             {
                 // 4th arg of mapStore identifies the loop where the store happens.
                 //
-                if (funcApp.m_func == VNF_MapStore)
+                if (funcApp.FuncIs(VNF_MapStore))
                 {
-                    assert(funcApp.m_arity == 4);
+                    assert(funcApp.GetArity() == 4);
 
                     if (i == 3)
                     {
-                        const unsigned loopIndex = funcApp.m_args[3];
+                        const unsigned loopIndex = funcApp.GetArg(3);
                         assert((loopIndex == ValueNumStore::NoLoop) || (loopIndex < m_loops->NumLoops()));
                         if (loopIndex == ValueNumStore::NoLoop)
                         {
@@ -4991,7 +5044,7 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
                 // TODO-CQ: We need to either make sure that *all* VN functions
                 // always take VN args, or else have a list of arg positions to exempt, as implicitly
                 // constant.
-                if (!optVNIsLoopInvariant(funcApp.m_args[i], loop, loopVnInvariantCache))
+                if (!optVNIsLoopInvariant(funcApp.GetArg(i), loop, loopVnInvariantCache))
                 {
                     res = false;
                     break;
@@ -5257,11 +5310,11 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                                 lvaTable[argLcl->GetLclNum()].GetPerSsaData(argLcl->GetSsaNum())->m_vnPair.GetLiberal();
                             VNFuncApp funcApp;
                             if (argVN != ValueNumStore::NoVN && vnStore->GetVNFunc(argVN, &funcApp) &&
-                                funcApp.m_func == VNF_PtrToArrElem)
+                                funcApp.FuncIs(VNF_PtrToArrElem))
                             {
-                                assert(vnStore->IsVNHandle(funcApp.m_args[0]));
+                                assert(vnStore->IsVNHandle(funcApp.GetArg(0)));
                                 CORINFO_CLASS_HANDLE elemType =
-                                    CORINFO_CLASS_HANDLE(vnStore->ConstantValue<size_t>(funcApp.m_args[0]));
+                                    CORINFO_CLASS_HANDLE(vnStore->ConstantValue<size_t>(funcApp.GetArg(0)));
                                 AddModifiedElemTypeAllContainingLoops(mostNestedLoop, elemType);
                                 // Don't set memoryHavoc for GcHeap below.  Do set memoryHavoc for ByrefExposed
                                 // (conservatively assuming that a byref may alias the array element)

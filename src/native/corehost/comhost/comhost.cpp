@@ -198,6 +198,12 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
     _In_ REFIID riid,
     _Outptr_ LPVOID FAR* ppv)
 {
+    if (ppv == nullptr)
+        return E_POINTER;
+
+    // COM out parameters must always be initialized, including on failure paths.
+    *ppv = nullptr;
+
     // Check if the CLSID map contains a mapping
     clsid_map map;
     RETURN_HRESULT_IF_EXCEPT(map = comhost::get_clsid_map());
