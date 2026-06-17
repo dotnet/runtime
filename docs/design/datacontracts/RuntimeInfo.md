@@ -33,7 +33,6 @@ public enum RuntimeInfoRuntimeFlavor : uint
 {
     Unknown = 0,
     Coreclr,
-    Mono,
     NativeAot,
 }
 ```
