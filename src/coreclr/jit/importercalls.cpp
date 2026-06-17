@@ -403,7 +403,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+                    impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, di);
 
                     if (compDonotInline())
                     {

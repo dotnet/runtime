@@ -4644,6 +4644,11 @@ static OpcodePeepElement peepRuntimeAsyncCallRetInAsyncVersion[] = {
     { 6, CEE_ILLEGAL } // End marker
 };
 
+static OpcodePeepElement peepRuntimeAsyncJmpInAsyncVersion[] = {
+    { 0, CEE_JMP },
+    { 5, CEE_ILLEGAL } // End marker
+};
+
 class InterpAsyncCallPeeps
 {
     OpcodePeep peepCall = { peepRuntimeAsyncCall, &InterpCompiler::IsRuntimeAsyncCall, &InterpCompiler::ApplyRuntimeAsyncCall, "Call" };
@@ -4654,10 +4659,11 @@ class InterpAsyncCallPeeps
     OpcodePeep peepCallConfigureAwaitValueTask_S_S = { peepRuntimeAsyncCallConfigureAwaitValueTask_S_S, &InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask, &InterpCompiler::ApplyRuntimeAsyncCall, "CallConfigureAwaitValueTask_S_S" };
     OpcodePeep peepCallConfigureAwaitValueTask_EXACT_S = { peepRuntimeAsyncCallConfigureAwaitValueTask_EXACT_S, &InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc, &InterpCompiler::ApplyRuntimeAsyncCall, "CallConfigureAwaitValueTask_EXACT_S" };
     OpcodePeep peepCallConfigureAwaitValueTask_EXACT_L = { peepRuntimeAsyncCallConfigureAwaitValueTask_EXACT_L, &InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc, &InterpCompiler::ApplyRuntimeAsyncCall, "CallConfigureAwaitValueTask_EXACT_L" };
-    OpcodePeep peepCallRetInAsyncVersion = { peepRuntimeAsyncCallRetInAsyncVersion, &InterpCompiler::IsRuntimeAsyncCallRetInAsyncVersion, &InterpCompiler::ApplyRuntimeAsyncCallRetInAsyncVersion, "CallRetInAsyncVersion" };
+    OpcodePeep peepCallRetInAsyncVersion = { peepRuntimeAsyncCallRetInAsyncVersion, &InterpCompiler::IsRuntimeAsyncCallRetOrJmpInAsyncVersion, &InterpCompiler::ApplyRuntimeAsyncCallRetInAsyncVersion, "CallRetInAsyncVersion" };
+    OpcodePeep peepJmpInAsyncVersion = { peepRuntimeAsyncJmpInAsyncVersion, &InterpCompiler::IsRuntimeAsyncCallRetOrJmpInAsyncVersion, &InterpCompiler::ApplyRuntimeAsyncCall, "JmpInAsyncVersion" };
 
 public:
-    OpcodePeep* Peeps[10] = {
+    OpcodePeep* Peeps[11] = {
         &peepCall,
         &peepCallConfigureAwaitTask,
         &peepCallConfigureAwaitValueTask_L_L,
@@ -4667,6 +4673,7 @@ public:
         &peepCallConfigureAwaitValueTask_EXACT_S,
         &peepCallConfigureAwaitValueTask_EXACT_L,
         &peepCallRetInAsyncVersion,
+        &peepJmpInAsyncVersion,
         NULL };
 
 
@@ -4953,7 +4960,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     else
     {
         // We expect this bool to be reset when we handle the RET instruction after it gets set.
-        assert(!m_matchedAsyncCallRetInAsyncVersion);
+        assert(!m_asyncVersionIsTailCalling);
 
         if (!newObj && m_methodInfo->args.isAsyncCall() && AsyncCallPeeps.FindAndApplyPeep(this))
         {
@@ -5134,7 +5141,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     if (isJmp)
     {
-        assert(tailcall);
+        assert(tailcall || m_isAsyncVersionOfSyncMethod);
         // CEE_JMP is simulated as a tail call, so we need to load the current method's args
         for (int i = 0; i < numArgsFromStack; i++)
         {
@@ -5728,9 +5735,9 @@ void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
 
     if (m_isAsyncVersionOfSyncMethod)
     {
-        if (m_matchedAsyncCallRetInAsyncVersion)
+        if (m_asyncVersionIsTailCalling)
         {
-            m_matchedAsyncCallRetInAsyncVersion = false;
+            m_asyncVersionIsTailCalling = false;
 
             if (retType == InterpTypeVoid && m_pStackPointer > m_pStackBase)
             {
@@ -7553,7 +7560,7 @@ bool InterpCompiler::IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip
     return ResolveAsyncCallToken(ip);
 }
 
-bool InterpCompiler::IsRuntimeAsyncCallRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+bool InterpCompiler::IsRuntimeAsyncCallRetOrJmpInAsyncVersion(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
 {
     if (!m_isAsyncVersionOfSyncMethod)
     {
@@ -7566,7 +7573,7 @@ bool InterpCompiler::IsRuntimeAsyncCallRetInAsyncVersion(const uint8_t* ip, Opco
     }
 
     m_currentContinuationContextHandling = ContinuationContextHandling::None;
-    m_matchedAsyncCallRetInAsyncVersion = true;
+    m_asyncVersionIsTailCalling = true;
     return true;
 }
 
@@ -10116,7 +10123,10 @@ retry_emit:
                 {
                     BADCODE("CEE_JMP in synchronized or async method");
                 }
-                EmitCall(m_pConstrainedToken, readonly, true /* tailcall */, false /*newObj*/, false /*isCalli*/);
+                // We currently do not support tailcalls out of async methods, so we emit jmp as just
+                // a normal call in this case.
+                bool isTailCall = !m_isAsyncVersionOfSyncMethod;
+                EmitCall(m_pConstrainedToken, readonly, isTailCall /* tailcall */, false /*newObj*/, false /*isCalli*/);
                 EmitRet(methodInfo); // The tail-call infrastructure in the interpreter is not 100% guaranteed to do a 
                            // tail-call, so inject the ret logic here to cover that case.
                 linkBBlocks = false;

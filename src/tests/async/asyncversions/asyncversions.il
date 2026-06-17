@@ -112,6 +112,47 @@
         ret
     }
 
+    // --- async await wrappers --------------------------------------------
+    // These runtime-async methods actually await the result of the transfer
+    // methods, so the await path (rather than a blocking Task.Result) drives
+    // the jmp/tail. target. The non-async test methods below block on these.
+
+    .method public hidebysig static class [System.Runtime]System.Threading.Tasks.Task`1<int32>
+            AwaitJmpToSuspending() cil managed async
+    {
+        .maxstack 8
+        call class [System.Runtime]System.Threading.Tasks.Task`1<int32> AsyncVersions::JmpToSuspending()
+        call !!0 [System.Runtime]System.Runtime.CompilerServices.AsyncHelpers::Await<int32>(class [System.Runtime]System.Threading.Tasks.Task`1<!!0>)
+        ret
+    }
+
+    .method public hidebysig static class [System.Runtime]System.Threading.Tasks.Task
+            AwaitJmpToCompleted() cil managed async
+    {
+        .maxstack 8
+        call class [System.Runtime]System.Threading.Tasks.Task AsyncVersions::JmpToCompleted()
+        call void [System.Runtime]System.Runtime.CompilerServices.AsyncHelpers::Await(class [System.Runtime]System.Threading.Tasks.Task)
+        ret
+    }
+
+    .method public hidebysig static class [System.Runtime]System.Threading.Tasks.Task`1<int32>
+            AwaitTailToSuspending() cil managed async
+    {
+        .maxstack 8
+        call class [System.Runtime]System.Threading.Tasks.Task`1<int32> AsyncVersions::TailToSuspending()
+        call !!0 [System.Runtime]System.Runtime.CompilerServices.AsyncHelpers::Await<int32>(class [System.Runtime]System.Threading.Tasks.Task`1<!!0>)
+        ret
+    }
+
+    .method public hidebysig static class [System.Runtime]System.Threading.Tasks.Task
+            AwaitTailToCompleted() cil managed async
+    {
+        .maxstack 8
+        call class [System.Runtime]System.Threading.Tasks.Task AsyncVersions::TailToCompleted()
+        call void [System.Runtime]System.Runtime.CompilerServices.AsyncHelpers::Await(class [System.Runtime]System.Threading.Tasks.Task)
+        ret
+    }
+
     // --- Tests -----------------------------------------------------------
 
     .method public hidebysig static void JmpToSuspendingTest() cil managed
@@ -119,7 +160,7 @@
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 2
 
-        call class [System.Runtime]System.Threading.Tasks.Task`1<int32> AsyncVersions::JmpToSuspending()
+        call class [System.Runtime]System.Threading.Tasks.Task`1<int32> AsyncVersions::AwaitJmpToSuspending()
         callvirt instance !0 class [System.Runtime]System.Threading.Tasks.Task`1<int32>::get_Result()
         ldc.i4.s 42
         beq.s Ok
@@ -137,7 +178,7 @@
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 1
 
-        call class [System.Runtime]System.Threading.Tasks.Task AsyncVersions::JmpToCompleted()
+        call class [System.Runtime]System.Threading.Tasks.Task AsyncVersions::AwaitJmpToCompleted()
         callvirt instance void [System.Runtime]System.Threading.Tasks.Task::Wait()
         ret
     }
@@ -147,7 +188,7 @@
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 2
 
-        call class [System.Runtime]System.Threading.Tasks.Task`1<int32> AsyncVersions::TailToSuspending()
+        call class [System.Runtime]System.Threading.Tasks.Task`1<int32> AsyncVersions::AwaitTailToSuspending()
         callvirt instance !0 class [System.Runtime]System.Threading.Tasks.Task`1<int32>::get_Result()
         ldc.i4.s 84
         beq.s Ok
@@ -165,7 +206,7 @@
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 1
 
-        call class [System.Runtime]System.Threading.Tasks.Task AsyncVersions::TailToCompleted()
+        call class [System.Runtime]System.Threading.Tasks.Task AsyncVersions::AwaitTailToCompleted()
         callvirt instance void [System.Runtime]System.Threading.Tasks.Task::Wait()
         ret
     }

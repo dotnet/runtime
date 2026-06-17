@@ -7121,7 +7121,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("Stack must be empty after CEE_JMPs");
                 }
 
-                _impResolveToken(CORINFO_TOKENKIND_Method);
+                if (compIsAsyncVersion())
+                {
+                    _impResolveToken(CORINFO_TOKENKIND_Await);
+
+                    // Target may not have async variant. These cases would
+                    // fail in non-async case too since they are generic.
+                    if (resolvedToken.hMethod == NO_METHOD_HANDLE)
+                    {
+                        BADCODE("Incompatible target for CEE_JMP in async version");
+                    }
+                }
+                else
+                {
+                    _impResolveToken(CORINFO_TOKENKIND_Method);
+                }
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -8778,6 +8792,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (!impOpcodeIsCallOpcode(actualOpcode))
                     {
                         BADCODE("tailcall. has to be followed by call, callvirt or calli");
+                    }
+
+                    if (compIsAsyncVersion())
+                    {
+                        // In async versions we just ignore tail.
+                        prefixFlags &= ~PREFIX_TAILCALL_EXPLICIT;
                     }
                 }
                 assert(sz == 0);

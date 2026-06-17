@@ -700,7 +700,7 @@ private:
     // directly returns the continuation of the call instead of creating a new
     // suspension point.
     bool m_nextAwaitIsTail = false;
-    bool m_matchedAsyncCallRetInAsyncVersion = false;
+    bool m_asyncVersionIsTailCalling = false;
 
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
@@ -991,7 +991,7 @@ private:
     bool    IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
-    bool    IsRuntimeAsyncCallRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    bool    IsRuntimeAsyncCallRetOrJmpInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
 
     int     ApplyRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo) { return -1; }
     int     ApplyRuntimeAsyncCallRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
