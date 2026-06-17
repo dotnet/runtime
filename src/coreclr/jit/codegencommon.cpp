@@ -1822,8 +1822,18 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         }
 
         assert(numRegs == 2);
-        info.returnValueLoc.storeVariableInRegisters(retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv()),
-                                                     retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv()));
+        regNumber reg1 = retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv());
+        regNumber reg2 = retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv());
+
+        // VLT_REG_REG can only encode integer registers. On platforms where structs
+        // can be returned in a mix of int and float registers (SysV x64, RISC-V),
+        // skip recording if any register is not an int register.
+        if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
+        {
+            return;
+        }
+
+        info.returnValueLoc.storeVariableInRegisters(reg1, reg2);
     }
     else if (varTypeIsFloating(call))
     {
