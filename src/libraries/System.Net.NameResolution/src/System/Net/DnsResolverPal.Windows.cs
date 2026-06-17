@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -137,7 +137,7 @@ namespace System.Net
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
                 if (hdr.wType == qtype && section == Interop.Dnsapi.DNSREC_ANSWER)
                 {
-                    IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
+                    IntPtr dataPtr = cur + Unsafe.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
                     if (TryParseAddress(hdr.wType, dataPtr, out IPAddress? address))
                     {
                         records.Add(new AddressRecord(address!, TimeSpan.FromSeconds(hdr.dwTtl)));
@@ -167,7 +167,7 @@ namespace System.Net
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
                 if (hdr.wType == Interop.Dnsapi.DNS_TYPE_SRV && section == Interop.Dnsapi.DNSREC_ANSWER)
                 {
-                    IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
+                    IntPtr dataPtr = cur + Unsafe.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
                     Interop.Dnsapi.DNS_SRV_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_SRV_DATA>(dataPtr);
                     string target = PtrToString(data.pNameTarget) ?? string.Empty;
                     List<AddressRecord>? attached = null;
@@ -194,7 +194,7 @@ namespace System.Net
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
                 if (hdr.wType == Interop.Dnsapi.DNS_TYPE_TEXT && section == Interop.Dnsapi.DNSREC_ANSWER)
                 {
-                    IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
+                    IntPtr dataPtr = cur + Unsafe.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
                     // DNS_TXT_DATA: uint dwStringCount; followed by array of PCWSTR.
                     uint count = (uint)Marshal.ReadInt32(dataPtr);
                     int ptrSize = IntPtr.Size;
@@ -234,7 +234,7 @@ namespace System.Net
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
                 if (hdr.wType == qtype && section == Interop.Dnsapi.DNSREC_ANSWER)
                 {
-                    IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
+                    IntPtr dataPtr = cur + Unsafe.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
                     records.Add(selector(hdr, dataPtr));
                 }
                 cur = hdr.pNext;
@@ -292,7 +292,7 @@ namespace System.Net
                 bool isAddress = hdr.wType == Interop.Dnsapi.DNS_TYPE_A || hdr.wType == Interop.Dnsapi.DNS_TYPE_AAAA;
                 if (section == Interop.Dnsapi.DNSREC_ADDITIONAL && isAddress)
                 {
-                    IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
+                    IntPtr dataPtr = cur + Unsafe.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
                     if (TryParseAddress(hdr.wType, dataPtr, out IPAddress? address))
                     {
                         string name = PtrToString(hdr.pName) ?? string.Empty;
@@ -327,6 +327,14 @@ namespace System.Net
 
         private static string? PtrToString(IntPtr p) =>
             p == IntPtr.Zero ? null : Marshal.PtrToStringUni(p);
+
+        // Reinterprets native memory (records and result structures returned by
+        // DnsQueryEx) as a managed read-only reference. The structures are blittable
+        // and remain valid until the record list / result is freed, so this avoids the
+        // marshalling copy of Marshal.PtrToStructure. The single pointer cast is
+        // confined here so callers stay free of the 'unsafe' keyword.
+        private static unsafe ref readonly T AsStruct<T>(IntPtr ptr) where T : unmanaged =>
+            ref Unsafe.AsRef<T>((void*)ptr);
 
         // ---- Asynchronous DnsQueryEx state machine ----
 
@@ -661,41 +669,21 @@ namespace System.Net
 
             for (int i = 0; i < count; i++)
             {
-                WriteSockAddr(buffer.Slice(headerSize + (i * addrSize), addrSize), servers[i].Address);
+                WriteSockAddr(buffer.Slice(headerSize + (i * addrSize), addrSize), servers[i]);
             }
         }
 
         // Writes a SOCKADDR_IN or SOCKADDR_IN6 representation into the destination buffer.
         // The buffer must be at least 28 bytes (sizeof sockaddr_in6).
-        private static void WriteSockAddr(Span<byte> dest, IPAddress address)
+        private static void WriteSockAddr(Span<byte> dest, IPEndPoint endpoint)
         {
-            // DnsQueryEx always queries DNS servers on port 53 and requires the sockaddr
-            // port field to be left as 0. Supplying a non-zero port (even 53) is rejected
-            // with ERROR_INVALID_PARAMETER. Non-default ports are validated and rejected
-            // earlier, so the port is always written as 0 here.
-            if (address.AddressFamily == AddressFamily.InterNetwork)
-            {
-                // sockaddr_in: ushort family, ushort port (net order), uint addr, 8 bytes zero
-                BinaryPrimitives.WriteUInt16LittleEndian(dest, Interop.Dnsapi.AF_INET);
-                // dest[2..3] (port) left zero
-                address.TryWriteBytes(dest.Slice(4, 4), out _);
-                // dest[8..15] left zero
-            }
-            else if (address.AddressFamily == AddressFamily.InterNetworkV6)
-            {
-                // sockaddr_in6: ushort family, ushort port, uint flowinfo, 16-byte addr, uint scope_id
-                BinaryPrimitives.WriteUInt16LittleEndian(dest, Interop.Dnsapi.AF_INET6);
-                // dest[2..3] (port) left zero
-                // flowinfo (dest[4..7]) left zero
-                address.TryWriteBytes(dest.Slice(8, 16), out _);
-                // scope_id (dest[24..27]) is in host byte order; this code is Windows-only
-                // (always little-endian), so write it as little-endian.
-                BinaryPrimitives.WriteUInt32LittleEndian(dest.Slice(24, 4), (uint)address.ScopeId);
-            }
-            else
-            {
-                throw new ArgumentException(SR.net_invalid_ip_addr);
-            }
+            // IPEndPoint.Serialize() yields the platform SOCKADDR layout (family, port,
+            // address, and for IPv6 the flow info and scope id) via SocketAddressPal, so
+            // there's no need to lay out the bytes by hand. DnsQueryEx always queries DNS
+            // servers on port 53 and requires the sockaddr port field to be left as 0;
+            // serializing a port-0 endpoint satisfies that.
+            SocketAddress socketAddress = endpoint.Serialize();
+            socketAddress.Buffer.Span.Slice(0, socketAddress.Size).CopyTo(dest);
         }
 
         private static DnsResponseCode MapWindowsErrorToResponseCode(int status) =>
@@ -720,7 +708,7 @@ namespace System.Net
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
                 if (hdr.wType == Interop.Dnsapi.DNS_TYPE_SOA && section == Interop.Dnsapi.DNSREC_AUTHORITY)
                 {
-                    IntPtr dataPtr = cur + Marshal.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
+                    IntPtr dataPtr = cur + Unsafe.SizeOf<Interop.Dnsapi.DNS_RECORD_HEADER>();
                     Interop.Dnsapi.DNS_SOA_DATA soa = Marshal.PtrToStructure<Interop.Dnsapi.DNS_SOA_DATA>(dataPtr);
                     // RFC 2308 §5: negative cache TTL = min(SOA TTL, SOA MINIMUM)
                     uint negTtl = Math.Min(hdr.dwTtl, soa.dwDefaultTtl);

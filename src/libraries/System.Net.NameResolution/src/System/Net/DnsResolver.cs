@@ -35,9 +35,16 @@ namespace System.Net
         public DnsResolver(DnsResolverOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
-            // Capture a snapshot of the configured servers so later mutations of the
-            // options instance don't affect resolutions performed by this resolver.
-            _servers = [.. options.Servers];
+            // Capture a defensive snapshot of the configured servers. IPEndPoint is
+            // mutable, so clone each entry to ensure later mutations of the options
+            // instance (or the endpoints it holds) don't affect this resolver.
+            IList<IPEndPoint> servers = options.Servers;
+            _servers = new IPEndPoint[servers.Count];
+            for (int i = 0; i < _servers.Length; i++)
+            {
+                IPEndPoint server = servers[i];
+                _servers[i] = new IPEndPoint(server.Address, server.Port);
+            }
         }
 
         /// <summary>
