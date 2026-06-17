@@ -56,7 +56,7 @@ namespace System.Threading
         #region Public Enter/Exit methods
         public static void Enter(object obj)
         {
-            ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
+            ObjectHeader.HeaderLockResult result = ObjectHeader.AcquireThinLock(obj, isOneShot: false);
             if (result == ObjectHeader.HeaderLockResult.Success)
                 return;
 
@@ -65,7 +65,7 @@ namespace System.Threading
 
         public static bool TryEnter(object obj)
         {
-            ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
+            ObjectHeader.HeaderLockResult result = ObjectHeader.AcquireThinLock(obj);
             if (result == ObjectHeader.HeaderLockResult.Success)
                 return true;
 
@@ -79,7 +79,7 @@ namespace System.Threading
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
-            ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
+            ObjectHeader.HeaderLockResult result = ObjectHeader.AcquireThinLock(obj);
             if (result == ObjectHeader.HeaderLockResult.Success)
                 return true;
 
@@ -122,7 +122,7 @@ namespace System.Threading
 
         internal static void SynchronizedMethodEnter(object obj, ref bool lockTaken)
         {
-            ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
+            ObjectHeader.HeaderLockResult result = ObjectHeader.AcquireThinLock(obj, isOneShot: false);
             if (result == ObjectHeader.HeaderLockResult.Success)
             {
                 lockTaken = true;

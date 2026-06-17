@@ -284,22 +284,20 @@ namespace System.Threading
         // -1 - success
         // 0 - failed
         // syncIndex - retry with the Lock
+        //
+        // The public entry point is one-shot by default. Callers that want to wait for a thin lock
+        // owned by another thread (e.g. a blocking Monitor.Enter) pass isOneShot: false to spin
+        // briefly before giving up.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int Acquire(object obj, int currentThreadID)
-        {
-            return TryAcquire(obj, currentThreadID, oneShot: false);
-        }
-
-        // -1 - success
-        // 0 - failed
-        // syncIndex - retry with the Lock
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int TryAcquire(object obj, int currentThreadID, bool oneShot = true)
+        public static unsafe int AcquireThinLock(object obj, int currentThreadID, bool isOneShot = true)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
             // if thread ID is uninitialized or too big, we do "uncommon" part.
-            if ((uint)(currentThreadID - 1) <= (uint)SBLK_MASK_LOCK_THREADID)
+            // A thin lock can only store a thread id in [1, SBLK_MASK_LOCK_THREADID]; the single
+            // unsigned comparison rules out both the uninitialized 0 id and ids that do not fit
+            // (including SBLK_MASK_LOCK_THREADID + 1, which would overflow into the recursion bits).
+            if ((uint)(currentThreadID - 1) < (uint)SBLK_MASK_LOCK_THREADID)
             {
                 // for an object used in locking there are two common cases:
                 // - header bits are unused or
@@ -330,14 +328,14 @@ namespace System.Threading
                 }
             }
 
-            return TryAcquireUncommon(obj, currentThreadID, oneShot);
+            return TryAcquireUncommon(obj, currentThreadID, isOneShot);
         }
 
         // handling uncommon cases here - recursive lock, contention, retries
         // -1 - success
         // 0 - failed
         // syncIndex - retry with the Lock
-        private static unsafe int TryAcquireUncommon(object obj, int currentThreadID, bool oneShot)
+        private static unsafe int TryAcquireUncommon(object obj, int currentThreadID, bool isOneShot)
         {
             if (currentThreadID == 0)
                 currentThreadID = Environment.CurrentManagedThreadId;
@@ -348,7 +346,7 @@ namespace System.Threading
 
             // Lock.IsSingleProcessor gets a value that is lazy-initialized at the first contended acquire.
             // Until then it is false and we assume we have multicore machine.
-            int retries = oneShot || Lock.IsSingleProcessor ? 0 : 16;
+            int retries = isOneShot || Lock.IsSingleProcessor ? 0 : 16;
 
             // retry when the lock is owned by somebody else.
             // this loop will spinwait between iterations.
