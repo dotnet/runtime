@@ -218,6 +218,7 @@ def main(main_args):
             python_path,
             os.path.join(cwd, "superpmi.py"),
             "replay",
+            "--skip_if_no_mch",
             "-core_root", cwd,
             "-target_os", target_os_name,
             "-target_arch", target_arch_name,

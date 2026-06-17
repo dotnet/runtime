@@ -348,6 +348,7 @@ replay_common_parser.add_argument("-private_store", action="append", help=privat
 replay_common_parser.add_argument("-compile", "-c", help=compile_help)
 replay_common_parser.add_argument("--produce_repro", action="store_true", help=produce_repro_help)
 replay_common_parser.add_argument("-details", help="Specify full path to details file")
+replay_common_parser.add_argument("--skip_if_no_mch", action="store_true", help="Treat no matching MCH files as a successful no-op.")
 
 # subparser for replay
 replay_parser = subparsers.add_parser("replay", description=replay_description, parents=[core_root_parser, target_parser, superpmi_common_parser, replay_common_parser])
@@ -5212,6 +5213,11 @@ def setup_args(args):
                             lambda unused: True,
                             "Unable to set details")
 
+        coreclr_args.verify(args,
+                            "skip_if_no_mch",
+                            lambda unused: True,
+                            "Unable to set skip_if_no_mch")
+
     def verify_base_diff_args():
 
         coreclr_args.verify(args,
@@ -5886,6 +5892,9 @@ def main(args):
         local_mch_paths = process_mch_files_arg(coreclr_args)
         mch_files = get_mch_files_for_replay(local_mch_paths, coreclr_args.filter)
         if mch_files is None:
+            if coreclr_args.skip_if_no_mch:
+                logging.warning("No MCH files found for replay; skipping.")
+                return 0
             return 1
 
         begin_time = datetime.datetime.now()
