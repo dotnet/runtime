@@ -36,7 +36,7 @@ LOCAL_LABEL(Hashtable):
 
         // r1 = MethodTable, r12 = indirection cell address
         // Look up the target in the dispatch cache hashtable (GenericCache<Key, nint>).
-        push        {r3,r4,r5,r6,r8,lr}
+        PROLOG_PUSH  "{r3,r4,r5,r6,r8}"
 
         // Load the _table field (Entry[]) from the cache struct.
         PREPARE_EXTERNAL_VAR_INDIRECT g_pDispatchCache, r2
@@ -89,7 +89,7 @@ LOCAL_LABEL(ProbeLoop):
         // Dispatch to cached target.
         mov         r12, r8
 
-        pop         {r3,r4,r5,r6,r8,lr}
+        EPILOG_POP   "{r3,r4,r5,r6,r8}"
         EPILOG_POP "{r1,r2}"
 
         EPILOG_BRANCH_REG r12
@@ -109,7 +109,7 @@ LOCAL_LABEL(ProbeMiss):
         blt         LOCAL_LABEL(ProbeLoop)
 
 LOCAL_LABEL(CacheMiss):
-        pop         {r3,r4,r5,r6,r8,lr}
+        EPILOG_POP  "{r3,r4,r5,r6,r8}"
 
         // restore original value of r1, r2
         EPILOG_POP "{r1,r2}"
