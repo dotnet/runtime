@@ -615,23 +615,23 @@ void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTa
     // when it is null the code causes an AV. This AV is seen by the VM's personality routine
     // and it converts it into nullRef.
 
-    // push {r5,r6}
-    _stub._entryPoint[n++] = 0xb460;
+    // push {r4,r5}
+    _stub._entryPoint[n++] = 0xb430;
 
-    // ldr r6, [r0 + #Object.m_pMethTab]
+    // ldr r4, [r0 + #Object.m_pMethTab]
     _stub._entryPoint[n++] = DISPATCH_STUB_FIRST_WORD;
-    _stub._entryPoint[n++] = 0x6000;
+    _stub._entryPoint[n++] = 0x4000;
 
     // ldr r5, [pc + #_expectedMT]
     offset = PC_REL_OFFSET(_expectedMT);
     _ASSERTE((offset & 0x3) == 0);
     _stub._entryPoint[n++] = 0x4d00 | (offset >> 2);
 
-    // cmp r5, r6
-    _stub._entryPoint[n++] = 0x42b5;
+    // cmp r5, r4
+    _stub._entryPoint[n++] = 0x42a5;
 
-    // pop {r5,r6}
-    _stub._entryPoint[n++] = 0xbc60;
+    // pop {r4,r5}
+    _stub._entryPoint[n++] = 0xbc30;
 
     // bne failTarget
     _stub._entryPoint[n++] = 0xd101;

@@ -50,7 +50,7 @@ AdjustContextForVirtualStub(
             return FALSE;
         }
 
-        pushedRegistersSize = 2 * sizeof(TADDR); // push {r5,r6}
+        pushedRegistersSize = 2 * sizeof(TADDR); // push {r4,r5}
     }
     else
     if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
