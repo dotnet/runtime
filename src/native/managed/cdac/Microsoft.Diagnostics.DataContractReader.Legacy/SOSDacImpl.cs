@@ -7129,16 +7129,26 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSStressLogThreadEnum.Next(uint count, SOSThreadStressLogData[] values, uint* pFetched)
         {
-            if (pFetched is null || values is null)
-                return HResults.E_POINTER;
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pFetched is null || values is null)
+                    throw new NullReferenceException();
 
-            count = Math.Min(count, (uint)values.Length);
-            uint written = 0;
-            while (written < count && _index < _threads.Length)
-                values[written++] = _threads[(int)_index++];
+                count = Math.Min(count, (uint)values.Length);
+                uint written = 0;
+                while (written < count && _index < _threads.Length)
+                    values[written++] = _threads[(int)_index++];
 
-            *pFetched = written;
-            return written < count ? HResults.S_FALSE : HResults.S_OK;
+                *pFetched = written;
+                hr = written < count ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+
+            return hr;
         }
 
         int ISOSEnum.Skip(uint count)
@@ -7178,30 +7188,40 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSStressLogMsgEnum.Next(uint count, SOSStressMsgData[] values, uint* pFetched)
         {
-            if (pFetched is null || values is null)
-                return HResults.E_POINTER;
-
-            count = Math.Min(count, (uint)values.Length);
-            _lastBatchStart = _index;
-            uint written = 0;
-
-            while (written < count && _index < _messages.Length)
+            int hr = HResults.S_OK;
+            try
             {
-                Contracts.StressMsgData msg = _messages[(int)_index++];
-                values[written] = new SOSStressMsgData
+                if (pFetched is null || values is null)
+                    throw new NullReferenceException();
+
+                count = Math.Min(count, (uint)values.Length);
+                _lastBatchStart = _index;
+                uint written = 0;
+
+                while (written < count && _index < _messages.Length)
                 {
-                    Facility = msg.Facility,
-                    FormatString = msg.FormatString.ToClrDataAddress(_target),
-                    Timestamp = msg.Timestamp,
-                    ArgumentCount = (uint)msg.Args.Count,
-                    MessageAddress = 0,
-                };
-                written++;
+                    Contracts.StressMsgData msg = _messages[(int)_index++];
+                    values[written] = new SOSStressMsgData
+                    {
+                        Facility = msg.Facility,
+                        FormatString = msg.FormatString.ToClrDataAddress(_target),
+                        Timestamp = msg.Timestamp,
+                        ArgumentCount = (uint)msg.Args.Count,
+                        MessageAddress = 0,
+                    };
+                    written++;
+                }
+
+                _lastBatchCount = written;
+                *pFetched = written;
+                hr = written < count ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
             }
 
-            _lastBatchCount = written;
-            *pFetched = written;
-            return written < count ? HResults.S_FALSE : HResults.S_OK;
+            return hr;
         }
 
         int ISOSStressLogMsgEnum.GetArguments(uint messageIndex, uint argCount, ClrDataAddress[] args, uint* pFetched)
@@ -7251,12 +7271,11 @@ public sealed unsafe partial class SOSDacImpl
             if (data is null)
                 return HResults.E_POINTER;
 
+            *data = default;
+
             Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
             if (!stressLogContract.HasStressLog())
-            {
-                *data = default;
                 return HResults.S_FALSE;
-            }
 
             Contracts.StressLogData logData = stressLogContract.GetStressLogData();
             data->LoggedFacilities = logData.LoggedFacilities;
