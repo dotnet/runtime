@@ -559,12 +559,88 @@ namespace System.Xml.Serialization
 
                 collection = a;
             }
+            else if (TryBuildWithCollectionBuilder(collectionType, collectionMember, out object? built))
+            {
+                Debug.Assert(built != null);
+                collection = built;
+            }
             else
             {
                 collection ??= ReflectionCreateObject(collectionType)!;
 
                 AddObjectsIntoTargetCollection(collection, collectionMember, collectionType);
             }
+        }
+
+        // If collectionType has a [CollectionBuilder] (e.g. ImmutableArray/List/Stack/Queue/HashSet/SortedSet),
+        // accumulate items into a typed array and invoke the static factory method instead of trying to
+        // construct the type directly + call Add (which would fail or silently no-op for immutables).
+        private static bool TryBuildWithCollectionBuilder(
+            [DynamicallyAccessedMembers(TrimmerConstants.AllMethods)] Type collectionType,
+            CollectionMember collectionMember,
+            out object? built)
+        {
+            built = null;
+            Type? elementType = GetEnumerableElementType(collectionType);
+            if (elementType == null)
+                return false;
+
+            MethodInfo? factory = TypeScope.GetCollectionBuilderMethod(collectionType, elementType);
+            if (factory == null)
+                return false;
+
+            Array buffer = Array.CreateInstance(elementType, collectionMember.Count);
+            for (int i = 0; i < collectionMember.Count; i++)
+            {
+                buffer.SetValue(collectionMember[i], i);
+            }
+
+            // ImmutableStack.Create(arr) pushes arr[0] first so arr[last] ends up on top — which inverts
+            // enumeration order on round-trip. Reverse the buffer first so the deserialized stack enumerates
+            // in the same order as the serialized one.
+            if (collectionType.IsGenericType &&
+                collectionType.GetGenericTypeDefinition().FullName == "System.Collections.Immutable.ImmutableStack`1")
+            {
+                Array.Reverse(buffer);
+            }
+
+            object? arg = buffer;
+            ParameterInfo[] pars = factory.GetParameters();
+            Debug.Assert(pars.Length == 1);
+            Type paramType = pars[0].ParameterType;
+            if (paramType.IsGenericType && paramType.GetGenericTypeDefinition() == typeof(ReadOnlySpan<>))
+            {
+                // ReadOnlySpan<T> is a ref struct and cannot be passed via MethodBase.Invoke.
+                // Build an Expression that converts the array to ReadOnlySpan<T> and invokes the factory.
+                MethodInfo? op = paramType.GetMethod("op_Implicit", BindingFlags.Public | BindingFlags.Static,
+                    new Type[] { elementType.MakeArrayType() });
+                if (op == null)
+                    return false;
+                ParameterExpression p = Expression.Parameter(typeof(Array), "arr");
+                Expression call = Expression.Call(factory, Expression.Call(op, Expression.Convert(p, elementType.MakeArrayType())));
+                if (factory.ReturnType != typeof(object))
+                {
+                    call = Expression.Convert(call, typeof(object));
+                }
+                Func<Array, object> invoker = Expression.Lambda<Func<Array, object>>(call, p).Compile();
+                built = invoker(buffer);
+                return true;
+            }
+
+            built = factory.Invoke(null, new object?[] { arg });
+            return true;
+        }
+
+        private static Type? GetEnumerableElementType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type type)
+        {
+            foreach (Type itf in type.GetInterfaces())
+            {
+                if (itf.IsGenericType && itf.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                {
+                    return itf.GetGenericArguments()[0];
+                }
+            }
+            return null;
         }
 
         private static void AddObjectsIntoTargetCollection(object targetCollection, List<object?> sourceCollection,
@@ -1137,7 +1213,9 @@ namespace System.Xml.Serialization
                     };
 
                     Type collectionType = memberMapping.TypeDesc!.Type!;
-                    o = ReflectionCreateObject(memberMapping.TypeDesc.Type!);
+                    o = memberMapping.TypeDesc.UsesCollectionBuilder
+                        ? null
+                        : ReflectionCreateObject(memberMapping.TypeDesc.Type!);
 
                     // When this array is the value of a member that carries an [XmlChoiceIdentifier]
                     // (e.g. one of the choice element types is itself an array), the parallel choice
