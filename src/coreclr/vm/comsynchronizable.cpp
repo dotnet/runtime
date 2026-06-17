@@ -860,22 +860,6 @@ extern "C" void QCALLTYPE Monitor_GetOrCreateLockObject(QCall::ObjectHandleOnSta
     END_QCALL;
 }
 
-FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_AcquireThinLock, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    return obj->GetHeader()->AcquireHeaderThinLock(GetThread());
-}
-FCIMPLEND
-
-FCIMPL1(ObjHeader::HeaderLockResult, ObjHeader_ReleaseThinLock, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    return obj->GetHeader()->ReleaseHeaderThinLock(GetThread());
-}
-FCIMPLEND
-
 extern "C" INT32 QCALLTYPE ThreadNative_ReentrantWaitAny(BOOL alertable, INT32 timeout, INT32 count, HANDLE *handles)
 {
     QCALL_CONTRACT;

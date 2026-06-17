@@ -48,7 +48,6 @@ namespace System.Threading
         private const int SBLK_MASK_LOCK_RECLEVEL = 0x003F0000;   // 64 recursion levels
         private const int SBLK_LOCK_RECLEVEL_INC = 0x00010000;    // each level is this much higher than the previous one
 
-        // These must match the values in syncblk.h
         public enum HeaderLockResult
         {
             Success = 0,
