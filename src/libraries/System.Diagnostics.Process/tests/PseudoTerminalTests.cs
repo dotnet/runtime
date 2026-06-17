@@ -14,10 +14,7 @@ namespace System.Diagnostics.Tests
     {
         public static bool IsPseudoTerminalSupported =>
             RemoteExecutor.IsSupported &&
-            !PlatformDetection.IsAndroid &&
-            !PlatformDetection.IsiOS &&
-            !PlatformDetection.IstvOS &&
-            !PlatformDetection.IsWasm &&
+            !PlatformDetection.IsWindowsNanoServer &&
             !PlatformDetection.IsAzureLinux;
 
         private static readonly PseudoTerminalOptions s_testOptions = new(80, 24);
@@ -175,19 +172,25 @@ namespace System.Diagnostics.Tests
                 }
                 else
                 {
-                    Assert.NotEqual(stdIn, GetTerminalNameOrEmpty(0));
-                    Assert.NotEqual(stdOut, GetTerminalNameOrEmpty(1));
+                    Assert.NotEqual(stdIn, NativeTtyName(0) ?? string.Empty);
+                    Assert.NotEqual(stdOut, NativeTtyName(1) ?? string.Empty);
                 }
 
                 return RemoteExecutor.SuccessExitCode;
+
+                [LibraryImport("libc", EntryPoint = "ttyname", StringMarshalling = StringMarshalling.Utf8)]
+                static partial string? NativeTtyName(int fd);
             },
-            OperatingSystem.IsWindows() ? Console.OpenStandardInputHandle().DangerousGetHandle().ToString() : GetTerminalNameOrEmpty(Console.OpenStandardInputHandle()),
-            OperatingSystem.IsWindows() ? Console.OpenStandardOutputHandle().DangerousGetHandle().ToString() : GetTerminalNameOrEmpty(Console.OpenStandardOutputHandle()));
+            OperatingSystem.IsWindows() ? Console.OpenStandardInputHandle().DangerousGetHandle().ToString() : NativeTtyName(Console.OpenStandardInputHandle()) ?? string.Empty,
+            OperatingSystem.IsWindows() ? Console.OpenStandardOutputHandle().DangerousGetHandle().ToString() : NativeTtyName(Console.OpenStandardOutputHandle()) ?? string.Empty);
             process.StartInfo.PseudoTerminal = pty;
 
             Assert.True(process.Start());
             Assert.True(process.WaitForExit(WaitInMS));
             Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
+
+            [LibraryImport("libc", EntryPoint = "ttyname", StringMarshalling = StringMarshalling.Utf8)]
+            static partial string? NativeTtyName(SafeFileHandle fd);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -279,21 +282,7 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
             Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
         }
-
-        private static string GetTerminalNameOrEmpty(SafeHandle handle) =>
-            GetTerminalNameOrEmpty((int)handle.DangerousGetHandle());
-
-        private static string GetTerminalNameOrEmpty(int fileDescriptor)
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                return string.Empty;
-            }
-
-            return NativeTtyName(fileDescriptor) ?? string.Empty;
-        }
-
-        [LibraryImport("libc", EntryPoint = "ttyname", StringMarshalling = StringMarshalling.Utf8)]
-        private static partial string? NativeTtyName(int fd);
+    }
+}
     }
 }

@@ -1265,11 +1265,6 @@ namespace System.Diagnostics
                     // or fall back to the console handles. The null device handle will be disposed in the finally block below.
                     if (startInfo.PseudoTerminal is not null)
                     {
-                        if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
-                        {
-                            throw new PlatformNotSupportedException();
-                        }
-
                         SetChildHandlesForPseudoTerminal(startInfo.PseudoTerminal, ref childInputHandle, ref childOutputHandle, ref childErrorHandle);
                     }
                     else if (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
@@ -1352,11 +1347,6 @@ namespace System.Diagnostics
 
             if (startInfo.PseudoTerminal is not null)
             {
-                if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
-                {
-                    throw new PlatformNotSupportedException();
-                }
-
                 OpenPseudoTerminalStreams(startInfo);
             }
 
