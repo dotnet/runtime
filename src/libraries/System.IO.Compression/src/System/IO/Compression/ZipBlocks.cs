@@ -247,16 +247,13 @@ namespace System.IO.Compression
             // is to respect the size, but only actually use the values if their 32 bit
             // values were all 0xFF.
 
-            // The spec section 4.5.3 later:
-            //      This entry in the Local header MUST include BOTH original
-            //      and compressed file size fields. If encrypting the
-            //      central directory and bit 13 of the general purpose bit
-            //      flag is set indicating masking, the value stored in the
-            //      Local Header for the original file size will be zero.
-
             if (data.Length < FieldLengths.UncompressedSize)
             {
-                return true;
+                // The spec section 4.5.3 later:
+                //      This entry in the Local header MUST include BOTH original
+                //      and compressed file size fields.
+
+                return !isInLocalHeader;
             }
 
             // Advancing the stream (by reading from it) is possible only when:
@@ -286,7 +283,7 @@ namespace System.IO.Compression
 
             if (data.Length < FieldLengths.CompressedSize)
             {
-                return true;
+                return !isInLocalHeader;
             }
 
             if (readCompressedSize)
