@@ -179,6 +179,7 @@ namespace System.Text.Json.Serialization.Metadata
             return delegate (TCollection collection, object? element)
             {
 #if NET
+                // Keep exception propagation aligned with ReflectionEmitMemberAccessor.
                 addMethod.Invoke(
                     collection,
                     BindingFlags.DoNotWrapExceptions,
@@ -310,7 +311,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 KeyValuePair<Type, MethodInfo> entry = entries[i];
                 caseTypes[i] = entry.Key;
-                chain[i] = (UnionTryGetValueAccessor<TUnion>)typeof(ReflectionMemberAccessor)
+                object? accessor = typeof(ReflectionMemberAccessor)
                     .GetMethod(nameof(CreateUnionTryGetValueAccessorCore), BindingFlags.NonPublic | BindingFlags.Static)!
                     .MakeGenericMethod(typeof(TUnion), entry.Key)
 #if NET
@@ -321,8 +322,15 @@ namespace System.Text.Json.Serialization.Metadata
                         parameters: new object[] { entry.Value },
                         culture: null)!;
 #else
-                    .Invoke(null, new object[] { entry.Value })!;
+                    .Invoke(null, new object[] { entry.Value });
 #endif
+
+                if (accessor is null)
+                {
+                    throw new InvalidOperationException();
+                }
+
+                chain[i] = (UnionTryGetValueAccessor<TUnion>)accessor;
             }
 
             return (TUnion union, out Type? caseType, out object? value) =>
