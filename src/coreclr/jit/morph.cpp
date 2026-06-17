@@ -9613,6 +9613,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         break;
                     }
 
+                    if (!gtCanSwapOrder(op1, op2))
+                    {
+                        break;
+                    }
+
                     op1 = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
 
                     NamedIntrinsic subIntrinsic =
