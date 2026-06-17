@@ -49,20 +49,36 @@ namespace System.Diagnostics.Tests
         [InlineData(true)]
         public async Task Run_WithFileName_Silent_OutputIsDiscarded(bool useAsync)
         {
-            using Process template = CreateProcess(static () =>
+            // Process B writes to stdout and stderr.
+            using Process innerTemplate = CreateProcess(static () =>
             {
                 Console.Write("this should be discarded");
                 Console.Error.Write("this error should be discarded");
                 return RemoteExecutor.SuccessExitCode;
             });
-            List<string>? arguments = Helpers.MapToArgumentList(template.StartInfo);
+            string innerFileName = innerTemplate.StartInfo.FileName;
+            string innerArguments = innerTemplate.StartInfo.Arguments;
 
-            ProcessExitStatus exitStatus = useAsync
-                ? await Process.RunAsync(template.StartInfo.FileName, arguments, silent: true)
-                : Process.Run(template.StartInfo.FileName, arguments, silent: true);
+            // Process A starts process B with silent: true, then returns B's exit code.
+            using Process outerTemplate = CreateProcess(static (string fileName, string arguments) =>
+            {
+                List<string>? args = Helpers.MapToArgumentList(new ProcessStartInfo(fileName) { Arguments = arguments });
+                ProcessExitStatus status = Process.Run(fileName, args, silent: true);
+                return status.ExitCode;
+            }, innerFileName, innerArguments);
 
-            Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
-            Assert.False(exitStatus.Canceled);
+            // Start process A with redirected output/error so we can capture them.
+            outerTemplate.StartInfo.RedirectStandardOutput = true;
+            outerTemplate.StartInfo.RedirectStandardError = true;
+
+            ProcessTextOutput result = useAsync
+                ? await Process.RunAndCaptureTextAsync(outerTemplate.StartInfo)
+                : Process.RunAndCaptureText(outerTemplate.StartInfo);
+
+            Assert.Equal(RemoteExecutor.SuccessExitCode, result.ExitStatus.ExitCode);
+            Assert.False(result.ExitStatus.Canceled);
+            Assert.Equal(string.Empty, result.StandardOutput);
+            Assert.Equal(string.Empty, result.StandardError);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

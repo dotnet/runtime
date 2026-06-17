@@ -141,15 +141,10 @@ namespace System.Diagnostics
         {
             ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
 
-            if (silent)
-            {
-                using SafeFileHandle nullHandle = File.OpenNullHandle();
-                startInfo.StandardInputHandle = nullHandle;
-                startInfo.StandardOutputHandle = nullHandle;
-                startInfo.StandardErrorHandle = nullHandle;
-
-                return Run(startInfo, timeout);
-            }
+            using SafeFileHandle? nullHandle = silent ? File.OpenNullHandle() : null;
+            startInfo.StandardInputHandle = nullHandle;
+            startInfo.StandardOutputHandle = nullHandle;
+            startInfo.StandardErrorHandle = nullHandle;
 
             return Run(startInfo, timeout);
         }
@@ -204,26 +199,16 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Task<ProcessExitStatus> RunAsync(string fileName, IList<string>? arguments = null, bool silent = false, CancellationToken cancellationToken = default)
+        public static async Task<ProcessExitStatus> RunAsync(string fileName, IList<string>? arguments = null, bool silent = false, CancellationToken cancellationToken = default)
         {
             ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
 
-            if (silent)
-            {
-                return RunSilentAsync(startInfo, cancellationToken);
-            }
+            using SafeFileHandle? nullHandle = silent ? File.OpenNullHandle() : null;
+            startInfo.StandardInputHandle = nullHandle;
+            startInfo.StandardOutputHandle = nullHandle;
+            startInfo.StandardErrorHandle = nullHandle;
 
-            return RunAsync(startInfo, cancellationToken);
-
-            static async Task<ProcessExitStatus> RunSilentAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken)
-            {
-                using SafeFileHandle nullHandle = File.OpenNullHandle();
-                startInfo.StandardInputHandle = nullHandle;
-                startInfo.StandardOutputHandle = nullHandle;
-                startInfo.StandardErrorHandle = nullHandle;
-
-                return await RunAsync(startInfo, cancellationToken).ConfigureAwait(false);
-            }
+            return await RunAsync(startInfo, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
