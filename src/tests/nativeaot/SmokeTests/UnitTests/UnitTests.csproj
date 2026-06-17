@@ -13,6 +13,8 @@
 
     <IlcOrderFile>order.txt</IlcOrderFile>
     <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
+
+    <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
   <ItemGroup>
