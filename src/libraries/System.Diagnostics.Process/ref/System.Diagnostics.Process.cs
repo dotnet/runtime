@@ -16,6 +16,8 @@ namespace Microsoft.Win32.SafeHandles
         public void Kill() { }
         public int ProcessId { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public void Resume() { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
@@ -353,6 +355,8 @@ namespace System.Diagnostics
         public System.Text.Encoding? StandardOutputEncoding { get { throw null; } set { } }
         public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardOutputHandle { get { throw null; } set { } }
         public bool StartDetached { get { throw null; } set { } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public bool StartSuspended { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool UseCredentialsForNetworkingOnly { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
