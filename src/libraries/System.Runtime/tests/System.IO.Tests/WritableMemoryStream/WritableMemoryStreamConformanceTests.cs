@@ -19,9 +19,15 @@ namespace System.IO.Tests
 
         protected override Task<Stream?> CreateReadWriteStreamCore(byte[]? initialData)
         {
-            if (initialData is null || initialData.Length == 0)
+            if (initialData is null)
             {
                 return Task.FromResult<Stream?>(null);
+            }
+
+            if (initialData.Length == 0)
+            {
+                return Task.FromResult<Stream?>(
+                    new WritableMemoryStream(new Memory<byte>(new byte[1024])));
             }
 
             var memory = new Memory<byte>(new byte[initialData.Length]);

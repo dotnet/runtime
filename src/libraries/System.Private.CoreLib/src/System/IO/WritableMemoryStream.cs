@@ -170,6 +170,11 @@ public sealed class WritableMemoryStream : MemoryStream
         ValidateCopyToArguments(destination, bufferSize);
         EnsureNotClosed();
 
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled(cancellationToken);
+        }
+
         if (_length > _position)
         {
             ReadOnlyMemory<byte> content = _buffer.Slice(_position, _length - _position);
@@ -189,6 +194,11 @@ public sealed class WritableMemoryStream : MemoryStream
         if (_position >= _buffer.Length)
         {
             throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
+        }
+
+        if (_position > _length)
+        {
+            _buffer.Span.Slice(_length, _position - _length).Clear();
         }
 
         _buffer.Span[_position++] = value;
@@ -219,6 +229,11 @@ public sealed class WritableMemoryStream : MemoryStream
         if (_position > _buffer.Length - buffer.Length)
         {
             throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
+        }
+
+        if (_position > _length)
+        {
+            _buffer.Span.Slice(_length, _position - _length).Clear();
         }
 
         buffer.CopyTo(_buffer.Span.Slice(_position));
@@ -318,10 +333,7 @@ public sealed class WritableMemoryStream : MemoryStream
         ArgumentNullException.ThrowIfNull(stream);
         EnsureNotClosed();
 
-        if (_length > 0)
-        {
-            stream.Write(_buffer.Span.Slice(0, _length));
-        }
+        stream.Write(_buffer.Span.Slice(0, _length));
     }
 
     /// <inheritdoc/>

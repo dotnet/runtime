@@ -127,6 +127,7 @@ namespace System.Buffers
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
+            EnsureNotDisposed();
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -140,6 +141,8 @@ namespace System.Buffers
         /// <inheritdoc/>
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            EnsureNotDisposed();
+
             if (cancellationToken.IsCancellationRequested)
             {
                 return ValueTask.FromCanceled<int>(cancellationToken);

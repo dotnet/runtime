@@ -168,6 +168,11 @@ public sealed class ReadOnlyMemoryStream : MemoryStream
         ValidateCopyToArguments(destination, bufferSize);
         EnsureNotClosed();
 
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled(cancellationToken);
+        }
+
         if (_buffer.Length > _position)
         {
             ReadOnlyMemory<byte> content = _buffer.Slice(_position);
@@ -253,10 +258,7 @@ public sealed class ReadOnlyMemoryStream : MemoryStream
         ArgumentNullException.ThrowIfNull(stream);
         EnsureNotClosed();
 
-        if (_buffer.Length > 0)
-        {
-            stream.Write(_buffer.Span);
-        }
+        stream.Write(_buffer.Span);
     }
 
     /// <inheritdoc/>
