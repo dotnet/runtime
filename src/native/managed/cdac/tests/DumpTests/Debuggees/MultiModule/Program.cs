@@ -2,12 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 
 /// <summary>
 /// Debuggee for cDAC dump tests — exercises the Loader contract.
 /// Loads assemblies from multiple AssemblyLoadContexts then crashes.
+/// Also loads an assembly from in-memory bytes with an in-memory PDB
+/// stream so the Loader contract's <c>TryGetSymbolStream</c> /
+/// DacDbi <c>GetSymbolsBuffer</c> path can be exercised against a real module.
 /// Also includes metadata features for MetaDataImport dump tests:
 /// - Non-const fields (for ELEMENT_TYPE_VOID default value testing)
 /// - String literals (user strings in #US heap)
@@ -40,6 +44,16 @@ internal static class Program
         // Also load System.Xml to have another module present
         var xmlAssembly = Assembly.Load("System.Private.Xml");
 
+        // Load this debuggee's own assembly from in-memory bytes alongside its
+        // portable PDB. The runtime stores the PDB bytes on the resulting
+        // Module as a CGrowableSymbolStream, which is what the DacDbi
+        // GetSymbolsBuffer / Loader contract TryGetSymbolStream APIs read.
+        string asmPath = typeof(Program).Assembly.Location;
+        string pdbPath = Path.ChangeExtension(asmPath, ".pdb");
+        byte[] inMemoryAssemblyBytes = File.ReadAllBytes(asmPath);
+        byte[] inMemorySymbolBytes = File.ReadAllBytes(pdbPath);
+        Assembly inMemoryAssembly = Assembly.Load(inMemoryAssemblyBytes, inMemorySymbolBytes);
+
         // Use the non-const field so it doesn't get optimized away
         s_nonConstField = contexts.Length;
 
@@ -51,6 +65,9 @@ internal static class Program
         GC.KeepAlive(contexts);
         GC.KeepAlive(loadedAssemblies);
         GC.KeepAlive(xmlAssembly);
+        GC.KeepAlive(inMemoryAssembly);
+        GC.KeepAlive(inMemoryAssemblyBytes);
+        GC.KeepAlive(inMemorySymbolBytes);
         GC.KeepAlive(userString);
         GC.KeepAlive(s_nonConstField);
 

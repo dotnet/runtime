@@ -29,7 +29,9 @@ namespace TestApp
                 var info = new global::System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<global::System.Collections.Generic.List<string>>
                 {
                     ObjectCreator = () => new global::System.Collections.Generic.List<string>(),
-                    SerializeHandler = ListStringSerializeHandler
+                    SerializeHandler = ListStringSerializeHandler,
+                    PolymorphismOptions = new global::System.Text.Json.Serialization.Metadata.JsonPolymorphismOptions(),
+                    TypeClassifierFactory = null,
                 };
                 
                 jsonTypeInfo = global::System.Text.Json.Serialization.Metadata.JsonMetadataServices.CreateListInfo<global::System.Collections.Generic.List<string>, string>(options, info);

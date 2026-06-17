@@ -512,7 +512,7 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
     if (popGCFrames)
     {
         GCFrame* pGCFrame = pThread->GetGCFrame();
-        while ((pGCFrame != GCFRAME_TOP) && pGCFrame->GetOSStackLocation() < targetSp)
+        while ((pGCFrame != nullptr) && pGCFrame->GetOSStackLocation() < targetSp)
         {
             pGCFrame->Pop();
             pGCFrame = pThread->GetGCFrame();
@@ -653,8 +653,23 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
 #endif
     else
     {
+        void *sp = (void*)GetSP(pContextRecord);
+        PopExplicitFrames(pThread, sp, NULL /* targetCallerSp */, false /* popGCFrames */);
+        ExInfo::PopExInfos(pThread, sp);
+
+#if defined(HOST_WINDOWS) && defined(HOST_AMD64)
+        TADDR ssp = GetSSP(pContextRecord);
+#else
+        TADDR ssp = 0;
+#endif
+
+        ResumableFrame resFrame(pContextRecord);
+        resFrame.Push(pThread);
+
         OBJECTREF oref = ExInfo::CreateThrowable(pExceptionRecord, FALSE);
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContextRecord, ssp);
         DispatchManagedException(oref, pContextRecord, pExceptionRecord);
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
     }
 #endif // !HOST_UNIX
 
@@ -1447,6 +1462,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             exInfo.TakeExceptionPointersOwnership(ex);
         }
 
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(fef.GetExceptionContext(), 0 /* SSP -  no SSP support on Unix */);
         // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
         // Do NOT also GCPROTECT it - reporting the same location twice corrupts
         // the GC's relocation logic (see clr-code-guide.md §2.1.5).
@@ -1458,6 +1474,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
         DispatchExSecondPass(&exInfo);
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 
         UNREACHABLE();
     }
@@ -1506,6 +1523,83 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 }
 
 #endif // TARGET_UNIX
+
+#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASM)
+
+// The ssp argument needs to match the pContext (SSP register value at that context)
+VOID DECLSPEC_NORETURN RethrowResumeAfterCatchExceptionSkipManagedFrames(const ResumeAfterCatchException& ex, CONTEXT *pContext, TADDR ssp)
+{
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    // Find precise SSP value. We cannot use the instruction pointer from the context here because for PInvoke frames it points to the return address
+    // of the JIT_PInvokeBegin call that is called before the actual target function.
+    if (ssp != 0)
+    {
+        while (!ExecutionManager::IsManagedCode(*(PCODE*)(ssp - 8)))
+        {
+            ssp += 8;
+        }
+    }
+#endif
+
+    while (ExecutionManager::IsManagedCode(GetIP(pContext)))
+    {
+        Thread::VirtualUnwindCallFrame(pContext);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+        if (ssp != 0)
+        {
+            ssp += 8;
+        }
+#endif
+    }
+
+    TADDR resumeSP;
+    TADDR resumeIP;
+    ex.GetResumeContext(&resumeSP, &resumeIP);
+    _ASSERTE(resumeSP != 0 && resumeIP != 0);
+
+    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, ssp, resumeSP, resumeIP);
+}
+
+// The ssp argument is approximate (it can be the SSP value of several frames below the context extracted from the pFrame)
+VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchException& ex, Frame *pFrame, TADDR ssp)
+{
+    // The frame should have been popped already
+    _ASSERTE(pFrame->PtrNextFrame() == NULL);
+
+    EECodeInfo codeInfo(pFrame->GetReturnAddress());
+
+    if (!codeInfo.IsValid() || codeInfo.IsInterpretedCode())
+    {
+        // Native caller - interpreter stubs or PInvoke called from the interpreted code
+        throw ex;
+    }
+
+    REGDISPLAY rd = {};
+    T_CONTEXT context = {};
+#if (defined(HOST_WINDOWS) && defined(HOST_AMD64)) || defined(TARGET_ARM64)
+    constexpr BOOL updateFloats = TRUE;
+    context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+    RtlCaptureContext(&context);
+#else
+    constexpr BOOL updateFloats = FALSE;
+    context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+#endif
+
+    FillRegDisplay(&rd, &context);
+    pFrame->UpdateRegDisplay(&rd, updateFloats);
+
+#if defined(HOST_WINDOWS) && defined(HOST_AMD64)
+    // Initialize FP control/status so that the context can be used for resuming execution
+    rd.pCurrentContext->FltSave.ControlWord = 0x27F;  // Default x87 control word
+    rd.pCurrentContext->FltSave.MxCsr = 0x1F80;       // Default MXCSR value (all exceptions masked)
+    rd.pCurrentContext->FltSave.MxCsr_Mask = 0x1FFF;  // MXCSR mask
+    rd.pCurrentContext->MxCsr = 0x1F80;               // Default MXCSR value (all exceptions masked)
+#endif // HOST_WINDOWS && HOST_AMD64
+
+    RethrowResumeAfterCatchExceptionSkipManagedFrames(ex, rd.pCurrentContext, ssp);
+}
+
+#endif // FEATURE_INTERPRETER && !HOST_WASM
 
 void FirstChanceExceptionNotification()
 {
@@ -2568,7 +2662,7 @@ bool ExInfo::IsUnwoundToTargetParentFrame(CrawlFrame * pCF, StackFrame sfParent)
         MODE_ANY;
         PRECONDITION( CheckPointer(pCF, NULL_NOT_OK) );
         PRECONDITION( pCF->IsFrameless() );
-        PRECONDITION( pCF->GetRegisterSet()->IsCallerContextValid || pCF->GetRegisterSet()->IsCallerSPValid );
+        PRECONDITION( pCF->GetRegisterSet()->IsCallerContextValid );
     }
     CONTRACTL_END;
 
@@ -3000,6 +3094,7 @@ void ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t ta
     if (targetSSP != 0)
     {
         targetSSP -= sizeof(size_t);
+        _ASSERTE(*(ULONG64*)targetSSP == pContext->Rip);
     }
 #endif // HOST_WINDOWS
     SetSP(pContext, targetSp - 8);
@@ -3832,7 +3927,13 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
 
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
-            controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+#ifdef TARGET_WASM
+            // On Wasm, R2R code with virtual ips should not have its ip adjusted
+            if (!ExecutionManager::IsVirtualIP(controlPC))
+#endif
+            {
+                controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            }
         }
         pThis->SetAdjustedControlPC(controlPC);
 
@@ -4035,6 +4136,15 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
                 }
             }
 
+            // Advance past the native marker frame to the explicit frame (e.g. FuncEvalFrame),
+            // but only when there is one. For example, with foreign-thread and reverse
+            // PInvoke with no further managed frames, there is no explicit frame to advance to.
+            if (pThis->GetFrameState() == StackFrameIterator::SFITER_NATIVE_MARKER_FRAME)
+            {
+                pThis->Next();
+                _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION || (pThis->GetFrameState() == StackFrameIterator::SFITER_DONE));
+            }
+
             *pfIsExceptionIntercepted = FALSE;
 
             if (fUnwoundReversePInvoke)
@@ -4134,7 +4244,13 @@ Exit:;
         TADDR controlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
-            controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+#ifdef TARGET_WASM
+            // On Wasm, R2R code with virtual ips should not have its ip adjusted
+            if (!ExecutionManager::IsVirtualIP(controlPC))
+#endif
+            {
+                controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+            }
         }
         pThis->SetAdjustedControlPC(controlPC);
 

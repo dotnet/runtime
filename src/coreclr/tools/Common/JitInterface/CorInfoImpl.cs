@@ -12,6 +12,8 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
 
+using Internal.Text;
+
 #if SUPPORT_JIT
 using Internal.Runtime.CompilerServices;
 #endif
@@ -736,10 +738,6 @@ namespace Internal.JitInterface
         private const int handleMultiplier = 8;
         private const int handleBase = 0x420000;
 
-#if DEBUG
-        private static readonly IntPtr s_handleHighBitSet = (sizeof(IntPtr) == 4) ? new IntPtr(0x40000000) : new IntPtr(0x4000000000000000);
-#endif
-
         private IntPtr ObjectToHandle(object obj)
         {
             // MethodILScopes need to go through ObjectToHandle(MethodILScope methodIL).
@@ -755,9 +753,6 @@ namespace Internal.JitInterface
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
                 handle = (IntPtr)(handleMultiplier * _handleToObject.Count + handleBase);
-#if DEBUG
-                handle = new IntPtr((long)s_handleHighBitSet | (long)handle);
-#endif
                 _handleToObject.Add(obj);
                 _objectToHandle.Add(obj, handle);
             }
@@ -767,9 +762,6 @@ namespace Internal.JitInterface
         private object HandleToObject(void* handle)
         {
             Debug.Assert(handle != null);
-#if DEBUG
-            handle = (void*)(~s_handleHighBitSet & (nint)handle);
-#endif
             int index = ((int)handle - handleBase) / handleMultiplier;
             return _handleToObject[index];
         }
@@ -1155,7 +1147,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
             }
 
-            if (method.OwningType.IsDelegate && method.Name.SequenceEqual("Invoke"u8))
+            if (method.OwningType.IsDelegate && method.Name == "Invoke"u8)
             {
                 // This is now used to emit efficient invoke code for any delegate invoke,
                 // including multicast.
@@ -1349,10 +1341,9 @@ namespace Internal.JitInterface
         {
             // Initialize OUT fields
             info->devirtualizedMethod = null;
-            info->exactContext = null;
+            info->tokenLookupContext = null;
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_UNKNOWN;
-            info->isInstantiatingStub = false;
-            info->needsMethodContext = false;
+            info->instParamLookup = default(CORINFO_LOOKUP);
 
             TypeDesc objType = HandleToObject(info->objClass);
 
@@ -1497,8 +1488,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->isInstantiatingStub = false;
-            info->exactContext = contextFromType(owningType);
+            info->tokenLookupContext = contextFromType(owningType);
 
             return true;
 
@@ -1771,7 +1761,7 @@ namespace Internal.JitInterface
                     Debug.Assert((methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
                         (!methodContext.HasInstantiation && !owningMethod.HasInstantiation) ||
                         methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
-                        (owningMethod.Name.SequenceEqual("CreateDefaultInstance"u8) && methodContext.Name.SequenceEqual("CreateInstance"u8)));
+                        (owningMethod.Name == "CreateDefaultInstance"u8 && methodContext.Name == "CreateInstance"u8));
                     Debug.Assert(methodContext.OwningType.HasSameTypeDefinition(owningMethod.OwningType));
                     typeInst = methodContext.OwningType.Instantiation;
                     methodInst = methodContext.Instantiation;
@@ -1872,6 +1862,7 @@ namespace Internal.JitInterface
             else
             {
                 recordToken = (_compilation.CompilationModuleGroup.VersionsWithType(owningType) || _compilation.CompilationModuleGroup.CrossModuleInlineableType(owningType)) && owningType is EcmaType;
+                recordToken &= methodIL.GetMethodILScopeDefinition() is IMethodTokensAreUseableInCompilation || methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL;
             }
 #endif
 
@@ -1884,7 +1875,8 @@ namespace Internal.JitInterface
 #if READYTORUN
                 if (recordToken)
                 {
-                    ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken);
+                    ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);
+                    Debug.Assert(!strippedInstantiation);
                     var resolver = _compilation.NodeFactory.Resolver;
                     resolver.AddModuleTokenForMethod(method, methodModuleToken);
                     ValidateSafetyOfUsingTypeEquivalenceInSignature(method.Signature);
@@ -1951,7 +1943,8 @@ namespace Internal.JitInterface
 #if READYTORUN
                 if (recordToken)
                 {
-                    _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, HandleToModuleToken(ref pResolvedToken));
+                    _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation));
+                    Debug.Assert(!strippedInstantiation);
                 }
 #endif
 
@@ -2092,8 +2085,8 @@ namespace Internal.JitInterface
             else if (type is MetadataType mdType)
             {
                 if (namespaceName != null)
-                    *namespaceName = (byte*)GetPin(SpanToPinnableBytes(mdType.Namespace));
-                return (byte*)GetPin(SpanToPinnableBytes(mdType.Name));
+                    *namespaceName = (byte*)GetPin(Utf8SpanToPinnableBytes(mdType.Namespace));
+                return (byte*)GetPin(Utf8SpanToPinnableBytes(mdType.Name));
             }
 
             if (namespaceName != null)
@@ -2313,7 +2306,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            if (type.Context.Target.Architecture == TargetArchitecture.ARM &&
+            if (type.Context.Target.SupportsAlign8 &&
                 alignment < 8 && type.RequiresAlign8())
             {
                 // If the structure contains 64-bit primitive fields and the platform requires 8-byte alignment for
@@ -2582,8 +2575,8 @@ namespace Internal.JitInterface
             // not care about since they are considered primitives by the JIT.
             if (type.IsIntrinsic)
             {
-                ReadOnlySpan<byte> ns = type.Namespace;
-                if (ns.SequenceEqual("System.Runtime.Intrinsics"u8) || ns.SequenceEqual("System.Numerics"u8))
+                Utf8Span ns = type.Namespace;
+                if (ns == "System.Runtime.Intrinsics"u8 || ns == "System.Numerics"u8)
                 {
                     parNode->simdTypeHnd = ObjectToHandle(type);
                     if (parentIndex != uint.MaxValue)
@@ -3064,9 +3057,9 @@ namespace Internal.JitInterface
             // non-candidates before we compare names.
             if (type.IsIntrinsic && type is MetadataType mdType)
             {
-                ReadOnlySpan<byte> name = mdType.Name;
-                if ((name.SequenceEqual("SZArrayHelper"u8) || name.SequenceEqual("Array`1"u8)) &&
-                    mdType.Namespace.SequenceEqual("System"u8))
+                Utf8Span name = mdType.Name;
+                if ((name == "SZArrayHelper"u8 || name == "Array`1"u8) &&
+                    mdType.Namespace == "System"u8)
                 {
                     return false;
                 }
@@ -3264,16 +3257,16 @@ namespace Internal.JitInterface
             var owningType = field.OwningType;
             if ((owningType.IsWellKnownType(WellKnownType.IntPtr) ||
                     owningType.IsWellKnownType(WellKnownType.UIntPtr)) &&
-                        field.Name.SequenceEqual("Zero"u8))
+                        field.Name == "Zero"u8)
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ZERO;
             }
-            else if (owningType.IsString && field.Name.SequenceEqual("Empty"u8))
+            else if (owningType.IsString && field.Name == "Empty"u8)
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_EMPTY_STRING;
             }
-            else if (owningType.Name.SequenceEqual("BitConverter"u8) && owningType.Namespace.SequenceEqual("System"u8) &&
-                field.Name.SequenceEqual("IsLittleEndian"u8))
+            else if (owningType.Name == "BitConverter"u8 && owningType.Namespace == "System"u8 &&
+                field.Name == "IsLittleEndian"u8)
             {
                 return CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN;
             }
@@ -3448,8 +3441,10 @@ namespace Internal.JitInterface
 
             pEEInfoOut.inlinedCallFrameInfo.size = (uint)SizeOfPInvokeTransitionFrame;
 
-            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::_firstParameter
-            pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
+            // _target/_firstParameter
+            pEEInfoOut.offsetOfDelegateInstance = 2 * (uint)pointerSize;
+            // _methodPtr/_functionPointer
+            pEEInfoOut.offsetOfDelegateFirstTarget = pEEInfoOut.offsetOfDelegateInstance + (uint)pointerSize;
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
 
@@ -3535,10 +3530,10 @@ namespace Internal.JitInterface
             return bytes;
         }
 
-        private static byte[] SpanToPinnableBytes(ReadOnlySpan<byte> s)
+        private static byte[] Utf8SpanToPinnableBytes(Utf8Span s)
         {
             byte[] bytes = new byte[s.Length + 1];
-            s.CopyTo(bytes);
+            s.AsSpan().CopyTo(bytes);
             return bytes;
         }
 
@@ -4123,12 +4118,6 @@ namespace Internal.JitInterface
             // CompileMethod is going to fail with this CorJitResult anyway.
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
-#pragma warning restore CA1822 // Mark members as static
-        {
-        }
-
         private ArrayBuilder<Relocation> _codeRelocs;
         private ArrayBuilder<Relocation> _roDataRelocs;
         private ArrayBuilder<Relocation> _rwDataRelocs;
@@ -4272,6 +4261,7 @@ namespace Internal.JitInterface
                 CorInfoReloc.WASM_MEMORY_ADDR_REL_LEB => RelocType.WASM_MEMORY_ADDR_REL_LEB,
                 CorInfoReloc.WASM_TYPE_INDEX_LEB => RelocType.WASM_TYPE_INDEX_LEB,
                 CorInfoReloc.WASM_GLOBAL_INDEX_LEB => RelocType.WASM_GLOBAL_INDEX_LEB,
+                CorInfoReloc.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB => RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
             };
 
@@ -4332,9 +4322,9 @@ namespace Internal.JitInterface
                     break;
             }
 
+            RelocType relocType = GetRelocType(fRelocType);
             relocDelta += addlDelta;
 
-            RelocType relocType = GetRelocType(fRelocType);
             // relocDelta is stored as the value
             Relocation.WriteValue(relocType, location, relocDelta);
 
@@ -4444,6 +4434,9 @@ namespace Internal.JitInterface
             flags.Set(CorJitFlag.CORJIT_FLAG_AOT);
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
+#if !READYTORUN
+            flags.Set(CorJitFlag.CORJIT_FLAG_USE_DISPATCH_HELPERS);
+#endif
 
             TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
 

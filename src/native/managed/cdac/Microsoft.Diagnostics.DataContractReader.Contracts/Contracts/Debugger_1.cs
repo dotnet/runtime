@@ -83,7 +83,7 @@ internal readonly struct Debugger_1 : IDebugger
             return;
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
-        debugger.SetField(_target, nameof(Data.Debugger.RSRequestedSync), 1);
+        debugger.WriteRSRequestedSync(1);
     }
 
     void IDebugger.SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC)
@@ -92,7 +92,7 @@ internal readonly struct Debugger_1 : IDebugger
             return;
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
-        debugger.SetField(_target, nameof(Data.Debugger.SendExceptionsOutsideOfJMC), sendExceptionsOutsideOfJMC ? 1 : 0);
+        debugger.WriteSendExceptionsOutsideOfJMC(sendExceptionsOutsideOfJMC ? 1 : 0);
     }
 
     TargetPointer IDebugger.GetDebuggerControlBlockAddress()
@@ -115,6 +115,6 @@ internal readonly struct Debugger_1 : IDebugger
             return;
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
-        debugger.SetField(_target, nameof(Data.Debugger.GCNotificationEventsEnabled), fEnable ? 1 : 0);
+        debugger.WriteGCNotificationEventsEnabled(fEnable ? 1 : 0);
     }
 }

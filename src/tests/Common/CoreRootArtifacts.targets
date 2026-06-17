@@ -133,7 +133,26 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_Crossgen2Dir)' != ''">
+      <!-- When crossgen2-published does not exist (e.g. wasm cross-targeting builds),
+           copy crossgen2 itself from the cross-architecture build output. -->
       <_CoreRootArtifactSource
+          Include="$(_Crossgen2Dir)/crossgen2$(ExeSuffix)"
+          Condition="Exists('$(_Crossgen2Dir)/crossgen2$(ExeSuffix)') and !Exists('$(CoreCLRArtifactsPath)crossgen2-published/crossgen2$(ExeSuffix)')"
+          TargetDir="crossgen2/" />
+      <_CoreRootArtifactSource
+          Include="$(_Crossgen2Dir)/crossgen2.pdb"
+          Condition="Exists('$(_Crossgen2Dir)/crossgen2.pdb') and !Exists('$(CoreCLRArtifactsPath)crossgen2-published/crossgen2$(ExeSuffix)')"
+          TargetDir="crossgen2/" />
+
+      <_CoreRootArtifactSource
+          Condition="'$(TargetArchitecture)' == 'wasm'"
+          Include="
+            $(_Crossgen2Dir)/$(HostLibPrefix)clrjit_*$(HostLibSuffix);
+            $(_Crossgen2Dir)/$(HostLibPrefix)jitinterface_*$(HostLibSuffix);
+            $(_Crossgen2Dir)/$(HostLibPrefix)Microsoft.DiaSymReader.Native.*$(HostLibSuffix)"
+          TargetDir="crossgen2/" />
+      <_CoreRootArtifactSource
+          Condition="'$(TargetArchitecture)' != 'wasm'"
           Include="
             $(_Crossgen2Dir)/$(LibPrefix)clrjit_*$(LibSuffix);
             $(_Crossgen2Dir)/$(LibPrefix)jitinterface_*$(LibSuffix);

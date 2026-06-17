@@ -1975,7 +1975,7 @@ class ILRuntimeFieldHandleMarshaler : public ILReflectionObjectMarshaler
 {
 protected:
     BinderFieldID GetStructureFieldID() override { LIMITED_METHOD_CONTRACT; return FIELD__FIELD_HANDLE__M_FIELD; }
-    BinderFieldID GetObjectFieldID() override { LIMITED_METHOD_CONTRACT; return FIELD__RT_FIELD_INFO__HANDLE; }
+    BinderFieldID GetObjectFieldID() override { LIMITED_METHOD_CONTRACT; return FIELD__STUBFIELDINFO__HANDLE; }
     BinderClassID GetManagedTypeBinderID() override { LIMITED_METHOD_CONTRACT; return CLASS__FIELD_HANDLE; }
 };
 

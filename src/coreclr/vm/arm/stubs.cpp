@@ -34,8 +34,6 @@ EXTERN_C void JIT_WriteBarrier(Object **dst, Object *ref);
 EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_CheckedWriteBarrier(Object **dst, Object *ref);
 EXTERN_C void JIT_CheckedWriteBarrier_End();
-EXTERN_C void JIT_ByRefWriteBarrier_End();
-EXTERN_C void JIT_ByRefWriteBarrier_SP(Object **dst, Object *ref);
 
 // source write barriers
 EXTERN_C void JIT_WriteBarrier_SP_Pre(Object **dst, Object *ref);
@@ -55,15 +53,6 @@ EXTERN_C void JIT_CheckedWriteBarrier_MP_Pre(Object **dst, Object *ref);
 EXTERN_C void JIT_CheckedWriteBarrier_MP_Pre_End();
 EXTERN_C void JIT_CheckedWriteBarrier_MP_Post(Object **dst, Object *ref);
 EXTERN_C void JIT_CheckedWriteBarrier_MP_Post_End();
-
-EXTERN_C void JIT_ByRefWriteBarrier_SP_Pre();
-EXTERN_C void JIT_ByRefWriteBarrier_SP_Pre_End();
-EXTERN_C void JIT_ByRefWriteBarrier_SP_Post();
-EXTERN_C void JIT_ByRefWriteBarrier_SP_Post_End();
-EXTERN_C void JIT_ByRefWriteBarrier_MP_Pre();
-EXTERN_C void JIT_ByRefWriteBarrier_MP_Pre_End();
-EXTERN_C void JIT_ByRefWriteBarrier_MP_Post(Object **dst, Object *ref);
-EXTERN_C void JIT_ByRefWriteBarrier_MP_Post_End();
 
 EXTERN_C void JIT_PatchedWriteBarrierStart();
 EXTERN_C void JIT_PatchedWriteBarrierLast();
@@ -305,14 +294,12 @@ struct WriteBarrierMapping
 
 const int WriteBarrierIndex         = 0;
 const int CheckedWriteBarrierIndex  = 1;
-const int ByRefWriteBarrierIndex    = 2;
-const int MaxWriteBarrierIndex      = 3;
+const int MaxWriteBarrierIndex      = 2;
 
 WriteBarrierMapping wbMapping[MaxWriteBarrierIndex] =
                                     {
                                         {(PBYTE)JIT_WriteBarrier, NULL},
-                                        {(PBYTE)JIT_CheckedWriteBarrier, NULL},
-                                        {(PBYTE)JIT_ByRefWriteBarrier, NULL}
+                                        {(PBYTE)JIT_CheckedWriteBarrier, NULL}
                                     };
 
 PBYTE FindWBMapping(PBYTE from)
@@ -369,10 +356,6 @@ void ValidateWriteBarriers()
 
     _ASSERTE( ((PBYTE)JIT_CheckedWriteBarrier_End - (PBYTE)JIT_CheckedWriteBarrier) >= ((PBYTE)JIT_CheckedWriteBarrier_MP_Post_End - (PBYTE)JIT_CheckedWriteBarrier_MP_Post));
     _ASSERTE( ((PBYTE)JIT_CheckedWriteBarrier_End - (PBYTE)JIT_CheckedWriteBarrier) >= ((PBYTE)JIT_CheckedWriteBarrier_SP_Post_End - (PBYTE)JIT_CheckedWriteBarrier_SP_Post));
-
-    _ASSERTE( ((PBYTE)JIT_ByRefWriteBarrier_End - (PBYTE)JIT_ByRefWriteBarrier) >= ((PBYTE)JIT_ByRefWriteBarrier_MP_Post_End - (PBYTE)JIT_ByRefWriteBarrier_MP_Post));
-    _ASSERTE( ((PBYTE)JIT_ByRefWriteBarrier_End - (PBYTE)JIT_ByRefWriteBarrier) >= ((PBYTE)JIT_ByRefWriteBarrier_SP_Post_End - (PBYTE)JIT_ByRefWriteBarrier_SP_Post));
-
 }
 #endif // _DEBUG
 
@@ -382,9 +365,6 @@ void ValidateWriteBarriers()
     \
     CopyWriteBarrier((PCODE)JIT_CheckedWriteBarrier, (PCODE)JIT_CheckedWriteBarrier_ ## _proc ## _ ## _grow , (PCODE)JIT_CheckedWriteBarrier_ ## _proc ## _ ## _grow ## _End); \
     wbMapping[CheckedWriteBarrierIndex].from = (PBYTE)JIT_CheckedWriteBarrier_ ## _proc ## _ ## _grow ; \
-    \
-    CopyWriteBarrier((PCODE)JIT_ByRefWriteBarrier, (PCODE)JIT_ByRefWriteBarrier_ ## _proc ## _ ## _grow , (PCODE)JIT_ByRefWriteBarrier_ ## _proc ## _ ## _grow ## _End); \
-    wbMapping[ByRefWriteBarrierIndex].from = (PBYTE)JIT_ByRefWriteBarrier_ ## _proc ## _ ## _grow ; \
 
 // Update the instructions in our various write barrier implementations that refer directly to the values
 // of GC globals such as g_lowest_address and g_card_table. We don't particularly care which values have
@@ -1248,7 +1228,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     // Copy the saved argument registers into the current context
     ArgumentRegisters * pArgRegs = GetArgumentRegisters();
@@ -1329,7 +1308,6 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->pCurrentContextPointers->Lr = NULL;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -1372,7 +1350,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     pRD->SP = (DWORD) dac_cast<TADDR>(m_pCallSiteSP);
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Pc = *(pRD->pPC);
     pRD->pCurrentContext->Sp = pRD->SP;
@@ -1429,7 +1406,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->volatileCurrContextPointers.R12 = &m_Regs->R12;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
 
 void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -1442,7 +1418,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
      CONTRACTL_END;
 
      pRD->IsCallerContextValid = FALSE;
-     pRD->IsCallerSPValid      = FALSE;
 
      pRD->pCurrentContext->Pc = m_ReturnAddress;
      size_t s = sizeof(struct HijackArgs);

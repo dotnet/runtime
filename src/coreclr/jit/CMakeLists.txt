@@ -16,6 +16,15 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/permissive->)
 endif()
 
+# The JIT enforces -Wunused-function, -Wtautological-compare and -Wunused-value
+# (overriding the repo-wide -Wno-* counterparts from configurecompiler.cmake) so
+# that dead helpers, always-true/always-false comparisons and discarded
+# expressions are caught early. Any helper or comparison that is only meaningful
+# under a target/DEBUG #ifdef must be guarded by the same condition.
+if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
+  add_compile_options(-Wunused-function -Wtautological-compare -Wunused-value)
+endif()
+
 function(create_standalone_jit)
 
   set(oneValueArgs TARGET OS ARCH)
@@ -74,6 +83,11 @@ function(create_standalone_jit)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
     target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_MASKED_HW_INTRINSICS)
   endif ()
+
+  if (TARGETDETAILS_ARCH STREQUAL "wasm")
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_SIMD)
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
+  endif ()
 endfunction()
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_I386)
@@ -97,6 +111,7 @@ set( JIT_SOURCES
   asyncanalysis.cpp
   bitset.cpp
   block.cpp
+  boundscheckcoalesce.cpp
   buildstring.cpp
   codegencommon.cpp
   codegenlinear.cpp
@@ -295,9 +310,12 @@ set( JIT_WASM_SOURCES
   codegenwasm.cpp
   emitwasm.cpp
   fgwasm.cpp
+  hwintrinsicwasm.cpp
+  hwintrinsiccodegenwasm.cpp
   lowerwasm.cpp
   regallocwasm.cpp
   registeropswasm.cpp
+  simd.cpp
   targetwasm.cpp
   unwindwasm.cpp
 )
@@ -491,6 +509,7 @@ set( JIT_WASM_HEADERS
     instrswasm.h
     registerwasm.h
     fgwasm.h
+    hwintrinsiclistwasm.h
 )
 
 set ( JITSHARED_SOURCES
@@ -719,6 +738,10 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   endif(CLR_CMAKE_BUILD_COMMUNITY_ALTJITS EQUAL 1)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+  create_standalone_jit(TARGET clrjit_universal_wasm_${ARCH_HOST_NAME} OS universal ARCH wasm)
+endif (CLR_CMAKE_TARGET_ARCH_WASM)
+
 if (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
   create_standalone_jit(TARGET clrjit_unix_loongarch64_${ARCH_HOST_NAME} OS unix ARCH loongarch64)
 endif (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
@@ -727,7 +750,7 @@ if (CLR_CMAKE_TARGET_ARCH_RISCV64)
   create_standalone_jit(TARGET clrjit_unix_riscv64_${ARCH_HOST_NAME} OS unix ARCH riscv64)
 else()
   create_standalone_jit(TARGET clrjit_universal_arm_${ARCH_HOST_NAME} OS universal ARCH arm)
-  target_compile_definitions(clrjit_universal_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
+  target_compile_definitions(clrjit_universal_arm_${ARCH_HOST_NAME} PRIVATE CONFIGURABLE_ARM_ABI)
   create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86)
 endif (CLR_CMAKE_TARGET_ARCH_RISCV64)
 

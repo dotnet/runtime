@@ -1629,6 +1629,7 @@ public:
 
     void ResetPortableEntryPoint();
     void SetPortableEntrypointInitialStateForMethod(PortableEntryPoint *portableEntry);
+    static void EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     //*******************************************************************************
@@ -1867,6 +1868,16 @@ public:
 
     void PrepareForUseAsAFunctionPointer();
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    bool IsPendingThunkResolution()
+    {
+        return (VolatileLoad(&m_bFlags4) & enum_flag4_PendingThunkResolution) != 0;
+    }
+    void SetPendingThunkResolution(bool isPending)
+    {
+        InterlockedUpdateFlags4(enum_flag4_PendingThunkResolution, isPending ? TRUE : FALSE);
+    }
+#endif
 private:
     void PrepareForUseAsADependencyOfANativeImageWorker();
 
@@ -1899,9 +1910,11 @@ protected:
         enum_flag4_RequiresStableEntryPoint                 = 0x02,
         enum_flag4_TemporaryEntryPointAssigned              = 0x04,
         enum_flag4_EnCAddedMethod                           = 0x08,
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        enum_flag4_PendingThunkResolution                   = 0x10,
+#endif
     };
 
-    void InterlockedSetFlags4(BYTE mask, BYTE newValue);
     BYTE        m_bFlags4; // Used to hold more flags
 
     WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
@@ -2970,6 +2983,14 @@ public:
     void ClearFlags(DWORD flags)
     {
         m_dwExtendedFlags = (m_dwExtendedFlags & ~flags);
+    }
+    void InterlockedSetFlags(DWORD flags)
+    {
+        InterlockedOr((LONG*)&m_dwExtendedFlags, (LONG)flags);
+    }
+    void InterlockedClearFlags(DWORD flags)
+    {
+        InterlockedAnd((LONG*)&m_dwExtendedFlags, (LONG)~flags);
     }
 
     ILStubType GetILStubType() const
