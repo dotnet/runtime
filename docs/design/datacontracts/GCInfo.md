@@ -2,7 +2,7 @@
 
 This contract is for fetching information related to GCInfo associated with native code.
 
-The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract: x86 currently implements `GetCodeLength`, `GetStackBaseRegister`, `GetSizeOfStackParameterArea`, `GetCalleePoppedArgumentsSize`, and `EnumerateLiveSlots` (sufficient for SOS code-size lookups and for `WalkStackReferences` GC-root scanning). `GetInterruptibleRanges` is not yet implemented on x86 -- x86 does not encode explicit interruptible ranges; per-offset transitions are used instead, and the only consumer (catch-handler PC override in `StackWalk_1`) has no x86-relevant scenarios today.
+The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract; see [x86 specifics](#x86-specifics) below.
 
 ## APIs of contract
 
@@ -603,3 +603,28 @@ IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle,
     // Collect each live slot into a list and return it.
 }
 ```
+
+
+## x86 specifics
+
+x86 uses the legacy bit-packed `InfoHdr` byte-stream encoding (`src/coreclr/vm/gc_unwind_x86.inl`, `src/coreclr/inc/gcdecoder.cpp`) rather than the modern `GcInfoDecoder` shared by all other architectures. The cDAC decoder lives at `src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/GCInfo/X86/` and is shared with the x86 stack walker.
+
+### Supported APIs
+
+| API | Status |
+|---|---|
+| `GetCodeLength` | Implemented |
+| `GetStackBaseRegister` | Implemented |
+| `GetSizeOfStackParameterArea` | Implemented (always returns 0; x86 has no separate outgoing-argument scratch area) |
+| `GetCalleePoppedArgumentsSize` | Implemented (mirrors native `EECodeManager::GetStackParameterSize`) |
+| `EnumerateLiveSlots` | Implemented; supports untracked frame locals, VarPtr-tracked lifetimes, and live register / pushed pointer-arg state derived from the per-offset transition stream |
+| `GetInterruptibleRanges` | Not implemented -- x86 does not encode explicit interruptible ranges. The only consumer is the catch-handler PC override in `StackWalk_1`, which has no x86-relevant scenarios today. |
+
+### Deferred edges
+
+These do not affect the GC root scan / `WalkStackReferences` path used by SOS today, but are noted for future work:
+
+- "this"-pointer special-case reporting for synchronized methods (VarPtr `0x2` tracked-local bit is currently masked out -- on x86 it means "this", not pinned).
+- `IPtrMask` interior-pointer bitmaps for pushed args -- the decoder currently uses the simpler per-push `Iptr` flag instead of consuming the IPtrMask transitions.
+- Funclet handling beyond the existing `IsParentOfFuncletStackFrame` caller-side early-skip.
+- Finer `IsActiveFrame` register filter precision (currently emits live registers when the frame is active or when an active call-site transition was found).
