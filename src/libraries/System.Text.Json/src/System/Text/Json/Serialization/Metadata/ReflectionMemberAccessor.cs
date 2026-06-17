@@ -320,14 +320,15 @@ namespace System.Text.Json.Serialization.Metadata
                         BindingFlags.DoNotWrapExceptions,
                         binder: null,
                         parameters: new object[] { entry.Value },
-                        culture: null)!;
+                        culture: null);
 #else
                     .Invoke(null, new object[] { entry.Value });
 #endif
 
                 if (accessor is null)
                 {
-                    throw new InvalidOperationException($"Failed to create union accessor for type '{entry.Key}'.");
+                    throw new InvalidOperationException(
+                        $"Failed to create union accessor for type '{entry.Key}' using method '{entry.Value}'.");
                 }
 
                 chain[i] = (UnionTryGetValueAccessor<TUnion>)accessor;
