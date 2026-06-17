@@ -2699,7 +2699,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // 2- Instance open non-virt        delegate        shuffle thunk           target method       null                0
     // 3- Instance open virtual         delegate        Virtual-stub dispatch   method id           null                0
     // 4- Static closed                 first arg       target method           null                null                0
-    // 5- Static closed (special sig)   delegate        specialSig thunk        target method       first arg           0
+    // 5- Static closed (special sig)   delegate        specialSig thunk        target method       null                0
     // 6- Static opened                 delegate        shuffle thunk           target method       null                0
     //
     // Delegate invoke arg count == target method arg count - 2, 3, 6
@@ -2717,10 +2717,8 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     //
     // There are two techniques that will work for this.
     // One is to simply use the slow path. We use this for unusual constructs. It is rather slow.
-    //  We will use this for the secure variants
     //
     // Another is to pass a gchandle to the delegate ctor. This is fastest, but only works if we can predict the gc handle at this time.
-    //  We will use this for the non secure variants
     //
     // If you modify this logic, please update cDAC IObject.GetDelegateInfo.
 
