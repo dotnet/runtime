@@ -7207,7 +7207,6 @@ public sealed unsafe partial class SOSDacImpl
                         FormatString = msg.FormatString.ToClrDataAddress(_target),
                         Timestamp = msg.Timestamp,
                         ArgumentCount = (uint)msg.Args.Count,
-                        MessageAddress = 0,
                     };
                     written++;
                 }
@@ -7288,7 +7287,6 @@ public sealed unsafe partial class SOSDacImpl
             data->TickFrequency = logData.TickFrequency;
             data->StartTimestamp = logData.StartTimestamp;
             data->StartTime = logData.StartTime;
-            data->Logs = logData.Logs.ToClrDataAddress(_target);
         }
         catch (System.Exception ex)
         {
@@ -7314,11 +7312,6 @@ public sealed unsafe partial class SOSDacImpl
                 {
                     ThreadLogAddress = t.Address.ToClrDataAddress(_target),
                     ThreadId = t.ThreadId,
-                    WriteHasWrapped = t.WriteHasWrapped ? 1 : 0,
-                    CurrentPointer = t.CurrentPointer.ToClrDataAddress(_target),
-                    ChunkListHead = t.ChunkListHead.ToClrDataAddress(_target),
-                    ChunkListTail = t.ChunkListTail.ToClrDataAddress(_target),
-                    CurrentWriteChunk = t.CurrentWriteChunk.ToClrDataAddress(_target),
                 })
                 .ToArray();
             ppEnum.Interface = new SOSStressLogThreadEnum(threads);

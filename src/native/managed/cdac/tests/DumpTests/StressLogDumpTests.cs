@@ -80,7 +80,6 @@ public class StressLogDumpTests : DumpTestBase
         Assert.NotEqual(0UL, data.TickFrequency);
         Assert.NotEqual(0UL, data.StartTimestamp);
         Assert.NotEqual(0UL, data.StartTime);
-        Assert.NotEqual((ClrDataAddress)0, data.Logs);
     }
 
     [ConditionalTheory]

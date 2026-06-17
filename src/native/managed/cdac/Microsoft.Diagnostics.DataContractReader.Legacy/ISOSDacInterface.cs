@@ -1204,18 +1204,12 @@ public struct SOSStressLogData
     public ulong TickFrequency;
     public ulong StartTimestamp;
     public ulong StartTime;
-    public ClrDataAddress Logs;
 }
 
 public struct SOSThreadStressLogData
 {
     public ClrDataAddress ThreadLogAddress;
     public ulong ThreadId;
-    public int WriteHasWrapped;
-    public ClrDataAddress CurrentPointer;
-    public ClrDataAddress ChunkListHead;
-    public ClrDataAddress ChunkListTail;
-    public ClrDataAddress CurrentWriteChunk;
 }
 
 public struct SOSStressMsgData
@@ -1224,7 +1218,6 @@ public struct SOSStressMsgData
     public ClrDataAddress FormatString;
     public ulong Timestamp;
     public uint ArgumentCount;
-    public ClrDataAddress MessageAddress;
 }
 
 [GeneratedComInterface]

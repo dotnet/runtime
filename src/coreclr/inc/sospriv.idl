@@ -586,7 +586,6 @@ typedef struct _SOSStressLogData
     UINT64 TickFrequency;
     UINT64 StartTimestamp;
     UINT64 StartTime;
-    CLRDATA_ADDRESS Logs;
 } SOSStressLogData;
 
 cpp_quote("#endif //_SOS_StressLogData")
@@ -598,11 +597,6 @@ typedef struct _SOSThreadStressLogData
 {
     CLRDATA_ADDRESS ThreadLogAddress;
     UINT64 ThreadId;
-    int WriteHasWrapped;
-    CLRDATA_ADDRESS CurrentPointer;
-    CLRDATA_ADDRESS ChunkListHead;
-    CLRDATA_ADDRESS ChunkListTail;
-    CLRDATA_ADDRESS CurrentWriteChunk;
 } SOSThreadStressLogData;
 
 cpp_quote("#endif //_SOS_ThreadStressLogData")
@@ -616,7 +610,6 @@ typedef struct _SOSStressMsgData
     CLRDATA_ADDRESS FormatString;
     UINT64 Timestamp;
     unsigned int ArgumentCount;
-    CLRDATA_ADDRESS MessageAddress;
 } SOSStressMsgData;
 
 cpp_quote("#endif //_SOS_StressMsgData")
