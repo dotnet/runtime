@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -183,7 +184,7 @@ namespace System.Diagnostics.Tests
 
                 using StreamReader streamReader = new(readStream);
                 // The first byte was already read into the buffer by the async read.
-                string firstChar = System.Text.Encoding.UTF8.GetString(buffer, 0, readTask.GetAwaiter().GetResult());
+                string firstChar = Encoding.UTF8.GetString(buffer, 0, readTask.GetAwaiter().GetResult());
                 string? rest = streamReader.ReadLine();
                 Assert.Equal("hello", firstChar + rest);
 
