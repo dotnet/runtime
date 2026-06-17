@@ -614,25 +614,25 @@ void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTa
     // r0 : object. It can be null as well.
     // when it is null the code causes an AV. This AV is seen by the VM's personality routine
     // and it converts it into nullRef. We want the AV to happen before modifying the stack so that we can get the
-    // call stack in windbg at the point of AV. So therefore "ldr r12, [r0]" should be the first instruction.
+    // call stack in windbg at the point of AV. So therefore "ldr r6, [r0]" should be the first instruction.
 
-    // ldr r12, [r0 + #Object.m_pMethTab]
+    // ldr r6, [r0 + #Object.m_pMethTab]
     _stub._entryPoint[n++] = DISPATCH_STUB_FIRST_WORD;
-    _stub._entryPoint[n++] = 0xc000;
+    _stub._entryPoint[n++] = 0x6000;
 
-    // push {r5}
-    _stub._entryPoint[n++] = 0xb420;
+    // push {r5,r6}
+    _stub._entryPoint[n++] = 0xb460;
 
     // ldr r5, [pc + #_expectedMT]
     offset = PC_REL_OFFSET(_expectedMT);
     _ASSERTE((offset & 0x3) == 0);
     _stub._entryPoint[n++] = 0x4d00 | (offset >> 2);
 
-    // cmp r5, r12
-    _stub._entryPoint[n++] = 0x4565;
+    // cmp r5, r6
+    _stub._entryPoint[n++] = 0x42b5;
 
-    // pop {r5}
-    _stub._entryPoint[n++] = 0xbc20;
+    // pop {r5,r6}
+    _stub._entryPoint[n++] = 0xbc60;
 
     // bne failTarget
     _stub._entryPoint[n++] = 0xd101;
