@@ -213,6 +213,10 @@ export function replaceEmscriptenPThreadUI (modulePThread: PThreadLibrary): void
 
     modulePThread.loadWasmModuleToWorker = async (worker: PThreadWorker): Promise<PThreadWorker> => {
         const wasmModule = await loaderHelpers.wasmCompilePromise.promise;
+        for (const ev in worker.queue) {
+            monoWorkerMessageHandler(worker, wasmModule, worker.queue[ev]);
+        }
+        worker.queue.length = 0;
         worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, wasmModule, ev));
         const afterLoaded = originalLoadWasmModuleToWorker(worker);
         afterLoaded.then(() => {
@@ -304,6 +308,9 @@ function allocateUnusedWorker (): PThreadWorker {
         threadPrefix: worker_empty_prefix,
         threadName: "emscripten-pool",
     };
+    worker.queue = [];
+    worker.handler = (ev) => worker.queue!.push(ev);
+    worker.addEventListener!("message", worker.handler);
     return worker;
 }
 
