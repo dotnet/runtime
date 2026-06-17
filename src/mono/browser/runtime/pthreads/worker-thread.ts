@@ -20,6 +20,7 @@ import { CharPtr } from "../types/emscripten";
 import { utf8ToString } from "../strings";
 import { forceThreadMemoryViewRefresh } from "../memory";
 import { threads_c_functions as tcwraps } from "../cwraps";
+import { jiterpreter_allocate_tables } from "../jiterpreter-support";
 
 // re-export some of the events types
 export {
@@ -87,6 +88,7 @@ export function mono_wasm_pthread_on_pthread_created (): void {
         monoThreadInfo.updateCount++;
         monoThreadInfo.threadName = "pthread-assigned";
         update_thread_info();
+        jiterpreter_allocate_tables();
 
         // don't do this callback for the main thread
         if (!ENVIRONMENT_IS_PTHREAD) return;

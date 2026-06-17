@@ -538,6 +538,8 @@ export interface PThreadWorker extends Worker {
     // this info is updated via async messages from the worker, it could be stale
     info: PThreadInfo;
     thread?: Thread;
+    queue: MessageEvent[];
+    handler: ((ev: MessageEvent) => void) | null;
 }
 
 export interface PThreadInfo {

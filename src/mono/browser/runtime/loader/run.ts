@@ -449,20 +449,22 @@ async function createEmscriptenWorker (): Promise<EmscriptenModuleInternal> {
     await loaderHelpers.afterConfigLoaded.promise;
 
     prepareAssetsWorker();
-
-    setTimeout(async () => {
-        try {
-            // load subset which is on JS heap rather than in WASM linear memory
-            await mono_download_assets();
-        } catch (err) {
-            mono_exit(1, err);
-        }
-    }, 0);
-
     const promises = importModules();
     const es6Modules = await Promise.all(promises);
     (globalThis as any).name = "em-pthread";
     await initializeModules(es6Modules as any);
+
+    if (loaderHelpers.config.exitOnUnhandledError) {
+        installUnhandledErrorHandler();
+    }
+    registerEmscriptenExitHandlers();
+    if (ENVIRONMENT_IS_WEB && loaderHelpers.config.forwardConsole && typeof globalThis.WebSocket != "undefined") {
+        setup_proxy_console("main", globalThis.console, globalThis.location.origin);
+    }
+
+    await detect_features_and_polyfill(emscriptenModule);
+
+    await mono_download_assets();
 
     self.dispatchEvent(new MessageEvent("message", {
         data: {

@@ -786,6 +786,9 @@ export function preloadWorkers () {
             threadPrefix: worker_empty_prefix,
             threadName: "emscripten-pool",
         } as any;
+        worker.queue = [];
+        worker.handler = (ev) => worker.queue!.push(ev);
+        worker.addEventListener!("message", worker.handler);
         loadingWorkers.push(worker as any);
     }
     loaderHelpers.loadingWorkers.promise_control.resolve(loadingWorkers);

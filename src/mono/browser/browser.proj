@@ -142,6 +142,7 @@
       <EmccExportedRuntimeMethod Include="HEAPF64" />
       <EmccExportedRuntimeMethod Include="HEAP64" />
       <EmccExportedRuntimeMethod Include="HEAPU64" />
+      <EmccExportedRuntimeMethod Include="PThread" Condition="'$(WasmEnableThreads)' == 'true'" />
 
       <EmccExportedFunction Include="_free" />
       <EmccExportedFunction Include="_htons" />

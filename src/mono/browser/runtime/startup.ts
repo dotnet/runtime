@@ -158,7 +158,6 @@ export function preRunWorker () {
         mono_log_debug("preRunWorker");
         init_c_exports();
         cwraps_internal(INTERNAL);
-        jiterpreter_allocate_tables(); // this will return quickly if already allocated
         runtimeHelpers.nativeExit = nativeExit;
         runtimeHelpers.nativeAbort = nativeAbort;
         runtimeHelpers.runtimeReady = true;
