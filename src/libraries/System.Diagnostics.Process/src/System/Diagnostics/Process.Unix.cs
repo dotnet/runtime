@@ -437,6 +437,9 @@ namespace System.Diagnostics
 
         private static bool WaitForInputIdleCore(int _ /*milliseconds*/) => throw new InvalidOperationException(SR.InputIdleUnknownError);
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private static void SetChildHandlesForPseudoTerminal(PseudoTerminal pty, ref SafeFileHandle? childInputHandle, ref SafeFileHandle? childOutputHandle, ref SafeFileHandle? childErrorHandle)
         {
             // On Unix, all three child handles point to the secondary (child) side of the PTY.
@@ -445,20 +448,23 @@ namespace System.Diagnostics
             childErrorHandle = pty.Secondary;
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         private void OpenPseudoTerminalStreams(ProcessStartInfo startInfo)
         {
             PseudoTerminal pty = startInfo.PseudoTerminal!;
             // On Unix, the primary fd is bidirectional (read + write).
-            // Create non-owning pipe handles since the PseudoTerminal owns the primary fd lifetime.
-            SafePipeHandle writePipeHandle = new(pty.Primary.DangerousGetHandle(), ownsHandle: false);
-            SafePipeHandle readPipeHandle = new(pty.Primary.DangerousGetHandle(), ownsHandle: false);
-            AnonymousPipeClientStream writeStream = new(PipeDirection.Out, writePipeHandle);
-            AnonymousPipeClientStream readStream = new(PipeDirection.In, readPipeHandle);
-            _standardInput = new StreamWriter(writeStream, startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
+            // Create non-owning file handles since the PseudoTerminal owns the primary fd lifetime.
+            SafeFileHandle writeHandle = new(pty.Primary.DangerousGetHandle(), ownsHandle: false);
+            SafeFileHandle readHandle = new(pty.Primary.DangerousGetHandle(), ownsHandle: false);
+            _standardInput = new StreamWriter(new FileStream(writeHandle, FileAccess.Write, StreamBufferSize, isAsync: pty.Primary.IsAsync),
+                startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
             {
                 AutoFlush = true
             };
-            _standardOutput = new StreamReader(readStream, startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            _standardOutput = new StreamReader(new FileStream(readHandle, FileAccess.Read, StreamBufferSize, isAsync: pty.Primary.IsAsync),
+                startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
         }
 
     }

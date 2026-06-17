@@ -168,13 +168,21 @@ namespace System.Diagnostics.Tests
 
             Process process = CreateProcess(static (stdIn, stdOut) =>
             {
-                Assert.NotEqual(nint.Parse(stdIn), Console.OpenStandardInputHandle().DangerousGetHandle());
-                Assert.NotEqual(nint.Parse(stdOut), Console.OpenStandardOutputHandle().DangerousGetHandle());
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.NotEqual(nint.Parse(stdIn), Console.OpenStandardInputHandle().DangerousGetHandle());
+                    Assert.NotEqual(nint.Parse(stdOut), Console.OpenStandardOutputHandle().DangerousGetHandle());
+                }
+                else
+                {
+                    Assert.NotEqual(stdIn, GetTerminalNameOrEmpty(0));
+                    Assert.NotEqual(stdOut, GetTerminalNameOrEmpty(1));
+                }
 
                 return RemoteExecutor.SuccessExitCode;
             },
-            Console.OpenStandardInputHandle().DangerousGetHandle().ToString(),
-            Console.OpenStandardOutputHandle().DangerousGetHandle().ToString());
+            OperatingSystem.IsWindows() ? Console.OpenStandardInputHandle().DangerousGetHandle().ToString() : GetTerminalNameOrEmpty(Console.OpenStandardInputHandle()),
+            OperatingSystem.IsWindows() ? Console.OpenStandardOutputHandle().DangerousGetHandle().ToString() : GetTerminalNameOrEmpty(Console.OpenStandardOutputHandle()));
             process.StartInfo.PseudoTerminal = pty;
 
             Assert.True(process.Start());
@@ -271,5 +279,22 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
             Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
         }
+
+        private static string GetTerminalNameOrEmpty(SafeHandle handle) =>
+            GetTerminalNameOrEmpty((int)handle.DangerousGetHandle());
+
+        private static string GetTerminalNameOrEmpty(int fileDescriptor)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return string.Empty;
+            }
+
+            IntPtr ttyName = NativeTtyName(fileDescriptor);
+            return ttyName != IntPtr.Zero ? Marshal.PtrToStringAnsi(ttyName)! : string.Empty;
+        }
+
+        [DllImport("libc", EntryPoint = "ttyname")]
+        private static extern IntPtr NativeTtyName(int fd);
     }
 }
