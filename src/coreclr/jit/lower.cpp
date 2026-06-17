@@ -768,7 +768,7 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
     GenTree* addr;
     noway_assert(arr->gtNext == node);
 
-    if (arr->OperIs(GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
+    if (arr->OperIs(GT_CNS_INT) && (arr->AsIntCon()->IconValue() == 0))
     {
         // If the array is NULL, then we should get a NULL reference
         // exception when computing its length.  We need to maintain
@@ -3572,7 +3572,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
 
     ssize_t tailCallHelperFlags = 1 |                                  // always restore EDI,ESI,EBX
                                   (call->IsVirtualStub() ? 0x2 : 0x0); // Stub dispatch flag
-    arg1->AsIntCon()->gtIconVal = tailCallHelperFlags;
+    arg1->AsIntCon()->SetIconValue(tailCallHelperFlags);
 
     // arg 2 == numberOfNewStackArgsWords
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 3);
@@ -3580,7 +3580,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     GenTree* arg2 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
     assert(arg2->OperIs(GT_CNS_INT));
 
-    arg2->AsIntCon()->gtIconVal = nNewStkArgsWords;
+    arg2->AsIntCon()->SetIconValue(nNewStkArgsWords);
 
 #ifdef DEBUG
     // arg 3 == numberOfOldStackArgsWords
@@ -6322,9 +6322,10 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
                 // a single indirection.
                 GenTree* cellAddr = AddrGen(addr);
 #ifdef DEBUG
-                cellAddr->AsIntCon()->gtTargetHandle = (size_t)call->gtCallMethHnd;
+                cellAddr->AsIntCon()->SetTargetHandle((size_t)call->gtCallMethHnd);
 #endif
-                GenTree* indir = Ind(cellAddr);
+                // The cell holds a function pointer that is never null.
+                GenTree* indir = m_compiler->gtNewIndir(TYP_I_IMPL, cellAddr, GTF_IND_NONFAULTING);
                 result         = indir;
             }
             break;
@@ -7228,7 +7229,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
             case IAT_PVALUE:
                 addrTree = AddrGen(addr);
 #ifdef DEBUG
-                addrTree->AsIntCon()->gtTargetHandle = (size_t)methHnd;
+                addrTree->AsIntCon()->SetTargetHandle((size_t)methHnd);
 #endif
                 result = Ind(addrTree);
                 break;
@@ -7243,7 +7244,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
 
                 addrTree = AddrGen(addr);
 #ifdef DEBUG
-                addrTree->AsIntCon()->gtTargetHandle = (size_t)methHnd;
+                addrTree->AsIntCon()->SetTargetHandle((size_t)methHnd);
 #endif
                 // Double-indirection. Load the address into a register
                 // and call indirectly through the register
@@ -11276,8 +11277,8 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
 
         assert(currData.value->OperIs(GT_CNS_INT));
-        auto* intCon      = currData.value->AsIntCon();
-        intCon->gtIconVal = static_cast<ssize_t>(val);
+        auto* intCon = currData.value->AsIntCon();
+        intCon->SetIconValue(static_cast<ssize_t>(val));
         if (genTypeSize(oldType) == 1 && node->OperIsIndir())
         {
             node->gtFlags |= GTF_IND_ALLOW_NON_ATOMIC;
@@ -12791,6 +12792,93 @@ bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
     return true;
 }
 
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// TryLowerAndRshToBFX : Lower AND of right shift and constant
+//
+// Arguments:
+//    tree - pointer to the node
+//    next - [out] Next node to lower if this function returns true
+//
+// Return Value:
+//    false if no changes were made
+//
+bool Lowering::TryLowerAndRshToBFX(GenTreeOp* tree, GenTree** next)
+{
+    assert(tree->OperIs(GT_AND));
+
+    if (!m_compiler->opts.OptimizationEnabled())
+    {
+        return false;
+    }
+
+    GenTree* shift    = tree->gtGetOp1();
+    GenTree* andConst = tree->gtGetOp2();
+    if (!shift->OperIs(GT_RSH, GT_RSZ) || !andConst->IsIntegralConst())
+    {
+        return false;
+    }
+
+    GenTree* shiftVar   = shift->gtGetOp1();
+    GenTree* shiftConst = shift->gtGetOp2();
+    if (!shiftConst->IsIntegralConst())
+    {
+        return false;
+    }
+
+    var_types ty = genActualType(tree->TypeGet());
+    if (!varTypeIsIntegral(ty))
+    {
+        return false;
+    }
+
+    uint64_t mask     = (uint64_t)andConst->AsIntConCommon()->IntegralValue();
+    uint64_t shiftVal = (uint64_t)shiftConst->AsIntConCommon()->IntegralValue();
+    if ((mask == 0) || ((mask & (mask + 1)) != 0))
+    {
+        return false;
+    }
+
+    uint64_t width    = (uint64_t)BitOperations::PopCount(mask);
+    uint64_t offset   = (uint64_t)shiftVal;
+    uint64_t bitWidth = genTypeSize(ty) * BITS_PER_BYTE;
+    if ((width > bitWidth) || (offset >= bitWidth) || ((offset + width) > bitWidth))
+    {
+        return false;
+    }
+
+    if ((width == 8) || (width == 16) || ((bitWidth == 64) && (width == 32)))
+    {
+        return false;
+    }
+
+    GenTreeBfm* bfm =
+        m_compiler->gtNewBfxNode(ty, shiftVar, static_cast<unsigned>(offset), static_cast<unsigned>(width));
+
+    ContainCheckNode(bfm);
+
+    BlockRange().InsertBefore(tree, bfm);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(tree, &use))
+    {
+        use.ReplaceWith(bfm);
+    }
+    else
+    {
+        bfm->SetUnusedValue();
+    }
+
+    BlockRange().Remove(shiftConst);
+    BlockRange().Remove(shift);
+    BlockRange().Remove(andConst);
+    BlockRange().Remove(tree);
+
+    *next = bfm->gtNext;
+    return true;
+}
+#endif
+
 //------------------------------------------------------------------------
 // ContainCheckConditionalCompare: determine whether the source of a compare within a compare chain should be contained.
 //
@@ -12803,7 +12891,7 @@ void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
 
     if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(m_compiler))
     {
-        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->gtIconVal;
+        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->IconValue();
 
         if (emitter::emitIns_valid_imm_for_ccmp(immVal))
         {

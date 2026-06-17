@@ -1437,6 +1437,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
 
         pFrame->Push(CURRENT_THREAD);
 
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -1482,6 +1483,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
         pFrame->Pop(CURRENT_THREAD);
     }
@@ -1523,6 +1525,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
     pFrame->Push(CURRENT_THREAD);
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -1594,6 +1597,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pFrame->Pop(CURRENT_THREAD);
 

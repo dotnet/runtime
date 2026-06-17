@@ -1450,7 +1450,7 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
         !incr->AsOp()->gtOp1->OperIs(GT_LCL_VAR) ||
         (incr->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() != lvar) ||
         !incr->AsOp()->gtOp2->OperIs(GT_CNS_INT) ||
-        (incr->AsOp()->gtOp2->AsIntCon()->gtIconVal != iterInc) ||
+        (incr->AsOp()->gtOp2->AsIntCon()->IconValue() != iterInc) ||
 
         (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree))
     {
@@ -3162,7 +3162,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
             case GT_CNS_INT:
 
                 ssize_t ival;
-                ival = tree->AsIntCon()->gtIconVal;
+                ival = tree->AsIntCon()->IconValue();
                 ssize_t imask;
                 imask = 0;
 
@@ -3200,8 +3200,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 #ifdef TARGET_64BIT
                 if (doit)
                 {
-                    tree->gtType                = TYP_INT;
-                    tree->AsIntCon()->gtIconVal = (int)ival;
+                    tree->gtType = TYP_INT;
+                    tree->AsIntCon()->SetIconValue((int)ival);
 
                     fgUpdateConstTreeValueNumber(tree);
                 }
