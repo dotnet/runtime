@@ -1139,6 +1139,46 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(FormatsAndLevels))]
+        public void WriteCore_EmptyMessageWithException(ConsoleLoggerFormat format, LogLevel level)
+        {
+            using var t = SetUp(new ConsoleLoggerOptions { Format = format });
+            var levelPrefix = t.GetLevelPrefix(level);
+            var logger = t.Logger;
+            var sink = t.Sink;
+            var ex = new Exception("Exception message" + Environment.NewLine + "with a second line");
+            string message = string.Empty;
+
+            logger.Log(level, 0, message, ex, (s, e) => s);
+
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    Assert.Equal(
+                        levelPrefix + ": test[0]" + Environment.NewLine +
+                        _paddingString + "System.Exception: Exception message" + Environment.NewLine +
+                        _paddingString + "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.Equal(
+                        levelPrefix + "test[0]" + " " +
+                        "System.Exception: Exception message" + " " +
+                        "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [MemberData(nameof(FormatsAndLevels))]
         public void WriteCore_MessageWithNullException(ConsoleLoggerFormat format, LogLevel level)
         {
             // Arrange

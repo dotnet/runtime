@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Globalization;
 using System.Text;
 
 namespace Microsoft.Extensions.Logging.Console
@@ -30,8 +29,14 @@ namespace Microsoft.Extensions.Logging.Console
                 char current = value[i];
                 if (ShouldEscape(current))
                 {
-                    sanitized.Append(@"\u");
-                    sanitized.Append(((int)current).ToString("X4", CultureInfo.InvariantCulture));
+                    sanitized.Append('\\');
+                    sanitized.Append('u');
+                    int codePoint = current;
+                    Span<char> hex = sanitized.AppendSpan(4);
+                    hex[0] = ToHexChar(codePoint >> 12);
+                    hex[1] = ToHexChar((codePoint >> 8) & 0xF);
+                    hex[2] = ToHexChar((codePoint >> 4) & 0xF);
+                    hex[3] = ToHexChar(codePoint & 0xF);
                 }
                 else
                 {
@@ -41,6 +46,9 @@ namespace Microsoft.Extensions.Logging.Console
 
             return sanitized.ToString();
         }
+
+        private static char ToHexChar(int value) =>
+            (char)(value < 10 ? '0' + value : 'A' + value - 10);
 
         private static int GetFirstEscapedCharacterIndex(string value)
         {
@@ -59,13 +67,20 @@ namespace Microsoft.Extensions.Logging.Console
         {
             return c switch
             {
-                '\u001B' => true, // ESC - ANSI escape sequences
+                '\u0000' => true, // NUL - can truncate log lines in syslog/journald pipelines
                 '\u0007' => true, // BEL - terminal bell
                 '\u0008' => true, // BS  - backspace
+                '\u000E' => true, // SO  - shift out (invokes alternate character set)
+                '\u000F' => true, // SI  - shift in
+                '\u001B' => true, // ESC - ANSI escape sequences
                 '\u007F' => true, // DEL - delete
+                '\u0090' => true, // DCS - device control string (8-bit)
                 '\u009B' => true, // CSI - control sequence introducer (8-bit)
                 '\u009C' => true, // ST  - string terminator (8-bit)
                 '\u009D' => true, // OSC - operating system command (8-bit)
+                '\u0098' => true, // SOS - start of string (8-bit)
+                '\u009E' => true, // PM  - privacy message (8-bit)
+                '\u009F' => true, // APC - application program command (8-bit)
                 '\u200B' => true, // zero-width space
                 '\u200C' => true, // zero-width non-joiner
                 '\u200D' => true, // zero-width joiner
