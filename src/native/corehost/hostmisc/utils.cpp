@@ -239,6 +239,9 @@ const pal::char_t* get_current_arch_name()
 pal::string_t get_runtime_id()
 {
     pal_char_t* rid = utils_get_runtime_id();
+    if (rid == nullptr)
+        return pal::string_t(_STRINGIFY(HOST_RID_PLATFORM) _X("-") _STRINGIFY(CURRENT_ARCH_NAME));
+
     pal::string_t result = rid;
     free(rid);
     return result;
