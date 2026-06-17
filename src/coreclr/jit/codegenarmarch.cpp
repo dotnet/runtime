@@ -4143,7 +4143,7 @@ void CodeGen::genCodeForMulLong(GenTreeOp* mul)
 }
 
 //------------------------------------------------------------------------
-// genCodeForDivModOverflowCheck: Emit the (MinInt / -1) overflow check for a signed integer divide, throwing ArithmeticException.
+// genCodeForDivModOverflowCheck: Emit the (MinInt / -1) overflow check for a signed integer divide.
 //
 // Arguments:
 //    tree - the GT_DIV node
