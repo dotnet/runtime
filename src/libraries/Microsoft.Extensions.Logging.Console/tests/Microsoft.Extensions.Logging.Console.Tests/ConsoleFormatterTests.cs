@@ -214,7 +214,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(NonJsonFormatterNames))]
-        public void Log_SafeWhitespace_IsPreserved(string formatterName)
+        public void Log_SafeWhitespace_IsNotEscaped(string formatterName)
         {
             using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = formatterName },
