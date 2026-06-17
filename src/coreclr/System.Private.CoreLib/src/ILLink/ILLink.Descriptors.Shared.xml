@@ -9,6 +9,19 @@
     <!-- Accessed via native code. -->
     <type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
 
+    <!-- Referenced by name from the IL-stub generator in native code and used as constrained
+         TMarshaler type arguments the trimmer cannot see. -->
+    <type fullname="System.StubHelpers.DateMarshaler" />
+    <type fullname="System.StubHelpers.StructureMarshaler`1" />
+    <type fullname="System.StubHelpers.BlittableArrayMarshaler`1" />
+    <type fullname="System.StubHelpers.AnsiCharArrayMarshaler`2" />
+    <type fullname="System.StubHelpers.LayoutClassMarshaler`1" />
+    <type fullname="System.StubHelpers.VariantBoolMarshaler" />
+    <type fullname="System.StubHelpers.BoolMarshaler`1" />
+    <type fullname="System.StubHelpers.LPWSTRMarshaler" />
+    <type fullname="System.StubHelpers.LPSTRArrayElementMarshaler`2" />
+    <type fullname="System.StubHelpers.BSTRArrayElementMarshaler" />
+
     <!-- GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod depends on slots of these interfaces not changing -->
     <type fullname="System.Collections.Generic.IEnumerable`1" />
     <type fullname="System.Collections.Generic.ICollection`1" />
