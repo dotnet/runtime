@@ -96,6 +96,7 @@ namespace System.Threading
         // The public entry point spins by default (e.g. a blocking Monitor.Enter). Callers that want a
         // single attempt (e.g. Monitor.TryEnter) pass isOneShot: true to succeed only if the lock is
         // currently unowned.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static HeaderLockResult AcquireThinLock(object obj, bool isOneShot = false)
         {
             ArgumentNullException.ThrowIfNull(obj);
@@ -193,6 +194,7 @@ namespace System.Threading
             return HeaderLockResult.Failure;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe HeaderLockResult TryAcquireThinLockSpin(object obj)
         {
             int currentThreadID = ManagedThreadId.Current;
