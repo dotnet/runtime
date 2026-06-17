@@ -615,12 +615,12 @@ void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTa
     // when it is null the code causes an AV. This AV is seen by the VM's personality routine
     // and it converts it into nullRef.
 
+    // push {r5,r6}
+    _stub._entryPoint[n++] = 0xb460;
+
     // ldr r6, [r0 + #Object.m_pMethTab]
     _stub._entryPoint[n++] = DISPATCH_STUB_FIRST_WORD;
     _stub._entryPoint[n++] = 0x6000;
-
-    // push {r5,r6}
-    _stub._entryPoint[n++] = 0xb460;
 
     // ldr r5, [pc + #_expectedMT]
     offset = PC_REL_OFFSET(_expectedMT);

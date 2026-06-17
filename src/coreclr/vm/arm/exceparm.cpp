@@ -39,6 +39,7 @@ AdjustContextForVirtualStub(
     TADDR pInstr = PCODEToPINSTR(f_IP);
 
     StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
+    size_t pushedRegistersSize = 0;
 
     if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
@@ -48,6 +49,8 @@ AdjustContextForVirtualStub(
             _ASSERTE(!"AV in DispatchStub at unknown instruction");
             return FALSE;
         }
+
+        pushedRegistersSize = 2 * sizeof(TADDR); // push {r5,r6}
     }
     else
     if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
@@ -58,11 +61,15 @@ AdjustContextForVirtualStub(
             _ASSERTE(!"AV in ResolveStub at unknown instruction");
             return FALSE;
         }
+
+        pushedRegistersSize = 3 * sizeof(TADDR); // push {r4,r5,r6}
     }
     else
     {
         return FALSE;
     }
+
+    SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + pushedRegistersSize));
 
     PCODE callsite = GetAdjustedCallAddress(GetLR(pContext));
 
