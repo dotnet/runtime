@@ -80,17 +80,8 @@ namespace System.Diagnostics.Tests
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, result.ExitStatus.ExitCode);
             Assert.False(result.ExitStatus.Canceled);
-
-            if (silent)
-            {
-                Assert.Equal(string.Empty, result.StandardOutput);
-                Assert.Equal(string.Empty, result.StandardError);
-            }
-            else
-            {
-                Assert.Equal(new string('a', 100_000), result.StandardOutput);
-                Assert.Equal(new string('b', 100_000), result.StandardError);
-            }
+            Assert.Equal(silent ? string.Empty : new string('a', 100_000), result.StandardOutput);
+            Assert.Equal(silent ? string.Empty : new string('b', 100_000), result.StandardError);
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
