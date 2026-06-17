@@ -9,18 +9,23 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
+    [ConditionalClass(typeof(PseudoTerminalTests), nameof(IsPseudoTerminalSupported))]
     public class PseudoTerminalTests : ProcessTestBase
     {
-        private static readonly PseudoTerminalOptions s_testOptions = new PseudoTerminalOptions { Columns = 80, Rows = 24 };
+        public static bool IsPseudoTerminalSupported =>
+            RemoteExecutor.IsSupported &&
+            !PlatformDetection.IsAndroid &&
+            !PlatformDetection.IsiOS &&
+            !PlatformDetection.IstvOS &&
+            !PlatformDetection.IsWasm &&
+            !PlatformDetection.IsAzureLinux;
+
+        private static readonly PseudoTerminalOptions s_testOptions = new(80, 24);
 
         [Fact]
         public void Create_WithOptions_Succeeds()
         {
-            PseudoTerminalOptions options = new PseudoTerminalOptions
-            {
-                Columns = 120,
-                Rows = 40
-            };
+            PseudoTerminalOptions options = new(120, 40);
 
             using PseudoTerminal pty = PseudoTerminal.Create(options);
             Assert.NotNull(pty);
@@ -35,12 +40,13 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(0, 24)]
         [InlineData(-1, 24)]
+        [InlineData(short.MaxValue + 1, 24)]
         [InlineData(80, 0)]
         [InlineData(80, -1)]
+        [InlineData(80, short.MaxValue + 1)]
         public void Create_InvalidDimensions_Throws(int columns, int rows)
         {
-            PseudoTerminalOptions options = new PseudoTerminalOptions { Columns = columns, Rows = rows };
-            Assert.ThrowsAny<ArgumentOutOfRangeException>(() => PseudoTerminal.Create(options));
+            Assert.ThrowsAny<ArgumentOutOfRangeException>(() => new PseudoTerminalOptions(columns, rows));
         }
 
         [Fact]
@@ -56,8 +62,10 @@ namespace System.Diagnostics.Tests
             using PseudoTerminal pty = PseudoTerminal.Create(s_testOptions);
             Assert.Throws<ArgumentOutOfRangeException>("columns", () => pty.Resize(0, 24));
             Assert.Throws<ArgumentOutOfRangeException>("columns", () => pty.Resize(-1, 24));
+            Assert.Throws<ArgumentOutOfRangeException>("columns", () => pty.Resize(short.MaxValue + 1, 24));
             Assert.Throws<ArgumentOutOfRangeException>("rows", () => pty.Resize(80, 0));
             Assert.Throws<ArgumentOutOfRangeException>("rows", () => pty.Resize(80, -1));
+            Assert.Throws<ArgumentOutOfRangeException>("rows", () => pty.Resize(80, short.MaxValue + 1));
         }
 
         [Fact]
@@ -192,7 +200,8 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
             Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
 
-            string output = process.StandardOutput.ReadLine();
+            string? output = process.StandardOutput.ReadLine();
+            Assert.NotNull(output);
             Assert.Contains("hello from child", output);
         }
 
@@ -224,11 +233,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StartProcess_WithPseudoTerminal_CustomWindowSize()
         {
-            PseudoTerminalOptions options = new PseudoTerminalOptions
-            {
-                Columns = 132,
-                Rows = 50
-            };
+            PseudoTerminalOptions options = new(132, 50);
 
             using PseudoTerminal pty = PseudoTerminal.Create(options);
 

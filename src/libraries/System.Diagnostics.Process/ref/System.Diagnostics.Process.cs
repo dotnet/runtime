@@ -369,6 +369,9 @@ namespace System.Diagnostics
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string WorkingDirectory { get { throw null; } set { } }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
     public partial class PseudoTerminal : System.IDisposable
     {
         internal PseudoTerminal() { }
@@ -378,9 +381,9 @@ namespace System.Diagnostics
     }
     public partial class PseudoTerminalOptions
     {
-        public PseudoTerminalOptions() { }
-        public int Columns { get { throw null; } set { } }
-        public int Rows { get { throw null; } set { } }
+        public PseudoTerminalOptions(int columns, int rows) { }
+        public int Columns { get { throw null; } }
+        public int Rows { get { throw null; } }
     }
     public sealed partial class ProcessTextOutput
     {

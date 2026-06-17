@@ -1,27 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Diagnostics
 {
     /// <summary>
     /// Represents a pseudo-terminal (PTY) device that can be used to spawn child processes
     /// with a controlling terminal.
     /// </summary>
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
+    [SupportedOSPlatform("maccatalyst")]
     public sealed partial class PseudoTerminal : IDisposable
     {
         /// <summary>
         /// Creates a new pseudo-terminal with the specified options.
         /// </summary>
-        /// <param name="options">Optional configuration for the pseudo-terminal, such as window size.</param>
+        /// <param name="options">Configuration for the pseudo-terminal, including the window size.</param>
         /// <returns>A new <see cref="PseudoTerminal"/> instance.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
         /// <exception cref="System.ComponentModel.Win32Exception">The pseudo-terminal could not be created.</exception>
         public static PseudoTerminal Create(PseudoTerminalOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.Columns);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.Rows);
-
             return CreateCore(options);
         }
 
@@ -30,12 +32,10 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="columns">The new number of columns.</param>
         /// <param name="rows">The new number of rows.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="columns"/> or <paramref name="rows"/> is less than or equal to zero.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="columns"/> or <paramref name="rows"/> is less than or equal to zero, or greater than <see cref="short.MaxValue"/>.</exception>
         public void Resize(int columns, int rows)
         {
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(columns);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rows);
-
+            PseudoTerminalOptions.ValidateDimensions(columns, rows);
             ResizeCore(columns, rows);
         }
 

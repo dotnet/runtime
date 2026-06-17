@@ -30,9 +30,10 @@ namespace System.Diagnostics
             int result = Interop.Sys.OpenPseudoTerminal(out SafeFileHandle primary, out SafeFileHandle secondary, options.Columns, options.Rows);
             if (result != 0)
             {
+                int error = Marshal.GetLastPInvokeError();
                 primary.Dispose();
                 secondary.Dispose();
-                throw new Win32Exception(Marshal.GetLastPInvokeError());
+                throw new Win32Exception(error);
             }
 
             return new PseudoTerminal(primary, secondary);

@@ -21,7 +21,7 @@
 
 #if HAVE_OPENPTY
 #include <pty.h>
-#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
+#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_OPENBSD)
 #include <util.h>
 #endif
 #endif
@@ -508,6 +508,17 @@ int32_t SystemNative_OpenPseudoTerminal(intptr_t* primaryFd, intptr_t* secondary
     {
         *primaryFd = -1;
         *secondaryFd = -1;
+        return -1;
+    }
+
+    if (fcntl(primary, F_SETFD, FD_CLOEXEC) == -1 || fcntl(secondary, F_SETFD, FD_CLOEXEC) == -1)
+    {
+        int error = errno;
+        close(primary);
+        close(secondary);
+        *primaryFd = -1;
+        *secondaryFd = -1;
+        errno = error;
         return -1;
     }
 

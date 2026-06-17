@@ -367,6 +367,7 @@ typedef struct
     int32_t* inheritedFds;
     int32_t inheritedFdCount;
     int32_t startDetached;
+    int32_t pseudoTerminalSecondaryFd;
 
     // Output
     int32_t childPid;
@@ -403,7 +404,7 @@ static void* PDeathSigThreadFunc(void* arg)
             req->filename, req->argv, req->envp, req->cwd,
             req->setCredentials, req->userId, req->groupId, req->groups, req->groupsLength,
             &childPid, req->stdinFd, req->stdoutFd, req->stderrFd,
-            req->inheritedFds, req->inheritedFdCount, req->startDetached, 1, -1);
+            req->inheritedFds, req->inheritedFdCount, req->startDetached, 1, req->pseudoTerminalSecondaryFd);
         req->childPid = childPid;
         req->errnoValue = errno;
 
@@ -460,7 +461,7 @@ static int32_t ForkAndExecOnPDeathSigThread(
     const char* filename, char* const argv[], char* const envp[], const char* cwd,
     int32_t setCredentials, uint32_t userId, uint32_t groupId, uint32_t* groups, int32_t groupsLength,
     int32_t* childPid, int32_t stdinFd, int32_t stdoutFd, int32_t stderrFd,
-    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached)
+    int32_t* inheritedFds, int32_t inheritedFdCount, int32_t startDetached, int32_t pseudoTerminalSecondaryFd)
 {
     PDeathSigForkRequest req;
     req.filename = filename;
@@ -478,6 +479,7 @@ static int32_t ForkAndExecOnPDeathSigThread(
     req.inheritedFds = inheritedFds;
     req.inheritedFdCount = inheritedFdCount;
     req.startDetached = startDetached;
+    req.pseudoTerminalSecondaryFd = pseudoTerminalSecondaryFd;
     req.childPid = -1;
     req.result = -1;
     req.errnoValue = 0;
@@ -547,7 +549,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
             filename, argv, envp, cwd,
             setCredentials, userId, groupId, groups, groupsLength,
             childPid, stdinFd, stdoutFd, stderrFd,
-            inheritedFds, inheritedFdCount, startDetached);
+            inheritedFds, inheritedFdCount, startDetached, pseudoTerminalSecondaryFd);
     }
 #else
     (void)killOnParentExit;

@@ -866,12 +866,14 @@ namespace System.Diagnostics
             PseudoTerminal pty = startInfo.PseudoTerminal!;
             // On Windows, Input is a write pipe (to send data to the console) and Output is a read pipe (to receive from the console).
             // Use non-owning handles since the PseudoTerminal owns the pipe lifetime.
-            _standardInput = new StreamWriter(new FileStream(pty.Input, FileAccess.Write, StreamBufferSize, isAsync: pty.Input.IsAsync),
+            SafeFileHandle inputHandle = new(pty.Input.DangerousGetHandle(), ownsHandle: false);
+            SafeFileHandle outputHandle = new(pty.Output.DangerousGetHandle(), ownsHandle: false);
+            _standardInput = new StreamWriter(new FileStream(inputHandle, FileAccess.Write, StreamBufferSize, isAsync: pty.Input.IsAsync),
                 startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
             {
                 AutoFlush = true
             };
-            _standardOutput = new StreamReader(new FileStream(pty.Output, FileAccess.Read, StreamBufferSize, isAsync: pty.Output.IsAsync),
+            _standardOutput = new StreamReader(new FileStream(outputHandle, FileAccess.Read, StreamBufferSize, isAsync: pty.Output.IsAsync),
                 startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
         }
     }
