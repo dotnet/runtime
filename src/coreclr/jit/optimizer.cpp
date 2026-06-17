@@ -1450,7 +1450,7 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
         !incr->AsOp()->gtOp1->OperIs(GT_LCL_VAR) ||
         (incr->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() != lvar) ||
         !incr->AsOp()->gtOp2->OperIs(GT_CNS_INT) ||
-        (incr->AsOp()->gtOp2->AsIntCon()->gtIconVal != iterInc) ||
+        (incr->AsOp()->gtOp2->AsIntCon()->IconValue() != iterInc) ||
 
         (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree))
     {
@@ -1995,12 +1995,12 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     // Check if loop is small enough to consider for inversion.
     // Large loops are less likely to benefit from inversion.
-    const int invertSizeLimit = JitConfig.JitLoopInversionSizeLimit();
+    bool      mightBenefitFromCloning = false;
+    const int invertSizeLimit         = JitConfig.JitLoopInversionSizeLimit();
     if (invertSizeLimit >= 0)
     {
-        const int cloneSizeLimit          = JitConfig.JitCloneLoopsSizeLimit();
-        bool      mightBenefitFromCloning = false;
-        unsigned  loopSize                = 0;
+        const int cloneSizeLimit = JitConfig.JitCloneLoopsSizeLimit();
+        unsigned  loopSize       = 0;
 
         // Loops with bounds checks can benefit from cloning, which depends on inversion running.
         // Thus, we will try to proceed with inversion for slightly oversize loops if they show potential for cloning.
@@ -2067,7 +2067,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     bool costIsTooHigh = (estDupCostSz > maxDupCostSz);
 
-    OptInvertCountTreeInfoType optInvertTotalInfo = {};
+    OptInvertCountTreeInfoType optInvertTotalInfo         = {};
+    bool                       hasSplitIVTestAndIncrement = false;
     if (costIsTooHigh)
     {
         // If we already know that the cost is acceptable, then don't waste time walking the tree
@@ -2078,6 +2079,34 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         // be executed on every loop iteration.
         //
         // If the condition has array.Length operations, also boost, as they are likely to be CSE'd.
+        //
+        // Also boost if the IV increment happens in a backedge source block.
+
+        if (mightBenefitFromCloning)
+        {
+            for (FlowEdge* const backEdge : loop->BackEdges())
+            {
+                BasicBlock* const latchBlock = backEdge->getSourceBlock();
+                if (latchBlock == condBlock)
+                {
+                    continue;
+                }
+
+                for (Statement* const stmt : latchBlock->Statements())
+                {
+                    if (optIsLoopIncrTree(stmt->GetRootNode()) != BAD_VAR_NUM)
+                    {
+                        hasSplitIVTestAndIncrement = true;
+                        break;
+                    }
+                }
+
+                if (hasSplitIVTestAndIncrement)
+                {
+                    break;
+                }
+            }
+        }
 
         for (int i = 0; i < duplicatedBlocks.Height() && costIsTooHigh; i++)
         {
@@ -2090,14 +2119,15 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
                 optInvertTotalInfo.sharedStaticHelperCount += optInvertInfo.sharedStaticHelperCount;
                 optInvertTotalInfo.arrayLengthCount += optInvertInfo.arrayLengthCount;
 
-                if ((optInvertInfo.sharedStaticHelperCount > 0) || (optInvertInfo.arrayLengthCount > 0))
+                if ((optInvertInfo.sharedStaticHelperCount > 0) || (optInvertInfo.arrayLengthCount > 0) ||
+                    hasSplitIVTestAndIncrement)
                 {
                     // Calculate a new maximum cost. We might be able to early exit.
 
                     unsigned newMaxDupCostSz =
                         maxDupCostSz +
                         24 * min(optInvertTotalInfo.sharedStaticHelperCount, (int)(loopIterations + 1.5)) +
-                        8 * optInvertTotalInfo.arrayLengthCount;
+                        8 * optInvertTotalInfo.arrayLengthCount + (hasSplitIVTestAndIncrement ? 24 : 0);
 
                     // Is the cost too high now?
                     costIsTooHigh = (estDupCostSz > newMaxDupCostSz);
@@ -2120,12 +2150,13 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     {
         // Note that `optInvertTotalInfo.sharedStaticHelperCount = 0` means either there were zero helpers, or the
         // tree walk to count them was not done.
-        printf(
-            "\nDuplication of loop condition [%06u] is %s, because the cost of duplication (%i) is %s than %i,"
-            "\n   loopIterations = %7.3f, optInvertTotalInfo.sharedStaticHelperCount >= %d, haveProfileWeights = %s\n",
-            dspTreeID(condBlock->lastStmt()->GetRootNode()), costIsTooHigh ? "not done" : "performed", estDupCostSz,
-            costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, loopIterations,
-            optInvertTotalInfo.sharedStaticHelperCount, dspBool(haveProfileWeights));
+        printf("\nDuplication of loop condition [%06u] is %s, because the cost of duplication (%i) is %s than %i,"
+               "\n   loopIterations = %7.3f, optInvertTotalInfo.sharedStaticHelperCount >= %d,"
+               " hasSplitIVTestAndIncrement = %s, haveProfileWeights = %s\n",
+               dspTreeID(condBlock->lastStmt()->GetRootNode()), costIsTooHigh ? "not done" : "performed", estDupCostSz,
+               costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, loopIterations,
+               optInvertTotalInfo.sharedStaticHelperCount, dspBool(hasSplitIVTestAndIncrement),
+               dspBool(haveProfileWeights));
     }
 #endif
 
@@ -3162,7 +3193,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
             case GT_CNS_INT:
 
                 ssize_t ival;
-                ival = tree->AsIntCon()->gtIconVal;
+                ival = tree->AsIntCon()->IconValue();
                 ssize_t imask;
                 imask = 0;
 
@@ -3200,8 +3231,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 #ifdef TARGET_64BIT
                 if (doit)
                 {
-                    tree->gtType                = TYP_INT;
-                    tree->AsIntCon()->gtIconVal = (int)ival;
+                    tree->gtType = TYP_INT;
+                    tree->AsIntCon()->SetIconValue((int)ival);
 
                     fgUpdateConstTreeValueNumber(tree);
                 }
@@ -3389,14 +3420,27 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 }
 #endif
 
-                if ((tree->CastToType() != srct) || tree->gtOverflow())
+                // We are called recursively to push a narrowing cast down through `tree`.
+                // In this GT_CAST case, `tree` is an inner cast whose result feeds the outer
+                // narrowing operation; `srct` is that result type (the inner cast's TypeGet)
+                // and `dstt` is the type we are narrowing to.
+                //
+                // We recognize the pattern (simplified):
+                //     CAST<dstt <- srct>( CAST<srct <- op1>(op1) )       e.g. (int)(long)x
+                // and below rewrite the inner cast to int<->int so the chain folds away.
+                //
+                // CastToType carries signedness independently of tree->TypeGet() (e.g.
+                // CAST_LONG <- ULONG <- uint has CastToType=ULONG while tree->TypeGet()==LONG).
+                // Use genActualType on both sides of the compare so an unsigned-widening inner
+                // cast still matches a LONG `srct`.
+                if ((genActualType(tree->CastToType()) != genActualType(srct)) || tree->gtOverflow())
                 {
                     return false;
                 }
 
                 if (varTypeIsInt(op1) && varTypeIsInt(dstt) && tree->TypeIs(TYP_LONG))
                 {
-                    // We have a CAST that converts into to long while dstt is int.
+                    // We have a CAST that converts int to long while dstt is int.
                     // so we can just convert the cast to int -> int and someone will clean it up.
                     if (doit)
                     {

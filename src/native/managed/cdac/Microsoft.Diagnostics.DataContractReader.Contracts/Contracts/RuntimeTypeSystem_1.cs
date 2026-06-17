@@ -584,6 +584,27 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public bool IsObject(TypeHandle typeHandle) => ObjectMethodTablePointer != TargetPointer.Null && ObjectMethodTablePointer == typeHandle.Address;
 
     public bool IsString(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsString;
+
+    public TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind)
+    {
+        string globalName = kind switch
+        {
+            WellKnownMethodTable.Object => Constants.Globals.ObjectMethodTable,
+            WellKnownMethodTable.String => Constants.Globals.StringMethodTable,
+            WellKnownMethodTable.Array => Constants.Globals.ObjectArrayMethodTable,
+            WellKnownMethodTable.Exception => Constants.Globals.ExceptionMethodTable,
+            WellKnownMethodTable.Free => Constants.Globals.FreeObjectMethodTable,
+            WellKnownMethodTable.Canon => Constants.Globals.CanonMethodTable,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+        };
+
+        if (!_target.TryReadGlobalPointer(globalName, out TargetPointer? ptrPtr) || ptrPtr is null)
+            return TargetPointer.Null;
+        if (!_target.TryReadPointer(ptrPtr.Value, out TargetPointer value))
+            return TargetPointer.Null;
+        return value;
+    }
+
     public bool IsObjRef(TypeHandle typeHandle)
     {
         CorElementType elementType = GetSignatureCorElementType(typeHandle);
@@ -1240,6 +1261,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     public bool IsTypeDesc(TypeHandle typeHandle) => typeHandle.IsTypeDesc();
+
+    public TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef)
+    {
+        Data.TypedByRef typedByRefData = _target.ProcessedData.GetOrAdd<Data.TypedByRef>(typedByRef);
+        return new TypedByRefInfo(typedByRefData.Data, typedByRefData.Type);
+    }
 
     public TargetPointer GetLoaderModule(TypeHandle typeHandle)
     {
