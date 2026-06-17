@@ -21,13 +21,12 @@ namespace System.Diagnostics
             }
             set
             {
-                throw new PlatformNotSupportedException(); // TODO: Is this the same as FreeBSD? We can find no API to set this
+                throw new PlatformNotSupportedException(); // OpenBSD does not support thread priority scheduling
             }
         }
 
-        // TODO: I'm not sure if the same holds on OpenBSD or not.
-        // kinfo_proc has one  entry per thread but ki_start seems to be same for
-        // all threads e.g. reflects process start. This may be re-visited later.
+        // kinfo_proc has one entry per thread but p_ustart_sec is the same for
+        // all threads e.g. reflects process start.
         private static DateTime GetStartTime() => throw new PlatformNotSupportedException();
 
         /// <summary>

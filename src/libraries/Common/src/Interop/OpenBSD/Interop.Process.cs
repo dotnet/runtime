@@ -134,7 +134,7 @@ internal static partial class Interop
         /// <param name="pid">The PID (process ID) of the process</param>
         /// <param name="tid">The TID (thread ID) of the process</param>
         /// <returns>
-        /// Returns basic info about thread. If tis is 0, it will return
+        /// Returns basic info about thread. If tid is 0, it will return
         /// info for process e.g. main thread.
         /// </returns>
         public static unsafe proc_stats GetThreadInfo(int pid, int tid)
