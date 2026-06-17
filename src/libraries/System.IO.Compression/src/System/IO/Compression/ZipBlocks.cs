@@ -772,7 +772,8 @@ namespace System.IO.Compression
                 header.ExtraFields = ZipGenericExtraField.ParseExtraField(zipExtraFields, out ReadOnlySpan<byte> trailingDataSpan);
                 zip64 = Zip64ExtraField.GetAndRemoveZip64Block(header.ExtraFields,
                             uncompressedSizeInZip64, compressedSizeInZip64,
-                            relativeOffsetInZip64, diskNumberStartInZip64, false);
+                            relativeOffsetInZip64, diskNumberStartInZip64,
+                            isInLocalHeader: false);
                 header.TrailingExtraFieldData = trailingDataSpan.ToArray();
             }
             else
@@ -781,7 +782,8 @@ namespace System.IO.Compression
                 header.TrailingExtraFieldData = null;
                 zip64 = Zip64ExtraField.GetJustZip64Block(zipExtraFields,
                             uncompressedSizeInZip64, compressedSizeInZip64,
-                            relativeOffsetInZip64, diskNumberStartInZip64, false);
+                            relativeOffsetInZip64, diskNumberStartInZip64,
+                            isInLocalHeader: false);
             }
 
             header.FileComment = dynamicHeader.Slice(header.FilenameLength + header.ExtraFieldLength, header.FileCommentLength).ToArray();
