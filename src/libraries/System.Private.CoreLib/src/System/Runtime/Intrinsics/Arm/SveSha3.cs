@@ -1,14 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.Arm
 {
     /// <summary>Provides access to the ARM SveSha3 hardware instructions via intrinsics.</summary>
     [Intrinsic]
     [CLSCompliant(false)]
+    [Experimental(Experimentals.ArmSveDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract class SveSha3 : ArmBase
     {
         internal SveSha3() { }
