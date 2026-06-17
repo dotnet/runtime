@@ -329,12 +329,9 @@ namespace System
                 return [this];
             }
 
-            // Create an array of delegate copies and copy each element into the array
-            ReadOnlySpan<MulticastDelegate> invocationList = GetInvocationsUnchecked();
-            Delegate[] del = new Delegate[invocationList.Length];
-            for (int i = 0; i < invocationList.Length; i++)
-                del[i] = invocationList[i];
-            return del;
+            // Copy the invocations into a new array
+            ReadOnlySpan<Delegate> invocationList = GetInvocationsUnchecked();
+            return invocationList.ToArray();
         }
 
         internal new bool HasSingleTarget => _invocationList is not object[];
