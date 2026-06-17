@@ -7138,7 +7138,7 @@ public sealed unsafe partial class SOSDacImpl
                 values[written++] = _threads[(int)_index++];
 
             *pFetched = written;
-            return _index < _threads.Length ? HResults.S_FALSE : HResults.S_OK;
+            return written < count ? HResults.S_FALSE : HResults.S_OK;
         }
 
         int ISOSEnum.Skip(uint count)
@@ -7201,7 +7201,7 @@ public sealed unsafe partial class SOSDacImpl
 
             _lastBatchCount = written;
             *pFetched = written;
-            return _index < _messages.Length ? HResults.S_FALSE : HResults.S_OK;
+            return written < count ? HResults.S_FALSE : HResults.S_OK;
         }
 
         int ISOSStressLogMsgEnum.GetArguments(uint messageIndex, uint argCount, ClrDataAddress[] args, uint* pFetched)
@@ -7263,7 +7263,7 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             if (data is null)
-                throw new ArgumentException();
+                throw new NullReferenceException();
 
             Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
             if (!stressLogContract.HasStressLog())
