@@ -1183,15 +1183,15 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 #endif
         if (targetMethodHnd != nullptr)
     {
-        CORINFO_METHOD_HANDLE alternateCtor = nullptr;
         DelegateCtorArgs      ctorData;
         ctorData.pMethod = info.compMethodHnd;
         ctorData.pArg3   = nullptr;
         ctorData.pArg4   = nullptr;
         ctorData.pArg5   = nullptr;
 
-        alternateCtor = info.compCompHnd->GetDelegateCtor(methHnd, clsHnd, targetMethodHnd, &ctorData);
-        if (alternateCtor != methHnd)
+        CORINFO_METHOD_HANDLE alternateCtor =
+            info.compCompHnd->GetDelegateCtor(methHnd, clsHnd, targetMethodHnd, &ctorData);
+        if (alternateCtor != NO_METHOD_HANDLE && alternateCtor != methHnd)
         {
             JITDUMP("optimized\n");
             // we erase any inline info that may have been set for generics has it is not needed here,

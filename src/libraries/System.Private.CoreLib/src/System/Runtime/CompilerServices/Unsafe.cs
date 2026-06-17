@@ -72,6 +72,15 @@ namespace System.Runtime.CompilerServices
             // ret
         }
 
+        // Internal helper that asserts the As is valid in Debug and Checked
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NotNullIfNotNull(nameof(o))]
+        internal static T? AsAssert<T>(object? o) where T : class?
+        {
+            Debug.Assert(o is null or T);
+            return As<T?>(o);
+        }
+
         /// <summary>
         /// Reinterprets the given reference as a reference to a value of type <typeparamref name="TTo"/>.
         /// </summary>

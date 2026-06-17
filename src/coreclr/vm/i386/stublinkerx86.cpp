@@ -1194,9 +1194,9 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     }
 
     // mov r10, [r11 + Delegate._methodptraux]
-    X86EmitIndexRegLoad(kR10, kR11, DelegateObject::GetOffsetOfMethodPtrAux());
-    // add r11, DelegateObject::GetOffsetOfMethodPtrAux() - load the indirection cell into r11
-    X86EmitAddReg(kR11, DelegateObject::GetOffsetOfMethodPtrAux());
+    X86EmitIndexRegLoad(kR10, kR11, DelegateObject::GetOffsetOfExtraFunctionPointerOrData());
+    // add r11, DelegateObject::GetOffsetOfExtraFunctionPointerOrData() - load the indirection cell into r11
+    X86EmitAddReg(kR11, DelegateObject::GetOffsetOfExtraFunctionPointerOrData());
     // Now jump to real target
     //   jmp r10
     static const BYTE bjmpr10[] = { 0x41, 0xff, 0xe2 };
@@ -1287,7 +1287,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     // Now jump to real target
     //   JMP [SCRATCHREG]
     // we need to jump indirect so that for virtual delegates eax contains a pointer to the indirection cell
-    X86EmitAddReg(SCRATCH_REGISTER_X86REG, DelegateObject::GetOffsetOfMethodPtrAux());
+    X86EmitAddReg(SCRATCH_REGISTER_X86REG, DelegateObject::GetOffsetOfExtraFunctionPointerOrData());
     static const BYTE bjmpeax[] = { 0xff, 0x20 };
     EmitBytes(bjmpeax, sizeof(bjmpeax));
 

@@ -1744,7 +1744,7 @@ typedef BStrWrapper*     BSTRWRAPPEROBJECTREF;
 #endif // FEATURE_COMINTEROP
 
 
-// This class corresponds to System.Delegate on the managed side.
+// This class corresponds to System.MulticastDelegate on the managed side.
 class DelegateObject : public Object
 {
     friend class CheckAsmOffsets;
@@ -1752,56 +1752,67 @@ class DelegateObject : public Object
     friend struct ::cdac_data<DelegateObject>;
 
 public:
-    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _extraFunctionPointerOrData == 0; }
+    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == 0; }
 
-    OBJECTREF GetHelperObject() { LIMITED_METHOD_CONTRACT; return _helperObject; }
-    void SetHelperObject(OBJECTREF helperObject) { WRAPPER_NO_CONTRACT; SetObjectReference(&_helperObject, helperObject); }
-    static int GetOffsetOfHelperObject() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _helperObject); }
-
-    OBJECTREF GetFirstParameter() { LIMITED_METHOD_CONTRACT; return _firstParameter; }
-    void SetFirstParameter(OBJECTREF firstParameter) { WRAPPER_NO_CONTRACT; SetObjectReference(&_firstParameter, firstParameter); }
-    static int GetOffsetOfFirstParameter() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _firstParameter); }
-
-    PCODE GetFunctionPointer() { LIMITED_METHOD_CONTRACT; return _functionPointer; }
-    void SetFunctionPointer(PCODE functionPointer) { LIMITED_METHOD_CONTRACT; _functionPointer = functionPointer; }
-    static int GetOffsetOfFunctionPointer() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _functionPointer); }
-
-    PCODE GetExtraFunctionPointerOrData() { LIMITED_METHOD_CONTRACT; return _extraFunctionPointerOrData; }
-    void SetExtraFunctionPointerOrData(PCODE extraFunctionPointerOrData) { LIMITED_METHOD_CONTRACT; _extraFunctionPointerOrData = extraFunctionPointerOrData; }
-    static int GetOffsetOfExtraFunctionPointerOrData() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _extraFunctionPointerOrData); }
-
-    INT_PTR GetInvocationCount() { LIMITED_METHOD_CONTRACT; return _invocationCount; }
-    void SetInvocationCount(INT_PTR invocationCount) { LIMITED_METHOD_CONTRACT; _invocationCount = invocationCount; }
-    static int GetOffsetOfInvocationCount() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationCount); }
+    OBJECTREF GetTarget() { LIMITED_METHOD_CONTRACT; return _target; }
+    void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
+    static int GetOffsetOfTarget() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _target); }
 
     MethodDesc* GetMethodDesc() { LIMITED_METHOD_CONTRACT; return _methodDesc; }
     void SetMethodDesc(MethodDesc* methodDesc) { LIMITED_METHOD_CONTRACT; _methodDesc = methodDesc; }
     static int GetOffsetOfMethodDesc() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodDesc); }
 
+    PCODE GetMethodPtr() { LIMITED_METHOD_CONTRACT; return _methodPtr; }
+    void SetMethodPtr(PCODE methodPtr) { LIMITED_METHOD_CONTRACT; _methodPtr = methodPtr; }
+    static int GetOffsetOfMethodPtr() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodPtr); }
+
+    PCODE GetMethodPtrAux() { LIMITED_METHOD_CONTRACT; return _methodPtrAux; }
+    void SetMethodPtrAux(PCODE methodPtrAux) { LIMITED_METHOD_CONTRACT; _methodPtrAux = methodPtrAux; }
+    static int GetOffsetOfMethodPtrAux() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodPtrAux); }
+
+    OBJECTREF GetInvocationList() { LIMITED_METHOD_CONTRACT; return _invocationList; }
+    void SetInvocationList(OBJECTREF invocationList) { WRAPPER_NO_CONTRACT; SetObjectReference(&_invocationList, invocationList); }
+    static int GetOffsetOfInvocationList() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationList); }
+
+    INT_PTR GetInvocationCount() { LIMITED_METHOD_CONTRACT; return _invocationCount; }
+    void SetInvocationCount(INT_PTR invocationCount) { LIMITED_METHOD_CONTRACT; _invocationCount = invocationCount; }
+    static int GetOffsetOfInvocationCount() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationCount); }
+
     // README:
     // If you modify the order of these fields, make sure to update the definition in
     // BCL for this object.
 private:
-    OBJECTREF   _helperObject;
-    OBJECTREF   _firstParameter;
-    PCODE       _functionPointer;
-    PCODE       _extraFunctionPointerOrData;
-    INT_PTR     _invocationCount;
+    // System.Delegate
+<<<<<<< HEAD
+    OBJECTREF   _target;
     MethodDesc* _methodDesc;
+=======
+    OBJECTREF   _methodBase;
+    OBJECTREF   _target;
+>>>>>>> upstream/main
+    PCODE       _methodPtr;
+    PCODE       _methodPtrAux;
+    // System.MulticastDelegate
+    OBJECTREF   _invocationList;
+    INT_PTR     _invocationCount;
 };
 
-#define OFFSETOF__DelegateObject__firstParameter             (OBJECT_SIZE /* m_pMethTab */ + TARGET_POINTER_SIZE /* _helperObject */)
-#define OFFSETOF__DelegateObject__functionPointer            (OFFSETOF__DelegateObject__firstParameter + TARGET_POINTER_SIZE /* _firstParameter */)
-#define OFFSETOF__DelegateObject__extraFunctionPointerOrData (OFFSETOF__DelegateObject__functionPointer + TARGET_POINTER_SIZE /* _functionPointer */)
-#define OFFSETOF__DelegateObject__methodDesc                 (OFFSETOF__DelegateObject__extraFunctionPointerOrData + TARGET_POINTER_SIZE /* _extraFunctionPointerOrData */ + \
-                                                                    TARGET_POINTER_SIZE /* _invocationCount */)
+<<<<<<< HEAD
+#define OFFSETOF__DelegateObject__target          OBJECT_SIZE /* m_pMethTab */
+#define OFFSETOF__DelegateObject__methodDesc      (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
+#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__methodDesc + TARGET_POINTER_SIZE /* _methodDesc */)
+=======
+#define OFFSETOF__DelegateObject__target          (OBJECT_SIZE /* m_pMethTab */ + TARGET_POINTER_SIZE /* _methodBase */)
+#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
+>>>>>>> upstream/main
+#define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
 
 template<>
 struct cdac_data<DelegateObject>
 {
-    static constexpr size_t Target = offsetof(DelegateObject, _firstParameter);
-    static constexpr size_t MethodPtr = offsetof(DelegateObject, _functionPointer);
-    static constexpr size_t MethodPtrAux = offsetof(DelegateObject, _extraFunctionPointerOrData);
+    static constexpr size_t Target = offsetof(DelegateObject, _target);
+    static constexpr size_t MethodPtr = offsetof(DelegateObject, _methodPtr);
+    static constexpr size_t MethodPtrAux = offsetof(DelegateObject, _methodPtrAux);
     static constexpr size_t InvocationCount = offsetof(DelegateObject, _invocationCount);
 };
 

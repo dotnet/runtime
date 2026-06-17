@@ -1208,7 +1208,7 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
 
     // If we got here, then we're here b/c we're at the start of a delegate stub
     // need to figure out the kind of delegates we are dealing with.
-    BYTE *pbDelInvocationList = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfInvocationList());
+    BYTE *pbDelInvocationList = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfHelperObject());
 
     LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: invocationList: %p\n", pbDelInvocationList));
 
@@ -1220,10 +1220,10 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
         // For the others the logic is the following:
         // if _methodPtrAux is 0 the target is in _methodPtr, otherwise the taret is _methodPtrAux
 
-        ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtrAux());
+        ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfExtraFunctionPointerOrData());
         if (*ppbDest == NULL)
         {
-            ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtr());
+            ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfFunctionPointer());
 
             if (*ppbDest == NULL)
             {
@@ -1250,7 +1250,7 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
     if (pbCount == NULL)
     {
         // it's a static closed, the target lives in _methodAuxPtr
-        ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtrAux());
+        ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfExtraFunctionPointerOrData());
 
         if (*ppbDest == NULL)
         {
@@ -1374,7 +1374,7 @@ static BOOL TraceShuffleThunk(
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
     DELEGATEREF orDelegate = (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetThisPtr(pContext));
-    PCODE destAddr = orDelegate->GetMethodPtrAux();
+    PCODE destAddr = orDelegate->GetExtraFunctionPointerOrData();
     LOG((LF_CORDB,LL_INFO10000, "TraceShuffleThunk: ppbDest: %p\n", destAddr));
 
     BOOL res = StubManager::TraceStub(destAddr, trace);
@@ -1763,7 +1763,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     {
         // This is forward delegate P/Invoke stub, the argument is undefined
         DelegateObject *pDel = (DelegateObject *)pThis;
-        target = pDel->GetMethodPtrAux();
+        target = pDel->GetExtraFunctionPointerOrData();
 
         LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward delegate P/Invoke case %p\n", target));
         trace->InitForUnmanaged(target);

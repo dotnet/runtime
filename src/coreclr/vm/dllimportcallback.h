@@ -308,7 +308,7 @@ public:
             // We have optimizations that skip the Invoke method and call directly the
             // delegate's target method. We need to return the target in that case,
             // otherwise debugger would fail to step in.
-            RETURN orDelegate->GetMethodPtr();
+            RETURN orDelegate->GetFunctionPointer();
         }
         else if (m_pManagedTarget != (PCODE)NULL)
         {

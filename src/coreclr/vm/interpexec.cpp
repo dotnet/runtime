@@ -3305,7 +3305,7 @@ SWITCH_OPCODE:
 
                     DELEGATEREF* delegateObj = LOCAL_VAR_ADDR(callArgsOffset, DELEGATEREF);
                     NULL_CHECK(*delegateObj);
-                    PCODE targetAddress = (*delegateObj)->GetMethodPtr();
+                    PCODE targetAddress = (*delegateObj)->GetFunctionPointer();
                     DelegateEEClass *pDelClass = (DelegateEEClass*)(*delegateObj)->GetMethodTable()->GetClass();
                     if ((pDelClass->m_pInstRetBuffCallStub != NULL && pDelClass->m_pInstRetBuffCallStub->GetEntryPoint() == targetAddress) ||
                         (pDelClass->m_pStaticCallStub != NULL && pDelClass->m_pStaticCallStub->GetEntryPoint() == targetAddress))
@@ -3313,7 +3313,7 @@ SWITCH_OPCODE:
                         // This implies that we're using a delegate shuffle thunk to strip off the first parameter to the method
                         // and call the actual underlying method. We allow for tail-calls to work and for greater efficiency in the
                         // interpreter by skipping the shuffle thunk and calling the actual target method directly.
-                        PCODE actualTarget = (*delegateObj)->GetMethodPtrAux();
+                        PCODE actualTarget = (*delegateObj)->GetExtraFunctionPointerOrData();
 
                         // Detect open virtual dispatch scenario
                         bool isOpenVirtual = false;
@@ -3390,7 +3390,7 @@ SWITCH_OPCODE:
                         }
                     }
 
-                    OBJECTREF targetMethodObj = (*delegateObj)->GetTarget();
+                    OBJECTREF targetMethodObj = (*delegateObj)->GetFirstParameter();
                     LOCAL_VAR(callArgsOffset, OBJECTREF) = targetMethodObj;
 
                     if ((targetMethod = NonVirtualEntry2MethodDesc(targetAddress)) != NULL)
