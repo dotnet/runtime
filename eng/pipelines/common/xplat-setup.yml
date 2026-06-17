@@ -139,8 +139,8 @@ jobs:
         # needed for Wasm.Build.Tests
         - name: wasmSingleThreadedBuildOnlyNeededOnDefaultPipeline
           value: $[ variables['shouldRunWasmBuildTestsOnDefaultPipeline'] ]
-        # - name: wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline
-        #   value: $[ variables['shouldRunWasmBuildTestsOnDefaultPipeline'] ]
+        - name: wasmMultiThreadedBuildOnlyNeededOnDefaultPipeline
+          value: $[ variables['shouldRunWasmBuildTestsOnDefaultPipeline'] ]
 
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
