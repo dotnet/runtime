@@ -657,7 +657,6 @@ interface ISOSStressLogMsgEnum : ISOSEnum
 ]
 interface ISOSDacInterface17 : IUnknown
 {
-    HRESULT IsStressLogAvailable();
     HRESULT GetStressLogData([out] SOSStressLogData *data);
     HRESULT GetStressLogThreadEnumerator([out] ISOSStressLogThreadEnum **ppEnum);
     HRESULT GetStressLogMessageEnumerator([in] CLRDATA_ADDRESS threadStressLogAddress,

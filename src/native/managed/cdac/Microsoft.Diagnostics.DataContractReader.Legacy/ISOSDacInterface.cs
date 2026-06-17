@@ -1261,9 +1261,6 @@ public unsafe partial interface ISOSStressLogMsgEnum : ISOSEnum
 public unsafe partial interface ISOSDacInterface17
 {
     [PreserveSig]
-    int IsStressLogAvailable();
-
-    [PreserveSig]
     int GetStressLogData(SOSStressLogData* data);
 
     [PreserveSig]

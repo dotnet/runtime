@@ -7243,27 +7243,13 @@ public sealed unsafe partial class SOSDacImpl
         }
     }
 
-    int ISOSDacInterface17.IsStressLogAvailable()
-    {
-        try
-        {
-            return _target.Contracts.StressLog.HasStressLog()
-                ? HResults.S_OK
-                : HResults.S_FALSE;
-        }
-        catch (System.Exception ex)
-        {
-            return ex.HResult;
-        }
-    }
-
     int ISOSDacInterface17.GetStressLogData(SOSStressLogData* data)
     {
         int hr = HResults.S_OK;
         try
         {
             if (data is null)
-                throw new NullReferenceException();
+                return HResults.E_POINTER;
 
             Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
             if (!stressLogContract.HasStressLog())
@@ -7297,6 +7283,9 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
+            if (!stressLogContract.HasStressLog())
+                return HResults.S_FALSE;
+
             Contracts.StressLogData logData = stressLogContract.GetStressLogData();
 
             var threads = stressLogContract.GetThreadStressLogs(logData.Logs)
@@ -7329,6 +7318,9 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
+            if (!stressLogContract.HasStressLog())
+                return HResults.S_FALSE;
+
             Contracts.StressLogData logData = stressLogContract.GetStressLogData();
 
             // Find the matching thread
