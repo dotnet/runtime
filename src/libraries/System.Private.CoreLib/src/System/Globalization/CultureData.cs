@@ -640,11 +640,10 @@ namespace System.Globalization
             invariant._iDefaultMacCodePage = 10000;         // default macintosh code page
             invariant._iDefaultEbcdicCodePage = 037;        // default EBCDIC code page
 
-            if (GlobalizationMode.InvariantNoLoad)
-            {
-                invariant._sLocalizedCountry = invariant._sNativeCountry;
-            }
-
+            // _sLocalizedCountry is intentionally left null here. It is populated lazily the first
+            // time the LocalizedCountryName property is accessed. We avoid reading GlobalizationMode
+            // here because doing so triggers ICU load in GlobalizationMode.Settings.cctor. During
+            // runtime startup that load can fail and crash the process on some platforms such as Android.
             return invariant;
         }
 
@@ -1159,19 +1158,26 @@ namespace System.Globalization
             get
             {
                 string? localizedCountry = _sLocalizedCountry;
-                if (localizedCountry == null && !GlobalizationMode.Invariant)
+                if (localizedCountry == null)
                 {
-                    try
+                    if (!GlobalizationMode.Invariant)
                     {
-                        localizedCountry = GlobalizationMode.UseNls ? NlsGetRegionDisplayName() : IcuGetRegionDisplayName();
+                        try
+                        {
+                            localizedCountry = GlobalizationMode.UseNls ? NlsGetRegionDisplayName() : IcuGetRegionDisplayName();
+                        }
+                        catch
+                        {
+                            // do nothing. we'll fallback
+                        }
+                        localizedCountry ??= NativeCountryName;
+                        _sLocalizedCountry = localizedCountry;
                     }
-                    catch
+                    else
                     {
-                        // do nothing. we'll fallback
+                        localizedCountry = NativeCountryName;
+                        _sLocalizedCountry = localizedCountry;
                     }
-
-                    localizedCountry ??= NativeCountryName;
-                    _sLocalizedCountry = localizedCountry;
                 }
 
                 return localizedCountry!;
