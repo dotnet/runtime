@@ -1187,7 +1187,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     //
     if (vnStore->IsVNConstant(treeNormVN))
     {
-        relopValue = (treeNormVN == vnStore->VNZeroForType(TYP_INT)) ? 0 : 1;
+        relopValue = (treeNormVN == vnStore->VNZeroForType(vnStore->TypeOfVN(treeNormVN))) ? 0 : 1;
         JITDUMP("Relop [%06u] " FMT_BB " has known value %s\n ", dspTreeID(tree), block->bbNum,
                 relopValue == 0 ? "false" : "true");
     }
@@ -2389,7 +2389,7 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
         //
         if (vnStore->IsVNConstant(substVN))
         {
-            const bool relopIsTrue = (substVN != vnStore->VNZeroForType(TYP_INT));
+            const bool relopIsTrue = (substVN != vnStore->VNZeroForType(vnStore->TypeOfVN(substVN)));
             JITDUMP("... substituted VN implies relop is %d when coming from pred " FMT_BB "\n", relopIsTrue,
                     predBlock->bbNum);
 
