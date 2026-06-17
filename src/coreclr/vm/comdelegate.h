@@ -41,7 +41,7 @@ public:
     static BOOL NeedsWrapperDelegate(MethodDesc* pTargetMD);
     // on entry delegate points to the delegate to wrap
     static DELEGATEREF CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc* pTargetMD);
-    static DELEGATEREF CreateShared(MethodDesc* pTargetMD, MethodTable* pMT, bool requireFrozen = false);
+    static DELEGATEREF CreateShared(MethodDesc* pTargetMD, MethodTable* pMT);
 
     // Marshals a delegate to a unmanaged callback.
     static LPVOID ConvertToCallback(OBJECTREF pDelegate);

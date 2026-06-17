@@ -3706,24 +3706,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     return nullptr;
                 }
 
-                CORINFO_METHOD_HANDLE targetMethod = methodPtr->AsFptrVal()->gtFptrMethod;
-
-                CORINFO_SIG_INFO exactSig;
-                info.compCompHnd->getMethodSig(pResolvedToken->hMethod, &exactSig);
-                CORINFO_CLASS_HANDLE delegateType = exactSig.sigInst.methInst[0];
-
-                CORINFO_OBJECT_HANDLE delegate = info.compCompHnd->constructDelegateLiteral(targetMethod, delegateType);
-
-                if (delegate != NO_OBJECT_HANDLE)
-                {
-                    JITDUMP("Optimized frozen delegate creation\n");
-                    retNode = gtNewIconEmbObjHndNode(delegate);
-                    impPopStack();
-                    break;
-                }
-
                 if (IsNativeAot())
                 {
+                    CORINFO_METHOD_HANDLE targetMethod = methodPtr->AsFptrVal()->gtFptrMethod;
+
+                    CORINFO_SIG_INFO exactSig;
+                    info.compCompHnd->getMethodSig(pResolvedToken->hMethod, &exactSig);
+                    CORINFO_CLASS_HANDLE delegateType = exactSig.sigInst.methInst[0];
+
                     methodPtr = impPopStack().val;
 
                     CORINFO_SIG_INFO callSig;

@@ -3193,6 +3193,7 @@ namespace ILCompiler
             public int InstructionCounter { get; }
             public AllocationSite(MetadataType type, int instructionCounter)
             {
+                Debug.Assert(type.HasStaticConstructor);
                 OwningType = type;
                 InstructionCounter = instructionCounter;
             }
@@ -3245,11 +3246,6 @@ namespace ILCompiler
             }
         }
 
-        public static ISerializableReference GetLambdaDelegate(MetadataType delegateType, MethodDesc method)
-        {
-            return new DelegateInstance(delegateType, method, null, new AllocationSite(delegateType, method.GetHashCode()));
-        }
-
         private sealed class DelegateInstance : AllocatedReferenceTypeValue, ISerializableReference
         {
             private readonly MethodDesc _methodPointed;
@@ -3284,6 +3280,8 @@ namespace ILCompiler
 
             public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
+                Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
+
                 DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
 
                 Debug.Assert(!creationInfo.TargetNeedsVTableLookup);
@@ -3295,7 +3293,6 @@ namespace ILCompiler
 
                 if (_methodPointed.Signature.IsStatic)
                 {
-                    Debug.Assert(_firstParameter == null);
                     Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk"u8);
 
                     // _helperObject
@@ -3319,15 +3316,7 @@ namespace ILCompiler
                     builder.EmitZeroPointer();
 
                     // _firstParameter
-                    if (_firstParameter is null)
-                    {
-                        Debug.Assert(!_methodPointed.OwningType.HasInstantiation);
-                        builder.EmitZeroPointer();
-                    }
-                    else
-                    {
-                        _firstParameter.WriteFieldData(ref builder, factory);
-                    }
+                    _firstParameter.WriteFieldData(ref builder, factory);
 
                     // _functionPointer
                     builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
@@ -3342,7 +3331,7 @@ namespace ILCompiler
                 builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
 
-            public bool IsKnownImmutable => _firstParameter is null;
+            public bool IsKnownImmutable => _methodPointed.Signature.IsStatic;
 
             public int ArrayLength => throw new NotSupportedException();
         }

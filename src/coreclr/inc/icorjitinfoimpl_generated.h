@@ -642,10 +642,6 @@ InfoAccessType constructStringLiteral(
           mdToken metaTok,
           void** ppValue) override;
 
-CORINFO_OBJECT_HANDLE constructDelegateLiteral(
-          CORINFO_METHOD_HANDLE method,
-          CORINFO_CLASS_HANDLE delegateType) override;
-
 InfoAccessType emptyStringLiteral(
           void** ppValue) override;
 
