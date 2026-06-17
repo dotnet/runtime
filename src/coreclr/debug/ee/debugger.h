@@ -1053,7 +1053,7 @@ public:
     ~DebuggerMethodInfo();
 
     // A profiler can remap the IL. We track the "instrumented" IL map here.
-    void SetInstrumentedILMap(COR_IL_MAP * pMap, SIZE_T cEntries);
+    void SetInstrumentedILMap(COR_IL_MAP * pMap, UINT cEntries);
     bool HasInstrumentedILMap() {return m_fHasInstrumentedILMap; }
 
     // TranslateToInstIL will take offOrig, and translate it to the
