@@ -145,6 +145,8 @@ struct _EventPipeBufferManager {
 #endif
 
 EP_DEFINE_GETTER_REF(EventPipeBufferManager *, buffer_manager, ep_rt_wait_event_handle_t *, rt_wait_event)
+// The buffering mode (Drop or Block) the manager was created with.
+EP_DEFINE_GETTER(EventPipeBufferManager *, buffer_manager, EventPipeBufferingMode, buffering_mode)
 
 EventPipeBufferManager *
 ep_buffer_manager_alloc (

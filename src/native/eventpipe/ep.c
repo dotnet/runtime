@@ -588,6 +588,8 @@ enable (const EventPipeSessionOptions *options)
 		provider_callback_data_queue = NULL;
 		ep_raise_error ();
 	}
+	// Attach the provider-enable callbacks to the session; config_enable_disable below fills the queue,
+	// but it is dispatched later, not here. See EventPipeSession::provider_callbacks.
 	ep_session_set_provider_callbacks (session, provider_callback_data_queue);
 
 	// Register the SampleProfiler the very first time (if supported).
@@ -647,6 +649,20 @@ disable_holding_lock (
 
 	if (is_session_id_in_collection (id)) {
 		EventPipeSession *const session = (EventPipeSession *)(uintptr_t)id;
+
+		// Session disabled before ep_start_streaming could dispatch: its provider-enable callbacks are still
+		// attached. Move them into this disable's callback queue (detached under the lock, racing
+		// ep_start_streaming's own detach) so disable_helper invokes them outside the lock, ahead of the
+		// disable callbacks added below. See EventPipeSession::provider_callbacks for why this is required.
+		EventPipeProviderCallbackDataQueue *pending_provider_callbacks = ep_session_get_provider_callbacks (session);
+		if (pending_provider_callbacks != NULL && provider_callback_data_queue != NULL) {
+			EventPipeProviderCallbackData pending_callback_data;
+			while (ep_provider_callback_data_queue_try_dequeue (pending_provider_callbacks, &pending_callback_data))
+				ep_provider_callback_data_queue_enqueue (provider_callback_data_queue, &pending_callback_data);
+			ep_session_set_provider_callbacks (session, NULL);
+			ep_provider_callback_data_queue_fini (pending_provider_callbacks);
+			ep_rt_object_free (pending_provider_callbacks);
+		}
 
 		EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
 		if (buffer_manager != NULL)
@@ -860,12 +876,15 @@ write_event_2 (
 			// Set WRITE_BUFFER_IN_USE so the reader waits for us before stealing the buffer.
 			ep_thread_set_session_use_in_progress (current_thread, i | EP_SESSION_USE_WRITE_BUFFER_IN_USE);
 			{
-				EventPipeSession *const session = ep_volatile_load_session (i);
-				// Disable is allowed to set s_pSessions[i] = NULL at any time and that may have occurred in between
-				// the check and the load
-				if (session != NULL) {
+				// Disable is allowed to set s_pSessions[i] = NULL at any time, and that may have occurred
+				// between the allow-write check and this load; re-loading on each block-mode retry below
+				// also picks up such an unpublish. The first write and every block-mode retry share the
+				// single ep_session_write_event call in this loop.
+				EventPipeSession *write_session = ep_volatile_load_session (i);
+				EventPipeBufferManager *buffer_manager = NULL;
+				while (write_session != NULL) {
 					EventPipeWriteEventResult write_result = ep_session_write_event (
-						session,
+						write_session,
 						thread,
 						ep_event,
 						payload,
@@ -873,39 +892,29 @@ write_event_2 (
 						related_activity_id,
 						event_thread,
 						stack);
+					if (write_result != EP_WRITE_EVENT_RESULT_BLOCKED)
+						break;
 
-					// Block (non-lossy) mode: buffers full but the session is live, so park and retry
-					// instead of dropping. While parked we clear WRITE_BUFFER_IN_USE (keeping the index)
-					// so the reader can drain our full buffer; the retained index pins the buffer manager
-					// so teardown waits us out. We re-publish the bit and re-load the session each retry
-					// (disable may have unpublished it). If teardown aborts while parked we drop the event.
-					if (write_result == EP_WRITE_EVENT_RESULT_BLOCKED) {
-						EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
-						while (write_result == EP_WRITE_EVENT_RESULT_BLOCKED) {
-							// Park: drop the write-buffer bit so the reader can drain our buffer, then wait.
-							ep_thread_set_session_use_in_progress (current_thread, i);
-							if (ep_buffer_manager_is_aborting (buffer_manager))
-								break; // teardown: give up and drop the event
-							ep_buffer_manager_writer_wait_for_capacity (buffer_manager);
-							if (ep_buffer_manager_is_aborting (buffer_manager))
-								break; // teardown: give up and drop the event
+					// Block (non-lossy) mode: buffers full but the session is live, so park and retry instead
+					// of dropping. While parked we clear WRITE_BUFFER_IN_USE (keeping the index) so the reader
+					// can drain our full buffer; the retained index pins the buffer manager so teardown waits
+					// us out. We then re-publish the bit and re-load the session (disable may have unpublished
+					// it) before looping back to retry. If teardown aborts while parked, or the session is
+					// disabled out from under us, we drop the event.
+					if (buffer_manager == NULL)
+						buffer_manager = ep_session_get_buffer_manager (write_session);
 
-							// Retry: re-publish the write-buffer bit and re-load the session, then attempt again.
-							ep_thread_set_session_use_in_progress (current_thread, i | EP_SESSION_USE_WRITE_BUFFER_IN_USE);
-							EventPipeSession *const retry_session = ep_volatile_load_session (i);
-							if (retry_session == NULL)
-								break; // disabled out from under us
-							write_result = ep_session_write_event (
-								retry_session,
-								thread,
-								ep_event,
-								payload,
-								activity_id,
-								related_activity_id,
-								event_thread,
-								stack);
-						}
-					}
+					// Park: drop the write-buffer bit so the reader can drain our buffer, then wait.
+					ep_thread_set_session_use_in_progress (current_thread, i);
+					if (ep_buffer_manager_is_aborting (buffer_manager))
+						break; // teardown: give up and drop the event
+					ep_buffer_manager_writer_wait_for_capacity (buffer_manager);
+					if (ep_buffer_manager_is_aborting (buffer_manager))
+						break; // teardown: give up and drop the event
+
+					// Retry: re-publish the write-buffer bit and re-load the session before looping.
+					ep_thread_set_session_use_in_progress (current_thread, i | EP_SESSION_USE_WRITE_BUFFER_IN_USE);
+					write_session = ep_volatile_load_session (i);
 				}
 			}
 			// Do not reference session past this point, we are signaling disable_holding_lock that it is safe to
@@ -1269,7 +1278,10 @@ ep_enable_3 (const EventPipeSessionOptions *options)
 		session_id = enable (options);
 	EP_LOCK_EXIT (section1)
 
-	// enable() only collects this session's provider-enable callbacks; ep_start_streaming invokes them.
+	// enable() defers this session's provider-enable callbacks onto the session (see
+	// EventPipeSession::provider_callbacks); ep_start_streaming - which the caller invokes next on success -
+	// dispatches them, or disable_holding_lock does if the session is disabled first. On the error path
+	// enable() returns session_id == 0 with an empty queue, so there is nothing to dispatch.
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
@@ -1360,8 +1372,9 @@ ep_start_streaming (EventPipeSessionID session_id)
 		else
 			dn_vector_push_back (_ep_deferred_enable_session_ids, session_id);
 
-		// Detach the callback queue under the lock so a concurrent disable's ep_session_dec_ref sees
-		// NULL and won't also free it; this thread now owns the queue and frees it below.
+		// Detach the callback queue under the lock so a concurrent disable_holding_lock sees NULL and won't
+		// also take it; this thread now owns the queue and frees it below. See
+		// EventPipeSession::provider_callbacks.
 		provider_callbacks = ep_session_get_provider_callbacks (session);
 		ep_session_set_provider_callbacks (session, NULL);
 	EP_LOCK_EXIT (section1)

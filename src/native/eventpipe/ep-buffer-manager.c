@@ -83,6 +83,16 @@ buffer_manager_release_buffer (
 	EventPipeBufferManager *buffer_manager,
 	uint32_t size);
 
+// Free a buffer's memory and then release its reserved budget. The order matters: the Block-mode
+// capacity signal raised by buffer_manager_release_buffer must only be observed once the buffer is
+// fully reclaimed, so callers never signal capacity while the memory is still outstanding.
+static
+void
+buffer_manager_free_buffer_and_release_budget (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeBuffer *buffer,
+	uint32_t budget_size);
+
 // An iterator that can enumerate all the events which have been written into this buffer manager.
 // Initially the iterator starts uninitialized and get_current_event () returns NULL. The iterator
 // operates on the buffer_manager's thread_session_state_list_snapshot, and calling move_next_xxx ()
@@ -303,6 +313,21 @@ buffer_manager_release_buffer (
 
 	if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK)
 		ep_rt_wait_event_set (&buffer_manager->buffer_available_event);
+}
+
+static
+void
+buffer_manager_free_buffer_and_release_budget (
+	EventPipeBufferManager *buffer_manager,
+	EventPipeBuffer *buffer,
+	uint32_t budget_size)
+{
+	EP_ASSERT (buffer_manager != NULL);
+
+	// Reclaim the buffer memory first, then release the budget, so the Block-mode capacity signal that
+	// buffer_manager_release_buffer raises is only observed once the buffer is fully freed.
+	ep_buffer_free (buffer);
+	buffer_manager_release_buffer (buffer_manager, budget_size);
 }
 
 #ifdef EP_CHECKED_BUILD
@@ -538,10 +563,8 @@ ep_on_error:
 	ep_sequence_point_free (sequence_point);
 	sequence_point = NULL;
 
-	ep_buffer_free (new_buffer);
+	buffer_manager_free_buffer_and_release_budget (buffer_manager, new_buffer, buffer_size);
 	new_buffer = NULL;
-
-	buffer_manager_release_buffer (buffer_manager, buffer_size);
 
 	ep_exit_error_handler ();
 }
@@ -555,8 +578,7 @@ buffer_manager_deallocate_buffer (
 	EP_ASSERT (buffer_manager != NULL);
 
 	if (buffer) {
-		buffer_manager_release_buffer (buffer_manager, ep_buffer_get_size (buffer));
-		ep_buffer_free (buffer);
+		buffer_manager_free_buffer_and_release_budget (buffer_manager, buffer, ep_buffer_get_size (buffer));
 #ifdef EP_CHECKED_BUILD
 		buffer_manager->num_buffers_allocated--;
 #endif
@@ -939,6 +961,7 @@ void
 ep_buffer_manager_writer_wait_for_capacity (EventPipeBufferManager *buffer_manager)
 {
 	EP_ASSERT (buffer_manager != NULL);
+	EP_ASSERT (ep_rt_wait_event_is_valid (&buffer_manager->buffer_available_event));
 	ep_rt_wait_event_wait (&buffer_manager->buffer_available_event, EP_INFINITE_WAIT, false);
 }
 
@@ -953,6 +976,7 @@ void
 ep_buffer_manager_signal_capacity (EventPipeBufferManager *buffer_manager)
 {
 	EP_ASSERT (buffer_manager != NULL);
+	EP_ASSERT (ep_rt_wait_event_is_valid (&buffer_manager->buffer_available_event));
 	ep_rt_wait_event_set (&buffer_manager->buffer_available_event);
 }
 
@@ -964,11 +988,11 @@ ep_buffer_manager_abort_blocked_writers (EventPipeBufferManager *buffer_manager)
 	if (buffer_manager->buffering_mode != EP_BUFFERING_MODE_BLOCK)
 		return;
 
-	// Raise the abort flag (parked producers give up when woken; none newly park). The wake is
-	// driven by ep_session_wait_for_inflight_thread_ops, which signals buffer_available_event while
-	// it waits out the threads still holding this session's index - so no parked-writer count is kept.
+	// Raise the abort flag so parked producers give up when woken and none newly park. Waking the
+	// parked producers is owned by ep_session_wait_for_inflight_thread_ops, which is always called
+	// after this during teardown and signals buffer_available_event each iteration until every producer
+	// still holding this session's index has observed the abort and cleared it.
 	ep_rt_volatile_store_uint32_t (&buffer_manager->aborting, 1);
-	ep_rt_wait_event_set (&buffer_manager->buffer_available_event);
 }
 
 #ifdef EP_CHECKED_BUILD

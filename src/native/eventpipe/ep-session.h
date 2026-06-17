@@ -31,7 +31,27 @@ struct _EventPipeSession_Internal {
 	EventPipeSessionProviderList *providers;
 	// Session buffer manager.
 	EventPipeBufferManager *buffer_manager;
-	// The provider-enable callbacks.
+	// Provider-enable callbacks collected during enable() but deferred - not fired inline.
+	//
+	// Before: enable() built these on a stack-local queue and invoked them inline, so each provider's
+	// EventSource enable notification fired during enable(), unconditionally, before streaming began.
+	//
+	// Why deferred: a blocking GCHeapSnapshot enable callback forces a stop-the-world heap walk that parks
+	// the cooperative producer on a full buffer, and only the session's drain thread frees that capacity;
+	// invoking it before that thread is live self-deadlocks. So enable() parks the callbacks here and a
+	// later site dispatches them once the drain thread runs.
+	//
+	// Ownership: exactly one site invokes (or frees) this queue. Once enable() publishes the session it is
+	// reachable by both ep_start_streaming and a concurrent disable in the enable()->dispatch window, so
+	// those two race - each detaches the queue (NULLing this field) under the EventPipe lock, and the loser
+	// sees NULL, preventing a double-free:
+	//   - ep_start_streaming (enable succeeded): wait for the drain thread, then invoke and free.
+	//   - disable_holding_lock (disabled first): move the still-attached callbacks into the disable callback
+	//     queue so they still fire - balanced with, and ahead of, the disable notifications - and decrement
+	//     each provider's callbacks_pending, which ep_delete_provider would otherwise wait on forever.
+	// enable() can only fail before it publishes the session, so the failure path frees the (empty) queue
+	// with no concurrent observer - no race:
+	//   - ep_session_dec_ref (enable failed before enqueuing any): free the empty queue.
 	EventPipeProviderCallbackDataQueue *provider_callbacks;
 	// Object used to flush event data (File, IPC stream, etc.).
 	EventPipeFile *file;

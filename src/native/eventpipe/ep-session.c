@@ -401,6 +401,10 @@ ep_session_dec_ref (EventPipeSession *session)
 	ep_buffer_manager_free (session->buffer_manager);
 	ep_file_free (session->file);
 
+	// Safety-net free for the provider-enable callback queue: the only path that reaches here with it still
+	// attached is enable() failing after allocating it but before enqueuing anything, so it is empty. The
+	// success and disabled-first paths detach and free it elsewhere (see EventPipeSession::provider_callbacks).
+	// Freeing without invoking the callbacks never calls into managed code.
 	if (session->provider_callbacks != NULL) {
 		EventPipeProviderCallbackData provider_callback_data;
 		while (ep_provider_callback_data_queue_try_dequeue (session->provider_callbacks, &provider_callback_data))
@@ -535,7 +539,11 @@ ep_session_wait_for_inflight_thread_ops (EventPipeSession *session)
 				// Block-mode session is tearing down, also signal buffer_available_event each iteration
 				// so a parked producer wakes, observes the abort, drops, and clears its index.
 				EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
-				if (buffer_manager != NULL && ep_buffer_manager_is_aborting (buffer_manager)) {
+				if (buffer_manager != NULL && ep_buffer_manager_get_buffering_mode (buffer_manager) == EP_BUFFERING_MODE_BLOCK) {
+					// A Block-mode session is always aborting by the time we wait out its inflight writers
+					// (disable_holding_lock calls ep_buffer_manager_abort_blocked_writers first), so a parked
+					// producer is guaranteed to wake, observe the abort, drop, and clear its index here.
+					EP_ASSERT (ep_buffer_manager_is_aborting (buffer_manager));
 					while ((ep_thread_get_session_use_in_progress (thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == session->index) {
 						ep_buffer_manager_signal_capacity (buffer_manager);
 						ep_rt_thread_sleep (0);
