@@ -9,17 +9,21 @@ public enum RuntimeInfoArchitecture : uint
 {
     Unknown = 0,
     X86,
-    Arm32,
     X64,
+    Arm,
     Arm64,
+    Wasm,
+    S390x,
     LoongArch64,
-    RISCV,
+    Armv6,
+    Ppc64le,
+    RiscV64,
 }
 
 public enum RuntimeInfoOperatingSystem : uint
 {
     Unknown = 0,
-    Win,
+    Windows,
     Unix,
     Browser,
     Apple,

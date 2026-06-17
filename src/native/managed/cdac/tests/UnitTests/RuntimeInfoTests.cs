@@ -99,10 +99,6 @@ public class RuntimeInfoTests
 
             foreach(RuntimeInfoRuntimeFlavor flavor in (RuntimeInfoRuntimeFlavor[])Enum.GetValues(typeof(RuntimeInfoRuntimeFlavor)))
             {
-                // Skip Unknown flavor
-                if (flavor == RuntimeInfoRuntimeFlavor.Unknown)
-                    continue;
-
                 yield return new object[] { arch, flavor.ToString().ToLowerInvariant(), flavor };
             }
 
