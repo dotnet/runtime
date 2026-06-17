@@ -92,7 +92,9 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAsync<ObjectDisposedException>(() => r.ResolveAddressesAsync(TestHost));
         }
 
-        [Fact]
+        // ---- Windows network tests (require outbound DNS) ----
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public async Task DnsResolver_PreCanceledToken_ReturnsCanceled()
         {
             using DnsResolver r = new DnsResolver();
@@ -100,8 +102,6 @@ namespace System.Net.NameResolution.Tests
             cts.Cancel();
             await Assert.ThrowsAsync<TaskCanceledException>(() => r.ResolveAddressesAsync(TestHost, cts.Token));
         }
-
-        // ---- Windows network tests (require outbound DNS) ----
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [OuterLoop]

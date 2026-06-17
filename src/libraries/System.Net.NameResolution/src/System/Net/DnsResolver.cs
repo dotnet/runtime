@@ -447,7 +447,7 @@ namespace System.Net
                 address.TryWriteBytes(bytes, out _);
                 Span<char> chars = stackalloc char[16 * 4];
                 int pos = 0;
-                for (int i = 15; i >= 0; i--)
+                for (int i = bytes.Length - 1; i >= 0; i--)
                 {
                     byte b = bytes[i];
                     chars[pos++] = ToHex(b & 0xF);

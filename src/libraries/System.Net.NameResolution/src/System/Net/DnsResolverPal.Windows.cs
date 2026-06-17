@@ -248,7 +248,7 @@ namespace System.Net
             if (a.Records.Count > 0 || b.Records.Count > 0)
             {
                 AddressRecord[] merged = [.. a.Records, .. b.Records];
-                TimeSpan mergedTtl = a.NegativeCacheTtl > b.NegativeCacheTtl ? a.NegativeCacheTtl : b.NegativeCacheTtl;
+                TimeSpan mergedTtl = Math.Min(a.NegativeCacheTtl, b.NegativeCacheTtl);
                 return new DnsResult<AddressRecord>(DnsResponseCode.NoError, merged, mergedTtl);
             }
 
