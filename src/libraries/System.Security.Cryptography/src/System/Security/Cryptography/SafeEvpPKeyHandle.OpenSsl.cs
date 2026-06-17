@@ -329,7 +329,9 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>
         ///     The order in which the providers are loaded is the same order in which the <paramref name="providerNames" />
-        ///     enumerable returns them.
+        ///     enumerable returns them. When loading multiple providers, it is more efficient to ensure the same order
+        ///     is used consistently. For example, with the providers <c>[a, b]</c>, passing <c>a</c> and <c>b</c> in the
+        ///     same order may be more efficient than doing <c>[a, b]</c> followed by <c>[b, a]</c>.
         ///   </para>
         /// </remarks>
         [UnsupportedOSPlatform("android")]
