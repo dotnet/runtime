@@ -3161,12 +3161,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
             case GT_CNS_INT:
 
-                // Do not narrow relocatable handle constants. They are materialized as
-                // pointer-sized addresses (e.g. an ARM64 adrp+add pair carrying a page-offset
-                // relocation), so they must retain their full width even when the value happens
-                // to fit in the narrower type. Narrowing such a handle to TYP_INT would make the
-                // backend emit a 32-bit address materialization and attach a 64-bit page-offset
-                // relocation to it.
+                // Do not narrow relocatable handle constants.
                 if (tree->AsIntCon()->ImmedValNeedsReloc(this))
                 {
                     return false;
