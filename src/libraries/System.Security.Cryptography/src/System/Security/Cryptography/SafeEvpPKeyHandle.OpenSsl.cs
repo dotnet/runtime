@@ -219,7 +219,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Open a named public key using a named <c>OSSL_PROVIDER</c>.
+        ///   Open a named key using a named <c>OSSL_PROVIDER</c>.
         /// </summary>
         /// <param name="providerName">
         ///   The name of the <c>OSSL_PROVIDER</c> to process the key open request.

@@ -892,6 +892,7 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char** providerNames,
         if (loadedProviders == NULL)
         {
             OSSL_LIB_CTX_free(libCtx);
+            ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
             libCtx = NULL;
             goto end;
         }
