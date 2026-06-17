@@ -4,14 +4,6 @@
 #include "pal_types.h"
 #include "pal_compiler.h"
 #include "opensslshim.h"
-#include "pal_atomic.h"
-
-struct EvpPKeyExtraHandle_st
-{
-    atomic_int refCount;
-    OSSL_LIB_CTX* libCtx;
-    OSSL_PROVIDER* prov;
-};
 
 typedef enum
 {
@@ -23,8 +15,6 @@ typedef enum
     PalPKeyFamilyId_SlhDsa = 5,
     PalPKeyFamilyId_MLDsa = 6,
 } PalPKeyFamilyId;
-
-typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;
 
 /*
 Shims the EVP_PKEY_new method.
@@ -42,7 +32,7 @@ No-op if pkey is null.
 The given EVP_PKEY pointer is invalid after this call.
 Always succeeds.
 */
-PALEXPORT void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey, void* extraHandle);
+PALEXPORT void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey);
 
 /*
 Returns the cryptographic length of the cryptosystem to which the key belongs, in bits.
@@ -56,7 +46,7 @@ duplicating a private key context as part of duplicating the Pal object.
 Returns the number (as of this call) of references to the EVP_PKEY. Anything less than
 2 is an error, because the key is already in the process of being freed.
 */
-PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle);
+PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey);
 
 /*
 Returns one of the following 4 values for the given EVP_PKEY:
@@ -138,9 +128,8 @@ PALEXPORT EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName,
 Load a key by URI from a specified OSSL_PROVIDER.
 
 Returns a valid EVP_PKEY* on success, NULL on failure.
-On success extraHandle may be non-null value which we need to keep alive
-until the EVP_PKEY is destroyed.
-
+extraHandle is an in/out parameter for an opaque context. When extraHandle points to NULL, a new context is created.
+If the return value is non-NULL, it *must* be cached and re-used for each provider.
 *haveProvider is 1 if OpenSSL providers are supported, otherwise 0.
 */
 PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider);
