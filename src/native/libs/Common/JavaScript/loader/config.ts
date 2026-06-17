@@ -78,7 +78,7 @@ function mergeResources(target: Assets, source: Assets): Assets {
     source.modulesAfterConfigLoaded = [...target.modulesAfterConfigLoaded!, ...source.modulesAfterConfigLoaded || []];
     source.modulesAfterRuntimeReady = [...target.modulesAfterRuntimeReady!, ...source.modulesAfterRuntimeReady || []];
     source.extensions = { ...target.extensions!, ...source.extensions || {} };
-    for (const key in source.satelliteResources || {}) {
+    for (const key in { ...target.satelliteResources!, ...source.satelliteResources || {} }) {
         source.satelliteResources![key] = [...target.satelliteResources![key] || [], ...source.satelliteResources![key] || []];
     }
     Object.assign(target, source);
