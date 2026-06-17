@@ -483,6 +483,23 @@ namespace System.Diagnostics.Tests
             Assert.Equal("cc-12345678901234567890123456789012-1234567890123456-01", traceId);
         }
 
+        [Fact]
+        public void ValidateTraceIdAndStateExtractionRejectsFutureVersionTraceParentWithInvalidExtensionSeparator()
+        {
+            s_w3cPropagator.ExtractTraceIdAndState(null, (object carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
+            {
+                fieldValues = null;
+                fieldValue = null;
+
+                if (fieldName == PropagatorTests.TraceParent)
+                {
+                    fieldValue = "cc-12345678901234567890123456789012-1234567890123456-01.what-the-future-will-be-like";
+                }
+            }, out string? traceId, out string? traceState);
+
+            Assert.Null(traceId);
+        }
+
         private static string? EncodeBaggage(IEnumerable<KeyValuePair<string, string>> baggageEntries)
         {
             Activity? current = Activity.Current;
