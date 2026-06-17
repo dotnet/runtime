@@ -136,7 +136,7 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        private static void ResumeCore()
+        private void ResumeCore()
         {
             throw new PlatformNotSupportedException();
         }
