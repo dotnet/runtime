@@ -116,7 +116,7 @@ LOCAL_LABEL(CacheMiss):
 
         // Push args for RhpUniversalTransitionTailCall:
         // [sp+0] = extra arg (indirection cell), [sp+4] = target fn (RhpCidResolve)
-        sub         sp, sp, #8
+        PROLOG_STACK_ALLOC 8
         str         r12, [sp, #0]
         PREPARE_EXTERNAL_VAR RhpCidResolve, r12
         str         r12, [sp, #4]
