@@ -2,7 +2,7 @@
 
 This contract is for fetching information related to GCInfo associated with native code.
 
-The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract.
+The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract: x86 currently implements `GetCodeLength`, `GetStackBaseRegister`, `GetSizeOfStackParameterArea`, `GetCalleePoppedArgumentsSize`, and `EnumerateLiveSlots` (sufficient for SOS code-size lookups and for `WalkStackReferences` GC-root scanning). `GetInterruptibleRanges` is not yet implemented on x86 -- x86 does not encode explicit interruptible ranges; per-offset transitions are used instead, and the only consumer (catch-handler PC override in `StackWalk_1`) has no x86-relevant scenarios today.
 
 ## APIs of contract
 

@@ -72,9 +72,12 @@
     <TestHostDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'testhost', '$(NetCoreAppCurrent)-$(HostOS)-$(_TestHostConfig)-$(_HostArch)'))</TestHostDir>
   </PropertyGroup>
 
-  <!-- Auto-discover debuggee csproj files from the Debuggees/ subdirectory. -->
+  <!-- Auto-discover debuggee csproj files from the Debuggees/ subdirectory.
+       Pass /p:DebuggeeFilter=<Name> to restrict generation/build to a single debuggee
+       (useful for iterative local x86 work where some other debuggee's publish may fail). -->
   <ItemGroup>
-    <DebuggeeCsproj Include="$(DebuggeesDir)*\*.csproj" />
+    <DebuggeeCsproj Include="$(DebuggeesDir)*\*.csproj" Condition="'$(DebuggeeFilter)' == ''" />
+    <DebuggeeCsproj Include="$(DebuggeesDir)$(DebuggeeFilter)\$(DebuggeeFilter).csproj" Condition="'$(DebuggeeFilter)' != ''" />
   </ItemGroup>
 
   <!-- Runtime versions to create dumps for.
