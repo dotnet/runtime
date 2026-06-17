@@ -527,7 +527,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_PermittedTree_Dns()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -543,7 +542,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_ExcludedTree_Dns()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -1171,9 +1169,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
             else if (OperatingSystem.IsAndroid())
             {
-                // Android always validates name constraints as part of building a path
-                // so violations comes back as PartialChain with no elements.
-                flags = X509ChainStatusFlags.PartialChain;
+                const X509ChainStatusFlags AndroidValidatedFlags =
+                    X509ChainStatusFlags.HasExcludedNameConstraint |
+                    X509ChainStatusFlags.HasNotPermittedNameConstraint;
+
+                if ((flags & AndroidValidatedFlags) != 0)
+                {
+                    // Android (API 24+) validates DNS/email permitted and excluded
+                    // name constraints inline and reports InvalidNameConstraints.
+                    flags &= ~AndroidValidatedFlags;
+                    flags |= X509ChainStatusFlags.InvalidNameConstraints;
+                }
+                else
+                {
+                    // Other constraint types (UPN, min/max) are not validated by
+                    // Android's chain builder; violations come back as PartialChain.
+                    flags = X509ChainStatusFlags.PartialChain;
+                }
             }
 
             return flags;
