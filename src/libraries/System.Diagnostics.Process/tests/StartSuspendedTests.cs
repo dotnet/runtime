@@ -177,7 +177,7 @@ namespace System.Diagnostics.Tests
                 // Verify nothing has been written yet while the process is suspended.
                 using FileStream readStream = new(outputReadPipe, FileAccess.Read, bufferSize: 1, outputReadPipe.IsAsync);
                 byte[] buffer = new byte[10];
-                Task<int> readTask = readStream.ReadAsync(buffer);
+                Task<int> readTask = readStream.ReadAsync(buffer).AsTask();
                 Assert.False(readTask.Wait(50), "Suspended process should not have written any output yet.");
 
                 processHandle.Resume();
