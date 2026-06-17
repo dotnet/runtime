@@ -694,19 +694,19 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
 #undef PC_REL_OFFSET
 #define PC_REL_OFFSET(_field) (WORD)(offsetof(ResolveStub, _field) - ((offsetof(ResolveStub, _resolveEntryPoint) + sizeof(*ResolveStub::_resolveEntryPoint) * (n + 2)) & 0xfffffffc))
 
-    // ldr r12, [r0 + #Object.m_pMethTab]
+    // ldr r4, [r0 + #Object.m_pMethTab]
     _stub._resolveEntryPoint[n++] = RESOLVE_STUB_FIRST_WORD;
-    _stub._resolveEntryPoint[n++] = 0xc000;
+    _stub._resolveEntryPoint[n++] = 0x4000;
 
-    // ;; We need two scratch registers, r5 and r6
-    // push {r5,r6}
-    _stub._resolveEntryPoint[n++] = 0xb460;
+    // ;; We need three scratch registers, r4, r5 and r6
+    // push {r4,r5,r6}
+    _stub._resolveEntryPoint[n++] = 0xb470;
 
     // ;; Compute i = ((mt + mt >> 12) ^ this._hashedToken) & this._cacheMask
 
-    // add r6, r12, r12 lsr #12
-    _stub._resolveEntryPoint[n++] = 0xeb0c;
-    _stub._resolveEntryPoint[n++] = 0x361c;
+    // add r6, r4, r4 lsr #12
+    _stub._resolveEntryPoint[n++] = 0xeb04;
+    _stub._resolveEntryPoint[n++] = 0x3614;
 
     // ldr r5, [pc + #_hashedToken]
     offset = PC_REL_OFFSET(_hashedToken);
@@ -744,8 +744,8 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _ASSERTE(offset <= 124 && (offset & 0x3) == 0);
     _stub._resolveEntryPoint[n++] = 0x6835 | (offset<< 4);
 
-    // cmp r12, r5
-    _stub._resolveEntryPoint[n++] = 0x45ac;
+    // cmp r4, r5
+    _stub._resolveEntryPoint[n++] = 0x42ac;
 
     // bne nextEntry
     _stub._resolveEntryPoint[n++] = 0xd108;
@@ -772,9 +772,9 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _stub._resolveEntryPoint[n++] = 0xf8d6;
     _stub._resolveEntryPoint[n++] = 0xc000 | offset;
 
-    // ;; Restore r5 and r6
-    // pop {r5,r6}
-    _stub._resolveEntryPoint[n++] = 0xbc60;
+    // ;; Restore r4, r5 and r6
+    // pop {r4,r5,r6}
+    _stub._resolveEntryPoint[n++] = 0xbc70;
 
     // ;; Branch to e.target
     // bx       r12 ;; (e.target)(r0,r1,r2,r3)
@@ -791,9 +791,9 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     // cbz r6, slowEntryPoint
     _stub._resolveEntryPoint[n++] = 0xb116;
 
-    // ldr r12, [r0 + #Object.m_pMethTab]
+    // ldr r4, [r0 + #Object.m_pMethTab]
     _stub._resolveEntryPoint[n++] = 0xf8d0;
-    _stub._resolveEntryPoint[n++] = 0xc000;
+    _stub._resolveEntryPoint[n++] = 0x4000;
 
     // b loop
     offset = (WORD)((loop - (n + 2)) * sizeof(WORD));
@@ -801,8 +801,8 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _stub._resolveEntryPoint[n++] = 0xe000 | offset;
 
     // slowEntryPoint:
-    // pop {r5,r6}
-    _stub._resolveEntryPoint[n++] = 0xbc60;
+    // pop {r4,r5,r6}
+    _stub._resolveEntryPoint[n++] = 0xbc70;
 
     // nop for alignment
     _stub._resolveEntryPoint[n++] = 0xbf00;
