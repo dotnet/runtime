@@ -27,16 +27,39 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task Run_WithFileName_ExitCodeIsReturned(bool useAsync)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task Run_WithFileName_ExitCodeIsReturned(bool useAsync, bool silent)
         {
             using Process template = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
             List<string>? arguments = Helpers.MapToArgumentList(template.StartInfo);
 
             ProcessExitStatus exitStatus = useAsync
-                ? await Process.RunAsync(template.StartInfo.FileName, arguments)
-                : Process.Run(template.StartInfo.FileName, arguments);
+                ? await Process.RunAsync(template.StartInfo.FileName, arguments, silent)
+                : Process.Run(template.StartInfo.FileName, arguments, silent);
+
+            Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
+            Assert.False(exitStatus.Canceled);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Run_WithFileName_Silent_OutputIsDiscarded(bool useAsync)
+        {
+            using Process template = CreateProcess(static () =>
+            {
+                Console.Write("this should be discarded");
+                Console.Error.Write("this error should be discarded");
+                return RemoteExecutor.SuccessExitCode;
+            });
+            List<string>? arguments = Helpers.MapToArgumentList(template.StartInfo);
+
+            ProcessExitStatus exitStatus = useAsync
+                ? await Process.RunAsync(template.StartInfo.FileName, arguments, silent: true)
+                : Process.Run(template.StartInfo.FileName, arguments, silent: true);
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, exitStatus.ExitCode);
             Assert.False(exitStatus.Canceled);

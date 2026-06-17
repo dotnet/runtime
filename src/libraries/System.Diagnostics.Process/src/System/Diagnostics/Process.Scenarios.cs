@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -120,6 +121,11 @@ namespace System.Diagnostics
         /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty list
         /// to start the process without additional arguments.
         /// </param>
+        /// <param name="silent">
+        /// When <see langword="true"/>, redirects standard input, output, and error to the null device,
+        /// ensuring the process produces no visible console output.
+        /// When <see langword="false"/>, the process inherits standard handles from the parent.
+        /// </param>
         /// <param name="timeout">
         /// The maximum amount of time to wait for the process to exit.
         /// When <see langword="null"/>, waits indefinitely.
@@ -131,8 +137,22 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static ProcessExitStatus Run(string fileName, IList<string>? arguments = null, TimeSpan? timeout = default)
-            => Run(CreateStartInfo(fileName, arguments), timeout);
+        public static ProcessExitStatus Run(string fileName, IList<string>? arguments = null, bool silent = false, TimeSpan? timeout = default)
+        {
+            ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
+
+            if (silent)
+            {
+                using SafeFileHandle nullHandle = File.OpenNullHandle();
+                startInfo.StandardInputHandle = nullHandle;
+                startInfo.StandardOutputHandle = nullHandle;
+                startInfo.StandardErrorHandle = nullHandle;
+
+                return Run(startInfo, timeout);
+            }
+
+            return Run(startInfo, timeout);
+        }
 
         /// <summary>
         /// Asynchronously starts the process described by <paramref name="startInfo"/>, waits for it to exit, and returns its exit status.
@@ -169,6 +189,11 @@ namespace System.Diagnostics
         /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty list
         /// to start the process without additional arguments.
         /// </param>
+        /// <param name="silent">
+        /// When <see langword="true"/>, redirects standard input, output, and error to the null device,
+        /// ensuring the process produces no visible console output.
+        /// When <see langword="false"/>, the process inherits standard handles from the parent.
+        /// </param>
         /// <param name="cancellationToken">
         /// A token to cancel the asynchronous operation.
         /// If the token is canceled, the process is killed.
@@ -179,8 +204,27 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Task<ProcessExitStatus> RunAsync(string fileName, IList<string>? arguments = null, CancellationToken cancellationToken = default)
-            => RunAsync(CreateStartInfo(fileName, arguments), cancellationToken);
+        public static Task<ProcessExitStatus> RunAsync(string fileName, IList<string>? arguments = null, bool silent = false, CancellationToken cancellationToken = default)
+        {
+            ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
+
+            if (silent)
+            {
+                return RunSilentAsync(startInfo, cancellationToken);
+            }
+
+            return RunAsync(startInfo, cancellationToken);
+
+            static async Task<ProcessExitStatus> RunSilentAsync(ProcessStartInfo startInfo, CancellationToken cancellationToken)
+            {
+                using SafeFileHandle nullHandle = File.OpenNullHandle();
+                startInfo.StandardInputHandle = nullHandle;
+                startInfo.StandardOutputHandle = nullHandle;
+                startInfo.StandardErrorHandle = nullHandle;
+
+                return await RunAsync(startInfo, cancellationToken).ConfigureAwait(false);
+            }
+        }
 
         /// <summary>
         /// Starts the process described by <paramref name="startInfo"/>, captures its standard output and error,
