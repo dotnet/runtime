@@ -705,6 +705,8 @@ namespace Microsoft.Win32.SafeHandles
 
         private void ResumeCore()
         {
+            Validate();
+
             IntPtr threadHandle = Interlocked.Exchange(ref _mainThreadHandle, IntPtr.Zero);
             if (threadHandle == IntPtr.Zero)
             {

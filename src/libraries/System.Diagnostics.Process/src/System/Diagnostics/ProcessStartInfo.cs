@@ -469,9 +469,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.StartDetachedNotCompatible);
             }
 
-#pragma warning disable CA1416 // StartSuspended getter works on all platforms; the attribute guards the actual effect
-            if (StartSuspended && UseShellExecute)
-#pragma warning restore CA1416
+            if (OperatingSystem.IsWindows() && StartSuspended && UseShellExecute)
             {
                 throw new InvalidOperationException(SR.StartSuspendedNotCompatible);
             }
