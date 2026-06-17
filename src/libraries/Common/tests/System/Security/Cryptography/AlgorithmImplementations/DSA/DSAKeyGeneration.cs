@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -29,12 +30,12 @@ namespace System.Security.Cryptography.Dsa.Tests
             GenerateKey(dsa => GetMin(dsa.LegalKeySizes));
         }
 
-        [Fact]
+        [ConditionalFact]
         public void GenerateSecondMinKey()
         {
             if (!HasSecondMinSize())
             {
-                return;
+                throw new SkipTestException("Provider does not have a second minimum key size.");
             }
 
             GenerateKey(dsa => GetSecondMin(dsa.LegalKeySizes));
