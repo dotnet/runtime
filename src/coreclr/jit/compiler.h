@@ -7400,6 +7400,7 @@ private:
 
     PhaseStatus fgLocalMorph();
     bool fgExposeUnpropagatedLocals(bool propagatedAny, class LocalEqualsLocalAddrAssertions* assertions);
+    PhaseStatus fgUnpinNonMovableLocals();
     void fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec);
 
     PhaseStatus fgOptimizeMaskConversions();
