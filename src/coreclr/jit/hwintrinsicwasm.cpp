@@ -76,8 +76,156 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        unsigned              simdSize,
                                        bool                  mustExpand)
 {
-    NYI_WASM_SIMD("impSpecialIntrinsic");
-    return nullptr;
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    GenTree* retNode = nullptr;
+    GenTree* op1     = nullptr;
+
+    switch (intrinsic)
+    {
+        case NI_Vector128_Create:
+        {
+            // Vector128.Create(T)                    -> broadcast/"splat" one T value to all elements
+            // Vector128.Create(T, T, ..., T)         -> pack N scalar T values
+            //
+            // For either form, if T is a const we can leverage a GenTreeVecCon and map directly to v128.const
+            if (sig->numArgs == 1)
+            {
+                op1     = impPopStack().val;
+                retNode = gtNewSimdCreateBroadcastNode(retType, op1, simdBaseType, simdSize);
+                break;
+            }
+
+            uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
+            assert(sig->numArgs == simdLength);
+
+            bool isConstant = true;
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    if (!impStackTop(index).val->IsCnsFltOrDbl())
+                    {
+                        isConstant = false;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                assert(varTypeIsIntegral(simdBaseType));
+
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    if (!impStackTop(index).val->IsIntegralConst())
+                    {
+                        isConstant = false;
+                        break;
+                    }
+                }
+            }
+
+            if (isConstant)
+            {
+                assert(simdSize == 16);
+
+                GenTreeVecCon* vecCon = gtNewVconNode(retType);
+
+                switch (simdBaseType)
+                {
+                    case TYP_BYTE:
+                    case TYP_UBYTE:
+                    {
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            uint8_t cnsVal = static_cast<uint8_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                            vecCon->gtSimdVal.u8[simdLength - 1 - index] = cnsVal;
+                        }
+                        break;
+                    }
+
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                    {
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            uint16_t cnsVal =
+                                static_cast<uint16_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                            vecCon->gtSimdVal.u16[simdLength - 1 - index] = cnsVal;
+                        }
+                        break;
+                    }
+
+                    case TYP_INT:
+                    case TYP_UINT:
+                    {
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            uint32_t cnsVal =
+                                static_cast<uint32_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                            vecCon->gtSimdVal.u32[simdLength - 1 - index] = cnsVal;
+                        }
+                        break;
+                    }
+
+                    case TYP_LONG:
+                    case TYP_ULONG:
+                    {
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            uint64_t cnsVal =
+                                static_cast<uint64_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                            vecCon->gtSimdVal.u64[simdLength - 1 - index] = cnsVal;
+                        }
+                        break;
+                    }
+
+                    case TYP_FLOAT:
+                    {
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            float cnsVal = static_cast<float>(impPopStack().val->AsDblCon()->DconValue());
+                            vecCon->gtSimdVal.f32[simdLength - 1 - index] = cnsVal;
+                        }
+                        break;
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            double cnsVal = static_cast<double>(impPopStack().val->AsDblCon()->DconValue());
+                            vecCon->gtSimdVal.f64[simdLength - 1 - index] = cnsVal;
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+
+                retNode = vecCon;
+                break;
+            }
+
+            // TODO-WASM-SIMD: Build a GT_HWINTRINSIC node packing N non-constant operands
+            // (mirroring the arm64/xarch IntrinsicNodeBuilder path) once WASM SIMD lowering
+            // and codegen for Vector128.Create are implemented.
+            NYI_WASM_SIMD("Vector128.Create with non-constant operands");
+            break;
+        }
+
+        default:
+        {
+            NYI_WASM_SIMD("impSpecialIntrinsic");
+            break;
+        }
+    }
+
+    return retNode;
 }
 
 //------------------------------------------------------------------------

@@ -795,6 +795,9 @@ protected:
 
 #if defined(TARGET_WASM)
     void genCodeForConstant(GenTree* treeNode);
+#if defined(FEATURE_SIMD)
+    void genCodeForVectorConstant(GenTree* treeNode);
+#endif
     void genCatchArg(GenTree* treeNode);
 #endif
 

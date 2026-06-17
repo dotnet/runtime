@@ -922,6 +922,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCkfinite(treeNode);
             break;
 
+#if defined(FEATURE_SIMD)
+        case GT_CNS_VEC:
+            genCodeForVectorConstant(treeNode);
+            break;
+#endif // FEATURE_SIMD
+
         default:
 #ifdef DEBUG
             if (JitConfig.JitWasmNyiToR2RUnsupported())
@@ -1800,6 +1806,19 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
     GetEmitter()->emitIns_I(ins, emitTypeSize(treeNode), bits);
     WasmProduceReg(treeNode);
 }
+
+#ifdef FEATURE_SIMD
+void CodeGen::genCodeForVectorConstant(GenTree* treeNode)
+{
+    assert(treeNode->IsCnsVec());
+    GenTreeVecCon* vecCon = treeNode->AsVecCon();
+
+    // There is only one type variant for v128.const, v128.const <byte[16]>
+    // and the bytes are reinterpreted according to whichever operation consumes the value.
+    GetEmitter()->emitIns_V128Imm(INS_v128_const, vecCon->gtSimd16Val.u8);
+    WasmProduceReg(treeNode);
+}
+#endif
 
 //------------------------------------------------------------------------
 // genCodeForShift: Generate code for a shift or rotate operator
