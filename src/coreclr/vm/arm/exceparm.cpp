@@ -43,8 +43,7 @@ AdjustContextForVirtualStub(
 
     if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
-        if ((*PTR_WORD(pInstr) != DISPATCH_STUB_FIRST_WORD) ||
-            (*PTR_WORD(pInstr + sizeof(WORD)) != DISPATCH_STUB_SECOND_WORD))
+        if (*PTR_WORD(pInstr) != DISPATCH_STUB_FIRST_WORD)
         {
             _ASSERTE(!"AV in DispatchStub at unknown instruction");
             return FALSE;
