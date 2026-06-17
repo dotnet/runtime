@@ -70,6 +70,8 @@ static bool get_latest_fxr(const pal_char_t* fxr_root, pal_char_t** out_fxr_path
         return false;
     }
 
+    // SemVer does not define a size limit on version string, but calls out a reasonable max of 255 characters:
+    // https://semver.org/#does-semver-have-a-size-limit-on-the-version-string
     pal_char_t max_ver_str[256];
     c_fx_ver_as_str(&ctx.max_ver, max_ver_str, ARRAY_SIZE(max_ver_str));
     c_fx_ver_cleanup(&ctx.max_ver);
