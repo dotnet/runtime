@@ -74,7 +74,77 @@ internal static partial class Interop
         /// <param name="pid">The PID of the process</param>
         public static unsafe string GetProcPath(int pid)
         {
-            // TODO
+            // OpenBSD has no KERN_PROC_PATHNAME. The closest available information is the
+            // process argv, whose first entry is the path the process was executed with.
+            ReadOnlySpan<int> sysctlName = [CTL_KERN, KERN_PROC_ARGS, pid, KERN_PROC_ARGV];
+
+            byte* pBuffer = null;
+            uint bytesLength = 0;
+            try
+            {
+                Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
+
+                if (pBuffer == null || bytesLength < (uint)sizeof(byte*))
+                {
+                    return string.Empty;
+                }
+
+                // The kernel relocates the argv pointer array to point within the returned buffer.
+                byte* argv0 = ((byte**)pBuffer)[0];
+                return argv0 is null ? string.Empty : Utf8StringMarshaller.ConvertToManaged(argv0) ?? string.Empty;
+            }
+            finally
+            {
+                NativeMemory.Free(pBuffer);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to recover a process name that was truncated in kinfo_proc.p_comm by reading
+        /// the full name from the process argv.
+        /// </summary>
+        /// <param name="pid">The PID of the process.</param>
+        /// <param name="prefix">The (possibly truncated) p_comm value used to validate the recovered name.</param>
+        /// <returns>The full process name, or null if it could not be recovered.</returns>
+        private static unsafe string? GetUntruncatedProcessName(int pid, string prefix)
+        {
+            ReadOnlySpan<int> sysctlName = [CTL_KERN, KERN_PROC_ARGS, pid, KERN_PROC_ARGV];
+
+            byte* pBuffer = null;
+            uint bytesLength = 0;
+            try
+            {
+                Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
+
+                if (pBuffer == null || bytesLength < (uint)sizeof(byte*))
+                {
+                    return null;
+                }
+
+                // The kernel relocates the argv pointer array to point within the returned buffer.
+                // For native executables the name is argv[0]; for scripts argv[0] is the interpreter
+                // and argv[1] is the script, so check the first two NULL-terminated arguments.
+                byte** argv = (byte**)pBuffer;
+                for (int i = 0; i < 2 && argv[i] is not null; i++)
+                {
+                    string arg = Utf8StringMarshaller.ConvertToManaged(argv[i]) ?? string.Empty;
+
+                    // Strip directory names.
+                    int nameStart = arg.LastIndexOf('/') + 1;
+                    string name = nameStart == 0 ? arg : arg.Substring(nameStart);
+
+                    if (name.StartsWith(prefix, StringComparison.Ordinal))
+                    {
+                        return name;
+                    }
+                }
+
+                return null;
+            }
+            finally
+            {
+                NativeMemory.Free(pBuffer);
+            }
         }
 
         /// <summary>
@@ -85,7 +155,7 @@ internal static partial class Interop
         /// Returns a valid ProcessInfo struct for valid processes that the caller
         /// has permission to access; otherwise, returns null
         /// </returns>
-        public static unsafe ProcessInfo GetProcessInfoById(int pid)
+        public static unsafe ProcessInfo? GetProcessInfoById(int pid)
         {
             // Negative PIDs are invalid
             ArgumentOutOfRangeException.ThrowIfNegative(pid);
@@ -95,7 +165,12 @@ internal static partial class Interop
             kinfo_proc* kinfo = GetProcInfo(pid, true, out int count);
             try
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(count, 1, nameof(pid));
+                // The process may have exited between the time its PID was enumerated and now,
+                // in which case no entries are returned. Report it as not found rather than failing.
+                if (count < 1)
+                {
+                    return null;
+                }
 
                 var process = new ReadOnlySpan<kinfo_proc>(kinfo, count);
 
@@ -103,19 +178,45 @@ internal static partial class Interop
                 info = new ProcessInfo();
 
                 info.ProcessName = Utf8StringMarshaller.ConvertToManaged(kinfo->p_comm)!;
+
+                // p_comm is limited to KI_MAXCOMLEN - 1 characters. When the name is at that
+                // limit it may be truncated, so try to recover the full name from the process argv.
+                if (info.ProcessName.Length >= KI_MAXCOMLEN - 1)
+                {
+                    info.ProcessName = GetUntruncatedProcessName(pid, info.ProcessName) ?? info.ProcessName;
+                }
+
                 info.BasePriority = kinfo->p_nice;
-                info.VirtualBytes = (long)kinfo->p_vm_map_size;
+
+                // OpenBSD's KERN_PROC sysctl always reports p_vm_map_size as 0, so derive the
+                // virtual size from the text, data, and stack segment sizes instead.
+                long pageSize = Environment.SystemPageSize;
+                info.VirtualBytes = ((long)kinfo->p_vm_tsize + kinfo->p_vm_dsize + kinfo->p_vm_ssize) * pageSize;
+                // OpenBSD does not track a separate peak virtual size; report the current size.
+                info.VirtualBytesPeak = info.VirtualBytes;
                 info.WorkingSet = kinfo->p_vm_rssize;
+                // p_uru_maxrss is the peak resident set size, reported in kilobytes.
+                info.WorkingSetPeak = (long)kinfo->p_uru_maxrss * 1024;
+                // OpenBSD does not expose a private byte count; approximate it with the
+                // anonymous (data + stack) segment sizes.
+                info.PrivateBytes = ((long)kinfo->p_vm_dsize + kinfo->p_vm_ssize) * pageSize;
                 info.SessionId = kinfo->p_sid;
 
                 for (int i = 0; i < process.Length; i++)
                 {
+                    // KERN_PROC_SHOW_THREADS returns a process-summary entry with p_tid == -1
+                    // ahead of the real per-thread entries. Skip it so only actual threads are reported.
+                    if (process[i].p_tid < 0)
+                    {
+                        continue;
+                    }
+
                     var ti = new ThreadInfo()
                     {
                         _processId = pid,
                         _threadId = (ulong)process[i].p_tid,
                         _basePriority = process[i].p_nice,
-                        _startAddress = // TODO: this doesn't exist on OpenBSD
+                        _startAddress = null // OpenBSD's kinfo_proc does not expose a thread start address.
                     };
                     info._threadInfoList.Add(ti);
                 }
@@ -152,7 +253,7 @@ internal static partial class Interop
                         ret.startTime = (int)info->p_ustart_sec;
                         ret.nice = info->p_nice;
                         ret.userTime = (ulong)info->p_uutime_sec * SecondsToNanoseconds + (ulong)info->p_uutime_usec * MicroSecondsToNanoSeconds;
-                        ret.systemTime = (ulong)info->p_uutime_sec * SecondsToNanoseconds + (ulong)info->p_uutime_usec * MicroSecondsToNanoSeconds;
+                        ret.systemTime = (ulong)info->p_ustime_sec * SecondsToNanoseconds + (ulong)info->p_ustime_usec * MicroSecondsToNanoSeconds;
                     }
                     else
                     {
@@ -164,7 +265,7 @@ internal static partial class Interop
                                 ret.startTime = (int)list[i].p_ustart_sec;
                                 ret.nice = list[i].p_nice;
                                 ret.userTime = (ulong)list[i].p_uutime_sec * SecondsToNanoseconds + (ulong)list[i].p_uutime_usec * MicroSecondsToNanoSeconds;
-                                ret.systemTime = (ulong)list[i].p_uutime_sec * SecondsToNanoseconds + (ulong)list[i].p_uutime_usec * MicroSecondsToNanoSeconds;
+                                ret.systemTime = (ulong)list[i].p_ustime_sec * SecondsToNanoseconds + (ulong)list[i].p_ustime_usec * MicroSecondsToNanoSeconds;
                                 break;
                             }
                         }
