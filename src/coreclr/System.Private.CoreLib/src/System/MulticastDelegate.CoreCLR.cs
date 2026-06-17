@@ -54,16 +54,14 @@ namespace System
                     case Delegate wrapper:
                         return wrapper.Equals(other);
                     default:
-                        if (IsUnmanagedFunctionPtr)
+                        if (!IsUnmanagedFunctionPtr)
                         {
-                            return other.IsUnmanagedFunctionPtr &&
-                                   _methodPtr == other._methodPtr &&
-                                   _methodPtrAux == other._methodPtrAux;
+                            break;
                         }
 
-                        // now we know 'this' is not a special one, so we can work out what the other is
-                        // this is a wrapper delegate so we need to unwrap and check the inner one
-                        return other._invocationList is Delegate ? Equals(other._invocationList) : base.Equals(obj);
+                        return other.IsUnmanagedFunctionPtr &&
+                               _methodPtr == other._methodPtr &&
+                               _methodPtrAux == other._methodPtrAux;
                 }
             }
 
@@ -271,20 +269,20 @@ namespace System
                             continue;
                         }
 
-                        if (invocationCount - vInvocationCount == 0)
+                        switch (invocationCount - vInvocationCount)
                         {
-                            // Special case - no values left
-                            return null;
+                            case 0:
+                                // Special case - no values left
+                                return null;
+                            case 1:
+                                // Special case - only one value left, either at the beginning or the end
+                                return (Delegate)invocationList[i != 0 ? 0 : invocationCount - 1];
+                            default:
+                            {
+                                object[] list = DeleteFromInvocationList(invocationList, invocationCount, i, vInvocationCount);
+                                return NewMulticastDelegate(list, invocationCount - vInvocationCount, true);
+                            }
                         }
-
-                        if (invocationCount - vInvocationCount == 1)
-                        {
-                            // Special case - only one value left, either at the beginning or the end
-                            return (Delegate)invocationList[i != 0 ? 0 : invocationCount - 1];
-                        }
-
-                        object[] list = DeleteFromInvocationList(invocationList, invocationCount, i, vInvocationCount);
-                        return NewMulticastDelegate(list, invocationCount - vInvocationCount, true);
                     }
                 }
             }
