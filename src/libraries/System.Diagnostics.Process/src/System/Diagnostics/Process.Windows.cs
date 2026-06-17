@@ -874,11 +874,11 @@ namespace System.Diagnostics
             GC.SuppressFinalize(outputStream);
 
             // We don't use any buffering, as we want all the data to be sent to the console immediately, and we want to receive data from the console as soon as it's available.
-            _standardInput = new StreamWriter(inputStream, Utf8EncodingWithoutBom, bufferSize: 1, leaveOpen: true)
+            _standardInput = new StreamWriter(inputStream, startInfo.StandardInputEncoding ?? Utf8EncodingWithoutBom, bufferSize: 1, leaveOpen: true)
             {
                 AutoFlush = true
             };
-            _standardOutput = new StreamReader(outputStream, Utf8EncodingWithoutBom, false, bufferSize: 1, leaveOpen: true);
+            _standardOutput = new StreamReader(outputStream, startInfo.StandardOutputEncoding ?? Utf8EncodingWithoutBom, false, bufferSize: 1, leaveOpen: true);
         }
     }
 }
