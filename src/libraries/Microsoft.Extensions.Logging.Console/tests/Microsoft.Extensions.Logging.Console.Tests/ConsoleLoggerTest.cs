@@ -1141,6 +1141,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [MemberData(nameof(FormatsAndLevels))]
         public void WriteCore_EmptyMessageWithException(ConsoleLoggerFormat format, LogLevel level)
         {
+            // Arrange
             using var t = SetUp(new ConsoleLoggerOptions { Format = format });
             var levelPrefix = t.GetLevelPrefix(level);
             var logger = t.Logger;
@@ -1148,8 +1149,10 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var ex = new Exception("Exception message" + Environment.NewLine + "with a second line");
             string message = string.Empty;
 
+            // Act
             logger.Log(level, 0, message, ex, (s, e) => s);
 
+            // Assert
             switch (format)
             {
                 case ConsoleLoggerFormat.Default:

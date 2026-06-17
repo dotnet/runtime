@@ -158,7 +158,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         private static void WriteItem(Utf8JsonWriter writer, KeyValuePair<string, object?> item)
         {
-            string key = item.Key;
+            var key = item.Key;
             switch (item.Value)
             {
                 case bool boolValue:
@@ -171,7 +171,7 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteNumber(key, sbyteValue);
                     break;
                 case char charValue:
-                    writer.WriteString(key, new string(charValue, 1));
+                    writer.WriteString(key, [charValue]);
                     break;
                 case decimal decimalValue:
                     writer.WriteNumber(key, decimalValue);
