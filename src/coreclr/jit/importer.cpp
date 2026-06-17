@@ -11671,10 +11671,11 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
 //------------------------------------------------------------------------
 // impWrapTopOfStackInAwait:
-//   Wrap the value on the top of the stack in AsyncHelpers.TransparentAwait.
+//   Wrap the value on the top of the stack in
+//   AsyncHelpers.TransparentAwaitWithResult.
 //
 // Returns:
-//   True if successful. False if he EE could not create the call (only during
+//   True if successful. False if the EE could not create the call (only during
 //   inlining), in which case inlining should be aborted.
 //
 // Remarks:
@@ -11683,7 +11684,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //   mistyped; the original IL returns a Task or ValueTask, but the runtime
 //   async version expects to return the unwrapped result. This function
 //   accomplishes the unwrapping by inserting an async call to
-//   AsyncHelpers.TransparentAwait around the value on the top of the stack.
+//   AsyncHelpers.TransparentAwaitWithResult around the value on the top of the
+//   stack.
 //
 bool Compiler::impWrapTopOfStackInAwait()
 {
