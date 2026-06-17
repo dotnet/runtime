@@ -90,19 +90,21 @@ public class StressLogDumpTests : DumpTestBase
         InitializeDumpTest(config);
         ISOSDacInterface17 sosDac = (ISOSDacInterface17)new SOSDacImpl(Target, legacyObj: null);
 
-        var ppEnum = new DacComNullableByRef<ISOSStressLogThreadEnum>(isNullRef: false);
+        DacComNullableByRef<ISOSStressLogThreadEnum> ppEnum = new(isNullRef: false);
         int hr = sosDac.GetStressLogThreadEnumerator(ppEnum);
         Assert.Equal(System.HResults.S_OK, hr);
-        Assert.NotNull(ppEnum.Interface);
+
+        ISOSStressLogThreadEnum? threadEnum = ppEnum.Interface;
+        Assert.NotNull(threadEnum);
 
         uint count;
-        hr = ppEnum.Interface.GetCount(&count);
+        hr = threadEnum.GetCount(&count);
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.True(count > 0, "Expected at least one thread with stress log");
 
         SOSThreadStressLogData[] threads = new SOSThreadStressLogData[count];
         uint fetched;
-        hr = ppEnum.Interface.Next(count, threads, &fetched);
+        hr = threadEnum.Next(count, threads, &fetched);
         Assert.True(hr == System.HResults.S_OK || hr == System.HResults.S_FALSE);
         Assert.True(fetched > 0);
         Assert.NotEqual((ClrDataAddress)0, threads[0].ThreadLogAddress);
@@ -115,28 +117,33 @@ public class StressLogDumpTests : DumpTestBase
         InitializeDumpTest(config);
         ISOSDacInterface17 sosDac = (ISOSDacInterface17)new SOSDacImpl(Target, legacyObj: null);
 
-        var ppThreadEnum = new DacComNullableByRef<ISOSStressLogThreadEnum>(isNullRef: false);
+        DacComNullableByRef<ISOSStressLogThreadEnum> ppThreadEnum = new(isNullRef: false);
         int hr = sosDac.GetStressLogThreadEnumerator(ppThreadEnum);
         Assert.Equal(System.HResults.S_OK, hr);
 
+        ISOSStressLogThreadEnum? threadEnum = ppThreadEnum.Interface;
+        Assert.NotNull(threadEnum);
+
         uint threadCount;
-        ppThreadEnum.Interface.GetCount(&threadCount);
+        threadEnum.GetCount(&threadCount);
 
         SOSThreadStressLogData[] threads = new SOSThreadStressLogData[threadCount];
         uint fetched;
-        ppThreadEnum.Interface.Next(threadCount, threads, &fetched);
+        threadEnum.Next(threadCount, threads, &fetched);
 
         bool foundMessages = false;
         for (uint i = 0; i < fetched; i++)
         {
-            var ppMsgEnum = new DacComNullableByRef<ISOSStressLogMsgEnum>(isNullRef: false);
+            DacComNullableByRef<ISOSStressLogMsgEnum> ppMsgEnum = new(isNullRef: false);
             hr = sosDac.GetStressLogMessageEnumerator(threads[i].ThreadLogAddress, ppMsgEnum);
             Assert.Equal(System.HResults.S_OK, hr);
-            Assert.NotNull(ppMsgEnum.Interface);
+
+            ISOSStressLogMsgEnum? msgEnum = ppMsgEnum.Interface;
+            Assert.NotNull(msgEnum);
 
             SOSStressMsgData[] messages = new SOSStressMsgData[10];
             uint msgFetched;
-            hr = ppMsgEnum.Interface.Next(10, messages, &msgFetched);
+            hr = msgEnum.Next(10, messages, &msgFetched);
             Assert.True(hr == System.HResults.S_OK || hr == System.HResults.S_FALSE);
 
             if (msgFetched > 0)
@@ -149,7 +156,7 @@ public class StressLogDumpTests : DumpTestBase
                 {
                     ClrDataAddress[] args = new ClrDataAddress[messages[0].ArgumentCount];
                     uint argFetched;
-                    hr = ppMsgEnum.Interface.GetArguments(0, messages[0].ArgumentCount, args, &argFetched);
+                    hr = msgEnum.GetArguments(0, messages[0].ArgumentCount, args, &argFetched);
                     Assert.Equal(System.HResults.S_OK, hr);
                     Assert.Equal(messages[0].ArgumentCount, argFetched);
                 }
