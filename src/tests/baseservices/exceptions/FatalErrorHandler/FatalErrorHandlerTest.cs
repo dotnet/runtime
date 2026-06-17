@@ -160,33 +160,23 @@ unsafe class FatalErrorHandlerTest
 
     static (int exitCode, string stderr) LaunchChild(string scenario)
     {
-        StringBuilder stderrBuilder = new();
-
-        using Process child = new();
-        child.StartInfo.FileName = Environment.ProcessPath;
-
         // For NativeAOT, Assembly.Location is empty — the process IS the test binary.
         // For CoreCLR, we need to pass the DLL path as the first argument to corerun.
         string assemblyLocation = Assembly.GetExecutingAssembly().Location;
-        child.StartInfo.Arguments = !string.IsNullOrEmpty(assemblyLocation)
+        string arguments = !string.IsNullOrEmpty(assemblyLocation)
             ? $"\"{assemblyLocation}\" {scenario}"
-            : $" {scenario}";
+            : scenario;
 
-        child.StartInfo.UseShellExecute = false;
-        child.StartInfo.RedirectStandardError = true;
-        child.StartInfo.Environment["DOTNET_DbgEnableMiniDump"] = "0";
-        child.ErrorDataReceived += (_, e) =>
+        ProcessStartInfo startInfo = new(Environment.ProcessPath!, arguments)
         {
-            if (!string.IsNullOrEmpty(e.Data))
-                stderrBuilder.AppendLine(e.Data);
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
         };
+        startInfo.Environment["DOTNET_DbgEnableMiniDump"] = "0";
 
-        child.Start();
-        child.BeginErrorReadLine();
-        child.WaitForExit();
-        child.CancelErrorRead();
+        ProcessTextOutput result = Process.RunAndCaptureText(startInfo);
 
-        return (child.ExitCode, stderrBuilder.ToString());
+        return (result.ExitStatus.ExitCode, result.StandardError);
     }
 
     static bool TestSkipHandler()
