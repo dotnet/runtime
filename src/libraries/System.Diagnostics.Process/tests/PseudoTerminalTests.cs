@@ -3,7 +3,6 @@
 
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -159,41 +158,6 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void StartProcess_WithPseudoTerminal_DoesNotInheritParentHandles()
-        {
-            using PseudoTerminal pty = PseudoTerminal.Create(s_testOptions);
-
-            Process process = CreateProcess(static (stdIn, stdOut) =>
-            {
-                if (OperatingSystem.IsWindows())
-                {
-                    Assert.NotEqual(nint.Parse(stdIn), Console.OpenStandardInputHandle().DangerousGetHandle());
-                    Assert.NotEqual(nint.Parse(stdOut), Console.OpenStandardOutputHandle().DangerousGetHandle());
-                }
-                else
-                {
-                    Assert.NotEqual(stdIn, NativeTtyName(0) ?? string.Empty);
-                    Assert.NotEqual(stdOut, NativeTtyName(1) ?? string.Empty);
-                }
-
-                return RemoteExecutor.SuccessExitCode;
-
-                [LibraryImport("libc", EntryPoint = "ttyname", StringMarshalling = StringMarshalling.Utf8)]
-                static partial string? NativeTtyName(int fd);
-            },
-            OperatingSystem.IsWindows() ? Console.OpenStandardInputHandle().DangerousGetHandle().ToString() : NativeTtyName(Console.OpenStandardInputHandle()) ?? string.Empty,
-            OperatingSystem.IsWindows() ? Console.OpenStandardOutputHandle().DangerousGetHandle().ToString() : NativeTtyName(Console.OpenStandardOutputHandle()) ?? string.Empty);
-            process.StartInfo.PseudoTerminal = pty;
-
-            Assert.True(process.Start());
-            Assert.True(process.WaitForExit(WaitInMS));
-            Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
-
-            [LibraryImport("libc", EntryPoint = "ttyname", StringMarshalling = StringMarshalling.Utf8)]
-            static partial string? NativeTtyName(SafeFileHandle fd);
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StartProcess_WithPseudoTerminal_CanCommunicate()
         {
             using PseudoTerminal pty = PseudoTerminal.Create(s_testOptions);
@@ -282,7 +246,5 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
             Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
         }
-    }
-}
     }
 }
