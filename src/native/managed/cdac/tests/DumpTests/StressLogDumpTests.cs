@@ -125,11 +125,13 @@ public class StressLogDumpTests : DumpTestBase
         Assert.NotNull(threadEnum);
 
         uint threadCount;
-        threadEnum.GetCount(&threadCount);
+        hr = threadEnum.GetCount(&threadCount);
+        Assert.Equal(System.HResults.S_OK, hr);
 
         SOSThreadStressLogData[] threads = new SOSThreadStressLogData[threadCount];
         uint fetched;
-        threadEnum.Next(threadCount, threads, &fetched);
+        hr = threadEnum.Next(threadCount, threads, &fetched);
+        Assert.True(hr == System.HResults.S_OK || hr == System.HResults.S_FALSE);
 
         bool foundMessages = false;
         for (uint i = 0; i < fetched; i++)

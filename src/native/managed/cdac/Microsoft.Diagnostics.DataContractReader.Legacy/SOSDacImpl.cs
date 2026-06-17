@@ -7252,6 +7252,8 @@ public sealed unsafe partial class SOSDacImpl
         int ISOSEnum.Reset()
         {
             _index = 0;
+            _lastBatchStart = 0;
+            _lastBatchCount = 0;
             return HResults.S_OK;
         }
 
