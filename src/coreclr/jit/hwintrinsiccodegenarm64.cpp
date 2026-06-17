@@ -3127,6 +3127,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_SveSha3_BitwiseRotateLeftBy1AndXor:
+            {
+                opt = INS_OPTS_SCALABLE_D;
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
             default:
                 unreached();
         }
