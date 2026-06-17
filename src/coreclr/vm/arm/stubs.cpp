@@ -819,6 +819,8 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     // {
     //     push(r12);
     //     r12 = this._tokenSlow;
+    //     // _resolveWorkerTarget pops hidden IndirectionCellAndFlags from the stack and
+    //     // takes dispatch token in r12.
     //     this._resolveWorkerTarget(r0, r1, r2, r3, r12);
     // }
 
