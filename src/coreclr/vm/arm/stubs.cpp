@@ -592,10 +592,10 @@ void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorke
 void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT)
 {
     // Called directly by JITTED code
-    // DispatchHolder._stub._entryPoint(r0:object, r1, r2, r3, r12:IndirectionCellAndFlags)
+    // DispatchHolder._stub._entryPoint(r0:object, r1, r2, r3, r12:scratch)
     // {
     //     if (r0.methodTable == this._expectedMT) (this._implTarget)(r0, r1, r2, r3);
-    //     else (this._failTarget)(r0, r1, r2, r3, r12);
+    //     else (this._failTarget)(r0, r1, r2, r3, r12:MethodTable);
     // }
 
     int n = 0;
