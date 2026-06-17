@@ -49,7 +49,7 @@ namespace System.Diagnostics.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-public async Task Run_WithFileName_OutputIsDiscardedWhenSilent(bool useAsync, bool silent)
+        public async Task Run_WithFileName_OutputIsDiscardedWhenSilent(bool useAsync, bool silent)
         {
             // Process A starts process B that writes large output to stdout and stderr.
             // When silent is true, B's output is redirected to the null device.
