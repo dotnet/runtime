@@ -37,8 +37,13 @@ namespace System.Diagnostics
             ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
             // Try to get the task info. This can fail if the user permissions don't permit
-            // this user context to query the specified process
-            ProcessInfo iinfo = Interop.Process.GetProcessInfoById(pid);
+            // this user context to query the specified process, or if the process has exited.
+            ProcessInfo? iinfo = Interop.Process.GetProcessInfoById(pid);
+            if (iinfo is null)
+            {
+                return null;
+            }
+
             if (processNameFilter != null && !processNameFilter.Equals(iinfo.ProcessName, StringComparison.OrdinalIgnoreCase))
             {
                 return null;
@@ -50,7 +55,10 @@ namespace System.Diagnostics
                 ProcessName = iinfo.ProcessName,
                 BasePriority = iinfo.BasePriority,
                 VirtualBytes = iinfo.VirtualBytes,
+                VirtualBytesPeak = iinfo.VirtualBytesPeak,
                 WorkingSet = iinfo.WorkingSet,
+                WorkingSetPeak = iinfo.WorkingSetPeak,
+                PrivateBytes = iinfo.PrivateBytes,
                 SessionId = iinfo.SessionId,
             };
 
