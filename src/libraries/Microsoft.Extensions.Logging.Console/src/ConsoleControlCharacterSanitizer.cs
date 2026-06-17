@@ -67,34 +67,43 @@ namespace Microsoft.Extensions.Logging.Console
         {
             return c switch
             {
-                '\u0000' => true, // NUL - can truncate log lines in syslog/journald pipelines
-                '\u0007' => true, // BEL - terminal bell
-                '\u0008' => true, // BS  - backspace
-                '\u000E' => true, // SO  - shift out (invokes alternate character set)
-                '\u000F' => true, // SI  - shift in
-                '\u001B' => true, // ESC - ANSI escape sequences
-                '\u007F' => true, // DEL - delete
-                '\u0090' => true, // DCS - device control string (8-bit)
-                '\u009B' => true, // CSI - control sequence introducer (8-bit)
-                '\u009C' => true, // ST  - string terminator (8-bit)
-                '\u009D' => true, // OSC - operating system command (8-bit)
-                '\u0098' => true, // SOS - start of string (8-bit)
-                '\u009E' => true, // PM  - privacy message (8-bit)
-                '\u009F' => true, // APC - application program command (8-bit)
-                '\u200B' => true, // zero-width space
-                '\u200C' => true, // zero-width non-joiner
-                '\u200D' => true, // zero-width joiner
-                '\u200E' => true, // left-to-right mark
-                '\u200F' => true, // right-to-left mark
-                '\u202A' => true, // left-to-right embedding
-                '\u202B' => true, // right-to-left embedding
-                '\u202C' => true, // pop directional formatting
-                '\u202D' => true, // left-to-right override
-                '\u202E' => true, // right-to-left override
-                '\u2066' => true, // left-to-right isolate
-                '\u2067' => true, // right-to-left isolate
-                '\u2068' => true, // first strong isolate
-                '\u2069' => true, // pop directional isolate
+                '\u0000' => true, // NUL
+                '\u0001' => true, // SOH
+                '\u0002' => true, // STX
+                '\u0003' => true, // ETX
+                '\u0004' => true, // EOT
+                '\u0005' => true, // ENQ
+                '\u0006' => true, // ACK
+                '\u0007' => true, // BEL
+                '\u0008' => true, // BS
+                // '\u0009' HT (tab) - preserved for log formatting
+                // '\u000A' LF (newline) - preserved for log formatting
+                '\u000B' => true, // VT
+                '\u000C' => true, // FF
+                // '\u000D' CR (carriage return) - preserved for log formatting
+                '\u000E' => true, // SO
+                '\u000F' => true, // SI
+                '\u0010' => true, // DLE
+                '\u0011' => true, // DC1
+                '\u0012' => true, // DC2
+                '\u0013' => true, // DC3
+                '\u0014' => true, // DC4
+                '\u0015' => true, // NAK
+                '\u0016' => true, // SYN
+                '\u0017' => true, // ETB
+                '\u0018' => true, // CAN
+                '\u0019' => true, // EM
+                '\u001A' => true, // SUB
+                '\u001B' => true, // ESC
+                '\u001C' => true, // FS
+                '\u001D' => true, // GS
+                '\u001E' => true, // RS
+                '\u001F' => true, // US
+                '\u007F' => true, // DEL
+                >= '\u0080' and <= '\u009F' => true, // C1 control range
+                >= '\u200B' and <= '\u200F' => true, // zero-width and directional marks
+                >= '\u202A' and <= '\u202E' => true, // bidi embedding/override
+                >= '\u2066' and <= '\u2069' => true, // bidi isolates
                 _ => false,
             };
         }

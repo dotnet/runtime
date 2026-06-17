@@ -195,7 +195,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         {
             using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = formatterName },
-                new SimpleConsoleFormatterOptions { ColorBehavior = LoggerColorBehavior.Enabled },
+                new SimpleConsoleFormatterOptions { ColorBehavior = LoggerColorBehavior.Disabled },
                 new ConsoleFormatterOptions(),
                 new JsonConsoleFormatterOptions());
             var logger = (ILogger)t.Logger;
@@ -218,7 +218,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         {
             using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = formatterName },
-                new SimpleConsoleFormatterOptions { ColorBehavior = LoggerColorBehavior.Enabled },
+                new SimpleConsoleFormatterOptions { ColorBehavior = LoggerColorBehavior.Disabled },
                 new ConsoleFormatterOptions(),
                 new JsonConsoleFormatterOptions());
             var logger = (ILogger)t.Logger;
@@ -229,6 +229,26 @@ namespace Microsoft.Extensions.Logging.Console.Test
             string output = GetMessage(sink.Writes);
             Assert.DoesNotContain("\\u000A", output);
             Assert.DoesNotContain("\\u0009", output);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [InlineData(ConsoleFormatterNames.Json)]
+        public void Log_Json_ControlCharacters_EscapedByWriter(string formatterName)
+        {
+            using var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = formatterName },
+                new SimpleConsoleFormatterOptions(),
+                new ConsoleFormatterOptions(),
+                new JsonConsoleFormatterOptions());
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            logger.LogInformation("Payload: {Value}", "prefix\u001b[31mtext\u0008\u202Esuffix");
+
+            string output = GetMessage(sink.Writes);
+            Assert.DoesNotContain('\u001b', output);
+            Assert.DoesNotContain('\u0008', output);
+            Assert.DoesNotContain('\u202E', output);
         }
 
         private class NullNameConsoleFormatter : ConsoleFormatter
