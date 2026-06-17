@@ -7985,16 +7985,13 @@ void FlowGraphTryRegions::AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edg
 
                 // If the dest is not reachable within the try, then we need to also add
                 // a temporary edge from the try header to the dest to create the SCC.
-                // Since we've pruned away dead blocks, any in-try pred sufficies to establish
-                // reachability.
+                // Since we've pruned away dead blocks, any other pred edge suffices to
+                // establish reachability.
                 //
                 bool isReachableInTry = false;
                 for (FlowEdge* const predEdge : destBlock->PredEdges())
                 {
-                    BasicBlock* const predBlock = predEdge->getSourceBlock();
-                    if ((predBlock != edge->getSourceBlock()) &&
-                        !predBlock->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION) &&
-                        BitVecOps::IsMember(GetBlockBitVecTraits(), region->m_blocks, GetBlockIndex(predBlock)))
+                    if (predEdge != edge)
                     {
                         isReachableInTry = true;
                         break;
