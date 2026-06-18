@@ -66,7 +66,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             return result switch
             {
                 null => "null",
-                string s => "instance:" + s,
                 System.Collections.IEnumerable enumerable => "enumerable:" + enumerable.Cast<object>().Count(),
                 _ => "instance",
             };
