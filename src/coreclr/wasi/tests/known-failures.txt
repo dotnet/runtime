@@ -16,7 +16,9 @@ JIT/jit64/regress/ddb/113574/113574/113574.sh
 # Same general issue: a large stress loop that exceeds the default timeout
 # under the interpreter. Promote to passing once R2R-WASM is on, or run
 # with a much larger --timeout.
-JIT/Regression/Regression_PdbOnly_r_2/Regression_PdbOnly_r_2.sh
+# (RESOLVED locally with current corerun; completes within the default
+# timeout. Keep as a comment so a regression is easy to spot.)
+# JIT/Regression/Regression_PdbOnly_r_2/Regression_PdbOnly_r_2.sh
 
 # ----- vararg calling convention not implemented in the WASM interpreter ------
 #
@@ -63,7 +65,10 @@ JIT/Regression/JitBlue/GitHub_23199/GitHub_23199_Target_64Bit/GitHub_23199_Targe
 # Test verifies that a readonly static field referenced from a method
 # in a collectible ALC is collected when the ALC is unloaded. The WASI
 # CoreCLR bring-up does not yet implement ALC unloading.
-JIT/Regression/JitBlue/Runtime_100437/Runtime_100437/Runtime_100437.sh
+# (RESOLVED with the finalizer drain on WASI: GC.WaitForPendingFinalizers
+# now actually drains, so the ALC unload sequence completes. Left as a
+# comment marker.)
+# JIT/Regression/JitBlue/Runtime_100437/Runtime_100437/Runtime_100437.sh
 
 # ----- EH edge case: double-ctor exception not thrown ------------------------
 #
