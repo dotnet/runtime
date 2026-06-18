@@ -649,7 +649,33 @@ static int run(const configuration& config)
     // Or in Module.onExit handler when  managed Main() is synchronous.
     return exit_code;
 #else // TARGET_BROWSER
-    return corerun_shutdown(exit_code);
+    int final_exit_code = corerun_shutdown(exit_code);
+#ifdef TARGET_WASI
+    // WASI Preview 2's component-model exit channel (wasi:cli/exit) cannot
+    // carry an arbitrary integer — it only signals ok/err — so wasmtime
+    // collapses any non-zero managed Main return to host exit code 1.
+    // Mirror Mono's wasi runtime (src/mono/wasi/runtime/main.c): when the
+    // launching test harness sets DOTNET_WASI_PRINT_EXIT_CODE=1, emit a
+    // "WASM EXIT <n>" marker on stderr so the host process can recover
+    // the value the managed Main returned. Consumed by the WASI launch
+    // block in src/tests/Common/CLRTest.Execute.Bash.targets, matching
+    // the regex the rest of the WASM test infrastructure already uses
+    // (e.g. src/mono/wasm/host/wasi/WasiEngineHost.cs).
+    //
+    // The opt-in keeps `corerun foo.dll` quiet outside test runs so the
+    // marker can't be mistaken for application output.
+    //
+    // Future direction: wasi-cli@0.3 stabilises exit-with-code(u8), and
+    // wasi-libc PR #611 already routes _Exit() through it on __wasip3__.
+    // Once wasi-sdk ships a wasm32-wasip3 target, retargeting corerun
+    // makes Main's return value propagate as the process exit code
+    // unchanged, and this marker can be removed entirely.
+    if (pal::getenv(W("DOTNET_WASI_PRINT_EXIT_CODE")) == W("1"))
+    {
+        pal::fprintf(stderr, W("WASM EXIT %d\n"), final_exit_code);
+    }
+#endif // TARGET_WASI
+    return final_exit_code;
 #endif // TARGET_BROWSER
 }
 
