@@ -12381,7 +12381,7 @@ static CorJitResult CompileMethodWithEtwWrapper(EEJitManager *jitMgr,
 //
 // Helper function to check if a function name should use interpreter fallback
 //
-static bool ShouldUseInterpreterFallback(const char* ftnName)
+static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName)
 {
     // List of function names that should use interpreter fallback
     static const char* coreclrInitializationInterpreterFallbackFunctions[] = {
@@ -12392,8 +12392,15 @@ static bool ShouldUseInterpreterFallback(const char* ftnName)
         "ThrowIfNull",
         "GetReference",
         "get_Length",
-        "get_Capacity"
+        "get_Capacity",
+        "op_Equality",
+        "Initialize"
     };
+
+    if (!strcmp(ftnDesc->m_pszDebugClassName, "System.Diagnostics.Tracing.EventSource") && !strcmp(ftnName,"Initialize"))
+    {
+	return false;
+    }
 
     const size_t numFunctions = sizeof(coreclrInitializationInterpreterFallbackFunctions) / sizeof(coreclrInitializationInterpreterFallbackFunctions[0]);
     
@@ -12460,7 +12467,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     const char* ftnName = ftnDesc->GetName();
 
     forceInterpreter = true;
-    if (ShouldUseInterpreterFallback(ftnName))
+    if (ShouldUseInterpreterFallback(ftnDesc,ftnName))
     {
 	printf ("Jitting -> %s:%s \n", ftnDesc->m_pszDebugClassName,ftnName);
 	interpreterFallback = true;
