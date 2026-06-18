@@ -755,7 +755,10 @@ public record X86GCInfo : IGCInfoDecoder
         switch (ptrT.Act)
         {
             case Action.PUSH:
-                pushedPtrs[depthSlots] = ptrT.Iptr ? 0x1u : 0u;
+                // Non-ptr arg pushes (GetTransitionsFullyInterruptible 0xB0..0xB7) advance depth
+                // only; pointer pushes also record into pushedPtrs.
+                if (ptrT.IsPtr)
+                    pushedPtrs[depthSlots] = ptrT.Iptr ? 0x1u : 0u;
                 depthSlots++;
                 break;
             case Action.POP:
