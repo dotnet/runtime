@@ -54,25 +54,15 @@ namespace System.Formats.Tar
 
         // Parses the sparse map on first read. Populates _segments, _packedStartOffsets,
         // and _dataStart. Throws InvalidDataException if the sparse map is malformed.
-        private void EnsureInitialized()
+        private async ValueTask EnsureInitializedCoreAsync<TAdapter>(CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             if (_segments is not null)
             {
                 return;
             }
 
-            var segments = ParseSparseMap(isAsync: false, _rawStream, CancellationToken.None).GetAwaiter().GetResult();
-            InitializeFromParsedMap(segments);
-        }
-
-        private async ValueTask EnsureInitializedAsync(CancellationToken cancellationToken)
-        {
-            if (_segments is not null)
-            {
-                return;
-            }
-
-            var segments = await ParseSparseMap(isAsync: true, _rawStream, cancellationToken).ConfigureAwait(false);
+            var segments = await ParseSparseMapCoreAsync<TAdapter>(_rawStream, cancellationToken).ConfigureAwait(false);
             InitializeFromParsedMap(segments);
         }
 
@@ -176,48 +166,24 @@ namespace System.Formats.Tar
         public override int Read(Span<byte> destination)
         {
             ThrowIfDisposed();
-            EnsureInitialized();
-            Debug.Assert(_segments is not null && _packedStartOffsets is not null);
-
             if (destination.IsEmpty || _virtualPosition >= _realSize)
             {
                 return 0;
             }
 
-            int toRead = (int)Math.Min(destination.Length, _realSize - _virtualPosition);
-            destination = destination.Slice(0, toRead);
-
-            int totalFilled = 0;
-            while (totalFilled < toRead)
+            byte[] rented = ArrayPool<byte>.Shared.Rent(destination.Length);
+            try
             {
-                long vPos = _virtualPosition + totalFilled;
-                int segIdx = FindSegmentFromCurrent(vPos);
-
-                if (segIdx < 0)
-                {
-                    // vPos is in a sparse hole — fill with zeros until the next segment or end of file.
-                    long nextSegStart = ~segIdx < _segments.Length ? _segments[~segIdx].Offset : _realSize;
-                    int zeroCount = (int)Math.Min(toRead - totalFilled, nextSegStart - vPos);
-                    destination.Slice(totalFilled, zeroCount).Clear();
-                    totalFilled += zeroCount;
-                }
-                else
-                {
-                    // vPos is within segment segIdx — read from packed data.
-                    var (segOffset, segLength) = _segments[segIdx];
-                    long offsetInSeg = vPos - segOffset;
-                    long remainingInSeg = segLength - offsetInSeg;
-                    int countToRead = (int)Math.Min(toRead - totalFilled, remainingInSeg);
-
-                    long packedOffset = _packedStartOffsets[segIdx] + offsetInSeg;
-                    int bytesRead = ReadFromPackedData(destination.Slice(totalFilled, countToRead), packedOffset);
-                    totalFilled += bytesRead;
-                    break; // Return after an underlying read; caller can call Read again for more.
-                }
+                ValueTask<int> vt = ReadCoreAsync<SyncReadWriteAdapter>(rented.AsMemory(0, destination.Length), CancellationToken.None);
+                Debug.Assert(vt.IsCompleted, "Synchronous Read completed asynchronously.");
+                int bytesRead = vt.GetAwaiter().GetResult();
+                rented.AsSpan(0, bytesRead).CopyTo(destination);
+                return bytesRead;
             }
-
-            _virtualPosition += totalFilled;
-            return totalFilled;
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -241,12 +207,13 @@ namespace System.Formats.Tar
             {
                 return ValueTask.FromResult(0);
             }
-            return ReadAsyncCore(buffer, cancellationToken);
+            return ReadCoreAsync<AsyncReadWriteAdapter>(buffer, cancellationToken);
         }
 
-        private async ValueTask<int> ReadAsyncCore(Memory<byte> buffer, CancellationToken cancellationToken)
+        private async ValueTask<int> ReadCoreAsync<TAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
-            await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
+            await EnsureInitializedCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false);
             Debug.Assert(_segments is not null && _packedStartOffsets is not null);
 
             int toRead = (int)Math.Min(buffer.Length, _realSize - _virtualPosition);
@@ -273,7 +240,7 @@ namespace System.Formats.Tar
                     int countToRead = (int)Math.Min(toRead - totalFilled, remainingInSeg);
 
                     long packedOffset = _packedStartOffsets[segIdx] + offsetInSeg;
-                    int bytesRead = await ReadFromPackedDataAsync(buffer.Slice(totalFilled, countToRead), packedOffset, cancellationToken).ConfigureAwait(false);
+                    int bytesRead = await ReadFromPackedDataCoreAsync<TAdapter>(buffer.Slice(totalFilled, countToRead), packedOffset, cancellationToken).ConfigureAwait(false);
                     totalFilled += bytesRead;
                     break;
                 }
@@ -297,8 +264,27 @@ namespace System.Formats.Tar
         // the entry's real (expanded) size.
         internal void CopyPopulatedDataTo(FileStream destination)
         {
+            ValueTask vt = CopyPopulatedDataToCoreAsync<SyncReadWriteAdapter>(destination, CancellationToken.None);
+            Debug.Assert(vt.IsCompleted, "Synchronous CopyPopulatedDataTo completed asynchronously.");
+            vt.GetAwaiter().GetResult();
+        }
+
+        // Async counterpart to CopyPopulatedDataTo.
+        internal ValueTask CopyPopulatedDataToAsync(FileStream destination, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
+            return CopyPopulatedDataToCoreAsync<AsyncReadWriteAdapter>(destination, cancellationToken);
+        }
+
+        private async ValueTask CopyPopulatedDataToCoreAsync<TAdapter>(FileStream destination, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
+        {
             ThrowIfDisposed();
-            EnsureInitialized();
+            await EnsureInitializedCoreAsync<TAdapter>(cancellationToken).ConfigureAwait(false);
             Debug.Assert(_segments is not null && _packedStartOffsets is not null);
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
@@ -317,12 +303,12 @@ namespace System.Formats.Tar
                     while (written < segmentLength)
                     {
                         int toRead = (int)Math.Min(segmentLength - written, buffer.Length);
-                        int bytesRead = ReadFromPackedData(buffer.AsSpan(0, toRead), _packedStartOffsets[i] + written);
+                        int bytesRead = await ReadFromPackedDataCoreAsync<TAdapter>(buffer.AsMemory(0, toRead), _packedStartOffsets[i] + written, cancellationToken).ConfigureAwait(false);
                         if (bytesRead == 0)
                         {
                             throw new EndOfStreamException();
                         }
-                        destination.Write(buffer, 0, bytesRead);
+                        await TAdapter.WriteAsync(destination, buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
                         written += bytesRead;
                     }
                 }
@@ -342,57 +328,12 @@ namespace System.Formats.Tar
             _virtualPosition = _realSize;
         }
 
-        // Async counterpart to CopyPopulatedDataTo.
-        internal async ValueTask CopyPopulatedDataToAsync(FileStream destination, CancellationToken cancellationToken)
-        {
-            ThrowIfDisposed();
-            await EnsureInitializedAsync(cancellationToken).ConfigureAwait(false);
-            Debug.Assert(_segments is not null && _packedStartOffsets is not null);
-
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(81920);
-            try
-            {
-                for (int i = 0; i < _segments.Length; i++)
-                {
-                    (long virtualOffset, long segmentLength) = _segments[i];
-                    if (segmentLength == 0)
-                    {
-                        continue;
-                    }
-
-                    destination.Position = virtualOffset;
-                    long written = 0;
-                    while (written < segmentLength)
-                    {
-                        int toRead = (int)Math.Min(segmentLength - written, buffer.Length);
-                        int bytesRead = await ReadFromPackedDataAsync(buffer.AsMemory(0, toRead), _packedStartOffsets[i] + written, cancellationToken).ConfigureAwait(false);
-                        if (bytesRead == 0)
-                        {
-                            throw new EndOfStreamException();
-                        }
-                        await destination.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
-                        written += bytesRead;
-                    }
-                }
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
-
-            if (destination.Length < _realSize)
-            {
-                destination.SetLength(_realSize);
-            }
-
-            _virtualPosition = _realSize;
-        }
-
         // Reads from the packed data at the given packedOffset.
         // After EnsureInitialized, the raw stream is positioned at _dataStart and
         // _nextPackedOffset tracks how far into the packed data we've read.
         // Returns the number of bytes actually read (may be less than destination.Length).
-        private int ReadFromPackedData(Span<byte> destination, long packedOffset)
+        private async ValueTask<int> ReadFromPackedDataCoreAsync<TAdapter>(Memory<byte> destination, long packedOffset, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             long skipBytes = packedOffset - _nextPackedOffset;
             if (skipBytes < 0 && !_rawStream.CanSeek)
@@ -401,25 +342,9 @@ namespace System.Formats.Tar
             }
             if (skipBytes != 0)
             {
-                TarHelpers.AdvanceStream(_rawStream, skipBytes);
+                await TarHelpers.AdvanceStreamCoreAsync<TAdapter>(_rawStream, skipBytes, cancellationToken).ConfigureAwait(false);
             }
-            int bytesRead = _rawStream.Read(destination);
-            _nextPackedOffset = packedOffset + bytesRead;
-            return bytesRead;
-        }
-
-        private async ValueTask<int> ReadFromPackedDataAsync(Memory<byte> destination, long packedOffset, CancellationToken cancellationToken)
-        {
-            long skipBytes = packedOffset - _nextPackedOffset;
-            if (skipBytes < 0 && !_rawStream.CanSeek)
-            {
-                throw new InvalidOperationException(SR.IO_NotSupported_UnseekableStream);
-            }
-            if (skipBytes != 0)
-            {
-                await TarHelpers.AdvanceStreamAsync(_rawStream, skipBytes, cancellationToken).ConfigureAwait(false);
-            }
-            int bytesRead = await _rawStream.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
+            int bytesRead = await TAdapter.ReadAsync(_rawStream, destination, cancellationToken).ConfigureAwait(false);
             _nextPackedOffset = packedOffset + bytesRead;
             return bytesRead;
         }
@@ -512,8 +437,9 @@ namespace System.Formats.Tar
         // and then the packed data begins.
         //
         // Returns the parsed segments.
-        private static async Task<(long Offset, long Length)[]> ParseSparseMap(
-            bool isAsync, Stream rawStream, CancellationToken cancellationToken)
+        private static async ValueTask<(long Offset, long Length)[]> ParseSparseMapCoreAsync<TAdapter>(
+            Stream rawStream, CancellationToken cancellationToken)
+            where TAdapter : IReadWriteAdapter
         {
             // The buffer is 2 * RecordSize (1024 bytes) and each fill reads exactly RecordSize (512)
             // bytes. This guarantees that the total bytes read is always a multiple of RecordSize,
@@ -538,9 +464,7 @@ namespace System.Formats.Tar
                     activeStart = 0;
                     availableStart = active;
 
-                    int newBytes = isAsync
-                        ? await rawStream.ReadAtLeastAsync(bytes.AsMemory(availableStart, TarHelpers.RecordSize), TarHelpers.RecordSize, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false)
-                        : rawStream.ReadAtLeast(bytes.AsSpan(availableStart, TarHelpers.RecordSize), TarHelpers.RecordSize, throwOnEndOfStream: false);
+                    int newBytes = await TAdapter.ReadAtLeastAsync(rawStream, bytes.AsMemory(availableStart, TarHelpers.RecordSize), TarHelpers.RecordSize, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
 
                     availableStart += newBytes;
                     return newBytes > 0;

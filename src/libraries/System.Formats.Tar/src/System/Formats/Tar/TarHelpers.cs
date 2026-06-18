@@ -50,24 +50,6 @@ namespace System.Formats.Tar
             => type is TarEntryType.Directory or TarEntryType.DirectoryList ? (int)DefaultDirectoryMode : (int)DefaultFileMode;
 
         // Helps advance the stream a total number of bytes larger than int.MaxValue.
-        internal static void AdvanceStream(Stream archiveStream, long bytesToDiscard)
-        {
-            ValueTask vt = AdvanceStreamCoreAsync<SyncReadWriteAdapter>(archiveStream, bytesToDiscard, CancellationToken.None);
-            Debug.Assert(vt.IsCompleted, "Synchronous AdvanceStream completed asynchronously.");
-            vt.GetAwaiter().GetResult();
-        }
-
-        // Asynchronously helps advance the stream a total number of bytes larger than int.MaxValue.
-        internal static ValueTask AdvanceStreamAsync(Stream archiveStream, long bytesToDiscard, CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return ValueTask.FromCanceled(cancellationToken);
-            }
-
-            return AdvanceStreamCoreAsync<AsyncReadWriteAdapter>(archiveStream, bytesToDiscard, cancellationToken);
-        }
-
         internal static async ValueTask AdvanceStreamCoreAsync<TAdapter>(Stream archiveStream, long bytesToDiscard, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
