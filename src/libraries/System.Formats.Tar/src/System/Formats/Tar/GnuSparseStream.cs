@@ -171,10 +171,11 @@ namespace System.Formats.Tar
                 return 0;
             }
 
-            byte[] rented = ArrayPool<byte>.Shared.Rent(destination.Length);
+            int toRead = (int)Math.Min(destination.Length, _realSize - _virtualPosition);
+            byte[] rented = ArrayPool<byte>.Shared.Rent(toRead);
             try
             {
-                ValueTask<int> vt = ReadCoreAsync<SyncReadWriteAdapter>(rented.AsMemory(0, destination.Length), CancellationToken.None);
+                ValueTask<int> vt = ReadCoreAsync<SyncReadWriteAdapter>(rented.AsMemory(0, toRead), CancellationToken.None);
                 Debug.Assert(vt.IsCompleted, "Synchronous Read completed asynchronously.");
                 int bytesRead = vt.GetAwaiter().GetResult();
                 rented.AsSpan(0, bytesRead).CopyTo(destination);
