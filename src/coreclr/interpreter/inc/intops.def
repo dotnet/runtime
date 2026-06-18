@@ -75,9 +75,16 @@ OPDEF(INTOP_LDLOCA, "ldloca", 3, 1, 0, InterpOpInt)
 OPDEF(INTOP_SWITCH, "switch", 0, 0, 1, InterpOpSwitch)
 
 OPDEF(INTOP_SAFEPOINT, "safepoint", 1, 0, 0, InterpOpNoArgs)
+
+#ifdef PERFTRACING_DISABLE_THREADS
 OPDEF(INTOP_PROF_SAMPLEPOINT, "prof.samplepoint", 1, 0, 0, InterpOpNoArgs)
+#endif
+
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
 OPDEF(INTOP_PROF_ENTER, "prof.enter", 2, 0, 0, InterpOpMethodHandle)
 OPDEF(INTOP_PROF_LEAVE, "prof.leave", 1, 0, 0, InterpOpNoArgs)
+#endif
+
 OPDEF(INTOP_BR, "br", 2, 0, 0, InterpOpBranch)
 
 OPDEF(INTOP_BRFALSE_I4, "brfalse.i4", 3, 0, 1, InterpOpBranch)
