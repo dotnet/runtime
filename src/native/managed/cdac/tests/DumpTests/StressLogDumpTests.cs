@@ -52,21 +52,28 @@ public class StressLogDumpTests : DumpTestBase
         var threads = stressLog.GetThreadStressLogs(data.Logs).ToList();
         Assert.NotEmpty(threads);
 
+        System.Text.StringBuilder diag = new();
+        diag.AppendLine($"Thread count: {threads.Count}, PointerSize: {Target.PointerSize}");
+
         bool foundMessages = false;
         foreach (ThreadStressLogData thread in threads)
         {
+            int msgIndex = 0;
+            diag.AppendLine($"  Thread 0x{thread.ThreadId:X}: WriteHasWrapped={thread.WriteHasWrapped}, CurrentPointer=0x{thread.CurrentPointer:X}");
             foreach (StressMsgData message in stressLog.GetStressMessages(thread).Take(10))
             {
+                diag.AppendLine($"    Msg[{msgIndex}]: Timestamp={message.Timestamp}, FormatString=0x{(ulong)message.FormatString:X}, Facility={message.Facility}, ArgCount={message.Args.Count}");
                 if (message.Timestamp != 0 && message.FormatString != TargetPointer.Null)
                 {
                     foundMessages = true;
                     break;
                 }
+                msgIndex++;
             }
             if (foundMessages)
                 break;
         }
-        Assert.True(foundMessages, "Expected at least one thread with stress log messages");
+        Assert.True(foundMessages, $"Expected at least one thread with stress log messages.\nDiagnostics:\n{diag}");
     }
 
     [ConditionalTheory]
