@@ -11,23 +11,22 @@ using Xunit;
 
 namespace System.Net.NameResolution.Tests
 {
-    public class WindowsLoopbackServer : IAsyncDisposable
+    public sealed class WindowsLoopbackServer : IAsyncDisposable
     {
-        private LoopbackDnsServer _server;
+        private LoopbackDnsServer? _server;
 
-        public WindowsLoopbackServer()
-        {
-            _server = LoopbackDnsServer.Start();
-        }
-
-        internal LoopbackDnsServer Server => _server;
+        // Started lazily on first access (from within a test invocation) rather than in
+        // the constructor. LoopbackDnsServer.Start() throws SkipTestException when port 53
+        // is unavailable; that is only honored by the ConditionalFact/ConditionalTheory
+        // runner, which wraps the test class constructor where Server is first accessed.
+        // Starting in this fixture constructor would instead surface as a hard failure.
+        internal LoopbackDnsServer Server => _server ??= LoopbackDnsServer.Start();
 
         public async ValueTask DisposeAsync()
         {
-            if (_server != null)
+            if (_server is not null)
             {
                 await _server.DisposeAsync();
-                _server = null;
             }
         }
     }
@@ -37,8 +36,10 @@ namespace System.Net.NameResolution.Tests
     // On Windows, DnsQueryEx only ever contacts custom DNS servers on the standard
     // port 53 (the sockaddr port field must be 0), so the loopback server binds port 53.
     // When that port is unavailable (e.g. a local DNS service is already running) the
-    // tests are skipped via SkipTestException rather than failing. Because the single
-    // machine-wide port 53 is shared, these tests run sequentially (see the collection).
+    // server's Start() throws SkipTestException; the tests therefore use
+    // ConditionalFact/ConditionalTheory so that skip is honored rather than surfacing as
+    // a failure. Because the single machine-wide port 53 is shared, these tests run
+    // sequentially (see the collection).
     //
     // Each behavioral test is parameterized over the synchronous and asynchronous APIs
     // so both code paths are exercised against the same loopback responses.
@@ -47,7 +48,6 @@ namespace System.Net.NameResolution.Tests
     // OuterLoop tests in DnsResolverTest.cs cannot exercise deterministically.
     [OuterLoop("Binds the loopback DNS port 53 and issues real DnsQueryEx calls.")]
     [Collection(nameof(DisableParallelization))]
-    [PlatformSpecific(TestPlatforms.Windows)]
     public class DnsResolverLoopbackTest : IClassFixture<WindowsLoopbackServer>
     {
         private static DnsResolver CreateResolver(LoopbackDnsServer server)
@@ -95,7 +95,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- Address resolution ----
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_Unspecified_ReturnsBothV4AndV6(bool async)
@@ -112,7 +112,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Contains(result.Records, a => a.Address.ToString() == "fd00::1");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_IPv4Only_ReturnsOnlyV4(bool async)
@@ -129,7 +129,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("10.0.0.2", record.Address.ToString());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_IPv6Only_ReturnsOnlyV6(bool async)
@@ -145,7 +145,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("fd00::1", record.Address.ToString());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_AddressFamilyV4_QueriesOnlyA(bool async)
@@ -160,7 +160,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("192.0.2.7", record.Address.ToString());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_HasTtl(bool async)
@@ -177,7 +177,7 @@ namespace System.Net.NameResolution.Tests
                 $"Unexpected TTL: {record.Ttl}");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_Nxdomain_ReturnsNxDomain(bool async)
@@ -200,7 +200,7 @@ namespace System.Net.NameResolution.Tests
                 $"Unexpected NegativeCacheTtl: {result.NegativeCacheTtl}");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_NoData_ReturnsNoErrorWithEmptyRecords(bool async)
@@ -222,7 +222,7 @@ namespace System.Net.NameResolution.Tests
                 $"Unexpected NegativeCacheTtl: {result.NegativeCacheTtl}");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_NoData_And_Nxdomain_AreDistinguishable(bool async)
@@ -256,7 +256,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- SRV ----
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveSrv_ReturnsRecords(bool async)
@@ -281,7 +281,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal((ushort)20, s2.Priority);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveSrv_IncludesAdditionalAddresses(bool async)
@@ -306,7 +306,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(2, s2.Addresses.Count);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveSrv_NoAdditionalAddresses(bool async)
@@ -324,7 +324,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- MX / TXT / CNAME / PTR / NS ----
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveMx_ReturnsRecords(bool async)
@@ -344,7 +344,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Single(result.Records, m => m.Exchange == "mail2.test" && m.Preference == 20);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveTxt_ReturnsValues(bool async)
@@ -362,7 +362,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Contains(result.Records, t => t.Values.Count == 2 && t.Values[0] == "part1" && t.Values[1] == "part2");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveCName_ReturnsCanonicalName(bool async)
@@ -378,7 +378,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("canonical.test", record.CanonicalName);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolvePtr_ReturnsName(bool async)
@@ -394,7 +394,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("host.test", record.Name);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveNs_ReturnsRecords(bool async)
@@ -414,7 +414,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- Custom server endpoint handling ----
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task CustomServer_DefaultPortZero_IsAccepted(bool async)
@@ -438,7 +438,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- Cancellation while a query is in flight ----
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public async Task ResolveAddresses_CancellationInFlight_Throws()
         {
             using SemaphoreSlim queryReceived = new(0, 1);
@@ -469,7 +469,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- Telemetry ----
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ResolveAddresses_RecordsDurationMetric_CoversQueryTime(bool async)

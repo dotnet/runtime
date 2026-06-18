@@ -100,9 +100,10 @@ internal static partial class Interop
 
         // ---- DNS_RECORD (variable layout: header + Data union) ----
         // We declare the fixed header layout and read the data area as a byte blob,
-        // re-interpreting per record type. The Data field begins at offset 24 on 32-bit
-        // and at offset 24 on 64-bit pointer layouts as documented; we use a
-        // Sequential struct with explicit Next/pName pointers.
+        // re-interpreting per record type. The Data union follows the header; because the
+        // header contains two pointers, its size (and therefore the Data offset) depends on
+        // the pointer width - 24 bytes on 32-bit and 32 bytes on 64-bit. Callers must use
+        // Unsafe.SizeOf<DNS_RECORD_HEADER>() rather than a hard-coded offset.
         [StructLayout(LayoutKind.Sequential)]
         internal struct DNS_RECORD_HEADER
         {

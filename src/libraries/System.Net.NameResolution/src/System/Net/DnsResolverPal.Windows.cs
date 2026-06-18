@@ -553,11 +553,12 @@ namespace System.Net
             }
         }
 
-        // DnsQueryEx only supports DNS servers reachable on the standard port 53.
-        // The sockaddr port field passed to the API must be 0 (the API always
-        // queries port 53); supplying any non-zero port - even 53 itself - results
-        // in ERROR_INVALID_PARAMETER. We therefore reject any server endpoint that
-        // requests a non-default port, since it cannot be honored on Windows.
+        // DnsQueryEx always queries DNS servers on the standard port 53 and requires the
+        // sockaddr port field passed to the API to be left as 0; supplying any other
+        // non-zero port results in ERROR_INVALID_PARAMETER. We accept either 0 ("use the
+        // default port") or 53 (the port DnsQueryEx will actually use) and normalize both
+        // to 0 when building the native server list (see WriteSockAddr). Any other port
+        // cannot be honored on Windows and is rejected here.
         private static void ValidateServerPorts(IList<IPEndPoint> servers)
         {
             foreach (IPEndPoint ep in servers)
@@ -669,20 +670,21 @@ namespace System.Net
 
             for (int i = 0; i < count; i++)
             {
-                WriteSockAddr(buffer.Slice(headerSize + (i * addrSize), addrSize), servers[i]);
+                WriteSockAddr(buffer.Slice(headerSize + (i * addrSize), addrSize), servers[i].Address);
             }
         }
 
         // Writes a SOCKADDR_IN or SOCKADDR_IN6 representation into the destination buffer.
         // The buffer must be at least 28 bytes (sizeof sockaddr_in6).
-        private static void WriteSockAddr(Span<byte> dest, IPEndPoint endpoint)
+        private static void WriteSockAddr(Span<byte> dest, IPAddress address)
         {
-            // IPEndPoint.Serialize() yields the platform SOCKADDR layout (family, port,
-            // address, and for IPv6 the flow info and scope id) via SocketAddressPal, so
-            // there's no need to lay out the bytes by hand. DnsQueryEx always queries DNS
-            // servers on port 53 and requires the sockaddr port field to be left as 0;
-            // serializing a port-0 endpoint satisfies that.
-            SocketAddress socketAddress = endpoint.Serialize();
+            // DnsQueryEx always queries DNS servers on port 53 and requires the sockaddr
+            // port field to be left as 0, so we build the SOCKADDR from a port-0 endpoint.
+            // Taking an IPAddress (rather than the caller's mutable IPEndPoint) also ensures
+            // we can never accidentally serialize a non-default port. SocketAddressPal lays
+            // out the platform SOCKADDR (family, port, address, and for IPv6 the flow info
+            // and scope id), so there's no need to write the bytes by hand.
+            SocketAddress socketAddress = new IPEndPoint(address, 0).Serialize();
             socketAddress.Buffer.Span.Slice(0, socketAddress.Size).CopyTo(dest);
         }
 
