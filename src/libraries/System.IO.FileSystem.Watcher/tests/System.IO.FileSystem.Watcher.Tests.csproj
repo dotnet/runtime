@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-freebsd</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
@@ -55,7 +55,7 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
              Link="Common\System\IO\PathInternal.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'osx'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'solaris'">
     <Compile Include="FileSystemWatcher.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
