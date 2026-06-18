@@ -199,10 +199,11 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 		// (double, double)
 		if (fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_R8 && fsig->params [1]->type == MONO_TYPE_R8) {
-			// Max and Min can only be optimized in fast math mode
-			if (!strcmp (cmethod->name, "Max") && mono_use_fast_math) {
+			// Max/Min use llvm.maximum/minimum (NaN-propagating); see mini-llvm.c.
+			// Matches IEEE 754-2019 minimum/maximum which is what MathF.Min/Max documents.
+			if (!strcmp (cmethod->name, "Max")) {
 				opcode = OP_FMAX;
-			} else if (!strcmp (cmethod->name, "Min") && mono_use_fast_math) {
+			} else if (!strcmp (cmethod->name, "Min")) {
 				opcode = OP_FMIN;
 			} else if (!strcmp (cmethod->name, "Pow")) {
 				opcode = OP_FPOW;
@@ -226,9 +227,9 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 		// (float, float)
 		if (fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_R4 && fsig->params [1]->type == MONO_TYPE_R4) {
-			if (!strcmp (cmethod->name, "Max") && mono_use_fast_math) {
+			if (!strcmp (cmethod->name, "Max")) {
 				opcode = OP_RMAX;
-			} else if (!strcmp (cmethod->name, "Min") && mono_use_fast_math) {
+			} else if (!strcmp (cmethod->name, "Min")) {
 				opcode = OP_RMIN;
 			} else if (!strcmp (cmethod->name, "Pow")) {
 				opcode = OP_RPOW;
