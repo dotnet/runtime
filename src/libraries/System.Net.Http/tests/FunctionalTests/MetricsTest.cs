@@ -73,6 +73,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
 
+        private static void VerifyPeerAddress(KeyValuePair<string, object?>[] tags, IPAddress[] validPeerAddresses = null)
+        {
+            string ipString = (string)tags.Single(t => t.Key == "network.peer.address").Value;
+            validPeerAddresses ??= [IPAddress.Loopback.MapToIPv6(), IPAddress.Loopback, IPAddress.IPv6Loopback];
+            IPAddress ip = IPAddress.Parse(ipString);
+            Assert.Contains(ip, validPeerAddresses);
+        }
+
+
         protected static void VerifyRequestDuration(Measurement<double> measurement,
             Uri uri,
             Version? protocolVersion = null,
@@ -118,23 +127,29 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(method, tags.Single(t => t.Key == "http.request.method").Value);
         }
 
-        protected static void VerifyOpenConnections(string actualName, object measurement, KeyValuePair<string, object?>[] tags, long expectedValue, Uri uri, Version? protocolVersion, string state)
+        protected static void VerifyOpenConnections(string actualName, object measurement, KeyValuePair<string, object?>[] tags, long expectedValue, Uri uri, Version? protocolVersion, string state, IPAddress[] validPeerAddresses = null)
         {
             Assert.Equal(InstrumentNames.OpenConnections, actualName);
             Assert.Equal(expectedValue, Assert.IsType<long>(measurement));
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
             VerifyTag(tags, "http.connection.state", state);
+            VerifyPeerAddress(tags, validPeerAddresses);
         }
 
-        protected static void VerifyConnectionDuration(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion)
+        protected static void VerifyConnectionDuration(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion, IPAddress[] validPeerAddresses = null)
         {
             Assert.Equal(InstrumentNames.ConnectionDuration, instrumentName);
             double value = Assert.IsType<double>(measurement);
 
-            Assert.InRange(value, double.Epsilon, 60);
+            // This flakes for remote requests on CI.
+            if (validPeerAddresses is null)
+            {
+                Assert.InRange(value, double.Epsilon, 60);
+            }
             VerifySchemeHostPortTags(tags, uri);
             VerifyTag(tags, "network.protocol.version", GetVersionString(protocolVersion));
+            VerifyPeerAddress(tags, validPeerAddresses);
         }
 
         protected static void VerifyTimeInQueue(string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, Version? protocolVersion, string method = "GET")
@@ -274,6 +289,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task ActiveRequests_Success_Recorded()
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -331,6 +347,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJSOrFirefox))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         [InlineData("GET", HttpStatusCode.OK)]
         [InlineData("PUT", HttpStatusCode.Created)]
         public Task RequestDuration_Success_Recorded(string method, HttpStatusCode statusCode)
@@ -369,6 +386,8 @@ namespace System.Net.Http.Functional.Tests
             Uri uri = UseVersion == HttpVersion.Version11
                 ? Test.Common.Configuration.Http.RemoteHttp11Server.EchoUri
                 : Test.Common.Configuration.Http.RemoteHttp2Server.EchoUri;
+            IPAddress[] addresses = await Dns.GetHostAddressesAsync(uri.Host);
+            addresses = addresses.Union(addresses.Select(a => a.MapToIPv6())).ToArray();
 
             using (HttpMessageInvoker client = CreateHttpMessageInvoker())
             {
@@ -381,9 +400,9 @@ namespace System.Net.Http.Functional.Tests
 
             VerifyRequestDuration(Assert.Single(requestDurationRecorder.GetMeasurements()), uri, UseVersion, 200, "GET");
             Measurement<double> cd = Assert.Single(connectionDurationRecorder.GetMeasurements());
-            VerifyConnectionDuration(InstrumentNames.ConnectionDuration, cd.Value, cd.Tags.ToArray(), uri, UseVersion);
+            VerifyConnectionDuration(InstrumentNames.ConnectionDuration, cd.Value, cd.Tags.ToArray(), uri, UseVersion, addresses);
             Measurement<long> oc = openConnectionsRecorder.GetMeasurements().First();
-            VerifyOpenConnections(InstrumentNames.OpenConnections, oc.Value, oc.Tags.ToArray(), 1, uri, UseVersion, "idle");
+            VerifyOpenConnections(InstrumentNames.OpenConnections, oc.Value, oc.Tags.ToArray(), 1, uri, UseVersion, "idle", addresses);
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -432,6 +451,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task RequestDuration_CustomTags_Recorded()
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -458,6 +478,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task RequestDuration_MultipleCallbacksPerRequest_AllCalledInOrder()
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -574,6 +595,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         [InlineData(HttpCompletionOption.ResponseContentRead, ResponseContentType.Empty)]
         [InlineData(HttpCompletionOption.ResponseContentRead, ResponseContentType.ContentLength)]
         [InlineData(HttpCompletionOption.ResponseContentRead, ResponseContentType.TransferEncodingChunked)]
@@ -697,6 +719,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [PlatformSpecific(~TestPlatforms.Browser)] // BrowserHttpHandler supports only a limited set of methods.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         [MemberData(nameof(MethodData))]
         public async Task RequestMetrics_EmitNormalizedMethodTags(string method, string expectedMethodTag)
         {
@@ -801,6 +824,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task RequestDuration_RequestCancelled_ErrorReasonIsExceptionType()
         {
             TaskCompletionSource clientCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -845,6 +869,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task RequestDuration_ConnectionError_LogsExpectedErrorReason()
         {
             if (UseVersion.Major == 3)
@@ -1019,6 +1044,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJSOrFirefox))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task RequestDuration_EnrichmentHandler_ContentLengthError_Recorded()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1049,6 +1075,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         [InlineData(400)]
         [InlineData(404)]
         [InlineData(599)]
@@ -1073,6 +1100,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Browser is relaxed about validating HTTP headers")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task RequestDuration_ConnectionClosedWhileReceivingHeaders_Recorded()
         {
             using CancellationTokenSource cancelServerCts = new CancellationTokenSource();
@@ -1105,6 +1133,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task DurationHistograms_HaveBucketSizeHints()
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>

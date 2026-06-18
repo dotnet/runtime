@@ -4134,7 +4134,9 @@ void GCInfo::gcMakeRegPtrTable(
                 // If it is pinned, it must be an untracked local.
                 assert(!varDsc->lvPinned || !varDsc->lvTracked);
 
-                if (varDsc->lvTracked || !varDsc->lvOnFrame)
+                // When noTrackedGCSlots is true (e.g. on wasm) tracked on-frame GC vars
+                // must be reported here as untracked, since gcVarPtrList is not populated.
+                if ((varDsc->lvTracked && !noTrackedGCSlots) || !varDsc->lvOnFrame)
                 {
                     continue;
                 }
@@ -4161,7 +4163,9 @@ void GCInfo::gcMakeRegPtrTable(
                 }
                 else
                 {
-                    if (varDsc->lvIsRegArg && varDsc->lvTracked)
+                    // When noTrackedGCSlots is true (e.g. on wasm) tracked register args
+                    // must fall through and be reported as untracked.
+                    if (varDsc->lvIsRegArg && varDsc->lvTracked && !noTrackedGCSlots)
                     {
                         // If this register-passed arg is tracked, then
                         // it has been allocated space near the other

@@ -16,8 +16,15 @@ namespace Microsoft.Extensions.Options
     /// Implementation of <see cref="IValidateOptions{TOptions}"/> that uses DataAnnotation's <see cref="Validator"/> for validation.
     /// </summary>
     /// <typeparam name="TOptions">The instance being validated.</typeparam>
-    public class DataAnnotationValidateOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOptions>
-        : IValidateOptions<TOptions> where TOptions : class
+#if NET11_0_OR_GREATER
+    public partial class DataAnnotationValidateOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOptions>
+        : IValidateOptions<TOptions>, IAsyncValidateOptions<TOptions>
+        where TOptions : class
+#else
+    public partial class DataAnnotationValidateOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOptions>
+        : IValidateOptions<TOptions>
+        where TOptions : class
+#endif
     {
         /// <summary>
         /// Initializes a new instance of <see cref="DataAnnotationValidateOptions{TOptions}"/> .

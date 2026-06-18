@@ -330,7 +330,7 @@ namespace System
         public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
 
         // Changed to `true` when trimming
-        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot || IsAppleMobile;
+        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot || IsAppleMobile || IsWasi;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
         public static bool IsTrimmedWithILLink => IsBuiltWithAggressiveTrimming && !IsNativeAot;
 

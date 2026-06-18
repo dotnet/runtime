@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -21,8 +22,8 @@ namespace ILCompiler
         public GCPointerMap PointerMap { get; }
 
         public override DefType[] ExplicitlyImplementedInterfaces => [];
-        public override ReadOnlySpan<byte> Name => Encoding.UTF8.GetBytes(DiagnosticName);
-        public override ReadOnlySpan<byte> Namespace => [];
+        public override Utf8Span Name => Encoding.UTF8.GetBytes(DiagnosticName);
+        public override Utf8Span Namespace => Array.Empty<byte>();
 
         // We don't lay these out using MetadataType metadata.
         // Autolayout (which we'd get due to GC pointers) would likely not match what codegen expects.
@@ -49,9 +50,9 @@ namespace ILCompiler
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => false;
         public override IEnumerable<MetadataType> GetNestedTypes() => [];
-        public override MetadataType GetNestedType(ReadOnlySpan<byte> name) => null;
+        public override MetadataType GetNestedType(Utf8Span name) => null;
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => [];
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => [];
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name) => [];
 
         protected override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {

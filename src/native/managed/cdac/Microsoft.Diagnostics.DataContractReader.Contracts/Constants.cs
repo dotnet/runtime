@@ -90,7 +90,6 @@ public static class Constants
         public const string EEJitManagerAddress = nameof(EEJitManagerAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
 
-        public const string DefaultADID = nameof(DefaultADID);
         public const string StaticsPointerMask = nameof(StaticsPointerMask);
         public const string PtrArrayOffsetToDataArray = nameof(PtrArrayOffsetToDataArray);
         public const string NumberOfTlsOffsetsNotUsedInNoncollectibleArray = nameof(NumberOfTlsOffsetsNotUsedInNoncollectibleArray);

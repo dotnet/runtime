@@ -34,6 +34,17 @@ public enum StackWalkState
     SkippedFrame,
 }
 
+// Classifies the origin of a reported stack reference.
+//   InstructionPointer - a managed (frameless) JIT frame; Source is the native PC.
+//   Frame              - an explicit capital-F Frame; Source is the Frame address.
+//   Other              - a root which is not any of the other enums
+public enum StackSourceType
+{
+    InstructionPointer = 0,
+    Frame = 1,
+    Other = 2,
+}
+
 public class StackReferenceData
 {
     public bool HasRegisterInformation { get; init; }
@@ -42,7 +53,7 @@ public class StackReferenceData
     public TargetPointer Address { get; init; }
     public TargetPointer Object { get; init; }
     public uint Flags { get; init; }
-    public bool IsStackSourceFrame { get; init; }
+    public StackSourceType SourceType { get; init; }
     public TargetPointer Source { get; init; }
     public TargetPointer StackPointer { get; init; }
 }

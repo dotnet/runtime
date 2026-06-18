@@ -20,7 +20,11 @@ The .NET Foundation licenses this file to you under the MIT license.
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
     <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
+    <!-- UsePureLlvmToolchain links exclusively with the LLVM toolchain (lld + compiler-rt)
+         instead of the GNU toolchain (ld + libgcc). Default the linker flavor to lld. -->
+    <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(UsePureLlvmToolchain)' == 'true'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'freebsd'">lld</LinkerFlavor>
+    <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'openbsd'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'android'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
@@ -64,7 +68,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <TargetTriple />
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and '$(_IsAlpineExitCode)' != '0'">$(CrossCompileArch)-linux-$(CrossCompileAbi)</TargetTriple>
       <TargetTriple Condition="'$(CrossCompileArch)' != '' and '$(_IsAlpineExitCode)' == '0'">$(CrossCompileArch)-alpine-linux-$(CrossCompileAbi)</TargetTriple>
-      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd12</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('freebsd')))">$(CrossCompileArch)-unknown-freebsd14</TargetTriple>
+      <TargetTriple Condition="'$(CrossCompileArch)' != '' and ($(CrossCompileRid.StartsWith('openbsd')))">$(CrossCompileArch)-unknown-openbsd</TargetTriple>
 
       <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == '' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">@rpath/$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</SharedLibraryInstallName>
 
@@ -222,14 +227,14 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <NativeSystemLibrary Include="stdc++" Condition="'$(LinkStandardCPlusPlusLibrary)' == 'true'" />
-      <NativeSystemLibrary Include="dl" />
+      <NativeSystemLibrary Include="dl" Condition="'$(_targetOS)' != 'openbsd'" />
       <NativeSystemLibrary Include="objc" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="swiftCore" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="swiftFoundation" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="z" Condition="'$(UseSystemZlib)' == 'true'" />
       <NativeSystemLibrary Include="brotlienc;brotlidec;brotlicommon" Condition="'$(UseSystemBrotli)' == 'true'" />
       <NativeSystemLibrary Include="zstd" Condition="'$(UseSystemZstd)' == 'true'" />
-      <NativeSystemLibrary Include="rt" Condition="'$(_IsApplePlatform)' != 'true' and '$(_linuxLibcFlavor)' != 'bionic'" />
+      <NativeSystemLibrary Include="rt" Condition="'$(_IsApplePlatform)' != 'true' and '$(_linuxLibcFlavor)' != 'bionic' and '$(_targetOS)' != 'openbsd'" />
       <NativeSystemLibrary Include="log" Condition="'$(_linuxLibcFlavor)' == 'bionic'" />
       <NativeSystemLibrary Include="icucore" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="m" />
@@ -240,6 +245,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ItemGroup>
       <LinkerArg Include="-gz=zlib" Condition="'$(CompressSymbols)' != 'false'" />
       <LinkerArg Include="-fuse-ld=$(LinkerFlavor)" Condition="'$(LinkerFlavor)' != ''" Shim="true" />
+      <!-- Use the LLVM compiler runtime (compiler-rt) instead of libgcc. -->
+      <LinkerArg Include="--rtlib=compiler-rt" Condition="'$(UsePureLlvmToolchain)' == 'true'" Shim="true" />
       <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="--sysroot=&quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' != 'true'" Shim="true" />
       <LinkerArg Include="-isysroot &quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' == 'true'" Shim="true" />
@@ -267,6 +274,10 @@ The .NET Foundation licenses this file to you under the MIT license.
       <!-- binskim warning BA3011 The BIND_NOW flag is missing -->
       <LinkerArg Include="-Wl,-z,now" Condition="'$(_IsApplePlatform)' != 'true'" Shim="true" />
       <LinkerArg Include="-Wl,-z,stack-size=$(IlcDefaultStackSize)" Condition="'$(IlcDefaultStackSize)' != ''" Shim="true" />
+      <!-- OpenBSD enforces IBT/BTCFI on amd64. NativeAOT codegen is not endbr64-instrumented, so
+           indirect branches (e.g. switch jump tables) to non-endbr64 targets fault with SIGILL.
+           Opt out of branch-target CFI enforcement via the PT_OPENBSD_NOBTCFI program header. -->
+      <LinkerArg Include="-Wl,-z,nobtcfi" Condition="'$(_targetOS)' == 'openbsd'" />
       <!-- this workaround can be deleted once the minimum supported glibc version
            (runtime's official build machine's glibc version) is at least 2.33
            see https://github.com/bminor/glibc/commit/99468ed45f5a58f584bab60364af937eb6f8afda -->
