@@ -1617,6 +1617,27 @@ export function generateWasmBody (
                 break;
             }
 
+            case MintOpcode.MINT_SCALEB:
+            case MintOpcode.MINT_SCALEBF: {
+                // Math.ScaleB / MathF.ScaleB. Signature is (double, int) -> double
+                // and (float, int) -> float, so we can't go through mathIntrinsicTable
+                // (which assumes a uniform float-only shape). Mirror the FMA special
+                // case instead and call libm scalbn / scalbnf directly.
+                const isF32 = (opcode === MintOpcode.MINT_SCALEBF),
+                    loadOp = isF32 ? WasmOpcode.f32_load : WasmOpcode.f64_load,
+                    storeOp = isF32 ? WasmOpcode.f32_store : WasmOpcode.f64_store;
+
+                builder.local("pLocals");
+
+                append_ldloc(builder, getArgU16(ip, 2), loadOp);
+                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
+
+                builder.callImport(isF32 ? "scalbnf" : "scalbn");
+
+                append_stloc_tail(builder, getArgU16(ip, 1), storeOp);
+                break;
+            }
+
             default:
                 if (
                     (
