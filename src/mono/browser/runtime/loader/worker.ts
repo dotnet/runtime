@@ -28,7 +28,7 @@ export function setupPreloadChannelToMainThread () {
 let workerMonoConfigReceived = false;
 
 // called when the main thread sends us the mono config
-async function onMonoConfigReceived (data: any): Promise<void> {
+function onMonoConfigReceived (data: any): void {
     const config = JSON.parse(data.config) as MonoConfigInternal;
     const monoThreadInfo = JSON.parse(data.monoThreadInfo) as PThreadInfo;
     emscriptenModule.config = config;

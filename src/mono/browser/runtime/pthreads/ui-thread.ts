@@ -75,26 +75,28 @@ function monoWorkerMessageHandler (worker: PThreadWorker, wasmModule: WebAssembl
     let thread: Thread;
     pthreadId = message.info?.pthreadId ?? 0;
     worker.info = Object.assign({}, worker.info, message.info);
-    const wasmMemory = runtimeHelpers.getMemory();
-    const handlers = [];
-    const knownHandlers = ["onExit", "onAbort", "print", "printErr"];
-    for (const handler of knownHandlers) {
-        if (Object.prototype.propertyIsEnumerable.call(Module, handler)) {
-            handlers.push(handler);
-        }
-    }
     switch (message.monoCmd) {
         case WorkerToMainMessageType.preload:
-            // this one shot port from setupPreloadChannelToMainThread
-            message.port!.postMessage({
-                type: "pthread",
-                cmd: MainToWorkerMessageType.applyConfig,
-                config: JSON.stringify(runtimeHelpers.config),
-                monoThreadInfo: JSON.stringify(worker.info),
-                handlers,
-                wasmMemory,
-                wasmModule
-            });
+            {
+                const wasmMemory = runtimeHelpers.getMemory();
+                const handlers = [];
+                const knownHandlers = ["onExit", "onAbort", "print", "printErr"];
+                for (const handler of knownHandlers) {
+                    if (Object.prototype.propertyIsEnumerable.call(Module, handler)) {
+                        handlers.push(handler);
+                    }
+                }
+                // this one shot port from setupPreloadChannelToMainThread
+                message.port!.postMessage({
+                    type: "pthread",
+                    cmd: MainToWorkerMessageType.applyConfig,
+                    config: JSON.stringify(runtimeHelpers.config),
+                    monoThreadInfo: JSON.stringify(worker.info),
+                    handlers,
+                    wasmMemory,
+                    wasmModule
+                });
+            }
             break;
         case WorkerToMainMessageType.pthreadCreated:
             thread = new ThreadImpl(pthreadId, worker, message.port!);
