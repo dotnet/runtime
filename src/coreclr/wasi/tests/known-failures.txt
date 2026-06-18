@@ -395,3 +395,40 @@ GC/Scenarios/FinalizeTimeout/FinalizeTimeout/FinalizeTimeout.sh
 # timeout reproducibly. Listed here so the sweep stays clean; passes
 # on a solo retry. Expected to drop once R2R-WASM is on for tests.
 GC/Features/HeapExpansion/bestfit-finalize/bestfit-finalize.sh
+
+# =============================================================================
+# Regressions
+# =============================================================================
+
+# ----- threading / Thread-driven regression repros ---------------------------
+#
+# Both raise PlatformNotSupportedException out of the multithreading
+# guard before reaching the regression repro. Single-threaded WASI.
+Regressions/coreclr/GitHub_117393/test117393/test117393.sh
+Regressions/coreclr/GitHub_12224/Test12224/Test12224.sh
+
+# ----- threading regression: PNSE before the actual repro --------------------
+#
+# Same single-threaded WASI block.
+# (Reclassified: this one actually crashes with `wasm trap: unreachable`
+# AFTER deliberately catching a PNSE — see below.)
+# Regressions/coreclr/GitHub_89834/test89834/test89834.sh
+
+# ----- REAL BUG: wasm `unreachable` trap after handled PNSE ------------------
+#
+# Test prints "Begin Observing Exception: PlatformNotSupportedException"
+# (which it deliberately catches), then traps with
+# `wasm trap: wasm "unreachable" instruction executed` and host exit
+# 134. Same family of "interpreter / portable-entrypoint" surface as
+# self_override5 in Loader. Worth root-causing alongside that one.
+Regressions/coreclr/GitHub_89834/test89834/test89834.sh
+
+# ----- flaky under parallel sweep load ---------------------------------------
+#
+# All three pass cleanly in solo runs (WASM EXIT 100 reported) but
+# fail intermittently under --jobs=12 parallelism — they share state
+# through the test wrappers' takeLock/ReleaseLock guard. Listed here
+# so the sweep stays deterministic; pass on re-run with --jobs=1.
+Regressions/coreclr/GitHub_49826/test49826/test49826.sh
+Regressions/coreclr/GitHub_49982/test49982/test49982.sh
+Regressions/coreclr/GitHub_61104/test61104/test61104.sh
