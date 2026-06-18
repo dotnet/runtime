@@ -231,7 +231,7 @@ struct ResolveStub
 
 private:
     friend struct ResolveHolder;
-    const static int resolveEntryPointLen = 31;
+    const static int resolveEntryPointLen = 30;
     const static int slowEntryPointLen = 6;
     const static int failEntryPointLen = 14;
 

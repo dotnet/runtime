@@ -803,11 +803,6 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     // pop {r4,r5,r6}
     _stub._resolveEntryPoint[n++] = 0xbc70;
 
-    // nop for alignment
-    _stub._resolveEntryPoint[n++] = 0xbf00;
-
-    // the slow entry point be DWORD-aligned (see _ASSERTE below) insert nops if necessary .
-
     // ARMSTUB TODO: promotion
 
     // fall through to slow case
