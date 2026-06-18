@@ -123,18 +123,16 @@ internal class GcScanContext
                 continue;
 
             TargetPointer currentObj = _gc.GetPotentialNextObjectAddress(seg.Start, 0, seg);
-            while (currentObj.Value < obj.Value)
+            while (currentObj.Value <= obj.Value)
             {
                 ulong size;
                 try
                 {
-                    _target.ActivateCache();
-                    size = _target.Contracts.Object.GetSize(currentObj);
-                    _target.DeactivateCache();
+                    using (_target.BeginReadCache())
+                        size = _target.Contracts.Object.GetSize(currentObj);
                 }
                 catch
                 {
-                    _target.DeactivateCache();
                     return TargetPointer.Null;
                 }
 
@@ -146,6 +144,7 @@ internal class GcScanContext
                 outerObj = currentObj;
                 currentObj = _gc.GetPotentialNextObjectAddress(currentObj, size, seg);
             }
+            return outerObj;
         }
         return outerObj;
     }

@@ -30,6 +30,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     private const int StackAllocByteThreshold = 1024;
     private bool _pageCacheActive;
     private readonly LinearReadCache _linearReadCache;
+    private readonly LinearReadCacheScope _linearReadCacheScope;
 
     private readonly struct Configuration
     {
@@ -139,6 +140,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         Contracts = new CachingContractRegistry(this, this.TryGetContractVersion, contractRegistrations);
         ProcessedData = new DataCache(this);
         _linearReadCache = new LinearReadCache(this);
+        _linearReadCacheScope = new LinearReadCacheScope(this);
 
         _config = mainDescriptor.Config;
         _dataTargetDelegates = dataTargetDelegates;
@@ -1012,6 +1014,104 @@ public sealed unsafe class ContractDescriptorTarget : Target
         }
     }
 
-    public override void ActivateCache() => _pageCacheActive = true;
-    public override void DeactivateCache() => _pageCacheActive = false;
+    private sealed class LinearReadCache
+    {
+        // Typical page size
+        private const uint PageSize = 0x1000;
+
+        private readonly Target _target;
+        private readonly byte[] _page = new byte[PageSize];
+        private ulong _currPageStart;
+        private uint _currPageSize;
+
+        public LinearReadCache(Target target)
+        {
+            _target = target;
+        }
+
+        public bool TryReadPointer(ulong addr, out TargetPointer value)
+        {
+            Span<byte> buffer = stackalloc byte[sizeof(ulong)];
+            buffer = buffer.Slice(0, _target.PointerSize);
+            if (!TryRead(addr, buffer))
+            {
+                value = TargetPointer.Null;
+                return false;
+            }
+            value = _target.ReadPointerFromSpan(buffer);
+            return true;
+        }
+
+        public bool TryRead(ulong addr, Span<byte> dest)
+        {
+            // If the request misses the currently-cached page, try to load the page
+            // containing it. If that fails (e.g. the page is unmapped), or the request
+            // straddles the end of the cached page, fall back to a direct read.
+            if (addr < _currPageStart || addr - _currPageStart >= _currPageSize)
+            {
+                if (!MoveToPage(addr))
+                    return DirectRead(addr, dest);
+            }
+
+            ulong offset = addr - _currPageStart;
+            if (offset + (ulong)dest.Length > _currPageSize)
+                return DirectRead(addr, dest);
+
+            _page.AsSpan((int)offset, dest.Length).CopyTo(dest);
+            return true;
+        }
+
+        public void Flush()
+        {
+            // Clear the current page cache
+            _currPageStart = 0;
+            _currPageSize = 0;
+            Array.Clear(_page, 0, _page.Length);
+        }
+
+        private bool MoveToPage(ulong addr)
+        {
+            ulong pageStart = addr - (addr % PageSize);
+            try
+            {
+                _target.ReadBuffer(pageStart, _page.AsSpan(0, (int)PageSize));
+                _currPageStart = pageStart;
+                _currPageSize = PageSize;
+                return true;
+            }
+            catch
+            {
+                _currPageStart = 0;
+                _currPageSize = 0;
+                return false;
+            }
+        }
+
+        private bool DirectRead(ulong addr, Span<byte> dest)
+        {
+            try
+            {
+                _target.ReadBuffer(addr, dest);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+
+    public override IDisposable BeginReadCache()
+    {
+        Debug.Assert(!_pageCacheActive, "Linear read cache scopes must not be nested on the same Target.");
+        _pageCacheActive = true;
+
+        // The scope object is reused: nesting is disallowed, so at most one scope is ever active.
+        return _linearReadCacheScope;
+    }
+
+    private sealed class LinearReadCacheScope(ContractDescriptorTarget target) : IDisposable
+    {
+        public void Dispose() => target._pageCacheActive = false;
+    }
 }

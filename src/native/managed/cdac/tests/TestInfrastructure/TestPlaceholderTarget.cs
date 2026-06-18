@@ -657,6 +657,11 @@ public class TestPlaceholderTarget : Target
         public override void Flush(FlushScope scope) { }
     }
 
-    public override void ActivateCache() { }
-    public override void DeactivateCache() { }
+    public override IDisposable BeginReadCache() => NoOpScope.Instance;
+
+    private sealed class NoOpScope : IDisposable
+    {
+        public static readonly NoOpScope Instance = new();
+        public void Dispose() { }
+    }
 }

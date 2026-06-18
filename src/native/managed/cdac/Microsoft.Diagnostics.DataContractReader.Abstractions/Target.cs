@@ -342,12 +342,8 @@ public abstract class Target
     }
 
     /// <summary>
-    /// Activate a special-purpose cache for the target process
+    /// Begins a scope where reads via this Target are routed through a special-purpose cache.
+    /// Reads outside the returned scope bypass the cache. Scopes must not be nested on the same Target.
     /// </summary>
-    public abstract void ActivateCache();
-
-    /// <summary>
-    /// Deactivate a special-purpose cache for the target process
-    /// </summary>
-    public abstract void DeactivateCache();
+    public abstract IDisposable BeginReadCache();
 }

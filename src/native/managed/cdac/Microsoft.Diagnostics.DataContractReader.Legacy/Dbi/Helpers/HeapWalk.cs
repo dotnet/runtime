@@ -43,26 +43,22 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
                 ulong size;
                 try
                 {
-                    _target.ActivateCache();
-                    mt = _object.GetMethodTableAddress(currentObj);
-                    _target.DeactivateCache();
+                    using (_target.BeginReadCache())
+                        mt = _object.GetMethodTableAddress(currentObj);
                 }
                 catch
                 {
-                    _target.DeactivateCache();
                     pendingFailure = true;
                     break;
                 }
 
                 try
                 {
-                    _target.ActivateCache();
-                    size = _object.GetSize(currentObj);
-                    _target.DeactivateCache();
+                    using (_target.BeginReadCache())
+                        size = _object.GetSize(currentObj);
                 }
                 catch
                 {
-                    _target.DeactivateCache();
                     pendingFailure = true;
                     break;
                 }
