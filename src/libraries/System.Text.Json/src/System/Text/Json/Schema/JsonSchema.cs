@@ -146,31 +146,6 @@ namespace System.Text.Json.Schema
             {
                 Type |= JsonSchemaType.Null;
             }
-            else if (AnyOf is { } anyOf)
-            {
-                // The schema is an "anyOf" composition with no top-level type keyword
-                // (e.g. an IEEE floating-point type under AllowNamedFloatingPointLiterals).
-                // Fold the null type into the first branch that carries a concrete type,
-                // unless one of the branches already permits null.
-                JsonSchema? firstTypedBranch = null;
-                foreach (JsonSchema branch in anyOf)
-                {
-                    if ((branch.Type & JsonSchemaType.Null) != 0)
-                    {
-                        return;
-                    }
-
-                    if (firstTypedBranch is null && branch.Type is not JsonSchemaType.Any)
-                    {
-                        firstTypedBranch = branch;
-                    }
-                }
-
-                if (firstTypedBranch is not null)
-                {
-                    firstTypedBranch.Type |= JsonSchemaType.Null;
-                }
-            }
         }
 
         public JsonNode ToJsonNode(JsonSchemaExporterOptions options)

@@ -187,6 +187,20 @@ namespace System.Text.Json.Schema
                     Debug.Assert(elementTypeInfo.Type.IsEnum, "The enum keyword should only be populated by schemas for enum types.");
                     schema.Enum.Add(null); // Append null to the enum array.
                 }
+                else if (schema.AnyOf is { } anyOf)
+                {
+                    // The element schema is an "anyOf" composition, which for a nullable value type
+                    // can only originate from an IEEE floating-point type formatted under
+                    // AllowNamedFloatingPointLiterals. Fold the null type into the numeric branch.
+                    foreach (JsonSchema branch in anyOf)
+                    {
+                        if (branch.Type is not JsonSchemaType.Any)
+                        {
+                            branch.Type |= JsonSchemaType.Null;
+                            break;
+                        }
+                    }
+                }
 
                 return CompleteSchema(ref state, schema);
             }
