@@ -608,9 +608,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // by falling back to a default parameter value. Constructors are ordered from the
                 // most parameters to the fewest (preserving declaration order among equal counts),
                 // and the first fully resolvable one becomes the best match. Every subsequent
-                // resolvable constructor must be a strict subset of the best one, i.e. each of its
-                // parameters was already used by the best constructor; otherwise the two are
-                // ambiguous and an exception is thrown.
+                // resolvable constructor must have parameters that are a subset of the best one,
+                // i.e. each of its parameters was already used by the best constructor; otherwise
+                // the two are ambiguous and an exception is thrown.
                 int constructorCount = constructors.Length;
                 var sortedParameters = new ParameterInfo[constructorCount][];
                 for (int i = 0; i < constructorCount; i++)
