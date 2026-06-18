@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Runtime.Versioning;
 
-namespace System.Diagnostics
+namespace System.Runtime.InteropServices
 {
     /// <summary>
     /// Provides the prepared data required to start a process via a user-supplied callback.
     /// This ref struct is populated by the <see cref="UnixProcessStartArguments.Start(ProcessStartInfo, Func{UnixProcessStartArguments, SafeProcessHandle})"/> method.
     /// </summary>
+    [UnsupportedOSPlatform("windows")]
     public ref struct UnixProcessStartArguments
     {
         public UnixProcessStartArguments() { }
@@ -22,7 +24,6 @@ namespace System.Diagnostics
         /// </value>
         /// <remarks>
         /// The memory pointed to by this property is only valid for the duration of the callback invocation.
-        /// This property is writable to allow callback implementations to override the resolved path when needed.
         /// Do not cache or use this pointer after the callback returns.
         /// </remarks>
         [CLSCompliant(false)]

@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Runtime.Versioning;
 
-namespace System.Diagnostics
+namespace System.Runtime.InteropServices
 {
     /// <summary>
     /// Provides the prepared data required to start a process via a user-supplied callback.
     /// This ref struct is populated by the <see cref="WindowsProcessStartArguments.Start(ProcessStartInfo, Func{WindowsProcessStartArguments, SafeProcessHandle})"/> method.
     /// </summary>
+    [SupportedOSPlatform("windows")]
     public ref struct WindowsProcessStartArguments
     {
         public WindowsProcessStartArguments() { }
@@ -26,7 +28,7 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Gets a pointer to the environment variables block for the new process.
-        /// Tthis is a pointer to a null-terminated <see cref="char"/> string in the format used by CreateProcess
+        /// This is a pointer to a null-terminated <see cref="char"/> string in the format used by CreateProcess
         /// (each variable is "name=value\0", terminated by an extra '\0').
         /// </summary>
         /// <remarks>
