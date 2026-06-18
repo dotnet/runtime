@@ -66,7 +66,7 @@ internal sealed class PInvokeCollector {
     private readonly string _targetOS;
     private LogAdapter Log { get; init; }
 
-    public PInvokeCollector(LogAdapter log, string targetOS = "browser")
+    public PInvokeCollector(LogAdapter log, string targetOS)
     {
         Log = log;
         _targetOS = targetOS;
