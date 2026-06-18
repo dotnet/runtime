@@ -111,7 +111,7 @@ namespace ILCompiler.DependencyAnalysis.ARM
         }
 
         // ldr reg, [reg]
-        // reg range: [0..7] for 16-bit encoding, [0..PC] when using 32-bit encoding
+        // reg range: [0..PC]
         public void EmitLDR(Register destination, Register source)
         {
             // If both registers are low (R0-R7), use the compact 16-bit encoding
