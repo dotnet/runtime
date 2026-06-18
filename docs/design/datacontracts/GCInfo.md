@@ -2,7 +2,7 @@
 
 This contract is for fetching information related to GCInfo associated with native code.
 
-The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract; see [x86 specifics](#x86-specifics) below.
+The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract.
 
 ## APIs of contract
 
@@ -40,13 +40,9 @@ uint GetSizeOfStackParameterArea(IGCInfoHandle handle);
 uint GetCalleePoppedArgumentsSize(IGCInfoHandle handle);
 
 // Returns the list of interruptible code offset ranges from the GCInfo
-// (x86 reports one range covering the post-prolog body for fully-interruptible
-// methods, or single-byte ranges at each call site for partially-interruptible
-// methods -- see the x86 specifics section).
 IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle);
 
 // Returns all live GC slots at the given instruction offset
-// (x86 has its own decoder; see the x86 specifics section).
 IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options);
 ```
 
