@@ -103,8 +103,6 @@ public interface ILoader : IContract
     bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags) => throw new NotImplementedException();
     TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
     TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => throw new NotImplementedException();
-    string GetPath(TargetPointer peAssemblyPtr, bool fallbackToHint = false) => throw new NotImplementedException();
-    bool GetFileHeadersInfo(TargetPointer peAssemblyPtr, out uint timeStamp, out uint imageSize) => throw new NotImplementedException();
     bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle) => throw new NotImplementedException();
     IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle) => throw new NotImplementedException();
@@ -113,7 +111,9 @@ public interface ILoader : IContract
     ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
     bool IsReadyToRun(ModuleHandle handle) => throw new NotImplementedException();
     string GetSimpleName(ModuleHandle handle) => throw new NotImplementedException();
+    string GetPath(ModuleHandle handle, bool fallbackToHint = false) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
+    bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize) => throw new NotImplementedException();
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssemblyLoadContext(ModuleHandle handle) => throw new NotImplementedException();

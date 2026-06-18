@@ -8,6 +8,5 @@ internal sealed partial class PEImage : IData<PEImage>
 {
     [Field] public TargetPointer LoadedImageLayout { get; }
     [Field] public ProbeExtensionResult ProbeExtensionResult { get; }
-    [Field] public TargetPointer Path { get; }
     [Field] public TargetPointer ModuleFileNameHint { get; }
 }

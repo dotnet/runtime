@@ -5937,6 +5937,19 @@ ClrDataAccess::GetHostJitNotificationTable()
 }
 
 /* static */ bool
+ClrDataAccess::GetMetaDataFileInfoFromModule(Module *pModule,
+                                             DWORD &dwTimeStamp,
+                                             DWORD &dwSize,
+                                             DWORD &dwDataSize,
+                                             DWORD &dwRvaHint,
+                                             _Out_writes_(cchFilePath) LPWSTR wszFilePath,
+                                             const DWORD cchFilePath)
+{
+    SUPPORTS_DAC_HOST_ONLY;
+    return ClrDataAccess::GetMetaDataFileInfoFromPEFile(pModule->GetPEAssembly(), dwTimeStamp, dwSize, dwDataSize, dwRvaHint, wszFilePath, cchFilePath);
+}
+
+/* static */ bool
 ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                              DWORD &dwTimeStamp,
                                              DWORD &dwSize,

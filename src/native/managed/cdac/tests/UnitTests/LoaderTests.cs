@@ -64,10 +64,11 @@ public unsafe class LoaderTests
     public void GetPath(MockTarget.Architecture arch)
     {
         const string expected = @"C:\some\path\TestModule.dll";
-        var (target, peAssemblyAddr) = CreatePETarget(arch, timeStamp: 1, imageSize: 2, path: expected, moduleFileNameHint: null);
+        var (target, moduleAddr) = CreatePETarget(arch, timeStamp: 1, imageSize: 2, path: expected, moduleFileNameHint: null);
         ILoader contract = target.Contracts.Loader;
 
-        Assert.Equal(expected, contract.GetPath(peAssemblyAddr));
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        Assert.Equal(expected, contract.GetPath(handle));
     }
 
     [Theory]
@@ -75,10 +76,11 @@ public unsafe class LoaderTests
     public void GetPath_EmptyPathFallsBackToModuleFileNameHint(MockTarget.Architecture arch)
     {
         const string expectedHint = @"InMemoryModule.dll";
-        var (target, peAssemblyAddr) = CreatePETarget(arch, timeStamp: 1, imageSize: 2, path: null, moduleFileNameHint: expectedHint);
+        var (target, moduleAddr) = CreatePETarget(arch, timeStamp: 1, imageSize: 2, path: null, moduleFileNameHint: expectedHint);
         ILoader contract = target.Contracts.Loader;
 
-        Assert.Equal(expectedHint, contract.GetPath(peAssemblyAddr, fallbackToHint: true));
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        Assert.Equal(expectedHint, contract.GetPath(handle, fallbackToHint: true));
     }
 
     [Theory]
@@ -1080,7 +1082,7 @@ public unsafe class LoaderTests
         Assert.Equal(0u, size);
     }
 
-    private static (TestPlaceholderTarget Target, TargetPointer PEAssemblyAddr) CreatePETarget(
+    private static (TestPlaceholderTarget Target, TargetPointer ModuleAddr) CreatePETarget(
         MockTarget.Architecture arch,
         uint timeStamp,
         uint imageSize,
@@ -1091,6 +1093,7 @@ public unsafe class LoaderTests
         TargetTestHelpers helpers = new(arch);
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
         MockMemorySpace.Builder builder = targetBuilder.MemoryBuilder;
+        MockLoaderBuilder loader = new(builder);
         var allocator = builder.CreateAllocator(0x0010_0000, 0x0020_0000);
 
         var probeExtLayout = helpers.LayoutFields([
@@ -1100,12 +1103,11 @@ public unsafe class LoaderTests
             new(nameof(Data.PEAssembly.PEImage), DataType.pointer),
             new(nameof(Data.PEAssembly.AssemblyBinder), DataType.pointer),
         ]);
-        // PEImage.Path and PEImage.ModuleFileNameHint are modeled as pointers directly to the
+        // PEImage.ModuleFileNameHint is modeled as a pointer directly to the
         // SString's null-terminated UTF-16 character buffer.
         var peImageLayout = helpers.LayoutFields([
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
             new(nameof(Data.PEImage.ProbeExtensionResult), DataType.ProbeExtensionResult, probeExtLayout.Stride),
-            new(nameof(Data.PEImage.Path), DataType.pointer),
             new(nameof(Data.PEImage.ModuleFileNameHint), DataType.pointer),
         ]);
         var imageLayoutLayout = helpers.LayoutFields([
@@ -1145,18 +1147,23 @@ public unsafe class LoaderTests
 
         var peImageFrag = allocator.Allocate(peImageLayout.Stride, "PEImage");
         helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[nameof(Data.PEImage.LoadedImageLayout)].Offset, helpers.PointerSize), layoutFrag.Address);
-        helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[nameof(Data.PEImage.Path)].Offset, helpers.PointerSize), AllocateUtf16String(helpers, allocator, path));
         helpers.WritePointer(peImageFrag.Data.AsSpan().Slice(peImageLayout.Fields[nameof(Data.PEImage.ModuleFileNameHint)].Offset, helpers.PointerSize), AllocateUtf16String(helpers, allocator, moduleFileNameHint));
 
         var peAssemblyFrag = allocator.Allocate(peAssemblyLayout.Stride, "PEAssembly");
         helpers.WritePointer(peAssemblyFrag.Data.AsSpan().Slice(peAssemblyLayout.Fields[nameof(Data.PEAssembly.PEImage)].Offset, helpers.PointerSize), peImageFrag.Address);
 
+        // Build a Module that owns the PEAssembly and carries the module path. GetPath reads the
+        // path from the Module, falling back to the PEImage's ModuleFileNameHint when it is empty.
+        MockLoaderModule module = loader.AddModule(path: path);
+        module.PEAssembly = peAssemblyFrag.Address;
+
         var target = targetBuilder
+            .AddTypes(CreateContractTypes(loader))
             .AddTypes(types)
             .AddContract<ILoader>(version: "c1")
             .Build();
 
-        return (target, new TargetPointer(peAssemblyFrag.Address));
+        return (target, new TargetPointer(module.Address));
     }
 
     // Allocates a null-terminated UTF-16 buffer (mirroring an SString's UNICODE character buffer,
@@ -1181,10 +1188,11 @@ public unsafe class LoaderTests
         const uint expectedTimeStamp = 0x1234_5678;
         const uint expectedImageSize = 0x0009_A000;
         const string expectedPath = @"C:\some\path\Test.dll";
-        var (target, peAssemblyAddr) = CreatePETarget(arch, expectedTimeStamp, expectedImageSize, expectedPath, moduleFileNameHint: null);
+        var (target, moduleAddr) = CreatePETarget(arch, expectedTimeStamp, expectedImageSize, expectedPath, moduleFileNameHint: null);
         ILoader contract = target.Contracts.Loader;
 
-        bool result = contract.GetFileHeadersInfo(peAssemblyAddr, out uint timeStamp, out uint imageSize);
+        Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
+        bool result = contract.GetFileHeadersInfo(handle, out uint timeStamp, out uint imageSize);
 
         Assert.True(result);
         Assert.Equal(expectedTimeStamp, timeStamp);

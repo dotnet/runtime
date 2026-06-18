@@ -327,58 +327,6 @@ internal readonly struct Loader_1 : ILoader
 
     TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva) => GetRvaData(peAssemblyPtr, rva, true);
 
-    string ILoader.GetPath(TargetPointer peAssemblyPtr, bool fallbackToHint)
-    {
-        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
-        if (peAssembly.PEImage == TargetPointer.Null)
-            return string.Empty;
-
-        Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(peAssembly.PEImage);
-
-        string path = string.Empty;
-        if (peImage.Path != TargetPointer.Null)
-        {
-            try
-            {
-                path = _target.ReadUtf16String(peImage.Path);
-            }
-            catch (VirtualReadException)
-            {
-                // Ignore virtual read exceptions
-            }
-        }
-
-        if (fallbackToHint && string.IsNullOrEmpty(path) && peImage.ModuleFileNameHint != TargetPointer.Null)
-            path = _target.ReadUtf16String(peImage.ModuleFileNameHint);
-
-        return path;
-    }
-
-    bool ILoader.GetFileHeadersInfo(TargetPointer peAssemblyPtr, out uint timeStamp, out uint imageSize)
-    {
-        timeStamp = 0;
-        imageSize = 0;
-
-        if (peAssemblyPtr == TargetPointer.Null)
-            return false;
-
-        Data.PEAssembly peAssembly = _target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
-        if (peAssembly.PEImage == TargetPointer.Null)
-            return false;
-
-        Data.PEImage peImage = _target.ProcessedData.GetOrAdd<Data.PEImage>(peAssembly.PEImage);
-        if (peImage.LoadedImageLayout == TargetPointer.Null)
-            return false;
-
-        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
-
-        TargetPointer ntHeadersPtr = FindNTHeaders(peImageLayout);
-        Data.ImageNTHeaders ntHeaders = _target.ProcessedData.GetOrAdd<Data.ImageNTHeaders>(ntHeadersPtr);
-        timeStamp = ntHeaders.FileHeader.TimeDateStamp;
-        imageSize = ntHeaders.OptionalHeader.SizeOfImage;
-        return true;
-    }
-
     bool ILoader.TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size)
     {
         buffer = TargetPointer.Null;
@@ -507,12 +455,48 @@ internal readonly struct Loader_1 : ILoader
             : string.Empty;
     }
 
+    string ILoader.GetPath(ModuleHandle handle, bool fallbackToHint)
+    {
+        Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
+        string path = string.Empty;
+        try
+        {
+            path = module.Path != TargetPointer.Null ? _target.ReadUtf16String(module.Path) : string.Empty;
+        }
+        catch (VirtualReadException)
+        {
+            // Ignore virtual read exceptions
+        }
+
+        if (fallbackToHint && string.IsNullOrEmpty(path) && TryGetPEImage(handle, out Data.PEImage? peImage) && peImage.ModuleFileNameHint != TargetPointer.Null)
+            path = _target.ReadUtf16String(peImage.ModuleFileNameHint);
+
+        return path;
+    }
+
     string ILoader.GetFileName(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
         return module.FileName != TargetPointer.Null
             ? _target.ReadUtf16String(module.FileName)
             : string.Empty;
+    }
+
+    bool ILoader.GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize)
+    {
+        timeStamp = 0;
+        imageSize = 0;
+
+        if (!TryGetPEImage(handle, out Data.PEImage? peImage))
+            return false;
+
+        Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+
+        TargetPointer ntHeadersPtr = FindNTHeaders(peImageLayout);
+        Data.ImageNTHeaders ntHeaders = _target.ProcessedData.GetOrAdd<Data.ImageNTHeaders>(ntHeadersPtr);
+        timeStamp = ntHeaders.FileHeader.TimeDateStamp;
+        imageSize = ntHeaders.OptionalHeader.SizeOfImage;
+        return true;
     }
 
     TargetPointer ILoader.GetLoaderAllocator(ModuleHandle handle)

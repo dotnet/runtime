@@ -53,7 +53,7 @@ public class LoaderDumpTests : DumpTestBase
         TargetPointer rootAssembly = loader.GetRootAssembly();
 
         ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(rootAssembly);
-        string path = loader.GetPath(loader.GetPEAssembly(moduleHandle));
+        string path = loader.GetPath(moduleHandle);
         Assert.NotNull(path);
         Assert.NotEmpty(path);
     }

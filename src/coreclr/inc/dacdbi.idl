@@ -367,8 +367,8 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetAttachStateFlags([out] CLR_DEBUGGING_PROCESS_FLAGS * pRetVal);
 
     // Metadata
-    HRESULT GetMetaDataFileInfoFromPEFile(
-        [in] VMPTR_PEAssembly vmPEAssembly,
+    HRESULT GetModuleMetaDataFileInfo(
+        [in] VMPTR_Module vmModule,
         [out] DWORD * pTimeStamp,
         [out] DWORD * pImageSize,
         [in] IDacDbiStringHolder pStrFilename,

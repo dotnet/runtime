@@ -65,6 +65,7 @@ internal sealed class MockLoaderModule : TypedView
     private const string LoaderAllocatorFieldName = "LoaderAllocator";
     private const string DynamicMetadataFieldName = "DynamicMetadata";
     private const string SimpleNameFieldName = "SimpleName";
+    private const string PathFieldName = "Path";
     private const string FileNameFieldName = "FileName";
     private const string ReadyToRunInfoFieldName = "ReadyToRunInfo";
     private const string GrowableSymbolStreamFieldName = "GrowableSymbolStream";
@@ -88,6 +89,7 @@ internal sealed class MockLoaderModule : TypedView
             .AddPointerField(LoaderAllocatorFieldName)
             .AddPointerField(DynamicMetadataFieldName)
             .AddPointerField(SimpleNameFieldName)
+            .AddPointerField(PathFieldName)
             .AddPointerField(FileNameFieldName)
             .AddPointerField(ReadyToRunInfoFieldName)
             .AddPointerField(GrowableSymbolStreamFieldName)
@@ -119,6 +121,12 @@ internal sealed class MockLoaderModule : TypedView
     {
         get => ReadPointerField(SimpleNameFieldName);
         set => WritePointerField(SimpleNameFieldName, value);
+    }
+
+    public ulong Path
+    {
+        get => ReadPointerField(PathFieldName);
+        set => WritePointerField(PathFieldName, value);
     }
 
     public ulong FileName
@@ -267,6 +275,7 @@ internal sealed class MockLoaderBuilder
         string? fileName = null,
         string? simpleName = null,
         byte[]? simpleNameBytes = null,
+        string? path = null,
         uint flags = 0)
     {
         MockLoaderModule module = ModuleLayout.Create(_allocator.Allocate((ulong)ModuleLayout.Size, "Module"));
@@ -274,6 +283,11 @@ internal sealed class MockLoaderBuilder
         if (flags != 0)
         {
             module.Flags = flags;
+        }
+
+        if (path is not null)
+        {
+            module.Path = AddUtf16String(path, $"Module path = {path}");
         }
 
         byte[]? rawSimpleName = simpleName is not null ? Encoding.UTF8.GetBytes(simpleName) : simpleNameBytes;

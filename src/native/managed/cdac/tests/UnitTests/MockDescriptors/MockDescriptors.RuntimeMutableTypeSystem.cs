@@ -33,6 +33,7 @@ internal sealed class MockEnCModule : TypedView
             .AddPointerField(nameof(Data.Module.LoaderAllocator))
             .AddPointerField(nameof(Data.Module.DynamicMetadata))
             .AddPointerField(nameof(Data.Module.SimpleName))
+            .AddPointerField(nameof(Data.Module.Path))
             .AddPointerField(nameof(Data.Module.FileName))
             .AddPointerField(nameof(Data.Module.ReadyToRunInfo))
             .AddPointerField(nameof(Data.Module.GrowableSymbolStream))

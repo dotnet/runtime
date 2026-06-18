@@ -88,8 +88,6 @@ TargetPointer GetPEAssembly(ModuleHandle handle);
 bool TryGetLoadedImageContents(ModuleHandle handle, out TargetPointer baseAddress, out uint size, out uint imageFlags);
 TargetPointer GetILAddr(TargetPointer peAssemblyPtr, int rva);
 TargetPointer GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rva);
-string GetPath(TargetPointer peAssemblyPtr, bool fallbackToHint = false);
-bool GetFileHeadersInfo(TargetPointer peAssemblyPtr, out uint timeStamp, out uint imageSize);
 bool TryGetSymbolStream(ModuleHandle handle, out TargetPointer buffer, out uint size);
 IEnumerable<TargetPointer> GetAvailableTypeParams(ModuleHandle handle);
 IEnumerable<TargetPointer> GetInstantiatedMethods(ModuleHandle handle);
@@ -98,7 +96,9 @@ bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
 bool IsReadyToRun(ModuleHandle handle);
 string GetSimpleName(ModuleHandle handle);
+string GetPath(ModuleHandle handle, bool fallbackToHint = false);
 string GetFileName(ModuleHandle handle);
+bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
@@ -160,6 +160,7 @@ enum ClrModifiableAssemblies : uint
 | `Module` | `Base` | Pointer to start of PE file in memory |
 | `Module` | `Flags` | Assembly of the Module |
 | `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
+| `Module` | `Path` | Path of the Module (UTF-16, null-terminated) |
 | `Module` | `FileName` | File name of the Module (UTF-16, null-terminated) |
 | `Module` | `SimpleName` | Simple name of the Module (UTF-8, null-terminated) |
 | `Module` | `GrowableSymbolStream` | Pointer to the in memory symbol stream |
@@ -187,7 +188,6 @@ enum ClrModifiableAssemblies : uint
 | `AssemblyBinder` | `AssemblyLoadContext` | Pointer to the AssemblyBinder's AssemblyLoadContext |
 | `PEImage` | `LoadedImageLayout` | Pointer to the PEImage's loaded PEImageLayout |
 | `PEImage` | `ProbeExtensionResult` | PEImage's ProbeExtensionResult |
-| `PEImage` | `Path` | Pointer to the PEImage's on-disk path (UTF-16, null-terminated) |
 | `PEImage` | `ModuleFileNameHint` | Pointer to a diagnostic file name hint for in-memory modules |
 | `ProbeExtensionResult` | `Type` | Type of ProbeExtensionResult |
 | `PEImageLayout` | `Base` | Base address of the image layout |
@@ -463,50 +463,6 @@ TargetPointer ILoader.GetFieldAddressFromRva(TargetPointer peAssemblyPtr, int rv
     return GetRvaData(peAssemblyPtr, rva, isNullOk: true);
 }
 
-string GetPath(TargetPointer peAssemblyPtr, bool fallbackToHint = false)
-{
-    TargetPointer peImagePtr = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
-    if (peImagePtr == TargetPointer.Null)
-        return string.Empty;
-
-    TargetPointer pathPtr = target.ReadPointer(peImagePtr + /* PEImage::Path offset */);
-    string path = pathPtr != TargetPointer.Null
-        ? target.ReadUtf16String(pathPtr)
-        : string.Empty;
-
-    if (fallbackToHint && string.IsNullOrEmpty(path))
-    {
-        TargetPointer hintPtr = target.ReadPointer(peImagePtr + /* PEImage::ModuleFileNameHint offset */);
-        if (hintPtr != TargetPointer.Null)
-            path = target.ReadUtf16String(hintPtr);
-    }
-
-    return path;
-}
-
-bool GetFileHeadersInfo(TargetPointer peAssemblyPtr, out uint timeStamp, out uint imageSize)
-{
-    timeStamp = 0;
-    imageSize = 0;
-
-    if (peAssemblyPtr == TargetPointer.Null)
-        return false;
-
-    TargetPointer peImagePtr = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
-    if (peImagePtr == TargetPointer.Null)
-        return false;
-
-    TargetPointer layoutPtr = target.ReadPointer(peImagePtr + /* PEImage::LoadedImageLayout offset */);
-    if (layoutPtr == TargetPointer.Null)
-        return false;
-
-    TargetPointer baseAddress = target.ReadPointer(layoutPtr + /* PEImageLayout::Base offset */);
-    TargetPointer ntHeadersPtr = baseAddress + // offset to NT headers
-    timeStamp = // read from NT header
-    imageSize = // read from NT header
-    return true;
-}
-
 private TargetPointer GetRvaData(TargetPointer peAssemblyPtr, int rva, bool isNullOk)
 {
     if (rva == 0 && !isNullOk)
@@ -690,11 +646,63 @@ string GetSimpleName(ModuleHandle handle)
     return // convert to string, throw on invalid UTF-8
 }
 
+string GetPath(ModuleHandle handle, bool fallbackToHint = false)
+{
+    TargetPointer pathStart = target.ReadPointer(handle.Address + /* Module::Path offset */);
+    string path = pathStart != TargetPointer.Null
+        ? /* Read<char> from target starting at pathStart until null terminator */
+        : string.Empty;
+
+    // For in-memory modules the path is empty; optionally fall back to the
+    // PEImage's diagnostic file name hint (reached through the Module's PEAssembly).
+    if (fallbackToHint && string.IsNullOrEmpty(path))
+    {
+        TargetPointer peAssemblyPtr = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
+        if (peAssemblyPtr != TargetPointer.Null)
+        {
+            TargetPointer peImagePtr = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
+            if (peImagePtr != TargetPointer.Null)
+            {
+                TargetPointer hintPtr = target.ReadPointer(peImagePtr + /* PEImage::ModuleFileNameHint offset */);
+                if (hintPtr != TargetPointer.Null)
+                    path = target.ReadUtf16String(hintPtr);
+            }
+        }
+    }
+
+    return path;
+}
+
 string GetFileName(ModuleHandle handle)
 {
     TargetPointer fileNameStart = target.ReadPointer(handle.Address + /* Module::FileName offset */);
     char[] fileName = // Read<char> from target starting at fileNameStart until null terminator
     return new string(fileName);
+}
+
+bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize)
+{
+    timeStamp = 0;
+    imageSize = 0;
+
+    // Resolve the PEImage through the Module's PEAssembly.
+    TargetPointer peAssemblyPtr = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
+    if (peAssemblyPtr == TargetPointer.Null)
+        return false;
+
+    TargetPointer peImagePtr = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
+    if (peImagePtr == TargetPointer.Null)
+        return false;
+
+    TargetPointer layoutPtr = target.ReadPointer(peImagePtr + /* PEImage::LoadedImageLayout offset */);
+    if (layoutPtr == TargetPointer.Null)
+        return false;
+
+    TargetPointer baseAddress = target.ReadPointer(layoutPtr + /* PEImageLayout::Base offset */);
+    TargetPointer ntHeadersPtr = baseAddress + // offset to NT headers
+    timeStamp = // read from NT header
+    imageSize = // read from NT header
+    return true;
 }
 
 TargetPointer GetLoaderAllocator(ModuleHandle handle)

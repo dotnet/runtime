@@ -504,7 +504,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             string result = string.Empty;
             try
             {
-                result = contract.GetPath(contract.GetPEAssembly(handle), true);
+                result = contract.GetPath(handle, true);
             }
             catch (VirtualReadException)
             {
@@ -772,7 +772,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             }
             else
             {
-                getModuleData->IsInMemory = contract.GetPath(contract.GetPEAssembly(moduleHandle)).Length == 0 ? 1u : 0u;
+                getModuleData->IsInMemory = contract.GetPath(moduleHandle).Length == 0 ? 1u : 0u;
             }
 
             contract.TryGetLoadedImageContents(moduleHandle, out TargetPointer baseAddress, out uint size, out uint flags);

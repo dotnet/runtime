@@ -544,7 +544,7 @@ public sealed unsafe partial class SOSDacImpl
                 name[0] = '\0';
             Contracts.ILoader contract = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = contract.GetModuleHandleFromAssemblyPtr(assembly.ToTargetPointer(_target));
-            string path = contract.GetPath(contract.GetPEAssembly(handle));
+            string path = contract.GetPath(handle);
 
             // Return not implemented for empty paths for non-reflection emit assemblies (for example, loaded from memory)
             if (string.IsNullOrEmpty(path))
@@ -2645,8 +2645,7 @@ public sealed unsafe partial class SOSDacImpl
                     {
                         TargetPointer modulePtr = rtsContract.GetModule(rtsContract.GetTypeHandle(rtsContract.GetMethodTable(methodDescHandle)));
                         Contracts.ModuleHandle module = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
-                        ILoader loader = _target.Contracts.Loader;
-                        string modulePath = loader.GetPath(loader.GetPEAssembly(module));
+                        string modulePath = _target.Contracts.Loader.GetPath(module);
                         ReadOnlySpan<char> moduleSpan = modulePath.AsSpan();
                         char directorySeparator = (char)_target.ReadGlobal<byte>(Constants.Globals.DirectorySeparator);
 
@@ -3632,7 +3631,7 @@ public sealed unsafe partial class SOSDacImpl
 
             Contracts.ILoader contract = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(addr.ToTargetPointer(_target));
-            string path = contract.GetPath(contract.GetPEAssembly(handle));
+            string path = contract.GetPath(handle);
 
             // Return not implemented for empty paths for non-reflection emit assemblies (for example, loaded from memory)
             if (string.IsNullOrEmpty(path))

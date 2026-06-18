@@ -189,7 +189,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
-            string path = loader.GetPath(loader.GetPEAssembly(handle));
+            string path = loader.GetPath(handle);
             if (string.IsNullOrEmpty(path))
             {
                 *pResult = Interop.BOOL.FALSE;
@@ -228,7 +228,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
-            string path = loader.GetPath(loader.GetPEAssembly(handle), true);
+            string path = loader.GetPath(handle, true);
             if (string.IsNullOrEmpty(path))
             {
                 *pResult = Interop.BOOL.FALSE;
@@ -327,7 +327,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             pData->vmPEAssembly = loader.GetPEAssembly(handle).Value;
             bool isDynamic = loader.IsDynamic(handle);
             pData->fIsDynamic = isDynamic ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
-            string path = loader.GetPath(loader.GetPEAssembly(handle));
+            string path = loader.GetPath(handle);
             pData->fInMemory = string.IsNullOrEmpty(path) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
             if (!isDynamic && loader.TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out uint size, out uint _))
             {
@@ -3398,7 +3398,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, Interop.BOOL* pResult)
+    public int GetModuleMetaDataFileInfo(ulong vmModule, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, Interop.BOOL* pResult)
     {
         int hr = HResults.S_OK;
         string path = string.Empty;
@@ -3407,16 +3407,17 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (dwTimeStamp is null || dwImageSize is null || pStrFilename == 0 || pResult is null)
                 throw new NullReferenceException("One or more parameters are null");
             *pResult = Interop.BOOL.FALSE;
-            if (vmPEAssembly == 0)
+            if (vmModule == 0)
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
             Contracts.ILoader loader = _target.Contracts.Loader;
-            bool result = loader.GetFileHeadersInfo(vmPEAssembly, out uint timeStamp, out uint imageSize);
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(vmModule);
+            bool result = loader.GetFileHeadersInfo(moduleHandle, out uint timeStamp, out uint imageSize);
             if (result)
             {
                 *dwTimeStamp = timeStamp;
                 *dwImageSize = imageSize;
             }
-            path = loader.GetPath(vmPEAssembly, fallbackToHint: true);
+            path = loader.GetPath(moduleHandle, fallbackToHint: true);
             hr = StringHolderAssignCopy(pStrFilename, path);
             *pResult = result ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
@@ -3431,18 +3432,18 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             uint imageSizeLocal;
             Interop.BOOL resultLocal;
             using var legacyHolder = new NativeStringHolder();
-            int hrLocal = _legacy.GetMetaDataFileInfoFromPEFile(vmPEAssembly, &timeStampLocal, &imageSizeLocal, legacyHolder.Ptr, &resultLocal);
+            int hrLocal = _legacy.GetModuleMetaDataFileInfo(vmModule, &timeStampLocal, &imageSizeLocal, legacyHolder.Ptr, &resultLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
-                Debug.Assert(*pResult == resultLocal, $"GetMetaDataFileInfoFromPEFile result mismatch - cDAC: {*pResult}, DAC: {resultLocal}");
+                Debug.Assert(*pResult == resultLocal, $"GetModuleMetaDataFileInfo result mismatch - cDAC: {*pResult}, DAC: {resultLocal}");
                 if (*pResult == Interop.BOOL.TRUE)
                 {
-                    Debug.Assert(*dwTimeStamp == timeStampLocal, $"GetMetaDataFileInfoFromPEFile timestamp mismatch - cDAC: {*dwTimeStamp}, DAC: {timeStampLocal}");
-                    Debug.Assert(*dwImageSize == imageSizeLocal, $"GetMetaDataFileInfoFromPEFile image size mismatch - cDAC: {*dwImageSize}, DAC: {imageSizeLocal}");
+                    Debug.Assert(*dwTimeStamp == timeStampLocal, $"GetModuleMetaDataFileInfo timestamp mismatch - cDAC: {*dwTimeStamp}, DAC: {timeStampLocal}");
+                    Debug.Assert(*dwImageSize == imageSizeLocal, $"GetModuleMetaDataFileInfo image size mismatch - cDAC: {*dwImageSize}, DAC: {imageSizeLocal}");
                     Debug.Assert(
                         string.Equals(path, legacyHolder.Value, System.StringComparison.Ordinal),
-                        $"GetMetaDataFileInfoFromPEFile path mismatch - cDAC: '{path}', DAC: '{legacyHolder.Value}'");
+                        $"GetModuleMetaDataFileInfo path mismatch - cDAC: '{path}', DAC: '{legacyHolder.Value}'");
                 }
             }
         }
