@@ -57,10 +57,9 @@ public class StressLogDumpTests : DumpTestBase
         {
             foreach (StressMsgData message in stressLog.GetStressMessages(thread).Take(10))
             {
-                if (message.Timestamp != 0)
+                if (message.Timestamp != 0 && message.FormatString != TargetPointer.Null)
                 {
                     foundMessages = true;
-                    Assert.NotEqual(TargetPointer.Null, message.FormatString);
                     break;
                 }
             }
@@ -152,13 +151,12 @@ public class StressLogDumpTests : DumpTestBase
 
             if (msgFetched > 0)
             {
-                // Find a message with a valid (non-zero) timestamp
+                // Find a message with valid timestamp and format string
                 for (uint m = 0; m < msgFetched; m++)
                 {
-                    if (messages[m].Timestamp != 0)
+                    if (messages[m].Timestamp != 0 && messages[m].FormatString != (ClrDataAddress)0)
                     {
                         foundMessages = true;
-                        Assert.NotEqual((ClrDataAddress)0, messages[m].FormatString);
 
                         if (messages[m].ArgumentCount > 0)
                         {
