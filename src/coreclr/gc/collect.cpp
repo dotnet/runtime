@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 wait_full_gc_status gc_heap::full_gc_wait (GCEvent *event, int time_out_ms)
 {
 #ifdef MULTIPLE_HEAPS
@@ -1722,3 +1732,5 @@ void gc_heap::do_post_gc()
         mark_list_overflow = false;
     }
 }
+
+} // namespace WKS/SVR
