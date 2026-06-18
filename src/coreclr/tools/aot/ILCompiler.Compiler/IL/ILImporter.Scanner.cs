@@ -628,7 +628,7 @@ namespace Internal.IL
                         }
                     }
 
-                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetDelegate), reason);
+                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.CreateSharedDelegate), reason);
                     // do not return here, we want the method itself rooted too
                 }
 

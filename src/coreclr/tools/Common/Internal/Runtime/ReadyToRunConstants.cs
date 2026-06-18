@@ -402,7 +402,7 @@ namespace Internal.ReadyToRunConstants
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
 
-        GetDelegate,
+        CreateSharedDelegate,
     }
 
     // Enum used for HFA type recognition.

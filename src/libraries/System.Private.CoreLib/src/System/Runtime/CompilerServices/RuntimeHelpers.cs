@@ -164,18 +164,13 @@ namespace System.Runtime.CompilerServices
             => new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
 #endif
 
-        private static class DelegateCache
-        {
-            internal static readonly ConcurrentDictionary<(nint, RuntimeType), Delegate> s_cache = new();
-        }
-
         [Intrinsic]
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [RequiresDynamicCode("AOT must recognize usages of the method to preserve reflection info and generate stubs")]
-        public static TDelegate GetDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods)] TDelegate>(nint method) where TDelegate : Delegate
+        public static TDelegate GetDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods)] TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
         {
-            return DelegateCache.s_cache.TryGetValue((method, Unsafe.As<RuntimeType>(typeof(TDelegate))), out Delegate? value) ? Unsafe.As<TDelegate>(value) : CreateSharedDelegate<TDelegate>(method);
+            return storage ?? CreateSharedDelegate(method, ref storage);
         }
 
         // The following intrinsics return true if input is a compile-time constant

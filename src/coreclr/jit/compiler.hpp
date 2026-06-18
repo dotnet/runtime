@@ -1505,7 +1505,7 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 //    New CT_HELPER node
 //
 inline GenTreeCall* Compiler::gtNewHelperCallNode(
-    unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3, GenTree* arg4, GenTree* arg5)
+    unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3, GenTree* arg4)
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
@@ -1523,12 +1523,6 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 
     result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
 #endif
-
-    if (arg5 != nullptr)
-    {
-        result->gtArgs.PushFront(this, NewCallArg::Primitive(arg5));
-        result->gtFlags |= arg5->gtFlags & GTF_ALL_EFFECT;
-    }
 
     if (arg4 != nullptr)
     {

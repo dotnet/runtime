@@ -339,8 +339,8 @@ namespace ILCompiler
                     methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null);
                     break;
 
-                case ReadyToRunHelper.GetDelegate:
-                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8, "GetDelegateHelper"u8, null);
+                case ReadyToRunHelper.CreateSharedDelegate:
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8, "CreateSharedDelegateHelper"u8, null);
                     break;
 
                 default:

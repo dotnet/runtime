@@ -280,21 +280,8 @@ namespace System.Runtime.CompilerServices
         {
         }
 
-        private static class FrozenDelegateCache
-        {
-            public static readonly Lock CacheLock = new();
-            public static readonly Dictionary<(nint, Type), Delegate> Cache = new();
-        }
-
-        // This method is used by the JIT as a helper
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Delegate GetDelegateHelper(nint method, bool isStatic, int paramCount, bool throwIfClosed, RuntimeType delegateType)
-        {
-            return DelegateCache.s_cache.TryGetValue((method, delegateType), out Delegate? value) ? value : CreateSharedDelegateHelper(method, isStatic, paramCount, throwIfClosed, delegateType);
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static TDelegate CreateSharedDelegate<TDelegate>(nint method) where TDelegate : Delegate
+        private static unsafe TDelegate CreateSharedDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
         {
             ArgumentNullException.ThrowIfNull(method);
 
@@ -325,15 +312,25 @@ namespace System.Runtime.CompilerServices
             bool throwIfClosed = closureType is null || closureType.IsValueType ||
                                  (!isStatic && closureType.IsGenericType);
 
-            Delegate newDelegate = CreateSharedDelegateHelper(method, isStatic, paramCount, throwIfClosed, (RuntimeType)typeof(TDelegate));
+            uint info = isStatic ? 1u : 0u;
+            info |= throwIfClosed ? 2u : 0u;
+            info |= (uint)paramCount << 2;
+
+            Delegate newDelegate = CreateSharedDelegateHelper(method, ref Unsafe.As<TDelegate?, Delegate?>(ref storage), MethodTable.Of<TDelegate>(), info);
             Debug.Assert(newDelegate is TDelegate);
             return Unsafe.As<TDelegate>(newDelegate);
         }
 
+        // This method is used by the JIT as a helper
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe Delegate CreateSharedDelegateHelper(nint method, bool isStatic, int paramCount, bool throwIfClosed, RuntimeType delegateType)
+        private static unsafe Delegate CreateSharedDelegateHelper(nint method, ref Delegate? storage, MethodTable* pMT, uint info)
         {
+            RuntimeType delegateType = Type.GetTypeFromMethodTable(pMT);
             Debug.Assert(delegateType.GetRuntimeTypeInfo().IsDelegate);
+
+            bool isStatic = (info & 1) != 0;
+            bool throwIfClosed = (info & 2) != 0;
+            int paramCount = (int)(info >> 2);
 
             RuntimeMethodInfo invokeMethod = delegateType.GetRuntimeTypeInfo().GetInvokeMethod();
             int invokeCount = invokeMethod.GetParametersAsSpan().Length;
@@ -347,8 +344,6 @@ namespace System.Runtime.CompilerServices
             {
                 throw new NotSupportedException();
             }
-
-            MethodTable* pMT = delegateType.TypeHandle.ToMethodTable();
 
             Delegate? newDelegate = null;
             lock (FrozenDelegateCache.CacheLock)
@@ -383,7 +378,13 @@ namespace System.Runtime.CompilerServices
             }
 
             Debug.Assert(newDelegate is not null);
-            return DelegateCache.s_cache.TryAdd((method, delegateType), newDelegate) ? newDelegate : DelegateCache.s_cache[(method, delegateType)];
+            return Interlocked.CompareExchange(ref storage, newDelegate, null) ?? newDelegate;
+        }
+
+        private static class FrozenDelegateCache
+        {
+            public static readonly Lock CacheLock = new();
+            public static readonly Dictionary<(nint, Type), Delegate> Cache = [];
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",

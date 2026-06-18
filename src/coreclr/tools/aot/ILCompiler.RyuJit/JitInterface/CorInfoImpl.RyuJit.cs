@@ -760,8 +760,8 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AllocContinuation;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_NATIVEAOT_GET_DELEGATE:
-                    id = ReadyToRunHelper.GetDelegate;
+                case CorInfoHelpFunc.CORINFO_HELP_CREATE_DELEGATE:
+                    id = ReadyToRunHelper.CreateSharedDelegate;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
