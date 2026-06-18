@@ -354,6 +354,9 @@
   <data name="WarningOverridingOptimize" xml:space="preserve">
     <value>Warning: -Od overrides other optimization options</value>
   </data>
+  <data name="WarningConflictingReferenceVersions" xml:space="preserve">
+    <value>Warning: multiple versions of assembly '{0}' were passed as references: '{1}' (version {2}) and '{3}' (version {4}). '{1}' will be used.</value>
+  </data>
   <data name="CallChainProfileFile" xml:space="preserve">
     <value>Json file(s) for predictive profile guided optimization</value>
   </data>

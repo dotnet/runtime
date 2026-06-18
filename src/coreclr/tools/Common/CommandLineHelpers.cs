@@ -28,13 +28,13 @@ namespace System.CommandLine
         public static string[] ValidOS { get; } = ["windows", "linux", "freebsd", "openbsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator", "android", "browser", "wasi"];
         public static string[] ValidArchitectures { get; } = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
 
-        public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
+        public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict, Action<string, string, string> onDuplicateDropped = null)
         {
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
 
             foreach (Token token in tokens)
             {
-                AppendExpandedPaths(dictionary, token.Value, strict);
+                AppendExpandedPaths(dictionary, token.Value, strict, onDuplicateDropped);
             }
 
             return dictionary;
@@ -366,7 +366,7 @@ namespace System.CommandLine
         }
 
         // Helper to create a collection of paths unique in their simple names.
-        private static void AppendExpandedPaths(Dictionary<string, string> dictionary, string pattern, bool strict)
+        private static void AppendExpandedPaths(Dictionary<string, string> dictionary, string pattern, bool strict, Action<string, string, string> onDuplicateDropped = null)
         {
             bool empty = true;
             string directoryName = Path.GetDirectoryName(pattern);
@@ -389,6 +389,12 @@ namespace System.CommandLine
                         {
                             throw new CommandLineException("Multiple input files matching same simple name " +
                                 fullFileName + " " + otherFullFileName);
+                        }
+                        else
+                        {
+                            // The earlier file (otherFullFileName) wins binding; this one is dropped. Notify
+                            // the caller so it can warn if the files are genuinely different.
+                            onDuplicateDropped?.Invoke(simpleName, otherFullFileName, fullFileName);
                         }
                     }
                     else

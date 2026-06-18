@@ -21,7 +21,7 @@ namespace ILCompiler
         public Option<Dictionary<string, string>> UnrootedInputFilePaths { get; } =
             new("--unrooted-input-file-paths", "-u") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, true), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, true), Description = SR.UnrootedInputFilesToCompile };
         public Option<Dictionary<string, string>> ReferenceFilePaths { get; } =
-            new("--reference", "-r") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, false), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, false), Description = SR.ReferenceFiles };
+            new("--reference", "-r") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, false, ReferenceConflictWarning.WarnIfConflictingVersions), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, false, ReferenceConflictWarning.WarnIfConflictingVersions), Description = SR.ReferenceFiles };
         public Option<string> InstructionSet { get; } =
             new("--instruction-set") { Description = SR.InstructionSets };
         public Option<int> MaxVectorTBitWidth { get; } =
