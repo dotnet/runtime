@@ -1,0 +1,6 @@
+<!--
+    Pair to Directory.Build.props at this level. See that file for the
+    rationale (block inheritance from the repo root so smoke tests build
+    like a standalone app).
+-->
+<Project />

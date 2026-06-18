@@ -1,0 +1,22 @@
+<!--
+    Tiny project whose sole purpose is to trigger the existing
+    ProvisionWasmtime target so a fresh checkout can download wasmtime
+    without manual install. The provisioning target reads the version
+    from src/mono/wasi/wasmtime-version.txt and unpacks the matching
+    GitHub release into $(WasmtimeDir) (default artifacts/obj/wasmtime/).
+
+    Build with: $(repo-root)/.dotnet/dotnet build src/coreclr/wasi/tests/provision-wasmtime.proj
+-->
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <NoWarn>$(NoWarn);NU1505</NoWarn>
+    <!-- Force the provisioning target to run even if the dir exists but
+         the stamp is missing or stale. -->
+    <InstallWasmtimeForTests>true</InstallWasmtimeForTests>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />
+
+</Project>

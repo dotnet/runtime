@@ -1,0 +1,7 @@
+<!--
+    Empty Directory.Build.props that blocks inheritance from the repo root.
+    These smoke tests are deliberately self-contained — they should build
+    like any external app would, against the installed SDK, with no Arcade /
+    central-package-management / NetCoreAppCurrent plumbing in scope.
+-->
+<Project />
