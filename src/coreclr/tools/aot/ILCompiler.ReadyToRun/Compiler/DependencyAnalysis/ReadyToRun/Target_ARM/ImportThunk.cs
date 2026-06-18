@@ -29,37 +29,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     break;
 
                 case ImportThunkKind.DelayLoadHelper:
-                case ImportThunkKind.DelayLoadHelperWithExistingIndirectionCell:
-                    // r4 contains indirection cell (REG_R2R_INDIRECT_PARAM)
-                    // push r4
-                    instructionEncoder.EmitPUSH(Register.R4);
-
-                    if (!relocsOnly)
-                    {
-                        int index = _containingImportSection.IndexFromBeginningOfArray;
-                        // movw r12, #index
-                        instructionEncoder.EmitMOV(Register.R12, checked((ushort)index));
-                        // push r12
-                        instructionEncoder.EmitPUSH(Register.R12);
-                    }
-
-                    // mov r12, [module]
-                    instructionEncoder.EmitMOV(Register.R12, factory.ModuleImport);
-                    // ldr r12, [r12]
-                    instructionEncoder.EmitLDR(Register.R12, Register.R12);
-                    // push r12
-                    instructionEncoder.EmitPUSH(Register.R12);
-
-                    // mov r12, [helper]
-                    instructionEncoder.EmitMOV(Register.R12, _helperCell);
-                    // ldr r12, [r12]
-                    instructionEncoder.EmitLDR(Register.R12, Register.R12);
-                    // bx r12
-                    instructionEncoder.EmitJMP(Register.R12);
-                    break;
-
                 case ImportThunkKind.VirtualStubDispatch:
-                    // r12 contains indirection cell (virtualStubParamInfo register)
+                case ImportThunkKind.DelayLoadHelperWithExistingIndirectionCell:
+                    // r12 contains indirection cell
                     // push r12
                     instructionEncoder.EmitPUSH(Register.R12);
 
