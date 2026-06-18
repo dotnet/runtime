@@ -241,7 +241,16 @@ enum InterpInstFlags
     // Flag used internally by the var offset allocator
     INTERP_INST_FLAG_ACTIVE_CALL        = 0x02,
     // The IL stack is empty at this instruction
-    INTERP_INST_FLAG_EMPTY_IL_STACK    = 0x04
+    INTERP_INST_FLAG_EMPTY_IL_STACK    = 0x04,
+    // Marks a value-returning managed call site whose return value is reportable to the debugger
+    INTERP_INST_FLAG_DBG_CALL_INSTRUCTION = 0x08
+};
+
+struct InterpCallReturnInfo
+{
+    uint32_t ilOffset;
+    uint32_t postCallNativeOffset;
+    int32_t returnValueVarOffset;
 };
 
 struct InterpInst
@@ -866,6 +875,8 @@ private:
     int32_t* m_pNativeMapIndexToILOffset = NULL;
 #endif
     int32_t m_ILToNativeMapSize = 0;
+
+    TArray<InterpCallReturnInfo, MemPoolAllocator> m_callReturnInfos;
 
     InterpBasicBlock*   AllocBB(int32_t ilOffset);
     InterpBasicBlock*   GetBB(int32_t ilOffset);

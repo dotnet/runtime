@@ -1789,9 +1789,12 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
     if (retBuf != nullptr)
     {
         GenTree* node = retBuf->GetNode();
-        assert(node->OperIsPutArg());
 
+#if HAS_FIXED_REGISTER_SET
+        assert(node->OperIsPutArg());
         node = node->gtGetOp1()->gtSkipReloadOrCopy();
+#endif
+
         if (!node->OperIs(GT_LCL_ADDR))
         {
             return;
