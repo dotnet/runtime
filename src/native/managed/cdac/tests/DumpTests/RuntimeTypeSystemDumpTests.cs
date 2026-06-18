@@ -234,7 +234,7 @@ public class RuntimeTypeSystemDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
-    public void RuntimeTypeSystem_IsObjRef_AreConsistent(TestConfiguration config)
+    public void RuntimeTypeSystem_IsCorElementTypeObjRef_AreConsistent(TestConfiguration config)
     {
         InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;

@@ -656,7 +656,7 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsObjRef_ReturnsExpectedValues(MockTarget.Architecture arch)
+    public void IsCorElementTypeObjRef_ReturnsExpectedValues(MockTarget.Architecture arch)
     {
         TargetPointer objectTypePtr = default;
         TargetPointer stringTypePtr = default;
