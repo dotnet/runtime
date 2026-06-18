@@ -6,8 +6,10 @@
 // flow-sensitive GTF_DIV_MOD_NO_BY_ZERO flag (set by assertion propagation under
 // a dominating zero-check). CSE/loop-hoisting then moved the division into the
 // loop preheader, above the dominating check, where it executed unconditionally
-// and divided by zero. The division's exception must be modeled from value-based
-// information only, so it is not hoisted above the check that proves it safe.
+// and divided by zero. The fix clears these stale flow-sensitive flags
+// (GTF_DIV_MOD_NO_BY_ZERO / GTF_DIV_MOD_NO_OVERFLOW) between opt-repeat iterations
+// in ResetOptAnnotations, so a later value-numbering pass no longer sees the
+// divide as non-throwing and cannot hoist it above its guard.
 
 using System;
 using System.Numerics;
