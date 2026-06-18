@@ -33,10 +33,10 @@ namespace Microsoft.Extensions.Logging.Console
                     sanitized.Append('u');
                     int codePoint = current;
                     Span<char> hex = sanitized.AppendSpan(4);
-                    hex[0] = ToHexChar(codePoint >> 12);
-                    hex[1] = ToHexChar((codePoint >> 8) & 0xF);
-                    hex[2] = ToHexChar((codePoint >> 4) & 0xF);
-                    hex[3] = ToHexChar(codePoint & 0xF);
+                    hex[0] = HexConverter.ToCharUpper(current >> 12);
+                    hex[1] = HexConverter.ToCharUpper(current >> 8);
+                    hex[2] = HexConverter.ToCharUpper(current >> 4);
+                    hex[3] = HexConverter.ToCharUpper(current);
                 }
                 else
                 {
