@@ -500,17 +500,4 @@ GenTree* Compiler::impSIMDPopStack()
     return tree;
 }
 
-//-------------------------------------------------------------------
-// Set the flag that indicates that the lclVar referenced by this tree
-// is used in a SIMD intrinsic.
-// Arguments:
-//      tree - GenTree*
-//
-void Compiler::setLclRelatedToSIMDIntrinsic(GenTree* tree)
-{
-    assert(tree->OperIsScalarLocal() || tree->IsLclVarAddr());
-    LclVarDsc* lclVarDsc             = lvaGetDesc(tree->AsLclVarCommon());
-    lclVarDsc->lvUsedInSIMDIntrinsic = true;
-}
-
 #endif // FEATURE_SIMD

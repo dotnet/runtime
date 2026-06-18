@@ -3758,6 +3758,7 @@ public:
 
     GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank);
 
+    void gtInitializeLclVarNode(GenTreeLclVarCommon* lclVar);
     void gtInitializeStoreNode(GenTree* store, GenTree* value);
 
     void gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFlags indirFlags);
@@ -10176,8 +10177,6 @@ private:
     }
 
     GenTree* impSIMDPopStack();
-
-    void setLclRelatedToSIMDIntrinsic(GenTree* tree);
 
     // Get the size of the SIMD type in bytes
     int getSIMDTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)
