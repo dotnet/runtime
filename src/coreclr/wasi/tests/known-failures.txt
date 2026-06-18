@@ -316,11 +316,26 @@ Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
 # ----- self-overriding methodimpl: wasm "uninitialized element" trap ---------
 #
 # REAL BUG. Test runs partially (prints "In MyFoo::DoBarOverride")
-# then traps in CallFunc_This_RetI32_PE -- the portable-entrypoint
-# dispatch for the self-override slot lands on an uninitialized
-# function-table entry. Worth root-causing in the interpreter /
-# methodimpl resolution path. Not a blocker for the bring-up, but the
-# only remaining "real" failure in Loader.
+# then traps in CallFunc_This_RetI32_PE on the SECOND, non-virtual
+# call to MyBar::DoBar (which is methodimpl'd to MyBar::DoBarOverride).
+# Trap is "wasm trap: uninitialized element" — a call_indirect through
+# wasm table slot 0 (i.e. _pActualCode == NULL).
+#
+# Mechanism: PortableEntryPoint for MyBar::DoBarOverride was created
+# via PortableEntryPoint::Init(MethodDesc*) (precode_portable.cpp:113)
+# which leaves _pActualCode = NULL and only sets
+# kPrefersInterpreterEntryPoint. The interpreter thunk is supposed to
+# be installed later by ResolvePendingPortableEntryPointThunksGlobal()
+# via TrySetInterpreterThunk(), but in the methodimpl-non-virtual-call
+# path it appears the method is dispatched before the install runs (or
+# GetPortableEntryPointToInterpreterThunk returned NULL because no
+# pre-generated thunk exists for the signature, so the slot stays
+# NULL forever). The first virtual call works because the vtable slot
+# was already populated for MyFoo::DoBarOverride; only the non-virtual
+# call to MyBar::DoBarOverride trips the bug.
+#
+# Worth root-causing in the interpreter / methodimpl resolution path
+# alongside the GitHub_89834 second-pass-unwind bug.
 Loader/classloader/MethodImpl/self_override5/self_override5.sh
 
 # ----- CircularCctor*BFI: threading-driven cctor races -----------------------
@@ -417,10 +432,33 @@ Regressions/coreclr/GitHub_12224/Test12224/Test12224.sh
 # ----- REAL BUG: wasm `unreachable` trap after handled PNSE ------------------
 #
 # Test prints "Begin Observing Exception: PlatformNotSupportedException"
-# (which it deliberately catches), then traps with
-# `wasm trap: wasm "unreachable" instruction executed` and host exit
-# 134. Same family of "interpreter / portable-entrypoint" surface as
-# self_override5 in Loader. Worth root-causing alongside that one.
+# (which it deliberately catches via FirstChanceException), then traps
+# with `wasm trap: wasm "unreachable" instruction executed` and host
+# exit 134.
+#
+# Mechanism (different subsystem from self_override5): the trap is
+# the abort()/__builtin_trap() at the end of CrashDumpAndTerminateProcess.
+# Top of the wasm stack at trap is:
+#   abort -> PROCAbort (process.cpp:1939) ->
+#   PROCEndProcess (process.cpp:445) ->
+#   CrashDumpAndTerminateProcess (excep.cpp:3503) ->
+#   SfiNextWorker (exceptionhandling.cpp:4134) ->
+#   DispatchExSecondPass (exceptionhandling.cpp:4423) ->
+#   DispatchManagedException (exceptionhandling.cpp:1727)
+# i.e. the second-pass exception walk reaches the top of the managed
+# stack without finding a handler and terminates the process.
+#
+# The test uses async Task<int> Main + ThrowAndCatchTaskCancellation
+# + FirstChanceException + ThreadLocal<bool>. The first-chance
+# observation runs (prints "Begin Observing Exception"), but
+# second-pass unwind through the async state machine + FirstChance
+# observer doesn't find the catch frame that exists in the source.
+# Likely a stack-walker gap on WASI for one of: async resumption
+# frames, FirstChanceExceptionEventArgs invocation frame, or the
+# ThreadLocal field-init context.
+#
+# Different root cause from self_override5 but same class of "real
+# but narrow WASI EH bring-up gap" worth root-causing later.
 Regressions/coreclr/GitHub_89834/test89834/test89834.sh
 
 # ----- flaky under parallel sweep load ---------------------------------------
