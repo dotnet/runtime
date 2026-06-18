@@ -86,27 +86,154 @@ namespace System.Net.Mime
             return newValue;
         }
 
-        // Detect the encoding: "=?encoding?BorQ?content?="
+        // Detect the encoding: "=?charset?BorQ?content?="
         // "=?utf-8?B?RmlsZU5hbWVf55CG0Y3Qq9C60I5jw4TRicKq0YIM0Y1hSsSeTNCy0Klh?="; // 3.5
         // With the addition of folding in 4.0, there may be multiple lines with encoding, only detect the first:
         // "=?utf-8?B?RmlsZU5hbWVf55CG0Y3Qq9C60I5jw4TRicKq0YIM0Y1hSsSeTNCy0Klh?=\r\n =?utf-8?B??=";
-        internal static unsafe Encoding? DecodeEncoding(string? value)
+        //
+        // The entire value must consist of one or more well-formed RFC 2047 encoded-words
+        // separated by linear whitespace (folding); otherwise null is returned so callers
+        // do not treat attacker-controlled input as pre-encoded and pass it through unquoted.
+        internal static Encoding? DecodeEncoding(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
                 return null;
             }
 
-            ReadOnlySpan<char> valueSpan = value;
-            Span<Range> subStrings = stackalloc Range[6];
-            if (valueSpan.SplitAny(subStrings, "?\r\n") < 5 ||
-                valueSpan[subStrings[0]] is not "=" ||
-                valueSpan[subStrings[4]] is not "=")
+            ReadOnlySpan<char> remainder = value;
+            ReadOnlySpan<char> firstCharSet = default;
+
+            while (true)
             {
-                return null;
+                // An encoded-word has the form "=?charset?encoding?text?=".
+                // Minimum possible length is "=?x?Q??=" (8 chars).
+                if (remainder.Length < 8 || remainder[0] != '=' || remainder[1] != '?')
+                {
+                    return null;
+                }
+
+                // charset = characters up to the next '?'.
+                int charSetLength = remainder.Slice(2).IndexOf('?');
+                if (charSetLength <= 0)
+                {
+                    return null;
+                }
+                ReadOnlySpan<char> charSet = remainder.Slice(2, charSetLength);
+
+                // Validate charset is an RFC 2047 token (no whitespace, controls, or tspecials).
+                if (!IsValidEncodedWordToken(charSet))
+                {
+                    return null;
+                }
+
+                int encodingPos = 2 + charSetLength + 1;
+                if (encodingPos + 2 >= remainder.Length || remainder[encodingPos + 1] != '?')
+                {
+                    return null;
+                }
+                char encoding = remainder[encodingPos];
+                if (encoding is not ('B' or 'b' or 'Q' or 'q'))
+                {
+                    return null;
+                }
+
+                // Encoded text: terminated by "?=", and must not contain '?', whitespace,
+                // or any non-printable ASCII (per RFC 2047).
+                int dataStart = encodingPos + 2;
+                int dataEnd = -1;
+                for (int i = dataStart; i < remainder.Length - 1; i++)
+                {
+                    char c = remainder[i];
+                    if (c == '?')
+                    {
+                        if (remainder[i + 1] == '=')
+                        {
+                            dataEnd = i;
+                            break;
+                        }
+                        return null;
+                    }
+                    if (c <= ' ' || c >= 127)
+                    {
+                        return null;
+                    }
+                }
+                if (dataEnd < 0)
+                {
+                    return null;
+                }
+
+                if (firstCharSet.IsEmpty)
+                {
+                    firstCharSet = charSet;
+                }
+
+                remainder = remainder.Slice(dataEnd + 2);
+                if (remainder.IsEmpty)
+                {
+                    break;
+                }
+
+                // Multiple encoded-words must be separated by linear whitespace (folding):
+                // an optional CRLF followed by one or more SP/HT, or just SP/HT.
+                int wsLength = 0;
+                if (remainder.Length >= 2 && remainder[0] == '\r' && remainder[1] == '\n')
+                {
+                    wsLength = 2;
+                }
+                int wsEnd = wsLength;
+                while (wsEnd < remainder.Length && (remainder[wsEnd] == ' ' || remainder[wsEnd] == '\t'))
+                {
+                    wsEnd++;
+                }
+                if (wsEnd == wsLength)
+                {
+                    return null;
+                }
+                remainder = remainder.Slice(wsEnd);
+                if (remainder.IsEmpty)
+                {
+                    break;
+                }
             }
 
-            return Encoding.GetEncoding(value[subStrings[1]]);
+            return Encoding.GetEncoding(firstCharSet.ToString());
+        }
+
+        private static bool IsValidEncodedWordToken(ReadOnlySpan<char> token)
+        {
+            foreach (char c in token)
+            {
+                // RFC 2047 token: any CHAR except SPACE, CTLs, and especials
+                // (especials = "(" / ")" / "<" / ">" / "@" / "," / ";" / ":" /
+                //              "\" / <"> / "/" / "[" / "]" / "?" / "." / "=").
+                if (c <= ' ' || c >= 127)
+                {
+                    return false;
+                }
+                switch (c)
+                {
+                    case '(':
+                    case ')':
+                    case '<':
+                    case '>':
+                    case '@':
+                    case ',':
+                    case ';':
+                    case ':':
+                    case '\\':
+                    case '"':
+                    case '/':
+                    case '[':
+                    case ']':
+                    case '?':
+                    case '.':
+                    case '=':
+                        return false;
+                }
+            }
+            return true;
         }
 
         internal static bool IsAscii(string value, bool permitCROrLF)

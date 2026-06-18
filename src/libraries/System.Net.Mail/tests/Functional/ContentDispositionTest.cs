@@ -344,5 +344,38 @@ namespace System.Net.Mime.Tests
                 CultureInfo.CurrentCulture = origCulture;
             }
         }
+
+        [Theory]
+        [InlineData("=?utf-8?Q?foo?=?evil\"; filename=\"foo.txt")]
+        [InlineData("=?utf-8?B?Zm9v?=\"; filename=\"foo.txt")]
+        [InlineData("=?utf-8?Q?foo\"; filename=\"foo.txt?=")]
+        [InlineData("=?utf-8?B?Zm9v?=trailing")]
+        public static void FileName_Set_InjectionPayload_IsEscapedAndNotInjected(string injection)
+        {
+            var cd = new ContentDisposition();
+            cd.FileName = injection;
+
+            Assert.Equal(injection, cd.FileName);
+
+            var reparsed = new ContentDisposition(cd.ToString());
+            Assert.Equal(injection, reparsed.FileName);
+            Assert.Equal(cd.Parameters.Count, reparsed.Parameters.Count);
+        }
+
+        [Theory]
+        [InlineData("=?utf-8?B?SGVsbG8=?=")]
+        [InlineData("=?utf-8?Q?Hello=20world?=")]
+        [InlineData("=?utf-8?B?SGVsbG8=?=\r\n =?utf-8?B?d29ybGQ=?=")]
+        public static void FileName_Set_EncodedWord_RoundTripsUnchanged(string encoded)
+        {
+            var cd = new ContentDisposition();
+            cd.FileName = encoded;
+
+            string serialized = cd.ToString();
+            Assert.Contains(encoded, serialized);
+
+            var reparsed = new ContentDisposition(serialized);
+            Assert.Equal(encoded, reparsed.FileName);
+        }
     }
 }
