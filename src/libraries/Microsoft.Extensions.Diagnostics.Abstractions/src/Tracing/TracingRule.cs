@@ -14,10 +14,12 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
     /// </summary>
     /// <remarks>
     /// <para>The most specific rule that matches a given activity will be used. The priority of parameters is as follows:</para>
-    /// <para>- ListenerName, an exact match. See <see cref="ActivityListenerBuilder.Name"/>.</para>
-    /// <para>- SourceName, either an exact match, the longest prefix match, or a wildcard pattern using a single <c>*</c>. See <see cref="ActivitySource.Name"/>.</para>
-    /// <para>- OperationName, an exact match. See <see cref="Activity.OperationName"/>.</para>
-    /// <para>- Scopes, where a more constrained scope is preferred over <c>Global | Local</c>.</para>
+    /// <list type="bullet">
+    ///   <item><description>ListenerName, an exact match. See <see cref="ActivityListenerBuilder.Name"/>.</description></item>
+    ///   <item><description>SourceName, either an exact match, the longest prefix match, or a wildcard pattern using a single <c>*</c>. See <see cref="ActivitySource.Name"/>.</description></item>
+    ///   <item><description>OperationName, an exact match. See <see cref="Activity.OperationName"/>.</description></item>
+    ///   <item><description>Scopes, where a more constrained scope is preferred over <c>Global | Local</c>.</description></item>
+    /// </list>
     /// <para>When multiple rules are equally specific, the rule added last takes precedence.</para>
     /// </remarks>
     public class TracingRule

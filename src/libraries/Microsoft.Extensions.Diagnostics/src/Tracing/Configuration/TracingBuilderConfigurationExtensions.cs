@@ -20,10 +20,12 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
         /// </summary>
         /// <remarks>
         /// <para>Tracing has two key levels: <see cref="ActivitySource.Name"/> and <see cref="Activity.OperationName"/>.</para>
-        /// <para>- Section names: <c>EnabledTracing</c> (both global and local), <c>EnabledGlobalTracing</c>, and <c>EnabledLocalTracing</c>, plus the listener-specific forms <c>{ListenerName}:...</c>.</para>
-        /// <para>- Within each section, supported entries are <c>Default</c>, <c>{SourceName}</c>, <c>{SourceName}:Default</c>, and <c>{SourceName}:{OperationName}</c>. <c>Default</c> at either level is a synonym for the level above (a source-level rule when nested under a source, a global rule at the top).</para>
-        /// <para>- Listener-specific rules are evaluated together with root-level rules. When both match, the most specific rule is chosen; listener-specific rules are more specific than root-level defaults.</para>
-        /// <para>- Values are Boolean only: <c>true</c> enables and <c>false</c> disables.</para>
+        /// <list type="bullet">
+        ///   <item><description>Section names: <c>EnabledTracing</c> (both global and local), <c>EnabledGlobalTracing</c>, and <c>EnabledLocalTracing</c>, plus the listener-specific forms <c>{ListenerName}:...</c>.</description></item>
+        ///   <item><description>Within each section, supported entries are <c>Default</c>, <c>{SourceName}</c>, <c>{SourceName}:Default</c>, and <c>{SourceName}:{OperationName}</c>. <c>Default</c> at either level is a synonym for the level above (a source-level rule when nested under a source, a global rule at the top).</description></item>
+        ///   <item><description>Listener-specific rules are evaluated together with root-level rules. When both match, the most specific rule is chosen; listener-specific rules are more specific than root-level defaults.</description></item>
+        ///   <item><description>Values are Boolean only: <c>true</c> enables and <c>false</c> disables.</description></item>
+        /// </list>
         /// <para>Example keys: <c>EnabledTracing:Default=true</c>, <c>EnabledGlobalTracing:MyCompany.Service=false</c>, <c>EnabledTracing:MyCompany.Service:Checkout=true</c>, and <c>MyListener:EnabledLocalTracing:MyCompany.Service=true</c>.</para>
         /// </remarks>
         /// <param name="builder">The <see cref="ITracingBuilder"/>.</param>
