@@ -3702,17 +3702,16 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 GenTree* aotInfo = nullptr;
                 if (IsNativeAot())
                 {
-                    GenTree* methodPtr = impStackTop(1).val;
+                    StackEntry methodStack = impStackTop(1);
 
                     CORINFO_METHOD_HANDLE targetMethod = NO_METHOD_HANDLE;
-                    if (methodPtr->OperIs(GT_FTN_ADDR))
+                    if (methodStack.val->OperIs(GT_FTN_ADDR))
                     {
-                        targetMethod = methodPtr->AsFptrVal()->gtFptrMethod;
+                        targetMethod = methodStack.val->AsFptrVal()->gtFptrMethod;
                     }
-                    else if (methodPtr->OperIs(GT_CALL) &&
-                             methodPtr->AsCall()->IsHelperCall(CORINFO_HELP_READYTORUN_GENERIC_HANDLE))
+                    else if (methodStack.seTypeInfo.IsMethod())
                     {
-                        // TODO: impl handle lookups for ftn ptrs on NativeAOT
+                        targetMethod = methodStack.seTypeInfo.GetMethodPointerInfo()->m_token.hMethod;
                     }
 
                     if (targetMethod == NO_METHOD_HANDLE)
@@ -3731,7 +3730,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     }
                     else if (callSig.numArgs != 0)
                     {
-                        info.compCompHnd->getArgType(sig, sig->args, &closureType);
+                        info.compCompHnd->getArgType(&callSig, callSig.args, &closureType);
                     }
 
                     bool throwIfClosed = closureType == NO_CLASS_HANDLE || eeIsValueClass(closureType);
@@ -3749,6 +3748,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     infoBits |= throwIfClosed ? 2 : 0;
                     infoBits |= callSig.totalILArgs() << 2;
                     aotInfo = gtNewIconNode(infoBits);
+
+                    JITDUMP(
+                        "NativeAOT delegate creation info: method %s closure %s static %u throw if closed %u args %u\n",
+                        eeGetMethodFullName(targetMethod),
+                        closureType == NO_CLASS_HANDLE ? "none" : eeGetClassName(closureType), infoBits & 1,
+                        infoBits >> 1 & 1, infoBits >> 2);
                 }
 
                 CORINFO_SIG_INFO exactSig;
@@ -3756,7 +3761,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 CORINFO_CLASS_HANDLE delegateType = exactSig.sigInst.methInst[0];
 
                 GenTree* delegateMT;
-                if (eeIsSharedInst(delegateType))
+                bool     isShared = eeIsSharedInst(delegateType);
+                if (isShared)
                 {
                     if (!IsNativeAot())
                     {
@@ -3803,9 +3809,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
 
-                lvaSetClass(delegateSlot, delegateType, /*isExact*/ false);
+                lvaSetClass(delegateSlot, delegateType, !isShared);
                 retNode = gtNewLclVarNode(delegateSlot);
-                JITDUMP("Expanded GetDelegate\n");
+                JITDUMP("Expanded GetDelegate for %s\n", eeGetClassName(delegateType));
                 break;
             }
 
