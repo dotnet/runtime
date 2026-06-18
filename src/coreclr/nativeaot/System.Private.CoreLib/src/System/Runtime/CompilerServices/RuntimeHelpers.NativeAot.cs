@@ -332,7 +332,7 @@ namespace System.Runtime.CompilerServices
             bool throwIfClosed = (info & 2) != 0;
             int paramCount = (int)(info >> 2);
 
-            RuntimeMethodInfo invokeMethod = delegateType.GetRuntimeTypeInfo().GetInvokeMethod();
+            MethodInfo invokeMethod = Delegate.GetInvokeMethod(delegateType);
             int invokeCount = invokeMethod.GetParametersAsSpan().Length;
 
             bool isOpen = invokeCount == paramCount;
