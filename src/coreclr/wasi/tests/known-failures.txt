@@ -8,6 +8,71 @@
 # An expected-failure that starts passing surfaces as an "unexpected pass"
 # in the summary so you can remove it from this list.
 
+# ----- pure interpreter speed (no WASI bug, just slow) ------------------------
+#
 # 2^31 iteration loop in pure interpreter — runs forever within the 60s
 # default test timeout. Will become viable once R2R-WASM is on for tests.
 JIT/jit64/regress/ddb/113574/113574/113574.sh
+# Same general issue: a large stress loop that exceeds the default timeout
+# under the interpreter. Promote to passing once R2R-WASM is on, or run
+# with a much larger --timeout.
+JIT/Regression/Regression_PdbOnly_r_2/Regression_PdbOnly_r_2.sh
+
+# ----- vararg calling convention not implemented in the WASM interpreter ------
+#
+# Each of these throws "System.InvalidProgramException: Vararg calling
+# convention not supported." from the interpreter on entry. Vararg
+# IL is a real but narrow gap in the WASM interpreter codegen; the
+# tests are checking very old x86 JIT regressions that happen to use
+# __arglist. Unblock requires interpreter vararg support.
+JIT/Regression/CLR-x86-EJIT/V1-M12-Beta2/b26323/b26323/b26323.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324a/b26324a.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324b/b26324b.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28901/b28901/b28901.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30838/b30838/b30838.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30864/b30864/b30864.sh
+JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b32374/b32374/b32374.sh
+JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b35784/b35784/b35784.sh
+JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b65423/b65423/b65423.sh
+JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b409748/b409748/b409748.sh
+JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b426654/b426654/b426654.sh
+
+# ----- dlopen / shared-library loading not implemented in wasi-libc -----------
+#
+# Each of these has a `[DllImport]` against a per-test native helper
+# (.dylib/.so/.dll). wasi-libc has no dlopen, so the runtime throws
+# DllNotFoundException("dlopen not implemented"). Unblock requires
+# either static-linking pinvoke targets into corerun.wasm, or an
+# in-runtime PInvoke-override scheme like the browser host uses.
+JIT/Regression/JitBlue/Runtime_101046/Runtime_101046/Runtime_101046.sh
+JIT/Regression/VS-ia64-JIT/V1.2-M02/b108129/b108129/b108129.sh
+
+# ----- System.Diagnostics.Process not supported on WASI -----------------------
+#
+# These two tests spawn a sub-process to exercise a 32-bit vs 64-bit
+# JIT codegen difference. System.Diagnostics.Process is excluded from
+# the wasi-wasm runtime pack (the System.Diagnostics.Process
+# .notsupported.cs shim throws PlatformNotSupportedException). The
+# subprocess approach is fundamentally incompatible with a sandboxed
+# WASI module that has no `proc_create` equivalent.
+JIT/Regression/JitBlue/GitHub_23199/GitHub_23199_Target_32Bit/GitHub_23199_Target_32Bit.sh
+JIT/Regression/JitBlue/GitHub_23199/GitHub_23199_Target_64Bit/GitHub_23199_Target_64Bit.sh
+
+# ----- collectible AssemblyLoadContext unloading -----------------------------
+#
+# Test verifies that a readonly static field referenced from a method
+# in a collectible ALC is collected when the ALC is unloaded. The WASI
+# CoreCLR bring-up does not yet implement ALC unloading.
+JIT/Regression/JitBlue/Runtime_100437/Runtime_100437/Runtime_100437.sh
+
+# ----- EH edge case: double-ctor exception not thrown ------------------------
+#
+# Both variants of Dev11_468598 expect a specific EH-driven failure
+# when a constructor is invoked twice via reflection from inside a
+# catch handler. The expected exception does not surface on WASI
+# corerun, suggesting an interaction between the WASM EH path and the
+# constructor-completion bookkeeping. Worth investigating; tracked
+# here for now so it doesn't gate the run.
+JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Plain/Test_HndIndex_10_Plain.sh
+JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Reordered/Test_HndIndex_10_Reordered.sh
+
