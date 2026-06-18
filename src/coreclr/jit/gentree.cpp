@@ -10207,6 +10207,13 @@ GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags in
     GenTreeIndir* indir = new (this, GT_IND) GenTreeIndir(GT_IND, typ, addr, nullptr);
     gtInitializeIndirNode(indir, indirFlags);
 
+#if defined(FEATURE_SIMD)
+    if (varTypeIsSIMDOrMask(typ))
+    {
+        SetOpLclRelatedToSIMDIntrinsic(addr);
+    }
+#endif // FEATURE_SIMD
+
     return indir;
 }
 
