@@ -12182,6 +12182,16 @@ void CEEJitInfo::recordRelocation(void *       location,
         break;
     }
 
+    case CorInfoReloc::ARM64_PAGEOFFSET_12L:
+    {
+        _ASSERTE(addlDelta == 0);
+
+        // Write the 12 bits page offset into the ldr instruction.
+        INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
+        PutArm64Rel12Ldr((UINT32 *)locationRW, imm12);
+        break;
+    }
+
 #endif // TARGET_ARM64
 
 #ifdef TARGET_LOONGARCH64

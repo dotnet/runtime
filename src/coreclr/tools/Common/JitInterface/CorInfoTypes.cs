@@ -478,6 +478,7 @@ namespace Internal.JitInterface
         ARM64_BRANCH26,                        // Arm64: B, BL
         ARM64_PAGEBASE_REL21,                  // ADRP
         ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+        ARM64_PAGEOFFSET_12L,                  // LDR (indexed, unsigned immediate), for page offset
         // Linux arm64
         ARM64_LIN_TLSDESC_ADR_PAGE21,
         ARM64_LIN_TLSDESC_LD64_LO12,
