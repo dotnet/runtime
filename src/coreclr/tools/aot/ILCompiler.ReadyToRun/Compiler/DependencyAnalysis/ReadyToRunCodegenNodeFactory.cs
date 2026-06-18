@@ -897,9 +897,12 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
-            DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
-            graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
+            if (!Target.IsWasm)
+            {
+                DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
+                graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
+            }
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode);
@@ -1272,6 +1275,15 @@ namespace ILCompiler.DependencyAnalysis
         public void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee)
         {
             _genericCycleDetector?.DetectCycle(caller, callee);
+        }
+
+        public bool CanBeInGenericCycle(MethodDesc method)
+        {
+            if (_genericCycleDetector is null)
+                return false;
+
+            MethodDesc methodDefinition = method.GetTypicalMethodDefinition();
+            return _genericCycleDetector.CanBeInCycle(methodDefinition);
         }
 
         public Utf8String GetSymbolAlternateName(ISymbolNode node, out bool isHidden)

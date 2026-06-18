@@ -13,6 +13,17 @@
 //   3. Update the contract implementation in src/native/managed/cdac/.../Contracts/<Contract>.cs
 //   4. Update the mock descriptors and tests in src/native/managed/cdac/tests/.
 
+// Increment this when making a change where we'd like to recommend users update their diagnostic tools.
+// Tools can use this to display an advisory notice to users encouraging them to update. Changing
+// this value on its own is not considered a breaking change. See the RuntimeInfo.md data contract for details.
+// When incrementing this value, also implement the new functionality in the cDAC reader and update the
+// GetCurrentReaderVersion() method on the IRuntimeInfo contract in
+// src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/RuntimeInfo_1.cs
+// to match.
+#ifndef CDAC_RECOMMENDED_READER_VERSION
+#define CDAC_RECOMMENDED_READER_VERSION 1
+#endif
+
 CDAC_BASELINE("empty")
 CDAC_TYPES_BEGIN()
 
@@ -154,16 +165,65 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, T_UINT8, 3)
 
 // StressLog globals (no module table in NativeAOT)
 CDAC_GLOBAL(StressLogEnabled, T_UINT8, 1)
-CDAC_GLOBAL_POINTER(StressLog, &g_pStressLog)
+CDAC_GLOBAL_POINTER(StressLog, &StressLog::theLog)
 CDAC_GLOBAL(StressLogHasModuleTable, T_UINT8, 0)
 CDAC_GLOBAL(StressLogChunkSize, T_UINT32, STRESSLOG_CHUNK_SIZE)
 CDAC_GLOBAL(StressLogValidChunkSig, T_UINT32, 0xCFCFCFCF)
 CDAC_GLOBAL(StressLogMaxMessageSize, T_UINT64, (uint64_t)StressMsg::maxMsgSize)
 
+#if defined(TARGET_BROWSER)
+#ifdef Browser
+#error Handle 'Browser' define
+#endif // Browser
+CDAC_GLOBAL_STRING(OperatingSystem, Browser)
+#elif defined(TARGET_APPLE)
+#ifdef Apple
+#error Handle 'Apple' define
+#endif // Apple
+CDAC_GLOBAL_STRING(OperatingSystem, Apple)
+#elif defined(TARGET_UNIX)
+#ifdef Unix
+#error Handle 'Unix' define
+#endif // Unix
+CDAC_GLOBAL_STRING(OperatingSystem, Unix)
+#elif defined(TARGET_WINDOWS)
+#ifdef Windows
+#error Handle 'Windows' define
+#endif // Windows
+CDAC_GLOBAL_STRING(OperatingSystem, Windows)
+#else
+#error TARGET_{OS} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
+#endif
+
+#if defined(TARGET_X86)
+CDAC_GLOBAL_STRING(Architecture, x86)
+#elif defined(TARGET_AMD64)
+CDAC_GLOBAL_STRING(Architecture, x64)
+#elif defined(TARGET_ARM)
+CDAC_GLOBAL_STRING(Architecture, arm)
+#elif defined(TARGET_ARM64)
+CDAC_GLOBAL_STRING(Architecture, arm64)
+#elif defined(TARGET_LOONGARCH64)
+CDAC_GLOBAL_STRING(Architecture, loongarch64)
+#elif defined(TARGET_RISCV64)
+CDAC_GLOBAL_STRING(Architecture, riscv64)
+#elif defined(TARGET_WASM)
+CDAC_GLOBAL_STRING(Architecture, wasm)
+#else
+#error TARGET_{ARCH} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
+#endif
+
+CDAC_GLOBAL_STRING(RuntimeFlavor, NativeAot)
+
+CDAC_GLOBAL_STRING(RID, RID_STRING)
+
+CDAC_GLOBAL(RecommendedReaderVersion, T_UINT32, CDAC_RECOMMENDED_READER_VERSION)
+
 // Contracts: declare which contracts this runtime supports
 CDAC_GLOBAL_CONTRACT(Thread, n1)
 CDAC_GLOBAL_CONTRACT(Exception, c1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, n1)
+CDAC_GLOBAL_CONTRACT(RuntimeInfo, c1)
 CDAC_GLOBAL_CONTRACT(StressLog, c2)
 
 // Managed type sub-descriptor: ILC emits a ContractDescriptor with managed type layouts

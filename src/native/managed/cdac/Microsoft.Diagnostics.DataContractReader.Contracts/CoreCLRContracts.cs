@@ -60,6 +60,7 @@ public static class CoreCLRContracts
             return arch switch
             {
                 RuntimeInfoArchitecture.X64 => new GCInfo_1<AMD64GCInfoTraits>(t),
+                RuntimeInfoArchitecture.X86 => new GCInfoX86_1(t),
                 RuntimeInfoArchitecture.Arm64 => new GCInfo_1<ARM64GCInfoTraits>(t),
                 RuntimeInfoArchitecture.Arm => new GCInfo_1<ARMGCInfoTraits>(t),
                 RuntimeInfoArchitecture.LoongArch64 => new GCInfo_1<LoongArch64GCInfoTraits>(t),
@@ -72,5 +73,7 @@ public static class CoreCLRContracts
 
         registry.Register<IExecutionManager>("c1", static t => new ExecutionManager_1(t));
         registry.Register<IExecutionManager>("c2", static t => new ExecutionManager_2(t));
+
+        registry.Register<IRuntimeMutableTypeSystem>("c1", static t => new RuntimeMutableTypeSystem_1(t));
     }
 }

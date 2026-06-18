@@ -783,6 +783,8 @@ protected:
     void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree);
 #if defined(FEATURE_SIMD)
     void genSetRegToConst(regNumber targetReg, var_types targetType, simd_t* val);
+#endif
+#if defined(FEATURE_SIMD) && defined(FEATURE_MASKED_HW_INTRINSICS)
     void genSetRegToConst(regNumber targetReg, var_types targetType, simdmask_t* val);
 #endif
     void genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum);
@@ -824,6 +826,7 @@ protected:
 
 #if defined(TARGET_ARMARCH)
     void genCodeForMulLong(GenTreeOp* mul);
+    void genCodeForDivModOverflowCheck(GenTreeOp* tree);
 #endif // TARGET_ARMARCH
 
 #if !defined(TARGET_64BIT)
@@ -1175,9 +1178,11 @@ protected:
     void genCodeForReturnTrap(GenTreeOp* tree);
     void genCodeForStoreInd(GenTreeStoreInd* tree);
     void genCodeForSwap(GenTreeOp* tree);
-    void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
+#ifdef TARGET_WASM
+    void genCodeForFrameSize(GenTree* tree);
+#endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);
 #endif // SWIFT_SUPPORT
@@ -1252,7 +1257,6 @@ protected:
 
     void                 genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
     void                 genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
-    void                 genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
     void                 genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
     unsigned             genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
     void                 genJumpTable(GenTree* tree);
@@ -1288,6 +1292,7 @@ protected:
     void genCompareImmAndJump(
         GenCondition::Code cond, regNumber reg, ssize_t compareImm, emitAttr size, BasicBlock* target);
     void genCodeForBfiz(GenTreeOp* tree);
+    void genCodeForBfx(GenTreeBfm* tree);
 #endif // TARGET_ARM64
 
     void genEHCatchRet(BasicBlock* block);
