@@ -26,7 +26,7 @@ namespace Microsoft.Win32.SafeHandles
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
         private readonly ProcessWaitState.Holder? _waitStateHolder;
-        private int _startedSuspended; // 1 = started suspended but not yet resumed; 0 = not suspended or already resumed
+        private int _startedSuspended; // Accessed atomically via Interlocked.Exchange: 1 = started suspended but not yet resumed; 0 = not suspended or already resumed
 
         internal SafeProcessHandle(ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
@@ -367,7 +367,7 @@ namespace Microsoft.Win32.SafeHandles
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
-#pragma warning disable CA1416 // KillOnParentExit/StartSuspended getters work on all platforms; the native shim is a no-op where unsupported
+#pragma warning disable CA1416 // StartDetached/KillOnParentExit/StartSuspended getters work on all platforms; StartSuspended is handled natively on macOS, no-op elsewhere
                     startInfo.StartDetached, startInfo.KillOnParentExit, startInfo.StartSuspended, inheritedHandles);
 #pragma warning restore CA1416
 
