@@ -818,11 +818,16 @@ public:
     // Constructor
     RangeCheck(Compiler* pCompiler);
 
+    void SetBudget(int budget)
+    {
+        m_nVisitBudget = budget;
+    }
+
     // Entry point to optimize range checks in the method. Assumes value numbering
     // and assertion prop phases are completed.
     bool OptimizeRangeChecks();
 
-    bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
+    bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, ValueNum preferredBoundVN = ValueNumStore::NoVN);
 
     // Cheaper version of TryGetRange that is based only on incoming assertions.
     static Range GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_VALARG_TP assertions, int budget = 10);

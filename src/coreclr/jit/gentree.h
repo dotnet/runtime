@@ -1222,7 +1222,7 @@ public:
 
     bool IsNotGcDef() const
     {
-        if (IsIntegralConst(0) || OperIs(GT_LCL_ADDR))
+        if (IsIntegralConst(0) || OperIs(GT_LCL_ADDR, GT_LCLHEAP))
         {
             return true;
         }
