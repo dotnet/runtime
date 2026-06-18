@@ -200,7 +200,8 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		// (double, double)
 		if (fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_R8 && fsig->params [1]->type == MONO_TYPE_R8) {
 			// Max/Min use llvm.maximum/minimum (NaN-propagating); see mini-llvm.c.
-			// Matches IEEE 754-2019 minimum/maximum which is what MathF.Min/Max documents.
+			// Matches IEEE 754-2019 minimum/maximum which is what Math.Min/Math.Max
+			// (and the MathF.Min/MathF.Max forwarders) document.
 			if (!strcmp (cmethod->name, "Max")) {
 				opcode = OP_FMAX;
 			} else if (!strcmp (cmethod->name, "Min")) {

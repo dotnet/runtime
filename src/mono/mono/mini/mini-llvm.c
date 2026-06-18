@@ -7568,10 +7568,11 @@ MONO_RESTORE_WARNING
 		case OP_RMAX: {
 			/*
 			 * Use llvm.minimum/maximum (IEEE 754-2019, NaN-propagating) so the
-			 * MathF.Min/Max semantics ("if either argument is NaN, NaN is returned")
-			 * are honored symmetrically. The old fcmp+select lowering was both
-			 * asymmetric for NaN and got folded into AArch64 fminnm/fmaxnm by the
-			 * backend, which discards NaN entirely. See llvm-intrinsics.h.
+			 * Math.Min/Math.Max semantics ("if either argument is NaN, NaN is
+			 * returned"), as forwarded by MathF.Min/MathF.Max, are honored
+			 * symmetrically. The old fcmp+select lowering was both asymmetric for
+			 * NaN and got folded into AArch64 fminnm/fmaxnm by the backend, which
+			 * discards NaN entirely. See llvm-intrinsics.h.
 			 */
 			gboolean is_r4 = ins->opcode == OP_RMIN || ins->opcode == OP_RMAX;
 			LLVMTypeRef t = is_r4 ? LLVMFloatType () : LLVMDoubleType ();

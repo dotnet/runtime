@@ -68,9 +68,10 @@ INTRINS_OVR(FMAF, fma, Generic, LLVMFloatType ())
 	 * IEEE 754-2019 minimum/maximum (NaN-propagating). Used for scalar OP_FMIN/OP_FMAX/
 	 * OP_RMIN/OP_RMAX. We avoid the older fcmp+select lowering because (a) it has
 	 * asymmetric NaN semantics (Min(NaN,x)=NaN but Min(x,NaN)=x), violating
-	 * MathF.Min/Max spec, and (b) on AArch64 the backend folds it to fminnm/fmaxnm
-	 * (IEEE 754-2008 minNum/maxNum), which suppresses NaN entirely and miscompiles
-	 * the System.Half software conversion path under LLVM 23.
+	 * Math.Min/Math.Max (and the MathF.Min/MathF.Max forwarders) spec, and (b) on
+	 * AArch64 the backend folds it to fminnm/fmaxnm (IEEE 754-2008 minNum/maxNum),
+	 * which suppresses NaN entirely and miscompiles the System.Half software
+	 * conversion path under LLVM 23.
 	 */
 INTRINS_OVR(MINIMUM, minimum, Generic, LLVMDoubleType ())
 INTRINS_OVR(MINIMUMF, minimum, Generic, LLVMFloatType ())
