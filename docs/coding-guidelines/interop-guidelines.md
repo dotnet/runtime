@@ -167,6 +167,10 @@ If implicit framework references are disabled (as is the case for most libraries
   - `System.Memory`
   - `System.Runtime.CompilerServices.Unsafe`
 
+### Search paths
+
+System.Private.CoreLib and libaries assemblies all set `DefaultDllImportSearchPaths` to `DllImportSearchPath.Assembly | DllImportSearchPath.System32` at the module level. This first looks in the assembly directory (application directory for single-file), then system directory on Windows or default search on non-Windows. For Windows P/Invokes that should only ever load from the system directory, this can be narrowed with `[DefaultDllImportSearchPaths(DllImportSearchPath.System32)]` on the P/Invoke.
+
 ## UNIX shims
 
 Often, various UNIX flavors offer the same API from the point-of-view of compatibility with C/C++ source code, but they do not have the same ABI. e.g. Fields can be laid out differently, constants can have different numeric values, exports can be named differently, etc. There are not only differences between operating systems (Mac OS X vs. Ubuntu vs. FreeBSD), but also differences related to the underlying processor architecture (x64 vs. x86 vs. ARM).
