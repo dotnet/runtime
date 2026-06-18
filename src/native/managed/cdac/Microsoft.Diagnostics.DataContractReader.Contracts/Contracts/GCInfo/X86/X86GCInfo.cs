@@ -166,10 +166,7 @@ public record X86GCInfo : IGCInfoDecoder
         // Lazily calculate the pushed argument size. This forces the transitions to be decoded.
         _pushedArgSize = new(CalculatePushedArgSize);
 
-        // Lazily decode the untracked-locals and VarPtr tables. These live between the
-        // NoGCRegion table and the argument table in the bitstream; see DecodeTransitions
-        // for the layout. Like the transitions, the underlying GC info bytes are typically
-        // only present in full (or selectively included) memory dumps.
+        // Lazily decode the untracked-locals and VarPtr tables
         _untrackedSlots = new(DecodeUntrackedSlots);
         _varPtrLifetimes = new(DecodeVarPtrLifetimes);
     }
@@ -283,8 +280,8 @@ public record X86GCInfo : IGCInfoDecoder
         // stack offset. On EBP-frames the offset is EBP-relative; on ESP-frames it is
         // ESP-relative. Double-aligned frames use a hybrid encoding: offsets that lie
         // above the frame are EBP-relative even when the rest of the frame is ESP-based.
-        // Reference: gc_unwind_x86.inl:3467 (EnumGcRefsX86 untracked path) and
-        // ILCompiler.Reflection.ReadyToRun/x86/GcSlotTable.cs:127 (DecodeUntracked).
+        // Reference: gc_unwind_x86.inl (EnumGcRefsX86 untracked path) and
+        // ILCompiler.Reflection.ReadyToRun/x86/GcSlotTable.cs (DecodeUntracked).
         uint calleeSavedRegsCount = 0;
         if (Header.DoubleAlign)
         {
@@ -340,7 +337,7 @@ public record X86GCInfo : IGCInfoDecoder
         // varOffs is absolute; begOffs is delta-from-previous-begOffs; endOffs is delta-from-begOffs.
         // Low 2 bits of varOffs hold flags (byref=0x1, this=0x2 -- NOT pinned for tracked locals).
         // Reference: gc_unwind_x86.inl varPtrTable processing and
-        // ILCompiler.Reflection.ReadyToRun/x86/GcSlotTable.cs:168 (DecodeFrameVariableLifetimeTable).
+        // ILCompiler.Reflection.ReadyToRun/x86/GcSlotTable.cs (DecodeFrameVariableLifetimeTable).
         ImmutableArray<VarPtrLifetime>.Builder builder = ImmutableArray.CreateBuilder<VarPtrLifetime>((int)Header.VarPtrTableSize);
         uint curOffs = 0;
         for (uint i = 0; i < Header.VarPtrTableSize; i++)
@@ -486,14 +483,14 @@ public record X86GCInfo : IGCInfoDecoder
         // been torn down) the GC info doesn't accurately describe live slots. The runtime
         // never suspends a thread inside the prolog/epilog under normal circumstances; the only
         // path that reaches here is ExecutionAborted (thread abort or stack overflow). In that
-        // case we still drop reporting -- this matches native EnumGcRefsX86 in gc_unwind_x86.inl:3091
+        // case we still drop reporting -- this matches native EnumGcRefsX86 in gc_unwind_x86.inl
         // which returns true without enumerating when we're in the prolog/epilog.
         if (IsCodeOffsetInProlog(instructionOffset) || IsCodeOffsetInEpilog(instructionOffset))
             return Array.Empty<LiveSlot>();
 
         // For non-interruptible methods, an ExecutionAborted offset that isn't at a recorded
         // safe point yields no reliable GC info; skip reporting as the native walker does
-        // (gc_unwind_x86.inl:3093).
+        // (gc_unwind_x86.inl).
         if (options.IsExecutionAborted && !Header.Interruptible)
             return Array.Empty<LiveSlot>();
 
@@ -521,12 +518,8 @@ public record X86GCInfo : IGCInfoDecoder
                 if (instructionOffset < vp.BeginOffset || instructionOffset >= vp.EndOffset)
                     continue;
 
-                // VarPtr LowBits encoding differs from untracked: 0x1 = interior, 0x2 = "this"
-                // pointer (NOT pinned). The "this" pointer flag is consumed by special-case
-                // synchronized-method reporting in native code that this MVP cDAC decoder does
-                // not replicate. Map only the interior bit into LiveSlot.GcFlags.
-                uint gcFlags = vp.LowBits & 0x1u;
-                result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: vp.StackOffset, SpBase: spBase, GcFlags: gcFlags));
+                // LowBits encoding matches LiveSlot.GcFlags exactly: 0x1 = interior, 0x2 = pinned.
+                result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: vp.StackOffset, SpBase: spBase, GcFlags: vp.LowBits));
             }
         }
 
@@ -758,8 +751,5 @@ public readonly record struct UntrackedSlot(int StackOffset, bool IsEbpRelative,
 /// <param name="BeginOffset">Inclusive code offset (relative to method start) at which the slot becomes live.</param>
 /// <param name="EndOffset">Exclusive code offset at which the slot becomes dead.</param>
 /// <param name="StackOffset">Frame-relative byte offset of the slot (EBP-relative on EBP frames, ESP-relative otherwise).</param>
-/// <param name="LowBits">
-/// Raw flag bits from the encoded offset (0x1 = byref/interior, 0x2 = "this" pointer -- note that for
-/// tracked locals the 0x2 bit means "this", not "pinned" as it does for untracked slots).
-/// </param>
+/// <param name="LowBits">Raw flag bits from the encoded offset (0x1 = byref/interior, 0x2 = pinned).</param>
 public readonly record struct VarPtrLifetime(uint BeginOffset, uint EndOffset, int StackOffset, uint LowBits);
