@@ -26,7 +26,8 @@ struct DebuggerIPCE_ExpandedTypeData;
 struct DebuggerIPCE_BasicTypeData;
 struct EnCHangingFieldInfo;
 struct DacExceptionCallStackData;
-struct DebuggerIPCE_ObjectData;
+struct DacDbiObjectData;
+struct DacDbiArrayInfo;
 struct MonitorLockInfo;
 struct DacGcReference;
 struct DacSharedReJitInfo;
@@ -86,7 +87,6 @@ typedef int CorDebugUserState;
 typedef int CorDebugSetContextFlag;
 typedef int CorDebugNGENPolicy;
 typedef int CorElementType;
-typedef int AddressType;
 typedef int SymbolFormat;
 typedef int AreValueTypesBoxed;
 typedef int DynamicMethodType;
@@ -214,7 +214,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetModuleForAssembly([in] VMPTR_Assembly vmAssembly, [out] VMPTR_Module * pModule, [out] BOOL * pIsModuleLoaded);
 
     // Address
-    HRESULT GetAddressType([in] CORDB_ADDRESS address, [out] AddressType * pRetVal);
+    HRESULT IsManagedCode([in] CORDB_ADDRESS address, [out] BOOL * pIsManaged);
 
     // Compiler
     HRESULT GetCompilerFlags([in] VMPTR_Assembly vmAssembly, [out] BOOL * pfAllowJITOpts, [out] BOOL * pfEnableEnC);
@@ -327,7 +327,7 @@ interface IDacDbiInterface : IUnknown
     // Field
     HRESULT GetThreadStaticAddress([in] VMPTR_FieldDesc vmField, [in] VMPTR_Thread vmRuntimeThread, [out] CORDB_ADDRESS * pRetVal);
     HRESULT GetCollectibleTypeStaticAddress([in] VMPTR_FieldDesc vmField, [out] CORDB_ADDRESS * pRetVal);
-    HRESULT GetEnCHangingFieldInfo([in] const struct EnCHangingFieldInfo * pEnCFieldInfo, [out] struct FieldData * pFieldData, [out] BOOL * pfStatic);
+    HRESULT GetEnCHangingFieldInfo([in] const struct EnCHangingFieldInfo * pEnCFieldInfo, [out] struct FieldData * pFieldData);
     HRESULT GetTypeHandleParams([in] VMPTR_TypeHandle vmTypeHandle, [out] TypeParamsList * pParams);
     HRESULT GetSimpleType(
         [in] CorElementType simpleType,
@@ -341,10 +341,10 @@ interface IDacDbiInterface : IUnknown
     HRESULT EnumerateRcwCachedInterfacePointers([in] VMPTR_Object vmObject, [in] FP_RCW_INTERFACE_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
 
     // Object Data
-    HRESULT GetTypedByRefInfo([in] CORDB_ADDRESS pTypedByRef, [out] struct DebuggerIPCE_ObjectData * pObjectData);
-    HRESULT GetStringData([in] CORDB_ADDRESS objectAddress, [out] struct DebuggerIPCE_ObjectData * pObjectData);
-    HRESULT GetArrayData([in] CORDB_ADDRESS objectAddress, [out] struct DebuggerIPCE_ObjectData * pObjectData);
-    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [in] CorElementType type, [out] struct DebuggerIPCE_ObjectData * pObjectData);
+    HRESULT GetTypedByRefInfo([in] CORDB_ADDRESS pTypedByRef, [out] CORDB_ADDRESS * pObjRef, [out] struct DebuggerIPCE_BasicTypeData * pTypedByRefType);
+    HRESULT GetStringData([in] CORDB_ADDRESS objectAddress, [out] UINT * pLength, [out] UINT * pOffsetToStringBase);
+    HRESULT GetArrayData([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidArray, [out] struct DacDbiArrayInfo * pArrayInfo);
+    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidRef, [out] UINT * pObjSize, [out] UINT * pObjOffsetToVars, [out] struct DebuggerIPCE_ExpandedTypeData * pObjTypeData);
 
     // Debugger Control Block
     HRESULT GetDebuggerControlBlockAddress([out] CORDB_ADDRESS * pRetVal);

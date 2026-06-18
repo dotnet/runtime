@@ -4221,6 +4221,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [SkipOnPlatform(TestPlatforms.Wasi, "/tmp is not preopened in the wasmtime '--dir .' sandbox, so temp files cannot be created.")]
     public static void DCS_FileStreamSurrogate()
     {
         using (var testFile = TempFile.Create())

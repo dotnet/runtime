@@ -676,10 +676,7 @@ extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
 
     if (VolatileLoadWithoutBarrier(&g_pVirtualFunctionPointerCache) == NULL)
     {
-        {
-            GCX_COOP();
-            CoreLibBinder::GetClass(CLASS__VIRTUALDISPATCHHELPERS)->CheckRunClassInitThrowing();
-        }
+        CoreLibBinder::GetClass(CLASS__VIRTUALDISPATCHHELPERS)->CheckRunClassInitThrowing();
 
         VolatileStore(&g_pVirtualFunctionPointerCache, CoreLibBinder::GetField(FIELD__VIRTUALDISPATCHHELPERS__CACHE));
 #ifdef DEBUG
@@ -1437,6 +1434,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
 
         pFrame->Push(CURRENT_THREAD);
 
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -1482,6 +1480,7 @@ static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
         pFrame->Pop(CURRENT_THREAD);
     }
@@ -1523,6 +1522,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
     pFrame->Push(CURRENT_THREAD);
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -1594,6 +1594,7 @@ static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* co
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pFrame->Pop(CURRENT_THREAD);
 
