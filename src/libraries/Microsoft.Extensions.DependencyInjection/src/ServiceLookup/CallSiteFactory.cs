@@ -683,7 +683,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         continue;
                     }
 
-                    // All parameters resolvable; ambiguous unless it is a strict subset of best.
+                    // All parameters resolvable; ambiguous unless it is a subset of best.
                     foreach (ServiceIdentifier id in resolvedParameters)
                     {
                         if (!bestResolvedParameters.Contains(id))
