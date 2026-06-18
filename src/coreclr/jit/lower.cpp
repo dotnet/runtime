@@ -6232,6 +6232,17 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
             regType = call->TypeGet();
         }
 #endif
+
+#if defined(TARGET_WASM)
+        CORINFO_CLASS_HANDLE clsHnd = layout->GetClassHandle();
+        if (clsHnd != NO_CLASS_HANDLE)
+        {
+            CorInfoWasmType wasmAbiType = m_compiler->info.compCompHnd->getWasmLowering(clsHnd);
+            assert(wasmAbiType != CORINFO_WASM_TYPE_VOID);
+            regType = WasmClassifier::ToJitType(wasmAbiType);
+        }
+#endif // TARGET_WASM
+
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
         LowerStoreIndirCommon(store->AsStoreInd());
@@ -9236,7 +9247,7 @@ void Lowering::FindInducedParameterRegisterLocals()
             // accesses larger to generate smaller code.
 
 #ifdef TARGET_WASM
-            var_types fullWidthType = TYP_LONG;
+            var_types fullWidthType = genActualType(regSegment->GetRegisterType());
 #else
             var_types fullWidthType = TYP_I_IMPL;
 #endif
