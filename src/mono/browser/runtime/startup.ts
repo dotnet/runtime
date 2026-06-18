@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { DotnetModuleInternal, CharPtrNull, MainToWorkerMessageType } from "./types/internal";
-import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, browserVirtualAppBase } from "./globals";
+import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, mono_assert, browserVirtualAppBase } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
