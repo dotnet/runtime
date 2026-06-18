@@ -358,6 +358,43 @@ void FinalizerThread::RaiseShutdownEvents()
         // thread's context is needed (i.e. RCW cleanup)
         hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
     }
+#else // TARGET_WASM
+    // WASI/Browser have no separate finalizer thread (single-threaded WASI;
+    // browser defers via the JS event loop). At shutdown the JS loop isn't
+    // going to tick again and on WASI there is no loop at all, so any
+    // finalizers queued during process exit would silently leak. Pump them
+    // here on the shutdown thread: force a blocking GC so newly-unreachable
+    // finalizable objects move to the F-reachable queue, then run one
+    // worker iteration to drain GC::RunFinalizers. Repeat once to handle
+    // resurrected objects or finalizers that themselves drop references.
+    //
+    // We're called from ceemain.cpp under GCX_PREEMP; KickOff sets up the
+    // managed thread context and switches modes as needed (this is the
+    // same path SystemJS_ExecuteFinalizationCallback uses for runtime ticks).
+    EX_TRY
+    {
+        for (int pass = 0; pass < 2; pass++)
+        {
+            INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+            {
+                GCX_COOP();
+                // Mirror GCInterface_Collect: real GC dispatch needs the
+                // current thread in cooperative mode so its stack is scanned
+                // and the heap is suspended consistently.
+                GCHeapUtilities::GetGCHeap()->GarbageCollect(
+                    /*generation*/ -1, /*low_memory_p*/ false, collection_blocking);
+                ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
+            }
+            UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+        }
+    }
+    EX_CATCH
+    {
+        // Swallow exceptions raised during shutdown finalization: we're past
+        // the point where the app can observe them, and we still want the
+        // remainder of EE shutdown to proceed.
+    }
+    EX_END_CATCH
 #endif // !TARGET_WASM
 }
 
@@ -819,5 +856,36 @@ void FinalizerThread::FinalizerThreadWait()
 
         _ASSERTE(status == WAIT_OBJECT_0);
     }
+#else // TARGET_WASM
+    // No separate finalizer thread on WASM. Drain the queue synchronously on
+    // the calling thread. Browser ordinarily relies on the JS event loop to
+    // call SystemJS_ExecuteFinalizationCallback asynchronously, but a managed
+    // caller that has just issued GC.Collect() and is now blocked in
+    // GC.WaitForPendingFinalizers() needs the queue drained before this QCall
+    // returns. Single-threaded WASI has no host event loop at all, so this is
+    // the only drain path outside of the shutdown hook in RaiseShutdownEvents.
+    //
+    // One iteration is sufficient under standard semantics: the managed
+    // GC.RunFinalizers helper invoked by FinalizeAllObjects walks the
+    // F-reachable queue until empty. Objects resurrected by user finalizers
+    // require a subsequent GC.Collect() + WaitForPendingFinalizers() pair,
+    // mirroring the contract on every other target.
+    EX_TRY
+    {
+        INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+        {
+            GCX_COOP();
+            ManagedThreadBase::KickOff(FinalizerThread::FinalizerThreadWorkerIteration, NULL);
+        }
+        UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+    }
+    EX_CATCH
+    {
+        // Same rationale as RaiseShutdownEvents: user finalizers may throw,
+        // but blocking the caller of GC.WaitForPendingFinalizers on a
+        // finalizer-raised exception would be a behavior change relative to
+        // every other target where the finalizer thread quietly swallows it.
+    }
+    EX_END_CATCH
 #endif // !TARGET_WASM
 }
