@@ -611,10 +611,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // resolvable constructor must be a strict subset of the best one, i.e. each of its
                 // parameters was already used by the best constructor; otherwise the two are
                 // ambiguous and an exception is thrown.
-                //
-                // The constructors array returned by GetConstructors() is private to this method, so
-                // it is sorted in place via an insertion sort. The parameter arrays are cached
-                // alongside it to avoid calling GetParameters() again during selection.
                 int constructorCount = constructors.Length;
                 var sortedParameters = new ParameterInfo[constructorCount][];
                 for (int i = 0; i < constructorCount; i++)
