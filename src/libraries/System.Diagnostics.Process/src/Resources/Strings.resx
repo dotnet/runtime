@@ -233,6 +233,7 @@
   </data>
   <data name="PseudoTerminalCannotBeCombined" xml:space="preserve">
     <value>The PseudoTerminal property cannot be used together with UseShellExecute, RedirectStandardInput, RedirectStandardOutput, RedirectStandardError, StandardInputHandle, StandardOutputHandle, or StandardErrorHandle.</value>
+  </data>
   <data name="StartSuspendedNotCompatible" xml:space="preserve">
     <value>The StartSuspended property cannot be used with UseShellExecute set to true.</value>
   </data>
