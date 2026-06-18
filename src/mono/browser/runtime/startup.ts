@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { DotnetModuleInternal, CharPtrNull, MainToWorkerMessageType } from "./types/internal";
-import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, browserVirtualAppBase } from "./globals";
+import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, mono_assert, browserVirtualAppBase } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -144,9 +144,10 @@ async function instantiateWasmWorker (
     // Instantiate from the module posted from the main thread.
     // We can just use sync instantiation in the worker.
     const instance = new WebAssembly.Instance(Module.wasmModule!, imports);
-    successCallback(instance, undefined);
     Module.wasmModule = null;
+
     preRunWorker();
+    successCallback(instance, undefined);
 }
 
 
@@ -345,7 +346,6 @@ export function postRunWorker () {
 
         // signal next stage
         runtimeHelpers.runtimeReady = false;
-        runtimeHelpers.afterPreRun = createPromiseController<void>();
         endMeasure(mark, MeasuredBlock.postRunWorker);
     } catch (err) {
         mono_log_error("postRunWorker() failed", err);

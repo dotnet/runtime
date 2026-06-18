@@ -75,26 +75,28 @@ function monoWorkerMessageHandler (worker: PThreadWorker, wasmModule: WebAssembl
     let thread: Thread;
     pthreadId = message.info?.pthreadId ?? 0;
     worker.info = Object.assign({}, worker.info, message.info);
-    const wasmMemory = runtimeHelpers.getMemory();
-    const handlers = [];
-    const knownHandlers = ["onExit", "onAbort", "print", "printErr"];
-    for (const handler of knownHandlers) {
-        if (Object.prototype.propertyIsEnumerable.call(Module, handler)) {
-            handlers.push(handler);
-        }
-    }
     switch (message.monoCmd) {
         case WorkerToMainMessageType.preload:
-            // this one shot port from setupPreloadChannelToMainThread
-            message.port!.postMessage({
-                type: "pthread",
-                cmd: MainToWorkerMessageType.applyConfig,
-                config: JSON.stringify(runtimeHelpers.config),
-                monoThreadInfo: JSON.stringify(worker.info),
-                handlers,
-                wasmMemory,
-                wasmModule
-            });
+            {
+                const wasmMemory = runtimeHelpers.getMemory();
+                const handlers = [];
+                const knownHandlers = ["onExit", "onAbort", "print", "printErr"];
+                for (const handler of knownHandlers) {
+                    if (Object.prototype.propertyIsEnumerable.call(Module, handler)) {
+                        handlers.push(handler);
+                    }
+                }
+                // this one shot port from setupPreloadChannelToMainThread
+                message.port!.postMessage({
+                    type: "pthread",
+                    cmd: MainToWorkerMessageType.applyConfig,
+                    config: JSON.stringify(runtimeHelpers.config),
+                    monoThreadInfo: JSON.stringify(worker.info),
+                    handlers,
+                    wasmMemory,
+                    wasmModule
+                });
+            }
             break;
         case WorkerToMainMessageType.pthreadCreated:
             thread = new ThreadImpl(pthreadId, worker, message.port!);
@@ -211,17 +213,26 @@ export function replaceEmscriptenPThreadUI (modulePThread: PThreadLibrary): void
     const originalLoadWasmModuleToWorker = modulePThread.loadWasmModuleToWorker;
     const originalReturnWorkerToPool = modulePThread.returnWorkerToPool;
 
-    modulePThread.loadWasmModuleToWorker = async (worker: PThreadWorker): Promise<PThreadWorker> => {
-        const wasmModule = await loaderHelpers.wasmCompilePromise.promise;
-        for (const ev in worker.queue) {
-            monoWorkerMessageHandler(worker, wasmModule, worker.queue[ev]);
-        }
-        worker.queue.length = 0;
-        worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, wasmModule, ev));
+    modulePThread.loadWasmModuleToWorker = (worker: PThreadWorker): Promise<PThreadWorker> => {
+
         const afterLoaded = originalLoadWasmModuleToWorker(worker);
         afterLoaded.then(() => {
             worker.info.isLoaded = true;
         });
+
+        loaderHelpers.wasmCompilePromise.promise.then((wasmModule) => {
+            // Stop queueing once we can process messages synchronously.
+            for (const queuedEvent of worker.queue) {
+                monoWorkerMessageHandler(worker, wasmModule, queuedEvent);
+            }
+            worker.queue.length = 0;
+            if (worker.handler) {
+                worker.removeEventListener("message", worker.handler);
+            }
+            worker.handler = (ev) => monoWorkerMessageHandler(worker, wasmModule, ev);
+            worker.addEventListener("message", worker.handler);
+        });
+
         if (loaderHelpers.config.exitOnUnhandledError) {
             worker.onerror = (e) => {
                 loaderHelpers.mono_exit(1, e);

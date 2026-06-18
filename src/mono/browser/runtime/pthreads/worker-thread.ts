@@ -130,6 +130,7 @@ export function mono_wasm_pthread_on_pthread_registered (pthread_id: PThreadPtr)
             monoCmd: WorkerToMainMessageType.monoRegistered,
             info: monoThreadInfo,
         });
+        runtimeHelpers.runtimeReady = true;
     } catch (err) {
         mono_log_error("mono_wasm_pthread_on_pthread_registered () failed", err);
         loaderHelpers.mono_exit(1, err);
