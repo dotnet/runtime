@@ -293,9 +293,8 @@ namespace System.Text.Json.Schema.Tests
                 ExpectedJsonSchema: """
                     {
                         "anyOf": [
-                            { "type": "number" },
-                            { "enum": ["NaN", "Infinity", "-Infinity"] },
-                            { "type": "null" }
+                            { "type": ["number","null"] },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] }
                         ]
                     }
                     """,
@@ -307,9 +306,8 @@ namespace System.Text.Json.Schema.Tests
                 ExpectedJsonSchema: """
                     {
                         "anyOf": [
-                            { "type": "number" },
-                            { "enum": ["NaN", "Infinity", "-Infinity"] },
-                            { "type": "null" }
+                            { "type": ["number","null"] },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] }
                         ]
                     }
                     """,
@@ -324,16 +322,14 @@ namespace System.Text.Json.Schema.Tests
                         "properties": {
                             "Latitude": {
                                 "anyOf": [
-                                    { "type": "number" },
-                                    { "enum": ["NaN", "Infinity", "-Infinity"] },
-                                    { "type": "null" }
+                                    { "type": ["number","null"] },
+                                    { "enum": ["NaN", "Infinity", "-Infinity"] }
                                 ]
                             },
                             "Longitude": {
                                 "anyOf": [
-                                    { "type": "number" },
-                                    { "enum": ["NaN", "Infinity", "-Infinity"] },
-                                    { "type": "null" }
+                                    { "type": ["number","null"] },
+                                    { "enum": ["NaN", "Infinity", "-Infinity"] }
                                 ]
                             }
                         }
