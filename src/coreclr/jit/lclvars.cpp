@@ -433,6 +433,11 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
         // Wasm portable entry point is the very last arg
         lvaInitWasmPortableEntryPtr(&varNum);
     }
+
+    if (info.compArgsCount > MaxWasmFunctionParameters)
+    {
+        WASM_IMPL_LIMITATION("Too many arguments for a wasm function");
+    }
 #endif
 
     //----------------------------------------------------------------------

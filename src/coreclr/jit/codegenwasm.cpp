@@ -2665,36 +2665,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     GenTree* target = getCallTarget(call, &params.methHnd);
 
-    // Report managed call signatures to the R2R compiler for thunk generation.
-    if (!call->IsHelperCall() && !call->IsUnmanaged())
-    {
-        CORINFO_SIG_INFO  sigInfoLocal;
-        CORINFO_SIG_INFO* sigInfoCall = call->callSig;
-
-        if (sigInfoCall == nullptr)
-        {
-            if ((params.methHnd != NO_METHOD_HANDLE) &&
-                (Compiler::eeGetHelperNum(params.methHnd) == CORINFO_HELP_UNDEF))
-            {
-                m_compiler->eeGetMethodSig(params.methHnd, &sigInfoLocal);
-                sigInfoCall = &sigInfoLocal;
-            }
-        }
-
-        if (sigInfoCall != nullptr)
-        {
-            m_compiler->info.compCompHnd->recordWasmManagedCallSig(sigInfoCall);
-        }
-    }
-
     ArrayStack<CorInfoWasmType> typeStack(m_compiler->getAllocator(CMK_Codegen));
 
-    // Compute the wasm-level result type for the call. Use call->gtReturnType
-    // (the call's "exact" return type) rather than call->gtType, since the latter is
-    // overwritten to TYP_VOID for fast tail calls and for retbuf calls. Calls that
-    // return via a retbuf produce no wasm-level value. For fast tail calls we rely
-    // on fgCanFastTailCall to ensure caller/callee result types are compatible.
-    const var_types callRetType = (var_types)call->gtReturnType;
+    // Compute the wasm-level result type for the call.
+    const var_types callRetType = genActualType(call);
     if (call->ShouldHaveRetBufArg() || (callRetType == TYP_VOID))
     {
         typeStack.Push(CORINFO_WASM_TYPE_VOID);
@@ -2717,6 +2691,33 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             WasmValueType wvt = WasmRegToType(seg.GetRegister());
             assert(wvt < WasmValueType::Count);
             typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
+        }
+    }
+
+    if ((typeStack.Height() - 1) > MaxWasmFunctionParameters)
+    {
+        WASM_IMPL_LIMITATION("Too many arguments for a wasm call");
+    }
+
+    // Report managed call signatures to the R2R compiler for thunk generation.
+    if (!call->IsHelperCall() && !call->IsUnmanaged())
+    {
+        CORINFO_SIG_INFO  sigInfoLocal;
+        CORINFO_SIG_INFO* sigInfoCall = call->callSig;
+
+        if (sigInfoCall == nullptr)
+        {
+            if ((params.methHnd != NO_METHOD_HANDLE) &&
+                (Compiler::eeGetHelperNum(params.methHnd) == CORINFO_HELP_UNDEF))
+            {
+                m_compiler->eeGetMethodSig(params.methHnd, &sigInfoLocal);
+                sigInfoCall = &sigInfoLocal;
+            }
+        }
+
+        if (sigInfoCall != nullptr)
+        {
+            m_compiler->info.compCompHnd->recordWasmManagedCallSig(sigInfoCall);
         }
     }
 

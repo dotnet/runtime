@@ -91,6 +91,7 @@ class RangeCheck;          // defined in rangecheck.h
 #ifdef TARGET_WASM
 class WasmInterval; // defined in fgwasm.h
 enum class WasmValueType : unsigned;
+constexpr unsigned MaxWasmFunctionParameters = 1000;
 #endif
 #ifdef DEBUG
 struct IndentStack;
