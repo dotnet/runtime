@@ -1183,7 +1183,7 @@ public unsafe class LoaderTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetMetaDataFileInfoFromPEFile_ReturnsPathTimestampAndSize(MockTarget.Architecture arch)
+    public void GetFileHeadersInfo_ReturnsTimeStampAndImageSize(MockTarget.Architecture arch)
     {
         const uint expectedTimeStamp = 0x1234_5678;
         const uint expectedImageSize = 0x0009_A000;
