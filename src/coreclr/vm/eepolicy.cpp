@@ -410,7 +410,7 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
 // Return Value:
 //    None
 //
-void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
+static void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString, bool fIntentionalReentry = false)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -430,7 +430,8 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
     {
         if (previousThreadID == currentThreadID)
         {
-            PrintToStdErrA("Fatal error while logging another fatal error.\n");
+            if (!fIntentionalReentry)
+                PrintToStdErrA("Fatal error while logging another fatal error.\n");
         }
         else
         {
@@ -860,6 +861,17 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
                        GetClrInstanceId());
     }
 
+    // Invoke the user's fatal error handler before Watson / RaiseFailFastException.
+    // On Windows, WatsonLastChance invokes RaiseFailFastException which terminates
+    // the process, so the handler must run first.
+    {
+        UINT_PTR soAddress = pExceptionInfo->ContextRecord ? GetIP(pExceptionInfo->ContextRecord) : 0;
+        if (InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress, pExceptionInfo))
+        {
+            _exit(COR_E_STACKOVERFLOW);
+        }
+    }
+
     if (!fSkipDebugger)
     {
         Thread *pThread = GetThreadNULLOk();
@@ -914,12 +926,6 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     if (g_LogStackOverflowExit)
         PrintToStdErrA("@Terminating the process.\n");
 #endif
-
-    UINT_PTR soAddress = pExceptionInfo->ContextRecord ? GetIP(pExceptionInfo->ContextRecord) : 0;
-    if (InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress, pExceptionInfo))
-    {
-        _exit(COR_E_STACKOVERFLOW);
-    }
 
     CrashDumpAndTerminateProcess(COR_E_STACKOVERFLOW);
     UNREACHABLE();
@@ -1005,13 +1011,23 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 
         EnableCrashLogCapture();
 
-        STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
-        LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
+        STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogInfoForFatalError\n");
 
+        // Log exception to StdErr — this populates the crash log buffer that the
+        // user's fatal error handler can retrieve via pfnGetFatalErrorLog.
+        // Pass fIntentionalReentry = true since LogFatalError will call this again.
+        LogInfoForFatalError(exitCode, pszMessage, pExceptionInfo, errorSource, argExceptionString, /* fIntentionalReentry */ true);
+
+        // Invoke the user's fatal error handler before Watson / RaiseFailFastException.
+        // On Windows, WatsonLastChance (called from LogFatalError) invokes RaiseFailFastException
+        // which terminates the process, so the handler must run first.
         if (InvokeFatalErrorHandler(exitCode, address, pExceptionInfo))
         {
             _exit(exitCode);
         }
+
+        STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
+        LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
 
         SafeExitProcess(exitCode, SCA_TerminateProcessWhenShutdownComplete);
     }
