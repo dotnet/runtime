@@ -1,0 +1,13 @@
+# CoreCLR-WASI known-failures list, consumed by run.cs --known-failures=.
+#
+# Format: one test-wrapper path per line, relative to the test-bin root
+#   (e.g. JIT/jit64/regress/ddb/113574/113574/113574.sh).
+# Blank lines and `# comments` are ignored.
+#
+# Tests listed here are excluded from the "unexpected failures" count.
+# An expected-failure that starts passing surfaces as an "unexpected pass"
+# in the summary so you can remove it from this list.
+
+# 2^31 iteration loop in pure interpreter — runs forever within the 60s
+# default test timeout. Will become viable once R2R-WASM is on for tests.
+JIT/jit64/regress/ddb/113574/113574/113574.sh
