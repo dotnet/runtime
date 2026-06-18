@@ -161,27 +161,6 @@ check_symbol_exists(
     unistd.h
     HAVE_FORK)
 
-if (CLR_CMAKE_TARGET_OPENBSD)
-    set(PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
-    set(CMAKE_REQUIRED_LIBRARIES util)
-endif()
-
-if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_OPENBSD)
-    check_symbol_exists(
-        openpty
-        "pty.h;util.h"
-        HAVE_OPENPTY)
-else()
-    check_symbol_exists(
-        openpty
-        "pty.h"
-        HAVE_OPENPTY)
-endif()
-
-if (CLR_CMAKE_TARGET_OPENBSD)
-    set(CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
-endif()
-
 check_symbol_exists(
     posix_spawn_file_actions_addchdir_np
     spawn.h

@@ -19,11 +19,8 @@
 #include <pthread.h>
 #include <signal.h>
 
-#if HAVE_OPENPTY
-#include <pty.h>
-#if defined(TARGET_OSX) || defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_OPENBSD)
-#include <util.h>
-#endif
+#if HAVE_POSIX_ADVISE
+#include <stdlib.h>
 #endif
 
 int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
@@ -491,26 +488,76 @@ int32_t SystemNative_OpenPseudoTerminal(intptr_t* primaryFd, intptr_t* secondary
     assert(primaryFd != NULL);
     assert(secondaryFd != NULL);
 
-#if HAVE_OPENPTY
+#if !defined(TARGET_WASI) && !defined(TARGET_BROWSER)
     int primary = -1, secondary = -1;
 
-    struct winsize* wsPtr = NULL;
-    struct winsize ws;
-    if (columns > 0 && rows > 0)
-    {
-        memset(&ws, 0, sizeof(ws));
-        ws.ws_col = (unsigned short)columns;
-        ws.ws_row = (unsigned short)rows;
-        wsPtr = &ws;
-    }
-
-    if (openpty(&primary, &secondary, NULL, NULL, wsPtr) == -1)
+    // Open the primary side of the PTY
+    primary = posix_openpt(O_RDWR | O_NOCTTY);
+    if (primary == -1)
     {
         *primaryFd = -1;
         *secondaryFd = -1;
         return -1;
     }
 
+    // Grant access to the secondary and unlock it
+    if (grantpt(primary) == -1 || unlockpt(primary) == -1)
+    {
+        int error = errno;
+        close(primary);
+        *primaryFd = -1;
+        *secondaryFd = -1;
+        errno = error;
+        return -1;
+    }
+
+    // Get the name of the secondary
+    char* secondaryName = ptsname(primary);
+    if (secondaryName == NULL)
+    {
+        int error = errno;
+        close(primary);
+        *primaryFd = -1;
+        *secondaryFd = -1;
+        errno = error;
+        return -1;
+    }
+
+    // Open the secondary side
+    secondary = open(secondaryName, O_RDWR | O_NOCTTY);
+    if (secondary == -1)
+    {
+        int error = errno;
+        close(primary);
+        *primaryFd = -1;
+        *secondaryFd = -1;
+        errno = error;
+        return -1;
+    }
+
+    // Set window size if requested
+    if (columns > 0 && rows > 0)
+    {
+#if HAVE_IOCTL && HAVE_TIOCGWINSZ
+        struct winsize ws;
+        memset(&ws, 0, sizeof(ws));
+        ws.ws_col = (unsigned short)columns;
+        ws.ws_row = (unsigned short)rows;
+
+        if (ioctl(secondary, TIOCSWINSZ, &ws) == -1)
+        {
+            int error = errno;
+            close(primary);
+            close(secondary);
+            *primaryFd = -1;
+            *secondaryFd = -1;
+            errno = error;
+            return -1;
+        }
+#endif
+    }
+
+    // Set close-on-exec flags
     if (fcntl(primary, F_SETFD, FD_CLOEXEC) == -1 || fcntl(secondary, F_SETFD, FD_CLOEXEC) == -1)
     {
         int error = errno;
