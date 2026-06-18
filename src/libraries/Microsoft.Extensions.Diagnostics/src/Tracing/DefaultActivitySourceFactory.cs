@@ -86,6 +86,8 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
 
                 if (_cachedSources.TryGetValue(options.Name, out FactoryActivitySource[]? sources))
                 {
+                    // We grow manually here since List<T>'s growth is too coarse. Typically, we will have just one
+                    // source per name, so we optimize for that case by avoiding the List wrapper and its spare capacity.
                     FactoryActivitySource[] grown = new FactoryActivitySource[sources.Length + 1];
                     sources.CopyTo(grown, 0);
                     grown[sources.Length] = newSource;
@@ -110,7 +112,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 {
                     if (source.Version == options.Version
                         && source.TelemetrySchemaUrl == options.TelemetrySchemaUrl
-                        && DiagnosticsHelper.CompareTags(source.Tags as IList<KeyValuePair<string, object?>>, options.Tags))
+                        && DiagnosticsHelper.CompareTags((IList<KeyValuePair<string, object?>>?)source.Tags, options.Tags))
                     {
                         match = source;
                         return true;
@@ -335,7 +337,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 return divergent ? !filter.DefaultEnabled : filter.DefaultEnabled;
             }
 
-            private SourceFilterState ComputeFilterState(IList<TracingRule> rules, string sourceName, bool isLocalScope)
+            private SourceFilterState ComputeFilterState(List<TracingRule> rules, string sourceName, bool isLocalScope)
             {
                 TracingRule? defaultRule = GetMostSpecificRule(rules, sourceName, operationName: null, _listenerName, isLocalScope, considerOperationName: true);
                 bool defaultEnabled = defaultRule?.Enable ?? false;
@@ -366,7 +368,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 return new SourceFilterState(defaultEnabled, divergent);
             }
 
-            private bool IsOperationEnabled(IList<TracingRule> rules, string sourceName, bool isLocalScope, string operationName)
+            private bool IsOperationEnabled(List<TracingRule> rules, string sourceName, bool isLocalScope, string operationName)
             {
                 TracingRule? rule = GetMostSpecificRule(rules, sourceName, operationName, _listenerName, isLocalScope, considerOperationName: true);
                 return rule?.Enable ?? false;
@@ -407,7 +409,7 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 return filter.DefaultEnabled || filter.Divergent is { Count: > 0 };
             }
 
-            private static TracingRule? GetMostSpecificRule(IList<TracingRule> rules, string sourceName, string? operationName, string? listenerName, bool isLocalScope, bool considerOperationName)
+            private static TracingRule? GetMostSpecificRule(List<TracingRule> rules, string sourceName, string? operationName, string? listenerName, bool isLocalScope, bool considerOperationName)
             {
                 TracingRule? best = null;
                 foreach (TracingRule rule in rules)
@@ -569,14 +571,14 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
             {
                 public static readonly ListenerState Empty = new([], hasOperationNameRules: false, new Dictionary<(string, bool), SourceFilterState>());
 
-                public ListenerState(IList<TracingRule> rules, bool hasOperationNameRules, Dictionary<(string Name, bool IsLocalScope), SourceFilterState> sourceFilterStates)
+                public ListenerState(List<TracingRule> rules, bool hasOperationNameRules, Dictionary<(string Name, bool IsLocalScope), SourceFilterState> sourceFilterStates)
                 {
                     Rules = rules;
                     HasOperationNameRules = hasOperationNameRules;
                     SourceFilterStates = sourceFilterStates;
                 }
 
-                public IList<TracingRule> Rules { get; }
+                public List<TracingRule> Rules { get; }
                 public bool HasOperationNameRules { get; }
 
                 // Keyed by (Name, IsLocalScope) rather than by ActivitySource instance so that
@@ -585,13 +587,13 @@ namespace Microsoft.Extensions.Diagnostics.Tracing
                 // instance was disposed) share the cached filter state.
                 public Dictionary<(string Name, bool IsLocalScope), SourceFilterState> SourceFilterStates { get; }
 
-                public static ListenerState Create(IList<TracingRule> rules)
+                public static ListenerState Create(List<TracingRule> rules)
                     => new(rules, ComputeHasOperationNameRules(rules), new Dictionary<(string, bool), SourceFilterState>());
 
                 public ListenerState WithSourceFilterStates(Dictionary<(string Name, bool IsLocalScope), SourceFilterState> sourceFilterStates)
                     => new(Rules, HasOperationNameRules, sourceFilterStates);
 
-                private static bool ComputeHasOperationNameRules(IList<TracingRule> rules)
+                private static bool ComputeHasOperationNameRules(List<TracingRule> rules)
                 {
                     foreach (TracingRule rule in rules)
                     {

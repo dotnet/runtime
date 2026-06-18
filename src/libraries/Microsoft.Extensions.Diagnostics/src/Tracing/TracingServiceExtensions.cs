@@ -60,10 +60,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private sealed class SubscriptionActivator(ActivitySourceFactory factory) : IConfigureOptions<NoOpOptions>
         {
-            public void Configure(NoOpOptions options)
-            {
-                GC.KeepAlive(factory); // Eagerly instantiate the factory so any constructor-based listener registration happens during startup.
-            }
+            // The factory registers its listeners in its constructor, so resolving it is all that's
+            // needed here; unlike metrics there is no separate Initialize() to call.
+            public void Configure(NoOpOptions options) => _ = factory;
         }
     }
 }
