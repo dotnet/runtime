@@ -372,7 +372,8 @@ namespace System.Threading
                     {
                         int oldBits = *pHeader;
 
-                        // has hashcode -> slow path
+                        // If has a hash code or syncblock,
+                        // we cannot use a thin-lock.
                         if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
                         {
                             return SyncTable.AssignEntry(obj, pHeader);
@@ -409,8 +410,7 @@ namespace System.Threading
                                 return -1;
                             }
 
-                            // rare contention on lock.
-                            // Try again in case the finalization bits were touched.
+                            // Someone else touched the bits. Try again.
                             continue;
                         }
                         else

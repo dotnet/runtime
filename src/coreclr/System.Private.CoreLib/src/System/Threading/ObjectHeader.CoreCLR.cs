@@ -119,10 +119,9 @@ namespace System.Threading
                     // Thread IDs are allocated sequentially starting from 1 and recycled, so it's
                     // unusual to have a thread ID that doesn't fit in the thin-lock field.
                     // Check here rather than at entry to keep the hot path as tight as possible.
-                    // The uninitialized 0 id is also ruled out by this check.
                     // If the id doesn't fit, we fall through and call AcquireUncommon outside the
                     // fixed block to avoid keeping the object pinned while potentially spinning.
-                    if ((uint)(currentThreadID - 1) < (uint)SBLK_MASK_LOCK_THREADID)
+                    if ((uint)currentThreadID < (uint)SBLK_MASK_LOCK_THREADID)
                     {
                         if (Interlocked.CompareExchange(pHeader, oldBits | currentThreadID, oldBits) == oldBits)
                         {
@@ -144,17 +143,13 @@ namespace System.Threading
             return AcquireUncommon(obj, currentThreadID, isOneShot);
         }
 
-        // Handles the uncommon thin-lock acquire cases: a thread id that doesn't fit, recursive
-        // acquisition, contention and lost races. The spin loop used while the lock is owned by
-        // another thread is folded in here. Kept out of line so the common path stays small.
+        // handling uncommon cases here - recursive lock, contention, retries
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe HeaderLockResult AcquireUncommon(object obj, int currentThreadID, bool isOneShot)
         {
-            // A thin lock can only store a thread id that is initialized (non-zero) and fits in the
-            // thread-id field. A single unsigned comparison rules out both the uninitialized 0 id and
-            // ids that are too large; such threads must use the slow/fat path. This check is deferred
-            // to here (rather than at entry) because it is unusual to be true.
-            if ((uint)(currentThreadID - 1) >= (uint)SBLK_MASK_LOCK_THREADID)
+            // A thin lock can only store a thread id that fits in the thread-id field.
+            // This check is deferred to here (rather than at entry) because it is unusual to be true.
+            if ((uint)currentThreadID >= (uint)SBLK_MASK_LOCK_THREADID)
                 return HeaderLockResult.UseSlowPath;
 
             // A one-shot acquire does not spin while the lock is owned by another thread, but it still
@@ -182,7 +177,6 @@ namespace System.Threading
                         // we cannot use a thin-lock.
                         if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0)
                         {
-                            // Need to use a thick-lock.
                             return HeaderLockResult.UseSlowPath;
                         }
                         // If we already own the lock, try incrementing recursion level.
@@ -217,8 +211,7 @@ namespace System.Threading
                                 return HeaderLockResult.Success;
                             }
 
-                            // rare contention on lock.
-                            // Try again in case the finalization bits were touched.
+                            // Someone else touched the bits. Try again.
                             continue;
                         }
                         else
