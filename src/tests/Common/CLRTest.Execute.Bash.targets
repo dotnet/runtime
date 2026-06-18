@@ -269,7 +269,6 @@ fi
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun" $(CoreRunArgs)  ${__DotEnvArg}</CLRTestRunFile>
       <!-- WASI corerun.wasm needs to be launched under wasmtime. The wasm
-      <!-- WASI corerun.wasm needs to be launched under wasmtime. The wasm
            exception handling proposal must be enabled, both the CORE_ROOT
            and the per-test bin directory must be preopened so corerun can
            probe for CoreLib (in CORE_ROOT, via $CORE_ROOT=/core) and load
