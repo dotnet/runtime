@@ -18,6 +18,8 @@ struct TypeHandle
     public bool IsNull => Address != 0;
 }
 
+readonly record struct TypedByRefInfo(TargetPointer Data, TargetPointer TypeHandle);
+
 internal enum CorElementType
 {
     // Values defined in ECMA-335 - II.23.1.16 Element types used in signatures
@@ -66,6 +68,9 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool IsString(TypeHandle typeHandle);
     // True if the CorElementType represents a GC-collectable object reference.
     public virtual bool IsCorElementTypeObjRef(CorElementType elementType);
+    // Returns the address of one of the runtime's well-known singleton MethodTables, or
+    // TargetPointer.Null if the runtime has not yet initialized that global.
+    public virtual TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
@@ -131,6 +136,7 @@ partial interface IRuntimeTypeSystem : IContract
     bool IsPointer(TypeHandle typeHandle);
     bool IsTypeDesc(TypeHandle typeHandle);
     TargetPointer GetLoaderModule(TypeHandle typeHandle);
+    TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef);
 
     #endregion TypeHandle inspection APIs
 }
@@ -179,6 +185,18 @@ public enum GenericContextLoc
     InstArgMethodDesc,
     InstArgMethodTable,
     ThisPtr,
+}
+
+// Identifies one of the runtime's well-known singleton MethodTables, each addressable
+// via a dedicated global pointer (e.g. g_pObjectClass, g_pStringClass, g_pFreeObjectMethodTable).
+public enum WellKnownMethodTable
+{
+    Object,
+    String,
+    Array,
+    Exception,
+    Free,
+    Canon,
 }
 ```
 
@@ -469,6 +487,10 @@ The contract depends on the following globals
 | `FreeObjectMethodTable` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
 | `MulticastDelegateMethodTable` | A pointer to the address of the `System.MulticastDelegate` `MethodTable` (`g_pMulticastDelegateClass`)
 | `ObjectMethodTable` | A pointer to the address of the `System.Object` `MethodTable` (`g_pObjectClass`)
+| `StringMethodTable` | A pointer to the address of the `System.String` `MethodTable` (`g_pStringClass`)
+| `ObjectArrayMethodTable` | A pointer to the address of the `object[]` `MethodTable` (`g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]`)
+| `ExceptionMethodTable` | A pointer to the address of the `System.Exception` `MethodTable` (`g_pExceptionClass`)
+| `CanonMethodTable` | A pointer to the address of the canonical `MethodTable` used for shared generics (`System.__Canon`)
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
 | `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
 
@@ -513,6 +535,8 @@ The contract additionally depends on these data descriptors
 | `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
 | `LoaderAllocator` | `IsCollectible` | Non-zero if the `LoaderAllocator` is collectible. |
 | `LoaderAllocator` | `CreationNumber` | Monotonically-increasing creation number assigned to each collectible `LoaderAllocator`. |
+| `TypedByRef` | `Data` | Managed pointer (the byref) stored in a `System.TypedReference` value |
+| `TypedByRef` | `Type` | Raw `TypeHandle` pointer of the referent type |
 
 The value of the `NativeCodeVersionNode::OptimizationTier` field is one of:
 ```csharp
@@ -617,6 +641,29 @@ Contracts used:
             or CorElementType.String
             or CorElementType.Array
             or CorElementType.SzArray;
+
+    public TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind)
+    {
+        // Map the well-known kind to the corresponding runtime global. Returns
+        // TargetPointer.Null if the global is missing or the pointer it stores has
+        // not yet been initialized (e.g. SOS load notifications can run before the
+        // runtime has populated the MT globals).
+        string globalName = kind switch
+        {
+            WellKnownMethodTable.Object => "ObjectMethodTable",
+            WellKnownMethodTable.String => "StringMethodTable",
+            WellKnownMethodTable.Array => "ObjectArrayMethodTable",
+            WellKnownMethodTable.Exception => "ExceptionMethodTable",
+            WellKnownMethodTable.Free => "FreeObjectMethodTable",
+            WellKnownMethodTable.Canon => "CanonMethodTable",
+        };
+        if (!target.TryReadGlobalPointer(globalName, out TargetPointer? ptrPtr))
+            return TargetPointer.Null;
+        if (!target.TryReadPointer(ptrPtr.Value, out TargetPointer value))
+            return TargetPointer.Null;
+        return value;
+    }
+
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
@@ -1196,6 +1243,14 @@ Contracts used:
             }
         }
         return target.ReadPointer(mt.AuxiliaryData + /* MethodTableAuxiliaryData::LoaderModule offset */);
+    }
+
+    public TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef)
+    {
+        // Read both fields of a TypedByRef using the TypedByRef data descriptor.
+        TargetPointer data = target.ReadPointer(typedByRef + /* TypedByRef::Data offset */);
+        TargetPointer typeHandle = target.ReadPointer(typedByRef + /* TypedByRef::Type offset */);
+        return new TypedByRefInfo(data, typeHandle);
     }
 ```
 

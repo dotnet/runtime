@@ -3826,6 +3826,7 @@ void MethodTable::CheckRunClassInitThrowing()
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(IsFullyLoaded());
     }
@@ -5975,39 +5976,6 @@ UINT32 MethodTable::LookupTypeID()
     PTR_MethodTable pMT = PTR_MethodTable(this);
 
     return AppDomain::GetCurrentDomain()->LookupTypeID(pMT);
-}
-
-//==========================================================================================
-BOOL MethodTable::ImplementsInterfaceWithSameSlotsAsParent(MethodTable *pItfMT, MethodTable *pParentMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(!IsInterface() && !pParentMT->IsInterface());
-        PRECONDITION(pItfMT->IsInterface());
-    } CONTRACTL_END;
-
-    MethodTable *pMT = this;
-    do
-    {
-        DispatchMap::EncodedMapIterator it(pMT);
-        for (; it.IsValid(); it.Next())
-        {
-            DispatchMapEntry *pCurEntry = it.Entry();
-            if (DispatchMapTypeMatchesMethodTable(pCurEntry->GetTypeID(), pItfMT))
-            {
-                // this class and its parents up to pParentMT must have no mappings for the interface
-                return FALSE;
-            }
-        }
-
-        pMT = pMT->GetParentMethodTable();
-        _ASSERTE(pMT != NULL);
-    }
-    while (pMT != pParentMT);
-
-    return TRUE;
 }
 
 #endif // !DACCESS_COMPILE

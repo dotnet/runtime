@@ -44,19 +44,24 @@ namespace System.Formats.Tar
 
             // The four supported formats have a header that fits in the default record size
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
-            Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
-
-            await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            TarHeader? header = TryReadAttributes(initialFormat, buffer.Span, archiveStream);
-            if (header != null && processDataBlock)
+            try
             {
-                await header.ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
+                Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
+
+                await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+                TarHeader? header = TryReadAttributes(initialFormat, buffer.Span, archiveStream);
+                if (header != null && processDataBlock)
+                {
+                    await header.ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
+                }
+
+                return header;
             }
-
-            ArrayPool<byte>.Shared.Return(rented);
-
-            return header;
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
         }
 
         private static TarHeader? TryReadAttributes(TarEntryFormat initialFormat, ReadOnlySpan<byte> buffer, Stream archiveStream)
@@ -691,17 +696,22 @@ namespace System.Formats.Tar
                 ValidateSize();
 
                 byte[]? buffer = null;
-                Span<byte> span = (ulong)size <= 256 ?
-                    stackalloc byte[256] :
-                    (buffer = ArrayPool<byte>.Shared.Rent((int)size));
-                span = span.Slice(0, (int)size);
-
-                archiveStream.ReadExactly(span);
-                ReadExtendedAttributesFromBuffer(span, _name);
-
-                if (buffer is not null)
+                try
                 {
-                    ArrayPool<byte>.Shared.Return(buffer);
+                    Span<byte> span = (ulong)size <= 256 ?
+                        stackalloc byte[256] :
+                        (buffer = ArrayPool<byte>.Shared.Rent((int)size));
+                    span = span.Slice(0, (int)size);
+
+                    archiveStream.ReadExactly(span);
+                    ReadExtendedAttributesFromBuffer(span, _name);
+                }
+                finally
+                {
+                    if (buffer is not null)
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
                 }
             }
         }
@@ -716,12 +726,17 @@ namespace System.Formats.Tar
             {
                 ValidateSize();
                 byte[] buffer = ArrayPool<byte>.Shared.Rent((int)_size);
-                Memory<byte> memory = buffer.AsMemory(0, (int)_size);
+                try
+                {
+                    Memory<byte> memory = buffer.AsMemory(0, (int)_size);
 
-                await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(false);
-                ReadExtendedAttributesFromBuffer(memory.Span, _name);
-
-                ArrayPool<byte>.Shared.Return(buffer);
+                    await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(false);
+                    ReadExtendedAttributesFromBuffer(memory.Span, _name);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 
@@ -765,17 +780,22 @@ namespace System.Formats.Tar
                 ValidateSize();
 
                 byte[]? buffer = null;
-                Span<byte> span = (ulong)size <= 256 ?
-                    stackalloc byte[256] :
-                    (buffer = ArrayPool<byte>.Shared.Rent((int)size));
-                span = span.Slice(0, (int)size);
-
-                archiveStream.ReadExactly(span);
-                ReadGnuLongPathDataFromBuffer(span);
-
-                if (buffer is not null)
+                try
                 {
-                    ArrayPool<byte>.Shared.Return(buffer);
+                    Span<byte> span = (ulong)size <= 256 ?
+                        stackalloc byte[256] :
+                        (buffer = ArrayPool<byte>.Shared.Rent((int)size));
+                    span = span.Slice(0, (int)size);
+
+                    archiveStream.ReadExactly(span);
+                    ReadGnuLongPathDataFromBuffer(span);
+                }
+                finally
+                {
+                    if (buffer is not null)
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
                 }
             }
         }
@@ -791,12 +811,17 @@ namespace System.Formats.Tar
             {
                 ValidateSize();
                 byte[] buffer = ArrayPool<byte>.Shared.Rent((int)_size);
-                Memory<byte> memory = buffer.AsMemory(0, (int)_size);
+                try
+                {
+                    Memory<byte> memory = buffer.AsMemory(0, (int)_size);
 
-                await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(false);
-                ReadGnuLongPathDataFromBuffer(memory.Span);
-
-                ArrayPool<byte>.Shared.Return(buffer);
+                    await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(false);
+                    ReadGnuLongPathDataFromBuffer(memory.Span);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 

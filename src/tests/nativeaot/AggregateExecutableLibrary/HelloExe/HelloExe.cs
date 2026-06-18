@@ -3,4 +3,9 @@
 
 using System;
 
+if (OperatingSystem.IsWindows())
+{
+    Program.ValidateWin32Resources();
+}
+
 Console.WriteLine("Hello from HelloExe");
