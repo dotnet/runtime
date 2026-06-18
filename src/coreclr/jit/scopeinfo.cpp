@@ -1748,6 +1748,7 @@ void CodeGen::psiBegProlog()
                 // Integer register parameter. On SysV x64, the second segment
                 // may be in an XMM register for mixed struct passing — drop it
                 // since VLT_REG_REG cannot encode FP registers.
+                // TODO: Supporting this case is tracked by https://github.com/dotnet/runtime/issues/129344
                 if (reg2 != REG_NA && !genIsValidIntReg(reg2))
                 {
                     reg2 = REG_NA;

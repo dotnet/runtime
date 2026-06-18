@@ -1828,6 +1828,7 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         // VLT_REG_REG can only encode integer registers. On platforms where structs
         // can be returned in a mix of int and float registers (SysV x64, RISC-V),
         // skip recording if any register is not an int register.
+        // TODO: Supporting this case is tracked by https://github.com/dotnet/runtime/issues/129344
         if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
         {
             return;
