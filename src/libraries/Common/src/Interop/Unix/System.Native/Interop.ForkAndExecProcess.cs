@@ -71,12 +71,13 @@ internal static partial class Interop
                 fixed (uint* pGroups = groups)
                 fixed (int* pInheritedFds = inheritedFds)
                 {
-#pragma warning disable CA1416 // StartDetached/KillOnParentExit/StartSuspended getters work on all platforms; StartSuspended is handled natively on macOS, no-op elsewhere
                     result = ForkAndExecProcess(
                         filename, argvPtr, envpPtr, cwd,
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
                         out lpChildPid, stdinRawFd, stdoutRawFd, stderrRawFd,
-                        pInheritedFds, inheritedFdCount, startInfo.StartDetached ? 1 : 0, startInfo.KillOnParentExit ? 1 : 0, startInfo.StartSuspended ? 1 : 0);
+                        pInheritedFds, inheritedFdCount, startInfo.StartDetached ? 1 : 0,
+#pragma warning disable CA1416 // these getters work on all platforms
+                        startInfo.KillOnParentExit ? 1 : 0, startInfo.StartSuspended ? 1 : 0);
 #pragma warning restore CA1416
                 }
                 return result == 0 ? 0 : Marshal.GetLastPInvokeError();

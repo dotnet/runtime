@@ -224,6 +224,7 @@ namespace Microsoft.Win32.SafeHandles
                 throw new PlatformNotSupportedException();
             }
 
+            Validate();
             ResumeCore();
         }
 
