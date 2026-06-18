@@ -55,13 +55,15 @@
 //
 // Frame layout is:
 //
-//  {StackPassedArgs}                           ChildSP+080     CallerSP+000
-//  {CallerPushedArgs (extra+target) (8 bytes)} ChildSP+078     CallerSP-008
-//  {IntArgRegs (r0-r3) (0x10 bytes)}           ChildSP+068     CallerSP-018
-//  {ReturnBlock (0x20 bytes)}                  ChildSP+048     CallerSP-038
-//  {FpArgRegs (d0-d7) (0x40 bytes)}            ChildSP+008     CallerSP-078
-//  {PushedLR}                                  ChildSP+004     CallerSP-07C
-//  {PushedR11}                                 ChildSP+000     CallerSP-080
+//  {StackPassedArgs}                           ChildSP+078     CallerSP+000
+//  {IntArgRegs (r0-r3) (0x10 bytes)}           ChildSP+068     CallerSP-010
+//  {ReturnBlock (0x20 bytes)}                  ChildSP+048     CallerSP-030
+//   -- The base address of the Return block is the TransitionBlock pointer, the floating point args are
+//      in the neg space of the TransitionBlock pointer.  Note that the callee has knowledge of the exact
+//      layout of all pieces of the frame that lie at or above the pushed floating point registers.
+//  {FpArgRegs (d0-d7) (0x40 bytes)}            ChildSP+008     CallerSP-070
+//  {PushedLR}                                  ChildSP+004     CallerSP-074
+//  {PushedR11}                                 ChildSP+000     CallerSP-078
 //
 // NOTE: If the frame layout ever changes, the C++ UniversalTransitionStackFrame structure
 // must be updated as well.
@@ -81,9 +83,11 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         // Save argument registers (including floating point) and the return address.
         // Caller pushed 8 bytes: [sp]=extra arg, [sp+4]=target fn
         .pad #8
-        PROLOG_PUSH  "{r0-r3}"              // Push the argument registers
-        ldr          r12, [sp, #20]         // Capture target function (caller's [sp+4], now at sp+16+4)
-        ldr          r1, [sp, #16]          // Capture extra arg (caller's [sp], now at sp+16)
+        PROLOG_PUSH  "{r0-r1}"
+        ldr          r12, [sp, #12]         // Capture target function (caller's [sp+4], now at sp+8+4)
+        ldr          r1, [sp, #8]           // Capture extra arg (caller's [sp], now at sp+8)
+        str          r3, [sp, #12]          // Store remaining arg registers into the space used for the hidden args
+        str          r2, [sp, #8]
         PROLOG_STACK_ALLOC RETURN_BLOCK_SIZE // Save space a buffer to be used to hold return buffer data.
         PROLOG_VPUSH {d0-d7}                 // Capture the floating point argument registers
         PROLOG_PUSH  "{r11,lr}"              // Save caller's frame chain pointer and PC
@@ -129,7 +133,6 @@ GLOBAL_LABEL ReturnFrom\FunctionName
         EPILOG_VPOP  {d0-d7}
         EPILOG_STACK_FREE RETURN_BLOCK_SIZE        // pop return block conservatively reported area
         EPILOG_POP   "{r0-r3}"
-        EPILOG_STACK_FREE 8                        // free the 8 bytes pushed by the caller
 
         // Tailcall to the target address.
         EPILOG_BRANCH_REG r12

@@ -1424,13 +1424,12 @@ public:
     // Conservative GC reporting must be applied to everything between the base of the
     // ReturnBlock and the top of the StackPassedArgs.
 private:
-    uintptr_t m_pushedR11;                 // ChildSP+000 CallerSP-080 (0x4 bytes)     (r11)
-    uintptr_t m_pushedLR;                  // ChildSP+004 CallerSP-07C (0x4 bytes)     (lr)
-    uint64_t m_fpArgRegs[8];                  // ChildSP+008 CallerSP-078 (0x40 bytes)    (d0-d7)
-    uint64_t m_returnBlock[4];                // ChildSP+048 CallerSP-038 (0x20 bytes)
-    uintptr_t m_intArgRegs[4];             // ChildSP+068 CallerSP-018 (0x10 bytes)    (r0-r3)
-    uintptr_t m_callerPushedArgs[2];       // ChildSP+078 CallerSP-008 (0x8 bytes)     (extra arg + target fn)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+080 CallerSP+000 (unknown size)
+    uintptr_t m_pushedR11;                 // ChildSP+000 CallerSP-078 (0x4 bytes)     (r11)
+    uintptr_t m_pushedLR;                  // ChildSP+004 CallerSP-074 (0x4 bytes)     (lr)
+    uint64_t m_fpArgRegs[8];                  // ChildSP+008 CallerSP-070 (0x40 bytes)    (d0-d7)
+    uint64_t m_returnBlock[4];                // ChildSP+048 CallerSP-030 (0x20 bytes)
+    uintptr_t m_intArgRegs[4];             // ChildSP+068 CallerSP-010 (0x10 bytes)    (r0-r3)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+078 CallerSP+000 (unknown size)
 
 public:
     PTR_uintptr_t get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }

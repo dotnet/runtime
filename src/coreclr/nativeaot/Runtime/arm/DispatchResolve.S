@@ -10,8 +10,6 @@
 
 NESTED_ENTRY RhpInterfaceDispatch, _TEXT, NoHandler
 
-        // r12 currently contains the indirection cell address. We need scratch registers.
-        // Allocate stack frame for register spills.
         // Unwinder special cases this push to be able to unwind out of the potential nullref below.
         PROLOG_PUSH "{r1,r2}"
 
@@ -40,7 +38,7 @@ LOCAL_LABEL(Hashtable):
 
         // r1 = MethodTable, r12 = indirection cell address
         // Look up the target in the dispatch cache hashtable (GenericCache<Key, nint>).
-        PROLOG_PUSH  "{r3,r4,r5,r6,r8}"
+        PROLOG_PUSH "{r3,r4,r5,r6,r8}"
 
         // Load the _table field (Entry[]) from the cache struct.
         PREPARE_EXTERNAL_VAR_INDIRECT g_pDispatchCache, r2
@@ -114,8 +112,6 @@ LOCAL_LABEL(ProbeMiss):
 
 LOCAL_LABEL(CacheMiss):
         EPILOG_POP  "{r3,r4,r5,r6,r8}"
-
-        // restore original value of r1, r2
         EPILOG_POP  "{r1,r2}"
 
         // Push args for RhpUniversalTransitionTailCall:
