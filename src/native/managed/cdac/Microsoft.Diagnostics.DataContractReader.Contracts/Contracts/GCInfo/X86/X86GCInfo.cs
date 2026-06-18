@@ -349,6 +349,13 @@ public record X86GCInfo : IGCInfoDecoder
             uint lowBits = varOffsRaw & OFFSET_MASK;
             int stkOffs = (int)(varOffsRaw & ~OFFSET_MASK);
 
+            // For EBP-frames the encoded offset is positive but means EBP-relative-negative
+            // (i.e., locals live below EBP). Native EnumGcRefsX86 negates here; mirror that
+            // so LiveSlot.SpOffset is a true signed FRAMEREG-relative byte offset.
+            // (gc_unwind_x86.inl:3567-3573 -- "if (info.ebpFrame) { stkOffs = -stkOffs; }")
+            if (Header.EbpFrame)
+                stkOffs = -stkOffs;
+
             curOffs = begOffs;
 
             builder.Add(new VarPtrLifetime(begOffs, endOffs, stkOffs, lowBits));
@@ -509,13 +516,19 @@ public record X86GCInfo : IGCInfoDecoder
             }
         }
 
-        // (2) VarPtr-tracked frame locals -- live when instructionOffset is within [Begin, End).
+        // (2) VarPtr-tracked frame locals -- live when the lifetime-check offset is within [Begin, End).
+        // Native EnumGcRefsX86 (gc_unwind_x86.inl:3540-3548) uses `curOffs-1` on non-active frames
+        // because at the return address a variable could be dead (call was the last instruction of a
+        // try and the return address is the catch-block jump target).
         // Only EBP-frames produce entries here; the table is empty for ESP-frames.
         {
             uint spBase = Header.EbpFrame ? FRAMEREG_REL : SP_REL;
+            uint varPtrOffset = (options.IsActiveFrame || instructionOffset == 0)
+                ? instructionOffset
+                : instructionOffset - 1;
             foreach (VarPtrLifetime vp in VarPtrLifetimes)
             {
-                if (instructionOffset < vp.BeginOffset || instructionOffset >= vp.EndOffset)
+                if (varPtrOffset < vp.BeginOffset || varPtrOffset >= vp.EndOffset)
                     continue;
 
                 // LowBits encoding matches LiveSlot.GcFlags exactly: 0x1 = interior, 0x2 = pinned.
@@ -551,24 +564,40 @@ public record X86GCInfo : IGCInfoDecoder
         RegMask liveRegs = RegMask.NONE;
         RegMask liveIptrRegs = RegMask.NONE;
 
-        // Pushed pointer args on the stack, keyed by ESP-relative byte offset (positive).
-        // Value: GcFlags (0x1 = interior). Use a sorted dictionary for deterministic output.
+        // Pushed pointer args on the stack, keyed by push-index (the depth at the moment of
+        // the push, 0-indexed). Value: GcFlags (0x1 = interior). Native scanArgRegTableI sets
+        // bit `argOfs` in `ptrArgs` when a ptr is pushed at that depth (gc_unwind_x86.inl:1746).
+        // Bit 0 corresponds to the FIRST push (highest stack address among pushed args).
+        // The SP-relative byte offset is computed at emit time once finalDepth is known:
+        //   addr = pPendingArgFirst - pushIndex*4   (native gc_unwind_x86.inl:3262)
+        //        = ESP_call + (finalDepth - 1 - pushIndex)*4
+        // We must defer the offset translation because additional pushes/pops can change
+        // finalDepth after a slot is recorded.
         SortedDictionary<int, uint> pushedPtrs = new();
 
-        // Stack depth in pointer-size units, used by GcTransitionPointer offsets which are
-        // expressed as "argOffs from top of pushed args". Mirrors the depth bookkeeping in
-        // CalculatePushedArgSize.
+        // Stack depth in pointer-size units, tracking total pushed pointer-size slots
+        // (including non-ptr args). Mirrors `argCnt` in scanArgRegTableI.
         int depthSlots = 0;
 
         // For partially-interruptible methods, only the call-site state matters -- we collect
         // the most-recent call site at-or-before instructionOffset and emit its registers/args.
         GcTransitionCall? activeCallSite = null;
 
+        // Mirrors native EnumGcRefsX86 (gc_unwind_x86.inl:3149+): on non-leaf (non-active)
+        // stack frames, register liveness must be evaluated at the instruction *before* the
+        // call, because register liveness can change across calls (e.g., a register holding a
+        // GC ref before the call may be dead after the call). The active leaf frame uses the
+        // exact instructionOffset since execution is paused there.
+        uint regOffset = (options.IsActiveFrame || instructionOffset == 0)
+            ? instructionOffset
+            : instructionOffset - 1;
+
         foreach (int offset in Transitions.Keys.OrderBy(o => o))
         {
-            // Stop AFTER processing transitions at instructionOffset for fully-interruptible
-            // code. For partially-interruptible code, GcTransitionCall transitions can also
-            // contain register/arg state describing the call site.
+            // Stop once we've passed the queried offset. We need to consume all transitions at
+            // exactly `instructionOffset` to capture the call-site `GcTransitionCall` for the
+            // partially-interruptible path; the regOffset adjustment above handles the
+            // register-state-before-call case for non-leaf fully-interruptible frames.
             if (offset > instructionOffset)
                 break;
 
@@ -577,6 +606,18 @@ public record X86GCInfo : IGCInfoDecoder
                 switch (transition)
                 {
                     case GcTransitionRegister regT:
+                        // Native gc_unwind_x86.inl distinguishes register-liveness bytes
+                        // (00RRR DDD / 01RRR DDD: ptr reg dead/live) from arg-stream bytes
+                        // (push/pop/non-ptr-push/kill). Only the register-liveness bytes are
+                        // gated by `curOffsRegs` on non-leaf frames (line 1600-1602); arg-stream
+                        // bytes always update depth and pushed-pointers up to curOffsArgs.
+                        // GcArgTable encodes ESP push/pop as GcTransitionRegister with
+                        // RegMask.ESP, so we must NOT regOffset-gate those.
+                        if (regT.IsLive == Action.LIVE || regT.IsLive == Action.DEAD)
+                        {
+                            if ((uint)offset > regOffset)
+                                continue;
+                        }
                         ApplyRegisterTransition(regT, ref liveRegs, ref liveIptrRegs, ref depthSlots, pushedPtrs);
                         break;
                     case GcTransitionPointer ptrT:
@@ -607,27 +648,35 @@ public record X86GCInfo : IGCInfoDecoder
             }
         }
 
-        // Emit live registers from accumulated state.
-        // The IsActiveFrame option controls whether scratch (callee-trashed) registers are
-        // reported. On non-leaf frames, the live registers are by definition scratch from the
-        // caller's perspective, so they should not be reported. Native EnumGcRefsX86 handles
-        // this via the willContinueExecution / ExecutionAborted flags interacting with the
-        // CHK_AND_REPORT_REG macro family.
-        if (options.IsActiveFrame || activeCallSite is not null)
+        // Emit live registers from accumulated state. Native EnumGcRefsX86 (gc_unwind_x86.inl:3189-3199)
+        // distinguishes between callee-saved registers (always reported when willContinueExecution)
+        // and callee-trashed registers (only on the active leaf frame). On non-active frames the
+        // callee will have trashed EAX/ECX/EDX, so reporting them at the call site would be wrong.
+        // We already short-circuited the !willContinueExecution case above for aborted+non-interruptible.
+        const RegMask CalleeTrashedScratch = RegMask.EAX | RegMask.ECX | RegMask.EDX;
+        foreach (RegMask r in EnumerateSingleRegs())
         {
-            // Iterate single-bit register values via RM_ALL.
-            foreach (RegMask r in EnumerateSingleRegs())
-            {
-                if ((liveRegs & r) == 0) continue;
-                uint gcFlags = (liveIptrRegs & r) != 0 ? 0x1u : 0u;
-                result.Add(new LiveSlot(IsRegister: true, RegisterNumber: RegMaskToRegisterNumber(r), SpOffset: 0, SpBase: 0, GcFlags: gcFlags));
-            }
+            if ((liveRegs & r) == 0) continue;
+            // Skip callee-trashed scratch registers on non-active frames -- the callee will have
+            // overwritten them by the time we resume here, so any GC refs they held at the call
+            // site are stale.
+            if (!options.IsActiveFrame && (r & CalleeTrashedScratch) != 0) continue;
+
+            uint gcFlags = (liveIptrRegs & r) != 0 ? 0x1u : 0u;
+            result.Add(new LiveSlot(IsRegister: true, RegisterNumber: RegMaskToRegisterNumber(r), SpOffset: 0, SpBase: 0, GcFlags: gcFlags));
         }
 
-        // Emit pushed pointer args as SP-relative stack slots.
+        // Emit pushed pointer args as SP-relative stack slots. Native EnumGcRefsX86
+        // (gc_unwind_x86.inl:3262) addresses bit `i` of the args mask at
+        // `pPendingArgFirst - i*sizeof(DWORD)` where pPendingArgFirst is the FIRST-pushed-arg
+        // address (highest among pushed args). Translating to ESP-at-call-site:
+        //   addr = (ESP_call + finalDepth*4 - 4) - pushIndex*4
+        //        = ESP_call + (finalDepth - 1 - pushIndex) * 4
+        // Bit 0 (first push) ends up at the highest positive offset; the last push at offset 0.
         foreach (KeyValuePair<int, uint> pushed in pushedPtrs)
         {
-            result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: pushed.Key, SpBase: spRelBase, GcFlags: pushed.Value));
+            int spOffset = (depthSlots - 1 - pushed.Key) * 4;
+            result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: spOffset, SpBase: spRelBase, GcFlags: pushed.Value));
         }
 
         // Partially-interruptible call-site: emit its register set and pointer args directly.
@@ -665,22 +714,25 @@ public record X86GCInfo : IGCInfoDecoder
                 liveIptrRegs &= ~regT.Register;
                 break;
             case Action.PUSH:
-                // The register's value is pushed onto the stack as a callee argument.
-                // Each push advances depth; record the slot at the new top-of-stack.
+                // GcArgTable emits two flavors of PUSH: pointer-arg push (with a real Register
+                // bit set, e.g. RegMask.EAX-EDI) and ESP-only push (RegMask.ESP) for non-ptr
+                // arg pushes. Native scanArgRegTableI handles these as separate byte patterns:
+                // pointer pushes set a bit in ptrArgs, non-ptr pushes only advance argCnt.
+                // Mirror that: ESP-only pushes advance depth without recording a pointer.
+                bool isPtrPush = (regT.Register & ~RegMask.ESP) != 0;
                 for (int i = 0; i < regT.PushCountOrPopSize; i++)
                 {
+                    if (isPtrPush)
+                        pushedPtrs[depthSlots] = regT.Iptr ? 0x1u : 0u;
                     depthSlots++;
-                    int sp = -depthSlots * 4; // x86 grows down; offset relative to call-site SP
-                    pushedPtrs[sp] = regT.Iptr ? 0x1u : 0u;
                 }
                 break;
             case Action.POP:
                 // Pop unrolls the most recently pushed slots.
                 for (int i = 0; i < regT.PushCountOrPopSize && depthSlots > 0; i++)
                 {
-                    int sp = -depthSlots * 4;
-                    pushedPtrs.Remove(sp);
                     depthSlots--;
+                    pushedPtrs.Remove(depthSlots);
                 }
                 break;
             case Action.KILL:
@@ -700,17 +752,15 @@ public record X86GCInfo : IGCInfoDecoder
         switch (ptrT.Act)
         {
             case Action.PUSH:
+                pushedPtrs[depthSlots] = ptrT.Iptr ? 0x1u : 0u;
                 depthSlots++;
-                int spPush = -depthSlots * 4;
-                pushedPtrs[spPush] = ptrT.Iptr ? 0x1u : 0u;
                 break;
             case Action.POP:
                 // ArgOffset slots are popped from the top of the pushed-args stack.
                 for (uint i = 0; i < ptrT.ArgOffset && depthSlots > 0; i++)
                 {
-                    int sp = -depthSlots * 4;
-                    pushedPtrs.Remove(sp);
                     depthSlots--;
+                    pushedPtrs.Remove(depthSlots);
                 }
                 break;
             case Action.KILL:
