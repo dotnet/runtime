@@ -55,6 +55,7 @@ record struct ThreadData (
     TargetPointer ThreadHandle;
     bool IsInteropDebuggingHijacked;
     TargetPointer DebuggerFilterContext;
+    TargetPointer GCFrame;
 );
 ```
 
@@ -123,6 +124,7 @@ The contract additionally depends on these data descriptors
 | `Thread` | `DebuggerControlledThreadState` | Thread state flags controlled by the debugger |
 | `Thread` | `PreemptiveGCDisabled` | Flag indicating if preemptive GC is disabled |
 | `Thread` | `Frame` | Pointer to current frame |
+| `Thread` | `GCFrame` | Pointer to the head of the thread's GCFrame chain. |
 | `Thread` | `CachedStackBase` | Pointer to the base of the stack |
 | `Thread` | `CachedStackLimit` | Pointer to the limit of the stack |
 | `Thread` | `ExposedObject` | Handle to the managed `Thread` object exposed to the debugger |
@@ -237,6 +239,7 @@ ThreadData GetThreadData(TargetPointer address)
         LastThrownObjectHandle : lastThrownObjectHandle,
         FirstNestedException : firstNestedException,
         NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
+        GCFrame: target.ReadPointer(address + /* Thread::GCFrame offset */),
     );
 }
 
@@ -302,7 +305,11 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
             if (collectibleCount > indexOffset)
             {
                 TargetPointer collectibleArray = target.ReadPointer(threadLocalDataPtr + /* ThreadLocalData::CollectibleTlsArrayData offset */);
-                threadLocalStaticBase = target.ReadPointer(collectibleArray + (ulong)(indexOffset * target.PointerSize));
+                // The collectible TLS array slot holds an OBJECTHANDLE; dereference the handle to the object
+                TargetPointer handleSlotAddress = collectibleArray + (ulong)(indexOffset * target.PointerSize);
+                TargetPointer handle = target.ReadPointer(handleSlotAddress);
+                if (handle != TargetPointer.Null && target.TryReadPointer(handle, out TargetPointer obj))
+                    threadLocalStaticBase = obj;
             }
             break;
         case TLSIndexType.DirectOnThreadLocalData:
