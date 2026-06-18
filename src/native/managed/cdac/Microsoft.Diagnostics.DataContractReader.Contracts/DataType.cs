@@ -206,6 +206,10 @@ public enum DataType
 
     EnCEEClassData,
     EnCAddedFieldElement,
+    EnCFieldDesc,
+    EnCAddedField,
+    EnCAddedStaticField,
+    EnCSyncBlockInfo,
     UnorderedArrayBase,
 }
 
