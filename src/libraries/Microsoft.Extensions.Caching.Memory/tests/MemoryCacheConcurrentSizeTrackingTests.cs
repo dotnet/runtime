@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Caching.Memory
         // rather than the shared ThreadPool. This prevents the storm from starving timing-sensitive
         // post-eviction callbacks in sibling tests. It runs as OuterLoop because it is a long-running
         // stress test, and ConditionalFact skips platforms without real thread support (e.g. browser/wasm).
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop]
         public void ConcurrentSetReplaceAndRemove_DoesNotDriftSizeNegative_NorLatch()
         {
