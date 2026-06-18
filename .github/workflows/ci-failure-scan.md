@@ -48,7 +48,7 @@ safe-outputs:
   create-issue:
     max: 5
     labels: [agentic-workflows]
-    allowed-labels: ["Known Build Error", "blocking-clean-ci"]
+    allowed-labels: ["Known Build Error", "blocking-clean-ci", "blocking-clean-ci-optional"]
 
 timeout-minutes: 90
 
@@ -75,7 +75,7 @@ The agent runs read-only. All writes go through `safe-outputs`.
 
 1. **All writes via `safe-outputs`.** No `issues: write`, no `contents: write`. Don't try to use `gh` to write. The only output is `create_issue`.
 2. **Cap per run: 5 `create_issue`.** On cap, record `-> skipped: cap reached` and move on.
-3. **Labels: only `Known Build Error` and `blocking-clean-ci` on KBEs.** Every other label (`area-*`, `os-*`, `arch-*`, `disabled-test`, ...) is dropped by `allowed-labels`. Area triage is delegated to `dotnet/issue-labeler` (`.github/workflows/labeler-predict-issues.yml`); never propose area labels yourself.
+3. **Labels: only `Known Build Error` plus exactly one of `blocking-clean-ci` / `blocking-clean-ci-optional` on KBEs.** Pick the blocking label per [KBE label selection](#kbe-label-selection). Every other label (`area-*`, `os-*`, `arch-*`, `disabled-test`, ...) is dropped by `allowed-labels`. Area triage is delegated to `dotnet/issue-labeler` (`.github/workflows/labeler-predict-issues.yml`); never propose area labels yourself.
 4. **One area path per issue.** Title each KBE around a single failure shape (assertion text or test family), not a list of pipelines. If a root cause spans multiple area paths, file one KBE per area and cross-link with `Related: dotnet/runtime#<n>`.
 5. **No `Mute` / `Muting` in titles.** Use `Skip`, `Disable`, `Suppress`, or `Exclude` when a title must describe a mitigation; prefer describing the failure itself.
 6. **Every issue title starts with `[ci-scan] `.**
@@ -131,17 +131,17 @@ For each row in the pipeline table below:
 |---|---|---|
 | runtime-extra-platforms | 154 | Apple mobile, Android, browser, wasi, NativeAOT outer loop |
 | runtime-coreclr outerloop | 108 | |
-| runtime-coreclr jitstress | 109 | JIT stress modes |
-| runtime-coreclr jitstressregs | 110 | |
-| runtime-coreclr jitstress2-jitstressregs | 111 | |
-| runtime-coreclr gcstress-gcstress | 112 | |
-| runtime-coreclr gcstress-extra | 113 | |
+| runtime-coreclr jitstress | 109 | JIT stress modes; optional-ci |
+| runtime-coreclr jitstressregs | 110 | optional-ci |
+| runtime-coreclr jitstress2-jitstressregs | 111 | optional-ci |
+| runtime-coreclr gcstress-gcstress | 112 | optional-ci |
+| runtime-coreclr gcstress-extra | 113 | optional-ci |
 | runtime-coreclr r2r-extra | 114 | |
-| runtime-coreclr jitstress-isas-x86 | 115 | |
-| runtime-coreclr jitstress-isas-arm | 116 | |
-| runtime-coreclr jitstressregs-x86 | 117 | |
-| runtime-coreclr libraries-jitstressregs | 118 | |
-| runtime-coreclr libraries-jitstress2-jitstressregs | 119 | |
+| runtime-coreclr jitstress-isas-x86 | 115 | optional-ci |
+| runtime-coreclr jitstress-isas-arm | 116 | optional-ci |
+| runtime-coreclr jitstressregs-x86 | 117 | optional-ci |
+| runtime-coreclr libraries-jitstressregs | 118 | optional-ci |
+| runtime-coreclr libraries-jitstress2-jitstressregs | 119 | optional-ci |
 | runtime-coreclr r2r | 120 | |
 | runtime-coreclr gc-simulator | 123 | |
 | runtime-coreclr crossgen2 | 124 | |
@@ -149,22 +149,33 @@ For each row in the pipeline table below:
 | runtime-coreclr crossgen2-composite | 136 | |
 | runtime-coreclr crossgen2-composite gcstress | 141 | Weekends |
 | runtime-jit-experimental | 137 | OSR / partial compilation |
-| runtime-coreclr libraries-jitstress | 138 | |
-| runtime-coreclr ilasm | 140 | |
-| runtime-coreclr pgo | 144 | |
-| runtime-coreclr libraries-pgo | 145 | |
+| runtime-coreclr libraries-jitstress | 138 | optional-ci |
+| runtime-coreclr ilasm | 140 | optional-ci |
+| runtime-coreclr pgo | 144 | optional-ci |
+| runtime-coreclr libraries-pgo | 145 | optional-ci |
 | gc-standalone | 146 | ADO name differs from display name |
 | runtime-coreclr superpmi-replay | 150 | |
 | runtime-coreclr superpmi-asmdiffs-checked-release | 153 | |
 | runtime-coreclr jit-cfg | 155 | Control flow guard |
-| runtime-coreclr jitstress-random | 159 | Stress mode value comes from logs |
-| runtime-coreclr libraries-jitstress-random | 160 | Stress mode value comes from logs |
-| runtime-coreclr pgostress | 230 | |
-| runtime-coreclr jitstress-isas-avx512 | 235 | |
+| runtime-coreclr jitstress-random | 159 | Stress mode value comes from logs; optional-ci |
+| runtime-coreclr libraries-jitstress-random | 160 | Stress mode value comes from logs; optional-ci |
+| runtime-coreclr pgostress | 230 | optional-ci |
+| runtime-coreclr jitstress-isas-avx512 | 235 | optional-ci |
 | runtime-nativeaot-outerloop | 265 | |
 | runtime-diagnostics | 309 | |
 | runtime-interpreter | 316 | ADO name differs from display name |
 | runtime-libraries-interpreter | 330 | ADO name differs from display name |
+
+<a id="kbe-label-selection"></a>
+
+### KBE label selection
+
+Every KBE gets `Known Build Error` plus exactly one blocking label:
+
+- `blocking-clean-ci` by default — the failing pipeline is part of the required `runtime` / `runtime-extra-platforms` gate, so the failure must block clean CI.
+- `blocking-clean-ci-optional` when the failing pipeline's row above is marked `optional-ci` in its Notes. These are the JIT / GC / PGO stress-mode pipelines (defs 109, 110, 111, 112, 113, 115, 116, 117, 118, 119, 138, 140, 144, 145, 159, 160, 230, 235), which run as optional rolling jobs outside the required gate; their failures should surface in Build Analysis without blocking clean CI.
+
+Choose the label by the definition the signature came from. Never apply both blocking labels to one issue.
 
 ### Step 3 — Classify each failure (log-extraction only)
 
@@ -286,11 +297,11 @@ No meta / aggregate / outage issues. Every KBE is keyed to a single `(definition
 - Infra-shaped (agent disconnect, pool offline, dead-letter, queue capacity, transient network): emit zero issues. Record `skipped: suspected infra outage` for each signature. This workflow has no infra-report safe-output; the recorded skip reason is the only signal, and the feedback workflow aggregates it.
 - Product-shaped (assertion, exception, stack frame, JIT marker) converging on a common element (same assembly / stack frame / assertion file): file ONE representative KBE per element (cap 3 total). Skip the rest with `skipped: representative KBE filed as #aw_<id>`.
 
-**Leg-level failures.** Evaluate this per leg (`definition + queue + stress mode`, per [the leg definition](#leg-definition)) before per-test signature scoring. When > 80% of a single leg's work items fail on a shared crash signal (same exit code / signal / assertion, e.g. arm32 NativeAOT all SIGBUS), file ONE KBE keyed to `(definition_id, queue, stress_mode, shared-signal)` — matching the Step 4.0 dedup key shape `<definition_id>|<queue>|<stress_mode>|<signature_norm>` so the leg identity is preserved and unrelated legs sharing a crash signal do not collide — scoped to that leg with `Known Build Error` + `blocking-clean-ci`, and skip the per-test signatures with `skipped: leg-level failure filed as #aw_<id>`.
+**Leg-level failures.** Evaluate this per leg (`definition + queue + stress mode`, per [the leg definition](#leg-definition)) before per-test signature scoring. When > 80% of a single leg's work items fail on a shared crash signal (same exit code / signal / assertion, e.g. arm32 NativeAOT all SIGBUS), file ONE KBE keyed to `(definition_id, queue, stress_mode, shared-signal)` — matching the Step 4.0 dedup key shape `<definition_id>|<queue>|<stress_mode>|<signature_norm>` so the leg identity is preserved and unrelated legs sharing a crash signal do not collide — scoped to that leg with `Known Build Error` + the blocking label from [KBE label selection](#kbe-label-selection), and skip the per-test signatures with `skipped: leg-level failure filed as #aw_<id>`.
 
 **Branch A — No existing KBE; signature is stable.**
 
-Stable means >= 2 occurrences across >= 2 distinct builds in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Multiple legs, retries, or work items of the SAME build (same build id) count as a single occurrence, not two — a one-off failure that appears in only one build is NOT stable; record `skipped: < 2 occurrences and not blocking` and let the next run revisit. Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply both `Known Build Error` and `blocking-clean-ci` labels so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow. Append to the same-run dedup cache (Step 4.0) after emission.
+Stable means >= 2 occurrences across >= 2 distinct builds in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Multiple legs, retries, or work items of the SAME build (same build id) count as a single occurrence, not two — a one-off failure that appears in only one build is NOT stable; record `skipped: < 2 occurrences and not blocking` and let the next run revisit. Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply `Known Build Error` and the blocking label chosen per [KBE label selection](#kbe-label-selection) so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow. Append to the same-run dedup cache (Step 4.0) after emission.
 
 **Match-count gate.** Reject the emit if the body lacks `<!-- ci-scan-match-count: <N> hits in failure.log -->` with `N >= 1`. Treat an absent marker as `N=0` and record the same skip reason check #7 of the shared instructions uses: `skipped: signature did not match failure.log (N=<count>)`. Rationale, log-source caveats, and native-assert handling live in check #7.
 
