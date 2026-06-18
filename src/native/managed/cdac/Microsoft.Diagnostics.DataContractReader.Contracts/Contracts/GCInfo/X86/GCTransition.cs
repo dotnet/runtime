@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers.X86;
 
 public enum Action
 {
