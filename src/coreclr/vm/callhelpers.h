@@ -131,6 +131,30 @@ public:
         m_argIt.ForceSigWalk();
     }
 
+    //
+    // Only use this constructor if you're certain you know where
+    // you're going and it cannot be affected by generics/virtual
+    // dispatch/etc..
+    //
+    MethodDescCallSite(MethodDesc* pMD, PCODE pCallTarget, TypeHandle th) :
+        m_pMD(pMD),
+        m_pCallTarget(pCallTarget),
+        m_methodSig(pMD, th),
+        m_argIt(&m_methodSig)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        m_pMD->EnsureActive();
+
+        m_argIt.ForceSigWalk();
+    }
+
     MetaSig* GetMetaSig()
     {
         return &m_methodSig;

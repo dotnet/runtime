@@ -999,24 +999,18 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d
 
     BEGIN_QCALL;
 
-    GCX_COOP();
-
-    struct
-    {
-        DELEGATEREF refThis;
-        OBJECTREF target;
-    } gc;
-
-    gc.refThis    = (DELEGATEREF) d.Get();
-    gc.target     = target.Get();
-
-    GCPROTECT_BEGIN(gc);
 
     TypeHandle methodType = pMethodType.AsTypeHandle();
 
-    TypeHandle targetType((gc.target != NULL) ? gc.target->GetMethodTable() : NULL);
+    TypeHandle targetType;
+    MethodTable * pDelegateType;
+    {
+        GCX_COOP();
+        targetType = (target.Get() != NULL) ? TypeHandle(target.Get()->GetMethodTable()) : TypeHandle();
+        pDelegateType = d.Get()->GetMethodTable();
+    }
+    
     // get the invoke of the delegate
-    MethodTable * pDelegateType = gc.refThis->GetMethodTable();
     MethodDesc* pInvokeMeth = COMDelegate::FindDelegateInvokeMethod(pDelegateType);
     _ASSERTE(pInvokeMeth);
 
@@ -1073,10 +1067,10 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d
                                                                  false /* do not allow code with a shared-code calling convention to be returned */,
                                                                  true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
                 bool fIsOpenDelegate;
-                if (!COMDelegate::IsMethodDescCompatible((gc.target == NULL) ? TypeHandle() : gc.target->GetTypeHandle(),
+                if (!COMDelegate::IsMethodDescCompatible(targetType,
                                                         methodType,
                                                         pCurMethod,
-                                                        gc.refThis->GetTypeHandle(),
+                                                        TypeHandle(pDelegateType),
                                                         pInvokeMeth,
                                                         flags,
                                                         &fIsOpenDelegate))
@@ -1085,13 +1079,29 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d
                     continue;
                 }
 
-                // Found the target that matches the signature and satisfies security transparency rules
-                // Initialize the delegate to point to the target method.
-                COMDelegate::BindToMethod(&gc.refThis,
-                             &gc.target,
-                             pCurMethod,
-                             methodType.GetMethodTable(),
-                             fIsOpenDelegate);
+                {
+                    GCX_COOP();
+
+                    struct
+                    {
+                        DELEGATEREF refThis;
+                        OBJECTREF target;
+                    } gc;
+
+                    gc.refThis    = (DELEGATEREF) d.Get();
+                    gc.target     = target.Get();
+
+                    GCPROTECT_BEGIN(gc);
+
+                    // Found the target that matches the signature and satisfies security transparency rules
+                    // Initialize the delegate to point to the target method.
+                    COMDelegate::BindToMethod(&gc.refThis,
+                                &gc.target,
+                                pCurMethod,
+                                methodType.GetMethodTable(),
+                                fIsOpenDelegate);
+                    GCPROTECT_END();
+                }
 
                 pMatchingMethod = pCurMethod;
                 goto done;
@@ -1101,7 +1111,6 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d
     done:
         ;
 
-    GCPROTECT_END();
 
     END_QCALL;
 
@@ -1145,6 +1154,9 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d
     _ASSERTE(pInvokeMeth);
 
     // See the comment in BindToMethodName
+    bool fIsOpenDelegate;
+    bool fIsMethodDescCompatible;
+    TypeHandle targetType = (gc.refFirstArg == NULL) ? TypeHandle() : gc.refFirstArg->GetTypeHandle();
     {
         GCX_PREEMP();
         method =
@@ -1154,16 +1166,17 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(QCall::ObjectHandleOnStack d
                                                         method->GetMethodInstantiation(),
                                                         false /* do not allow code with a shared-code calling convention to be returned */,
                                                         true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
-    }
-
-    bool fIsOpenDelegate;
-    if (COMDelegate::IsMethodDescCompatible((gc.refFirstArg == NULL) ? TypeHandle() : gc.refFirstArg->GetTypeHandle(),
+                                                        
+        fIsMethodDescCompatible = COMDelegate::IsMethodDescCompatible(targetType,
                                             TypeHandle(pMethMT),
                                             method,
-                                            gc.refThis->GetTypeHandle(),
+                                            TypeHandle(pDelegateType),
                                             pInvokeMeth,
                                             flags,
-                                            &fIsOpenDelegate))
+                                            &fIsOpenDelegate);
+    }
+
+    if (fIsMethodDescCompatible)
     {
         // Initialize the delegate to point to the target method.
         COMDelegate::BindToMethod(&gc.refThis,

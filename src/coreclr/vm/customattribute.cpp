@@ -919,11 +919,10 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
 
     {
         GCX_PREEMP();
-        pCtorMD->EnsureActive();
         pCallTarget = pCtorMD->GetCallTarget(NULL, th);
     }
 
-    MethodDescCallSite ctorCallSite(pCtorMD, pCallTarget);
+    MethodDescCallSite ctorCallSite(pCtorMD, pCallTarget, th);
     MetaSig* pSig = ctorCallSite.GetMetaSig();
     BYTE* pBlob = *ppBlob;
 
