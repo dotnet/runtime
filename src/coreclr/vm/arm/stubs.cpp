@@ -747,7 +747,7 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _stub._resolveEntryPoint[n++] = 0x42ac;
 
     // bne nextEntry
-    _stub._resolveEntryPoint[n++] = 0xd108;
+    _stub._resolveEntryPoint[n++] = 0xd107;
 
     // ;; Check this._token == e.token
     // ldr r5, [pc + #_token]
@@ -755,13 +755,13 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _ASSERTE((offset & 0x3) == 0);
     _stub._resolveEntryPoint[n++] = 0x4d00 | (offset>>2);
 
-    // ldr r12, [r6 + #ResolveCacheElem.token]
+    // ldr r4, [r6 + #ResolveCacheElem.token] ;; use r4 (not r12) to avoid clobbering IndirectionCellAndFlags
     offset = offsetof(ResolveCacheElem, token);
-    _stub._resolveEntryPoint[n++] = 0xf8d6;
-    _stub._resolveEntryPoint[n++] = 0xc000 | offset;
+    _ASSERTE(offset <= 124 && (offset & 0x3) == 0);
+    _stub._resolveEntryPoint[n++] = 0x6834 | (offset << 4);
 
-    // cmp r12, r5
-    _stub._resolveEntryPoint[n++] = 0x45ac;
+    // cmp r4, r5
+    _stub._resolveEntryPoint[n++] = 0x42ac;
 
     // bne nextEntry
     _stub._resolveEntryPoint[n++] = 0xd103;
