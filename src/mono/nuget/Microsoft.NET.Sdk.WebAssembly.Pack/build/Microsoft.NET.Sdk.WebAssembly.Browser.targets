@@ -773,6 +773,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <!-- Track boot JSON for clean operations even when _WriteBuildWasmBootJsonFile was skipped -->
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
+      <!-- Track the completion stamp here too: when _WriteBuildWasmBootJsonFile is skipped on
+           incremental builds, its in-body FileWrites entries aren't populated. Without this,
+           `dotnet clean` would leave the stamp behind and the next build would (correctly)
+           see it as up-to-date even though the boot JSON was just cleaned. -->
+      <FileWrites Include="$(IntermediateOutputPath)wasm-bootjson-build.complete.stamp" />
       <_WasmBuildBootConfigCandidate
         Include="$(_WasmBuildBootJsonPath)"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
@@ -1092,6 +1097,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup>
       <!-- Track boot JSON for clean operations even when GeneratePublishWasmBootJson was skipped -->
       <FileWrites Include="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
+      <!-- Track the completion stamp here too: see _GenerateBuildWasmBootJson for rationale. -->
+      <FileWrites Include="$(IntermediateOutputPath)wasm-bootjson-publish.complete.stamp" />
       <_WasmPublishBootConfigCandidate
         Include="$([MSBuild]::NormalizePath($(IntermediateOutputPath), $(_WasmPublishBootConfigFileName)))"
         RelativePath="_framework/$(_WasmBootConfigFileName)" />
