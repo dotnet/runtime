@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
@@ -28,11 +28,5 @@
   <Suppression>
     <DiagnosticId>CP0008</DiagnosticId>
     <Target>T:System.Collections.BitArray</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0016</DiagnosticId>
-    <Target>T:System.Runtime.Intrinsics.Arm.SveSha3:[T:System.Diagnostics.CodeAnalysis.ExperimentalAttribute]</Target>
-    <Left>ref/net11.0/System.Private.CoreLib.dll</Left>
-    <Right>lib/net11.0/System.Private.CoreLib.dll</Right>
   </Suppression>
 </Suppressions>
