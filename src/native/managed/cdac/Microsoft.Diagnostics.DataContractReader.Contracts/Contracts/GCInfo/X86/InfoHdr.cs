@@ -6,7 +6,7 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers.X86;
 
 /// <summary>
 /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a> InfoHdrSmall
