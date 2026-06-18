@@ -24,7 +24,7 @@ namespace System.Threading.RateLimiting
 
         /// <summary>
         /// Function to calculate elapsed time from a given tick value.
-        /// Defaults to <see cref="RateLimiterHelper.GetElapsedTime(long?)"/>.
+        /// Defaults to the <see cref="RateLimiterHelper.GetElapsedTime(long?)"/> which returns <see langword="null"/> when the timestamp is <see langword="null"/>, and returns <c>Stopwatch.GetElapsedTime(long)</c> when not null.
         /// In tests, this field can be reassigned via reflection to inject custom time behavior without modifying the public API.
         /// </summary>
         private readonly Func<long?, TimeSpan?> _getElapsedTime = RateLimiterHelper.GetElapsedTime;
@@ -301,7 +301,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if (RateLimiterHelper.GetElapsedTime(_lastReplenishmentTick, nowTicks) < _options.Window && !_options.AutoReplenishment)
+                if (Stopwatch.GetElapsedTime(_lastReplenishmentTick, nowTicks) < _options.Window && !_options.AutoReplenishment)
                 {
                     return;
                 }
