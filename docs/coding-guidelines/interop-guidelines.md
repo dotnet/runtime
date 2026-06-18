@@ -169,7 +169,7 @@ If implicit framework references are disabled (as is the case for most libraries
 
 ### Search paths
 
-System.Private.CoreLib and libaries assemblies all set `DefaultDllImportSearchPaths` to `DllImportSearchPath.Assembly | DllImportSearchPath.System32` at the module level. This first looks in the assembly directory (application directory for single-file), then system directory on Windows or default search on non-Windows. For Windows P/Invokes that should only ever load from the system directory, this can be narrowed with `[DefaultDllImportSearchPaths(DllImportSearchPath.System32)]` on the P/Invoke.
+System.Private.CoreLib and libraries assemblies all set `DefaultDllImportSearchPaths` to `DllImportSearchPath.Assembly | DllImportSearchPath.System32` at the module level. This first looks in the assembly directory (application directory for single-file), then system directory on Windows or default search on non-Windows. For Windows P/Invokes that should only ever load from the system directory, this can be narrowed with `[DefaultDllImportSearchPaths(DllImportSearchPath.System32)]` on the P/Invoke.
 
 ## UNIX shims
 
