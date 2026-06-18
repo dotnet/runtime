@@ -3,23 +3,22 @@
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    public class DSACngProvider : IDSAProvider
+    public class DSACngProvider : DSAProvider
     {
-        public DSA Create()
+        public static readonly DSACngProvider Instance = new DSACngProvider();
+
+        private DSACngProvider() { }
+
+        public override DSA Create()
         {
             return new DSACng();
         }
 
-        public DSA Create(int keySize)
+        public override DSA Create(int keySize)
         {
             return new DSACng(keySize);
         }
 
-        public bool SupportsFips186_3 => true;
-    }
-
-    public partial class DSAFactory
-    {
-        private static readonly IDSAProvider s_provider = new DSACngProvider();
+        public override bool SupportsFips186_3 => true;
     }
 }
