@@ -12,9 +12,15 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 
 include(${CLR_DIR}/clrdatadescriptors.cmake)
 
+if(CDAC_BUILD_TOOL_BINARY_PATH AND "${CLR_DOTNET_RID}" STREQUAL "")
+  message(FATAL_ERROR "CLR_DOTNET_RID is not set. Please ensure it is being set to the portable RID of the target platform by runtime.proj.")
+endif()
+configure_file(configure.h.in ${CMAKE_CURRENT_BINARY_DIR}/configure.h)
+
 add_library(nativeaot_descriptor_interface INTERFACE)
 target_include_directories(nativeaot_descriptor_interface INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR})
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(nativeaot_descriptor_interface INTERFACE nativeaot_runtime_includes)
 add_dependencies(nativeaot_descriptor_interface aot_eventing_headers)
 generate_data_descriptors(
