@@ -1393,10 +1393,18 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
+            // A branch out of a wasm try/catch needs an explicit Block target
+            // even when the succ is contiguous or cold.
+            //
+            EHblkDsc* const blockTryDsc            = ehGetBlockTryDsc(block);
+            bool const      isCrossingTryCatchExit = (blockTryDsc != nullptr) && blockTryDsc->HasCatchHandler() &&
+                                                !bbInTryRegions(ehGetIndex(blockTryDsc), succ);
+
             // Branch to next needs no block, unless this is a switch or next is a throw helper.
             // We may need to branch to a throw helper mid-block, so can't always fall through.
             //
-            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH) && !(succ->HasFlag(BBF_THROW_HELPER)))
+            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH) && !(succ->HasFlag(BBF_THROW_HELPER)) &&
+                !isCrossingTryCatchExit)
             {
                 continue;
             }
@@ -1404,7 +1412,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
             // Branch to cold block needs no block (presumably something EH related).
             // Eventually we need to case these out and handle them better.
             //
-            if (succNum >= numBlocks)
+            if ((succNum >= numBlocks) && !isCrossingTryCatchExit)
             {
                 continue;
             }
@@ -1422,17 +1430,19 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
-            // Non-contiguous, non-subsumed forward branch
+            // Non-contiguous, non-subsumed forward branch. Start the Block at the try
+            // header when crossing a try-catch exit so it encloses the wrapper.
             //
-            WasmInterval* const branch = WasmInterval::NewBlock(this, block, initialLayout[succNum]);
+            BasicBlock* const   blockStart = isCrossingTryCatchExit ? blockTryDsc->ebdTryBeg : block;
+            WasmInterval* const branch     = WasmInterval::NewBlock(this, blockStart, initialLayout[succNum]);
             fgWasmIntervals->push_back(branch);
 
             // Remember an interval end here
             //
             scratch[succNum] = branch;
 
-            JITDUMP("Adding block interval for " FMT_BB "[%u] -> " FMT_BB "[%u]\n", block->bbNum, cursor, succ->bbNum,
-                    succNum);
+            JITDUMP("Adding block interval for " FMT_BB "[%u] -> " FMT_BB "[%u]\n", blockStart->bbNum,
+                    blockStart->bbPreorderNum, succ->bbNum, succNum);
         }
     }
 
