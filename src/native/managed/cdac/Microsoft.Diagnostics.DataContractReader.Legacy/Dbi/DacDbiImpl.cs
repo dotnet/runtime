@@ -3015,7 +3015,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             uint metadataToken = ReadLittleEndian(pEnCFieldInfo->objectTypeData.metadataToken);
             uint fldToken = pEnCFieldInfo->fldToken;
 
-            _ = LookupTypeDefOrRefInAssembly(rts, vmAssembly, metadataToken);
+            _ = DbiHelpers.LookupTypeDefOrRefInAssembly(_target, rts, vmAssembly, metadataToken);
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
             Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
             TargetPointer fieldDescPointer = loader.GetModuleLookupMapElement(lookupTables.FieldDefToDesc, fldToken, out _);
