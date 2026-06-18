@@ -22,8 +22,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 case ImportThunkKind.Eager:
                     // mov r12, [helper]
                     instructionEncoder.EmitMOV(Register.R12, _helperCell);
-                    // ldr.w r12, [r12]
-                    instructionEncoder.EmitLDR(Register.R12, Register.R12, 0);
+                    // ldr r12, [r12]
+                    instructionEncoder.EmitLDR(Register.R12, Register.R12);
                     // bx r12
                     instructionEncoder.EmitJMP(Register.R12);
                     break;
@@ -66,8 +66,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     instructionEncoder.EmitLDR(Register.R1, Register.R1);
                     // mov r12, [helper]
                     instructionEncoder.EmitMOV(Register.R12, _helperCell);
-                    // ldr.w r12, [r12]
-                    instructionEncoder.EmitLDR(Register.R12, Register.R12, 0);
+                    // ldr r12, [r12]
+                    instructionEncoder.EmitLDR(Register.R12, Register.R12);
                     // bx r12
                     instructionEncoder.EmitJMP(Register.R12);
                     break;
