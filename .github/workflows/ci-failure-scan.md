@@ -157,7 +157,6 @@ For each row in the pipeline table below:
 | runtime-coreclr superpmi-diffs | 152 | |
 | runtime-coreclr superpmi-replay | 150 | |
 | runtime-coreclr superpmi-asmdiffs-checked-release | 153 | |
-| Fuzzlyn | 149 | |
 | runtime-coreclr jit-cfg | 155 | Control flow guard |
 | runtime-coreclr jitstress-random | 159 | Stress mode value comes from logs; optional-ci |
 | runtime-coreclr libraries-jitstress-random | 160 | Stress mode value comes from logs; optional-ci |
