@@ -88,6 +88,7 @@ INTRINS_OVR(POW, pow, Generic, LLVMDoubleType ())
 INTRINS_OVR(EXP, exp, Generic, LLVMDoubleType ())
 INTRINS_OVR(EXPF, exp, Generic, LLVMFloatType ())
 INTRINS_OVR(LOG, log, Generic, LLVMDoubleType ())
+INTRINS_OVR(LOGF, log, Generic, LLVMFloatType ())
 INTRINS_OVR(LOG2, log2, Generic, LLVMDoubleType ())
 INTRINS_OVR(LOG2F, log2, Generic, LLVMFloatType ())
 INTRINS_OVR(LOG10, log10, Generic, LLVMDoubleType ())
@@ -96,6 +97,18 @@ INTRINS_OVR(TRUNC, trunc, Generic, LLVMDoubleType ())
 INTRINS_OVR(TRUNCF, trunc, Generic, LLVMFloatType ())
 INTRINS_OVR(COPYSIGN, copysign, Generic, LLVMDoubleType ())
 INTRINS_OVR(COPYSIGNF, copysign, Generic, LLVMFloatType ())
+	/*
+	 * IEEE 754-2008 minNum/maxNum (NaN-suppressing). When exactly one operand
+	 * is NaN they return the other; when both are NaN they return NaN. This is
+	 * what Math.MinNumber/MaxNumber (and the MathF.MinNumber/MaxNumber forwarders)
+	 * are documented to do, and on AArch64 these lower to single fminnm/fmaxnm
+	 * instructions. Use llvm.minimum/maximum (see above) for the NaN-propagating
+	 * Math.Min/Math.Max instead.
+	 */
+INTRINS_OVR(MINNUM, minnum, Generic, LLVMDoubleType ())
+INTRINS_OVR(MINNUMF, minnum, Generic, LLVMFloatType ())
+INTRINS_OVR(MAXNUM, maxnum, Generic, LLVMDoubleType ())
+INTRINS_OVR(MAXNUMF, maxnum, Generic, LLVMFloatType ())
 INTRINS_OVR(EXPECT_I8, expect, Generic, LLVMInt8Type ())
 INTRINS_OVR(EXPECT_I1, expect, Generic, LLVMInt1Type ())
 INTRINS_OVR(CTPOP_I32, ctpop, Generic, LLVMInt32Type ())
