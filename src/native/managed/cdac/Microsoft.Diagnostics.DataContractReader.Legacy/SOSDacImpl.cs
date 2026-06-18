@@ -4057,7 +4057,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException($"No thread with OS ID {osThreadID} was found.");
             }
 
-            IReadOnlyList<StackReferenceData> refs = stackWalkContract.WalkStackReferences(matchingThread.Value);
+            IReadOnlyList<StackReferenceData> refs = stackWalkContract.WalkStackReferences(matchingThread.Value, false);
 
             SOSStackRefData[] sosRefs = new SOSStackRefData[refs.Count];
             for (int i = 0; i < refs.Count; i++)

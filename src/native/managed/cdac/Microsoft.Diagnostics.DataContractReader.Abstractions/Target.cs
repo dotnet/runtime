@@ -340,4 +340,8 @@ public abstract class Target
         ProcessedData.Clear();
         Contracts.Flush(scope);
     }
+
+    public abstract void ActivateCache();
+
+    public abstract void DeactivateCache();
 }

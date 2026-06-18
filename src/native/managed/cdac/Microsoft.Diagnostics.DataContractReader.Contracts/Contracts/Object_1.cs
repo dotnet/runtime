@@ -203,8 +203,8 @@ internal readonly struct Object_1 : IObject
         {
             // Variable-size object (array or string): add the component data size.
             // Both Array and String share the m_NumComponents/m_StringLength field layout.
-            Data.Array arr = _target.ProcessedData.GetOrAdd<Data.Array>(address);
-            size += (ulong)arr.NumComponents * componentSize;
+            uint numComponents = _target.Read<uint>(address.Value + (ulong)_target.GetTypeInfo(DataType.Array).Fields["m_NumComponents"].Offset);
+            size += (ulong)numComponents * componentSize;
         }
         return size;
     }

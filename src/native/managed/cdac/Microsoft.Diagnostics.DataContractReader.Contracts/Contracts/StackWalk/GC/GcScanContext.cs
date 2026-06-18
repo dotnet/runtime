@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Abstractions;
+using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -10,6 +12,8 @@ internal class GcScanContext
 {
 
     private readonly Target _target;
+    private readonly LinearReadCache _cache;
+    private readonly IGC _gc;
     public bool ResolveInteriorPointers { get; }
     public List<StackRefData> StackRefs { get; } = [];
     public TargetPointer StackPointer { get; private set; }
@@ -25,6 +29,8 @@ internal class GcScanContext
     {
         _target = target;
         ResolveInteriorPointers = resolveInteriorPointers;
+        _cache = new LinearReadCache(target);
+        _gc = target.Contracts.GC;
     }
 
     public void UpdateScanContext(TargetPointer sp, TargetPointer ip, TargetPointer frame, StackRefData.SourceTypes? sourceTypeOverride = null)
@@ -89,9 +95,10 @@ internal class GcScanContext
 
         if (flags.HasFlag(GcScanFlags.GC_CALL_INTERIOR) && ResolveInteriorPointers)
         {
-            // TODO(stackref): handle interior pointers
-            // https://github.com/dotnet/runtime/issues/125728
-            throw new NotImplementedException();
+            TargetPointer interiorObj = GetInteriorPointer(obj);
+            if (interiorObj == TargetPointer.Null)
+                return;
+            obj = interiorObj;
         }
 
         StackRefData data = new()
@@ -111,17 +118,51 @@ internal class GcScanContext
         StackRefs.Add(data);
     }
 
+    private TargetPointer GetInteriorPointer(TargetPointer obj)
+    {
+        foreach ((GCHeapSegmentInfo seg, GCHeapData _) in _gc.EnumerateAllSegments())
+        {
+            if (obj.Value < seg.Start.Value || obj.Value >= seg.End.Value)
+                continue;
+
+            TargetPointer currentObj = _gc.GetPotentialNextObjectAddress(seg.Start, 0, seg);
+            while (currentObj.Value < obj.Value)
+            {
+                ulong size;
+                try
+                {
+                    _target.ActivateCache();
+                    size = _target.Contracts.Object.GetSize(currentObj);
+                    _target.DeactivateCache();
+                }
+                catch
+                {
+                    _target.DeactivateCache();
+                    return TargetPointer.Null;
+                }
+
+                size = _gc.AlignObjectSize(size, seg.Generation);
+                if (currentObj.Value + size > seg.End.Value || size == 0)
+                {
+                    return TargetPointer.Null;
+                }
+                obj = currentObj;
+                currentObj = _gc.GetPotentialNextObjectAddress(currentObj, size, seg);
+            }
+        }
+        return obj;
+    }
+
     public void GCReportCallback(TargetPointer ppObj, GcScanFlags flags)
     {
-        if (flags.HasFlag(GcScanFlags.GC_CALL_INTERIOR) && ResolveInteriorPointers)
-        {
-            // TODO(stackref): handle interior pointers
-            // https://github.com/dotnet/runtime/issues/125728
-            throw new NotImplementedException();
-        }
-
         // Read the object pointer from the stack slot.
         TargetPointer obj = _target.ReadPointer(ppObj);
+        if (flags.HasFlag(GcScanFlags.GC_CALL_INTERIOR) && ResolveInteriorPointers)
+        {
+            TargetPointer interiorObj = GetInteriorPointer(obj);
+            if (interiorObj != TargetPointer.Null)
+                obj = interiorObj;
+        }
 
         StackRefData data = new()
         {

@@ -164,7 +164,7 @@ internal partial class StackWalk_1 : IStackWalk
         }
     }
 
-    IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData)
+    IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData, bool resolveInteriorPointers)
     {
         // Initialize the walk data directly
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
@@ -191,7 +191,7 @@ internal partial class StackWalk_1 : IStackWalk
         if (walkData.State == StackWalkState.Frameless && CheckForSkippedFrames(walkData))
             walkData.State = StackWalkState.SkippedFrame;
 
-        GcScanContext scanContext = new(_target, resolveInteriorPointers: false);
+        GcScanContext scanContext = new(_target, resolveInteriorPointers);
 
         // Filter drives Next() directly, matching native Filter()+NextRaw() integration.
         // This prevents funclet-to-parent transitions from re-visiting already-walked frames.

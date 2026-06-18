@@ -12,6 +12,7 @@ using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System.Collections.Frozen;
+using Microsoft.Diagnostics.DataContractReader.Abstractions;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -27,6 +28,8 @@ namespace Microsoft.Diagnostics.DataContractReader;
 public sealed unsafe class ContractDescriptorTarget : Target
 {
     private const int StackAllocByteThreshold = 1024;
+    private bool _pageCacheActive;
+    private readonly LinearReadCache _linearReadCache;
 
     private readonly struct Configuration
     {
@@ -135,6 +138,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     {
         Contracts = new CachingContractRegistry(this, this.TryGetContractVersion, contractRegistrations);
         ProcessedData = new DataCache(this);
+        _linearReadCache = new LinearReadCache(this);
 
         _config = mainDescriptor.Config;
         _dataTargetDelegates = dataTargetDelegates;
@@ -146,6 +150,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override void Flush(FlushScope scope)
     {
         base.Flush(scope);
+        _linearReadCache.Flush();
 
         BuildDescriptors();
     }
@@ -341,7 +346,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             return false;
 
         // Flags - uint32_t
-        if (!TryRead(address, isLittleEndian, dataTargetDelegates, out uint flags))
+        if (!TryReadStatic(address, isLittleEndian, dataTargetDelegates, out uint flags))
             return false;
 
         address += sizeof(uint);
@@ -352,19 +357,19 @@ public sealed unsafe class ContractDescriptorTarget : Target
         Configuration config = new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize };
 
         // Descriptor size - uint32_t
-        if (!TryRead(address, config.IsLittleEndian, dataTargetDelegates, out uint descriptorSize))
+        if (!TryReadStatic(address, config.IsLittleEndian, dataTargetDelegates, out uint descriptorSize))
             return false;
 
         address += sizeof(uint);
 
         // Descriptor - char*
-        if (!TryReadPointer(address, config, dataTargetDelegates, out TargetPointer descriptorAddr))
+        if (!TryReadPointerStatic(address, config, dataTargetDelegates, out TargetPointer descriptorAddr))
             return false;
 
         address += (uint)pointerSize;
 
         // Pointer data count - uint32_t
-        if (!TryRead(address, config.IsLittleEndian, dataTargetDelegates, out uint pointerDataCount))
+        if (!TryReadStatic(address, config.IsLittleEndian, dataTargetDelegates, out uint pointerDataCount))
             return false;
 
         address += sizeof(uint);
@@ -373,7 +378,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         address += sizeof(uint);
 
         // Pointer data - uintptr_t*
-        if (!TryReadPointer(address, config, dataTargetDelegates, out TargetPointer pointerDataAddr))
+        if (!TryReadPointerStatic(address, config, dataTargetDelegates, out TargetPointer pointerDataAddr))
             return false;
 
         // Read descriptor
@@ -391,7 +396,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         TargetPointer[] pointerData = new TargetPointer[pointerDataCount];
         for (int i = 0; i < pointerDataCount; i++)
         {
-            if (!TryReadPointer(pointerDataAddr.Value + (uint)(i * pointerSize), config, dataTargetDelegates, out pointerData[i]))
+            if (!TryReadPointerStatic(pointerDataAddr.Value + (uint)(i * pointerSize), config, dataTargetDelegates, out pointerData[i]))
                 return false;
         }
 
@@ -460,7 +465,28 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return true;
     }
 
-    private static bool TryRead<T>(ulong address, bool isLittleEndian, DataTargetDelegates dataTargetDelegates, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    private bool TryRead<T>(ulong address, bool isLittleEndian, DataTargetDelegates dataTargetDelegates, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        value = default;
+        Span<byte> buffer = stackalloc byte[sizeof(T)];
+        if (_pageCacheActive)
+        {
+            // Use the linear read cache
+            if (!_linearReadCache.TryRead(address, buffer))
+                return false;
+        }
+        else
+        {
+            if (dataTargetDelegates.ReadFromTarget(address, buffer) < 0)
+                return false;
+        }
+
+        return isLittleEndian
+            ? T.TryReadLittleEndian(buffer, !IsSigned<T>(), out value)
+            : T.TryReadBigEndian(buffer, !IsSigned<T>(), out value);
+    }
+
+    private static bool TryReadStatic<T>(ulong address, bool isLittleEndian, DataTargetDelegates dataTargetDelegates, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         value = default;
         Span<byte> buffer = stackalloc byte[sizeof(T)];
@@ -721,7 +747,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return new TargetNInt(value);
     }
 
-    private static bool TryReadPointer(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out TargetPointer pointer)
+    private bool TryReadPointer(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out TargetPointer pointer)
     {
         pointer = TargetPointer.Null;
         if (!TryReadNUInt(address, config, dataTargetDelegates, out ulong value))
@@ -731,7 +757,37 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return true;
     }
 
-    private static bool TryReadNUInt(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out ulong value)
+    private static bool TryReadPointerStatic(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out TargetPointer pointer)
+    {
+        pointer = TargetPointer.Null;
+        if (!TryReadNUIntStatic(address, config, dataTargetDelegates, out ulong value))
+            return false;
+
+        pointer = new TargetPointer(value);
+        return true;
+    }
+
+    private static bool TryReadNUIntStatic(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out ulong value)
+    {
+        value = 0;
+        if (config.PointerSize == sizeof(uint)
+            && TryReadStatic(address, config.IsLittleEndian, dataTargetDelegates, out uint value32))
+        {
+            value = value32;
+            return true;
+        }
+        else if (config.PointerSize == sizeof(ulong)
+            && TryReadStatic(address, config.IsLittleEndian, dataTargetDelegates, out ulong value64))
+        {
+            value = value64;
+            return true;
+        }
+
+        return false;
+    }
+
+
+    private bool TryReadNUInt(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out ulong value)
     {
         value = 0;
         if (config.PointerSize == sizeof(uint)
@@ -750,7 +806,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return false;
     }
 
-    private static bool TryReadNInt(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out long value)
+    private bool TryReadNInt(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out long value)
     {
         value = 0;
         if (config.PointerSize == sizeof(uint)
@@ -955,4 +1011,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             return allocVirtual(size, out allocatedAddress);
         }
     }
+
+    public override void ActivateCache() => _pageCacheActive = true;
+    public override void DeactivateCache() => _pageCacheActive = false;
 }

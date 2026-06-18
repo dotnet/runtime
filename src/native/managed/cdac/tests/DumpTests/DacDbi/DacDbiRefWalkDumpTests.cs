@@ -107,7 +107,7 @@ public class DacDbiRefWalkDumpTests : DumpTestBase
         while (threadAddr != TargetPointer.Null)
         {
             ThreadData td = threadContract.GetThreadData(threadAddr);
-            expected += stackWalk.WalkStackReferences(td).Count(r => (r.Flags & CdacDeferredFrame) == 0);
+            expected += stackWalk.WalkStackReferences(td, true).Count(r => (r.Flags & CdacDeferredFrame) == 0);
             threadAddr = td.NextThread;
         }
 

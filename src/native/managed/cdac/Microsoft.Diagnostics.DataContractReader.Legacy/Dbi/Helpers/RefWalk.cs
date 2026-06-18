@@ -16,6 +16,7 @@ internal sealed class RefWalk : IEnum<DacGcReference>
     private readonly IGC _gc;
     private readonly bool _walkStacks;
     private readonly CorGCReferenceType _handleWalkMask;
+    private readonly TargetPointer _appDomain;
 
     public IEnumerator<DacGcReference> Enumerator { get; }
     public nuint LegacyHandle { get; set; } = 0;
@@ -26,28 +27,26 @@ internal sealed class RefWalk : IEnum<DacGcReference>
         _gc = target.Contracts.GC;
         _walkStacks = walkStacks;
         _handleWalkMask = handleWalkMask;
+        _appDomain = target.Contracts.Loader.GetAppDomain();
         Enumerator = Walk().GetEnumerator();
     }
 
     private IEnumerable<DacGcReference> Walk()
     {
-        // The single AppDomain pointer; used to fill vmDomain for both handle and stack references.
-        TargetPointer appDomain = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.AppDomain));
-
         if (_handleWalkMask != 0)
         {
-            foreach (DacGcReference reference in WalkHandles(appDomain))
+            foreach (DacGcReference reference in WalkHandles())
                 yield return reference;
         }
 
         if (_walkStacks)
         {
-            foreach (DacGcReference reference in WalkStacks(appDomain))
+            foreach (DacGcReference reference in WalkStacks())
                 yield return reference;
         }
     }
 
-    private IEnumerable<DacGcReference> WalkHandles(TargetPointer appDomain)
+    private IEnumerable<DacGcReference> WalkHandles()
     {
         HandleType[] requestedTypes = GetRequestedHandleTypes();
         if (requestedTypes.Length == 0)
@@ -59,7 +58,7 @@ internal sealed class RefWalk : IEnum<DacGcReference>
                 continue;
             yield return new DacGcReference
             {
-                vmDomain = appDomain.Value,
+                vmDomain = _appDomain.Value,
                 objHnd = handle.Handle.Value,
                 dwType = dwType,
                 i64ExtraData = extraData,
@@ -127,7 +126,7 @@ internal sealed class RefWalk : IEnum<DacGcReference>
         }
     }
 
-    private IEnumerable<DacGcReference> WalkStacks(TargetPointer appDomain)
+    private IEnumerable<DacGcReference> WalkStacks()
     {
         IThread threadContract = _target.Contracts.Thread;
         IStackWalk stackWalkContract = _target.Contracts.StackWalk;
@@ -138,7 +137,7 @@ internal sealed class RefWalk : IEnum<DacGcReference>
         {
             ThreadData threadData = threadContract.GetThreadData(threadAddr);
 
-            foreach (StackReferenceData stackRef in stackWalkContract.WalkStackReferences(threadData))
+            foreach (StackReferenceData stackRef in stackWalkContract.WalkStackReferences(threadData, true))
             {
                 // Skip cDAC-private deferred-frame markers; they are not real GC references.
                 if ((stackRef.Flags & CDAC_DEFERRED_FRAME) != 0)
@@ -146,7 +145,7 @@ internal sealed class RefWalk : IEnum<DacGcReference>
 
                 DacGcReference reference = new()
                 {
-                    vmDomain = appDomain.Value,
+                    vmDomain = _appDomain.Value,
                     dwType = CorGCReferenceType.CorReferenceStack,
                     i64ExtraData = 0,
                 };
