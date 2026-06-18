@@ -600,7 +600,8 @@ namespace System.Threading.RateLimiting.Tests
             Assert.NotNull(lastAccessField);
 
             var entry = GetLimiterEntry<TResource, TKey>(limiter, key);
-            lastAccessField.SetValue(entry, 0L);
+            long backdatedTimestamp = System.Diagnostics.Stopwatch.GetTimestamp() - (System.Diagnostics.Stopwatch.Frequency * 60);
+            lastAccessField.SetValue(entry, backdatedTimestamp);
         }
 
         private static object GetLimiterEntry<TResource, TKey>(PartitionedRateLimiter<TResource> limiter, TKey key)
