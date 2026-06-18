@@ -1514,6 +1514,15 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // Since this is only looking at prior intervals it could be
     // merged with (2) above.
     //
+
+    // Cross-try-exit Block intervals are backdated to start at the try
+    // header; sort by Start so resolve sees intervals in non-decreasing
+    // start order.
+    //
+    jitstd::sort(fgWasmIntervals->begin(), fgWasmIntervals->end(), [](WasmInterval* i1, WasmInterval* i2) {
+        return i1->Start() < i2->Start();
+    });
+
     auto resolve = [this](WasmInterval* const current) {
         for (WasmInterval* prior : *fgWasmIntervals)
         {
