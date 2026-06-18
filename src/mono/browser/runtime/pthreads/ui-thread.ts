@@ -213,26 +213,26 @@ export function replaceEmscriptenPThreadUI (modulePThread: PThreadLibrary): void
     const originalLoadWasmModuleToWorker = modulePThread.loadWasmModuleToWorker;
     const originalReturnWorkerToPool = modulePThread.returnWorkerToPool;
 
-    modulePThread.loadWasmModuleToWorker = async (worker: PThreadWorker): Promise<PThreadWorker> => {
-        const wasmModule = await loaderHelpers.wasmCompilePromise.promise;
-
-        // Stop queueing once we can process messages synchronously.
-        if (worker.handler) {
-            worker.removeEventListener("message", worker.handler);
-        }
-
-        for (const queuedEvent of worker.queue) {
-            monoWorkerMessageHandler(worker, wasmModule, queuedEvent);
-        }
-
-        worker.queue.length = 0;
-        worker.handler = (ev) => monoWorkerMessageHandler(worker, wasmModule, ev);
-        worker.addEventListener("message", worker.handler);
+    modulePThread.loadWasmModuleToWorker = (worker: PThreadWorker): Promise<PThreadWorker> => {
 
         const afterLoaded = originalLoadWasmModuleToWorker(worker);
         afterLoaded.then(() => {
             worker.info.isLoaded = true;
         });
+
+        loaderHelpers.wasmCompilePromise.promise.then((wasmModule) => {
+            // Stop queueing once we can process messages synchronously.
+            for (const queuedEvent of worker.queue) {
+                monoWorkerMessageHandler(worker, wasmModule, queuedEvent);
+            }
+            worker.queue.length = 0;
+            if (worker.handler) {
+                worker.removeEventListener("message", worker.handler);
+            }
+            worker.handler = (ev) => monoWorkerMessageHandler(worker, wasmModule, ev);
+            worker.addEventListener("message", worker.handler);
+        });
+
         if (loaderHelpers.config.exitOnUnhandledError) {
             worker.onerror = (e) => {
                 loaderHelpers.mono_exit(1, e);
