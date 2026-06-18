@@ -37,6 +37,13 @@ bool fxr_resolver_try_get_path_from_dotnet_root(
     const pal_char_t* dotnet_root,
     /*out*/ pal_char_t** out_fxr_path);
 
+// Try to find an already-loaded hostfxr in the current process. On success
+// returns true, sets *out_fxr to the library handle and *out_fxr_path to a
+// heap-allocated path. Caller should free() out_fxr_path.
+bool fxr_resolver_try_get_existing_fxr(
+    /*out*/ pal_dll_t* out_fxr,
+    /*out*/ pal_char_t** out_fxr_path);
+
 #ifdef __cplusplus
 }
 #endif

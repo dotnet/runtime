@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // C implementation of the fxr_resolver_* APIs (the C++ fxr_resolver:: namespace
-// in fxr_resolver.cpp now delegates here). try_get_existing_fxr stays in C++
-// because pal::get_loaded_library is templated/typed for C++ callers.
+// in fxr_resolver.cpp now delegates here).
 
 #include "fxr_resolver.h"
 
@@ -442,4 +441,15 @@ bool fxr_resolver_try_get_path_from_dotnet_root(
     bool ok = get_latest_fxr(fxr_dir, out_fxr_path);
     free(fxr_dir);
     return ok;
+}
+
+bool fxr_resolver_try_get_existing_fxr(pal_dll_t* out_fxr, pal_char_t** out_fxr_path)
+{
+    *out_fxr_path = NULL;
+
+    if (!pal_get_loaded_library(LIBFXR_NAME, "hostfxr_main", out_fxr, out_fxr_path))
+        return false;
+
+    trace_verbose(_X("Found previously loaded library %s [%s]."), LIBFXR_NAME, *out_fxr_path);
+    return true;
 }
