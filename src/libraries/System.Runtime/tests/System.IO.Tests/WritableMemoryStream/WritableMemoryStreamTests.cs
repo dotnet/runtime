@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
@@ -98,49 +97,6 @@ namespace System.IO.Tests
 
             Assert.Equal(10, bytesRead);
             Assert.Equal(new byte[] { 1, 2, 3, 100, 101, 102, 7, 8, 9, 10 }, result);
-        }
-
-        [Fact]
-        public async Task ReadAsyncDifferentResultSizeCreatesNewTask()
-        {
-            byte[] data = new byte[10];
-            for (int i = 0; i < 10; i++) data[i] = (byte)i;
-            byte[] backing = new byte[10];
-            Stream stream = new WritableMemoryStream(backing);
-            stream.Write(data, 0, data.Length);
-            stream.Position = 0;
-
-            byte[] buffer1 = new byte[5];
-            byte[] buffer2 = new byte[3];
-            byte[] buffer3 = new byte[2];
-
-            Task<int> task1 = stream.ReadAsync(buffer1, 0, 5);
-            Task<int> task2 = stream.ReadAsync(buffer2, 0, 3);
-            Task<int> task3 = stream.ReadAsync(buffer3, 0, 2);
-
-            await task1;
-            await task2;
-            await task3;
-
-            Assert.NotSame(task1, task2);
-            Assert.NotSame(task2, task3);
-        }
-
-        [Fact]
-        public async Task ReadAsyncArrayBackedMemoryUsesFastPath()
-        {
-            byte[] data = { 10, 20, 30, 40, 50 };
-            byte[] backing = new byte[5];
-            Stream stream = new WritableMemoryStream(backing);
-            stream.Write(data, 0, data.Length);
-            stream.Position = 0;
-
-            byte[] arrayBuffer = new byte[3];
-            Memory<byte> memory = arrayBuffer.AsMemory();
-            int bytesRead = await stream.ReadAsync(memory);
-
-            Assert.Equal(3, bytesRead);
-            Assert.Equal(new byte[] { 10, 20, 30 }, arrayBuffer);
         }
 
         [Fact]

@@ -1,25 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-using System.Threading;
+
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Buffers
 {
-    /// <summary>
-    /// Provides a seekable, read-only <see cref="Stream"/> implementation over a <see cref="ReadOnlySequence{T}"/> of bytes.
-    /// </summary>
-    /// <remarks>
-    /// This type is not thread-safe. Synchronize access if the stream is used concurrently.
-    /// The underlying sequence should not be modified while the stream is in use.
-    /// Seeking beyond the end of the stream is supported; subsequent reads will return zero bytes.
-    /// </remarks>
+
     public sealed class ReadOnlySequenceStream : Stream
     {
         private ReadOnlySequence<byte> _sequence;
         private SequencePosition _position;
         private long _absolutePosition;
         private bool _isDisposed;
+        private CachedCompletedInt32Task _lastReadTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ReadOnlySequenceStream"/> class over the specified <see cref="ReadOnlySequence{Byte}"/>.
@@ -135,7 +130,7 @@ namespace System.Buffers
             }
 
             int n = Read(buffer, offset, count);
-            return Task.FromResult(n);
+            return _lastReadTask.GetTask(n);
         }
 
         /// <inheritdoc/>
@@ -231,7 +226,7 @@ namespace System.Buffers
                 SeekOrigin.Begin => offset,
                 SeekOrigin.Current => _absolutePosition + offset,
                 SeekOrigin.End => _sequence.Length + offset,
-                _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin))
+                _ => throw new ArgumentOutOfRangeException(nameof(origin))
             };
 
             if (absolutePosition < 0)

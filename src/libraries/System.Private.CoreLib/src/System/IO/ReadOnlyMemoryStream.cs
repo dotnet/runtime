@@ -19,6 +19,7 @@ public sealed class ReadOnlyMemoryStream : MemoryStream
     private ReadOnlyMemory<byte> _buffer;
     private int _position;
     private bool _isOpen;
+    private CachedCompletedInt32Task _lastReadTask;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ReadOnlyMemoryStream"/> class over the specified <see cref="ReadOnlyMemory{Byte}"/>.
@@ -133,7 +134,19 @@ public sealed class ReadOnlyMemoryStream : MemoryStream
             return Task.FromCanceled<int>(cancellationToken);
         }
 
-        return Task.FromResult(Read(buffer, offset, count));
+        try
+        {
+            int n = Read(buffer, offset, count);
+            return _lastReadTask.GetTask(n);
+        }
+        catch (OperationCanceledException oce)
+        {
+            return Task.FromCanceled<int>(oce.CancellationToken);
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<int>(exception);
+        }
     }
 
     /// <inheritdoc/>
@@ -194,7 +207,7 @@ public sealed class ReadOnlyMemoryStream : MemoryStream
             SeekOrigin.Begin => offset,
             SeekOrigin.Current => _position + offset,
             SeekOrigin.End => _buffer.Length + offset,
-            _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin)
+            _ => throw new ArgumentOutOfRangeException(nameof(origin))
         };
 
         if (newPosition < 0)

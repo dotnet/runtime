@@ -20,6 +20,7 @@ public sealed class WritableMemoryStream : MemoryStream
     private int _position;
     private int _length;
     private bool _isOpen;
+    private CachedCompletedInt32Task _lastReadTask;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WritableMemoryStream"/> class over the specified <see cref="Memory{Byte}"/>.
@@ -135,7 +136,19 @@ public sealed class WritableMemoryStream : MemoryStream
             return Task.FromCanceled<int>(cancellationToken);
         }
 
-        return Task.FromResult(Read(buffer, offset, count));
+        try
+        {
+            int n = Read(buffer, offset, count);
+            return _lastReadTask.GetTask(n);
+        }
+        catch (OperationCanceledException oce)
+        {
+            return Task.FromCanceled<int>(oce.CancellationToken);
+        }
+        catch (Exception exception)
+        {
+            return Task.FromException<int>(exception);
+        }
     }
 
     /// <inheritdoc/>
@@ -284,7 +297,7 @@ public sealed class WritableMemoryStream : MemoryStream
             SeekOrigin.Begin => offset,
             SeekOrigin.Current => _position + offset,
             SeekOrigin.End => _length + offset,
-            _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin)
+            _ => throw new ArgumentOutOfRangeException(nameof(origin))
         };
 
         if (newPosition < 0)
