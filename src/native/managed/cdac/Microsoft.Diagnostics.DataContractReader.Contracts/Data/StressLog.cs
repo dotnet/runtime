@@ -15,6 +15,6 @@ internal sealed partial class StressLog : IData<StressLog>
     [Field] public ulong StartTimestamp { get; }
     [Field] public ulong StartTime { get; }
     [Field] public TargetNUInt ModuleOffset { get; }
-    [Field] public TargetPointer? Modules { get; }
+    [FieldAddress] public TargetPointer? Modules { get; }
     [Field] public TargetPointer Logs { get; }
 }
