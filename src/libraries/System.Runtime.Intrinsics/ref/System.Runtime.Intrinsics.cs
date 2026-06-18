@@ -7208,6 +7208,7 @@ namespace System.Runtime.Intrinsics.Arm
         }
     }
     [System.CLSCompliantAttribute(false)]
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public abstract partial class SveSha3 : System.Runtime.Intrinsics.Arm.ArmBase
     {
         internal SveSha3() { }
