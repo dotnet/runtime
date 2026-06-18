@@ -62,27 +62,50 @@ public class DacDbiRefWalkDumpTests : DumpTestBase
         return refs;
     }
 
+    /// <summary>
+    /// Cross product of <see cref="DumpTestBase.TestConfigurations"/> with each handle type the
+    /// GCRoots debuggee allocates, along with its <see cref="CorGCReferenceType"/> walk mask and the
+    /// <see cref="CorGCReferenceType"/> the ref-walk is expected to report for that handle.
+    /// </summary>
+    public static IEnumerable<object[]> HandleTypeConfigurations()
+    {
+        (HandleType HandleType, CorGCReferenceType Mask, CorGCReferenceType ExpectedType)[] cases =
+        [
+            (HandleType.Strong, CorGCReferenceType.CorHandleStrong, CorGCReferenceType.CorHandleStrong),
+            (HandleType.Pinned, CorGCReferenceType.CorHandleStrongPinning, CorGCReferenceType.CorHandleStrongPinning),
+            (HandleType.WeakShort, CorGCReferenceType.CorHandleWeakShort, CorGCReferenceType.CorHandleWeakShort),
+            (HandleType.WeakLong, CorGCReferenceType.CorHandleWeakLong, CorGCReferenceType.CorHandleWeakLong),
+            (HandleType.Dependent, CorGCReferenceType.CorHandleStrongDependent, CorGCReferenceType.CorHandleStrongDependent),
+        ];
+
+        foreach (object[] config in TestConfigurations)
+        {
+            foreach ((HandleType handleType, CorGCReferenceType mask, CorGCReferenceType expectedType) in cases)
+                yield return [config[0], handleType, mask, expectedType];
+        }
+    }
+
     [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    public unsafe void WalkRefs_StrongHandles_MatchHandleTable(TestConfiguration config)
+    [MemberData(nameof(HandleTypeConfigurations))]
+    public unsafe void WalkRefs_Handles_MatchHandleTable(TestConfiguration config, HandleType handleType, CorGCReferenceType mask, CorGCReferenceType expectedType)
     {
         InitializeDumpTest(config);
         DacDbiImpl dbi = CreateDacDbi();
         IGC gc = Target.Contracts.GC;
 
-        List<DacGcReference> refs = WalkAllRefs(dbi, walkStacks: false, handleWalkMask: CorGCReferenceType.CorHandleStrong);
+        List<DacGcReference> refs = WalkAllRefs(dbi, walkStacks: false, handleWalkMask: mask);
 
-        // Every reference must be a strong handle reported by its (low-bit-clear) handle address.
+        // Every reference must be a handle of the requested type reported by its (low-bit-clear) handle address.
         HashSet<ulong> walkedHandles = new();
         foreach (DacGcReference r in refs)
         {
-            Assert.Equal(CorGCReferenceType.CorHandleStrong, r.dwType);
+            Assert.Equal(expectedType, r.dwType);
             Assert.Equal(0ul, r.pObject & 1);
             walkedHandles.Add(r.pObject);
         }
 
-        HashSet<ulong> expectedHandles = gc.GetHandles([HandleType.Strong]).Select(h => h.Handle.Value).ToHashSet();
-        Assert.True(expectedHandles.Count > 0, "Expected at least one strong handle in GCRoots.");
+        HashSet<ulong> expectedHandles = gc.GetHandles([handleType]).Select(h => h.Handle.Value).ToHashSet();
+        Assert.True(expectedHandles.Count > 0, $"Expected at least one {handleType} handle in GCRoots.");
         Assert.Equal(expectedHandles, walkedHandles);
     }
 

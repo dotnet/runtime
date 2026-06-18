@@ -341,7 +341,13 @@ public abstract class Target
         Contracts.Flush(scope);
     }
 
+    /// <summary>
+    /// Activate a special-purpose cache for the target process
+    /// </summary>
     public abstract void ActivateCache();
 
+    /// <summary>
+    /// Deactivate a special-purpose cache for the target process
+    /// </summary>
     public abstract void DeactivateCache();
 }

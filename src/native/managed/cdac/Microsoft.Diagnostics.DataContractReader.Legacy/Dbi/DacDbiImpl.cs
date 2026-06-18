@@ -3755,6 +3755,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         int hr = HResults.S_OK;
         RefWalk? walk = null;
+        *pHandle = 0;
         try
         {
             if (pHandle is null)
