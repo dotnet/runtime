@@ -92,6 +92,31 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAsync<ObjectDisposedException>(() => r.ResolveAddressesAsync(TestHost));
         }
 
+        // ---- Sync/async dispatch helpers ----
+        // The synchronous overloads execute inline on the calling thread; the results
+        // are wrapped in a completed Task so each test can await a single helper.
+
+        private static async Task<DnsResult<AddressRecord>> ResolveAddresses(bool async, DnsResolver resolver, string name, AddressFamily addressFamily = AddressFamily.Unspecified)
+            => async ? await resolver.ResolveAddressesAsync(name, addressFamily) : resolver.ResolveAddresses(name, addressFamily);
+
+        private static async Task<DnsResult<MxRecord>> ResolveMx(bool async, DnsResolver resolver, string name)
+            => async ? await resolver.ResolveMxAsync(name) : resolver.ResolveMx(name);
+
+        private static async Task<DnsResult<TxtRecord>> ResolveTxt(bool async, DnsResolver resolver, string name)
+            => async ? await resolver.ResolveTxtAsync(name) : resolver.ResolveTxt(name);
+
+        private static async Task<DnsResult<CNameRecord>> ResolveCName(bool async, DnsResolver resolver, string name)
+            => async ? await resolver.ResolveCNameAsync(name) : resolver.ResolveCName(name);
+
+        private static async Task<DnsResult<NsRecord>> ResolveNs(bool async, DnsResolver resolver, string name)
+            => async ? await resolver.ResolveNsAsync(name) : resolver.ResolveNs(name);
+
+        private static async Task<DnsResult<PtrRecord>> ResolvePtr(bool async, DnsResolver resolver, IPAddress address)
+            => async ? await resolver.ResolvePtrAsync(address) : resolver.ResolvePtr(address);
+
+        private static async Task<DnsResult<AddressRecord>> Static_ResolveAddresses(bool async, string name)
+            => async ? await Dns.ResolveAddressesAsync(name) : Dns.ResolveAddresses(name);
+
         // ---- Windows network tests (require outbound DNS) ----
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
@@ -103,12 +128,44 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAsync<TaskCanceledException>(() => r.ResolveAddressesAsync(TestHost, cts.Token));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
-        [OuterLoop]
-        public async Task ResolveAddresses_KnownName_ReturnsRecords()
+        // Regression test for the Windows 10 DnsQueryEx bug where an asynchronous query
+        // that the OS can satisfy synchronously (for example "localhost") returns
+        // ERROR_SUCCESS inline and never invokes the registered completion callback.
+        // If the implementation waited for that callback it would hang forever; the PAL
+        // must instead detect the synchronous completion (any status other than
+        // DNS_REQUEST_PENDING) and surface the result directly.
+        // See https://dblohm7.ca/blog/2022/05/06/dnsqueryex-needs-love/.
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_SynchronouslyCompletingQuery_DoesNotHang(bool async)
         {
             using DnsResolver r = new DnsResolver();
-            DnsResult<AddressRecord> result = await r.ResolveAddressesAsync(TestHost);
+
+            // "localhost" can be answered without any network round-trip, which is what
+            // triggers the synchronous-completion path inside DnsQueryEx. A short timeout
+            // turns the "callback never fires" hang into a test failure rather than letting
+            // the run stall.
+            Task<DnsResult<AddressRecord>> task = ResolveAddresses(async, r, "localhost");
+            DnsResult<AddressRecord> result = await task.WaitAsync(TimeSpan.FromSeconds(30));
+
+            Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            // DnsQueryEx performs a pure-DNS lookup, so "localhost" may legitimately yield
+            // no records (NODATA); if any are returned they must be loopback addresses.
+            foreach (AddressRecord rec in result.Records)
+            {
+                Assert.True(IPAddress.IsLoopback(rec.Address), $"Expected a loopback address but got {rec.Address}.");
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop]
+        public async Task ResolveAddresses_KnownName_ReturnsRecords(bool async)
+        {
+            using DnsResolver r = new DnsResolver();
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, r, TestHost);
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.NotEmpty(result.Records);
             foreach (AddressRecord rec in result.Records)
@@ -118,12 +175,14 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
         [OuterLoop]
-        public async Task ResolveAddresses_IPv4Only_ReturnsOnlyIPv4()
+        public async Task ResolveAddresses_IPv4Only_ReturnsOnlyIPv4(bool async)
         {
             using DnsResolver r = new DnsResolver();
-            DnsResult<AddressRecord> result = await r.ResolveAddressesAsync(TestHost, AddressFamily.InterNetwork);
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, r, TestHost, AddressFamily.InterNetwork);
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             foreach (AddressRecord rec in result.Records)
             {
@@ -131,22 +190,26 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
         [OuterLoop]
-        public async Task ResolveAddresses_NonExistent_ReturnsNxDomain()
+        public async Task ResolveAddresses_NonExistent_ReturnsNxDomain(bool async)
         {
             using DnsResolver r = new DnsResolver();
-            DnsResult<AddressRecord> result = await r.ResolveAddressesAsync(NonExistentHost);
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, r, NonExistentHost);
             Assert.Equal(DnsResponseCode.NxDomain, result.ResponseCode);
             Assert.Empty(result.Records);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
         [OuterLoop]
-        public async Task ResolveMx_KnownName_ReturnsRecords()
+        public async Task ResolveMx_KnownName_ReturnsRecords(bool async)
         {
             using DnsResolver r = new DnsResolver();
-            DnsResult<MxRecord> result = await r.ResolveMxAsync(TestMxHost);
+            DnsResult<MxRecord> result = await ResolveMx(async, r, TestMxHost);
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.NotEmpty(result.Records);
             foreach (MxRecord rec in result.Records)
@@ -155,12 +218,14 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
         [OuterLoop]
-        public async Task ResolveTxt_KnownName_ReturnsRecords()
+        public async Task ResolveTxt_KnownName_ReturnsRecords(bool async)
         {
             using DnsResolver r = new DnsResolver();
-            DnsResult<TxtRecord> result = await r.ResolveTxtAsync(TestTxtHost);
+            DnsResult<TxtRecord> result = await ResolveTxt(async, r, TestTxtHost);
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.NotEmpty(result.Records);
             foreach (TxtRecord rec in result.Records)
@@ -169,12 +234,14 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
         [OuterLoop]
-        public async Task ResolveCName_KnownName_ReturnsRecord()
+        public async Task ResolveCName_KnownName_ReturnsRecord(bool async)
         {
             using DnsResolver r = new DnsResolver();
-            DnsResult<CNameRecord> result = await r.ResolveCNameAsync(TestCNameHost);
+            DnsResult<CNameRecord> result = await ResolveCName(async, r, TestCNameHost);
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             // CNAME may or may not exist for the target; at minimum the call should succeed.
             if (result.Records.Count > 0)
@@ -183,12 +250,14 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
         [OuterLoop]
-        public async Task ResolveNs_KnownName_ReturnsRecords()
+        public async Task ResolveNs_KnownName_ReturnsRecords(bool async)
         {
             using DnsResolver r = new DnsResolver();
-            DnsResult<NsRecord> result = await r.ResolveNsAsync(TestNsHost);
+            DnsResult<NsRecord> result = await ResolveNs(async, r, TestNsHost);
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.NotEmpty(result.Records);
             foreach (NsRecord rec in result.Records)
@@ -197,29 +266,35 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
         [OuterLoop]
-        public async Task ResolvePtr_ByIPAddress_ReturnsRecord()
+        public async Task ResolvePtr_ByIPAddress_ReturnsRecord(bool async)
         {
             using DnsResolver r = new DnsResolver();
-            DnsResult<PtrRecord> result = await r.ResolvePtrAsync(IPAddress.Parse("8.8.8.8"));
+            DnsResult<PtrRecord> result = await ResolvePtr(async, r, IPAddress.Parse("8.8.8.8"));
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.NotEmpty(result.Records);
             Assert.False(string.IsNullOrEmpty(result.Records[0].Name));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
         [OuterLoop]
-        public async Task Static_Dns_ResolveAddressesAsync_Works()
+        public async Task Static_Dns_ResolveAddresses_Works(bool async)
         {
-            DnsResult<AddressRecord> result = await Dns.ResolveAddressesAsync(TestHost);
+            DnsResult<AddressRecord> result = await Static_ResolveAddresses(async, TestHost);
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.NotEmpty(result.Records);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
         [OuterLoop]
-        public async Task DnsResolver_CustomServer_Port53_Works()
+        public async Task DnsResolver_CustomServer_Port53_Works(bool async)
         {
             IPAddress? dnsAddress = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
                 .SelectMany(ni => ni.GetIPProperties().DnsAddresses)
@@ -236,7 +311,7 @@ namespace System.Net.NameResolution.Tests
                 Servers = { new IPEndPoint(dnsAddress, 53) }
             };
             using DnsResolver r = new DnsResolver(opts);
-            DnsResult<AddressRecord> result = await r.ResolveAddressesAsync(TestHost);
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, r, TestHost);
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.NotEmpty(result.Records);
         }
@@ -256,13 +331,15 @@ namespace System.Net.NameResolution.Tests
 
         // ---- Reverse-arpa name building (covers both IPv4 and IPv6 paths used by ResolvePtr(IPAddress)) ----
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [InlineData(false)]
+        [InlineData(true)]
         [OuterLoop]
-        public async Task ResolvePtr_IPv6Address_DoesNotThrow()
+        public async Task ResolvePtr_IPv6Address_DoesNotThrow(bool async)
         {
             using DnsResolver r = new DnsResolver();
             // Google public DNS IPv6 — call shouldn't throw, even if no PTR record exists.
-            DnsResult<PtrRecord> result = await r.ResolvePtrAsync(IPAddress.Parse("2001:4860:4860::8888"));
+            DnsResult<PtrRecord> result = await ResolvePtr(async, r, IPAddress.Parse("2001:4860:4860::8888"));
             Assert.True(result.ResponseCode == DnsResponseCode.NoError || result.ResponseCode == DnsResponseCode.NxDomain);
         }
     }
