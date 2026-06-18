@@ -215,3 +215,59 @@ JIT/Methodical/tailcall_v4/hijacking/hijacking.sh
 JIT/Methodical/Coverage/arglist_pos/arglist_pos.sh
 JIT/Methodical/refany/seq_d/seq_d.sh
 JIT/Methodical/refany/seq_r/seq_r.sh
+
+# =============================================================================
+# JIT/Directed
+# =============================================================================
+
+# ----- threading (single-threaded WASI by design) -----------------------------
+#
+# PlatformNotSupportedException from RuntimeFeature.ThrowIfMultithreading...
+JIT/Directed/Misc/function_pointer/MutualThdRecur-fptr/MutualThdRecur-fptr.sh
+
+# ----- native P/Invoke into a per-test native library (no dlopen on WASI) ----
+#
+# All raise DllNotFoundException on the first call into their companion
+# native .so/.dll. WASI corerun has no dynamic loader; these tests build
+# a native library alongside the managed test and assume LoadLibrary-
+# style resolution. Real gap but out of scope for the bring-up.
+JIT/Directed/StructABI/EmptyStructs/EmptyStructs.sh
+JIT/Directed/StructABI/StructABI/StructABI.sh
+JIT/Directed/aliasing_retbuf/aliasing_retbuf/aliasing_retbuf.sh
+JIT/Directed/pinning/object-pin/object-pin/object-pin.sh
+JIT/Directed/pinvoke/calli_excep/calli_excep.sh
+JIT/Directed/pinvoke/tail_pinvoke/tail_pinvoke.sh
+JIT/Directed/tls/TestTLSWithLoadedDlls/TestTLSWithLoadedDlls.sh
+
+# ----- portable-entrypoint assertion in calling-convention IL test -----------
+#
+# EmptyThisCallTest exercises the unmanaged thiscall calling convention.
+# The WASI corerun build asserts portableEntryPoint->HasNativeCode()
+# because thiscall has no portable entrypoint on wasm. Real gap, low
+# priority (Windows COM-shaped calling convention).
+JIT/Directed/callconv/ThisCall/EmptyThisCallTest/EmptyThisCallTest.sh
+
+# ----- ICorDebug debug-info tester -------------------------------------------
+#
+# Drives the ICorDebug pipeline to validate debug info. The pipeline
+# doesn't exist on WASI corerun.
+JIT/Directed/debugging/debuginfo/tester/tester.sh
+
+# =============================================================================
+# JIT/opt
+# =============================================================================
+
+# ----- IL verification (tail. prefix) not enforced in interpreter ------------
+#
+# Test feeds invalid tail.call IL and expects the runtime to raise
+# InvalidProgramException. The WASI interpreter doesn't run IL
+# verification, so the malformed tail. prefix is accepted and the test
+# fails to observe the expected exception. Real interpreter gap.
+JIT/opt/Tailcall/TailcallVerifyWithPrefix/TailcallVerifyWithPrefix.sh
+
+# ----- pure interpreter speed (no WASI bug, just slow) ------------------------
+#
+# Nested 2^16 * 2^16 (~4.3B) iterations per method. Pure interpreter
+# never finishes within the default 120s timeout. Same category as
+# 113574 / Regression_PdbOnly_r_2.
+JIT/opt/Regressions/Regression2_Regressions/Regression2_Regressions.sh
