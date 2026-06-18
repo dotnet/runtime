@@ -708,7 +708,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     DependsOnTargets="_WriteWasmBootJsonBuildPropertyStamp"
     Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
     Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-build.stamp"
-    Outputs="$(_WasmBuildBootJsonPath)">
+    Outputs="$(IntermediateOutputPath)wasm-bootjson-build.complete.stamp">
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
@@ -748,12 +748,20 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
+      <FileWrites Include="$(IntermediateOutputPath)wasm-bootjson-build.complete.stamp" />
     </ItemGroup>
 
-    <!-- The GenerateWasmBootJson task uses content comparison and preserves old timestamps when
-         the output content is unchanged. Touch the output so MSBuild's Inputs/Outputs check
-         sees a current timestamp and can correctly skip this target on subsequent builds. -->
-    <Touch Files="$(_WasmBuildBootJsonPath)" />
+    <!-- The GenerateWasmBootJson task uses content comparison and preserves old timestamps
+         when the output content is unchanged. We need a current timestamp on something for
+         MSBuild's Inputs/Outputs check to correctly skip this target on subsequent builds,
+         but we must NOT touch $(_WasmBuildBootJsonPath) itself: that file is a source for the
+         StaticWebAssets compression pipeline (GZipCompress/BrotliCompress) and the copy-to-
+         output target (_BuildCopyStaticWebAssetsPreserveNewest). Bumping its timestamp on every
+         build defeats their incrementality checks and breaks `dotnet build -question` (see
+         dotnet/runtime#129280, dotnet/runtime#124729, dotnet/aspnetcore#63207).
+         Touch a separate stamp file that is the target's Outputs= so MSBuild sees a current
+         output timestamp without affecting downstream consumers of the boot JSON. -->
+    <Touch Files="$(IntermediateOutputPath)wasm-bootjson-build.complete.stamp" AlwaysCreate="true" />
   </Target>
 
   <!-- Define the boot config file as a static web asset and create endpoints.
@@ -1180,7 +1188,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="GeneratePublishWasmBootJson"
     DependsOnTargets="_WriteWasmPublishBootJsonPropertyStamp"
     Inputs="@(IntermediateAssembly);@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish);@(_WasmPublishConfigFile);@(_WasmDotnetJsForPublish);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
-    Outputs="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)">
+    Outputs="$(IntermediateOutputPath)wasm-bootjson-publish.complete.stamp">
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
@@ -1220,12 +1228,13 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ItemGroup>
       <FileWrites Include="$([MSBuild]::NormalizePath($(IntermediateOutputPath), $(_WasmPublishBootConfigFileName)))" />
+      <FileWrites Include="$(IntermediateOutputPath)wasm-bootjson-publish.complete.stamp" />
     </ItemGroup>
 
-    <!-- The GenerateWasmBootJson task uses content comparison and preserves old timestamps when
-         the output content is unchanged. Touch the output so MSBuild's Inputs/Outputs check
-         sees a current timestamp and can correctly skip this target on subsequent builds. -->
-    <Touch Files="$(IntermediateOutputPath)$(_WasmPublishBootConfigFileName)" />
+    <!-- See _WriteBuildWasmBootJsonFile for rationale: touch a separate stamp file rather than
+         the boot JSON itself to avoid cascading mtime bumps into downstream StaticWebAssets
+         compression / copy targets. -->
+    <Touch Files="$(IntermediateOutputPath)wasm-bootjson-publish.complete.stamp" AlwaysCreate="true" />
 
   </Target>
 
