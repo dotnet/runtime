@@ -606,16 +606,11 @@ IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle,
 
 x86 uses the legacy bit-packed `InfoHdr` byte-stream encoding (`src/coreclr/vm/gc_unwind_x86.inl`, `src/coreclr/inc/gcdecoder.cpp`) rather than the modern `GcInfoDecoder` shared by all other architectures. The cDAC decoder lives at `src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/GCInfo/X86/` and is shared with the x86 stack walker.
 
-### Supported APIs
+A few API behaviors are worth calling out:
 
-| API | Status |
-|---|---|
-| `GetCodeLength` | Implemented. |
-| `GetStackBaseRegister` | Implemented. |
-| `GetSizeOfStackParameterArea` | Implemented; always returns 0 (x86 has no separate outgoing-argument scratch area). |
-| `GetCalleePoppedArgumentsSize` | Implemented; mirrors `EECodeManager::GetStackParameterSize`. |
-| `GetInterruptibleRanges` | Implemented. Fully-interruptible methods report one range covering the post-prolog body; partially-interruptible methods emit each call site as a single-byte range. Used by `StackWalk_1.WalkStackReferences` when adjusting the GC-reporting PC for parent frames of catch funclets (x86 uses the funclet EH model, see PR [#115957](https://github.com/dotnet/runtime/pull/115957)). |
-| `EnumerateLiveSlots` | Implemented and validated to match `EnumGcRefsX86` across the full cDAC stress suite. See below. |
+- `GetSizeOfStackParameterArea` always returns 0 -- x86 has no separate outgoing-argument scratch area; pushed args are reported directly through the per-offset transition stream.
+- `GetInterruptibleRanges` reports one range covering the post-prolog body for fully-interruptible methods, or a single-byte range per call site for partially-interruptible methods. Consumed by `StackWalk_1.WalkStackReferences` for the catch-handler PC override (x86 uses the funclet EH model, see PR [#115957](https://github.com/dotnet/runtime/pull/115957)).
+- `EnumerateLiveSlots` mirrors `EnumGcRefsX86`; see below.
 
 ### `EnumerateLiveSlots` behavior
 
