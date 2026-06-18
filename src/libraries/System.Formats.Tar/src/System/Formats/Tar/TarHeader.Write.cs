@@ -649,58 +649,63 @@ namespace System.Formats.Tar
             byte[]? buffer = null;
             Span<byte> span = stackalloc byte[512];
 
-            if (extendedAttributes.Count > 0)
+            try
             {
-                dataStream = new MemoryStream();
-
-                foreach ((string attribute, string value) in extendedAttributes)
+                if (extendedAttributes.Count > 0)
                 {
-                    // Generates an extended attribute key value pair string saved into a byte array, following the ISO/IEC 10646-1:2000 standard UTF-8 encoding format.
-                    // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
+                    dataStream = new MemoryStream();
 
-                    // The format is:
-                    //     "XX attribute=value\n"
-                    // where "XX" is the number of characters in the entry, including those required for the count itself.
-                    // If prepending the length digits increases the number of digits, we need to expand.
-                    int length = 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value);
-                    int originalDigitCount = CountDigits(length), newDigitCount;
-                    length += originalDigitCount;
-                    while ((newDigitCount = CountDigits(length)) != originalDigitCount)
+                    foreach ((string attribute, string value) in extendedAttributes)
                     {
-                        length += newDigitCount - originalDigitCount;
-                        originalDigitCount = newDigitCount;
-                    }
-                    Debug.Assert(length == CountDigits(length) + 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value));
+                        // Generates an extended attribute key value pair string saved into a byte array, following the ISO/IEC 10646-1:2000 standard UTF-8 encoding format.
+                        // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
 
-                    // Get a large enough buffer if we don't already have one.
-                    if (span.Length < length)
-                    {
-                        if (buffer is not null)
+                        // The format is:
+                        //     "XX attribute=value\n"
+                        // where "XX" is the number of characters in the entry, including those required for the count itself.
+                        // If prepending the length digits increases the number of digits, we need to expand.
+                        int length = 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value);
+                        int originalDigitCount = CountDigits(length), newDigitCount;
+                        length += originalDigitCount;
+                        while ((newDigitCount = CountDigits(length)) != originalDigitCount)
                         {
-                            ArrayPool<byte>.Shared.Return(buffer);
+                            length += newDigitCount - originalDigitCount;
+                            originalDigitCount = newDigitCount;
                         }
-                        span = buffer = ArrayPool<byte>.Shared.Rent(length);
+                        Debug.Assert(length == CountDigits(length) + 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value));
+
+                        // Get a large enough buffer if we don't already have one.
+                        if (span.Length < length)
+                        {
+                            if (buffer is not null)
+                            {
+                                ArrayPool<byte>.Shared.Return(buffer);
+                            }
+                            span = buffer = ArrayPool<byte>.Shared.Rent(length);
+                        }
+
+                        // Format the contents.
+                        bool formatted = Utf8Formatter.TryFormat(length, span, out int bytesWritten);
+                        Debug.Assert(formatted);
+                        span[bytesWritten++] = (byte)' ';
+                        bytesWritten += Encoding.UTF8.GetBytes(attribute, span.Slice(bytesWritten));
+                        span[bytesWritten++] = (byte)'=';
+                        bytesWritten += Encoding.UTF8.GetBytes(value, span.Slice(bytesWritten));
+                        span[bytesWritten++] = (byte)'\n';
+
+                        // Write it to the stream.
+                        dataStream.Write(span.Slice(0, bytesWritten));
                     }
 
-                    // Format the contents.
-                    bool formatted = Utf8Formatter.TryFormat(length, span, out int bytesWritten);
-                    Debug.Assert(formatted);
-                    span[bytesWritten++] = (byte)' ';
-                    bytesWritten += Encoding.UTF8.GetBytes(attribute, span.Slice(bytesWritten));
-                    span[bytesWritten++] = (byte)'=';
-                    bytesWritten += Encoding.UTF8.GetBytes(value, span.Slice(bytesWritten));
-                    span[bytesWritten++] = (byte)'\n';
-
-                    // Write it to the stream.
-                    dataStream.Write(span.Slice(0, bytesWritten));
+                    dataStream.Position = 0; // Ensure it gets written into the archive from the beginning
                 }
-
-                dataStream.Position = 0; // Ensure it gets written into the archive from the beginning
             }
-
-            if (buffer is not null)
+            finally
             {
-                ArrayPool<byte>.Shared.Return(buffer);
+                if (buffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
 
             return dataStream;

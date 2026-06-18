@@ -179,8 +179,26 @@ else()
 
   include(${CLR_SRC_NATIVE_DIR}/external/llvm-libunwind.cmake)
 
-  list(APPEND FULL_RUNTIME_SOURCES ${LLVM_LIBUNWIND_SOURCES})
-  set(RUNTIME_SOURCES_ARCH_ASM ${LLVM_LIBUNWIND_ASM_SOURCES})
+  set(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS OFF)
+  if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    set(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS ON)
+  endif()
+
+  if(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS)
+    # Build the bundled libunwind implementation and the runtime unwinder code
+    # that references it into one relocatable object. The runtime sources are
+    # part of the partial link so their references to libunwind's implementation
+    # symbols are resolved before those symbols are localized.
+    set(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES
+      unix/UnwindHelpers.cpp
+      unix/UnixNativeCodeManager.cpp
+      ${LLVM_LIBUNWIND_SOURCES}
+      ${LLVM_LIBUNWIND_ASM_SOURCES})
+    list(REMOVE_ITEM FULL_RUNTIME_SOURCES unix/UnwindHelpers.cpp unix/UnixNativeCodeManager.cpp)
+  else()
+    list(APPEND FULL_RUNTIME_SOURCES ${LLVM_LIBUNWIND_SOURCES})
+    set(RUNTIME_SOURCES_ARCH_ASM ${LLVM_LIBUNWIND_ASM_SOURCES})
+  endif()
 
   set(ASM_SUFFIX S)
 endif()
@@ -288,7 +306,10 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_compile_options($<$<COMPILE_LANGUAGE:ASM_MASM>:/safeseh>)
   endif()
 else()
-  if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  # OpenBSD marks the main executable's read-only segments immutable (mimmutable) at load,
+  # so the runtime cannot mprotect the read-only GS cookie page to writable to initialize it.
+  # Keep the cookie in writable memory there, like Apple.
+  if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_OPENBSD)
     add_definitions(-DFEATURE_READONLY_GS_COOKIE)
   endif()
   include(unix/configure.cmake)
@@ -316,6 +337,7 @@ convert_to_absolute_path(FULL_RUNTIME_SOURCES ${FULL_RUNTIME_SOURCES})
 convert_to_absolute_path(SERVER_GC_SOURCES ${SERVER_GC_SOURCES})
 convert_to_absolute_path(STANDALONEGC_DISABLED_SOURCES ${STANDALONEGC_DISABLED_SOURCES})
 convert_to_absolute_path(STANDALONEGC_ENABLED_SOURCES ${STANDALONEGC_ENABLED_SOURCES})
+convert_to_absolute_path(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES ${NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES})
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 convert_to_absolute_path(VXSORT_SOURCES ${VXSORT_SOURCES})
 convert_to_absolute_path(DUMMY_VXSORT_SOURCES ${DUMMY_VXSORT_SOURCES})

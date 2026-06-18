@@ -6084,69 +6084,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetThreadOwningMonitorLock(VMPTR_
 }
 
 // DAC/DBI API:
-// Enumerate all threads waiting on the monitor event for an object
+// Enumerate all threads waiting on the monitor event for an object.
+// Not implemented as this API is not believed to be called by any current consumers.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateMonitorEventWaitList(VMPTR_Object vmObject, FP_THREAD_ENUMERATION_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        Object* pObj = vmObject.GetDacPtr();
-
-        SyncBlock* psb = pObj->PassiveGetSyncBlock();
-
-        // no sync block means no wait list
-        if(psb == NULL)
-            return hr;
-
-        FieldDesc* pConditionTableField = (&g_CoreLib)->GetField(FIELD__MONITOR__CONDITION_TABLE);
-        CONDITIONAL_WEAK_TABLE_REF conditionTable = *(DPTR(CONDITIONAL_WEAK_TABLE_REF))PTR_TO_TADDR(pConditionTableField->GetStaticAddressHandle(pConditionTableField->GetBase()));
-
-
-        OBJECTREF condition = NULL;
-        if (!conditionTable->TryGetValue(OBJECTREF(pObj), &condition))
-        {
-            return hr;
-        }
-
-        MapSHash<TADDR, Thread*> waiterToThreadMap;
-        FieldDesc* pConditionWaiterField = (&g_CoreLib)->GetField(FIELD__CONDITION__WAITERS_HEAD);
-        FieldDesc* pWaiterNextField = (&g_CoreLib)->GetField(FIELD__WAITER__NEXT);
-        FieldDesc* pThisThreadWaiterField = (&g_CoreLib)->GetField(FIELD__CONDITION__CURRENT_THREAD_WAITER);
-
-        // Build a map of Waiter objects to their owning Threads.
-        for (Thread *pThread = ThreadStore::GetThreadList(NULL); pThread != NULL; pThread = ThreadStore::GetThreadList(pThread))
-        {
-            PTR_PTR_Object pThisThreadWaiterStorage = dac_cast<PTR_PTR_Object>(pThread->GetStaticFieldAddrNoCreate(pThisThreadWaiterField));
-            if (pThisThreadWaiterStorage == NULL || *pThisThreadWaiterStorage == NULL)
-            {
-                continue; // this thread is not waiting on the monitor for this object. It has never waited on any monitor.
-            }
-
-            OBJECTREF pThisThreadWaiter = *pThisThreadWaiterStorage;
-            waiterToThreadMap.Add(dac_cast<TADDR>(pThisThreadWaiter), pThread);
-        }
-
-        // Iterate through the waiters in the condition object and invoke the user's callback for each thread
-        for (OBJECTREF pWaiter = pConditionWaiterField->GetRefValue(condition); pWaiter != NULL; pWaiter = pWaiterNextField->GetRefValue(pWaiter))
-        {
-            Thread* pThread = NULL;
-            if (!waiterToThreadMap.Lookup(dac_cast<TADDR>(pWaiter), &pThread))
-            {
-                // This waiter is not in the map, so we can't find its thread.
-                LOG((LF_CORDB, LL_INFO10000, "D::EMEWL: Waiter not found in waiter->thread map.\n"));
-                continue;
-            }
-            VMPTR_Thread vmThread = VMPTR_Thread::NullPtr();
-            vmThread.SetDacTargetPtr(PTR_HOST_TO_TADDR(pThread));
-            // Invoke the user's callback with the thread and user data
-            fpCallback(vmThread, pUserData);
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
+    return E_NOTIMPL;
 }
 
 

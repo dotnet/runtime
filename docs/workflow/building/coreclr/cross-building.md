@@ -222,6 +222,10 @@ src/tests/build.sh -cross -$arch -$os -p:LibrariesConfiguration=Debug --use-boot
 
 # Libraries tests (produces zipped per-library test archives under artifacts/helix/tests/).
 ./build.sh libs.tests --cross --arch $arch --os $os --use-bootstrap -p:ArchiveTests=true
+
+# A single library's test project can also be built and archived on its own.
+# The resulting zip lands under artifacts/helix/tests/.
+./dotnet.sh build src/libraries/System.Formats.Nrbf/tests -p:CrossBuild=true -p:UseBootstrap=true -p:ArchiveTests=true -p:TargetOS=$os -p:TargetArchitecture=$arch
 ```
 
 Without `--use-bootstrap`, restore would fail with `NU1102` errors because the apphost/runtime/targeting packs for `freebsd-arm64` are not published to NuGet feeds.
@@ -279,6 +283,5 @@ unzip /tmp/System.Text.RegularExpressions.Unit.Tests.zip
 
 #### Notes
 
-* `--use-bootstrap` works on any platform; on community-supported platforms it is the only way to build the tests because the targeting/runtime/apphost packs are not published to NuGet feeds.
-* If restore still fails after passing the flag, double-check that the `bootstrap` subset built successfully and produced `artifacts/bin/bootstrap/`.
-* Building/packing an individual library test project (e.g. `./dotnet.sh build src/libraries/System.Formats.Nrbf/tests -p:UseBootstrap=true -p:ArchiveTests=true ...`) currently produces an unusable archive (missing `xunit.console.runtimeconfig.json` and similar). Until that is fixed, build the whole `libs.tests` subset as shown above.
+* `--bootstrap` works on any platform; on community-supported platforms it is the only way to build the tests because the targeting/runtime/apphost packs are not published to NuGet feeds.
+* If restore still fails after passing the flag, double-check that the `bootstrap` subset built successfully and produced `artifacts/bootstrap/`.
