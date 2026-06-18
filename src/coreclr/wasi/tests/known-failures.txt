@@ -130,15 +130,17 @@ baseservices/exceptions/unhandled/unhandledTester/unhandledTester.sh
 # AOT the test first. The test would need its own WASI-aware runner.
 baseservices/TieredCompilation/BasicTestWithMcj/BasicTestWithMcj.sh
 
-# ----- nested / deep managed EH returning wrong value ------------------------
+# ----- threading tests masquerading as EH tests (V1/SEH/VJ family) ----------
 #
-# These tests issue 10+ nested throws/rethrows through generated VJ
-# (Visual J++) IL patterns and assert the per-iteration accumulated
-# value is 100. On WASI corerun the prints come out correctly but the
-# method returns 0 instead of 100 — i.e. a code path is being skipped
-# during deep nested unwind. Real WASI EH gap worth investigating
-# (likely same family as the SfiNextWorker "unhandled by runtime"
-# branch already noted in the WASI bring-up commits).
+# These four tests *look* like nested-throw / handler tests but the
+# actual scenario is single-thread WASI cannot Thread.Start the
+# worker that would do the throwing. Each Main() does
+#   try { mv_Thread.Start(); } catch { retVal = 0; ... }
+# 10 times, printing "Exception was caught in main" per iteration,
+# then returns 0 instead of the expected 100. The nested-throw
+# runtest() that gives these tests their names is never reached.
+# Same threading block as the rest — fix on browser, will require
+# multithreaded WASI to ever pass here.
 baseservices/exceptions/regressions/V1/SEH/VJ/HandlerException/HandlerException.sh
 baseservices/exceptions/regressions/V1/SEH/VJ/MultipleException/MultipleException.sh
 baseservices/exceptions/regressions/V1/SEH/VJ/NestedException/NestedException.sh
