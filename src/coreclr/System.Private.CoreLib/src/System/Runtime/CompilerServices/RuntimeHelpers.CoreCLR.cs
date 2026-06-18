@@ -235,8 +235,6 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe TDelegate CreateSharedDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
         {
-            ArgumentNullException.ThrowIfNull(method);
-
             Debug.Assert(typeof(TDelegate) is RuntimeType);
             Debug.Assert(typeof(TDelegate).IsAssignableTo(typeof(Delegate)));
 
@@ -250,6 +248,8 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe Delegate CreateSharedDelegateHelper(nint method, ref Delegate? storage, MethodTable* pMT)
         {
+            ArgumentNullException.ThrowIfNull(method);
+
             Debug.Assert(RuntimeTypeHandle.GetRuntimeType(pMT).IsDelegate());
 
             Delegate? newDelegate = null;
