@@ -111,11 +111,20 @@ namespace ILCompiler.DependencyAnalysis.ARM
         }
 
         // ldr reg, [reg]
-        // reg range: [0..7]
+        // reg range: [0..7] for 16-bit encoding, [0..PC] when using 32-bit encoding
         public void EmitLDR(Register destination, Register source)
         {
-            Debug.Assert(IsLowReg(destination) && IsLowReg(source));
-            Builder.EmitShort((short)(0x6800 + (((byte)source & 0x7) << 3) + ((byte)destination & 0x7)));
+            // If both registers are low (R0-R7), use the compact 16-bit encoding
+            if (IsLowReg(destination) && IsLowReg(source))
+            {
+                Builder.EmitShort((short)(0x6800 + (((byte)source & 0x7) << 3) + ((byte)destination & 0x7)));
+            }
+            else
+            {
+                // For high registers (R8-R12), use the 32-bit encoding with offset 0
+                Debug.Assert(IsValidReg(destination) && IsValidReg(source));
+                EmitLDR(destination, source, 0);
+            }
         }
 
         // ldr.w reg, [reg, #offset]
