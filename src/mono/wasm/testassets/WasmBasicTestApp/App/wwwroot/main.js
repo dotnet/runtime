@@ -288,6 +288,7 @@ try {
         case "InvokeLibraryInitializersTest":
             await invokeLibraryInitializers("customHook", []);
             testOutput(`customHookCalled=${globalThis.__customHookCalled === true}`);
+            testOutput(`resources.libraryInitializers.length=${config.resources.libraryInitializers.length}`);
             exit(0);
             break;
         case "ZipArchiveInteropTest":
