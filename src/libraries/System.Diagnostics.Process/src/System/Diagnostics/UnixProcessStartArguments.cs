@@ -70,6 +70,14 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public ProcessStartInfo ProcessStartInfo { get; internal set; } = null!;
 
+
+        /// <inheritdoc cref="Start{TState}(ProcessStartInfo, Func{UnixProcessStartArguments, TState, SafeProcessHandle}, TState)"/>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public static Process Start(ProcessStartInfo startInfo, Func<UnixProcessStartArguments, SafeProcessHandle> callback)
+            => Start(startInfo, (args, state) => callback(args), state: default(object));
+
         /// <summary>
         /// Starts a new process by preparing all necessary arguments (standard handles, command line, environment)
         /// and then invoking the user-supplied <paramref name="callback"/> to perform the actual process creation system call.
@@ -77,6 +85,7 @@ namespace System.Runtime.InteropServices
         /// <see cref="SafeProcessHandle"/> representing the created process.
         /// </summary>
         /// <param name="startInfo">The <see cref="ProcessStartInfo"/> that contains the information used to start the process.</param>
+        /// <param name="state">The user-defined state object that is passed to the callback.</param>
         /// <param name="callback">
         /// A function that receives the prepared <see cref="UnixProcessStartArguments"/> and creates the process using any system call of the user's choice.
         /// The callback must return a valid <see cref="SafeProcessHandle"/> for the newly created process.
@@ -86,10 +95,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> or <paramref name="callback"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">The <see cref="SafeProcessHandle"/> returned by the callback is invalid.</exception>
         /// <exception cref="InvalidOperationException"><see cref="ProcessStartInfo.UseShellExecute"/> is set to <see langword="true"/>.</exception>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public static Process Start(ProcessStartInfo startInfo, Func<UnixProcessStartArguments, SafeProcessHandle> callback)
+        public static Process Start<TState>(ProcessStartInfo startInfo, Func<UnixProcessStartArguments, TState, SafeProcessHandle> callback, TState state)
         {
 #if TARGET_WINDOWS
             throw new PlatformNotSupportedException();
@@ -111,7 +117,7 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                process.StartCore(startInfo, callback);
+                process.StartCore(startInfo, callback, state);
             }
             catch
             {

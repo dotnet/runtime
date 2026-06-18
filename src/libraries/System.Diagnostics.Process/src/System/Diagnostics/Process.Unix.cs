@@ -358,13 +358,13 @@ namespace System.Diagnostics
             return new SafeProcessHandle(_waitStateHolder!.IncrementRefCount());
         }
 
-        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, Func<UnixProcessStartArguments, SafeProcessHandle>? callback)
+        private bool StartCore<TState>(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, Func<UnixProcessStartArguments, TState, SafeProcessHandle>? callback, TState state)
         {
             ProcessWaitState.Holder? waitStateHolder = null;
 
             SafeProcessHandle startedProcess = callback is null
                 ? SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, out waitStateHolder)
-                : SafeProcessHandle.StartWithCallback(startInfo, stdinHandle!, stdoutHandle!, stderrHandle!, callback, out waitStateHolder);
+                : SafeProcessHandle.StartWithCallback(startInfo, stdinHandle!, stdoutHandle!, stderrHandle!, callback, state, out waitStateHolder);
 
             Debug.Assert(!startedProcess.IsInvalid);
 

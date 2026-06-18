@@ -212,8 +212,8 @@ namespace Microsoft.Win32.SafeHandles
                 out waitStateHolder);
         }
 
-        internal static unsafe SafeProcessHandle StartWithCallback(ProcessStartInfo startInfo, SafeFileHandle? stdinFd, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
-            Func<UnixProcessStartArguments, SafeProcessHandle> callback, out ProcessWaitState.Holder? waitStateHolder)
+        internal static unsafe SafeProcessHandle StartWithCallback<TState>(ProcessStartInfo startInfo, SafeFileHandle? stdinFd, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle,
+            Func<UnixProcessStartArguments, TState, SafeProcessHandle> callback, TState state, out ProcessWaitState.Holder? waitStateHolder)
         {
             waitStateHolder = null;
             ProcessUtils.EnsureInitialized();
@@ -277,7 +277,7 @@ namespace Microsoft.Win32.SafeHandles
                         configuredTerminal = true;
                     }
 
-                    SafeProcessHandle processHandle = callback(args);
+                    SafeProcessHandle processHandle = callback(args, state);
                     if (processHandle is null || processHandle.IsInvalid)
                     {
                         throw new ArgumentException(SR.Argument_InvalidHandle, nameof(callback));

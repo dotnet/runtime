@@ -469,6 +469,7 @@ namespace System.Runtime.InteropServices
         public System.IntPtr StandardInput { get { throw null; } }
         public System.IntPtr StandardOutput { get { throw null; } }
         public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.WindowsProcessStartArguments, Microsoft.Win32.SafeHandles.SafeProcessHandle> callback) { throw null; }
+        public static System.Diagnostics.Process Start<TState>(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.WindowsProcessStartArguments, TState, Microsoft.Win32.SafeHandles.SafeProcessHandle> callback, TState state) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
     public ref struct UnixProcessStartArguments
@@ -488,5 +489,6 @@ namespace System.Runtime.InteropServices
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.UnixProcessStartArguments, Microsoft.Win32.SafeHandles.SafeProcessHandle> callback) { throw null; }
+        public static System.Diagnostics.Process Start<TState>(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.UnixProcessStartArguments, TState, Microsoft.Win32.SafeHandles.SafeProcessHandle> callback, TState state) { throw null; }
     }
 }
