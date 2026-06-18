@@ -191,12 +191,13 @@ namespace System.Text.Json.Schema
                 {
                     // The element schema is an "anyOf" composition, which for a nullable value type
                     // can only originate from an IEEE floating-point type formatted under
-                    // AllowNamedFloatingPointLiterals. Fold the null type into the numeric branch.
+                    // AllowNamedFloatingPointLiterals. Append null to the enum branch listing the
+                    // named floating-point literals, mirroring the enum handling above.
                     foreach (JsonSchema branch in anyOf)
                     {
-                        if (branch.Type is not JsonSchemaType.Any)
+                        if (branch.Enum != null)
                         {
-                            branch.Type |= JsonSchemaType.Null;
+                            branch.Enum.Add(null); // Append null to the enum array.
                             break;
                         }
                     }

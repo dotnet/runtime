@@ -293,8 +293,8 @@ namespace System.Text.Json.Schema.Tests
                 ExpectedJsonSchema: """
                     {
                         "anyOf": [
-                            { "type": ["number","null"] },
-                            { "enum": ["NaN", "Infinity", "-Infinity"] }
+                            { "type": "number" },
+                            { "enum": ["NaN", "Infinity", "-Infinity", null] }
                         ]
                     }
                     """,
@@ -306,8 +306,8 @@ namespace System.Text.Json.Schema.Tests
                 ExpectedJsonSchema: """
                     {
                         "anyOf": [
-                            { "type": ["number","null"] },
-                            { "enum": ["NaN", "Infinity", "-Infinity"] }
+                            { "type": "number" },
+                            { "enum": ["NaN", "Infinity", "-Infinity", null] }
                         ]
                     }
                     """,
@@ -322,14 +322,14 @@ namespace System.Text.Json.Schema.Tests
                         "properties": {
                             "Latitude": {
                                 "anyOf": [
-                                    { "type": ["number","null"] },
-                                    { "enum": ["NaN", "Infinity", "-Infinity"] }
+                                    { "type": "number" },
+                                    { "enum": ["NaN", "Infinity", "-Infinity", null] }
                                 ]
                             },
                             "Longitude": {
                                 "anyOf": [
-                                    { "type": ["number","null"] },
-                                    { "enum": ["NaN", "Infinity", "-Infinity"] }
+                                    { "type": "number" },
+                                    { "enum": ["NaN", "Infinity", "-Infinity", null] }
                                 ]
                             }
                         }
