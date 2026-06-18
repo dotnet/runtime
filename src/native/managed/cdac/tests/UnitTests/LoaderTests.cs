@@ -537,6 +537,7 @@ public unsafe class LoaderTests
         var peImageLayout = helpers.LayoutFields([
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
             new(nameof(Data.PEImage.ProbeExtensionResult), DataType.ProbeExtensionResult, probeExtLayout.Stride),
+            new(nameof(Data.PEImage.ModuleFileNameHint), DataType.pointer),
         ]);
         var imageLayoutLayout = helpers.LayoutFields([
             new(nameof(Data.PEImageLayout.Base), DataType.pointer),
@@ -755,6 +756,7 @@ public unsafe class LoaderTests
         var peImageLayout = helpers.LayoutFields([
             new(nameof(Data.PEImage.LoadedImageLayout), DataType.pointer),
             new(nameof(Data.PEImage.ProbeExtensionResult), DataType.ProbeExtensionResult, probeExtLayout.Stride),
+            new(nameof(Data.PEImage.ModuleFileNameHint), DataType.pointer),
         ]);
         var imageLayoutLayout = helpers.LayoutFields([
             new(nameof(Data.PEImageLayout.Base), DataType.pointer),
