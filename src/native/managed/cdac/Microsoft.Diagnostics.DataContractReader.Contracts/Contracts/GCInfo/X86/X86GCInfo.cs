@@ -486,6 +486,12 @@ public record X86GCInfo : IGCInfoDecoder
         const uint SP_REL = 1;
         const uint FRAMEREG_REL = 2;
 
+        // The frame's GC refs are already reported via a funclet (e.g. a catch handler)
+        // sharing this parent's locals. Native EnumGcRefsX86 (gc_unwind_x86.inl:3039) returns
+        // without enumerating when the ParentOfFuncletStackFrame flag is set; mirror that.
+        if (options.IsParentOfFuncletStackFrame)
+            return Array.Empty<LiveSlot>();
+
         // In the prolog (before all locals are initialised) and in the epilog (after they've
         // been torn down) the GC info doesn't accurately describe live slots. The runtime
         // never suspends a thread inside the prolog/epilog under normal circumstances; the only
@@ -687,10 +693,34 @@ public record X86GCInfo : IGCInfoDecoder
                 uint gcFlags = cr.IsByRef ? 0x1u : 0u;
                 result.Add(new LiveSlot(IsRegister: true, RegisterNumber: RegMaskToRegisterNumber(cr.Register), SpOffset: 0, SpBase: 0, GcFlags: gcFlags));
             }
-            foreach (GcTransitionCall.PtrArg pa in activeCallSite.PtrArgs)
+            if (activeCallSite.PtrArgs.Count > 0)
             {
-                uint gcFlags = pa.LowBit != 0 ? 0x1u : 0u;
-                result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: (int)pa.StackOffset, SpBase: spRelBase, GcFlags: gcFlags));
+                // Huge encoding (0xFB): explicit per-pointer stack offsets.
+                foreach (GcTransitionCall.PtrArg pa in activeCallSite.PtrArgs)
+                {
+                    uint gcFlags = pa.LowBit != 0 ? 0x1u : 0u;
+                    result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: (int)pa.StackOffset, SpBase: spRelBase, GcFlags: gcFlags));
+                }
+            }
+            else if (activeCallSite.ArgMask != 0)
+            {
+                // Tiny / small / medium / large encodings: argMask is a bitmap where bit i
+                // represents a live pointer at ESP + i*sizeof(DWORD). Native scanArgRegTable
+                // (gc_unwind_x86.inl:3373-3402) iterates bits low-to-high with argAddr=ESP+i*4.
+                uint argMask = activeCallSite.ArgMask;
+                uint iargMask = activeCallSite.IArgs;
+                int i = 0;
+                while (argMask != 0)
+                {
+                    if ((argMask & 1) != 0)
+                    {
+                        uint gcFlags = (iargMask & 1) != 0 ? 0x1u : 0u;
+                        result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: i * 4, SpBase: spRelBase, GcFlags: gcFlags));
+                    }
+                    argMask >>= 1;
+                    iargMask >>= 1;
+                    i++;
+                }
             }
         }
     }
