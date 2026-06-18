@@ -485,12 +485,19 @@ CDAC_TYPE_FIELD(Debugger, T_POINTER, RCThread, cdac_data<Debugger>::RCThread)
 CDAC_TYPE_FIELD(Debugger, T_INT32, RSRequestedSync, cdac_data<Debugger>::RSRequestedSync)
 CDAC_TYPE_FIELD(Debugger, T_INT32, SendExceptionsOutsideOfJMC, cdac_data<Debugger>::SendExceptionsOutsideOfJMC)
 CDAC_TYPE_FIELD(Debugger, T_INT32, GCNotificationEventsEnabled, cdac_data<Debugger>::GCNotificationEventsEnabled)
+CDAC_TYPE_FIELD(Debugger, T_POINTER, RgHijackFunction, cdac_data<Debugger>::RgHijackFunction)
 CDAC_TYPE_END(Debugger)
 
 CDAC_TYPE_BEGIN(DebuggerRCThread)
 CDAC_TYPE_INDETERMINATE(DebuggerRCThread)
 CDAC_TYPE_FIELD(DebuggerRCThread, T_POINTER, DCB, cdac_data<DebuggerRCThread>::DCB)
 CDAC_TYPE_END(DebuggerRCThread)
+
+CDAC_TYPE_BEGIN(MemoryRange)
+CDAC_TYPE_SIZE(sizeof(MemoryRange))
+CDAC_TYPE_FIELD(MemoryRange, T_POINTER, StartAddress, cdac_data<MemoryRange>::StartAddress)
+CDAC_TYPE_FIELD(MemoryRange, T_NUINT, Size, cdac_data<MemoryRange>::Size)
+CDAC_TYPE_END(MemoryRange)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 
 CDAC_TYPE_BEGIN(ArrayListBase)
@@ -1563,6 +1570,7 @@ CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
 CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
+CDAC_GLOBAL(MaxHijackFunctions, T_UINT32, cdac_data<Debugger>::MaxHijackFunctions)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 #ifdef FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)
