@@ -603,8 +603,19 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     return new ConstructorCallSite(lifetime, serviceIdentifier.ServiceType, constructor, parameterCallSites, serviceIdentifier.ServiceKey);
                 }
 
+                // With more than one constructor, select the "best" one: the constructor with the
+                // most parameters whose arguments can all be resolved, either from the container or
+                // by falling back to a default parameter value. Constructors are ordered from the
+                // most parameters to the fewest (preserving declaration order among equal counts),
+                // and the first fully resolvable one becomes the best match. Every subsequent
+                // resolvable constructor must be a strict subset of the best one, i.e. each of its
+                // parameters was already used by the best constructor; otherwise the two are
+                // ambiguous and an exception is thrown.
+                //
+                // The constructors array returned by GetConstructors() is private to this method, so
+                // it is sorted in place via an insertion sort. The parameter arrays are cached
+                // alongside it to avoid calling GetParameters() again during selection.
                 int constructorCount = constructors.Length;
-                var sortedConstructors = new ConstructorInfo[constructorCount];
                 var sortedParameters = new ParameterInfo[constructorCount][];
                 for (int i = 0; i < constructorCount; i++)
                 {
@@ -612,29 +623,29 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     ParameterInfo[] parameters = constructor.GetParameters();
 
                     int sortedIndex = i;
-                    while (sortedIndex > 0 && sortedParameters[sortedIndex - 1]!.Length < parameters.Length)
+                    while (sortedIndex > 0 && sortedParameters[sortedIndex - 1].Length < parameters.Length)
                     {
-                        sortedConstructors[sortedIndex] = sortedConstructors[sortedIndex - 1]!;
-                        sortedParameters[sortedIndex] = sortedParameters[sortedIndex - 1]!;
+                        constructors[sortedIndex] = constructors[sortedIndex - 1];
+                        sortedParameters[sortedIndex] = sortedParameters[sortedIndex - 1];
                         sortedIndex--;
                     }
 
-                    sortedConstructors[sortedIndex] = constructor;
+                    constructors[sortedIndex] = constructor;
                     sortedParameters[sortedIndex] = parameters;
                 }
 
                 ConstructorInfo? bestConstructor = null;
-                HashSet<ServiceIdentifier>? bestParametersResolvedFromContainer = null;
-                HashSet<ServiceIdentifier>? bestParametersResolvedFromDefault = null;
+                List<ServiceIdentifier>? bestResolvedParameters = null;
+                List<ServiceIdentifier>? resolvedParameters = null;
 
                 for (int i = 0; i < constructorCount; i++)
                 {
-                    ConstructorInfo constructor = sortedConstructors[i]!;
-                    ParameterInfo[] parameters = sortedParameters[i]!;
+                    ConstructorInfo constructor = constructors[i];
+                    ParameterInfo[] parameters = sortedParameters[i];
 
                     if (bestConstructor is null)
                     {
-                        var currentResolvedParameters = new List<ResolvedParameter>(parameters.Length);
+                        var currentResolvedParameters = new List<ServiceIdentifier>(parameters.Length);
                         ServiceCallSite[]? currentParameterCallSites = CreateArgumentCallSites(
                             serviceIdentifier,
                             implementationType,
@@ -650,36 +661,43 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                         bestConstructor = constructor;
                         parameterCallSites = currentParameterCallSites;
-                        ClassifyResolvedParameters(
-                            currentResolvedParameters,
-                            out bestParametersResolvedFromContainer,
-                            out bestParametersResolvedFromDefault);
+                        bestResolvedParameters = currentResolvedParameters;
                         continue;
                     }
 
-                    Debug.Assert(bestParametersResolvedFromContainer is not null);
-                    Debug.Assert(bestParametersResolvedFromDefault is not null);
+                    Debug.Assert(bestResolvedParameters is not null);
 
-                    if (!IsResolvableWithoutCreatingCallSiteArray(
+                    if (resolvedParameters is null)
+                    {
+                        resolvedParameters = new List<ServiceIdentifier>(parameters.Length);
+                    }
+                    else
+                    {
+                        resolvedParameters.Clear();
+                    }
+
+                    if (CreateArgumentCallSites(
                         serviceIdentifier,
                         implementationType,
                         callSiteChain,
                         parameters,
                         throwIfCallSiteNotFound: false,
-                        bestParametersResolvedFromContainer,
-                        bestParametersResolvedFromDefault,
-                        out bool hasNewResolvableParameter))
+                        resolvedParameters) is null)
                     {
                         continue;
                     }
 
-                    if (hasNewResolvableParameter)
+                    // All parameters resolvable; ambiguous unless it is a strict subset of best.
+                    foreach (ServiceIdentifier id in resolvedParameters)
                     {
-                        throw new InvalidOperationException(string.Join(
-                            Environment.NewLine,
-                            SR.Format(SR.AmbiguousConstructorException, implementationType),
-                            bestConstructor,
-                            constructor));
+                        if (!bestResolvedParameters.Contains(id))
+                        {
+                            throw new InvalidOperationException(string.Join(
+                                Environment.NewLine,
+                                SR.Format(SR.AmbiguousConstructorException, implementationType),
+                                bestConstructor,
+                                constructor));
+                        }
                     }
                 }
 
@@ -705,7 +723,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             CallSiteChain callSiteChain,
             ParameterInfo[] parameters,
             bool throwIfCallSiteNotFound,
-            List<ResolvedParameter>? resolvedParameters = null)
+            List<ServiceIdentifier>? resolvedParameters = null)
         {
             var parameterCallSites = new ServiceCallSite[parameters.Length];
 
@@ -718,100 +736,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     parameters[index],
                     throwIfCallSiteNotFound,
                     out ServiceIdentifier parameterServiceIdentifier,
-                    out ServiceCallSite? callSite,
-                    out bool resolvedFromDefault))
+                    out ServiceCallSite? callSite))
                 {
                     return null;
                 }
 
                 Debug.Assert(callSite is not null);
-                resolvedParameters?.Add(new ResolvedParameter(parameterServiceIdentifier, resolvedFromDefault));
+                resolvedParameters?.Add(parameterServiceIdentifier);
                 parameterCallSites[index] = callSite;
             }
 
             return parameterCallSites;
-        }
-
-        private static void ClassifyResolvedParameters(
-            List<ResolvedParameter> resolvedParameters,
-            out HashSet<ServiceIdentifier> resolvedFromContainer,
-            out HashSet<ServiceIdentifier> resolvedFromDefault)
-        {
-            resolvedFromContainer = new HashSet<ServiceIdentifier>();
-            resolvedFromDefault = new HashSet<ServiceIdentifier>();
-
-            foreach (ResolvedParameter resolvedParameter in resolvedParameters)
-            {
-                if (resolvedParameter.ResolvedFromDefault)
-                {
-                    resolvedFromDefault.Add(resolvedParameter.ServiceIdentifier);
-                }
-                else
-                {
-                    resolvedFromContainer.Add(resolvedParameter.ServiceIdentifier);
-                }
-            }
-        }
-
-        private bool IsResolvableWithoutCreatingCallSiteArray(
-            ServiceIdentifier serviceIdentifier,
-            Type implementationType,
-            CallSiteChain callSiteChain,
-            ParameterInfo[] parameters,
-            bool throwIfCallSiteNotFound,
-            HashSet<ServiceIdentifier> bestParametersResolvedFromContainer,
-            HashSet<ServiceIdentifier> bestParametersResolvedFromDefault,
-            out bool hasNewResolvableParameter)
-        {
-            hasNewResolvableParameter = false;
-
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                ParameterInfo parameter = parameters[i];
-                ServiceIdentifier parameterServiceIdentifier = GetParameterServiceIdentifier(
-                    serviceIdentifier,
-                    parameter,
-                    out _,
-                    out _);
-
-                if (bestParametersResolvedFromContainer.Contains(parameterServiceIdentifier))
-                {
-                    continue;
-                }
-
-                bool defaultMatchesBestParameter =
-                    bestParametersResolvedFromDefault.Contains(parameterServiceIdentifier) &&
-                    ParameterDefaultValue.TryGetDefaultValue(parameter, out _);
-                if (defaultMatchesBestParameter)
-                {
-                    continue;
-                }
-
-                if (bestParametersResolvedFromDefault.Contains(parameterServiceIdentifier))
-                {
-                    return false;
-                }
-
-                if (!TryResolveCallSite(
-                    serviceIdentifier,
-                    implementationType,
-                    callSiteChain,
-                    parameter,
-                    throwIfCallSiteNotFound,
-                    out parameterServiceIdentifier,
-                    out _,
-                    out bool resolvedFromDefault))
-                {
-                    return false;
-                }
-
-                if (!resolvedFromDefault || !bestParametersResolvedFromDefault.Contains(parameterServiceIdentifier))
-                {
-                    hasNewResolvableParameter = true;
-                }
-            }
-
-            return true;
         }
 
         private bool TryResolveCallSite(
@@ -821,58 +756,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             ParameterInfo parameter,
             bool throwIfCallSiteNotFound,
             out ServiceIdentifier parameterServiceIdentifier,
-            out ServiceCallSite? callSite,
-            out bool resolvedFromDefault)
+            out ServiceCallSite? callSite)
         {
-            parameterServiceIdentifier = GetParameterServiceIdentifier(
-                serviceIdentifier,
-                parameter,
-                out Type parameterType,
-                out bool serviceKeyParameter);
-
-            if (serviceKeyParameter)
-            {
-                resolvedFromDefault = false;
-                callSite = new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey);
-                return true;
-            }
-
-            ServiceCallSite? parameterCallSite = GetCallSite(parameterServiceIdentifier, callSiteChain);
-            if (parameterCallSite is not null)
-            {
-                resolvedFromDefault = false;
-                callSite = parameterCallSite;
-                return true;
-            }
-
-            if (ParameterDefaultValue.TryGetDefaultValue(parameter, out object? defaultValue))
-            {
-                resolvedFromDefault = true;
-                callSite = new ConstantCallSite(parameterType, defaultValue);
-                return true;
-            }
-
-            if (throwIfCallSiteNotFound)
-            {
-                throw new InvalidOperationException(SR.Format(SR.CannotResolveService,
-                    parameterType,
-                    implementationType));
-            }
-
-            resolvedFromDefault = false;
-            callSite = null;
-            return false;
-        }
-
-        private static ServiceIdentifier GetParameterServiceIdentifier(
-            ServiceIdentifier serviceIdentifier,
-            ParameterInfo parameter,
-            out Type parameterType,
-            out bool serviceKeyParameter)
-        {
-            parameterType = parameter.ParameterType;
-            ServiceIdentifier parameterServiceIdentifier = ServiceIdentifier.FromServiceType(parameterType);
-            serviceKeyParameter = false;
+            Type parameterType = parameter.ParameterType;
+            parameterServiceIdentifier = ServiceIdentifier.FromServiceType(parameterType);
 
             foreach (object attribute in parameter.GetCustomAttributes(true))
             {
@@ -889,8 +776,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         throw new InvalidOperationException(SR.InvalidServiceKeyType);
                     }
 
-                    serviceKeyParameter = true;
-                    return new ServiceIdentifier(serviceIdentifier.ServiceKey, parameterType);
+                    parameterServiceIdentifier = new ServiceIdentifier(serviceIdentifier.ServiceKey, parameterType);
+                    callSite = new ConstantCallSite(parameterType, serviceIdentifier.ServiceKey);
+                    return true;
                 }
 
                 if (attribute is FromKeyedServicesAttribute fromKeyedServicesAttribute)
@@ -910,20 +798,28 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
             }
 
-            return parameterServiceIdentifier;
-        }
-
-        private readonly struct ResolvedParameter
-        {
-            public ResolvedParameter(ServiceIdentifier serviceIdentifier, bool resolvedFromDefault)
+            ServiceCallSite? parameterCallSite = GetCallSite(parameterServiceIdentifier, callSiteChain);
+            if (parameterCallSite is not null)
             {
-                ServiceIdentifier = serviceIdentifier;
-                ResolvedFromDefault = resolvedFromDefault;
+                callSite = parameterCallSite;
+                return true;
             }
 
-            public ServiceIdentifier ServiceIdentifier { get; }
+            if (ParameterDefaultValue.TryGetDefaultValue(parameter, out object? defaultValue))
+            {
+                callSite = new ConstantCallSite(parameterType, defaultValue);
+                return true;
+            }
 
-            public bool ResolvedFromDefault { get; }
+            if (throwIfCallSiteNotFound)
+            {
+                throw new InvalidOperationException(SR.Format(SR.CannotResolveService,
+                    parameterType,
+                    implementationType));
+            }
+
+            callSite = null;
+            return false;
         }
 
         /// <summary>
