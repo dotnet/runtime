@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number)
 {
 #ifdef MULTIPLE_HEAPS
@@ -334,6 +344,7 @@ bool gc_heap::decommit_step (uint64_t step_milliseconds)
         decommit_size += hp->decommit_ephemeral_segment_pages_step ();
     }
 #endif //MULTIPLE_HEAPS
+
     return (decommit_size != 0);
 }
 
@@ -501,3 +512,5 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
 }
 
 #endif //MULTIPLE_HEAPS
+
+} // namespace WKS/SVR
