@@ -48,6 +48,7 @@ namespace System.Tests
         //
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void op_AdditionTest()
         {
             AssertBitwiseEqual(Half.NegativeInfinity, AdditionOperatorsHelper<Half, Half, Half>.op_Addition(Half.NegativeInfinity, One));
@@ -68,6 +69,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void op_CheckedAdditionTest()
         {
             AssertBitwiseEqual(Half.NegativeInfinity, AdditionOperatorsHelper<Half, Half, Half>.op_CheckedAddition(Half.NegativeInfinity, One));
@@ -237,6 +239,7 @@ namespace System.Tests
         //
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void op_DecrementTest()
         {
             AssertBitwiseEqual(Half.NegativeInfinity, DecrementOperatorsHelper<Half>.op_Decrement(Half.NegativeInfinity));
@@ -257,6 +260,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void op_CheckedDecrementTest()
         {
             AssertBitwiseEqual(Half.NegativeInfinity, DecrementOperatorsHelper<Half>.op_CheckedDecrement(Half.NegativeInfinity));
@@ -281,6 +285,7 @@ namespace System.Tests
         //
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void op_DivisionTest()
         {
             AssertBitwiseEqual(Half.NegativeInfinity, DivisionOperatorsHelper<Half, Half, Half>.op_Division(Half.NegativeInfinity, Two));
@@ -301,6 +306,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void op_CheckedDivisionTest()
         {
             AssertBitwiseEqual(Half.NegativeInfinity, DivisionOperatorsHelper<Half, Half, Half>.op_CheckedDivision(Half.NegativeInfinity, Two));
@@ -737,6 +743,7 @@ namespace System.Tests
         //
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void op_IncrementTest()
         {
             AssertBitwiseEqual(Half.NegativeInfinity, IncrementOperatorsHelper<Half>.op_Increment(Half.NegativeInfinity));
@@ -757,6 +764,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void op_CheckedIncrementTest()
         {
             AssertBitwiseEqual(Half.NegativeInfinity, IncrementOperatorsHelper<Half>.op_CheckedIncrement(Half.NegativeInfinity));
@@ -837,6 +845,7 @@ namespace System.Tests
         //
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void op_MultiplyTest()
         {
             AssertBitwiseEqual(Half.NegativeInfinity, MultiplyOperatorsHelper<Half, Half, Half>.op_Multiply(Half.NegativeInfinity, Two));
@@ -857,6 +866,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void op_CheckedMultiplyTest()
         {
             AssertBitwiseEqual(Half.NegativeInfinity, MultiplyOperatorsHelper<Half, Half, Half>.op_CheckedMultiply(Half.NegativeInfinity, Two));
@@ -2341,6 +2351,7 @@ namespace System.Tests
         //
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void op_SubtractionTest()
         {
             AssertBitwiseEqual(Half.NegativeInfinity, SubtractionOperatorsHelper<Half, Half, Half>.op_Subtraction(Half.NegativeInfinity, One));
@@ -2361,6 +2372,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void op_CheckedSubtractionTest()
         {
             AssertBitwiseEqual(Half.NegativeInfinity, SubtractionOperatorsHelper<Half, Half, Half>.op_CheckedSubtraction(Half.NegativeInfinity, One));
