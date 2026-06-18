@@ -40,12 +40,13 @@ uint GetSizeOfStackParameterArea(IGCInfoHandle handle);
 uint GetCalleePoppedArgumentsSize(IGCInfoHandle handle);
 
 // Returns the list of interruptible code offset ranges from the GCInfo
-// (not implemented for x86 — x86 encodes per-offset transitions rather than explicit ranges).
+// (x86 reports one range covering the post-prolog body for fully-interruptible
+// methods, or single-byte ranges at each call site for partially-interruptible
+// methods -- see the x86 specifics section).
 IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle);
 
 // Returns all live GC slots at the given instruction offset
-// (not implemented for x86 — see X86GCInfo for the underlying transition data; the cDAC
-// adapter is future work).
+// (x86 has its own decoder; see the x86 specifics section).
 IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options);
 ```
 
