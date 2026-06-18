@@ -62,6 +62,7 @@ internal sealed class PInvokeComparer : IEqualityComparer<PInvoke>
 internal sealed class PInvokeCollector {
     private readonly Dictionary<Assembly, bool> _assemblyDisableRuntimeMarshallingAttributeCache = new();
     private readonly Dictionary<Type, bool> _typeUnsupportedOnPlatformCache = new();
+    private readonly Dictionary<Assembly, bool> _assemblyUnsupportedOnPlatformCache = new();
     private readonly string _targetOS;
     private LogAdapter Log { get; init; }
 
@@ -106,7 +107,7 @@ internal sealed class PInvokeCollector {
         {
             if ((method.Attributes & MethodAttributes.PinvokeImpl) != 0)
             {
-                if (IsUnsupportedOnPlatform(method.DeclaringType))
+                if (IsUnsupportedOnPlatform(method))
                     return;
 
                 var dllimport = method.CustomAttributes.First(attr => attr.AttributeType.Name == "DllImportAttribute");
@@ -131,7 +132,7 @@ internal sealed class PInvokeCollector {
             if (!MethodHasCallbackAttributes(method))
                 return false;
 
-            if (IsUnsupportedOnPlatform(method.DeclaringType))
+            if (IsUnsupportedOnPlatform(method))
                 return false;
 
             if (TryIsMethodGetParametersUnsupported(method, out string? reason))
@@ -218,48 +219,100 @@ internal sealed class PInvokeCollector {
         return value;
     }
 
+    private bool IsUnsupportedOnPlatform(MethodInfo method)
+    {
+        PlatformSupport methodResult = EvaluatePlatformAttributes(CustomAttributeData.GetCustomAttributes(method));
+        if (methodResult == PlatformSupport.Unsupported)
+            return true;
+        if (methodResult == PlatformSupport.Supported)
+            return false;
+
+        return IsUnsupportedOnPlatform(method.DeclaringType);
+    }
+
     private bool IsUnsupportedOnPlatform(Type? type)
     {
         if (type is null)
             return false;
 
-        if (!_typeUnsupportedOnPlatformCache.TryGetValue(type, out bool value))
+        if (_typeUnsupportedOnPlatformCache.TryGetValue(type, out bool cached))
+            return cached;
+
+        bool value;
+        PlatformSupport typeResult = EvaluatePlatformAttributes(CustomAttributeData.GetCustomAttributes(type));
+        if (typeResult == PlatformSupport.Unsupported)
+        {
+            value = true;
+        }
+        else if (typeResult == PlatformSupport.Supported)
         {
             value = false;
-            bool hasSupportedOSPlatform = false;
-            bool hasSupportedTarget = false;
-            foreach (CustomAttributeData cattr in CustomAttributeData.GetCustomAttributes(type))
-            {
-                try
-                {
-                    if (cattr.AttributeType.FullName == "System.Runtime.Versioning.UnsupportedOSPlatformAttribute" &&
-                        cattr.ConstructorArguments.Count > 0 &&
-                        cattr.ConstructorArguments[0].Value?.ToString() == _targetOS)
-                    {
-                        value = true;
-                        break;
-                    }
-                    if (cattr.AttributeType.FullName == "System.Runtime.Versioning.SupportedOSPlatformAttribute" &&
-                        cattr.ConstructorArguments.Count > 0)
-                    {
-                        hasSupportedOSPlatform = true;
-                        if (cattr.ConstructorArguments[0].Value?.ToString() == _targetOS)
-                            hasSupportedTarget = true;
-                    }
-                }
-                catch
-                {
-                    // Assembly not found, ignore
-                }
-            }
+        }
+        else if (type.DeclaringType is not null)
+        {
+            value = IsUnsupportedOnPlatform(type.DeclaringType);
+        }
+        else
+        {
+            value = IsAssemblyUnsupportedOnPlatform(type.Assembly);
+        }
 
-            if (!value && hasSupportedOSPlatform && !hasSupportedTarget)
-                value = true;
+        _typeUnsupportedOnPlatformCache[type] = value;
+        return value;
+    }
 
-            _typeUnsupportedOnPlatformCache[type] = value;
+    private bool IsAssemblyUnsupportedOnPlatform(Assembly assembly)
+    {
+        if (!_assemblyUnsupportedOnPlatformCache.TryGetValue(assembly, out bool value))
+        {
+            PlatformSupport asmResult = EvaluatePlatformAttributes(assembly.GetCustomAttributesData());
+            value = asmResult == PlatformSupport.Unsupported;
+            _assemblyUnsupportedOnPlatformCache[assembly] = value;
         }
 
         return value;
+    }
+
+    private enum PlatformSupport
+    {
+        Unknown,     // No platform attributes were observed at this scope
+        Supported,   // Explicitly supported here (target appears in a SupportedOSPlatform list)
+        Unsupported, // Explicitly unsupported here (target matches UnsupportedOSPlatform, or
+                     // SupportedOSPlatform is present and does not list the target)
+    }
+
+    private PlatformSupport EvaluatePlatformAttributes(IList<CustomAttributeData> attrs)
+    {
+        bool hasSupportedOSPlatform = false;
+        bool hasSupportedTarget = false;
+        foreach (CustomAttributeData cattr in attrs)
+        {
+            try
+            {
+                if (cattr.AttributeType.FullName == "System.Runtime.Versioning.UnsupportedOSPlatformAttribute" &&
+                    cattr.ConstructorArguments.Count > 0 &&
+                    cattr.ConstructorArguments[0].Value?.ToString() == _targetOS)
+                {
+                    return PlatformSupport.Unsupported;
+                }
+                if (cattr.AttributeType.FullName == "System.Runtime.Versioning.SupportedOSPlatformAttribute" &&
+                    cattr.ConstructorArguments.Count > 0)
+                {
+                    hasSupportedOSPlatform = true;
+                    if (cattr.ConstructorArguments[0].Value?.ToString() == _targetOS)
+                        hasSupportedTarget = true;
+                }
+            }
+            catch
+            {
+                // Assembly not found, ignore
+            }
+        }
+
+        if (hasSupportedOSPlatform)
+            return hasSupportedTarget ? PlatformSupport.Supported : PlatformSupport.Unsupported;
+
+        return PlatformSupport.Unknown;
     }
 }
 
