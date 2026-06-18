@@ -121,7 +121,7 @@ namespace System.Threading
                     // Check here rather than at entry to keep the hot path as tight as possible.
                     // If the id doesn't fit, we fall through and call AcquireUncommon outside the
                     // fixed block to avoid keeping the object pinned while potentially spinning.
-                    if ((uint)currentThreadID < (uint)SBLK_MASK_LOCK_THREADID)
+                    if ((uint)currentThreadID <= (uint)SBLK_MASK_LOCK_THREADID)
                     {
                         if (Interlocked.CompareExchange(pHeader, oldBits | currentThreadID, oldBits) == oldBits)
                         {
@@ -149,7 +149,7 @@ namespace System.Threading
         {
             // A thin lock can only store a thread id that fits in the thread-id field.
             // This check is deferred to here (rather than at entry) because it is unusual to be true.
-            if ((uint)currentThreadID >= (uint)SBLK_MASK_LOCK_THREADID)
+            if ((uint)currentThreadID > (uint)SBLK_MASK_LOCK_THREADID)
                 return HeaderLockResult.UseSlowPath;
 
             // A one-shot acquire does not spin while the lock is owned by another thread, but it still
@@ -264,7 +264,7 @@ namespace System.Threading
                     // field; ids that don't fit (including the uninitialized -1 sentinel) can never own a
                     // thin lock and are routed to the checks below. This guard is independent of the header
                     // load, so it can be evaluated while the header is fetched from memory.
-                    if ((currentThreadID & ~SBLK_MASK_LOCK_THREADID) == 0 &&
+                    if ((uint)currentThreadID <= (uint)SBLK_MASK_LOCK_THREADID &&
                         (oldBits & (BIT_SBLK_SPIN_LOCK | BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | SBLK_MASK_LOCK_RECLEVEL | SBLK_MASK_LOCK_THREADID)) == currentThreadID)
                     {
                         // Release entirely. Since the recursion level is 0, clearing the owning
