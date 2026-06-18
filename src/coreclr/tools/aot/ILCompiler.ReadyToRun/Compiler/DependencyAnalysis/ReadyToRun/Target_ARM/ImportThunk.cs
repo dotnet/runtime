@@ -38,8 +38,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (!relocsOnly)
                     {
                         int index = _containingImportSection.IndexFromBeginningOfArray;
-                        // mov r12, #index
-                        instructionEncoder.EmitMOV(Register.R12, index);
+                        // movw r12, #index
+                        instructionEncoder.EmitMOV(Register.R12, checked((ushort)index));
                         // push r12
                         instructionEncoder.EmitPUSH(Register.R12);
                     }

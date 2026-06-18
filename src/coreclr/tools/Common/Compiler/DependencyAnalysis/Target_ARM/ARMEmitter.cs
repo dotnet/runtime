@@ -41,6 +41,17 @@ namespace ILCompiler.DependencyAnalysis.ARM
             Builder.EmitShort((short)(0x2000 + ((byte)reg << 8) + immediate));
         }
 
+        // movw reg, #imm16
+        // reg range: [0..12, LR, PC]
+        // immediate range: [0..65535]
+        public void EmitMOV(Register reg, ushort immediate)
+        {
+            Debug.Assert(IsValidReg(reg));
+            int imm16 = immediate;
+            Builder.EmitShort((short)(0xF240 | (((imm16 >> 11) & 1) << 10) | ((imm16 >> 12) & 0xF)));
+            Builder.EmitShort((short)((((imm16 >> 8) & 7) << 12) | ((byte)reg << 8) | (imm16 & 0xFF)));
+        }
+
         // cmp reg, immediate
         // reg range: [0..7]
         // immediage range: [0..255]
