@@ -7243,7 +7243,7 @@ public sealed unsafe partial class SOSDacImpl
                 args[i] = msg.Args[(int)i].ToClrDataAddress(_target);
 
             *pFetched = toFetch;
-            return HResults.S_OK;
+            return toFetch < argCount ? HResults.S_FALSE : HResults.S_OK;
         }
 
         int ISOSEnum.Skip(uint count)
