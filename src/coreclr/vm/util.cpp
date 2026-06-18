@@ -140,8 +140,22 @@ char* GetCrashLogBuffer(size_t* pLength)
         : ARRAY_SIZE(s_crashLogBuffer) - 1;
     s_crashLogBuffer[nullTerminatorPos] = '\0';
 
-    *pLength = s_crashLogPos;
+    *pLength = nullTerminatorPos - 1;
     return s_crashLogBuffer;
+}
+
+static void AppendToCrashLog(const char* pszString, size_t len)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    size_t remaining = ARRAY_SIZE(s_crashLogBuffer) - s_crashLogPos;
+    if (len > remaining)
+        len = remaining;
+    if (len > 0)
+    {
+        memcpy(s_crashLogBuffer + s_crashLogPos, pszString, len);
+        s_crashLogPos += len;
+    }
 }
 
 void PrintToStdErrA(const char *pszString)
@@ -153,20 +167,13 @@ void PrintToStdErrA(const char *pszString)
         FORBID_FAULT;
     }
     CONTRACTL_END
+    _ASSERTE(pszString != NULL);
 
     minipal_log_write_error(pszString);
 
     if (s_crashLogActive)
     {
-        size_t len = strlen(pszString);
-        size_t remaining = ARRAY_SIZE(s_crashLogBuffer) - s_crashLogPos;
-        if (len > remaining)
-            len = remaining;
-        if (len > 0)
-        {
-            memcpy(s_crashLogBuffer + s_crashLogPos, pszString, len);
-            s_crashLogPos += len;
-        }
+        AppendToCrashLog(pszString, strlen(pszString));
     }
 }
 
@@ -179,10 +186,27 @@ void PrintToStdErrW(const WCHAR *pwzString)
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
+    _ASSERTE(pwzString != NULL);
 
-    MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, GetConsoleOutputCP());
+    UINT codepage = GetConsoleOutputCP();
 
-    PrintToStdErrA(pStr);
+    // Write to stderr using the console codepage for correct display.
+    MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, codepage);
+    minipal_log_write_error(pStr);
+
+    // Write to the crash log buffer as UTF-8 to honor the FatalErrorHandling.h contract.
+    if (s_crashLogActive)
+    {
+        if (codepage == CP_UTF8)
+        {
+            AppendToCrashLog(pStr, strlen(pStr));
+        }
+        else
+        {
+            MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pUtf8, pwzString, CP_UTF8);
+            AppendToCrashLog(pUtf8, strlen(pUtf8));
+        }
+    }
 }
 //----------------------------------------------------------------------------
 

@@ -64,7 +64,16 @@ namespace System
                 ReadOnlySpan<char> source = text.AsSpan();
                 Span<byte> destination = s_crashLogBuffer.AsSpan(s_crashLogLength, remaining);
 
-                int bytesUsed = Encoding.UTF8.GetBytes(source, destination);
+                // TryGetBytes is all-or-nothing — if the full string doesn't fit,
+                // truncate the source to a conservative estimate that will fit.
+                if (!Encoding.UTF8.TryGetBytes(source, destination, out int bytesUsed))
+                {
+                    int maxChars = remaining / Encoding.UTF8.GetMaxByteCount(1);
+                    if (maxChars <= 0)
+                        return;
+                    source = source.Slice(0, maxChars);
+                    bytesUsed = Encoding.UTF8.GetBytes(source, destination);
+                }
                 s_crashLogLength += bytesUsed;
             }
             catch
