@@ -45,7 +45,11 @@ RuntimeInfoArchitecture GetTargetArchitecture();
 RuntimeInfoOperatingSystem GetTargetOperatingSystem();
 
 // Gets the target's runtime flavor. If this information is not
-// available returns Unknown.
+// available returns Unknown. This is intended to be descriptive information for
+// users and provides no guarantees how the underlying runtime works. Over time
+// implementation details may change dramatically. For determining what features or 
+// invariants a given runtime implementation supports look at which contracts are 
+// implemented or call contract APIs that probe for specific capabilities.
 RuntimeInfoRuntimeFlavor GetRuntimeFlavor();
 
 // Returns the runtime's RecommendedReaderVersion global. Returns 0 if the global is absent.
