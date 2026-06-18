@@ -345,7 +345,6 @@ export function postRunWorker () {
 
         // signal next stage
         runtimeHelpers.runtimeReady = false;
-        runtimeHelpers.afterPreRun = createPromiseController<void>();
         endMeasure(mark, MeasuredBlock.postRunWorker);
     } catch (err) {
         mono_log_error("postRunWorker() failed", err);
