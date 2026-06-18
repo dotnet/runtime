@@ -197,6 +197,7 @@ public class GCArgTable
     /// </summary>
     private void GetTransitionsEbpFrame(ref TargetPointer offset)
     {
+        uint curOffs = 0;
         while (true)
         {
             uint argMask = 0, byrefArgMask = 0;
@@ -207,7 +208,6 @@ public class GCArgTable
             uint argTabSize;
 
             uint val, nxt;
-            uint curOffs = 0;
 
             // Get the next byte and check for a 'special' entry
             uint encType = _target.Read<byte>(offset++);
