@@ -271,3 +271,127 @@ JIT/opt/Tailcall/TailcallVerifyWithPrefix/TailcallVerifyWithPrefix.sh
 # never finishes within the default 120s timeout. Same category as
 # 113574 / Regression_PdbOnly_r_2.
 JIT/opt/Regressions/Regression2_Regressions/Regression2_Regressions.sh
+
+# =============================================================================
+# Loader
+# =============================================================================
+
+# ----- AssemblyDependencyResolver / hostpolicy probing -----------------------
+#
+# Both rely on hostpolicy / hostfxr behavior that doesn't exist on
+# WASI (no dlopen for hostpolicy.dll, no host probing). Real
+# host-infrastructure gap.
+Loader/AssemblyDependencyResolver/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests.sh
+Loader/AssemblyDependencyResolver/MissingHostPolicyTests/MissingHostPolicyTests/MissingHostPolicyTests.sh
+
+# ----- collectible AssemblyLoadContext (PlatformNotSupported on WASI) --------
+#
+# All three exercise full collectible-ALC unloading (TLS-static
+# collection, per-ALC statics). The WASI bring-up does not implement
+# the full unload path; CoreLib raises PlatformNotSupportedException.
+# (AssemblyOnDisk also hits a wasi-libc IOException("Function not
+# implemented") while preparing its on-disk staging, before it even
+# reaches the unload codepath.)
+Loader/CollectibleAssemblies/AssemblyOnDisk/AssemblyOnDisk/AssemblyOnDisk.sh
+Loader/CollectibleAssemblies/Statics/CollectibleStatics/CollectibleStatics.sh
+Loader/CollectibleAssemblies/Statics/CollectibleTLSStaticCollection/CollectibleTLSStaticCollection.sh
+
+# ----- TPA / external-probe / SYSTEM_CORELIB_DIRECTORY -----------------------
+#
+# These tests rely on the host configuring TRUSTED_PLATFORM_ASSEMBLIES
+# and SYSTEM_CORELIB_DIRECTORY through the standard hostpolicy. On
+# WASI corerun the bring-up uses CORE_ROOT-based probing and these
+# assertions do not hold (e.g. corerun does not honor
+# -p SYSTEM_CORELIB_DIRECTORY). Real but not bring-up-blocking.
+Loader/ExternalAssemblyProbe/ExternalAssemblyProbe/ExternalAssemblyProbe.sh
+Loader/SystemCoreLibDirectory/SystemCoreLibDirectory/SystemCoreLibDirectory.sh
+
+# ----- native-library probing path tests -------------------------------------
+#
+# Loads a native .so from a configured native-paths directory; WASI
+# has no dynamic loader. Same family as the JIT/Directed pinvoke
+# entries above.
+Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
+
+# ----- self-overriding methodimpl: wasm "uninitialized element" trap ---------
+#
+# REAL BUG. Test runs partially (prints "In MyFoo::DoBarOverride")
+# then traps in CallFunc_This_RetI32_PE -- the portable-entrypoint
+# dispatch for the self-override slot lands on an uninitialized
+# function-table entry. Worth root-causing in the interpreter /
+# methodimpl resolution path. Not a blocker for the bring-up, but the
+# only remaining "real" failure in Loader.
+Loader/classloader/MethodImpl/self_override5/self_override5.sh
+
+# ----- CircularCctor*BFI: threading-driven cctor races -----------------------
+#
+# All four BFI variants spin up multiple Thread.Start() workers to
+# race class constructors. Hits the standard PlatformNotSupported on
+# Thread.Start before the cctor logic kicks in.
+Loader/classloader/TypeInitialization/CircularCctors/CircularCctorFourThreadsBFI/CircularCctorFourThreadsBFI.sh
+Loader/classloader/TypeInitialization/CircularCctors/CircularCctorThreeThreads01BFI/CircularCctorThreeThreads01BFI.sh
+Loader/classloader/TypeInitialization/CircularCctors/CircularCctorThreeThreads02BFI/CircularCctorThreeThreads02BFI.sh
+Loader/classloader/TypeInitialization/CircularCctors/CircularCctorThreeThreads03BFI/CircularCctorThreeThreads03BFI.sh
+
+# =============================================================================
+# GC
+# =============================================================================
+
+# ----- spawn subprocess to verify GC.Collect side effects --------------------
+#
+# All three Collect_Forced_* variants invoke System.Diagnostics.Process
+# to spawn a child corerun and inspect its GC behavior. Process is
+# .notsupported on WASI (single-process model, no exec()).
+GC/API/GC/Collect_Forced_1/Collect_Forced_1.sh
+GC/API/GC/Collect_Forced_2/Collect_Forced_2.sh
+GC/API/GC/Collect_Forced_3/Collect_Forced_3.sh
+
+# ----- server / configuration-dependent GC API tests -------------------------
+#
+# GetConfigurationVariables expects GCHeapAffinitizeRanges=1 which is
+# a server-GC affinitization setting; WASI builds workstation GC.
+# GetTotalAllocatedBytes raises PlatformNotSupported on the per-thread
+# accumulator path. Callback{,_Svr} and SustainedLowLatency exercise
+# server-GC NoGCRegion / SustainedLowLatency mode and never make
+# progress (timeout) under workstation GC.
+GC/API/GC/GetConfigurationVariables/GetConfigurationVariables.sh
+GC/API/GC/GetTotalAllocatedBytes/GetTotalAllocatedBytes.sh
+GC/API/NoGCRegion/Callback/Callback.sh
+GC/API/NoGCRegion/Callback_Svr/Callback_Svr.sh
+GC/Features/SustainedLowLatency/scenario/scenario.sh
+
+# ----- LOH coverage test -----------------------------------------------------
+#
+# LargeObjectAlloc raises PlatformNotSupportedException early; the
+# test exercises behavior the WASI workstation GC build doesn't expose.
+GC/Coverage/LargeObjectAlloc/LargeObjectAlloc.sh
+
+# ----- threading-driven GC stress tests --------------------------------------
+#
+# All call Thread.Start / new Thread(...) and hit
+# PlatformNotSupportedException from the multithreading guard before
+# they can stress the GC. Same single-threaded WASI block as the
+# JIT/Methodical/threads tests.
+GC/Features/BackgroundGC/foregroundgc/foregroundgc.sh
+GC/Scenarios/BinTree/thdtree/thdtree.sh
+GC/Scenarios/BinTree/thdtreegrowingobj/thdtreegrowingobj.sh
+GC/Scenarios/BinTree/thdtreelivingobj/thdtreelivingobj.sh
+GC/Scenarios/DoublinkList/dlbigleakthd/dlbigleakthd.sh
+GC/Scenarios/LeakGen/leakgenthrd/leakgenthrd.sh
+GC/Scenarios/THDChaos/thdchaos/thdchaos.sh
+GC/Scenarios/THDList/thdlist/thdlist.sh
+
+# ----- finalizer-timeout test (no separate finalizer thread on WASI) ---------
+#
+# Test starts a finalizer that sleeps past the runtime's "finalizer
+# stuck" detection. WASI has no separate FT; the synchronous shutdown
+# pump deadlocks waiting for the sleep to end -> times out.
+GC/Scenarios/FinalizeTimeout/FinalizeTimeout/FinalizeTimeout.sh
+
+# ----- bestfit-finalize: flaky under parallel load ---------------------------
+#
+# Solo runtime is ~115s on the WASM interpreter; under --jobs=12
+# contention from the rest of the GC sweep it slips past the 120s
+# timeout reproducibly. Listed here so the sweep stays clean; passes
+# on a solo retry. Expected to drop once R2R-WASM is on for tests.
+GC/Features/HeapExpansion/bestfit-finalize/bestfit-finalize.sh
