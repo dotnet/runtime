@@ -893,7 +893,7 @@ verification time to the chain building. The input is an absolute instant as Uni
 (seconds since 1970-01-01 UTC), directly convertible to a time_t value.
 
 Return values:
-0 if ctx is NULL or if ctx has no X509_VERIFY_PARAM;
+0 if ctx is NULL, if ctx has no X509_VERIFY_PARAM, or if the time is out of bounds on a 32-bit time environment.
 1 on success.
 */
 int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx, int64_t unixTime)
