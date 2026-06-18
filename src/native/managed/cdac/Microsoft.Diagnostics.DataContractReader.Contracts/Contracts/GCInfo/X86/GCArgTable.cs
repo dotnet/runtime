@@ -453,7 +453,7 @@ public class GCArgTable
                         CallPattern.DecodeCallPattern((val & 0x7f), out callArgCnt, out callRegMask, out callPndMask, out lastSkip);
                         curOffs += lastSkip;
                         SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
-                        AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
+                        AddNewTransition(new StackDepthTransition((int)curOffs, -(int)callArgCnt));
                         break;
 
                     case 5:
@@ -468,7 +468,7 @@ public class GCArgTable
                         lastSkip = CallPattern.CallCommonDelta[(int)(val >> 6)];
                         curOffs += lastSkip;
                         SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
-                        AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
+                        AddNewTransition(new StackDepthTransition((int)curOffs, -(int)callArgCnt));
                         break;
                     case 6:
                         //
@@ -479,7 +479,7 @@ public class GCArgTable
                         callArgCnt = _target.GCDecodeUnsigned(ref offset);
                         callPndMask = _target.GCDecodeUnsigned(ref offset);
                         SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
-                        AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
+                        AddNewTransition(new StackDepthTransition((int)curOffs, -(int)callArgCnt));
                         break;
                     case 7:
                         switch (val & 0x0C)
@@ -509,7 +509,7 @@ public class GCArgTable
                                 offset += 4;
                                 callPndTab = true;
                                 SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
-                                AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
+                                AddNewTransition(new StackDepthTransition((int)curOffs, -(int)callArgCnt));
                                 break;
                             case 0x0C:
                                 return;
