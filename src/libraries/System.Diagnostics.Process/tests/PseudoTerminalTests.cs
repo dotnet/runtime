@@ -15,9 +15,31 @@ namespace System.Diagnostics.Tests
         public static bool IsPseudoTerminalSupported =>
             RemoteExecutor.IsSupported &&
             !PlatformDetection.IsWindowsNanoServer &&
+            IsCreatePseudoConsoleSupported &&
             !PlatformDetection.IsAzureLinux;
 
         private static readonly PseudoTerminalOptions s_testOptions = new(80, 24);
+        private static bool? s_isCreatePseudoConsoleSupported;
+
+        private static bool IsCreatePseudoConsoleSupported =>
+            s_isCreatePseudoConsoleSupported ??= !PlatformDetection.IsWindows || CanCreatePseudoConsole();
+
+        private static bool CanCreatePseudoConsole()
+        {
+            if (!NativeLibrary.TryLoad("kernel32.dll", out nint kernel32))
+            {
+                return false;
+            }
+
+            try
+            {
+                return NativeLibrary.TryGetExport(kernel32, "CreatePseudoConsole", out _);
+            }
+            finally
+            {
+                NativeLibrary.Free(kernel32);
+            }
+        }
 
         [Fact]
         public void Create_WithOptions_Succeeds()
