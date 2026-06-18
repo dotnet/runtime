@@ -160,12 +160,12 @@ steps:
     displayName:  Build BDN Android App
     workingDirectory: $(Build.SourcesDirectory)/maui
 
-  - task: PublishBuildArtifacts@1
+  - task: PublishPipelineArtifact@1
     condition: succeededOrFailed()
     displayName: 'Publish Benchmarks.Droid binlog'
     inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/maui/BenchmarksDroid.binlog
-      artifactName:  ${{ parameters.artifactName }}
+      targetPath: $(Build.SourcesDirectory)/maui/BenchmarksDroid.binlog
+      artifactName:  ${{ parameters.artifactName }}_BenchmarksDroidBinlog_Attempt$(System.JobAttempt)
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:

@@ -18,6 +18,5 @@ steps:
     isOfficialBuild: ${{ parameters.isOfficialBuild }}
     displayName: Publish intermediate artifacts
     inputs:
-      PathtoPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'
-      ArtifactName: IntermediateArtifacts
-      ArtifactType: container
+      targetPath: '$(Build.StagingDirectory)/IntermediateArtifacts'
+      artifactName: IntermediateArtifacts

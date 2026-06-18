@@ -11,18 +11,16 @@ parameters:
 
 steps:
   # Download artifact
-  - task: DownloadBuildArtifacts@0
+  - task: DownloadPipelineArtifact@2
     displayName: 'Download specific ${{ parameters.displayName }}'
     inputs:
       buildType: specific
       project: ${{ parameters.project }}
-      pipeline: ${{ parameters.pipeline }}
+      definition: ${{ parameters.pipeline }}
       buildVersionToDownload: specific
-      branchName: ${{ parameters.branchName }}
-      buildId: ${{ parameters.buildId }}
-      downloadType: single
-      downloadPath: '$(Build.SourcesDirectory)/__download__'
+      pipelineId: ${{ parameters.buildId }}
       artifactName: '${{ parameters.artifactName }}'
+      targetPath: '$(Build.SourcesDirectory)/__download__/${{ parameters.artifactName }}'
 
   # Unzip artifact
   - task: ExtractFiles@1
