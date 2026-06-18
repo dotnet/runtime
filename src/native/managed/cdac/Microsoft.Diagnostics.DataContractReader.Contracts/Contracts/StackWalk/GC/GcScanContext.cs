@@ -10,7 +10,6 @@ internal class GcScanContext
 {
 
     private readonly Target _target;
-    private readonly LinearReadCache _cache;
     private readonly IGC _gc;
     public bool ResolveInteriorPointers { get; }
     public List<StackRefData> StackRefs { get; } = [];
@@ -27,7 +26,6 @@ internal class GcScanContext
     {
         _target = target;
         ResolveInteriorPointers = resolveInteriorPointers;
-        _cache = new LinearReadCache(target);
         _gc = target.Contracts.GC;
     }
 
@@ -118,6 +116,7 @@ internal class GcScanContext
 
     private TargetPointer GetInteriorPointer(TargetPointer obj)
     {
+        TargetPointer outerObj = TargetPointer.Null;
         foreach ((GCHeapSegmentInfo seg, GCHeapData _) in _gc.EnumerateAllSegments())
         {
             if (obj.Value < seg.Start.Value || obj.Value >= seg.End.Value)
@@ -144,11 +143,11 @@ internal class GcScanContext
                 {
                     return TargetPointer.Null;
                 }
-                obj = currentObj;
+                outerObj = currentObj;
                 currentObj = _gc.GetPotentialNextObjectAddress(currentObj, size, seg);
             }
         }
-        return obj;
+        return outerObj;
     }
 
     public void GCReportCallback(TargetPointer ppObj, GcScanFlags flags)

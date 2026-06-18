@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Buffers.Binary;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
