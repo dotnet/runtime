@@ -106,7 +106,6 @@ extends:
           buildConfig: checked
           platforms:
           - osx_arm64
-          - osx_x64
           jobParameters:
             testGroup: innerloop
             readyToRun: true

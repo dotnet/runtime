@@ -87,7 +87,6 @@ extends:
           buildConfig: checked
           platforms:
           - osx_arm64
-          - osx_x64
           jobParameters:
             testGroup: outerloop
             readyToRun: true
