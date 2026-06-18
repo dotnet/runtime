@@ -213,9 +213,10 @@ namespace Microsoft.Win32.SafeHandles
         /// throws <see cref="InvalidOperationException" />.
         /// </remarks>
         /// <exception cref="InvalidOperationException">The process was not started with <see cref="ProcessStartInfo.StartSuspended" /> set to <see langword="true" />, or has already been resumed.</exception>
-        /// <exception cref="PlatformNotSupportedException">The current operating system is not Windows.</exception>
+        /// <exception cref="PlatformNotSupportedException">The current operating system is not supported.</exception>
         /// <exception cref="Win32Exception">The thread could not be resumed.</exception>
         [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("macos")]
         public void Resume() => ResumeCore();
 
         /// <summary>

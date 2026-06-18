@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -17,7 +16,7 @@ internal static partial class Interop
             string filename, string[] argv, IDictionary<string, string?> env, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd,
-            bool startDetached, bool killOnParentExit, SafeHandle[]? inheritedHandles = null)
+            bool startDetached, bool killOnParentExit, bool startSuspended, SafeHandle[]? inheritedHandles = null)
         {
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
@@ -76,7 +75,7 @@ internal static partial class Interop
                         filename, argvPtr, envpPtr, cwd,
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
                         out lpChildPid, stdinRawFd, stdoutRawFd, stderrRawFd,
-                        pInheritedFds, inheritedFdCount, startDetached ? 1 : 0, killOnParentExit ? 1 : 0);
+                        pInheritedFds, inheritedFdCount, startDetached ? 1 : 0, killOnParentExit ? 1 : 0, startSuspended ? 1 : 0);
                 }
                 return result == 0 ? 0 : Marshal.GetLastPInvokeError();
             }
@@ -105,7 +104,7 @@ internal static partial class Interop
             string filename, byte** argv, byte** envp, string? cwd,
             int setUser, uint userId, uint groupId, uint* groups, int groupsLength,
             out int lpChildPid, int stdinFd, int stdoutFd, int stderrFd,
-            int* inheritedFds, int inheritedFdCount, int startDetached, int killOnParentExit);
+            int* inheritedFds, int inheritedFdCount, int startDetached, int killOnParentExit, int startSuspended);
 
         /// <summary>
         /// Allocates a single native memory block containing both a null-terminated pointer array

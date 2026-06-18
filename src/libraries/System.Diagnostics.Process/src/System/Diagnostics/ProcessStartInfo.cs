@@ -158,10 +158,14 @@ namespace System.Diagnostics
         /// <see href="https://learn.microsoft.com/windows/win32/procthread/process-creation-flags">CREATE_SUSPENDED</see> flag.
         /// </para>
         /// <para>
+        /// On macOS, the process is started with the <c>POSIX_SPAWN_START_SUSPENDED</c> flag.
+        /// </para>
+        /// <para>
         /// This property cannot be used together with <see cref="UseShellExecute" /> set to <see langword="true" />.
         /// </para>
         /// </remarks>
         [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("macos")]
         public bool StartSuspended { get; set; }
 
         /// <summary>
@@ -469,7 +473,7 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.StartDetachedNotCompatible);
             }
 
-            if (OperatingSystem.IsWindows() && StartSuspended && UseShellExecute)
+            if ((OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()) && StartSuspended && UseShellExecute)
             {
                 throw new InvalidOperationException(SR.StartSuspendedNotCompatible);
             }

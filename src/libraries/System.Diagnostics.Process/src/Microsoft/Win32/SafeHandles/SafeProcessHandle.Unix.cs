@@ -7,11 +7,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Security;
-using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
@@ -29,6 +26,7 @@ namespace Microsoft.Win32.SafeHandles
         private readonly SafeWaitHandle? _handle;
         private readonly bool _releaseRef;
         private readonly ProcessWaitState.Holder? _waitStateHolder;
+        private int _startedSuspended; // 1 = started suspended but not yet resumed; 0 = not suspended or already resumed
 
         internal SafeProcessHandle(ProcessWaitState.Holder waitStateHolder) : base(ownsHandle: true)
         {
@@ -136,9 +134,16 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
-        private static void ResumeCore()
+        private void ResumeCore()
         {
-            throw new PlatformNotSupportedException();
+            Validate();
+
+            if (Interlocked.Exchange(ref _startedSuspended, 0) != 1)
+            {
+                throw new InvalidOperationException(SR.ProcessNotStartedSuspended);
+            }
+
+            SignalCore(PosixSignal.SIGCONT);
         }
 
         private ProcessExitStatus WaitForExitCore()
@@ -362,8 +367,8 @@ namespace Microsoft.Win32.SafeHandles
                     resolvedFilename, argv, env, cwd,
                     setCredentials, userId, groupId, groups,
                     out childPid, stdinHandle, stdoutHandle, stderrHandle,
-#pragma warning disable CA1416 // KillOnParentExit getter works on all platforms; the native shim is a no-op where unsupported
-                    startInfo.StartDetached, startInfo.KillOnParentExit, inheritedHandles);
+#pragma warning disable CA1416 // KillOnParentExit/StartSuspended getters work on all platforms; the native shim is a no-op where unsupported
+                    startInfo.StartDetached, startInfo.KillOnParentExit, startInfo.StartSuspended, inheritedHandles);
 #pragma warning restore CA1416
 
                 if (errno == 0)
@@ -401,7 +406,15 @@ namespace Microsoft.Win32.SafeHandles
                 throw ProcessUtils.CreateExceptionForErrorStartingProcess(new Interop.ErrorInfo(errno).GetErrorMessage(), errno, resolvedFilename, cwd);
             }
 
-            return new SafeProcessHandle(waitStateHolder!);
+            SafeProcessHandle processHandle = new SafeProcessHandle(waitStateHolder!);
+#pragma warning disable CA1416 // StartSuspended getter works on all platforms; the native shim is a no-op where unsupported
+            if (startInfo.StartSuspended)
+            {
+                processHandle._startedSuspended = 1;
+            }
+#pragma warning restore CA1416
+
+            return processHandle;
         }
     }
 }

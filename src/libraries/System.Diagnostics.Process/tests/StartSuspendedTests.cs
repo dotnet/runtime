@@ -12,7 +12,7 @@ using Xunit;
 namespace System.Diagnostics.Tests
 {
     [ConditionalClass(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
     public class StartSuspendedTests : ProcessTestBase
     {
         [ConditionalFact]
@@ -191,14 +191,14 @@ namespace System.Diagnostics.Tests
         }
     }
 
-    public class StartSuspendedTests_NonWindows : ProcessTestBase
+    public class StartSuspendedTests_NonWindowsNonMacOS : ProcessTestBase
     {
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Resume throws PlatformNotSupportedException on non-Windows")]
-        public void Resume_OnNonWindows_ThrowsPlatformNotSupportedException()
+        [SkipOnPlatform(TestPlatforms.Windows | TestPlatforms.OSX, "Resume is supported on Windows and macOS")]
+        public void Resume_OnNonWindowsNonMacOS_ThrowsInvalidOperationException()
         {
             using SafeProcessHandle handle = new();
-            Assert.Throws<PlatformNotSupportedException>(() => handle.Resume());
+            Assert.Throws<InvalidOperationException>(() => handle.Resume());
         }
     }
 }
