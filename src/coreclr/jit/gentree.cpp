@@ -261,9 +261,11 @@ void GenTree::InitNodeSize()
 #if USE_HELPERS_FOR_INT_DIV
     GenTree::s_gtNodeSizes[GT_DIV]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_UDIV]          = TREE_NODE_SZ_LARGE;
+#endif // USE_HELPERS_FOR_INT_DIV
+#ifdef TARGET_ARM
     GenTree::s_gtNodeSizes[GT_MOD]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_UMOD]          = TREE_NODE_SZ_LARGE;
-#endif
+#endif // TARGET_ARM
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     GenTree::s_gtNodeSizes[GT_PUTARG_STK]    = TREE_NODE_SZ_LARGE;
@@ -13152,6 +13154,20 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     const char* ilName = nullptr;
 
     unsigned ilNum = compMap2ILvarNum(lclNum);
+#if defined(TARGET_WASM)
+    int wasmSpillSlotIndex = -1;
+    if (m_wasmSpillSlots != nullptr)
+    {
+        for (unsigned i = 0; i < m_wasmSpillSlots->size(); i++)
+        {
+            if (m_wasmSpillSlots->at(i).lclNum == lclNum)
+            {
+                wasmSpillSlotIndex = i;
+                break;
+            }
+        }
+    }
+#endif
 
     if (ilNum == (unsigned)ICorDebugInfo::RETBUF_ILNUM)
     {
@@ -13221,12 +13237,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             {
                 ilName = "AsyncCont";
             }
-#if defined(TARGET_WASM)
-            else if (lclNum == lvaWasmSpArg)
-            {
-                ilName = "SP";
-            }
-#endif // defined(TARGET_WASM)
             else
             {
                 ilKind = "tmp";
@@ -13267,6 +13277,26 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             ilNum -= info.compILargsCount;
         }
     }
+
+#if defined(TARGET_WASM)
+    if (lclNum == lvaWasmSpArg)
+    {
+        ilName = "SP";
+    }
+    else if (lclNum == lvaWasmVirtualIP)
+    {
+        ilName = "VirtualIP";
+    }
+    else if (lclNum == lvaWasmFunctionIndex)
+    {
+        ilName = "FuncIndex";
+    }
+    else if (wasmSpillSlotIndex > -1)
+    {
+        ilKind = "spill";
+        ilNum  = wasmSpillSlotIndex;
+    }
+#endif // defined(TARGET_WASM)
 
     *ilKindOut = ilKind;
     *ilNameOut = ilName;

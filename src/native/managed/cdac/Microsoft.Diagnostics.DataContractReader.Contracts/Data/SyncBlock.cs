@@ -12,6 +12,7 @@ internal sealed partial class SyncBlock : IData<SyncBlock>
 
     public InteropSyncBlockInfo? InteropInfo { get; private set; }
     public ObjectHandle? Lock { get; private set; }
+    public TargetPointer? EnCInfo { get; private set; }
 
     partial void OnInit(Target target, TargetPointer address)
     {
@@ -23,5 +24,12 @@ internal sealed partial class SyncBlock : IData<SyncBlock>
         ObjectHandle lockHandle = target.ReadDataField<ObjectHandle>(address, type, nameof(Lock));
         if (lockHandle.Handle != TargetPointer.Null)
             Lock = lockHandle;
+
+        if (type.Fields.ContainsKey(nameof(EnCInfo)))
+        {
+            TargetPointer encInfoPointer = target.ReadPointerField(address, type, nameof(EnCInfo));
+            if (encInfoPointer != TargetPointer.Null)
+                EnCInfo = encInfoPointer;
+        }
     }
 }

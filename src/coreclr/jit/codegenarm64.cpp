@@ -3512,7 +3512,6 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
     assert(tree->OperIs(GT_DIV, GT_UDIV));
 
     var_types targetType = tree->TypeGet();
-    emitter*  emit       = GetEmitter();
 
     genConsumeOperands(tree);
 
@@ -3557,32 +3556,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         // (MinInt / -1) => ArithmeticException
         if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
         {
-            // Signed-division might overflow.
-
-            assert(tree->OperIs(GT_DIV));
-            assert(!divisorOp->IsIntegralConst(0));
-
-            BasicBlock* sdivLabel  = genCreateTempLabel();
-            GenTree*    dividendOp = tree->gtGetOp1();
-
-            // Check if the divisor is not -1 branch to 'sdivLabel'
-            emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
-
-            inst_JMP(EJ_ne, sdivLabel);
-            // If control flow continues past here the 'divisorReg' is known to be -1
-
-            regNumber dividendReg = dividendOp->GetRegNum();
-            // At this point the divisor is known to be -1
-            //
-            // Issue the 'cmp dividendReg, 1' instruction.
-            // This is an alias to 'subs zr, dividendReg, 1' on ARM64 itself.
-            // This will set the V (overflow) flags only when dividendReg is MinInt
-            //
-            emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
-            genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flags is set throw
-                                                          // ArithmeticException
-
-            genDefineTempLabel(sdivLabel);
+            genCodeForDivModOverflowCheck(tree);
         }
 
         genCodeForBinary(tree); // Generate the sdiv instruction

@@ -278,7 +278,7 @@ Title:
 Labels:
 
 - `Known Build Error`
-- `blocking-clean-ci`
+- `blocking-clean-ci` — or `blocking-clean-ci-optional` when the failure comes from an optional rolling pipeline outside the required `runtime` / `runtime-extra-platforms` gate (the JIT / GC / PGO stress-mode pipelines marked `optional-ci` in the scanner's pipeline table). Apply exactly one of the two.
 
 ````markdown
 ## Build Information
