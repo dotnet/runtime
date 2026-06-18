@@ -279,7 +279,7 @@ public:
     HRESULT STDMETHODCALLTYPE GetCollectibleTypeStaticAddress(VMPTR_FieldDesc vmField, OUT CORDB_ADDRESS * pRetVal);
 
     // Get information about a field added with Edit And Continue.
-    HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData, OUT BOOL * pfStatic);
+    HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData);
 
     // EnumerateTypeHandleParams gets the necessary data for a type handle, i.e. its type
     // parameters, e.g. "String" and "List<int>" from the type handle for
@@ -573,7 +573,6 @@ private:
 // ============================================================================
 
     using ClrDataAccess::GetModuleData;
-    using ClrDataAccess::GetAddressType;
 
 public:
     // Get the full path and file name to the assembly's manifest module.
@@ -599,8 +598,8 @@ public:
 
     HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule, OUT BOOL * pIsModuleLoaded);
 
-    // Get the "type" of address.
-    HRESULT STDMETHODCALLTYPE GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal);
+    // Get whether the specified address is managed code.
+    HRESULT STDMETHODCALLTYPE IsManagedCode(CORDB_ADDRESS address, OUT BOOL * pIsManaged);
 
 
     // Enumerate the assemblies in the appdomain.

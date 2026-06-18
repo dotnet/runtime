@@ -1819,7 +1819,6 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
     }
 }
 
-#ifndef TARGET_WASM
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // genConsumeOperands: Do liveness update for the operands of a multi-operand node,
@@ -1840,6 +1839,7 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
 //                      Also loads in the right register the addresses of the
