@@ -148,12 +148,16 @@ baseservices/exceptions/regressions/V1/SEH/VJ/RecursiveException/RecursiveExcept
 
 # ----- finalization-dependent: ConditionalWeakTable / dependent handles ------
 #
-# Dev10_535767 is a GC stress test for ConditionalWeakTable/dependent
-# handles that relies on finalizers running on demand from a worker
-# thread. WASI dispatches finalization through WasiEventLoop; without
-# the host loop ticking the test never observes its expected drops.
-# Same blocker as the Finalization smoke test in known-broken/.
-baseservices/compilerservices/dynamicobjectproperties/Dev10_535767/Dev10_535767.sh
+# (RESOLVED) Dev10_535767 stresses ConditionalWeakTable + dependent
+# handles and depends on GC.WaitForPendingFinalizers actually draining
+# the F-reachable queue. That QCall used to be a no-op on WASM (no
+# separate finalizer thread, no host event loop on WASI), so the test
+# never observed its expected drops. With FinalizerThread::
+# FinalizerThreadWait pumping FinalizerThreadWorkerIteration
+# synchronously on TARGET_WASM, this test passes locally — leaving as
+# a comment so future regressions are easy to spot, no entry below.
+#
+# baseservices/compilerservices/dynamicobjectproperties/Dev10_535767/Dev10_535767.sh
 
 # ----- DynamicMethod liveness via worker thread + GC -------------------------
 #
@@ -173,16 +177,18 @@ baseservices/typeequivalence/signatures/nopiatestil/nopiatestil.sh
 # JIT/Methodical
 # =============================================================================
 
-# ----- finalizer-dependent GC tests (no host-loop tick) ----------------------
+# ----- finalizer-dependent GC tests (RESOLVED) --------------------------------
 #
-# Same blocker as the Finalization smoke test and Dev10_535767:
-# GC.WaitForPendingFinalizers does not drain finalizers on WASI
-# without a host event-loop turn. These tests deliberately stress the
-# finalizer queue.
-JIT/Methodical/Arrays/misc/arrres_d/arrres_d.sh
-JIT/Methodical/Arrays/misc/arrres_do/arrres_do.sh
-JIT/Methodical/Arrays/misc/arrres_r/arrres_r.sh
-JIT/Methodical/Arrays/misc/arrres_ro/arrres_ro.sh
+# (RESOLVED) These arrres_* GC stress tests asserted on finalizer
+# observations. With the FinalizerThread::FinalizerThreadWait pump
+# enabled on TARGET_WASM, GC.WaitForPendingFinalizers actually drains
+# the F-reachable queue and they all pass locally. Kept here as a
+# comment marker — no entries below.
+#
+# JIT/Methodical/Arrays/misc/arrres_d/arrres_d.sh
+# JIT/Methodical/Arrays/misc/arrres_do/arrres_do.sh
+# JIT/Methodical/Arrays/misc/arrres_r/arrres_r.sh
+# JIT/Methodical/Arrays/misc/arrres_ro/arrres_ro.sh
 
 # ----- threading (single-threaded WASI by design) -----------------------------
 #
