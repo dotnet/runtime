@@ -1,6 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
+// If every heap's gen2 or gen3 size is less than this threshold we will do a blocking GC.
+const size_t bgc_min_per_heap = 4*1024*1024;
+
 inline
 BOOL is_induced_blocking (gc_reason reason)
 {
@@ -723,66 +736,156 @@ bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
 
 #endif //USE_REGIONS
 
-// The following 2 methods Use integer division to prevent potential floating point exception.
-// FPE may occur if we use floating point division because of speculative execution.
-//
-// Return the percentage of efficiency (between 0 and 100) of the allocator.
-inline
-size_t gc_heap::generation_allocator_efficiency_percent (generation* inst)
+inline BOOL
+gc_heap::dt_low_ephemeral_space_p (gc_tuning_point tp)
 {
-#ifdef DYNAMIC_HEAP_COUNT
-    if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
+    BOOL ret = FALSE;
+
+    switch (tp)
     {
-        uint64_t total_plan_allocated = generation_total_plan_allocated (inst);
-        uint64_t condemned_allocated = generation_condemned_allocated (inst);
-        return ((total_plan_allocated == 0) ? 0 : (100 * (total_plan_allocated - condemned_allocated) / total_plan_allocated));
+        case tuning_deciding_condemned_gen:
+#ifndef USE_REGIONS
+        case tuning_deciding_compaction:
+        case tuning_deciding_expansion:
+#endif //USE_REGIONS
+        case tuning_deciding_full_gc:
+        {
+            ret = (!ephemeral_gen_fit_p (tp));
+            break;
+        }
+#ifndef USE_REGIONS
+        case tuning_deciding_promote_ephemeral:
+        {
+            size_t new_gen0size = approximate_new_allocation();
+            ptrdiff_t plan_ephemeral_size = total_ephemeral_size;
+
+            dprintf (GTC_LOG, ("h%d: plan eph size is %zd, new gen0 is %zd",
+                heap_number, plan_ephemeral_size, new_gen0size));
+            ret = ((soh_segment_size - segment_info_size) < (plan_ephemeral_size + new_gen0size));
+            break;
+        }
+#endif //USE_REGIONS
+        default:
+        {
+            assert (!"invalid tuning reason");
+            break;
+        }
     }
-    else
-#endif //DYNAMIC_HEAP_COUNT
-    {
-        uint64_t free_obj_space = generation_free_obj_space (inst);
-        uint64_t free_list_allocated = generation_free_list_allocated (inst);
-        if ((free_list_allocated + free_obj_space) == 0)
-            return 0;
-        return (size_t)((100 * free_list_allocated) / (free_list_allocated + free_obj_space));
-    }
+
+    return ret;
 }
 
-inline
-size_t gc_heap::generation_unusable_fragmentation (generation* inst, int hn)
+inline BOOL
+gc_heap::dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number)
 {
-#ifdef DYNAMIC_HEAP_COUNT
-    if (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
-    {
-        uint64_t total_plan_allocated = generation_total_plan_allocated (inst);
-        uint64_t condemned_allocated = generation_condemned_allocated (inst);
-        uint64_t unusable_frag = 0;
-        size_t fo_space = (((ptrdiff_t)generation_free_obj_space (inst) < 0) ? 0 : generation_free_obj_space (inst));
+    BOOL ret = FALSE;
 
-        if (total_plan_allocated != 0)
+    switch (tp)
+    {
+        case tuning_deciding_condemned_gen:
         {
-            unusable_frag = fo_space + (condemned_allocated * generation_free_list_space (inst) / total_plan_allocated);
+            if (gen_number == max_generation)
+            {
+                size_t est_maxgen_free = estimated_reclaim (gen_number);
+
+                uint32_t num_heaps = 1;
+#ifdef MULTIPLE_HEAPS
+                num_heaps = gc_heap::n_heaps;
+#endif //MULTIPLE_HEAPS
+
+                size_t min_frag_th = min_reclaim_fragmentation_threshold (num_heaps);
+                dprintf (GTC_LOG, ("h%d, min frag is %zd", heap_number, min_frag_th));
+                ret = (est_maxgen_free >= min_frag_th);
+            }
+            else
+            {
+                assert (0);
+            }
+            break;
         }
 
-        dprintf (3, ("h%d g%d FLa: %Id, ESa: %Id, Ca: %Id | FO: %Id, FL %Id, fl effi %.3f, unusable fl is %Id",
-            hn, inst->gen_num,
-            generation_free_list_allocated (inst), generation_end_seg_allocated (inst), (size_t)condemned_allocated,
-            fo_space, generation_free_list_space (inst),
-            ((total_plan_allocated == 0) ? 1.0 : ((float)(total_plan_allocated - condemned_allocated) / (float)total_plan_allocated)),
-            (size_t)unusable_frag));
+        default:
+            break;
+    }
 
-        return (size_t)unusable_frag;
-    }
-    else
-#endif //DYNAMIC_HEAP_COUNT
+    return ret;
+}
+
+inline BOOL
+gc_heap::dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t available_mem)
+{
+    BOOL ret = FALSE;
+
+    switch (tp)
     {
-        uint64_t free_obj_space = generation_free_obj_space (inst);
-        uint64_t free_list_allocated = generation_free_list_allocated (inst);
-        uint64_t free_list_space = generation_free_list_space (inst);
-        if ((free_list_allocated + free_obj_space) == 0)
-            return 0;
-        return (size_t)(free_obj_space + (free_obj_space * free_list_space) / (free_list_allocated + free_obj_space));
+        case tuning_deciding_condemned_gen:
+        {
+            if (gen_number == max_generation)
+            {
+                dynamic_data* dd = dynamic_data_of (gen_number);
+                float est_frag_ratio = 0;
+                if (dd_current_size (dd) == 0)
+                {
+                    est_frag_ratio = 1;
+                }
+                else if ((dd_fragmentation (dd) == 0) || (dd_fragmentation (dd) + dd_current_size (dd) == 0))
+                {
+                    est_frag_ratio = 0;
+                }
+                else
+                {
+                    est_frag_ratio = (float)dd_fragmentation (dd) / (float)(dd_fragmentation (dd) + dd_current_size (dd));
+                }
+
+                size_t est_frag = (dd_fragmentation (dd) + (size_t)((dd_desired_allocation (dd) - dd_new_allocation (dd)) * est_frag_ratio));
+                dprintf (GTC_LOG, ("h%d: gen%d: current_size is %zd, frag is %zd, est_frag_ratio is %d%%, estimated frag is %zd",
+                    heap_number,
+                    gen_number,
+                    dd_current_size (dd),
+                    dd_fragmentation (dd),
+                    (int)(est_frag_ratio * 100),
+                    est_frag));
+
+                uint32_t num_heaps = 1;
+
+#ifdef MULTIPLE_HEAPS
+                num_heaps = gc_heap::n_heaps;
+#endif //MULTIPLE_HEAPS
+                uint64_t min_frag_th = min_high_fragmentation_threshold(available_mem, num_heaps);
+                ret = (est_frag >= min_frag_th);
+            }
+            else
+            {
+                assert (0);
+            }
+            break;
+        }
+
+        default:
+            break;
     }
+
+    return ret;
+}
+
+inline BOOL
+gc_heap::dt_low_card_table_efficiency_p (gc_tuning_point tp)
+{
+    BOOL ret = FALSE;
+
+    switch (tp)
+    {
+    case tuning_deciding_condemned_gen:
+    {
+        ret = (generation_skip_ratio < generation_skip_ratio_threshold);
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    return ret;
 }
 
 /*
@@ -1974,12 +2077,6 @@ retry:
 
 #endif //!USE_REGIONS
 #ifdef FEATURE_LOH_COMPACTION
-inline
-BOOL gc_heap::loh_pinned_plug_que_empty_p()
-{
-    return (loh_pinned_queue_bos == loh_pinned_queue_tos);
-}
-
 void gc_heap::loh_set_allocator_next_pin()
 {
     if (!(loh_pinned_plug_que_empty_p()))
@@ -2003,12 +2100,6 @@ size_t gc_heap::loh_deque_pinned_plug ()
     size_t m = loh_pinned_queue_bos;
     loh_pinned_queue_bos++;
     return m;
-}
-
-inline
-mark* gc_heap::loh_pinned_plug_of (size_t bos)
-{
-    return &loh_pinned_queue[bos];
 }
 
 inline
@@ -2196,20 +2287,6 @@ BOOL gc_heap::loh_compaction_requested()
 {
     // If hard limit is specified GC will automatically decide if LOH needs to be compacted.
     return (loh_compaction_always_p || (loh_compaction_mode != loh_compaction_default));
-}
-
-inline
-void gc_heap::check_loh_compact_mode (BOOL all_heaps_compacted_p)
-{
-    if (settings.loh_compaction && (loh_compaction_mode == loh_compaction_once))
-    {
-        if (all_heaps_compacted_p)
-        {
-            // If the compaction mode says to compact once and we are going to compact LOH,
-            // we need to revert it back to no compaction.
-            loh_compaction_mode = loh_compaction_default;
-        }
-    }
 }
 
 BOOL gc_heap::plan_loh()
@@ -2482,8 +2559,8 @@ void gc_heap::record_interesting_data_point (interesting_data_point idp)
 #else
     UNREFERENCED_PARAMETER(idp);
 #endif //GC_CONFIG_DRIVEN
-}
 
+}
 #ifdef USE_REGIONS
 void gc_heap::skip_pins_in_alloc_region (generation* consing_gen, int plan_gen_num)
 {
@@ -3222,6 +3299,17 @@ inline void save_allocated(heap_segment* seg)
         heap_segment_saved_allocated (seg) = heap_segment_allocated (seg);
     }
 }
+
+#ifdef USE_INTROSORT
+#define _sort introsort::sort
+#elif defined(USE_VXSORT)
+// in this case we have do_vxsort which takes an additional range that
+// all items to be sorted are contained in
+// so do not #define _sort
+#else //USE_INTROSORT
+#define _sort qsort1
+void qsort1(uint8_t** low, uint8_t** high, unsigned int depth);
+#endif //USE_INTROSORT
 
 void gc_heap::plan_phase (int condemned_gen_number)
 {
@@ -5977,23 +6065,6 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
     }
 }
 
-inline
-void gc_heap::check_demotion_helper_sip (uint8_t** pval, int parent_gen_num, uint8_t* parent_loc)
-{
-    uint8_t* child_object = *pval;
-    if (!is_in_heap_range (child_object))
-        return;
-    assert (child_object != nullptr);
-    int child_object_plan_gen = get_region_plan_gen_num (child_object);
-
-    if (child_object_plan_gen < parent_gen_num)
-    {
-        set_card (card_of (parent_loc));
-    }
-
-    dprintf (3, ("SCS %d, %d", child_object_plan_gen, parent_gen_num));
-}
-
 #endif //USE_REGIONS
 #ifndef USE_REGIONS
 #ifdef SEG_REUSE_STATS
@@ -8367,3 +8438,5 @@ BOOL gc_heap::should_do_sweeping_gc (BOOL compact_p)
 }
 
 #endif //GC_CONFIG_DRIVEN
+
+} // namespace SVR/WKS

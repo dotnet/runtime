@@ -185,6 +185,17 @@ public class SafeArrayMarshallingTest
         SafeArrayNative.Verify2DStringSafeArray(result, rows, cols);
     }
 
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled), nameof(TestLibrary.PlatformDetection.Is64BitProcess))]
+    [SkipOnMono("Requires COM support")]
+    public static void MultidimensionalIntPtrArray_MismatchedNativeElementSize()
+    {
+        // Native VT_I4 SAFEARRAY (4-byte elements) -> managed IntPtr[,] (8-byte elements).
+        Assert.Throws<SafeArrayTypeMismatchException>(() => SafeArrayNative.Create2DIntSafeArrayAsIntPtr(2, 2, out _));
+
+        // Managed IntPtr[,] (8-byte elements) -> native VT_I4 SAFEARRAY (4-byte elements).
+        Assert.Throws<SafeArrayTypeMismatchException>(() => SafeArrayNative.Verify2DIntSafeArrayAsIntPtr(new IntPtr[2, 2], 2, 2));
+    }
+
     private static bool XorArray(bool[] values)
     {
         bool retVal = false;
@@ -329,6 +340,22 @@ class SafeArrayNative
     [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
     public static extern void Verify2DIntSafeArray(
         [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_I4)] int[,] array,
+        int rows,
+        int cols
+    );
+
+    // Deliberately mismatched declarations on 64-bit - the managed element type is IntPtr (8 bytes)
+    // while the native SAFEARRAY element size is 4 bytes.
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false, EntryPoint = "Create2DIntSafeArray")]
+    public static extern void Create2DIntSafeArrayAsIntPtr(
+        int rows,
+        int cols,
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_I4)] out IntPtr[,] result
+    );
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false, EntryPoint = "Verify2DIntSafeArray")]
+    public static extern void Verify2DIntSafeArrayAsIntPtr(
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_I4)] IntPtr[,] array,
         int rows,
         int cols
     );
