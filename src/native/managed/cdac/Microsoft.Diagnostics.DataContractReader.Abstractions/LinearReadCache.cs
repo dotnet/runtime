@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Linear page cache used by the per-object heap walk.
 using System;
-using System.Buffers.Binary;
 using Microsoft.Diagnostics.DataContractReader;
-namespace Microsoft.Diagnostics.DataContractReader.Abstractions;
 
+namespace Microsoft.Diagnostics.DataContractReader.Abstractions;
 public sealed class LinearReadCache
 {
     // Typical page size

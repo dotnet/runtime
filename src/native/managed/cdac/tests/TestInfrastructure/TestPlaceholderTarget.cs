@@ -657,6 +657,6 @@ public class TestPlaceholderTarget : Target
         public override void Flush(FlushScope scope) { }
     }
 
-    public override void ActivateCache() => throw new NotImplementedException();
-    public override void DeactivateCache() => throw new NotImplementedException();
+    public override void ActivateCache() { }
+    public override void DeactivateCache() { }
 }
