@@ -783,6 +783,8 @@ protected:
     void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree);
 #if defined(FEATURE_SIMD)
     void genSetRegToConst(regNumber targetReg, var_types targetType, simd_t* val);
+#endif
+#if defined(FEATURE_SIMD) && defined(FEATURE_MASKED_HW_INTRINSICS)
     void genSetRegToConst(regNumber targetReg, var_types targetType, simdmask_t* val);
 #endif
     void genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum);
@@ -824,6 +826,7 @@ protected:
 
 #if defined(TARGET_ARMARCH)
     void genCodeForMulLong(GenTreeOp* mul);
+    void genCodeForDivModOverflowCheck(GenTreeOp* tree);
 #endif // TARGET_ARMARCH
 
 #if !defined(TARGET_64BIT)

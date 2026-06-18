@@ -40,6 +40,12 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
         return handle.GetSizeOfStackParameterArea();
     }
 
+    uint IGCInfo.GetCalleePoppedArgumentsSize(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetCalleePoppedArgumentsSize();
+    }
+
     IReadOnlyList<InterruptibleRange> IGCInfo.GetInterruptibleRanges(IGCInfoHandle gcInfoHandle)
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
