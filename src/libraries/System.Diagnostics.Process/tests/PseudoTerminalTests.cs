@@ -15,8 +15,7 @@ namespace System.Diagnostics.Tests
         public static bool IsPseudoTerminalSupported =>
             RemoteExecutor.IsSupported &&
             !PlatformDetection.IsWindowsNanoServer &&
-            IsCreatePseudoConsoleSupported &&
-            !PlatformDetection.IsAzureLinux;
+            IsCreatePseudoConsoleSupported;
 
         private static readonly PseudoTerminalOptions s_testOptions = new(80, 24);
         private static bool? s_isCreatePseudoConsoleSupported;
