@@ -178,7 +178,7 @@ bool utils_get_dotnet_root_from_env(const pal_char_t** out_env_var_name, pal_cha
     }
 
 #if defined(_WIN32)
-    if (pal_is_running_in_wow64())
+    if (pal_get_process_emulation() == pal_process_emulation_wow64)
     {
         dotnet_root = utils_get_file_path_from_env(_X("DOTNET_ROOT(x86)"));
         if (dotnet_root != NULL)
@@ -213,9 +213,10 @@ pal_char_t* utils_get_runtime_id(void)
 void utils_get_download_url(pal_char_t* out_url, size_t out_url_len, const pal_char_t* framework_name, const pal_char_t* framework_version)
 {
     pal_char_t* rid = utils_get_runtime_id();
+    const pal_char_t* rid_value = rid != NULL ? rid : _STRINGIFY(HOST_RID_PLATFORM) _X("-") _STRINGIFY(CURRENT_ARCH_NAME);
 
     pal_char_t query[MAX_DOWNLOAD_URL_LEN / 2];
-    if (framework_name != NULL)
+    if (framework_name != NULL && framework_name[0] != _X('\0'))
     {
         if (framework_version != NULL && framework_version[0] != _X('\0'))
         {
@@ -233,7 +234,7 @@ void utils_get_download_url(pal_char_t* out_url, size_t out_url_len, const pal_c
 
     pal_str_printf(out_url, out_url_len,
         DOTNET_CORE_APPLAUNCH_URL _X("?%s&arch=") _STRINGIFY(CURRENT_ARCH_NAME) _X("&rid=%s&os=") _STRINGIFY(FALLBACK_HOST_OS),
-        query, rid);
+        query, rid_value);
 
     free(rid);
 }

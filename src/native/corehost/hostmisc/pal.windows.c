@@ -297,44 +297,43 @@ bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t 
     return true;
 }
 
-bool pal_is_running_in_wow64(void)
-{
-    BOOL is_wow64 = FALSE;
-    if (!IsWow64Process(GetCurrentProcess(), &is_wow64))
-        return false;
-    return is_wow64 != FALSE;
-}
-
 typedef BOOL(WINAPI* is_wow64_process2_fn)(HANDLE, USHORT*, USHORT*);
 
-bool pal_is_emulating_x64(void)
+pal_process_emulation_t pal_get_process_emulation(void)
 {
 #if defined(TARGET_AMD64)
+    // x64 build: detect x64-on-arm64 emulation via IsWow64Process2.
     HMODULE kernel32 = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (kernel32 == NULL)
     {
         trace_info(_X("Could not load 'kernel32.dll': %u"), GetLastError());
-        return false;
     }
-
-    is_wow64_process2_fn is_wow64_process2_func = (is_wow64_process2_fn)(void*)GetProcAddress(kernel32, "IsWow64Process2");
-    if (is_wow64_process2_func == NULL)
+    else
     {
-        return false;
+        is_wow64_process2_fn is_wow64_process2_func = (is_wow64_process2_fn)(void*)GetProcAddress(kernel32, "IsWow64Process2");
+        if (is_wow64_process2_func != NULL)
+        {
+            USHORT process_machine;
+            USHORT native_machine;
+            if (is_wow64_process2_func(GetCurrentProcess(), &process_machine, &native_machine))
+            {
+                if (native_machine != IMAGE_FILE_MACHINE_AMD64)
+                    return pal_process_emulation_x64;
+            }
+            else
+            {
+                trace_info(_X("Call to IsWow64Process2 failed: %u"), GetLastError());
+            }
+        }
     }
-
-    USHORT process_machine;
-    USHORT native_machine;
-    if (!is_wow64_process2_func(GetCurrentProcess(), &process_machine, &native_machine))
-    {
-        trace_info(_X("Call to IsWow64Process2 failed: %u"), GetLastError());
-        return false;
-    }
-
-    return native_machine != IMAGE_FILE_MACHINE_AMD64;
-#else
-    return false;
 #endif
+
+    // 32-bit (x86) process running on a 64-bit Windows OS.
+    BOOL is_wow64 = FALSE;
+    if (IsWow64Process(GetCurrentProcess(), &is_wow64) && is_wow64 != FALSE)
+        return pal_process_emulation_wow64;
+
+    return pal_process_emulation_none;
 }
 
 // Get the registry hive and sub-key for the globally-registered .NET install:
@@ -493,7 +492,7 @@ pal_char_t* pal_get_default_installation_dir(void)
 
     size_t canonical_len = pal_strlen(canonical);
     size_t dotnet_len = ARRAY_SIZE(dotnet_seg) - 1;
-    bool emulating_x64 = pal_is_emulating_x64();
+    bool emulating_x64 = pal_get_process_emulation() == pal_process_emulation_x64;
     size_t arch_len = emulating_x64 ? (ARRAY_SIZE(arch_seg) - 1) : 0;
     size_t total = canonical_len + dotnet_len + arch_len + 1;
 

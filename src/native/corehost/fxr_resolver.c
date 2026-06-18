@@ -426,6 +426,8 @@ bool fxr_resolver_try_get_path_from_dotnet_root(
 {
     *out_fxr_path = NULL;
 
+    assert(dotnet_root != NULL);
+
     pal_char_t* fxr_dir = get_fxr_dir(dotnet_root);
     if (fxr_dir == NULL)
         return false;

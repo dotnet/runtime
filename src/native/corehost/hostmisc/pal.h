@@ -160,9 +160,21 @@ static inline pal_char_t* pal_strndup(const pal_char_t* src, size_t len)
 // trace messages are suppressed (used when probing for optional files).
 pal_char_t* pal_fullpath(const pal_char_t* path, bool skip_error_logging);
 
-// Returns true if the current process is a 32-bit process running on a
-// 64-bit Windows OS. Returns false on non-Windows.
-bool pal_is_running_in_wow64(void);
+// Describes whether the current process is running under an OS compatibility
+// layer rather than natively on the host architecture.
+typedef enum
+{
+    pal_process_emulation_none = 0,
+    // 32-bit (x86) process running on a 64-bit Windows OS (WOW64)
+    pal_process_emulation_wow64,
+    // x64 process running under emulation on a non-x64 host: Windows
+    // x64-on-arm64, or macOS x64-on-arm64 via Rosetta.
+    pal_process_emulation_x64,
+} pal_process_emulation_t;
+
+// Returns how the OS is emulating the current process, or
+// pal_process_emulation_none when it runs natively.
+pal_process_emulation_t pal_get_process_emulation(void);
 
 // Callback for pal_readdir_onlydirectories. Receives each directory entry
 // name (just the leaf name, not a full path) and the caller-supplied context.
@@ -173,11 +185,6 @@ typedef bool (*pal_readdir_callback_t)(const pal_char_t* entry_name, void* ctx);
 // Skips "." and "..". Returns true on full enumeration or callback-requested
 // stop; returns false if the directory could not be opened.
 bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t callback, void* ctx);
-
-// Returns true if the current process is an x64 process running under
-// emulation on a non-x64 host (Windows x64-on-arm64 via WOW64, or macOS
-// x64-on-arm64 via Rosetta). Returns false otherwise.
-bool pal_is_emulating_x64(void);
 
 // Returns the directory containing the globally-registered .NET install for
 // the current architecture, or NULL if no such registration exists. Caller

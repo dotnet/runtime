@@ -134,15 +134,10 @@ bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t 
     return true;
 }
 
-bool pal_is_running_in_wow64(void)
+pal_process_emulation_t pal_get_process_emulation(void)
 {
-    return false;
-}
-
-bool pal_is_emulating_x64(void)
-{
-    int is_translated_process = 0;
 #if defined(TARGET_OSX)
+    int is_translated_process = 0;
     size_t size = sizeof(is_translated_process);
     if (sysctlbyname("sysctl.proc_translated", &is_translated_process, &size, NULL, 0) == -1)
     {
@@ -152,11 +147,14 @@ bool pal_is_emulating_x64(void)
             trace_info(_X("Call to sysctlbyname failed: %s"), strerror(errno));
         }
 
-        return false;
+        return pal_process_emulation_none;
     }
+
+    if (is_translated_process == 1)
+        return pal_process_emulation_x64;
 #endif
 
-    return is_translated_process == 1;
+    return pal_process_emulation_none;
 }
 
 // Reads up to the first newline from `file`, returning the line (with the
@@ -276,7 +274,7 @@ pal_char_t* pal_get_default_installation_dir(void)
 
 #if defined(TARGET_OSX)
     const pal_char_t* base = _X("/usr/local/share/dotnet");
-    if (pal_is_emulating_x64())
+    if (pal_get_process_emulation() == pal_process_emulation_x64)
     {
         return utils_append_path_alloc(base, _STRINGIFY(CURRENT_ARCH_NAME));
     }

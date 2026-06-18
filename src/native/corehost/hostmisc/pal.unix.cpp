@@ -1155,12 +1155,12 @@ void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::st
 
 bool pal::is_running_in_wow64()
 {
-    return ::pal_is_running_in_wow64();
+    return ::pal_get_process_emulation() == pal_process_emulation_wow64;
 }
 
 bool pal::is_emulating_x64()
 {
-    return pal_is_emulating_x64();
+    return ::pal_get_process_emulation() == pal_process_emulation_x64;
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)
