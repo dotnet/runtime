@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public static Process Start(ProcessStartInfo startInfo, Func<UnixProcessStartArguments, SafeProcessHandle> callback)
-            => Start(startInfo, (args, state) => callback(args), state: default(object));
+            => Start(startInfo, static (args, state) => state(args), state: callback);
 
         /// <summary>
         /// Starts a new process by preparing all necessary arguments (standard handles, command line, environment)
@@ -90,11 +90,15 @@ namespace System.Runtime.InteropServices
         /// A function that receives the prepared <see cref="UnixProcessStartArguments"/> and creates the process using any system call of the user's choice.
         /// The callback must return a valid <see cref="SafeProcessHandle"/> for the newly created process.
         /// The memory referenced by pointer properties in <see cref="UnixProcessStartArguments"/> is only valid for the duration of the callback.
+        /// The callback is invoked while an internal process-start lock is held; calling APIs that start processes from within the callback may deadlock or throw.
         /// </param>
         /// <returns>A new <see cref="Process"/> instance associated with the started process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> or <paramref name="callback"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException">The <see cref="SafeProcessHandle"/> returned by the callback is invalid.</exception>
         /// <exception cref="InvalidOperationException"><see cref="ProcessStartInfo.UseShellExecute"/> is set to <see langword="true"/>.</exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process Start<TState>(ProcessStartInfo startInfo, Func<UnixProcessStartArguments, TState, SafeProcessHandle> callback, TState state)
         {
 #if TARGET_WINDOWS

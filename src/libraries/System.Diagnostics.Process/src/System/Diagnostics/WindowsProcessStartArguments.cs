@@ -33,6 +33,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         /// <remarks>
         /// The memory pointed to by this property is only valid for the duration of the callback invocation.
+        /// This block is UTF-16; if passed to CreateProcess, include CREATE_UNICODE_ENVIRONMENT.
         /// </remarks>
         [CLSCompliant(false)]
         public unsafe char* EnvironmentVariables { get; internal set; }
@@ -60,7 +61,7 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="Start{TState}(ProcessStartInfo, Func{WindowsProcessStartArguments, TState, SafeProcessHandle}, TState)"/>
         public static Process Start(ProcessStartInfo startInfo, Func<WindowsProcessStartArguments, SafeProcessHandle> callback)
-            => Start(startInfo, (args, state) => callback(args), state: default(object));
+            => Start(startInfo, static (args, state) => state(args), state: callback);
 
         /// <summary>
         /// Starts a new process by preparing all necessary arguments (standard handles, command line, environment)
@@ -74,6 +75,7 @@ namespace System.Runtime.InteropServices
         /// A function that receives the prepared <see cref="WindowsProcessStartArguments"/> and creates the process using any system call of the user's choice.
         /// The callback must return a valid <see cref="SafeProcessHandle"/> for the newly created process.
         /// The memory referenced by pointer properties in <see cref="WindowsProcessStartArguments"/> is only valid for the duration of the callback.
+        /// The callback is invoked while an internal process-start lock is held; calling APIs that start processes from within the callback may deadlock or throw.
         /// </param>
         /// <returns>A new <see cref="Process"/> instance associated with the started process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> or <paramref name="callback"/> is <see langword="null"/>.</exception>

@@ -489,6 +489,9 @@ namespace System.Runtime.InteropServices
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.UnixProcessStartArguments, Microsoft.Win32.SafeHandles.SafeProcessHandle> callback) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public static System.Diagnostics.Process Start<TState>(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.UnixProcessStartArguments, TState, Microsoft.Win32.SafeHandles.SafeProcessHandle> callback, TState state) { throw null; }
     }
 }
