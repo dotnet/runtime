@@ -3,7 +3,7 @@
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
-    nethost.cpp
+    nethost.c
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
