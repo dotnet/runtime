@@ -12,7 +12,6 @@ using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System.Collections.Frozen;
-using Microsoft.Diagnostics.DataContractReader.Abstractions;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
