@@ -61,17 +61,4 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
 
-  <!--
-  <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestBase.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTest.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTest.Http.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTest.WebSocket.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.cs" />
-
-    <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
-    <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\test.json" />
-  </ItemGroup>
-  -->
-
 </Project>
