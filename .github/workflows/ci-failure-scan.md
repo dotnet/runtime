@@ -154,7 +154,6 @@ For each row in the pipeline table below:
 | runtime-coreclr pgo | 144 | optional-ci |
 | runtime-coreclr libraries-pgo | 145 | optional-ci |
 | gc-standalone | 146 | ADO name differs from display name |
-| runtime-coreclr superpmi-diffs | 152 | |
 | runtime-coreclr superpmi-replay | 150 | |
 | runtime-coreclr superpmi-asmdiffs-checked-release | 153 | |
 | runtime-coreclr jit-cfg | 155 | Control flow guard |
@@ -177,6 +176,8 @@ Every KBE gets `Known Build Error` plus exactly one blocking label:
 - `blocking-clean-ci-optional` when the failing pipeline's row above is marked `optional-ci` in its Notes. These are the JIT / GC / PGO stress-mode pipelines (defs 109, 110, 111, 112, 113, 115, 116, 117, 118, 119, 138, 140, 144, 145, 159, 160, 230, 235), which run as optional rolling jobs outside the required gate; their failures should surface in Build Analysis without blocking clean CI.
 
 Choose the label by the definition the signature came from. Never apply both blocking labels to one issue.
+
+**Required-gate severity wins.** When the same signature appears in both an `optional-ci` pipeline and a required-gate pipeline, the required-gate severity takes precedence: the KBE must carry `blocking-clean-ci`, not `blocking-clean-ci-optional`. The cross-definition dedup in Step 4.0 must not let an earlier `optional-ci` filing suppress this — see [Cross-definition dedup](#cross-def-dedup).
 
 ### Step 3 — Classify each failure (log-extraction only)
 
@@ -232,12 +233,22 @@ test -f /tmp/gh-aw/agent/filed.tsv && cut -f1 /tmp/gh-aw/agent/filed.tsv | grep 
 printf '%s\t%s\n' "$key" "aw_<id>" >> /tmp/gh-aw/agent/filed.tsv                              # after emit
 ```
 
-**Cross-definition dedup (check second).** A KBE matches on signature text regardless of which pipeline definition produced it, so do NOT file a second KBE for a signature already filed this run under a different `definition_id`. After the exact-key check above misses, also check the definition-independent key `<queue>|<stress_mode>|<signature_norm>`. On match, record `skipped: cross-def dup of filed-issue #aw_<id> earlier in this run` and stop. Append this key too after every Branch A emission.
+<a id="cross-def-dedup"></a>
+
+**Cross-definition dedup (check second).** A KBE matches on signature text regardless of which pipeline definition produced it, so do NOT file a second KBE for a signature already filed this run under a different `definition_id`. After the exact-key check above misses, also check the definition-independent key `<queue>|<stress_mode>|<signature_norm>`. On match, record `skipped: cross-def dup of filed-issue #aw_<id> earlier in this run` and stop. Append this key too after every Branch A emission, tagging it with the blocking label that was applied (`req` for `blocking-clean-ci`, `opt` for `blocking-clean-ci-optional`).
+
+**Exception — required-gate escalation.** The dedup above is suppressed in exactly one case: the current signature comes from a required-gate pipeline (not `optional-ci`) but the earlier filing for `<queue>|<stress_mode>|<signature_norm>` was tagged `opt`. Filing the required occurrence as a separate `blocking-clean-ci` KBE is correct here — collapsing it onto the `opt` KBE would under-block clean CI (see [Required-gate severity wins](#kbe-label-selection)). Emit the required-gate KBE via Branch A and append the key again tagged `req`; the earlier `opt` KBE stays as filed. All other category combinations (req-onto-req, opt-onto-req, opt-onto-opt) dedup normally.
 
 ```bash
 xkey="<queue>|<stress_mode>|${signature_norm}"
-test -f /tmp/gh-aw/agent/filed.tsv && cut -f1 /tmp/gh-aw/agent/filed.tsv | grep -Fxq "$xkey"  # cross-def dup if exit 0
-printf '%s\t%s\n' "$xkey" "aw_<id>" >> /tmp/gh-aw/agent/filed.tsv                              # after emit
+# Dedup unless this is a required-gate signature escalating over an earlier optional-ci filing.
+prior=$(test -f /tmp/gh-aw/agent/filed.tsv && awk -F'\t' -v k="$xkey" '$1==k{l=$3} END{print l}' /tmp/gh-aw/agent/filed.tsv)
+if [ -n "$prior" ] && ! { [ "$current_category" = "req" ] && [ "$prior" = "opt" ]; }; then
+  :  # cross-def dup — skip
+else
+  :  # no prior, or required-gate escalating over an optional-ci filing — file via Branch A
+fi
+printf '%s\t%s\t%s\n' "$xkey" "aw_<id>" "<req|opt>" >> /tmp/gh-aw/agent/filed.tsv  # after emit
 ```
 
 #### Step 4.1 — Load the matching skill
