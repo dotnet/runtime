@@ -183,7 +183,7 @@ namespace System.Diagnostics.Tests
         [SkipOnPlatform(TestPlatforms.Windows | TestPlatforms.OSX, "Resume is supported on Windows and macOS")]
         public void Resume_OnNonSupportedOS_ThrowsPlatformNotSupportedException()
         {
-            using SafeProcessHandle handle = new();
+            using SafeProcessHandle handle = SafeProcessHandle.Open(Environment.ProcessId);
             Assert.Throws<PlatformNotSupportedException>(() => handle.Resume());
         }
     }
