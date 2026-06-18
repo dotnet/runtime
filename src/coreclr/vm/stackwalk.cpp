@@ -422,13 +422,18 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                                         ARM64_ARG(TADDR * pSpForPacSign /*= NULL*/))
 {
 #ifdef TARGET_WASM
-    // Interpreter-only WASM has no R2R unwind info to walk and no
-    // RtlVirtualUnwind equivalent. EH stack-walking on WASM proceeds through
-    // the explicit Frame chain (Thread::GetFrame()), so this overload should
-    // never be reached on the interpreter-only path.
-    _ASSERTE(!"VirtualUnwindCallFrame is not supported on WebAssembly");
-    return 0;
-#else
+    // WASM has a custom RtlVirtualUnwind (vm/wasm/helpers.cpp) that handles
+    // R2R-WASM frames keyed by virtual IPs. For interpreter-only WASM (e.g.,
+    // the WASI corerun) there is no R2R unwind info and no virtual IP, so
+    // walking past such a frame is not supported and the call into the body
+    // would corrupt the register display. Fail fast in that case; let R2R
+    // frames flow through the regular path below.
+    if (!ExecutionManager::IsVirtualIP(GetIP(pContext)))
+    {
+        _ASSERTE(!"VirtualUnwindCallFrame: non-virtual-IP context on WebAssembly");
+        return 0;
+    }
+#endif // TARGET_WASM
     CONTRACTL
     {
         NOTHROW;
@@ -576,7 +581,6 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 #endif // !DACCESS_COMPILE
 
     return uControlPc;
-#endif // TARGET_WASM
 }
 
 #ifndef DACCESS_COMPILE
