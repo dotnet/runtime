@@ -76,3 +76,93 @@ JIT/Regression/JitBlue/Runtime_100437/Runtime_100437/Runtime_100437.sh
 JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Plain/Test_HndIndex_10_Plain.sh
 JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Reordered/Test_HndIndex_10_Reordered.sh
 
+
+# =============================================================================
+# baseservices
+# =============================================================================
+
+# ----- multithreading not supported in single-threaded WASI ------------------
+#
+# Tests that call Thread.Start, Timer.., Parallel.* hit
+# `System.PlatformNotSupportedException` from
+# `RuntimeFeature.ThrowIfMultithreadingIsNotSupported()`. Single-threaded
+# WASI is by design — these tests cannot run as-is.
+baseservices/threading/regressions/13662/13662-a/13662-a.sh
+baseservices/threading/regressions/13662/13662-b/13662-b.sh
+baseservices/threading/regressions/13662/13662-simple/13662-simple.sh
+baseservices/threading/regressions/30032/30032/30032.sh
+baseservices/threading/regressions/576463/576463/576463.sh
+baseservices/threading/regressions/beta2/437017/437017.sh
+baseservices/threading/regressions/beta2/437044/437044.sh
+
+# ----- AppDomain.UnhandledException + worker threads --------------------------
+#
+# All of these set up an unhandled-exception handler and then either
+# launch a worker thread to fault or invoke a P/Invoke that faults.
+# Same single-threaded-WASI block as above (Thread.Start throws PNSE).
+baseservices/exceptions/UnhandledExceptionHandler/Foreign/ForeignUnhandled/ForeignUnhandled.sh
+baseservices/exceptions/UnhandledExceptionHandler/HandlerRefuses/HandlerRefuses.sh
+baseservices/exceptions/UnhandledExceptionHandler/HandlerThrows/HandlerThrows.sh
+baseservices/exceptions/UnhandledExceptionHandler/NoEffectInMainThread/NoEffectInMainThread.sh
+baseservices/exceptions/UnhandledExceptionHandler/PInvoke/PInvokeUnhandled/PInvokeUnhandled.sh
+baseservices/exceptions/UnhandledExceptionHandler/UnhandledTrivial/UnhandledTrivial.sh
+
+# ----- tests that shell out to corerun via System.Diagnostics.Process --------
+#
+# Same root cause as the JIT/Regression GitHub_23199_* entries above:
+# System.Diagnostics.Process is excluded from the wasi-wasm runtime
+# pack; the .notsupported.cs shim throws PlatformNotSupportedException.
+# The "tester" tests in baseservices spawn corerun as a subprocess to
+# observe its exit / stderr behaviour, which can't work in a sandboxed
+# WASI module.
+baseservices/RuntimeConfiguration/TestConfigTester/TestConfigTester.sh
+baseservices/callconvs/TestCallingConventions/TestCallingConventions.sh
+baseservices/exceptions/simple/ParallelCrashTester/ParallelCrashTester.sh
+baseservices/exceptions/stackoverflow/stackoverflowtester/stackoverflowtester.sh
+baseservices/exceptions/unhandled/unhandledTester/unhandledTester.sh
+
+# ----- custom test runner that bypasses the wasmtime wrapper ------------------
+#
+# BasicTestWithMcj uses its own RunBasicTestWithMcj.sh which execs
+# `$CORE_ROOT/corerun` directly. On WASI corerun is a `.wasm` file
+# (component) — not natively executable; the script fails with
+# "Permission denied". Same script also expects a host crossgen2 to
+# AOT the test first. The test would need its own WASI-aware runner.
+baseservices/TieredCompilation/BasicTestWithMcj/BasicTestWithMcj.sh
+
+# ----- nested / deep managed EH returning wrong value ------------------------
+#
+# These tests issue 10+ nested throws/rethrows through generated VJ
+# (Visual J++) IL patterns and assert the per-iteration accumulated
+# value is 100. On WASI corerun the prints come out correctly but the
+# method returns 0 instead of 100 — i.e. a code path is being skipped
+# during deep nested unwind. Real WASI EH gap worth investigating
+# (likely same family as the SfiNextWorker "unhandled by runtime"
+# branch already noted in the WASI bring-up commits).
+baseservices/exceptions/regressions/V1/SEH/VJ/HandlerException/HandlerException.sh
+baseservices/exceptions/regressions/V1/SEH/VJ/MultipleException/MultipleException.sh
+baseservices/exceptions/regressions/V1/SEH/VJ/NestedException/NestedException.sh
+baseservices/exceptions/regressions/V1/SEH/VJ/RecursiveException/RecursiveException.sh
+
+# ----- finalization-dependent: ConditionalWeakTable / dependent handles ------
+#
+# Dev10_535767 is a GC stress test for ConditionalWeakTable/dependent
+# handles that relies on finalizers running on demand from a worker
+# thread. WASI dispatches finalization through WasiEventLoop; without
+# the host loop ticking the test never observes its expected drops.
+# Same blocker as the Finalization smoke test in known-broken/.
+baseservices/compilerservices/dynamicobjectproperties/Dev10_535767/Dev10_535767.sh
+
+# ----- DynamicMethod liveness via worker thread + GC -------------------------
+#
+# Test creates a DynamicMethod, GCs from a worker thread, asserts the
+# DynamicMethod stays alive. Same threading block (Thread.Start
+# throws PNSE on single-threaded WASI).
+baseservices/exceptions/regressions/Dev11/154243/dynamicmethodliveness/dynamicmethodliveness.sh
+
+# ----- NoPIA type-equivalence IL test ----------------------------------------
+#
+# Exercises COM type equivalence (`[TypeIdentifier]`) at the IL level.
+# WASI corerun's `FEATURE_TYPEEQUIVALENCE` path is not yet wired up
+# (no `FEATURE_COMINTEROP` on the WASI build). Real gap, low priority.
+baseservices/typeequivalence/signatures/nopiatestil/nopiatestil.sh
