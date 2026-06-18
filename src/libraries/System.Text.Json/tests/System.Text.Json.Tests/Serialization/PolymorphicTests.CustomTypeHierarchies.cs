@@ -61,19 +61,19 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedClass1"", ""$type"" : ""derivedClass1"", ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42, ""$type"" : ""derivedClass1""}")]
-        [InlineData("$.$id", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$id", @"{ ""$type"" : ""derivedClass1"", """" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$values", @"{ ""Number"" : 42, ""$values"" : [] }")]
-        [InlineData("$.$type", @"{ ""Number"" : 42, ""$type"" : ""derivedClass"" }")]
-        [InlineData("$", @"{ ""$type"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
-        [InlineData("$", @"{ ""$type"" : 0, ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : false, ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : {}, ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : [], ""Number"" : 42 }")]
-        [InlineData("$.$id", @"{ ""$id"" : ""1"", ""Number"" : 42 }")]
-        [InlineData("$.$ref", @"{ ""$ref"" : ""1"" }")]
+        [InlineData("$['$type']", """{ "$type" : "derivedClass1", "$type" : "derivedClass1", "Number" : 42 }""")]
+        [InlineData("$['$type']", """{ "$type" : "derivedClass1", "Number" : 42, "$type" : "derivedClass1"}""")]
+        [InlineData("$['$id']", """{ "$type" : "derivedClass1", "Number" : 42, "$id" : "referenceId"}""")]
+        [InlineData("$['$id']", """{ "$type" : "derivedClass1", "" : 42, "$id" : "referenceId"}""")]
+        [InlineData("$['$values']", """{ "Number" : 42, "$values" : [] }""")]
+        [InlineData("$['$type']", """{ "Number" : 42, "$type" : "derivedClass" }""")]
+        [InlineData("$", """{ "$type" : "invalidDiscriminator", "Number" : 42 }""")]
+        [InlineData("$", """{ "$type" : 0, "Number" : 42 }""")]
+        [InlineData("$['$type']", """{ "$type" : false, "Number" : 42 }""")]
+        [InlineData("$['$type']", """{ "$type" : {}, "Number" : 42 }""")]
+        [InlineData("$['$type']", """{ "$type" : [], "Number" : 42 }""")]
+        [InlineData("$['$id']", """{ "$id" : "1", "Number" : 42 }""")]
+        [InlineData("$['$ref']", """{ "$ref" : "1" }""")]
         public async Task PolymorphicClass_InvalidTypeDiscriminatorMetadata_ShouldThrowJsonException(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClass>(json));
@@ -114,12 +114,12 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$.$type", """{"Number":42, "$type":"derivedClass1", "String": "str", "$type":"derivedClass1"}""")]
-        [InlineData("$.$type", """{"$type":"derivedCollection", "$values": [42,42,42], "$type":"derivedCollection"}""")]
-        [InlineData("$.$values", """{"$type":"derivedCollection", "NonMetadataProp": {}, "$values": [42,42,42]}""")]
+        [InlineData("$['$type']", """{"Number":42, "$type":"derivedClass1", "String": "str", "$type":"derivedClass1"}""")]
+        [InlineData("$['$type']", """{"$type":"derivedCollection", "$values": [42,42,42], "$type":"derivedCollection"}""")]
+        [InlineData("$['$values']", """{"$type":"derivedCollection", "NonMetadataProp": {}, "$values": [42,42,42]}""")]
         [InlineData("$.NonMetadataProp", """{"$type":"derivedCollection", "$values": [42,42,42], "NonMetadataProp": {}}""")]
         [InlineData("$.NonMetadataProp", """{"$values": [42,42,42], "$type":"derivedCollection", "NonMetadataProp": {}}""")]
-        [InlineData("$.$values", """{"$type":"derivedCollection", "$values": [42,42,42], "$values": [42,42,42]}""")]
+        [InlineData("$['$values']", """{"$type":"derivedCollection", "$values": [42,42,42], "$values": [42,42,42]}""")]
         public async Task PolymorphicClass_AllowOutOfOrderMetadata_RejectsInvalidInputs(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClass>(json, s_optionsWithAllowOutOfOrderMetadata));
@@ -182,21 +182,21 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42 }")]
-        [InlineData("$._case", @"{ ""_case"" : ""derivedClass1"", ""_case"" : ""derivedClass1"", ""Number"" : 42 }")]
-        [InlineData("$._case", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""_case"" : ""derivedClass1""}")]
-        [InlineData("$.$type", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$type"" : ""derivedClass1""}")]
-        [InlineData("$.$id", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$id", @"{ ""_case"" : ""derivedClass1"", """" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$values", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$values"" : [] }")]
-        [InlineData("$._case", @"{ ""Number"" : 42, ""_case"" : ""derivedClass1"" }")]
-        [InlineData("$", @"{ ""_case"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
-        [InlineData("$", @"{ ""_case"" : 0, ""Number"" : 42 }")]
-        [InlineData("$._case", @"{ ""_case"" : false, ""Number"" : 42 }")]
-        [InlineData("$._case", @"{ ""_case"" : {}, ""Number"" : 42 }")]
-        [InlineData("$._case", @"{ ""_case"" : [], ""Number"" : 42 }")]
-        [InlineData("$.$id", @"{ ""$id"" : ""1"", ""Number"" : 42 }")]
-        [InlineData("$.$ref", @"{ ""$ref"" : ""1"" }")]
+        [InlineData("$['$type']", """{ "$type" : "derivedClass1", "Number" : 42 }""")]
+        [InlineData("$._case", """{ "_case" : "derivedClass1", "_case" : "derivedClass1", "Number" : 42 }""")]
+        [InlineData("$._case", """{ "_case" : "derivedClass1", "Number" : 42, "_case" : "derivedClass1"}""")]
+        [InlineData("$['$type']", """{ "_case" : "derivedClass1", "Number" : 42, "$type" : "derivedClass1"}""")]
+        [InlineData("$['$id']", """{ "_case" : "derivedClass1", "Number" : 42, "$id" : "referenceId"}""")]
+        [InlineData("$['$id']", """{ "_case" : "derivedClass1", "" : 42, "$id" : "referenceId"}""")]
+        [InlineData("$['$values']", """{ "_case" : "derivedClass1", "Number" : 42, "$values" : [] }""")]
+        [InlineData("$._case", """{ "Number" : 42, "_case" : "derivedClass1" }""")]
+        [InlineData("$", """{ "_case" : "invalidDiscriminator", "Number" : 42 }""")]
+        [InlineData("$", """{ "_case" : 0, "Number" : 42 }""")]
+        [InlineData("$._case", """{ "_case" : false, "Number" : 42 }""")]
+        [InlineData("$._case", """{ "_case" : {}, "Number" : 42 }""")]
+        [InlineData("$._case", """{ "_case" : [], "Number" : 42 }""")]
+        [InlineData("$['$id']", """{ "$id" : "1", "Number" : 42 }""")]
+        [InlineData("$['$ref']", """{ "$ref" : "1" }""")]
         public async Task PolymorphicClass_CustomConfigWithBaseTypeFallback_InvalidTypeDiscriminatorMetadata_ShouldThrowJsonException(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClass>(json, PolymorphicClass.CustomConfigWithBaseTypeFallback));
@@ -259,21 +259,21 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42 }")]
-        [InlineData("$._case", @"{ ""_case"" : ""derivedClass1"", ""_case"" : ""derivedClass1"", ""Number"" : 42 }")]
-        [InlineData("$._case", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""_case"" : ""derivedClass1""}")]
-        [InlineData("$.$type", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$type"" : ""derivedClass1""}")]
-        [InlineData("$.$id", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$id", @"{ ""_case"" : ""derivedClass1"", """" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$values", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$values"" : [] }")]
-        [InlineData("$._case", @"{ ""Number"" : 42, ""_case"" : ""derivedClass1"" }")]
-        [InlineData("$", @"{ ""_case"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
-        [InlineData("$", @"{ ""_case"" : 0, ""Number"" : 42 }")]
-        [InlineData("$._case", @"{ ""_case"" : false, ""Number"" : 42 }")]
-        [InlineData("$._case", @"{ ""_case"" : {}, ""Number"" : 42 }")]
-        [InlineData("$._case", @"{ ""_case"" : [], ""Number"" : 42 }")]
-        [InlineData("$.$id", @"{ ""$id"" : ""1"", ""Number"" : 42 }")]
-        [InlineData("$.$ref", @"{ ""$ref"" : ""1"" }")]
+        [InlineData("$['$type']", """{ "$type" : "derivedClass1", "Number" : 42 }""")]
+        [InlineData("$._case", """{ "_case" : "derivedClass1", "_case" : "derivedClass1", "Number" : 42 }""")]
+        [InlineData("$._case", """{ "_case" : "derivedClass1", "Number" : 42, "_case" : "derivedClass1"}""")]
+        [InlineData("$['$type']", """{ "_case" : "derivedClass1", "Number" : 42, "$type" : "derivedClass1"}""")]
+        [InlineData("$['$id']", """{ "_case" : "derivedClass1", "Number" : 42, "$id" : "referenceId"}""")]
+        [InlineData("$['$id']", """{ "_case" : "derivedClass1", "" : 42, "$id" : "referenceId"}""")]
+        [InlineData("$['$values']", """{ "_case" : "derivedClass1", "Number" : 42, "$values" : [] }""")]
+        [InlineData("$._case", """{ "Number" : 42, "_case" : "derivedClass1" }""")]
+        [InlineData("$", """{ "_case" : "invalidDiscriminator", "Number" : 42 }""")]
+        [InlineData("$", """{ "_case" : 0, "Number" : 42 }""")]
+        [InlineData("$._case", """{ "_case" : false, "Number" : 42 }""")]
+        [InlineData("$._case", """{ "_case" : {}, "Number" : 42 }""")]
+        [InlineData("$._case", """{ "_case" : [], "Number" : 42 }""")]
+        [InlineData("$['$id']", """{ "$id" : "1", "Number" : 42 }""")]
+        [InlineData("$['$ref']", """{ "$ref" : "1" }""")]
         public async Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_InvalidTypeDiscriminatorMetadata_ShouldThrowJsonException(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClass>(json, PolymorphicClass.CustomConfigWithBaseTypeFallback));
@@ -560,12 +560,12 @@ namespace System.Text.Json.Serialization.Tests
             {
                 yield return new TestData(
                     Value: new PolymorphicClass { Number = 42 },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClass1_NoTypeDiscriminator { Number = 42, String = "str" },
-                    ExpectedJson: @"{ ""Number"" : 42, ""String"" : ""str"" }",
+                    ExpectedJson: """{ "Number" : 42, "String" : "str" }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
@@ -574,22 +574,22 @@ namespace System.Text.Json.Serialization.Tests
 
                 yield return new TestData(
                     Value: new DerivedClass1_NoTypeDiscriminator.DerivedClass { Number = 42, String = "str", ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""Number"" : 42, ""String"" : ""str"", ""ExtraProperty"" : ""extra"" }",
+                    ExpectedJson: """{ "Number" : 42, "String" : "str", "ExtraProperty" : "extra" }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClass1_TypeDiscriminator { Number = 42, String = "str" },
-                    ExpectedJson: @"{ ""$type"" : ""derivedClass1"", ""Number"" : 42, ""String"" : ""str"" }",
+                    ExpectedJson: """{ "$type" : "derivedClass1", "Number" : 42, "String" : "str" }""",
                     ExpectedRoundtripValue: new DerivedClass1_TypeDiscriminator { Number = 42, String = "str" });
 
                 yield return new TestData(
                     Value: new DerivedClass1_TypeDiscriminator.DerivedClass { Number = 42, String = "str", ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""$type"" : ""derivedClassOfDerivedClass1"", ""Number"" : 42, ""String"" : ""str"", ""ExtraProperty"" : ""extra"" }",
+                    ExpectedJson: """{ "$type" : "derivedClassOfDerivedClass1", "Number" : 42, "String" : "str", "ExtraProperty" : "extra" }""",
                     ExpectedRoundtripValue: new DerivedClass1_TypeDiscriminator.DerivedClass { Number = 42, String = "str", ExtraProperty = "extra" });
 
                 yield return new TestData(
                     Value: new DerivedClass2_NoTypeDiscriminator { Number = 42, Boolean = true },
-                    ExpectedJson: @"{ ""Number"" : 42, ""Boolean"" : true }",
+                    ExpectedJson: """{ "Number" : 42, "Boolean" : true }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
@@ -598,17 +598,17 @@ namespace System.Text.Json.Serialization.Tests
 
                 yield return new TestData(
                     Value: new DerivedClass2_TypeDiscriminator { Number = 42, Boolean = true },
-                    ExpectedJson: @"{ ""$type"" : ""derivedClass2"", ""Number"" : 42, ""Boolean"" : true }",
+                    ExpectedJson: """{ "$type" : "derivedClass2", "Number" : 42, "Boolean" : true }""",
                     ExpectedRoundtripValue: new DerivedClass2_TypeDiscriminator { Number = 42, Boolean = true });
 
                 yield return new TestData(
                     Value: new DerivedClass_IntegerTypeDiscriminator { Number = 42, String = "str" },
-                    ExpectedJson: @"{ ""$type"" : -1, ""Number"" : 42, ""String"" : ""str"" }",
+                    ExpectedJson: """{ "$type" : -1, "Number" : 42, "String" : "str" }""",
                     ExpectedRoundtripValue: new DerivedClass_IntegerTypeDiscriminator { Number = 42, String = "str" });
 
                 yield return new TestData(
                     Value: new DerivedCollection_NoTypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"[42,42,42]",
+                    ExpectedJson: "[42,42,42]",
                     ExpectedDeserializationException: typeof(JsonException));
 
                 yield return new TestData(
@@ -617,37 +617,37 @@ namespace System.Text.Json.Serialization.Tests
 
                 yield return new TestData(
                     Value: new DerivedCollection_TypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""$type"" : ""derivedCollection"", ""$values"" : [42,42,42] }",
+                    ExpectedJson: """{ "$type" : "derivedCollection", "$values" : [42,42,42] }""",
                     ExpectedRoundtripValue: new DerivedCollection_TypeDiscriminator { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedCollection_TypeDiscriminator.DerivedClass { Number = 42, ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""$type"" : ""derivedCollectionOfDerivedCollection"", ""$values"" : [42,42,42] }",
+                    ExpectedJson: """{ "$type" : "derivedCollectionOfDerivedCollection", "$values" : [42,42,42] }""",
                     ExpectedRoundtripValue: new DerivedCollection_TypeDiscriminator.DerivedClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedDictionary_NoTypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""dictionaryKey"" : 42 }",
+                    ExpectedJson: """{ "dictionaryKey" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass());
 
                 yield return new TestData(
                     Value: new DerivedDictionary_TypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""$type"":""derivedDictionary"", ""dictionaryKey"" : 42 }",
+                    ExpectedJson: """{ "$type":"derivedDictionary", "dictionaryKey" : 42 }""",
                     ExpectedRoundtripValue: new DerivedDictionary_TypeDiscriminator { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedDictionary_TypeDiscriminator.DerivedClass { Number = 42, ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""$type"" : ""derivedDictionaryOfDerivedDictionary"", ""dictionaryKey"" : 42 }",
+                    ExpectedJson: """{ "$type" : "derivedDictionaryOfDerivedDictionary", "dictionaryKey" : 42 }""",
                     ExpectedRoundtripValue: new DerivedDictionary_TypeDiscriminator.DerivedClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClassWithConstructor_TypeDiscriminator(42),
-                    ExpectedJson: @"{ ""$type"" : ""derivedClassWithCtor"", ""Number"" : 42 }",
+                    ExpectedJson: """{ "$type" : "derivedClassWithCtor", "Number" : 42 }""",
                     ExpectedRoundtripValue: new DerivedClassWithConstructor_TypeDiscriminator(42));
 
                 yield return new TestData(
                     Value: new DerivedClassWithConstructor_TypeDiscriminator.DerivedClass(42, "extra"),
-                    ExpectedJson: @"{ ""$type"" : ""derivedClassOfDerivedClassWithCtor"", ""Number"" : 42, ""ExtraProperty"" : ""extra"" }",
+                    ExpectedJson: """{ "$type" : "derivedClassOfDerivedClassWithCtor", "Number" : 42, "ExtraProperty" : "extra" }""",
                     ExpectedRoundtripValue: new DerivedClassWithConstructor_TypeDiscriminator.DerivedClass(42, "extra"));
 
                 yield return new TestData(
@@ -691,97 +691,97 @@ namespace System.Text.Json.Serialization.Tests
             {
                 yield return new TestData(
                     Value: new PolymorphicClass { Number = 42 },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClass1_NoTypeDiscriminator { Number = 42, String = "str" },
-                    ExpectedJson: @"{ ""Number"" : 42, ""String"" : ""str"" }",
+                    ExpectedJson: """{ "Number" : 42, "String" : "str" }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClass1_NoTypeDiscriminator.DerivedClass { Number = 42, String = "str", ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClass1_TypeDiscriminator { Number = 42, String = "str" },
-                    ExpectedJson: @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""String"" : ""str"" }",
+                    ExpectedJson: """{ "_case" : "derivedClass1", "Number" : 42, "String" : "str" }""",
                     ExpectedRoundtripValue: new DerivedClass1_TypeDiscriminator { Number = 42, String = "str" });
 
                 yield return new TestData(
                     Value: new DerivedClass1_TypeDiscriminator.DerivedClass { Number = 42, String = "str", ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""_case"" : ""derivedClassOfDerivedClass1"", ""Number"" : 42, ""String"" : ""str"", ""ExtraProperty"" : ""extra"" }",
+                    ExpectedJson: """{ "_case" : "derivedClassOfDerivedClass1", "Number" : 42, "String" : "str", "ExtraProperty" : "extra" }""",
                     ExpectedRoundtripValue: new DerivedClass1_TypeDiscriminator.DerivedClass { Number = 42, String = "str", ExtraProperty = "extra" });
 
                 yield return new TestData(
                     Value: new DerivedClass2_NoTypeDiscriminator { Number = 42, Boolean = true },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClass2_NoTypeDiscriminator.DerivedClass { Number = 42, Boolean = true },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClass2_TypeDiscriminator { Number = 42, Boolean = true },
-                    ExpectedJson: @"{ ""_case"" : ""derivedClass2"", ""Number"" : 42, ""Boolean"" : true }",
+                    ExpectedJson: """{ "_case" : "derivedClass2", "Number" : 42, "Boolean" : true }""",
                     ExpectedRoundtripValue: new DerivedClass2_TypeDiscriminator { Number = 42, Boolean = true });
 
                 yield return new TestData(
                     Value: new DerivedClass2_TypeDiscriminator.DerivedClass { Number = 42, Boolean = true, ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedCollection_NoTypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedCollection_TypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""_case"" : ""derivedCollection"", ""$values"" : [42,42,42] }",
+                    ExpectedJson: """{ "_case" : "derivedCollection", "$values" : [42,42,42] }""",
                     ExpectedRoundtripValue: new DerivedCollection_TypeDiscriminator { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedCollection_TypeDiscriminator.DerivedClass { Number = 42, ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedDictionary_NoTypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""dictionaryKey"" : 42 }",
+                    ExpectedJson: """{ "dictionaryKey" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass());
 
                 yield return new TestData(
                     Value: new DerivedDictionary_TypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedDictionary_TypeDiscriminator.DerivedClass { Number = 42, ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""_case"" : ""derivedDictionaryOfDerivedDictionary"", ""dictionaryKey"" : 42 }",
+                    ExpectedJson: """{ "_case" : "derivedDictionaryOfDerivedDictionary", "dictionaryKey" : 42 }""",
                     ExpectedRoundtripValue: new DerivedDictionary_TypeDiscriminator.DerivedClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClassWithConstructor_TypeDiscriminator(42),
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClassWithConstructor_TypeDiscriminator.DerivedClass(42, "extra"),
-                    ExpectedJson: @"{ ""_case"" : ""derivedClassOfDerivedClassWithCtor"", ""Number"" : 42, ""ExtraProperty"" : ""extra"" }",
+                    ExpectedJson: """{ "_case" : "derivedClassOfDerivedClassWithCtor", "Number" : 42, "ExtraProperty" : "extra" }""",
                     ExpectedRoundtripValue: new DerivedClassWithConstructor_TypeDiscriminator.DerivedClass(42, "extra"));
 
                 yield return new TestData(
                     Value: new DerivedClassWithCustomConverter_NoTypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClassWithCustomConverter_TypeDiscriminator.DerivedClass { Number = 42, ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
@@ -813,97 +813,97 @@ namespace System.Text.Json.Serialization.Tests
             {
                 yield return new TestData(
                     Value: new PolymorphicClass { Number = 42 },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClass1_NoTypeDiscriminator { Number = 42, String = "str" },
-                    ExpectedJson: @"{ ""Number"" : 42, ""String"" : ""str"" }",
+                    ExpectedJson: """{ "Number" : 42, "String" : "str" }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClass1_NoTypeDiscriminator.DerivedClass { Number = 42, String = "str", ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""Number"" : 42, ""String"" : ""str"" }",
+                    ExpectedJson: """{ "Number" : 42, "String" : "str" }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClass1_TypeDiscriminator { Number = 42, String = "str" },
-                    ExpectedJson: @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""String"" : ""str"" }",
+                    ExpectedJson: """{ "_case" : "derivedClass1", "Number" : 42, "String" : "str" }""",
                     ExpectedRoundtripValue: new DerivedClass1_TypeDiscriminator { Number = 42, String = "str" });
 
                 yield return new TestData(
                     Value: new DerivedClass1_TypeDiscriminator.DerivedClass { Number = 42, String = "str", ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""_case"" : ""derivedClassOfDerivedClass1"", ""Number"" : 42, ""String"" : ""str"", ""ExtraProperty"" : ""extra"" }",
+                    ExpectedJson: """{ "_case" : "derivedClassOfDerivedClass1", "Number" : 42, "String" : "str", "ExtraProperty" : "extra" }""",
                     ExpectedRoundtripValue: new DerivedClass1_TypeDiscriminator.DerivedClass { Number = 42, String = "str", ExtraProperty = "extra" });
 
                 yield return new TestData(
                     Value: new DerivedClass2_NoTypeDiscriminator { Number = 42, Boolean = true },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClass2_NoTypeDiscriminator.DerivedClass { Number = 42, Boolean = true },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClass2_TypeDiscriminator { Number = 42, Boolean = true },
-                    ExpectedJson: @"{ ""_case"" : ""derivedClass2"", ""Number"" : 42, ""Boolean"" : true }",
+                    ExpectedJson: """{ "_case" : "derivedClass2", "Number" : 42, "Boolean" : true }""",
                     ExpectedRoundtripValue: new DerivedClass2_TypeDiscriminator { Number = 42, Boolean = true });
 
                 yield return new TestData(
                     Value: new DerivedClass2_TypeDiscriminator.DerivedClass { Number = 42, Boolean = true, ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""_case"" : ""derivedClass2"", ""Number"" : 42, ""Boolean"" : true }",
+                    ExpectedJson: """{ "_case" : "derivedClass2", "Number" : 42, "Boolean" : true }""",
                     ExpectedRoundtripValue: new DerivedClass2_TypeDiscriminator { Number = 42, Boolean = true });
 
                 yield return new TestData(
                     Value: new DerivedAbstractClass.DerivedClass { Number = 42, Boolean = true },
-                    ExpectedJson: @"{ ""_case"" : ""derivedAbstractClass"", ""Number"" : 42, ""Boolean"" : true }",
+                    ExpectedJson: """{ "_case" : "derivedAbstractClass", "Number" : 42, "Boolean" : true }""",
                     ExpectedDeserializationException: typeof(NotSupportedException));
 
                 yield return new TestData(
                     Value: new DerivedCollection_NoTypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedCollection_TypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""_case"" : ""derivedCollection"", ""$values"" : [42,42,42] }",
+                    ExpectedJson: """{ "_case" : "derivedCollection", "$values" : [42,42,42] }""",
                     ExpectedRoundtripValue: new DerivedCollection_TypeDiscriminator { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedCollection_TypeDiscriminator.DerivedClass { Number = 42, ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""_case"" : ""derivedCollection"", ""$values"" : [42,42,42] }",
+                    ExpectedJson: """{ "_case" : "derivedCollection", "$values" : [42,42,42] }""",
                     ExpectedRoundtripValue: new DerivedCollection_TypeDiscriminator { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedDictionary_NoTypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""dictionaryKey"" : 42 }",
+                    ExpectedJson: """{ "dictionaryKey" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass());
 
                 yield return new TestData(
                     Value: new DerivedDictionary_TypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedDictionary_TypeDiscriminator.DerivedClass { Number = 42, ExtraProperty = "extra" },
-                    ExpectedJson: @"{ ""_case"" : ""derivedDictionaryOfDerivedDictionary"", ""dictionaryKey"" : 42 }",
+                    ExpectedJson: """{ "_case" : "derivedDictionaryOfDerivedDictionary", "dictionaryKey" : 42 }""",
                     ExpectedRoundtripValue: new DerivedDictionary_TypeDiscriminator.DerivedClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClassWithConstructor_TypeDiscriminator(42),
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
                     Value: new DerivedClassWithConstructor_TypeDiscriminator.DerivedClass(42, "extra"),
-                    ExpectedJson: @"{ ""_case"" : ""derivedClassOfDerivedClassWithCtor"", ""Number"" : 42, ""ExtraProperty"" : ""extra"" }",
+                    ExpectedJson: """{ "_case" : "derivedClassOfDerivedClassWithCtor", "Number" : 42, "ExtraProperty" : "extra" }""",
                     ExpectedRoundtripValue: new DerivedClassWithConstructor_TypeDiscriminator.DerivedClass(42, "extra"));
 
                 yield return new TestData(
                     Value: new DerivedClassWithCustomConverter_NoTypeDiscriminator { Number = 42 },
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClass { Number = 42 });
 
                 yield return new TestData(
@@ -926,7 +926,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PolymorphicClass_NoTypeDiscriminators_Deserialization_IgnoresTypeMetadata()
         {
-            string json = @"{""$type"" : ""derivedClass""}";
+            string json = """{"$type" : "derivedClass"}""";
             PolymorphicClass_NoTypeDiscriminators result = await Serializer.DeserializeWrapper<PolymorphicClass_NoTypeDiscriminators>(json);
             Assert.IsType<PolymorphicClass_NoTypeDiscriminators>(result);
             Assert.True(result.ExtensionData?.ContainsKey("$type") == true);
@@ -946,7 +946,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PolymorphicClass_WithDerivedPolymorphicClass_Serialization_ShouldUseBaseTypeContract()
         {
-            string expectedJson = @"{""$type"":""derivedClass""}";
+            string expectedJson = """{"$type":"derivedClass"}""";
             PolymorphicClass_WithDerivedPolymorphicClass value = new PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass();
             await TestMultiContextSerialization(value, expectedJson, contexts: ~SerializedValueContext.BoxedValue);
         }
@@ -954,7 +954,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PolymorphicClass_WithDerivedPolymorphicClass_Deserialization_ShouldUseBaseTypeContract()
         {
-            string json = @"{""$type"":""derivedClass""}";
+            string json = """{"$type":"derivedClass"}""";
 
             var expectedValueUsingBaseContract = new PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass();
             await TestMultiContextDeserialization<PolymorphicClass_WithDerivedPolymorphicClass>(
@@ -1004,8 +1004,8 @@ namespace System.Text.Json.Serialization.Tests
 
             public static IEnumerable<object[]> GetTestData()
             {
-                yield return WrapArgs(new PolymorphicClass_WithBaseTypeDiscriminator { Number = 42 }, @"{ ""$type"" : ""baseType"", ""Number"" : 42 }");
-                yield return WrapArgs(new DerivedClass { Number = 42, String = "str" }, @"{ ""$type"" : ""derivedType"", ""Number"" : 42, ""String"" : ""str"" }");
+                yield return WrapArgs(new PolymorphicClass_WithBaseTypeDiscriminator { Number = 42 }, """{ "$type" : "baseType", "Number" : 42 }""");
+                yield return WrapArgs(new DerivedClass { Number = 42, String = "str" }, """{ "$type" : "derivedType", "Number" : 42, "String" : "str" }""");
 
                 static object[] WrapArgs(PolymorphicClass_WithBaseTypeDiscriminator value, string expectedJson)
                     => new object[] { value, expectedJson };
@@ -1045,30 +1045,32 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = await Serializer.SerializeWrapper(obj);
             JsonTestHelper.AssertJsonEqual(
-                @"{
-                   ""$type"": ""NodeList"",
-                   ""Info"": ""1"",
-                   ""List"": [
-                     {
-                       ""$type"": ""Leaf"",
-                       ""Test"": null,
-                       ""Name"": ""testName2""
-                     },
-                     {
-                       ""$type"": ""NodeList"",
-                       ""Info"": ""2"",
-                       ""List"": [
-                         {
-                           ""$type"": ""NodeList"",
-                           ""Info"": ""1"",
-                           ""List"": null,
-                           ""Name"": ""testName4""
-                         }
-                       ],
-                       ""Name"": ""testName3""
-                     }
-                   ],
-                   ""Name"": ""testName""}", json);
+                """
+                        {
+                                           "$type": "NodeList",
+                                           "Info": "1",
+                                           "List": [
+                                             {
+                                               "$type": "Leaf",
+                                               "Test": null,
+                                               "Name": "testName2"
+                                             },
+                                             {
+                                               "$type": "NodeList",
+                                               "Info": "2",
+                                               "List": [
+                                                 {
+                                                   "$type": "NodeList",
+                                                   "Info": "1",
+                                                   "List": null,
+                                                   "Name": "testName4"
+                                                 }
+                                               ],
+                                               "Name": "testName3"
+                                             }
+                                           ],
+                                           "Name": "testName"}
+                    """, json);
 
             TestNode deserialized = await Serializer.DeserializeWrapper<TestNode>(json);
             obj.AssertEqualTo(deserialized);
@@ -1252,27 +1254,27 @@ namespace System.Text.Json.Serialization.Tests
             {
                 yield return new TestData(
                     Value: new PolymorphicClassWithConstructor(42),
-                    ExpectedJson: @"{ ""Number"" : 42 }",
+                    ExpectedJson: """{ "Number" : 42 }""",
                     ExpectedRoundtripValue: new PolymorphicClassWithConstructor(42));
 
                 yield return new TestData(
                     Value: new DerivedClass { String = "str" },
-                    ExpectedJson: @"{ ""$type"" : ""derivedClass"", ""Number"" : 0, ""String"" : ""str"" }",
+                    ExpectedJson: """{ "$type" : "derivedClass", "Number" : 0, "String" : "str" }""",
                     ExpectedRoundtripValue: new DerivedClass { String = "str" });
 
                 yield return new TestData(
                     Value: new DerivedClassWithConstructor(42, true),
-                    ExpectedJson: @"{ ""$type"" : ""derivedClassWithCtor"", ""Number"" : 42, ""Boolean"" : true }",
+                    ExpectedJson: """{ "$type" : "derivedClassWithCtor", "Number" : 42, "Boolean" : true }""",
                     ExpectedRoundtripValue: new DerivedClassWithConstructor(42, true));
 
                 yield return new TestData(
                     Value: new DerivedCollection { 1, 2, 3 },
-                    ExpectedJson: @"{ ""$type"" : ""derivedCollection"", ""$values"" : [1,2,3]}",
+                    ExpectedJson: """{ "$type" : "derivedCollection", "$values" : [1,2,3]}""",
                     ExpectedRoundtripValue: new DerivedCollection { 1, 2, 3 });
 
                 yield return new TestData(
                     Value: new DerivedDictionary { ["key1"] = 42, ["key2"] = -1 },
-                    ExpectedJson: @"{ ""$type"" : ""derivedDictionary"", ""key1"" : 42, ""key2"" : -1 }",
+                    ExpectedJson: """{ "$type" : "derivedDictionary", "key1" : 42, "key2" : -1 }""",
                     ExpectedRoundtripValue: new DerivedDictionary { ["key1"] = 42, ["key2"] = -1 });
             }
 
@@ -1327,17 +1329,17 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedClass"", ""$type"" : ""derivedClass"", ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""$type"" : ""derivedClass""}")]
-        [InlineData("$.$id", @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
-        [InlineData("$.$values", @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""$values"" : [] }")]
-        [InlineData("$", @"{ ""$type"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
-        [InlineData("$", @"{ ""$type"" : 0, ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : false, ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : {}, ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : [], ""Number"" : 42 }")]
-        [InlineData("$.$id", @"{ ""$id"" : ""1"", ""Number"" : 42 }")]
-        [InlineData("$.$ref", @"{ ""$ref"" : ""1"" }")]
+        [InlineData("$['$type']", """{ "$type" : "derivedClass", "$type" : "derivedClass", "Number" : 42 }""")]
+        [InlineData("$['$type']", """{ "$type" : "derivedClass", "Number" : 42, "$type" : "derivedClass"}""")]
+        [InlineData("$['$id']", """{ "$type" : "derivedClass", "Number" : 42, "$id" : "referenceId"}""")]
+        [InlineData("$['$values']", """{ "$type" : "derivedClass", "Number" : 42, "$values" : [] }""")]
+        [InlineData("$", """{ "$type" : "invalidDiscriminator", "Number" : 42 }""")]
+        [InlineData("$", """{ "$type" : 0, "Number" : 42 }""")]
+        [InlineData("$['$type']", """{ "$type" : false, "Number" : 42 }""")]
+        [InlineData("$['$type']", """{ "$type" : {}, "Number" : 42 }""")]
+        [InlineData("$['$type']", """{ "$type" : [], "Number" : 42 }""")]
+        [InlineData("$['$id']", """{ "$id" : "1", "Number" : 42 }""")]
+        [InlineData("$['$ref']", """{ "$ref" : "1" }""")]
         public async Task PolymorphicInterface_InvalidTypeDiscriminatorMetadata_ShouldThrowJsonException(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicInterface>(json, PolymorphicClass.CustomConfigWithBaseTypeFallback));
@@ -1489,7 +1491,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     yield return new TestData(
                         Value: new DerivedClass_NoTypeDiscriminator { Number = 42, String = "str" },
-                        ExpectedJson: @"{ ""Number"" : 42, ""String"" : ""str"" }",
+                        ExpectedJson: """{ "Number" : 42, "String" : "str" }""",
                         ExpectedDeserializationException: typeof(NotSupportedException));
 
                     yield return new TestData(
@@ -1498,7 +1500,7 @@ namespace System.Text.Json.Serialization.Tests
 
                     yield return new TestData(
                         Value: new DerivedClass_TypeDiscriminator { Number = 42, String = "str" },
-                        ExpectedJson: @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""String"" : ""str"" }",
+                        ExpectedJson: """{ "$type" : "derivedClass", "Number" : 42, "String" : "str" }""",
                         ExpectedRoundtripValue: new DerivedClass_TypeDiscriminator { Number = 42, String = "str" });
 
                     yield return new TestData(
@@ -1507,12 +1509,12 @@ namespace System.Text.Json.Serialization.Tests
 
                     yield return new TestData(
                         Value: new DerivedStruct_NoTypeDiscriminator { Number = 42, String = "str" },
-                        ExpectedJson: @"{ ""Number"" : 42, ""String"" : ""str"" }",
+                        ExpectedJson: """{ "Number" : 42, "String" : "str" }""",
                         ExpectedDeserializationException: typeof(NotSupportedException));
 
                     yield return new TestData(
                         Value: new DerivedStruct_TypeDiscriminator { Number = 42, String = "str" },
-                        ExpectedJson: @"{ ""$type"" : ""derivedStruct"", ""Number"" : 42, ""String"" : ""str"" }",
+                        ExpectedJson: """{ "$type" : "derivedStruct", "Number" : 42, "String" : "str" }""",
                         ExpectedRoundtripValue: new DerivedStruct_TypeDiscriminator { Number = 42, String = "str" });
                 }
 
@@ -1533,32 +1535,32 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     yield return new TestData(
                         Value: new DerivedClass_NoTypeDiscriminator { Number = 42, String = "str" },
-                        ExpectedJson: @"{ ""Number"" : 42 }",
+                        ExpectedJson: """{ "Number" : 42 }""",
                         ExpectedDeserializationException: typeof(NotSupportedException));
 
                     yield return new TestData(
                         new DerivedClass_NoTypeDiscriminator.DerivedClass { Number = 42 },
-                        ExpectedJson: @"{ ""Number"" : 42 }",
+                        ExpectedJson: """{ "Number" : 42 }""",
                         ExpectedDeserializationException: typeof(NotSupportedException));
 
                     yield return new TestData(
                         Value: new DerivedClass_TypeDiscriminator { Number = 42, String = "str" },
-                        ExpectedJson: @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""String"" : ""str"" }",
+                        ExpectedJson: """{ "$type" : "derivedClass", "Number" : 42, "String" : "str" }""",
                         ExpectedRoundtripValue: new DerivedClass_TypeDiscriminator { Number = 42, String = "str" });
 
                     yield return new TestData(
                         new DerivedClass_TypeDiscriminator.DerivedClass { Number = 42, String = "str", ExtraProperty = "extra" },
-                        ExpectedJson: @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""String"" : ""str"" }",
+                        ExpectedJson: """{ "$type" : "derivedClass", "Number" : 42, "String" : "str" }""",
                         ExpectedRoundtripValue: new DerivedClass_TypeDiscriminator { Number = 42, String = "str" });
 
                     yield return new TestData(
                         Value: new DerivedStruct_NoTypeDiscriminator { Number = 42, String = "str" },
-                        ExpectedJson: @"{ ""Number"" : 42, ""String"" : ""str"" }",
+                        ExpectedJson: """{ "Number" : 42, "String" : "str" }""",
                         ExpectedDeserializationException: typeof(NotSupportedException));
 
                     yield return new TestData(
                         Value: new DerivedStruct_TypeDiscriminator { Number = 42, String = "str" },
-                        ExpectedJson: @"{ ""Number"" : 42 }",
+                        ExpectedJson: """{ "Number" : 42 }""",
                         ExpectedDeserializationException: typeof(NotSupportedException));
 
                     yield return new TestData(
@@ -1638,17 +1640,17 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PolymorphicList_UnrecognizedTypeDiscriminators_ShouldSucceedDeserialization()
         {
-            string json = @"{ ""$type"" : ""invalidTypeDiscriminator"", ""$values"" : [42,42,42] }";
+            string json = """{ "$type" : "invalidTypeDiscriminator", "$values" : [42,42,42] }""";
             PolymorphicList result = await Serializer.DeserializeWrapper<PolymorphicList>(json);
             Assert.IsType<PolymorphicList>(result);
             Assert.Equal(Enumerable.Repeat(42, 3), result);
         }
 
         [Theory]
-        [InlineData("$.UnsupportedProperty", @"{ ""$type"" : ""derivedList"", ""UnsupportedProperty"" : 42 }")]
-        [InlineData("$.UnsupportedProperty", @"{ ""$type"" : ""derivedList"", ""$values"" : [], ""UnsupportedProperty"" : 42 }")]
-        [InlineData("$.$id", @"{ ""$id"" : 42, ""$values"" : [] }")]
-        [InlineData("$.$ref", @"{ ""$ref"" : 42 }")]
+        [InlineData("$.UnsupportedProperty", """{ "$type" : "derivedList", "UnsupportedProperty" : 42 }""")]
+        [InlineData("$.UnsupportedProperty", """{ "$type" : "derivedList", "$values" : [], "UnsupportedProperty" : 42 }""")]
+        [InlineData("$['$id']", """{ "$id" : 42, "$values" : [] }""")]
+        [InlineData("$['$ref']", """{ "$ref" : 42 }""")]
         public async Task PolymorphicList_InvalidTypeDiscriminatorMetadata_ShouldThrowJsonException(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicList>(json));
@@ -1672,17 +1674,17 @@ namespace System.Text.Json.Serialization.Tests
             {
                 yield return new TestData(
                     Value: new PolymorphicList { 42 },
-                    ExpectedJson: @"{ ""$type"" : ""baseList"", ""$values"" : [42]}",
+                    ExpectedJson: """{ "$type" : "baseList", "$values" : [42]}""",
                     ExpectedRoundtripValue:  new PolymorphicList { 42 });
 
                 yield return new TestData(
                     Value: new DerivedList1 { 42 },
-                    ExpectedJson: @"{ ""$type"" : ""derivedList"", ""$values"" : [42]}",
+                    ExpectedJson: """{ "$type" : "derivedList", "$values" : [42]}""",
                     ExpectedRoundtripValue: new DerivedList1 { 42 });
 
                 yield return new TestData(
                     Value: new DerivedList2 { 42 },
-                    ExpectedJson: @"{ ""$type"" : ""baseList"", ""$values"" : [42]}",
+                    ExpectedJson: """{ "$type" : "baseList", "$values" : [42]}""",
                     ExpectedRoundtripValue: new PolymorphicList { 42 });
             }
 
@@ -1702,10 +1704,12 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string expectedJson =
-                @"[ [1,2,3],
-                    { ""$type"":""list"" , ""$values"":[1,2,3] },
-                    { ""$type"":""queue"", ""$values"":[1,2,3] },
-                    { ""$type"":""set""  , ""$values"":[1,2,3] }]";
+                """
+                        [ [1,2,3],
+                                            { "$type":"list" , "$values":[1,2,3] },
+                                            { "$type":"queue", "$values":[1,2,3] },
+                                            { "$type":"set"  , "$values":[1,2,3] }]
+                    """;
 
             string actualJson = await Serializer.SerializeWrapper(values, s_optionsWithPolymorphicCollectionInterface);
 
@@ -1725,10 +1729,12 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json =
-                @"[ [1,2,3],
-                    { ""$type"":""list"" , ""$values"":[1,2,3] },
-                    { ""$type"":""queue"", ""$values"":[1,2,3] },
-                    { ""$type"":""set""  , ""$values"":[1,2,3] }]";
+                """
+                        [ [1,2,3],
+                                            { "$type":"list" , "$values":[1,2,3] },
+                                            { "$type":"queue", "$values":[1,2,3] },
+                                            { "$type":"set"  , "$values":[1,2,3] }]
+                    """;
 
             var actualValues = await Serializer.DeserializeWrapper<IEnumerable<int>[]>(json, s_optionsWithPolymorphicCollectionInterface);
             Assert.Equal(expectedValues.Length, actualValues.Length);
@@ -1884,19 +1890,19 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PolymorphicDictionary_UnrecognizedTypeDiscriminators_ShouldSucceedDeserialization()
         {
-            string json = @"{ ""$type"" : ""invalidTypeDiscriminator"", ""key"" : 42 }";
+            string json = """{ "$type" : "invalidTypeDiscriminator", "key" : 42 }""";
             PolymorphicDictionary result = await Serializer.DeserializeWrapper<PolymorphicDictionary>(json);
             Assert.IsType<PolymorphicDictionary>(result);
             Assert.Equal(new PolymorphicDictionary { ["key"] = 42 }, result);
         }
 
         [Theory]
-        [InlineData("$.$ref", @"{ ""$type"" : ""derivedList"", ""UserProperty"" : 42, ""$ref"" : ""42"" }")]
-        [InlineData("$.$type", @"{ ""$type"" : ""derivedList"", ""UserProperty"" : 42, ""$type"" : ""derivedDictionary"" }")]
-        [InlineData("$.$type", @"{ ""UserProperty"" : 42, ""$type"" : ""derivedDictionary"" }")]
-        [InlineData("$.$values", @"{ ""$type"" : ""derivedDictionary"", ""$values"" : [] }")]
-        [InlineData("$.$id", @"{ ""$id"" : 42, ""UserProperty"" : 42 }")]
-        [InlineData("$.$ref", @"{ ""$ref"" : 42 }")]
+        [InlineData("$['$ref']", """{ "$type" : "derivedList", "UserProperty" : 42, "$ref" : "42" }""")]
+        [InlineData("$['$type']", """{ "$type" : "derivedList", "UserProperty" : 42, "$type" : "derivedDictionary" }""")]
+        [InlineData("$['$type']", """{ "UserProperty" : 42, "$type" : "derivedDictionary" }""")]
+        [InlineData("$['$values']", """{ "$type" : "derivedDictionary", "$values" : [] }""")]
+        [InlineData("$['$id']", """{ "$id" : 42, "UserProperty" : 42 }""")]
+        [InlineData("$['$ref']", """{ "$ref" : 42 }""")]
         public async Task PolymorphicDictionary_InvalidTypeDiscriminatorMetadata_ShouldThrowJsonException(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicDictionary>(json));
@@ -1920,17 +1926,17 @@ namespace System.Text.Json.Serialization.Tests
             {
                 yield return new TestData(
                     Value: new PolymorphicDictionary { ["key1"] = 42 , ["key2"] = -1 },
-                    ExpectedJson: @"{ ""$type"" : ""baseDictionary"", ""key1"" : 42, ""key2"" : -1 }",
+                    ExpectedJson: """{ "$type" : "baseDictionary", "key1" : 42, "key2" : -1 }""",
                     ExpectedRoundtripValue: new PolymorphicDictionary { ["key1"] = 42, ["key2"] = -1 });
 
                 yield return new TestData(
                     Value: new DerivedDictionary1 { ["key1"] = 42, ["key2"] = -1 },
-                    ExpectedJson: @"{ ""$type"" : ""derivedDictionary"", ""key1"" : 42, ""key2"" : -1 }",
+                    ExpectedJson: """{ "$type" : "derivedDictionary", "key1" : 42, "key2" : -1 }""",
                     ExpectedRoundtripValue: new DerivedDictionary1 { ["key1"] = 42, ["key2"] = -1 });
 
                 yield return new TestData(
                     Value: new DerivedDictionary2 { ["key1"] = 42, ["key2"] = -1 },
-                    ExpectedJson: @"{ ""$type"" : ""baseDictionary"", ""key1"" : 42, ""key2"" : -1 }",
+                    ExpectedJson: """{ "$type" : "baseDictionary", "key1" : 42, "key2" : -1 }""",
                     ExpectedRoundtripValue: new PolymorphicDictionary { ["key1"] = 42, ["key2"] = -1 });
             }
 
@@ -1949,10 +1955,12 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string expectedJson =
-                @"[ [ { ""Key"":0, ""Value"":0 } ],
-                    { ""$type"" : ""dictionary"", ""42"" : false },
-                    { ""$type"" : ""sortedDictionary"", ""0"" : 1, ""1"" : 42 },
-                    { ""$type"" : ""readOnlyDictionary"" } ]";
+                """
+                        [ [ { "Key":0, "Value":0 } ],
+                                            { "$type" : "dictionary", "42" : false },
+                                            { "$type" : "sortedDictionary", "0" : 1, "1" : 42 },
+                                            { "$type" : "readOnlyDictionary" } ]
+                    """;
 
             string actualJson = await Serializer.SerializeWrapper(values, s_optionsWithPolymorphicDictionaryInterface);
 
@@ -1963,10 +1971,12 @@ namespace System.Text.Json.Serialization.Tests
         public async Task PolymorphicDictionaryInterface_Deserialization()
         {
             string json =
-                @"[ [ { ""Key"":0, ""Value"":0 } ],
-                    { ""$type"" : ""dictionary"", ""42"" : false },
-                    { ""$type"" : ""sortedDictionary"", ""0"" : 1, ""1"" : 42 },
-                    { ""$type"" : ""readOnlyDictionary"" } ]";
+                """
+                        [ [ { "Key":0, "Value":0 } ],
+                                            { "$type" : "dictionary", "42" : false },
+                                            { "$type" : "sortedDictionary", "0" : 1, "1" : 42 },
+                                            { "$type" : "readOnlyDictionary" } ]
+                    """;
 
             var expectedValues = new IEnumerable<KeyValuePair<int, object>>[]
             {
@@ -2001,9 +2011,9 @@ namespace System.Text.Json.Serialization.Tests
 
         #region Polymorphic Record Types
         [Theory]
-        [InlineData(0, @"{""$type"":""zero""}")]
-        [InlineData(1, @"{""$type"":""succ"", ""value"":{""$type"":""zero""}}")]
-        [InlineData(3, @"{""$type"":""succ"", ""value"":{""$type"":""succ"",""value"":{""$type"":""succ"",""value"":{""$type"":""zero""}}}}")]
+        [InlineData(0, """{"$type":"zero"}""")]
+        [InlineData(1, """{"$type":"succ", "value":{"$type":"zero"}}""")]
+        [InlineData(3, """{"$type":"succ", "value":{"$type":"succ","value":{"$type":"succ","value":{"$type":"zero"}}}}""")]
         public async Task Peano_Serialization(int size, string expectedJson)
         {
             Peano peano = Peano.FromInteger(size);
@@ -2011,9 +2021,9 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(0, @"{""$type"":""zero""}")]
-        [InlineData(1, @"{""$type"":""succ"", ""value"":{""$type"":""zero""}}")]
-        [InlineData(3, @"{""$type"":""succ"", ""value"":{""$type"":""succ"",""value"":{""$type"":""succ"",""value"":{""$type"":""zero""}}}}")]
+        [InlineData(0, """{"$type":"zero"}""")]
+        [InlineData(1, """{"$type":"succ", "value":{"$type":"zero"}}""")]
+        [InlineData(3, """{"$type":"succ", "value":{"$type":"succ","value":{"$type":"succ","value":{"$type":"zero"}}}}""")]
         public async Task Peano_Deserialization(int expectedSize, string json)
         {
             Peano expected = Peano.FromInteger(expectedSize);
@@ -2075,12 +2085,12 @@ namespace System.Text.Json.Serialization.Tests
 
             public static IEnumerable<object[]> GetTestData()
             {
-                yield return WrapArgs(new Leaf(), @"{""$type"":""leaf""}");
+                yield return WrapArgs(new Leaf(), """{"$type":"leaf"}""");
                 yield return WrapArgs(
                     new Node(-1,
                         new Leaf(),
                         new Leaf()),
-                    @"{""$type"":""node"",""value"":-1,""left"":{""$type"":""leaf""},""right"":{""$type"":""leaf""}}");
+                    """{"$type":"node","value":-1,"left":{"$type":"leaf"},"right":{"$type":"leaf"}}""");
 
                 yield return WrapArgs(
                     new Node(12,
@@ -2088,11 +2098,13 @@ namespace System.Text.Json.Serialization.Tests
                         new Node(24,
                             new Leaf(),
                             new Leaf())),
-                    @"{""$type"":""node"", ""value"":12,
-                            ""left"":{""$type"":""leaf""},
-                            ""right"":{""$type"":""node"", ""value"":24,
-                                      ""left"":{""$type"":""leaf""},
-                                      ""right"":{""$type"":""leaf""}}}");
+                    """
+                            {"$type":"node", "value":12,
+                                                        "left":{"$type":"leaf"},
+                                                        "right":{"$type":"node", "value":24,
+                                                                  "left":{"$type":"leaf"},
+                                                                  "right":{"$type":"leaf"}}}
+                        """);
 
                 static object[] WrapArgs(BinaryTree value, string expectedJson) => new object[] { value, expectedJson };
             }
@@ -2340,19 +2352,19 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "NonMetadataProperty": [1,2,3], "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "NonMetadataProperty": [1,2,3], "$ref" : "1" }]""")]
         [InlineData("$[1].NonMetadataProperty", """[{ "$id" : "1" }, { "$ref" : "1", "NonMetadataProperty": [1,2,3] }]""")]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "$type": "derivedClass1", "$ref" : "1" }]""")]
-        [InlineData("$[1].$type", """[{ "$id" : "1" }, { "$ref" : "1", "$type": "derivedClass1" }]""")]
-        [InlineData("$[1].$id", """[{ "$id" : "1" }, { "$ref" : "1", "$id": "1" }]""")]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "$id": "1", "$ref" : "1" }]""")]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "$values": [1, 2, 3], "$ref" : "1" }]""")]
-        [InlineData("$[1].$values", """[{ "$id" : "1" }, { "$ref" : "1", "$values": [1, 2, 3] }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "$type": "derivedClass1", "$ref" : "1" }]""")]
+        [InlineData("$[1]['$type']", """[{ "$id" : "1" }, { "$ref" : "1", "$type": "derivedClass1" }]""")]
+        [InlineData("$[1]['$id']", """[{ "$id" : "1" }, { "$ref" : "1", "$id": "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "$id": "1", "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "$values": [1, 2, 3], "$ref" : "1" }]""")]
+        [InlineData("$[1]['$values']", """[{ "$id" : "1" }, { "$ref" : "1", "$values": [1, 2, 3] }]""")]
         [InlineData("$[0].NonMetadataProperty", """[{ "$type" : "derivedCollection", "$values": [42,42,42], "$id" : "1", "NonMetadataProperty": {}}, { "$ref" : "1" }]""")]
-        [InlineData("$[0].$values", """[{ "$type" : "derivedCollection", "$id" : "1", "NonMetadataProperty": {}, "$values": [42,42,42]}, { "$ref" : "1" }]""")]
-        [InlineData("$[1].$ref", """[{ "$type" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$type" : "derivedCollection", "$ref" : "1" }]""")]
-        [InlineData("$[1].$values", """[{ "$type" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$ref" : "1", "$values" : [1,2,3] }]""")]
-        [InlineData("$[1].$ref", """[{ "$type" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$values" : [1,2,3], "$ref" : "1" }]""")]
+        [InlineData("$[0]['$values']", """[{ "$type" : "derivedCollection", "$id" : "1", "NonMetadataProperty": {}, "$values": [42,42,42]}, { "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$type" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$type" : "derivedCollection", "$ref" : "1" }]""")]
+        [InlineData("$[1]['$values']", """[{ "$type" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$ref" : "1", "$values" : [1,2,3] }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$type" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$values" : [1,2,3], "$ref" : "1" }]""")]
         public async Task ReferencePreservation_AllowOutOfOrderMetadata_RejectsInvalidMetadata(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClass[]>(json, s_jsonSerializerOptionsPreserveRefsAndAllowReadAhead));
@@ -2374,19 +2386,19 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "NonMetadataProperty": [1,2,3], "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "NonMetadataProperty": [1,2,3], "$ref" : "1" }]""")]
         [InlineData("$[1].NonMetadataProperty", """[{ "$id" : "1" }, { "$ref" : "1", "NonMetadataProperty": [1,2,3] }]""")]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "case": "derivedClass", "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "case": "derivedClass", "$ref" : "1" }]""")]
         [InlineData("$[1].case", """[{ "$id" : "1" }, { "$ref" : "1", "case": "derivedClass" }]""")]
-        [InlineData("$[1].$id", """[{ "$id" : "1" }, { "$ref" : "1", "$id": "1" }]""")]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "$id": "1", "$ref" : "1" }]""")]
-        [InlineData("$[1].$ref", """[{ "$id" : "1" }, { "$values": [1, 2, 3], "$ref" : "1" }]""")]
-        [InlineData("$[1].$values", """[{ "$id" : "1" }, { "$ref" : "1", "$values": [1, 2, 3] }]""")]
+        [InlineData("$[1]['$id']", """[{ "$id" : "1" }, { "$ref" : "1", "$id": "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "$id": "1", "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "$id" : "1" }, { "$values": [1, 2, 3], "$ref" : "1" }]""")]
+        [InlineData("$[1]['$values']", """[{ "$id" : "1" }, { "$ref" : "1", "$values": [1, 2, 3] }]""")]
         [InlineData("$[0].NonMetadataProperty", """[{ "case" : "derivedCollection", "$values": [42,42,42], "$id" : "1", "NonMetadataProperty": {}}, { "$ref" : "1" }]""")]
-        [InlineData("$[0].$values", """[{ "case" : "derivedCollection", "$id" : "1", "NonMetadataProperty": {}, "$values": [42,42,42]}, { "$ref" : "1" }]""")]
-        [InlineData("$[1].$ref", """[{ "case" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "case" : "derivedCollection", "$ref" : "1" }]""")]
-        [InlineData("$[1].$values", """[{ "case" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$ref" : "1", "$values" : [1,2,3] }]""")]
-        [InlineData("$[1].$ref", """[{ "case" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$values" : [1,2,3], "$ref" : "1" }]""")]
+        [InlineData("$[0]['$values']", """[{ "case" : "derivedCollection", "$id" : "1", "NonMetadataProperty": {}, "$values": [42,42,42]}, { "$ref" : "1" }]""")]
+        [InlineData("$[1]['$ref']", """[{ "case" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "case" : "derivedCollection", "$ref" : "1" }]""")]
+        [InlineData("$[1]['$values']", """[{ "case" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$ref" : "1", "$values" : [1,2,3] }]""")]
+        [InlineData("$[1]['$ref']", """[{ "case" : "derivedCollection", "$id" : "1", "$values": [42,42,42]}, { "$values" : [1,2,3], "$ref" : "1" }]""")]
         public async Task ReferencePreservation_CustomTypeDiscriminator_AllowOutOfOrderMetadata_RejectsInvalidMetadata(string expectedJsonPath, string json)
         {
             JsonException exception = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<PolymorphicClassWithCustomTypeDiscriminator[]>(json, s_jsonSerializerOptionsPreserveRefsAndAllowReadAhead));
@@ -2524,7 +2536,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PolymorphicInterfaceWithInterfaceDerivedType_Deserialization_ThrowsInvalidOperationException()
         {
-            string json = @"{""$type"":""derivedInterface""}";
+            string json = """{"$type":"derivedInterface"}""";
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper<PolymorphicInterfaceWithInterfaceDerivedType>(json));
         }
 
@@ -2532,7 +2544,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task PolymorphicInterfaceWithInterfaceDerivedType_FallbackToNearestAncestor_Serialization()
         {
             PolymorphicInterfaceWithInterfaceDerivedType value = new PolymorphicInterfaceWithInterfaceDerivedType.DerivedInterface.ImplementingClass();
-            string expectedJson = @"{""$type"":""derivedInterface""}";
+            string expectedJson = """{"$type":"derivedInterface"}""";
             string actualJson = await Serializer.SerializeWrapper(value, PolymorphicInterfaceWithInterfaceDerivedType_OptionsWithFallbackToNearestAncestor);
             JsonTestHelper.AssertJsonEqual(expectedJson, actualJson);
         }
@@ -2540,7 +2552,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PolymorphicInterfaceWithInterfaceDerivedType_FallbackToNearestAncestor_Deserialization_ThrowsNotSupportedException()
         {
-            string json = @"{""$type"":""derivedInterface""}";
+            string json = """{"$type":"derivedInterface"}""";
             await Assert.ThrowsAsync<NotSupportedException>(() =>
                 Serializer.DeserializeWrapper<PolymorphicInterfaceWithInterfaceDerivedType>(json,
                     PolymorphicInterfaceWithInterfaceDerivedType_OptionsWithFallbackToNearestAncestor));
@@ -2626,17 +2638,21 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task PolymorphicGenericClass_ThrowsInvalidOperationException()
+        public async Task PolymorphicGenericClass_SupportsOpenGenericDerivedType()
         {
-            PolymorphicGenericClass<int> value = new PolymorphicGenericClass<int>.DerivedClass();
-            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+            PolymorphicGenericClass<int> value = new PolymorphicGenericClass<int>.DerivedClass { BaseValue = 1, DerivedValue = 2 };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"BaseValue":1,"DerivedValue":2}""", json);
         }
 
         [JsonDerivedType(typeof(PolymorphicGenericClass<>.DerivedClass))]
         public class PolymorphicGenericClass<T>
         {
+            public T? BaseValue { get; set; }
+
             public class DerivedClass : PolymorphicGenericClass<T>
             {
+                public T? DerivedValue { get; set; }
             }
         }
 
@@ -2655,6 +2671,889 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        #region Open Generic Polymorphism Tests
+
+        [Fact]
+        public async Task OpenGenericDerivedType_WithStringDiscriminator_SerializationWorks()
+        {
+            OpenGenericBase_StringDisc<int> value = new OpenGenericDerived_StringDisc<int> { Value = 42 };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Value":42}""", json);
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_WithStringDiscriminator_DeserializationWorks()
+        {
+            string json = """{"$type":"derived","Value":42}""";
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_StringDisc<int>>(json);
+            Assert.IsType<OpenGenericDerived_StringDisc<int>>(result);
+            Assert.Equal(42, ((OpenGenericDerived_StringDisc<int>)result).Value);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_StringDisc<>), "derived")]
+        public class OpenGenericBase_StringDisc<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericDerived_StringDisc<T> : OpenGenericBase_StringDisc<T>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_WithIntDiscriminator_SerializationWorks()
+        {
+            OpenGenericBase_IntDisc<string> value = new OpenGenericDerived_IntDisc<string> { Value = "hello" };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":1,"Value":"hello"}""", json);
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_WithIntDiscriminator_DeserializationWorks()
+        {
+            string json = """{"$type":1,"Value":"hello"}""";
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_IntDisc<string>>(json);
+            Assert.IsType<OpenGenericDerived_IntDisc<string>>(result);
+            Assert.Equal("hello", ((OpenGenericDerived_IntDisc<string>)result).Value);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_IntDisc<>), 1)]
+        public class OpenGenericBase_IntDisc<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericDerived_IntDisc<T> : OpenGenericBase_IntDisc<T>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_MultipleDerivedTypes_Work()
+        {
+            OpenGenericBase_Multi<int> valueA = new OpenGenericDerivedA_Multi<int> { ValueA = 1 };
+            OpenGenericBase_Multi<int> valueB = new OpenGenericDerivedB_Multi<int> { ValueB = 2 };
+
+            string jsonA = await Serializer.SerializeWrapper(valueA);
+            string jsonB = await Serializer.SerializeWrapper(valueB);
+
+            JsonTestHelper.AssertJsonEqual("""{"$type":"a","ValueA":1}""", jsonA);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"b","ValueB":2}""", jsonB);
+
+            var resultA = await Serializer.DeserializeWrapper<OpenGenericBase_Multi<int>>(jsonA);
+            var resultB = await Serializer.DeserializeWrapper<OpenGenericBase_Multi<int>>(jsonB);
+
+            Assert.IsType<OpenGenericDerivedA_Multi<int>>(resultA);
+            Assert.IsType<OpenGenericDerivedB_Multi<int>>(resultB);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerivedA_Multi<>), "a")]
+        [JsonDerivedType(typeof(OpenGenericDerivedB_Multi<>), "b")]
+        public class OpenGenericBase_Multi<T>;
+
+        public class OpenGenericDerivedA_Multi<T> : OpenGenericBase_Multi<T>
+        {
+            public int ValueA { get; set; }
+        }
+
+        public class OpenGenericDerivedB_Multi<T> : OpenGenericBase_Multi<T>
+        {
+            public int ValueB { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_NestedClass_Works()
+        {
+            OpenGenericBase_Nested<int> value = new OpenGenericBase_Nested<int>.Derived();
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"nested"}""", json);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericBase_Nested<>.Derived), "nested")]
+        public class OpenGenericBase_Nested<T>
+        {
+            public class Derived : OpenGenericBase_Nested<T>;
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_ComplexTypeArg_Works()
+        {
+            OpenGenericBase_ComplexArg<List<int>> value = new OpenGenericDerived_ComplexArg<List<int>> { Data = [1, 2, 3] };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Data":[1,2,3]}""", json);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_ComplexArg<>), "derived")]
+        public class OpenGenericBase_ComplexArg<T>
+        {
+            public T? Data { get; set; }
+        }
+
+        public class OpenGenericDerived_ComplexArg<T> : OpenGenericBase_ComplexArg<T>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_WrappedTypeArg_Works()
+        {
+            // Derived<T> : Base<List<T>> registered on Base<List<string>> unifies to Derived<string>.
+            OpenGenericBase_Wrapped<List<string>> value = new OpenGenericDerived_Wrapped<string> { Data = ["a", "b"] };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Data":["a","b"]}""", json);
+
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_Wrapped<List<string>>>(json);
+            Assert.IsType<OpenGenericDerived_Wrapped<string>>(result);
+            Assert.Equal(new[] { "a", "b" }, ((OpenGenericDerived_Wrapped<string>)result).Data);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_Wrapped<>), "derived")]
+        public class OpenGenericBase_Wrapped<T>
+        {
+            public T? Data { get; set; }
+        }
+
+        public class OpenGenericDerived_Wrapped<T> : OpenGenericBase_Wrapped<List<T>>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_Interface_Works()
+        {
+            IOpenGenericBase<int> value = new OpenGenericInterfaceImpl<int> { Value = 42 };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","Value":42}""", json);
+
+            var result = await Serializer.DeserializeWrapper<IOpenGenericBase<int>>(json);
+            Assert.IsType<OpenGenericInterfaceImpl<int>>(result);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericInterfaceImpl<>), "impl")]
+        public interface IOpenGenericBase<T>
+        {
+            T? Value { get; set; }
+        }
+
+        public class OpenGenericInterfaceImpl<T> : IOpenGenericBase<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_DifferentTypeArguments_ProduceDifferentResults()
+        {
+            OpenGenericBase_StringDisc<int> intValue = new OpenGenericDerived_StringDisc<int> { Value = 42 };
+            OpenGenericBase_StringDisc<string> strValue = new OpenGenericDerived_StringDisc<string> { Value = "hello" };
+
+            string intJson = await Serializer.SerializeWrapper(intValue);
+            string strJson = await Serializer.SerializeWrapper(strValue);
+
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Value":42}""", intJson);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Value":"hello"}""", strJson);
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_NonGenericBase_ThrowsInvalidOperationException()
+        {
+            var value = new NonGenericBaseWithOpenGenericDerived();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(typeof(NonGenericBaseWithOpenGenericDerived.OpenDerived<>), "derived")]
+        public class NonGenericBaseWithOpenGenericDerived
+        {
+            public class OpenDerived<T> : NonGenericBaseWithOpenGenericDerived;
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_TypeArgsNotResolvable_ThrowsInvalidOperationException()
+        {
+            // Derived<T> : Base<int> - T cannot be determined from Base<int>
+            var value = new OpenGenericBase_Unresolvable<int>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_Unresolvable<>), "derived")]
+        public class OpenGenericBase_Unresolvable<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericDerived_Unresolvable<T> : OpenGenericBase_Unresolvable<int>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_GroundMismatchAgainstClosedBase_ThrowsInvalidOperationException()
+        {
+            // OpenGenericDerived_GroundMismatch<T> : OpenGenericBase_GroundMismatch<T, int>
+            // registered on OpenGenericBase_GroundMismatch<int, string>.
+            // Position 0 (T) unifies with int, but position 1 (concrete int in derived's base
+            // spec) contradicts string in the closed base. The derived type is well-formed in
+            // isolation but does not apply to this particular closed base, so the resolver
+            // surfaces a loud diagnostic rather than silently dropping the registration.
+            var value = new OpenGenericBase_GroundMismatch<int, string>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_GroundMismatch<>), "derived")]
+        public class OpenGenericBase_GroundMismatch<T1, T2>;
+
+        public class OpenGenericDerived_GroundMismatch<T> : OpenGenericBase_GroundMismatch<T, int>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_PartiallyConcrete_Works()
+        {
+            // Derived<T> : Base<T, int> registered on Base<string, int>:
+            // position 0 (T) unifies with string, position 1 (concrete int) matches.
+            // Expected: closed derived is OpenGenericDerived_PartiallyConcrete<string>, and
+            // round-trip serialization emits and reads the $type discriminator.
+            OpenGenericBase_PartiallyConcrete<string, int> value = new OpenGenericDerived_PartiallyConcrete<string> { Extra = "hello" };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Extra":"hello","Value1":null,"Value2":0}""", json);
+
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_PartiallyConcrete<string, int>>(json);
+            var derived = Assert.IsType<OpenGenericDerived_PartiallyConcrete<string>>(result);
+            Assert.Equal("hello", derived.Extra);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_PartiallyConcrete<>), "derived")]
+        public class OpenGenericBase_PartiallyConcrete<T1, T2>
+        {
+            public T1? Value1 { get; set; }
+            public T2? Value2 { get; set; }
+        }
+
+        public class OpenGenericDerived_PartiallyConcrete<T> : OpenGenericBase_PartiallyConcrete<T, int>
+        {
+            public T? Extra { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_ProgrammaticApi_Works()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        static typeInfo =>
+                        {
+                            if (typeInfo.Type == typeof(OpenGenericBase_Programmatic<int>))
+                            {
+                                typeInfo.PolymorphismOptions = new JsonPolymorphismOptions
+                                {
+                                    DerivedTypes =
+                                    {
+                                        new JsonDerivedType(typeof(OpenGenericDerived_Programmatic<int>), "derived"),
+                                    }
+                                };
+                            }
+                        }
+                    }
+                }
+            };
+
+            OpenGenericBase_Programmatic<int> value = new OpenGenericDerived_Programmatic<int> { Value = 99 };
+            string json = JsonSerializer.Serialize(value, options);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Value":99}""", json);
+
+            var result = JsonSerializer.Deserialize<OpenGenericBase_Programmatic<int>>(json, options);
+            Assert.IsType<OpenGenericDerived_Programmatic<int>>(result);
+            Assert.Equal(99, ((OpenGenericDerived_Programmatic<int>)result).Value);
+        }
+
+        public class OpenGenericBase_Programmatic<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericDerived_Programmatic<T> : OpenGenericBase_Programmatic<T>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_MixedWithRegularDerivedType_Works()
+        {
+            // Validates that both regular and open generic derived types coexist.
+            OpenGenericBase_Mixed<int> openValue = new OpenGenericDerived_Mixed<int> { Value = 1 };
+            OpenGenericBase_Mixed<int> regularValue = new RegularDerived_Mixed { Value = 2, Extra = "extra" };
+
+            string openJson = await Serializer.SerializeWrapper(openValue);
+            string regularJson = await Serializer.SerializeWrapper(regularValue);
+
+            JsonTestHelper.AssertJsonEqual("""{"$type":"open","Value":1}""", openJson);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"regular","Value":2,"Extra":"extra"}""", regularJson);
+
+            var openResult = await Serializer.DeserializeWrapper<OpenGenericBase_Mixed<int>>(openJson);
+            var regularResult = await Serializer.DeserializeWrapper<OpenGenericBase_Mixed<int>>(regularJson);
+
+            Assert.IsType<OpenGenericDerived_Mixed<int>>(openResult);
+            Assert.IsType<RegularDerived_Mixed>(regularResult);
+            Assert.Equal(1, openResult.Value);
+            Assert.Equal("extra", ((RegularDerived_Mixed)regularResult).Extra);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_Mixed<>), "open")]
+        [JsonDerivedType(typeof(RegularDerived_Mixed), "regular")]
+        public class OpenGenericBase_Mixed<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericDerived_Mixed<T> : OpenGenericBase_Mixed<T>;
+
+        public class RegularDerived_Mixed : OpenGenericBase_Mixed<int>
+        {
+            public string? Extra { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_InterfaceHierarchy_Works()
+        {
+            // Tests unification through a chain of generic interfaces:
+            // IDerived<T> extends IBase<T>, and we serialize through IBase<int>.
+            IOpenGenericBase_InterfaceHierarchy<int> value = new OpenGenericImpl_InterfaceHierarchy<int> { Value = 42, Extra = "extra" };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","Value":42,"Extra":"extra"}""", json);
+
+            var result = await Serializer.DeserializeWrapper<IOpenGenericBase_InterfaceHierarchy<int>>(json);
+            Assert.IsType<OpenGenericImpl_InterfaceHierarchy<int>>(result);
+            Assert.Equal(42, result.Value);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericImpl_InterfaceHierarchy<>), "impl")]
+        public interface IOpenGenericBase_InterfaceHierarchy<T>
+        {
+            T? Value { get; set; }
+        }
+
+        public interface IOpenGenericDerived_InterfaceHierarchy<T> : IOpenGenericBase_InterfaceHierarchy<T>;
+
+        public class OpenGenericImpl_InterfaceHierarchy<T> : IOpenGenericDerived_InterfaceHierarchy<T>
+        {
+            public T? Value { get; set; }
+            public string? Extra { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_InterfaceBaseWithWrappedTypeArg_Works()
+        {
+            // Impl<T> implements IBase<List<T>> registered on IBase<List<string>> unifies to Impl<string>.
+            IOpenGenericBase_InterfaceWrapped<List<string>> value = new OpenGenericImpl_InterfaceWrapped<string> { Data = ["a", "b"] };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","Data":["a","b"]}""", json);
+
+            var result = await Serializer.DeserializeWrapper<IOpenGenericBase_InterfaceWrapped<List<string>>>(json);
+            Assert.IsType<OpenGenericImpl_InterfaceWrapped<string>>(result);
+            Assert.Equal(new[] { "a", "b" }, ((OpenGenericImpl_InterfaceWrapped<string>)result).Data);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericImpl_InterfaceWrapped<>), "impl")]
+        public interface IOpenGenericBase_InterfaceWrapped<T>
+        {
+            T? Data { get; set; }
+        }
+
+        public class OpenGenericImpl_InterfaceWrapped<T> : IOpenGenericBase_InterfaceWrapped<List<T>>
+        {
+            public List<T>? Data { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_ArrayTypeArg_Works()
+        {
+            // Derived<T> : Base<T[]> registered on Base<int[]> unifies to Derived<int>.
+            OpenGenericBase_ArrayArg<int[]> value = new OpenGenericDerived_ArrayArg<int> { Values = [1, 2, 3] };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Values":[1,2,3]}""", json);
+
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_ArrayArg<int[]>>(json);
+            Assert.IsType<OpenGenericDerived_ArrayArg<int>>(result);
+            Assert.Equal(new[] { 1, 2, 3 }, ((OpenGenericDerived_ArrayArg<int>)result).Values);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_ArrayArg<>), "derived")]
+        public class OpenGenericBase_ArrayArg<T>
+        {
+            public T? Values { get; set; }
+        }
+
+        public class OpenGenericDerived_ArrayArg<T> : OpenGenericBase_ArrayArg<T[]>
+        {
+            public new T[]? Values { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_ReorderedParameters_Works()
+        {
+            // Derived<T1, T2> : Base<T2, T1> registered on Base<int, string> unifies to Derived<string, int>.
+            OpenGenericBase_Reordered<int, string> value = new OpenGenericDerived_Reordered<string, int> { Left = "left", Right = 42 };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Left":"left","Right":42}""", json);
+
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_Reordered<int, string>>(json);
+            Assert.IsType<OpenGenericDerived_Reordered<string, int>>(result);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_Reordered<,>), "derived")]
+        public class OpenGenericBase_Reordered<T1, T2>;
+
+        public class OpenGenericDerived_Reordered<T1, T2> : OpenGenericBase_Reordered<T2, T1>
+        {
+            public T1? Left { get; set; }
+            public T2? Right { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_PartialConcretization_Works()
+        {
+            // Derived<T> : Base<T, int> registered on Base<string, int> unifies to Derived<string>.
+            OpenGenericBase_Partial<string, int> value = new OpenGenericDerived_Partial<string> { Value = "hello" };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Value":"hello"}""", json);
+
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_Partial<string, int>>(json);
+            Assert.IsType<OpenGenericDerived_Partial<string>>(result);
+            Assert.Equal("hello", ((OpenGenericDerived_Partial<string>)result).Value);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_Partial<>), "derived")]
+        public class OpenGenericBase_Partial<T1, T2>;
+
+        public class OpenGenericDerived_Partial<T> : OpenGenericBase_Partial<T, int>
+        {
+            public T? Value { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_KeyValuePairArg_Works()
+        {
+            // Derived<T> : Base<KeyValuePair<string, T>> registered on Base<KeyValuePair<string, int>> unifies to Derived<int>.
+            OpenGenericBase_KvpArg<KeyValuePair<string, int>> value = new OpenGenericDerived_KvpArg<int> { Pair = new KeyValuePair<string, int>("k", 99) };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Pair":{"Key":"k","Value":99}}""", json);
+
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_KvpArg<KeyValuePair<string, int>>>(json);
+            Assert.IsType<OpenGenericDerived_KvpArg<int>>(result);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_KvpArg<>), "derived")]
+        public class OpenGenericBase_KvpArg<T>;
+
+        public class OpenGenericDerived_KvpArg<T> : OpenGenericBase_KvpArg<KeyValuePair<string, T>>
+        {
+            public KeyValuePair<string, T> Pair { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_MultiLevelInheritance_Works()
+        {
+            // Mid<T> : Base<List<T>>, Leaf<T> : Mid<T>; registered on Base<List<int>> unifies to Leaf<int>.
+            OpenGenericBase_MultiLevel<List<int>> value = new OpenGenericLeaf_MultiLevel<int> { Items = [10, 20] };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"leaf","Items":[10,20]}""", json);
+
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_MultiLevel<List<int>>>(json);
+            Assert.IsType<OpenGenericLeaf_MultiLevel<int>>(result);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericLeaf_MultiLevel<>), "leaf")]
+        public class OpenGenericBase_MultiLevel<T>;
+
+        public class OpenGenericMid_MultiLevel<T> : OpenGenericBase_MultiLevel<List<T>>;
+
+        public class OpenGenericLeaf_MultiLevel<T> : OpenGenericMid_MultiLevel<T>
+        {
+            public List<T>? Items { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_TupleSyntax_Works()
+        {
+            // Derived<T1, T2> : Base<(T1, T2)> registered on Base<(int, string)> unifies to Derived<int, string>.
+            OpenGenericBase_Tuple<(int, string)> value = new OpenGenericDerived_Tuple<int, string> { Pair = (5, "x") };
+            string json = await Serializer.SerializeWrapper(value);
+
+            var result = await Serializer.DeserializeWrapper<OpenGenericBase_Tuple<(int, string)>>(json);
+            Assert.IsType<OpenGenericDerived_Tuple<int, string>>(result);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_Tuple<,>), "derived")]
+        public class OpenGenericBase_Tuple<T>;
+
+        public class OpenGenericDerived_Tuple<T1, T2> : OpenGenericBase_Tuple<(T1, T2)>
+        {
+            public (T1, T2) Pair { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_AmbiguousInterfaceMatch_ThrowsInvalidOperationException()
+        {
+            // Impl<T> : IBase<T>, IBase<List<T>> registered on IBase<List<int>>.
+            // Both ancestors unify (T=List<int> via the first interface, T=int via the second).
+            // Result: ambiguous, throws.
+            IOpenGenericBase_Ambiguous<List<int>> value = new OpenGenericImpl_Ambiguous<int>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(typeof(OpenGenericImpl_Ambiguous<>), "impl")]
+        public interface IOpenGenericBase_Ambiguous<T>;
+
+        public class OpenGenericImpl_Ambiguous<T> : IOpenGenericBase_Ambiguous<T>, IOpenGenericBase_Ambiguous<List<T>>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_UnboundParameter_ThrowsInvalidOperationException()
+        {
+            // Derived<T1, T2> : Base<T1> — T2 is unspeakable (not bound by the base type's args).
+            var value = new OpenGenericBase_Unbound<int>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_Unbound<,>), "derived")]
+        public class OpenGenericBase_Unbound<T>;
+
+        public class OpenGenericDerived_Unbound<T1, T2> : OpenGenericBase_Unbound<T1>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_ConstraintViolation_ThrowsInvalidOperationException()
+        {
+            // Derived<T> : Base<T> where T : struct, registered on Base<string>.
+            // Constraint fails → InvalidOperationException.
+            var value = new OpenGenericBase_StructConstraint<string>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_StructConstraint<>), "derived")]
+        public class OpenGenericBase_StructConstraint<T>;
+
+        public class OpenGenericDerived_StructConstraint<T> : OpenGenericBase_StructConstraint<T>
+            where T : struct;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_NullableAnnotationOnTypeArg_Works()
+        {
+            // Reflection does not preserve nullable annotations; Derived<T> : Base<T> on Base<string> just works.
+            // (We verify the absence of any nullable-annotation-related rejection.)
+            OpenGenericBase_NullableArg<string> value = new OpenGenericDerived_NullableArg<string> { Value = "hello" };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"derived","Value":"hello"}""", json);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_NullableArg<>), "derived")]
+        public class OpenGenericBase_NullableArg<T>
+        {
+            public T? Value { get; set; }
+        }
+
+        public class OpenGenericDerived_NullableArg<T> : OpenGenericBase_NullableArg<T>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_DuplicateClosedAndOpenRegistration_ThrowsInvalidOperationException()
+        {
+            // Base<int> has BOTH a closed-form Derived<int> registration AND an open-form
+            // Derived<> registration. The open form closes to Derived<int>, producing a
+            // duplicate derived-type registration. The existing dup-detection in
+            // PolymorphicTypeResolver must surface this as InvalidOperationException.
+            OpenGenericBase_DuplicateDerivedRegistrations<int> value = new OpenGenericDerived_DuplicateDerivedRegistrations<int>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(typeof(OpenGenericDerived_DuplicateDerivedRegistrations<int>), "closed")]
+        [JsonDerivedType(typeof(OpenGenericDerived_DuplicateDerivedRegistrations<>), "open")]
+        public class OpenGenericBase_DuplicateDerivedRegistrations<T>;
+
+        public class OpenGenericDerived_DuplicateDerivedRegistrations<T> : OpenGenericBase_DuplicateDerivedRegistrations<T>;
+
+        [Fact]
+        public async Task OpenGenericDerivedType_MultipleGenericInterfaceBases_EachResolvesIndependently_Works()
+        {
+            // Impl<T> implements two unrelated generic interfaces, each carrying its own
+            // open-generic [JsonDerivedType(typeof(Impl<>))]. Serializing through either
+            // interface base resolves the same closed Impl<T> independently.
+            IOpenGenericBase_MultiBaseA<int> viaA = new OpenGenericImpl_MultiBase<int> { ValueA = 1, ValueB = "x" };
+            IOpenGenericBase_MultiBaseB<int> viaB = (OpenGenericImpl_MultiBase<int>)viaA;
+
+            string jsonA = await Serializer.SerializeWrapper(viaA);
+            string jsonB = await Serializer.SerializeWrapper(viaB);
+
+            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","ValueA":1,"ValueB":"x"}""", jsonA);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","ValueA":1,"ValueB":"x"}""", jsonB);
+
+            var roundA = await Serializer.DeserializeWrapper<IOpenGenericBase_MultiBaseA<int>>(jsonA);
+            var roundB = await Serializer.DeserializeWrapper<IOpenGenericBase_MultiBaseB<int>>(jsonB);
+
+            var implA = Assert.IsType<OpenGenericImpl_MultiBase<int>>(roundA);
+            var implB = Assert.IsType<OpenGenericImpl_MultiBase<int>>(roundB);
+            Assert.Equal(1, implA.ValueA);
+            Assert.Equal(1, implB.ValueA);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericImpl_MultiBase<>), "impl")]
+        public interface IOpenGenericBase_MultiBaseA<T>
+        {
+            T? ValueA { get; set; }
+        }
+
+        [JsonDerivedType(typeof(OpenGenericImpl_MultiBase<>), "impl")]
+        public interface IOpenGenericBase_MultiBaseB<T>
+        {
+            string? ValueB { get; set; }
+        }
+
+        public class OpenGenericImpl_MultiBase<T> : IOpenGenericBase_MultiBaseA<T>, IOpenGenericBase_MultiBaseB<T>
+        {
+            public T? ValueA { get; set; }
+            public string? ValueB { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_GenericInterfaceDiamond_Works()
+        {
+            // Diamond inheritance: IDerived<T> extends both IBaseA<T> and IBaseB<T>, and
+            // Impl<T> implements IDerived<T>. Open-generic [JsonDerivedType(typeof(Impl<>))]
+            // is declared on each of the two diamond legs. Serializing through either leg
+            // must independently resolve Impl<T> through the diamond.
+            IOpenGenericBase_DiamondA<int> viaA = new OpenGenericImpl_Diamond<int> { Common = 7 };
+            IOpenGenericBase_DiamondB<int> viaB = (OpenGenericImpl_Diamond<int>)viaA;
+
+            string jsonA = await Serializer.SerializeWrapper(viaA);
+            string jsonB = await Serializer.SerializeWrapper(viaB);
+
+            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","Common":7}""", jsonA);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","Common":7}""", jsonB);
+
+            var roundA = await Serializer.DeserializeWrapper<IOpenGenericBase_DiamondA<int>>(jsonA);
+            var roundB = await Serializer.DeserializeWrapper<IOpenGenericBase_DiamondB<int>>(jsonB);
+
+            Assert.IsType<OpenGenericImpl_Diamond<int>>(roundA);
+            Assert.IsType<OpenGenericImpl_Diamond<int>>(roundB);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericImpl_Diamond<>), "impl")]
+        public interface IOpenGenericBase_DiamondA<T>
+        {
+            T? Common { get; set; }
+        }
+
+        [JsonDerivedType(typeof(OpenGenericImpl_Diamond<>), "impl")]
+        public interface IOpenGenericBase_DiamondB<T>
+        {
+            T? Common { get; set; }
+        }
+
+        public interface IOpenGenericDerived_Diamond<T> : IOpenGenericBase_DiamondA<T>, IOpenGenericBase_DiamondB<T>;
+
+        public class OpenGenericImpl_Diamond<T> : IOpenGenericDerived_Diamond<T>
+        {
+            public T? Common { get; set; }
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_MultipleInterfaceConstructions_NonAmbiguousResolution_Works()
+        {
+            // Impl<T> reaches IBase<> twice: once via its own type-parameterized interface
+            // (IBase<T>) and once via inheritance from the non-generic IntBase (IBase<int>).
+            // When the closed base is IBase<string>, only the IBase<T> ancestor unifies
+            // (T=string); the IBase<int> ancestor is incompatible. Resolution must succeed
+            // and produce Impl<string>. (The both-legs-match scenario is the ambiguous one,
+            // covered separately.) Indirecting the IBase<int> leg through a non-generic base
+            // class avoids C# CS0695 -- a class cannot directly declare two constructions of
+            // the same generic interface that could unify under any substitution.
+            IOpenGenericBase_MultiCtor<string> value = new OpenGenericImpl_MultiCtor<string> { Item = "hello" };
+            string json = await Serializer.SerializeWrapper(value);
+
+            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","Item":"hello"}""", json);
+
+            var result = await Serializer.DeserializeWrapper<IOpenGenericBase_MultiCtor<string>>(json);
+            var impl = Assert.IsType<OpenGenericImpl_MultiCtor<string>>(result);
+            Assert.Equal("hello", impl.Item);
+        }
+
+        [JsonDerivedType(typeof(OpenGenericImpl_MultiCtor<>), "impl")]
+        public interface IOpenGenericBase_MultiCtor<T>;
+
+        public class OpenGenericImpl_MultiCtor_IntBase : IOpenGenericBase_MultiCtor<int>;
+
+        public class OpenGenericImpl_MultiCtor<T> : OpenGenericImpl_MultiCtor_IntBase, IOpenGenericBase_MultiCtor<T>
+        {
+            public T? Item { get; set; }
+        }
+
+        #endregion
+
+        #region Generic Variance Tests
+
+        // Shared fixtures for variance scenarios.
+        public class VarAnimal { public string? Name { get; set; } }
+        public sealed class VarDog : VarAnimal { public string? Breed { get; set; } }
+
+        // Covariant interface base. Closing T to VarAnimal still admits VarCovImpl<VarDog>
+        // at the IS-A level via the 'out' modifier, but the resolver registers only the
+        // closed VarCovImpl<VarAnimal> and a runtime VarCovImpl<VarDog> is not a key in
+        // the discriminator dictionary.
+        [JsonDerivedType(typeof(VarCovImpl<>), "covImpl")]
+        public interface IVarCovBase<out T> { }
+        public class VarCovImpl<T> : IVarCovBase<T> { public T? Value { get; set; } }
+
+        // Contravariant interface base. Mirror story for 'in' on the negative side.
+        [JsonDerivedType(typeof(VarContraImpl<>), "contraImpl")]
+        public interface IVarContraBase<in T> { }
+        public class VarContraImpl<T> : IVarContraBase<T> { public string? Marker { get; set; } }
+
+        // Mixed-variance interface (in TIn, out TOut).
+        [JsonDerivedType(typeof(VarBivariantImpl<,>), "bvImpl")]
+        public interface IVarBivariantBase<in TIn, out TOut> { }
+        public class VarBivariantImpl<TIn, TOut> : IVarBivariantBase<TIn, TOut> { public TOut? Out { get; set; } }
+
+        [Fact]
+        public async Task Variance_CovariantInterface_ExactMatch_EmitsDiscriminator()
+        {
+            // Exact-type match: runtime VarCovImpl<VarAnimal> is in the discriminator dictionary.
+            IVarCovBase<VarAnimal> value = new VarCovImpl<VarAnimal> { Value = new VarAnimal { Name = "Rex" } };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"covImpl","Value":{"Name":"Rex"}}""", json);
+
+            var result = await Serializer.DeserializeWrapper<IVarCovBase<VarAnimal>>(json);
+            var impl = Assert.IsType<VarCovImpl<VarAnimal>>(result);
+            Assert.Equal("Rex", impl.Value!.Name);
+        }
+
+        [Fact]
+        public async Task Variance_CovariantInterface_VarianceOnlyAssignment_DefaultThrows()
+        {
+            // Pranav's exact scenario: runtime value VarCovImpl<VarDog> is assignable to the
+            // closed base IVarCovBase<VarAnimal> only via covariance on 'out T'. The unification
+            // step is purely structural and closes the open generic to VarCovImpl<VarAnimal>;
+            // the runtime type VarCovImpl<VarDog> is therefore NOT in the discriminator dict.
+            // Default UnknownDerivedTypeHandling = FailSerialization -> NotSupportedException.
+            IVarCovBase<VarAnimal> value = new VarCovImpl<VarDog> { Value = new VarDog { Name = "Rex", Breed = "Labrador" } };
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [Fact]
+        public async Task Variance_CovariantInterface_VarianceOnlyAssignment_FallBackToBaseType_SerializesAsBase()
+        {
+            // Same as above with explicit FallBackToBaseType. The resolver falls through to the
+            // base contract (no discriminator emitted) because the runtime type is not registered.
+            // This matches the previously-described "serializes as base contract" behavior.
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        typeInfo =>
+                        {
+                            if (typeInfo.Type == typeof(IVarCovBase<VarAnimal>) && typeInfo.PolymorphismOptions is { } pOpts)
+                            {
+                                pOpts.UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType;
+                            }
+                        }
+                    }
+                }
+            };
+
+            IVarCovBase<VarAnimal> value = new VarCovImpl<VarDog> { Value = new VarDog { Name = "Rex", Breed = "Labrador" } };
+            string json = await Serializer.SerializeWrapper(value, options);
+            JsonTestHelper.AssertJsonEqual("{}", json);
+        }
+
+        [Fact]
+        public async Task Variance_ContravariantInterface_ExactMatch_EmitsDiscriminator()
+        {
+            // Exact-type match for the contravariant base: VarContraImpl<VarDog> with property
+            // typed IVarContraBase<VarDog>. Discriminator should be emitted.
+            IVarContraBase<VarDog> value = new VarContraImpl<VarDog> { Marker = "dog-impl" };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"contraImpl","Marker":"dog-impl"}""", json);
+        }
+
+        [Fact]
+        public async Task Variance_ContravariantInterface_VarianceOnlyAssignment_DefaultThrows()
+        {
+            // Contravariant analogue of Pranav's case: VarContraImpl<VarAnimal> assigned to
+            // IVarContraBase<VarDog> through 'in T' contravariance. Resolved derived type
+            // closes to VarContraImpl<VarDog>; runtime type VarContraImpl<VarAnimal> is not
+            // in the discriminator dict; default mode throws.
+            IVarContraBase<VarDog> value = new VarContraImpl<VarAnimal> { Marker = "animal-impl" };
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [Fact]
+        public async Task Variance_BivariantInterface_ExactMatch_EmitsDiscriminator()
+        {
+            // Both TIn and TOut bound exactly.
+            IVarBivariantBase<VarDog, VarAnimal> value = new VarBivariantImpl<VarDog, VarAnimal> { Out = new VarAnimal { Name = "Charlie" } };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"bvImpl","Out":{"Name":"Charlie"}}""", json);
+        }
+
+        [Fact]
+        public async Task Variance_BivariantInterface_BothViaVariance_DefaultThrows()
+        {
+            // TIn satisfied via contravariance (Animal -> Dog), TOut via covariance (Dog -> Animal).
+            // Both axes engage variance; resolved derived closes to VarBivariantImpl<VarDog, VarAnimal>;
+            // runtime VarBivariantImpl<VarAnimal, VarDog> is not in the dict; default mode throws.
+            IVarBivariantBase<VarDog, VarAnimal> value = new VarBivariantImpl<VarAnimal, VarDog> { Out = new VarDog { Name = "Buddy", Breed = "Beagle" } };
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        // Nested-generic ContainingType tests (matching Tarek's B2 concern). The source-gen
+        // unification helper now walks ContainingType to match reflection's flattened-args
+        // behavior. The reflection side has always handled these cases correctly because
+        // Type.GetGenericArguments() returns enclosing+leaf args together.
+
+        [Fact]
+        public async Task NestedGeneric_EnclosingMismatch_ThrowsInvalidOperationException()
+        {
+            // Pattern: NestedDerivedEnclosingMismatch<T> : NestedBase<NestedOuter<int>.NestedBox<T>>.
+            // Target: NestedBase<NestedOuter<string>.NestedBox<int>>.
+            // The enclosing argument differs (int vs string) so unification MUST fail. The
+            // resolver runs at first-use of the base type; serializing any value typed as the
+            // closed base surfaces the failure.
+            // Pre-B2-fix source-gen would have false-accepted (T=int) by ignoring the enclosing
+            // arg mismatch; reflection has always rejected.
+            var value = new NestedBase<NestedOuter<string>.NestedBox<int>>();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
+        }
+
+        [JsonDerivedType(typeof(NestedDerivedEnclosingMismatch<>), "nested")]
+        public class NestedBase<T> { public T? Item { get; set; } }
+        public class NestedOuter<TOuter> { public class NestedBox<TInner> { public TInner? Inner { get; set; } } }
+        public class NestedDerivedEnclosingMismatch<T> : NestedBase<NestedOuter<int>.NestedBox<T>>;
+
+        [Fact]
+        public async Task NestedGeneric_TypeParameterInEnclosing_Resolves()
+        {
+            // Pattern: NestedDerivedParamInEnclosing<T> : NestedBaseB<NestedOuterB<T>.NestedBoxB<int>>.
+            // Target: NestedBaseB<NestedOuterB<string>.NestedBoxB<int>>.
+            // T appears only in the ENCLOSING type's argument list. Reflection has always
+            // resolved this correctly because GetGenericArguments() flattens. Pre-B2-fix
+            // source-gen would have false-rejected because TryUnifyWith only walked leaf
+            // TypeArguments (T was never bound).
+            NestedBaseB<NestedOuterB<string>.NestedBoxB<int>> value =
+                new NestedDerivedParamInEnclosing<string> { Item = new NestedOuterB<string>.NestedBoxB<int> { Inner = 42 } };
+
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"nestedB","Item":{"Inner":42}}""", json);
+        }
+
+        [JsonDerivedType(typeof(NestedDerivedParamInEnclosing<>), "nestedB")]
+        public class NestedBaseB<T> { public T? Item { get; set; } }
+        public class NestedOuterB<TOuter> { public class NestedBoxB<TInner> { public TInner? Inner { get; set; } } }
+        public class NestedDerivedParamInEnclosing<T> : NestedBaseB<NestedOuterB<T>.NestedBoxB<int>>;
+
+        // Variance + constraint test (Tarek's B3 concern). Reflection has always handled
+        // variance-satisfying constraints correctly because Type.MakeGenericType respects
+        // implicit conversions including interface variance. The source-gen mirror was
+        // changed to use Compilation.HasImplicitConversion for the same parity.
+
+        [Fact]
+        public async Task Variance_CovariantInterfaceConstraintSatisfied_Resolves()
+        {
+            // Constraint: where T : IEnumerable<object>. Closing T to List<string> satisfies
+            // the constraint ONLY via IEnumerable<out T> covariance (IEnumerable<string> is
+            // assignable to IEnumerable<object> only by virtue of 'out T'). Reflection
+            // resolves successfully; serialization emits the discriminator.
+            ConstraintBase<List<string>> value = new ConstraintImpl<List<string>> { Items = new List<string> { "hello" } };
+            string json = await Serializer.SerializeWrapper(value);
+            JsonTestHelper.AssertJsonEqual("""{"$type":"impl","Items":["hello"]}""", json);
+        }
+
+        [JsonDerivedType(typeof(ConstraintImpl<>), "impl")]
+        public class ConstraintBase<T> { public T? Items { get; set; } }
+        public class ConstraintImpl<T> : ConstraintBase<T> where T : IEnumerable<object> { }
+
+        #endregion
+
         [Fact]
         public async Task PolymorphicClass_CustomConverter_TypeDiscriminator_Serialization_ThrowsNotSupportedException()
         {
@@ -2665,7 +3564,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PolymorphicClass_CustomConverter_TypeDiscriminator_Deserialization_ThrowsNotSupportedException()
         {
-            string json = @"{ ""$type"" : ""derivedClass"" }";
+            string json = """{ "$type" : "derivedClass" }""";
             await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<PolymorphicClass_CustomConverter_TypeDiscriminator>(json));
         }
 
@@ -2710,7 +3609,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task PolymorphicClass_CustomConverter_NoTypeDiscriminator_Serialization()
         {
             var value = new PolymorphicClass_CustomConverter_NoTypeDiscriminator.DerivedClass { Number = 42 };
-            string expectedJson = @"{ ""Number"" : 42 }";
+            string expectedJson = """{ "Number" : 42 }""";
             string actualJson = await Serializer.SerializeWrapper(value);
             JsonTestHelper.AssertJsonEqual(expectedJson, actualJson);
         }
@@ -2718,7 +3617,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task PolymorphicClass_CustomConverter_NoTypeDiscriminator_Deserialization()
         {
-            string json = @"{ ""Number"" : 42 }";
+            string json = """{ "Number" : 42 }""";
             PolymorphicClass_CustomConverter_NoTypeDiscriminator result = await Serializer.DeserializeWrapper<PolymorphicClass_CustomConverter_NoTypeDiscriminator>(json);
             Assert.Null(result);
         }
@@ -2762,7 +3661,7 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializerOptions? options = PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName.CreatePolymorphicConfigurationWithCustomPropertyName("$type");
             PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName value = new PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName.DerivedClass { Number = 42 };
 
-            string expectedJson = @"{ ""$type"" : ""derivedClass"", ""Number"" : 42 }";
+            string expectedJson = """{ "$type" : "derivedClass", "Number" : 42 }""";
             string actualJson = await Serializer.SerializeWrapper(value, options);
             JsonTestHelper.AssertJsonEqual(expectedJson, actualJson);
         }
@@ -2772,7 +3671,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(@" ")]
         [InlineData(@"\t")]
         [InlineData(@"\r\n")]
-        [InlineData(@"{ ""lol"" : true }")]
+        [InlineData("""{ "lol" : true }""")]
         public async Task PolymorphicClass_DegenerateCustomPropertyNames_ShouldSucceed(string propertyName)
         {
             JsonSerializerOptions? options = PolymorphicClass_InvalidCustomTypeDiscriminatorPropertyName.CreatePolymorphicConfigurationWithCustomPropertyName(propertyName);

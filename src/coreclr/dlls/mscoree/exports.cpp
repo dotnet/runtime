@@ -262,7 +262,7 @@ int coreclr_initialize(
         &hostContract);
 
 #ifdef TARGET_UNIX
-    DWORD error = PAL_InitializeCoreCLR(exePath, g_coreclr_embedded);
+    DWORD error = PAL_InitializeCoreCLR(g_coreclr_embedded);
     hr = HRESULT_FROM_WIN32(error);
 
     // If PAL initialization failed, then we should return right away and avoid
@@ -296,6 +296,13 @@ int coreclr_initialize(
 
     // This will take ownership of propertyKeysWTemp and propertyValuesWTemp
     Configuration::InitializeConfigurationKnobs(propertyCount, propertyKeysW, propertyValuesW);
+
+#ifdef TARGET_UNIX
+    if (Configuration::GetKnobBooleanValue(W("System.Runtime.CrashReportBeforeSignalChaining"), CLRConfig::INTERNAL_CrashReportBeforeSignalChaining))
+    {
+        PAL_EnableCrashReportBeforeSignalChaining();
+    }
+#endif
 
     STARTUP_FLAGS startupFlags;
     InitializeStartupFlags(&startupFlags);

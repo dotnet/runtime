@@ -21,26 +21,20 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 TYPEOF(OPENSSL_gmtime) OPENSSL_gmtime_ptr;
 #endif
 
 // x.x.x, considering the max number of decimal digits for each component
 #define MaxVersionStringLength 32
 
- static void* volatile libssl = NULL;
+static void* volatile libssl = NULL;
 
-#ifdef __APPLE__
-#define DYLIBNAME_PREFIX "libssl."
-#define DYLIBNAME_SUFFIX ".dylib"
-#define MAKELIB(v) DYLIBNAME_PREFIX v DYLIBNAME_SUFFIX
-#else
 #define LIBNAME "libssl.so"
 #define SONAME_BASE LIBNAME "."
 #define MAKELIB(v)  SONAME_BASE v
-#endif
 
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 // We support ARM32 linux distros that have Y2038-compatible glibc (those which support _TIME_BITS).
 // Some such distros have not yet switched to _TIME_BITS=64 by default, so we may be running against an openssl
 // that expects 32-bit time_t even though our time_t is 64-bit.
@@ -70,18 +64,8 @@ static void OpenLibraryOnce(void)
 
     if ((versionOverride != NULL) && strnlen(versionOverride, MaxVersionStringLength + 1) <= MaxVersionStringLength)
     {
-#ifdef __APPLE__
-        char soName[sizeof(DYLIBNAME_PREFIX) + MaxVersionStringLength + sizeof(DYLIBNAME_SUFFIX)] =
-            DYLIBNAME_PREFIX;
-
-        strcat(soName, versionOverride);
-        strcat(soName, DYLIBNAME_SUFFIX);
-#else
         char soName[sizeof(SONAME_BASE) + MaxVersionStringLength] = SONAME_BASE;
-
         strcat(soName, versionOverride);
-#endif
-
         DlOpen(soName);
     }
 
@@ -91,21 +75,20 @@ static void OpenLibraryOnce(void)
         // Android OpenSSL has no soname
         DlOpen(LIBNAME);
     }
-#endif
-
-    if (libssl == NULL)
-    {
-        // Prefer OpenSSL 3.x
-        DlOpen(MAKELIB("3"));
-    }
-
-    if (libssl == NULL)
-    {
-        DlOpen(MAKELIB("1.1"));
-    }
-
-#ifdef __FreeBSD__
+#elif defined(__FreeBSD__)
     // The ports version of OpenSSL is used over base where possible
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.5 from ports
+        DlOpen(MAKELIB("17"));
+    }
+
+    if (libssl == NULL)
+    {
+        // OpenSSL 3.5 from base as found in FreeBSD 15.0
+        DlOpen(MAKELIB("35"));
+    }
+
     if (libssl == NULL)
     {
         // OpenSSL 3.0 from ports
@@ -130,6 +113,22 @@ static void OpenLibraryOnce(void)
     }
 #endif
 
+    if (libssl == NULL)
+    {
+        // Prefer OpenSSL 3.x
+        DlOpen(MAKELIB("3"));
+    }
+
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("1.1"));
+    }
+
+    // While it's still in alpha, OpenSSL 4 is probed, but not preferred.
+    if (libssl == NULL)
+    {
+        DlOpen(MAKELIB("4"));
+    }
 }
 
 static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;
@@ -181,7 +180,7 @@ void InitializeOpenSSLShim(void)
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     if (!(OPENSSL_gmtime_ptr = (TYPEOF(OPENSSL_gmtime))(dlsym(libssl, "OPENSSL_gmtime")))) { fprintf(stderr, "Cannot get required symbol OPENSSL_gmtime from libssl\n"); abort(); }
 #endif
 
@@ -196,7 +195,7 @@ void InitializeOpenSSLShim(void)
         }
     }
 
-#if defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     c_static_assert_msg(sizeof(time_t) == 8, "Build requires 64-bit time_t.");
 
     // This value will represent a time in year 2038 if 64-bit time is used,

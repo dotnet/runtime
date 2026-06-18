@@ -83,6 +83,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/w32api.h>
+#include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-proclib.h>
 
@@ -7614,6 +7615,26 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		}
 		break;
 	}
+	case CMD_VM_GET_SYSTEM_INFORMATION: {
+		int processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_UNKNOWN;
+		int page_size = mono_pagesize ();
+
+#if defined(TARGET_AMD64)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_AMD64;
+#elif defined(TARGET_X86)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_INTEL;
+#elif defined(TARGET_ARM64)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_ARM64;
+#elif defined(TARGET_ARM)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_ARM;
+#elif defined(TARGET_WASM)
+		processor_architecture = CYCORDEBUG_PROCESSOR_ARCHITECTURE_AMD64;
+#endif
+
+		buffer_add_int (buf, processor_architecture);
+		buffer_add_int (buf, page_size);
+		break;
+	}
 	case MDBGPROT_CMD_GET_ASSEMBLY_BYTES: { //only used by wasm
 #ifdef HOST_WASM
 		char* assembly_name = m_dbgprot_decode_string (p, &p, end);
@@ -10350,6 +10371,10 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
 				if (CHECK_ICORDBG (TRUE))
 					buffer_add_byte (buf, GINT_TO_UINT8 (MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)))));
+			}
+			if (type == MONO_TYPE_SZARRAY && CHECK_ICORDBG (TRUE) && CHECK_PROTOCOL_VERSION (2, 67))
+			{
+				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
 			}
 		}
 		break;

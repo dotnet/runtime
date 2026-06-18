@@ -1308,7 +1308,7 @@ namespace System.Threading.Tests
             Assert.Throws<NotSupportedException>(() => Interlocked.Or<DateTime>(ref value, default));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void InterlockedIncrement_Multithreaded_Int32()
         {
             const int ThreadCount = 10;
@@ -1345,7 +1345,7 @@ namespace System.Threading.Tests
             Assert.Equal(ThreadCount * IterationCount, Interlocked.CompareExchange(ref value, 0, 0));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void InterlockedCompareExchange_Multithreaded_Double()
         {
             const int ThreadCount = 10;
@@ -1393,7 +1393,7 @@ namespace System.Threading.Tests
             Assert.Equal(ThreadCount * IterationCount * Increment, Interlocked.CompareExchange(ref value, 0, 0));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void InterlockedAddAndRead_Multithreaded_Int64()
         {
             const int ThreadCount = 10;
@@ -1468,7 +1468,7 @@ namespace System.Threading.Tests
             MemoryBarrierPointer()();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void MemoryBarrierProcessWide()
         {
             // Stress MemoryBarrierProcessWide correctness using a simple AsymmetricLock

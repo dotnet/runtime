@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -904,32 +905,16 @@ namespace System.Diagnostics.Tracing
         }
 
 
-        private static bool s_setInformationMissing;
-
         internal unsafe int SetInformation(
             Interop.Advapi32.EVENT_INFO_CLASS eventInfoClass,
             void* data,
             uint dataSize)
         {
-            int status = Interop.Errors.ERROR_NOT_SUPPORTED;
-
-            if (!s_setInformationMissing)
-            {
-                try
-                {
-                    status = Interop.Advapi32.EventSetInformation(
-                        _registrationHandle,
-                        eventInfoClass,
-                        data,
-                        dataSize);
-                }
-                catch (TypeLoadException)
-                {
-                    s_setInformationMissing = true;
-                }
-            }
-
-            return status;
+            return Interop.Advapi32.EventSetInformation(
+                _registrationHandle,
+                eventInfoClass,
+                data,
+                dataSize);
         }
 
         /// <summary>

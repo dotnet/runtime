@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="genrecur.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

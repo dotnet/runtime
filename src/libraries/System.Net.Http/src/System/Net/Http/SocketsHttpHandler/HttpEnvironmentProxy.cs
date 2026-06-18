@@ -115,7 +115,7 @@ namespace System.Net.Http
         /// Example expected inputs: contoso.com, contoso.com:8080, http://contoso.com/, user@contoso.com.
         /// </summary>
         /// <returns><see langword="null"/> if parsing fails.</returns>
-        private static Uri? GetUriFromString(string? value)
+        private static unsafe Uri? GetUriFromString(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -145,6 +145,11 @@ namespace System.Net.Http
             {
                 hostIndex = 9;
                 protocol = "socks5";
+            }
+            else if (value.StartsWith("socks5h://", StringComparison.OrdinalIgnoreCase))
+            {
+                hostIndex = 10;
+                protocol = "socks5h";
             }
             else if (value.StartsWith("socks4a://", StringComparison.OrdinalIgnoreCase))
             {

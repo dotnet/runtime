@@ -172,7 +172,7 @@ namespace System.Diagnostics.Metrics
 
         public override void Update(double measurement)
         {
-            if (!IsFinite(measurement))
+            if (!double.IsFinite(measurement))
             {
                 return;
             }
@@ -232,7 +232,7 @@ namespace System.Diagnostics.Metrics
         /// <returns>Returns the index of the bucket.</returns>
         public int MapToIndex(double value)
         {
-            Debug.Assert(IsFinite(value), "IEEE-754 +Inf, -Inf and NaN should be filtered out before calling this method.");
+            Debug.Assert(double.IsFinite(value), "IEEE-754 +Inf, -Inf and NaN should be filtered out before calling this method.");
             Debug.Assert(value != 0, "IEEE-754 zero values should be handled by ZeroCount.");
             Debug.Assert(value > 0, "IEEE-754 negative values should be normalized before calling this method.");
 
@@ -264,16 +264,6 @@ namespace System.Diagnostics.Metrics
 
                 return (exp - 1023 /* exponent bias */) >> -Scale;
             }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsFinite(double value)
-        {
-#if NET
-            return double.IsFinite(value);
-#else
-            return !double.IsInfinity(value) && !double.IsNaN(value);
-#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

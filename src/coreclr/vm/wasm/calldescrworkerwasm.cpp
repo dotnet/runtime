@@ -26,5 +26,17 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
         targetIp = pMethod->GetInterpreterCode();
     }
 
-    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, (int8_t*)pCallDescrData->pSrc, pCallDescrData->nArgsSize, (int8_t*)pCallDescrData->returnValue, (PCODE)&CallDescrWorkerInternal);
+    size_t argsSize = pCallDescrData->nArgsSize;
+    void* retBuff;
+    int8_t* args = (int8_t*)pCallDescrData->pSrc;
+    if (pCallDescrData->hasRetBuff)
+    {
+        retBuff = pCallDescrData->pRetBuffArg;
+    }
+    else
+    {
+        retBuff = &pCallDescrData->returnValue;
+    }
+
+    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argsSize, retBuff, (PCODE)&CallDescrWorkerInternal);
 }

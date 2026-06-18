@@ -155,7 +155,7 @@ namespace System.Runtime.CompilerServices
             [NotNull] ref Task<TResult>? taskField)
             where TStateMachine : IAsyncStateMachine
         {
-            ExecutionContext? currentContext = ExecutionContext.Capture();
+            ExecutionContext? currentContext = ExecutionContext.CaptureForSuspension(Thread.CurrentThread);
 
             IAsyncStateMachineBox result;
 
@@ -344,7 +344,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            internal sealed override void ExecuteFromThreadPool(Thread threadPoolThread) => MoveNext(threadPoolThread);
+            internal sealed override void ExecuteDirectly(Thread? threadPoolThread) => MoveNext(threadPoolThread);
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext() => MoveNext(threadPoolThread: null);
@@ -360,7 +360,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 ExecutionContext? context = Context;
-                if (context == null)
+                if (context == ExecutionContext.DefaultFlowSuppressed)
                 {
                     Debug.Assert(StateMachine != null);
                     StateMachine.MoveNext();

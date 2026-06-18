@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -406,11 +407,13 @@ namespace System
         /// </summary>
         public T[] ToArray()
         {
-            if (_length == 0)
-                return Array.Empty<T>();
+            if (IsEmpty)
+            {
+                return [];
+            }
 
-            var destination = new T[_length];
-            Buffer.Memmove(ref MemoryMarshal.GetArrayDataReference(destination), ref _reference, (uint)_length);
+            var destination = new T[Length];
+            CopyTo(destination);
             return destination;
         }
     }

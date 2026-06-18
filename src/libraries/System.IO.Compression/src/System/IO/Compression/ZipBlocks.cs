@@ -27,7 +27,7 @@ namespace System.IO.Compression
         public ushort Size => _size;
         public byte[] Data => _data ??= [];
 
-        public void WriteBlock(Stream stream)
+        public unsafe void WriteBlock(Stream stream)
         {
             Span<byte> extraFieldHeader = stackalloc byte[SizeOfHeader];
             WriteBlockCore(extraFieldHeader);
@@ -257,9 +257,18 @@ namespace System.IO.Compression
             // 2. When the size indicates that all the information is available ("slightly invalid files").
             bool readAllFields = extraField.Size >= MaximumExtraFieldLength;
 
+            // The original values are unsigned 64-bit, so a negative signed value means the
+            // value does not fit in Int64 and cannot be represented by the rest of the API
+            // (which uses long). Validate each field as it is read so that short extra fields
+            // (which exit early below) cannot bypass the check.
+
             if (readUncompressedSize)
             {
                 zip64Block._uncompressedSize = BinaryPrimitives.ReadInt64LittleEndian(data);
+                if (zip64Block._uncompressedSize < 0)
+                {
+                    throw new InvalidDataException(SR.FieldTooBigUncompressedSize);
+                }
                 data = data.Slice(FieldLengths.UncompressedSize);
             }
             else if (readAllFields)
@@ -275,6 +284,10 @@ namespace System.IO.Compression
             if (readCompressedSize)
             {
                 zip64Block._compressedSize = BinaryPrimitives.ReadInt64LittleEndian(data);
+                if (zip64Block._compressedSize < 0)
+                {
+                    throw new InvalidDataException(SR.FieldTooBigCompressedSize);
+                }
                 data = data.Slice(FieldLengths.CompressedSize);
             }
             else if (readAllFields)
@@ -290,6 +303,10 @@ namespace System.IO.Compression
             if (readLocalHeaderOffset)
             {
                 zip64Block._localHeaderOffset = BinaryPrimitives.ReadInt64LittleEndian(data);
+                if (zip64Block._localHeaderOffset < 0)
+                {
+                    throw new InvalidDataException(SR.FieldTooBigLocalHeaderOffset);
+                }
                 data = data.Slice(FieldLengths.LocalHeaderOffset);
             }
             else if (readAllFields)
@@ -305,20 +322,6 @@ namespace System.IO.Compression
             if (readStartDiskNumber)
             {
                 zip64Block._startDiskNumber = BinaryPrimitives.ReadUInt32LittleEndian(data);
-            }
-
-            // original values are unsigned, so implies value is too big to fit in signed integer
-            if (zip64Block._uncompressedSize < 0)
-            {
-                throw new InvalidDataException(SR.FieldTooBigUncompressedSize);
-            }
-            if (zip64Block._compressedSize < 0)
-            {
-                throw new InvalidDataException(SR.FieldTooBigCompressedSize);
-            }
-            if (zip64Block._localHeaderOffset < 0)
-            {
-                throw new InvalidDataException(SR.FieldTooBigLocalHeaderOffset);
             }
 
             return true;
@@ -395,7 +398,7 @@ namespace System.IO.Compression
             }
         }
 
-        public void WriteBlock(Stream stream)
+        public unsafe void WriteBlock(Stream stream)
         {
             Span<byte> extraFieldData = stackalloc byte[TotalSize];
             WriteBlockCore(extraFieldData);
@@ -434,7 +437,7 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static Zip64EndOfCentralDirectoryLocator TryReadBlock(Stream stream)
+        public static unsafe Zip64EndOfCentralDirectoryLocator TryReadBlock(Stream stream)
         {
             Span<byte> blockContents = stackalloc byte[TotalSize];
             int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
@@ -456,7 +459,7 @@ namespace System.IO.Compression
 
         }
 
-        public static void WriteBlock(Stream stream, long zip64EOCDRecordStart)
+        public static unsafe void WriteBlock(Stream stream, long zip64EOCDRecordStart)
         {
             Span<byte> blockContents = stackalloc byte[TotalSize];
             WriteBlockCore(blockContents, zip64EOCDRecordStart);
@@ -513,7 +516,7 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static Zip64EndOfCentralDirectoryRecord TryReadBlock(Stream stream)
+        public static unsafe Zip64EndOfCentralDirectoryRecord TryReadBlock(Stream stream)
         {
             Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
             int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);
@@ -545,7 +548,7 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteInt64LittleEndian(blockContents[FieldLocations.OffsetOfCentralDirectory..], startOfCentralDirectory);
         }
 
-        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory)
+        public static unsafe void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory)
         {
             Span<byte> blockContents = stackalloc byte[BlockConstantSectionSize];
             WriteBlockCore(blockContents, numberOfEntries, startOfCentralDirectory, sizeOfCentralDirectory);
@@ -583,7 +586,7 @@ namespace System.IO.Compression
             return list;
         }
 
-        public static List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData)
+        public static unsafe List<ZipGenericExtraField> GetExtraFields(Stream stream, out byte[] trailingData)
         {
             // assumes that TrySkipBlock has already been called, so we don't have to validate twice
 
@@ -658,7 +661,7 @@ namespace System.IO.Compression
         }
 
         // will not throw end of stream exception
-        public static bool TrySkipBlock(Stream stream)
+        public static unsafe bool TrySkipBlock(Stream stream)
         {
             Span<byte> blockBytes = stackalloc byte[FieldLengths.Signature];
             long currPosition = stream.Position;
@@ -897,7 +900,7 @@ namespace System.IO.Compression
             BinaryPrimitives.WriteUInt16LittleEndian(blockContents[FieldLocations.ArchiveCommentLength..], (ushort)archiveComment.Length);
         }
 
-        public static void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
+        public static unsafe void WriteBlock(Stream stream, long numberOfEntries, long startOfCentralDirectory, long sizeOfCentralDirectory, byte[] archiveComment)
         {
             Span<byte> blockContents = stackalloc byte[TotalSize];
 
@@ -956,7 +959,7 @@ namespace System.IO.Compression
             return true;
         }
 
-        public static ZipEndOfCentralDirectoryBlock ReadBlock(Stream stream)
+        public static unsafe ZipEndOfCentralDirectoryBlock ReadBlock(Stream stream)
         {
             Span<byte> blockContents = stackalloc byte[TotalSize];
             int bytesRead = stream.ReadAtLeast(blockContents, blockContents.Length, throwOnEndOfStream: false);

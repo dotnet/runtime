@@ -61,6 +61,7 @@ Environment variables supported:
 - `DOTNET_DbgEnableMiniDump`: if set to "1", enables this core dump generation. The default is NOT to generate a dump.
 - `DOTNET_DbgMiniDumpType`: See below. Default is "2" MiniDumpWithPrivateReadWriteMemory.
 - `DOTNET_DbgMiniDumpName`: if set, use as the template to create the dump path and file name. See "Dump name formatting" for how the dump name can be formatted. The default is _/tmp/coredump.%p_.
+- `DOTNET_DbgCreateDumpToolPath`: **(NativeAOT only)** if set, specifies the directory path where the createdump tool is located. The runtime will look for the createdump binary in this directory. This is useful in scenarios where createdump is not shipped with the runtime and you need to "bring your own" dump generation tool. This environment variable is only supported in NativeAOT applications and ignored otherwise.
 - `DOTNET_CreateDumpDiagnostics`: if set to "1", enables the _createdump_ utilities diagnostic messages (TRACE macro).
 - `DOTNET_CreateDumpVerboseDiagnostics`: if set to "1", enables the _createdump_ utilities verbose diagnostic messages (TRACE_VERBOSE macro).
 - `DOTNET_CreateDumpLogToFile`: if set, it is the path of the file to write the _createdump_ diagnostic messages.
@@ -114,6 +115,18 @@ As of .NET 5.0, the following subset of the core pattern (see [core](https://man
     %e  The process executable filename.
     %h  Hostname return by gethostname().
     %t  Time of dump, expressed as seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).
+
+**Using a custom createdump tool (NativeAOT only)**
+
+In scenarios where the NativeAOT runtime does not ship with the createdump tool, you can specify a custom directory path using the `DOTNET_DbgCreateDumpToolPath` environment variable:
+
+```bash
+export DOTNET_DbgEnableMiniDump=1
+export DOTNET_DbgCreateDumpToolPath=/path/to/directory
+./myapp
+```
+
+The runtime will look for the `createdump` binary in the specified directory. This allows you to "bring your own" dump generation tool. Note that this environment variable is only supported in NativeAOT applications and ignored otherwise.
 
 # Testing #
 

@@ -215,6 +215,10 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
                     {
                         return InstructionSet_AVX512;
                     }
+                    else if (strcmp(className + 7, "mm") == 0)
+                    {
+                        return InstructionSet_AVX512BMM;
+                    }
                 }
                 else if ((strcmp(className + 6, "CD") == 0) || (strcmp(className + 6, "DQ") == 0))
                 {
@@ -494,6 +498,7 @@ int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id)
         case NI_AVX_CompareScalar:
         case NI_AVX512_Compare:
         case NI_AVX512_CompareMask:
+        case NI_AVX512_CompareScalarMask:
         case NI_AVX10v2_MinMaxScalar:
         case NI_AVX10v2_MinMax:
         {
@@ -2164,39 +2169,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), sig->numArgs);
 
-            // TODO-CQ: We don't handle contiguous args for anything except TYP_FLOAT today
-
-            GenTree* prevArg           = nullptr;
-            bool     areArgsContiguous = (simdBaseType == TYP_FLOAT);
-
             for (int i = sig->numArgs - 1; i >= 0; i--)
             {
                 GenTree* arg = impPopStack().val;
-
-                if (areArgsContiguous)
-                {
-                    if (prevArg != nullptr)
-                    {
-                        // Recall that we are popping the args off the stack in reverse order.
-                        areArgsContiguous = areArgumentsContiguous(arg, prevArg);
-                    }
-
-                    prevArg = arg;
-                }
-
                 nodeBuilder.AddOperand(i, arg);
             }
 
-            if (areArgsContiguous)
-            {
-                op1                 = nodeBuilder.GetOperand(0);
-                GenTree* op1Address = CreateAddressNodeForSimdHWIntrinsicCreate(op1, simdBaseType, simdSize);
-                retNode             = gtNewIndir(retType, op1Address);
-            }
-            else
-            {
-                retNode = gtNewSimdHWIntrinsicNode(retType, std::move(nodeBuilder), intrinsic, simdBaseType, simdSize);
-            }
+            retNode = gtNewSimdHWIntrinsicNode(retType, std::move(nodeBuilder), intrinsic, simdBaseType, simdSize);
             break;
         }
 
@@ -4208,6 +4187,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_X86Base_X64_BigMul:
+        {
+            assert(sig->numArgs == 2);
+            assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
+            assert(retType == TYP_STRUCT);
+            assert(simdBaseType != TYP_UNDEF);
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            GenTreeHWIntrinsic* multiplyIntrinsic = gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic);
+
+            // Store the type from signature into SIMD base type for convenience
+            multiplyIntrinsic->SetSimdBaseType(simdBaseType);
+
+            retNode = impStoreMultiRegValueToVar(multiplyIntrinsic,
+                                                 sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
+            break;
+        }
+
         case NI_X86Base_CompareScalarGreaterThan:
         case NI_X86Base_CompareScalarGreaterThanOrEqual:
         case NI_X86Base_CompareScalarNotGreaterThan:
@@ -4389,7 +4388,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (op4->IsIntegralConst())
             {
-                uint8_t                 control  = static_cast<uint8_t>(op4->AsIntCon()->gtIconVal);
+                uint8_t                 control  = static_cast<uint8_t>(op4->AsIntCon()->IconValue());
                 const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
                 TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
 
@@ -4757,7 +4756,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                     *val2 = gtNewZeroConNode(retType);
                                 }
 
-                                op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~0xAA);
+                                op4->AsIntCon()->SetIconValue(static_cast<uint8_t>(~0xAA));
                                 break;
                             }
 
@@ -4813,7 +4812,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                     *val1 = gtNewZeroConNode(retType);
                                 }
 
-                                op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~0xCC | 0xAA);
+                                op4->AsIntCon()->SetIconValue(static_cast<uint8_t>(~0xCC | 0xAA));
                             }
                             break;
                         }
@@ -4856,7 +4855,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                 *val1 = gtNewZeroConNode(retType);
                             }
 
-                            op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~(0xCC & 0xAA));
+                            op4->AsIntCon()->SetIconValue(static_cast<uint8_t>(~(0xCC & 0xAA)));
                             break;
                         }
 
@@ -4898,7 +4897,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                 *val1 = gtNewZeroConNode(retType);
                             }
 
-                            op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~(0xCC | 0xAA));
+                            op4->AsIntCon()->SetIconValue(static_cast<uint8_t>(~(0xCC | 0xAA)));
                             break;
                         }
 
@@ -4940,7 +4939,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                 *val1 = gtNewZeroConNode(retType);
                             }
 
-                            op4->AsIntCon()->gtIconVal = static_cast<uint8_t>(~(0xCC ^ 0xAA));
+                            op4->AsIntCon()->SetIconValue(static_cast<uint8_t>(~(0xCC ^ 0xAA)));
                             break;
                         }
 
@@ -5372,9 +5371,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             CORINFO_ARG_LIST_HANDLE arg2 = info.compCompHnd->getArgNext(argList);
             CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
 
-            argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
-            CorInfoType op3BaseJitType = getBaseJitTypeOfSIMDType(argClass);
-            GenTree*    op3            = getArgForHWIntrinsic(argType, argClass);
+            argType               = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            var_types op3BaseType = getBaseTypeOfSIMDType(argClass);
+            GenTree*  op3         = getArgForHWIntrinsic(argType, argClass);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2     = getArgForHWIntrinsic(argType, argClass);
@@ -5383,7 +5382,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op1     = getArgForHWIntrinsic(argType, argClass);
 
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseType, simdSize);
-            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op3BaseJitType);
+            retNode->AsHWIntrinsic()->SetAuxiliaryType(op3BaseType);
             break;
         }
 
@@ -5474,9 +5473,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op4 = getArgForHWIntrinsic(argType, argClass);
             SetOpLclRelatedToSIMDIntrinsic(op4);
 
-            argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
-            CorInfoType indexBaseJitType = getBaseJitTypeOfSIMDType(argClass);
-            GenTree*    op3              = getArgForHWIntrinsic(argType, argClass);
+            argType                 = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            var_types indexBaseType = getBaseTypeOfSIMDType(argClass);
+            GenTree*  op3           = getArgForHWIntrinsic(argType, argClass);
             SetOpLclRelatedToSIMDIntrinsic(op3);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
@@ -5489,7 +5488,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic,
                                                                     simdBaseType, simdSize, op1, op2, op3, op4, op5);
-            retNode->AsHWIntrinsic()->SetAuxiliaryJitType(indexBaseJitType);
+            retNode->AsHWIntrinsic()->SetAuxiliaryType(indexBaseType);
             break;
         }
 

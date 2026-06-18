@@ -183,6 +183,37 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Fact]
+        public async Task SendAsync_FlushAsyncSyncFaulted_WrapsExceptionInWebSocketException()
+        {
+            var underlying = new IOException("flush failed");
+            using var stream = new WebSocketTestStream { FlushException = underlying };
+            using WebSocket ws = WebSocket.CreateFromStream(
+                stream, isServer: false, subProtocol: null, keepAliveInterval: Timeout.InfiniteTimeSpan);
+
+            var buffer = new ArraySegment<byte>(new byte[] { 1, 2, 3 });
+
+            WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(
+                () => ws.SendAsync(buffer, WebSocketMessageType.Binary, endOfMessage: true, CancellationToken.None));
+
+            Assert.Equal(WebSocketError.ConnectionClosedPrematurely, ex.WebSocketErrorCode);
+            Assert.Same(underlying, ex.InnerException);
+        }
+
+        [Fact]
+        public async Task ReceiveAsync_ServerUnmaskedFrame_ThrowsWebSocketException()
+        {
+            byte[] frame = { 0x81, 0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F };
+            using var stream = new MemoryStream();
+            stream.Write(frame, 0, frame.Length);
+            stream.Position = 0;
+            using WebSocket websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions { IsServer = true });
+            WebSocketException exception = await Assert.ThrowsAsync<WebSocketException>(() =>
+                websocket.ReceiveAsync(new byte[5], CancellationToken.None));
+            Assert.Equal(SR.net_Websockets_ServerReceivedUnmaskedFrame, exception.Message);
+            Assert.Equal(WebSocketState.Aborted, websocket.State);
+        }
+
+        [Fact]
         public async Task ReceiveAsync_WhenDisposedInParallel_DoesNotGetStuck()
         {
             using var stream = new WebSocketTestStream();

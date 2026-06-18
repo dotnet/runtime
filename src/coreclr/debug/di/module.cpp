@@ -15,24 +15,24 @@
 #include "corsym.h"
 
 #include "pedecoder.h"
-#include "stgpool.h"
+#include "memorystreams.h"
 
 //---------------------------------------------------------------------------------------
 // Initialize a new CordbModule around a Module in the target.
 //
 // Arguments:
 //    pProcess - process that this module lives in
-//    vmDomainAssembly - CLR cookie for module.
+//    vmAssembly - CLR cookie for module.
 CordbModule::CordbModule(
     CordbProcess *     pProcess,
     VMPTR_Module        vmModule,
-    VMPTR_DomainAssembly    vmDomainAssembly)
+    VMPTR_Assembly    vmAssembly)
 : CordbBase(pProcess, VmPtrToCookie(vmModule), enumCordbModule),
     m_pAssembly(0),
     m_pAppDomain(0),
     m_classes(11),
     m_functions(101),
-    m_vmDomainAssembly(vmDomainAssembly),
+    m_vmAssembly(vmAssembly),
     m_vmModule(vmModule),
     m_EnCCount(0),
     m_fForceMetaDataSerialize(FALSE),
@@ -50,27 +50,21 @@ CordbModule::CordbModule(
 
     // Fill out properties via DAC.
     ModuleInfo modInfo;
-    pProcess->GetDAC()->GetModuleData(vmModule, &modInfo); // throws
+    IfFailThrow(pProcess->GetDAC()->GetModuleData(vmModule, &modInfo)); // throws
 
     m_PEBuffer.Init(modInfo.pPEBaseAddress, modInfo.nPESize);
 
     m_fDynamic  = modInfo.fIsDynamic;
     m_fInMemory = modInfo.fInMemory;
     m_vmPEFile = modInfo.vmPEAssembly;
+    m_pAppDomain = pProcess->GetAppDomain();
 
-    if (!vmDomainAssembly.IsNull())
+    if (!vmAssembly.IsNull())
     {
-        DomainAssemblyInfo dfInfo;
-
-        pProcess->GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &dfInfo); // throws
-
-        m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
-        _ASSERTE(m_pAppDomain == pProcess->GetAppDomain());
-        m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(dfInfo.vmDomainAssembly);
+        m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(vmAssembly);
     }
     else
     {
-        m_pAppDomain = pProcess->GetAppDomain();
         m_pAssembly = m_pAppDomain->LookupOrCreateAssembly(modInfo.vmAssembly);
     }
 #ifdef _DEBUG
@@ -89,21 +83,21 @@ CordbModule::CordbModule(
 // Callback helper for code:CordbModule::DbgAssertModuleDeleted
 //
 // Arguments
-//    vmDomainAssembly - domain file in the enumeration
+//    vmAssembly - assembly in the enumeration
 //    pUserData - pointer to the CordbModule that we just got an exit event for.
 //
-void DbgAssertModuleDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void * pUserData)
+void DbgAssertModuleDeletedCallback(VMPTR_Assembly vmAssembly, void * pUserData)
 {
     CordbModule * pThis = reinterpret_cast<CordbModule *>(pUserData);
     INTERNAL_DAC_CALLBACK(pThis->GetProcess());
 
-    if (!pThis->m_vmDomainAssembly.IsNull())
+    if (!pThis->m_vmAssembly.IsNull())
     {
-        VMPTR_DomainAssembly vmDomainAssemblyDeleted = pThis->m_vmDomainAssembly;
+        VMPTR_Assembly vmAssemblyDeleted = pThis->m_vmAssembly;
 
-        CONSISTENCY_CHECK_MSGF((vmDomainAssemblyDeleted != vmDomainAssembly),
-            ("A Module Unload event was sent for a module, but it still shows up in the enumeration.\n vmDomainAssemblyDeleted=%p\n",
-            VmPtrToCookie(vmDomainAssemblyDeleted)));
+        CONSISTENCY_CHECK_MSGF((vmAssemblyDeleted != vmAssembly),
+            ("A Module Unload event was sent for a module, but it still shows up in the enumeration.\n vmAssemblyDeleted=%p\n",
+            VmPtrToCookie(vmAssemblyDeleted)));
     }
 }
 
@@ -112,15 +106,14 @@ void DbgAssertModuleDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void 
 //
 // Notes:
 //   See code:IDacDbiInterface#Enumeration for rules that we're asserting.
-//   This is a debug only method. It's conceptually similar to
-//   code:CordbProcess::DbgAssertAppDomainDeleted.
+//   This is a debug only method.
 //
 void CordbModule::DbgAssertModuleDeleted()
 {
-    GetProcess()->GetDAC()->EnumerateModulesInAssembly(
-        m_pAssembly->GetDomainAssemblyPtr(),
+    IfFailThrow(GetProcess()->GetDAC()->EnumerateAssembliesInAppDomain(
+        m_pAppDomain->GetADToken(),
         DbgAssertModuleDeletedCallback,
-        this);
+        this));
 }
 #endif // _DEBUG
 
@@ -223,7 +216,7 @@ IDacDbiInterface::SymbolFormat CordbModule::GetInMemorySymbolStream(IStream ** p
 
     TargetBuffer bufferPdb;
     IDacDbiInterface::SymbolFormat symFormat;
-    GetProcess()->GetDAC()->GetSymbolsBuffer(m_vmModule, &bufferPdb, &symFormat);
+    IfFailThrow(GetProcess()->GetDAC()->GetSymbolsBuffer(m_vmModule, &bufferPdb, &symFormat));
     if (bufferPdb.IsEmpty())
     {
         // No in-memory PDB. Common case.
@@ -431,7 +424,7 @@ public:
                 true,
                 pModule->GetAppDomain()->GetADToken());
 
-            event.MetadataUpdateRequest.pMetadataStart = CORDB_ADDRESS_TO_PTR(bufferMetaData.pAddress);
+            event.MetadataUpdateRequest.pMetadataStart = bufferMetaData.pAddress;
 
             // Note: two-way event here...
             IfFailThrow(pProcess->SendIPCEvent(&event, sizeof(DebuggerIPCEvent)));
@@ -499,7 +492,7 @@ void CordbModule::RefreshMetaData()
         // We could make a reader for MDInternalRO, but no need yet. This also ensures we don't encroach into common
         // scenario where we can map a file on disk.
         TADDR remoteMDInternalRWAddr = (TADDR)NULL;
-        GetProcess()->GetDAC()->GetPEFileMDInternalRW(m_vmPEFile, &remoteMDInternalRWAddr);
+        IfFailThrow(GetProcess()->GetDAC()->GetPEFileMDInternalRW(m_vmPEFile, &remoteMDInternalRWAddr));
         if (remoteMDInternalRWAddr != (TADDR)NULL)
         {
             // we should only be doing this once to initialize, we don't support reopen with this technique
@@ -527,7 +520,7 @@ void CordbModule::RefreshMetaData()
     if(!m_fForceMetaDataSerialize) // case 1 and 2
     {
         LOG((LF_CORDB,LL_INFO10000, "CM::RM !m_fForceMetaDataSerialize case\n"));
-        GetProcess()->GetDAC()->GetMetadata(m_vmModule, &bufferMetaData); // throws
+        IfFailThrow(GetProcess()->GetDAC()->GetMetadata(m_vmModule, &bufferMetaData)); // throws
     }
     else if (GetProcess()->GetShim() == NULL) // case 3 won't work on a dump so don't try
     {
@@ -555,7 +548,7 @@ void CordbModule::RefreshMetaData()
         //
         // Update it on the RS
         //
-        bufferMetaData.Init(PTR_TO_CORDB_ADDRESS(event.MetadataUpdateRequest.pMetadataStart), (ULONG) event.MetadataUpdateRequest.nMetadataSize);
+        bufferMetaData.Init(event.MetadataUpdateRequest.pMetadataStart, (ULONG) event.MetadataUpdateRequest.nMetadataSize);
 
         // init the cleanup object to ensure the buffer gets destroyed later
         cleanup.bufferMetaData = bufferMetaData;
@@ -797,10 +790,13 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
 
         _ASSERTE(!m_vmPEFile.IsNull());
         // MetaData lookup favors the NGEN image, which is what we want here.
-        if (!this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
-                                                                         dwImageTimeStamp,
-                                                                         dwImageSize,
-                                                                         &filePath))
+        BOOL _mdFileInfoResult;
+        IfFailThrow(this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
+                                                                         &dwImageTimeStamp,
+                                                                         &dwImageSize,
+                                                                         &filePath,
+                                                                         &_mdFileInfoResult));
+        if (!_mdFileInfoResult)
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't get metadata info for file \"%s\"\n", pszFullPathName));
             return CORDBG_E_MISSING_METADATA;
@@ -839,7 +835,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
             return CORDBG_E_MISSING_METADATA;
         }
 
-        MapViewHolder hMapView = MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0);
+        MapViewHolder hMapView{ MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0) };
         if (hMapView == NULL)
         {
             LOG((LF_CORDB,LL_WARNING, "CM::IM: Couldn't map view of file \"%s\" (GLE=%x)\n", pszFullPathName, GetLastError()));
@@ -932,7 +928,7 @@ void CordbModule::InitPublicMetaData(TargetBuffer buffer)
     // copy it over from the remote process
 
     CoTaskMemHolder<VOID> pMetaDataCopy;
-    CopyRemoteMetaData(buffer, pMetaDataCopy.GetAddr());
+    CopyRemoteMetaData(buffer, &pMetaDataCopy);
 
 
     //
@@ -959,7 +955,7 @@ void CordbModule::InitPublicMetaData(TargetBuffer buffer)
                                   reinterpret_cast<IUnknown**>( &m_pIMImport ));
 
     // MetaData has taken ownership -don't free the memory
-    pMetaDataCopy.SuppressRelease();
+    pMetaDataCopy.Detach();
 
     // Immediately restore the old setting.
     HRESULT hrRestore = pDisp->SetOption(MetaDataSetUpdate, &valueOld);
@@ -1013,7 +1009,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
 
     // First copy it from the remote process
     CoTaskMemHolder<VOID> pLocalMetaDataPtr;
-    CopyRemoteMetaData(bufferRemoteMetaData, pLocalMetaDataPtr.GetAddr());
+    CopyRemoteMetaData(bufferRemoteMetaData, &pLocalMetaDataPtr);
 
     IMetaDataDispenserEx *  pDisp = GetProcess()->GetDispenser();
     _ASSERTE(pDisp != NULL); // throws on error.
@@ -1041,7 +1037,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
     IfFailThrow(hr);
 
     // Success.  MetaData now owns the metadata memory
-    pLocalMetaDataPtr.SuppressRelease();
+    pLocalMetaDataPtr.Detach();
 }
 
 //---------------------------------------------------------------------------------------
@@ -1062,7 +1058,7 @@ void CordbModule::UpdatePublicMetaDataFromRemote(TargetBuffer bufferRemoteMetaDa
 //    Uses an allocator (CoTaskMemHolder) that lets us hand off the memory to the metadata.
 void CordbModule::CopyRemoteMetaData(
     TargetBuffer buffer,
-    CoTaskMemHolder<VOID> * pLocalBuffer)
+    VOID** pLocalBuffer)
 {
     CONTRACTL
     {
@@ -1075,20 +1071,16 @@ void CordbModule::CopyRemoteMetaData(
 
     // Allocate space for the local copy of the metadata
     // No need to zero out the memory since we'll fill it all here.
-    LPVOID pRawBuffer = CoTaskMemAlloc(buffer.cbSize);
-    if (pRawBuffer == NULL)
+    CoTaskMemHolder<BYTE> pBuffer{ (BYTE*)CoTaskMemAlloc(buffer.cbSize) };
+    if (pBuffer == NULL)
     {
         ThrowOutOfMemory();
     }
 
-    pLocalBuffer->Assign(pRawBuffer);
-
-
-
     // Copy the metadata from the left side
-    GetProcess()->SafeReadBuffer(buffer, (BYTE *)pRawBuffer);
+    GetProcess()->SafeReadBuffer(buffer, pBuffer);
 
-    return;
+    *pLocalBuffer = pBuffer.Detach();
 }
 
 HRESULT CordbModule::QueryInterface(REFIID id, void **pInterface)
@@ -1184,10 +1176,13 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_
             StringCopyHolder filePath;
 
             _ASSERTE(!m_vmPEFile.IsNull());
-            if (this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
-                                                                             dwImageTimeStamp,
-                                                                             dwImageSize,
-                                                                             &filePath))
+            BOOL _mdFileInfoResult;
+            IfFailThrow(this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
+                                                                             &dwImageTimeStamp,
+                                                                             &dwImageSize,
+                                                                             &filePath,
+                                                                             &_mdFileInfoResult));
+            if (_mdFileInfoResult)
             {
                 _ASSERTE(filePath.IsSet());
                 hr = CopyOutString(filePath, cchName, pcchName, szName);
@@ -1275,7 +1270,7 @@ HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, _Out_writ
             // Tempting to use the metadata-scope name, but that's a regression from Whidbey. For manifest modules,
             // the metadata scope name is not initialized with the string the user supplied to create the
             // dynamic assembly. So we call into the runtime to use CLR heuristics to get a more accurate name.
-            m_pProcess->GetDAC()->GetModuleSimpleName(m_vmModule, &buffer);
+            IfFailThrow(m_pProcess->GetDAC()->GetModuleSimpleName(m_vmModule, &buffer));
             _ASSERTE(buffer.IsSet());
             szTempName = buffer;
             // Note that we considered returning S_FALSE for fabricated names like this, but that's a breaking
@@ -1308,7 +1303,8 @@ const WCHAR * CordbModule::GetModulePath()
     if (!m_strModulePath.IsSet())
     {
         IDacDbiInterface * pDac = m_pProcess->GetDAC(); // throws
-        pDac->GetModulePath(m_vmModule, &m_strModulePath); // throws
+        BOOL fNonEmpty;
+        IfFailThrow(pDac->GetModulePath(m_vmModule, &m_strModulePath, &fNonEmpty)); // throws
         _ASSERTE(m_strModulePath.IsSet());
     }
 
@@ -1353,7 +1349,7 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
     if (m_fDynamic && !bClassLoadCallbacks)
         return E_INVALIDARG;
 
-    if (m_vmDomainAssembly.IsNull())
+    if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
     // Send a Set Class Load Flag event to the left side. There is no need to wait for a response, and this can be
@@ -1365,7 +1361,7 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
                            DB_IPCE_SET_CLASS_LOAD_FLAG,
                            false,
                            (GetAppDomain()->GetADToken()));
-    event.SetClassLoad.vmDomainAssembly = this->m_vmDomainAssembly;
+    event.SetClassLoad.vmAssembly = this->m_vmAssembly;
     event.SetClassLoad.flag = (bClassLoadCallbacks == TRUE);
 
     HRESULT hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event,
@@ -1895,7 +1891,7 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
         return E_INVALIDARG;
     }
 
-    if (m_vmDomainAssembly.IsNull() || m_pAppDomain == NULL)
+    if (m_vmAssembly.IsNull() || m_pAppDomain == NULL)
     {
         return E_UNEXPECTED;
     }
@@ -1904,15 +1900,15 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
     *ppClass = NULL;
     EX_TRY
     {
-        TypeRefData inData = {m_vmDomainAssembly, token};
+        TypeRefData inData = {m_vmAssembly, token};
         TypeRefData outData;
 
         {
             RSLockHolder lockHolder(pProcess->GetProcessLock());
-            pProcess->GetDAC()->ResolveTypeReference(&inData, &outData);
+            IfFailThrow(pProcess->GetDAC()->ResolveTypeReference(&inData, &outData));
         }
 
-        CordbModule * pModule = m_pAppDomain->LookupOrCreateModule(outData.vmDomainAssembly);
+        CordbModule * pModule = m_pAppDomain->LookupOrCreateModule(outData.vmAssembly);
         IfFailThrow(pModule->LookupClassByToken(outData.typeToken, ppClass));
     }
     EX_CATCH_HRESULT(hr);
@@ -2125,7 +2121,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
     FAIL_IF_NEUTERED(this);
     INTERNAL_SYNC_API_ENTRY(this->GetProcess()); //
 
-    if (m_vmDomainAssembly.IsNull())
+    if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
 #ifdef FEATURE_REMAP_FUNCTION
@@ -2142,7 +2138,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
         DebuggerIPCEvent event;
         GetProcess()->InitIPCEvent(&event, DB_IPCE_APPLY_CHANGES, false, VMPTR_AppDomain::NullPtr());
 
-        event.ApplyChanges.vmDomainAssembly = this->m_vmDomainAssembly;
+        event.ApplyChanges.vmAssembly = this->m_vmAssembly;
 
         // Have the left-side create a buffer for us to store the delta into
         ULONG cbSize = cbMetaData+cbIL;
@@ -2208,7 +2204,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
                 CordbModule* pModule = NULL;
 
 
-                pModule = pAppDomain->LookupOrCreateModule(retEvent->EnCUpdate.vmDomainAssembly); // throws
+                pModule = pAppDomain->LookupOrCreateModule(retEvent->EnCUpdate.vmAssembly); // throws
                 _ASSERTE(pModule != NULL);
 
                 // update to the newest version
@@ -2217,7 +2213,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
                      retEvent->type == DB_IPCE_ENC_ADD_FUNCTION)
                 {
                     // Update the function collection to reflect this edit
-                    hr = pModule->UpdateFunction(retEvent->EnCUpdate.memberMetadataToken, retEvent->EnCUpdate.newVersionNumber, NULL);
+                    hr = pModule->UpdateFunction(retEvent->EnCUpdate.memberMetadataToken, (SIZE_T)(ULONG64)retEvent->EnCUpdate.newVersionNumber, NULL);
 
                 }
                 // mark the class and relevant type as old so we update it next time we try to query it
@@ -2266,7 +2262,7 @@ HRESULT CordbModule::SetJMCStatus(
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    if (m_vmDomainAssembly.IsNull())
+    if (m_vmAssembly.IsNull())
         return E_UNEXPECTED;
 
     // @todo -allow the other parameters. These are functions that have default status
@@ -2285,7 +2281,7 @@ HRESULT CordbModule::SetJMCStatus(
     // Tell the LS that this module is/is not user code
     DebuggerIPCEvent event;
     pProcess->InitIPCEvent(&event, DB_IPCE_SET_MODULE_JMC_STATUS, true, this->GetAppDomain()->GetADToken());
-    event.SetJMCFunctionStatus.vmDomainAssembly = m_vmDomainAssembly;
+    event.SetJMCFunctionStatus.vmAssembly = m_vmAssembly;
     event.SetJMCFunctionStatus.dwStatus = fIsUserCode;
 
 
@@ -2374,17 +2370,18 @@ CordbAssembly * CordbModule::ResolveAssemblyInternal(mdToken tkAssemblyRef)
 
     CordbAssembly *    pAssembly = NULL;
 
-    if (!m_vmDomainAssembly.IsNull())
+    if (!m_vmAssembly.IsNull())
     {
         // Get DAC to do the real work to resolve the assembly
-        VMPTR_DomainAssembly vmDomainAssembly = GetProcess()->GetDAC()->ResolveAssembly(m_vmDomainAssembly, tkAssemblyRef);
+        VMPTR_Assembly vmAssembly;
+        IfFailThrow(GetProcess()->GetDAC()->ResolveAssembly(m_vmAssembly, tkAssemblyRef, &vmAssembly));
 
         // now find the ICorDebugAssembly corresponding to it
-        if (!vmDomainAssembly.IsNull() && m_pAppDomain != NULL)
+        if (!vmAssembly.IsNull() && m_pAppDomain != NULL)
         {
             RSLockHolder lockHolder(GetProcess()->GetProcessLock());
             // Don't throw here because if the lookup fails, we want to throw CORDBG_E_CANNOT_RESOLVE_ASSEMBLY.
-            pAssembly = m_pAppDomain->LookupOrCreateAssembly(vmDomainAssembly);
+            pAssembly = m_pAppDomain->LookupOrCreateAssembly(vmAssembly);
         }
     }
 
@@ -2548,7 +2545,7 @@ HRESULT CordbModule::SetJITCompilerFlags(DWORD dwFlags)
             if (SUCCEEDED(hr))
             {
                 // DD interface will check if it's a valid time to change the flags.
-                hr = pProcess->GetDAC()->SetCompilerFlags(GetRuntimeDomainAssembly(), fAllowJitOpts, fEnableEnC);
+                hr = pProcess->GetDAC()->SetCompilerFlags(GetRuntimeAssembly(), fAllowJitOpts, fEnableEnC);
             }
         }
     }
@@ -2583,10 +2580,10 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
         BOOL fAllowJitOpts;
         BOOL fEnableEnC;
 
-        pProcess->GetDAC()->GetCompilerFlags (
-            GetRuntimeDomainAssembly(),
+        IfFailThrow(pProcess->GetDAC()->GetCompilerFlags (
+            GetRuntimeAssembly(),
             &fAllowJitOpts,
-            &fEnableEnC);
+            &fEnableEnC));
 
         if (fEnableEnC)
         {
@@ -4240,7 +4237,24 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffset(ULONG32 ILoffset, ULONG32 buff
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
     EX_TRY
     {
-        hr = GetReturnValueLiveOffsetImpl(NULL, ILoffset, bufferSize, pFetched, pOffsets);
+        LoadNativeInfo();
+
+        NewArrayHolder<const ICorDebugInfo::NativeVarInfo *> varInfos;
+        const ICorDebugInfo::NativeVarInfo **pVarInfosBuffer = NULL;
+        if (pOffsets != NULL && bufferSize > 0)
+        {
+            varInfos = new const ICorDebugInfo::NativeVarInfo *[bufferSize];
+            pVarInfosBuffer = varInfos;
+        }
+
+        hr = GetReturnValueVariableHomes(NULL, ILoffset, bufferSize, pFetched, pVarInfosBuffer);
+        if ((SUCCEEDED(hr) || hr == S_FALSE) && pVarInfosBuffer != NULL)
+        {
+            for (ULONG32 i = 0; i < *pFetched; ++i)
+            {
+                pOffsets[i] = pVarInfosBuffer[i]->startOffset;
+            }
+        }
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -4351,385 +4365,6 @@ HRESULT CordbNativeCode::EnumerateVariableHomes(ICorDebugVariableHomeEnum **ppEn
     EX_CATCH_HRESULT(hr);
 
     return hr;
-}
-
-int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
-{
-#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
-    if (Is32BitInstruction(*(WORD*)ip))
-        return 4;
-    else
-        return 2;
-#elif defined(TARGET_ARM64)
-    return MAX_INSTRUCTION_LENGTH;
-#elif defined(TARGET_LOONGARCH64)
-    return MAX_INSTRUCTION_LENGTH;
-#elif defined(TARGET_X86)
-    if (count < 2)
-        return -1;
-
-    // Skip instruction prefixes
-    do
-    {
-        switch (*ip)
-        {
-            // Segment overrides
-        case 0x26: // ES
-        case 0x2E: // CS
-        case 0x36: // SS
-        case 0x3E: // DS
-        case 0x64: // FS
-        case 0x65: // GS
-
-            // Size overrides
-        case 0x66: // Operand-Size
-        case 0x67: // Address-Size
-
-            // Lock
-        case 0xf0:
-
-            // String REP prefixes
-        case 0xf1:
-        case 0xf2: // REPNE/REPNZ
-        case 0xf3:
-            ip++;
-            count--;
-            continue;
-
-        default:
-            break;
-        }
-    } while (0);
-
-    // Read the opcode
-    BYTE opcode = *ip++;
-    if (opcode == 0xcc)
-    {
-        // todo:  Can we actually get this result?  Doesn't ICorDebug hand out un-patched assembly?
-        _ASSERTE(!"Hit break opcode!");
-        return -1;
-    }
-
-    // Analyze what we can of the opcode
-    switch (opcode)
-    {
-    case 0xff:
-    {
-                 // Count may have been decremented by prefixes.
-                 if (count < 2)
-                     return -1;
-
-                 BYTE modrm = *ip++;
-                 BYTE mod = (modrm & 0xC0) >> 6;
-                 BYTE reg = (modrm & 0x38) >> 3;
-                 BYTE rm  = (modrm & 0x07);
-
-                 int displace = -1;
-
-                 if ((reg != 2) && (reg != 3) && (reg != 4) && (reg != 5))
-                 {
-                     //
-                     // This is not a CALL or JMP instruction, return, unknown.
-                     //
-                     _ASSERTE(!"Unhandled opcode!");
-                     return -1;
-                 }
-
-
-                 // Only try to decode registers if we actually have reg sets.
-                 switch (mod)
-                 {
-                 case 0:
-                 case 1:
-                 case 2:
-
-                     if (rm == 4)
-                     {
-                         if (count < 3)
-                             return -1;
-
-                         //
-                         // Get values from the SIB byte
-                         //
-                         BYTE ss    = (*ip & 0xC0) >> 6;
-                         BYTE index = (*ip & 0x38) >> 3;
-                         BYTE base  = (*ip & 0x7);
-
-                         //
-                         // Finally add in the offset
-                         //
-                         if (mod == 0)
-                         {
-                             if (base == 5)
-                                 displace = 7;
-                             else
-                                 displace = 3;
-                         }
-                         else if (mod == 1)
-                         {
-                             displace = 4;
-                         }
-                         else
-                         {
-                             displace = 7;
-                         }
-                     }
-                     else
-                     {
-                         if (mod == 0)
-                         {
-                             if (rm == 5)
-                                 displace = 6;
-                             else
-                                 displace = 2;
-                         }
-                         else if (mod == 1)
-                         {
-                             displace = 3;
-                         }
-                         else
-                         {
-                             displace = 6;
-                         }
-                     }
-                     break;
-
-                 case 3:
-                 default:
-                     displace = 2;
-                     break;
-                 }
-
-                 return displace;
-    }  // end of 0xFF case
-
-    case 0xe8:
-        return 5;
-
-
-    default:
-        break;
-    }
-
-
-    _ASSERTE(!"Unhandled opcode!");
-    return -1;
-
-#elif defined(TARGET_AMD64)
-    BYTE rex = 0;
-    BYTE prefix = *ip;
-    BOOL fContainsPrefix = FALSE;
-
-    // Should not happen.
-    if (prefix == 0xcc)
-        return -1;
-
-    // Skip instruction prefixes
-    //@TODO by euzem:
-    //This "loop" can't be really executed more than once so if CALL can really have more than one prefix we'll crash.
-    //Some of these prefixes are not allowed for CALL instruction and we should treat them as invalid code.
-    //It appears that this code was mostly copy/pasted from \NDP\clr\src\Debug\EE\amd64\amd64walker.cpp
-    //with very minimum fixes.
-    do
-    {
-        switch (prefix)
-        {
-            // Segment overrides
-        case 0x26: // ES
-        case 0x2E: // CS
-        case 0x36: // SS
-        case 0x3E: // DS
-        case 0x64: // FS
-        case 0x65: // GS
-
-            // Size overrides
-        case 0x66: // Operand-Size
-        case 0x67: // Address-Size
-
-            // Lock
-        case 0xf0:
-
-            // String REP prefixes
-        case 0xf2: // REPNE/REPNZ
-        case 0xf3:
-            ip++;
-            fContainsPrefix = TRUE;
-            continue;
-
-            // REX register extension prefixes
-        case 0x40:
-        case 0x41:
-        case 0x42:
-        case 0x43:
-        case 0x44:
-        case 0x45:
-        case 0x46:
-        case 0x47:
-        case 0x48:
-        case 0x49:
-        case 0x4a:
-        case 0x4b:
-        case 0x4c:
-        case 0x4d:
-        case 0x4e:
-        case 0x4f:
-            // make sure to set rex to prefix, not *ip because *ip still represents the
-            // codestream which has a 0xcc in it.
-            rex = prefix;
-            ip++;
-            fContainsPrefix = TRUE;
-            continue;
-
-        default:
-            break;
-        }
-    } while (0);
-
-    // Read the opcode
-    BYTE opcode = *ip++;
-
-    // Should not happen.
-    if (opcode == 0xcc)
-        return -1;
-
-
-    // Setup rex bits if needed
-    BYTE rex_b = 0;
-    BYTE rex_x = 0;
-    BYTE rex_r = 0;
-
-    if (rex != 0)
-    {
-        rex_b = (rex & 0x1);       // high bit to modrm r/m field or SIB base field or OPCODE reg field    -- Hmm, when which?
-        rex_x = (rex & 0x2) >> 1;  // high bit to sib index field
-        rex_r = (rex & 0x4) >> 2;  // high bit to modrm reg field
-    }
-
-    // Analyze what we can of the opcode
-    switch (opcode)
-    {
-    case 0xff:
-    {
-                 BYTE modrm = *ip++;
-
-                 _ASSERT(modrm != 0);
-
-                 BYTE mod = (modrm & 0xC0) >> 6;
-                 BYTE reg = (modrm & 0x38) >> 3;
-                 BYTE rm  = (modrm & 0x07);
-
-                 reg   |= (rex_r << 3);
-                 rm    |= (rex_b << 3);
-
-                 if ((reg < 2) || (reg > 5 && reg < 8) || (reg > 15)) {
-                     // not a valid register for a CALL or BRANCH
-                     _ASSERTE(!"Invalid opcode!");
-                     return -1;
-                 }
-
-                 SHORT displace = -1;
-
-                 // See: Tables A-15,16,17 in AMD Dev Manual 3 for information
-                 //      about how the ModRM/SIB/REX bytes interact.
-
-                 switch (mod)
-                 {
-                 case 0:
-                 case 1:
-                 case 2:
-                     if ((rm & 0x07) == 4) // we have an SIB byte following
-                     {
-                         //
-                         // Get values from the SIB byte
-                         //
-                         BYTE sib   = *ip;
-                         _ASSERT(sib != 0);
-
-                         BYTE base  = (sib & 0x07);
-                         base  |= (rex_b << 3);
-
-                         ip++;
-
-                         //
-                         // Finally add in the offset
-                         //
-                         if (mod == 0)
-                         {
-                             if ((base & 0x07) == 5)
-                                 displace = 7;
-                             else
-                                 displace = 3;
-                         }
-                         else if (mod == 1)
-                         {
-                             displace = 4;
-                         }
-                         else // mod == 2
-                         {
-                             displace = 7;
-                         }
-                     }
-                     else
-                     {
-                         //
-                         // Get the value we need from the register.
-                         //
-
-                         // Check for RIP-relative addressing mode.
-                         if ((mod == 0) && ((rm & 0x07) == 5))
-                         {
-                             displace = 6;   // 1 byte opcode + 1 byte modrm + 4 byte displacement (signed)
-                         }
-                         else
-                         {
-                             if (mod == 0)
-                                 displace = 2;
-                             else if (mod == 1)
-                                 displace = 3;
-                             else // mod == 2
-                                 displace = 6;
-                         }
-                     }
-
-                     break;
-
-                 case 3:
-                 default:
-                     displace = 2;
-                 }
-
-                 // Displace should be set by one of the cases above
-                 if (displace == -1)
-                 {
-                     _ASSERTE(!"GetCallInstructionLength() encountered unexpected call instruction");
-                     return -1;
-                 }
-
-                 // Account for the 1 byte prefix (REX or otherwise)
-                 if (fContainsPrefix)
-                     displace++;
-
-                 // reg == 4 or 5 means that it is not a CALL, but JMP instruction
-                 // so we will fall back to ASSERT after break
-                 if ((reg != 4) && (reg != 5))
-                     return displace;
-                 break;
-    }
-    case 0xe8:
-    {
-                 //Near call with the target specified by a 32-bit relative displacement.
-                 //[maybe 1 byte prefix] + [1 byte opcode E8h] + [4 bytes offset]
-                 return 5 + (fContainsPrefix ? 1 : 0);
-    }
-    default:
-        break;
-    }
-
-    _ASSERTE(!"Invalid opcode!");
-    return -1;
-#else
-#error Platform not implemented
-#endif
 }
 
 HRESULT CordbNativeCode::GetSigParserFromFunction(mdToken mdFunction, mdToken *pClass, SigParser &parser, SigParser &methodGenerics)
@@ -4993,7 +4628,7 @@ HRESULT CordbNativeCode::GetCallSignature(ULONG32 ILoffset, mdToken *pClass, mdT
     return GetSigParserFromFunction(mdFunction, pClass, parser, generics);
 }
 
-HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, ULONG32 *pOffsets)
+HRESULT CordbNativeCode::GetReturnValueVariableHomes(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, const ICorDebugInfo::NativeVarInfo **ppVarInfos)
 {
     if (pFetched == NULL)
         return E_INVALIDARG;
@@ -5007,55 +4642,33 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
     IfFailRet(GetCallSignature(ILoffset, &mdClass, NULL, signature, generics));
     IfFailRet(EnsureReturnValueAllowed(currentInstantiation, mdClass, signature, generics));
 
-    // now find the native offset
-    SequencePoints *pSP = GetSequencePoints();
-    DebuggerILToNativeMap *pMap = pSP->GetCallsiteMapAddr();
-
-    for (ULONG32 i = 0; i < pSP->GetCallsiteEntryCount() && pMap; ++i, pMap++)
+    // now find the matching CALL_RETURN_ILNUM NativeVarInfo entries
+    const DacDbiArrayList<ICorDebugInfo::NativeVarInfo> *pOffsetInfoList = m_nativeVarData.GetOffsetInfoList();
+    _ASSERTE(pOffsetInfoList != NULL);
+    for (unsigned int i = 0; i < pOffsetInfoList->Count(); i++)
     {
-        if (pMap->ilOffset == ILoffset && (pMap->source & ICorDebugInfo::CALL_INSTRUCTION) == ICorDebugInfo::CALL_INSTRUCTION)
+        const ICorDebugInfo::NativeVarInfo *pNativeVarInfo = &((*pOffsetInfoList)[i]);
+        _ASSERTE(pNativeVarInfo != NULL);
+        if (pNativeVarInfo->varNumber != (unsigned)ICorDebugInfo::CALL_RETURN_ILNUM)
         {
-            // if we have a buffer, fill it in.
-            if (pOffsets && found < bufferSize)
-            {
-                // Fetch the actual assembly instructions
-                BYTE nativeBuffer[8];
-
-                ULONG32 fetched = 0;
-                IfFailRet(GetCode(pMap->nativeStartOffset, pMap->nativeStartOffset+ARRAY_SIZE(nativeBuffer), ARRAY_SIZE(nativeBuffer), nativeBuffer, &fetched));
-
-                int skipBytes = 0;
-
-#if defined(PSEUDORANDOM_NOP_INSERTION)
-                // Skip nop sleds the JIT adds. These instructions as a security measure,
-                // and incorrectly reports to us the wrong offset of the call instruction.
-                const BYTE nop_opcode = 0x90;
-                while (fetched && nativeBuffer[0] == nop_opcode)
-                {
-                    skipBytes++;
-
-                    for (int j = 1; j < ARRAY_SIZE(nativeBuffer) && nativeBuffer[j] == nop_opcode; ++j)
-                        skipBytes++;
-
-                    // We must have at least one skip byte since the outer while ensures it.  Thus we always need to reread
-                    // the buffer at the end of this loop.
-                    IfFailRet(GetCode(pMap->nativeStartOffset+skipBytes, pMap->nativeStartOffset+skipBytes+ARRAY_SIZE(nativeBuffer), ARRAY_SIZE(nativeBuffer), nativeBuffer, &fetched));
-                }
-#endif
-
-                // Get the length of the call instruction.
-                int offset = GetCallInstructionLength(nativeBuffer, fetched);
-                if (offset == -1)
-                    return E_UNEXPECTED; // Could not decode instruction, this should never happen.
-
-                pOffsets[found] = pMap->nativeStartOffset + offset + skipBytes;
-            }
-
-            found++;
+            continue;
         }
+
+        if (pNativeVarInfo->callReturnValueILOffset != ILoffset)
+        {
+            continue;
+        }
+
+        // if we have a buffer, fill it in.
+        if (ppVarInfos && found < bufferSize)
+        {
+            ppVarInfos[found] = pNativeVarInfo;
+        }
+
+        found++;
     }
 
-    if (pOffsets)
+    if (ppVarInfos)
         *pFetched = found < bufferSize ? found : bufferSize;
     else
         *pFetched = found;
@@ -5063,7 +4676,7 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
     if (found == 0)
         return E_FAIL;
 
-    if (pOffsets && found > bufferSize)
+    if (ppVarInfos && found > bufferSize)
         return S_FALSE;
 
     return S_OK;
@@ -5103,7 +4716,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
 
     if (pNativeCode == NULL)
     {
-        GetProcess()->GetDAC()->GetNativeCodeInfoForAddr(methodDesc, startAddress, &codeInfo);
+        IfFailThrow(GetProcess()->GetDAC()->GetNativeCodeInfoForAddr(startAddress, &codeInfo, NULL, NULL));
 
         // We didn't have an instance, so we'll build one and add it to the hash table
         LOG((LF_CORDB,
@@ -5158,11 +4771,11 @@ void CordbNativeCode::LoadNativeInfo()
     if (m_fCodeAvailable)
     {
         RSLockHolder lockHolder(pProcess->GetProcessLock());
-        pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(GetVMNativeCodeMethodDescToken(),
+        IfFailThrow(pProcess->GetDAC()->GetNativeCodeSequencePointsAndVarInfo(GetVMNativeCodeMethodDescToken(),
                                                                   GetAddress(),
                                                                   m_fCodeAvailable,
                                                                   &m_nativeVarData,
-                                                                  &m_sequencePoints);
+                                                                  &m_sequencePoints));
     }
 
 } // CordbNativeCode::LoadNativeInfo

@@ -1582,6 +1582,8 @@ namespace System.Runtime.InteropServices
     public enum PosixSignal
     {
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        SIGKILL = -11,
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         SIGTSTP = -10,
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         SIGTTOU = -9,
@@ -1714,6 +1716,7 @@ namespace System.Runtime.InteropServices
     public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
     {
         public UnmanagedCallersOnlyAttribute() { }
+        public System.Type? AssociatedSourceType;
         public System.Type[]? CallConvs;
         public string? EntryPoint;
     }
@@ -2446,6 +2449,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
         public static GCHandle CreateReferenceTrackingHandle(
             object obj,
             out System.Span<System.IntPtr> taggedMemory) => throw null;
+        public static System.Span<System.IntPtr> GetOrCreateReferenceTrackingMemory(object obj) => throw null;
         public enum MessageSendFunction
         {
             MsgSend,
@@ -2536,7 +2540,7 @@ namespace System.Runtime.InteropServices.Marshalling
             public void Free() { throw null; }
         }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
     public sealed partial class MarshalUsingAttribute : System.Attribute
     {
         public MarshalUsingAttribute() { }

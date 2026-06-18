@@ -21,6 +21,11 @@ namespace SlowPathELTTests
 
         public static int Main(string[] args)
         {
+            if (!TestLibrary.PlatformDetection.IsICorProfilerEnterLeaveHooksEnabled)
+            {
+                return 100;
+            }
+
             if (args.Length > 0 && args[0].Equals("RunTest", StringComparison.OrdinalIgnoreCase))
             {
                 return SlowPathELTHelpers.RunTest();

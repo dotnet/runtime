@@ -31,6 +31,7 @@
 #include "castcache.h"
 #include "encee.h"
 #include "finalizerthread.h"
+#include "pregeneratedstringthunks.h"
 
 extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes)
 {
@@ -466,7 +467,7 @@ extern "C" BOOL QCALLTYPE RuntimeTypeHandle_GetFields(MethodTable* pMT, intptr_t
 
     BEGIN_QCALL;
 
-    EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, TRUE);
+    EncApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS, EncApproxFieldDescIterator::FixUpEncFields);
     INT32 count = (INT32)fdIterator.Count();
 
     if (count > *pCount)
@@ -1086,6 +1087,22 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_MakeByRef(QCall::TypeHandle pTypeHan
     byRefHandle = pTypeHandle.AsTypeHandle().MakeByRef();
     GCX_COOP();
     retType.Set(byRefHandle.GetManagedClassObject());
+    END_QCALL;
+
+    return;
+}
+
+extern "C" void QCALLTYPE RuntimeTypeHandle_MakeFunctionPointer(TypeHandle* pRetAndArgTypes, INT32 numArgs, BOOL isUnmanaged, QCall::ObjectHandleOnStack retType)
+{
+    QCALL_CONTRACT;
+
+    TypeHandle fnPtrHandle;
+
+    BEGIN_QCALL;
+    BYTE callConv = (BYTE)(isUnmanaged ? IMAGE_CEE_CS_CALLCONV_UNMANAGED : IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    fnPtrHandle = ClassLoader::LoadFnptrTypeThrowing(callConv, numArgs, pRetAndArgTypes);
+    GCX_COOP();
+    retType.Set(fnPtrHandle.GetManagedClassObject());
     END_QCALL;
 
     return;
@@ -1782,6 +1799,10 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
     DynamicMethodDesc* pDynamicMethodDesc = pMethod->AsDynamicMethodDesc();
 
     {
+#if defined(FEATURE_PORTABLE_ENTRYPOINTS)
+        ClearPendingThunkResolutionUnderLock(pDynamicMethodDesc);
+#endif
+
         GCX_COOP();
 
         // Destroy should be called only if the managed part is gone.
@@ -1790,9 +1811,11 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_Destroy(MethodDesc * pMethod)
         // Fire Unload Dynamic Method Event here
         ETW::MethodLog::DynamicMethodDestroyed(pMethod);
 
+#ifdef PROFILING_SUPPORTED
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackDynamicFunctionUnloads());
         (&g_profControlBlock)->DynamicMethodUnloaded((FunctionID)pMethod);
         END_PROFILER_CALLBACK();
+#endif // PROFILING_SUPPORTED
     }
 
     if (!pDynamicMethodDesc->TryDestroy())
@@ -1863,8 +1886,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
 //          async variants for task-returning methods
 //
 // For {task-returning, async} variants Reflection hands out only the task-returning variant.
-//  the async varinat is an implementation detail that conceptually does not exist.
-//  TODO: (async) the filtering may not cover all scenarios. Review and add tests.
+//  the async variant is an implementation detail that conceptually does not exist.
 //
 // For generic methods we always hand out an instantiating stub except for a generic method definition
 // For non-generic methods on generic types we need an instantiating stub if it's one of the following
@@ -1930,7 +1952,7 @@ extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodD
     if (pMethod->IsAsyncVariantMethod())
     {
         // do not report async variants to reflection.
-        pMethod = pMethod->GetAsyncOtherVariant(/*allowInstParam*/ false);
+        pMethod = pMethod->GetOrdinaryVariant(/*allowInstParam*/ false);
     }
 
     TypeHandle instType = declaringTypeHandle.AsTypeHandle();

@@ -37,9 +37,8 @@ extern "C"
 */
 extern Volatile<LONG> terminator;
 
-// The process and session ID of this process, so we can avoid excessive calls to getpid() and getsid().
+// The process ID of this process, so we can avoid excessive calls to getpid().
 extern DWORD gPID;
-extern DWORD gSID;
 
 extern LPWSTR pAppDir;
 
@@ -49,15 +48,6 @@ extern LPCSTR gApplicationGroupId;
 extern int gApplicationGroupIdLength;
 #endif // __APPLE__
 extern PathCharString *gSharedFilesPath;
-
-/*++
-Function:
-  PROCGetProcessIDFromHandle
-
-Abstract
-  Return the process ID from a process handle
---*/
-DWORD PROCGetProcessIDFromHandle(HANDLE hProcess);
 
 /*++
 Function:
@@ -78,54 +68,6 @@ Notes :
     This function takes ownership of lpwstrCmdLine, but not of lpwstrFullPath
 --*/
 BOOL PROCCreateInitialProcess(LPWSTR lpwstrCmdLine, LPWSTR lpwstrFullPath);
-
-/*++
-Function:
-  PROCCleanupInitialProcess
-
-Abstract
-  Cleanup all the structures for the initial process.
-
-Parameter
-  VOID
-
-Return
-  VOID
-
---*/
-VOID PROCCleanupInitialProcess(VOID);
-
-#if USE_SYSV_SEMAPHORES
-/*++
-Function:
-  PROCCleanupThreadSemIds(VOID);
-
-Abstract
-  Cleanup SysV semaphore ids for all threads.
-
-(no parameters, no return value)
---*/
-VOID PROCCleanupThreadSemIds(VOID);
-#endif
-
-/*++
-Function:
-  PROCProcessLock
-
-Abstract
-  Enter the critical section associated to the current process
---*/
-VOID PROCProcessLock(VOID);
-
-
-/*++
-Function:
-  PROCProcessUnlock
-
-Abstract
-  Leave the critical section associated to the current process
---*/
-VOID PROCProcessUnlock(VOID);
 
 /*++
 Function
@@ -189,6 +131,20 @@ Parameters:
 (no return value)
 --*/
 VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize);
+
+/*++
+Function:
+  PROCLogManagedCallstackForSignal
+
+  Invokes the registered callback to log the managed callstack for a signal.
+  Used by Android since CreateDump is not supported there.
+
+Parameters:
+  signal - POSIX signal number
+
+(no return value)
+--*/
+VOID PROCLogManagedCallstackForSignal(int signal);
 
 #ifdef __cplusplus
 }

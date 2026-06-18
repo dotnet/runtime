@@ -285,7 +285,7 @@ namespace System.IO.Packaging
 
             int forwardSlashPos = typeAndSubType.IndexOf('/');
             if (forwardSlashPos < 0 || // no slashes
-                typeAndSubType.Slice(forwardSlashPos + 1).IndexOf('/') >= 0) // more than one slash
+                typeAndSubType.Slice(forwardSlashPos + 1).Contains('/')) // more than one slash
             {
                 throw new ArgumentException(SR.InvalidTypeSubType);
             }

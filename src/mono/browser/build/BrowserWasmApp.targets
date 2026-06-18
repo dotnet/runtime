@@ -5,6 +5,7 @@
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
     <!-- we are not triggering EnableDiagnostics in Debug automatically, because it would trigger re-link, making dev-loop slow -->
     <EnableDiagnostics Condition="'$(EnableDiagnostics)' == ''">false</EnableDiagnostics>
+    <WasmAppRuntimeFlavor>Mono</WasmAppRuntimeFlavor>
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
@@ -48,15 +49,6 @@
     <!-- Allow running/debugging from VS -->
     <ProjectCapability Include="DotNetCoreWeb"/>
   </ItemGroup>
-
-  <!-- When trimming non-exe projects, root the whole intermediate assembly. -->
-  <Target Name="_RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" BeforeTargets="_RunILLink" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' And '$(OutputType)' == 'Library'">
-    <ItemGroup>
-      <TrimmerRootAssembly Condition="'%(Identity)' == '@(IntermediateAssembly)'">
-        <RootMode>all</RootMode>
-      </TrimmerRootAssembly>
-    </ItemGroup>
-  </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
   <Target Name="_SetupEmscripten" BeforeTargets="_SetupToolchain">
@@ -125,6 +117,7 @@
       <_MonoAotCrossCompilerPath>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier', $(RuntimeIdentifier)))</_MonoAotCrossCompilerPath>
       <_WasmDefaultFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-default.rsp'))</_WasmDefaultFlagsRsp>
       <_WasmDefaultLinkFlagsRsp>$([MSBuild]::NormalizePath($(_WasmRuntimePackSrcDir), 'emcc-link.rsp'))</_WasmDefaultLinkFlagsRsp>
+      <_WasmLlvmSizeRsp>$(_WasmIntermediateOutputPath)emcc-llvmsize.rsp</_WasmLlvmSizeRsp>
       <!--<_WasmLLVMPathForAOT>$(EmscriptenUpstreamBinPath)</_WasmLLVMPathForAOT>-->
       <WasmLinkIcalls Condition="'$(WasmLinkIcalls)' == ''">$(WasmBuildNative)</WasmLinkIcalls>
       <WasmRunWasmOpt Condition="'$(WasmRunWasmOpt)' == '' and '$(WasmNativeStrip)' == 'true'">true</WasmRunWasmOpt>
@@ -473,7 +466,7 @@
 
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
-      Lines="$(V8ScriptShebang);v8 --module $(_WasmMainJSFileName) -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
+      Lines="$(V8ScriptShebang);v8 $(_WasmMainJSFileName) -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
       Overwrite="true">
     </WriteLinesToFile>
 

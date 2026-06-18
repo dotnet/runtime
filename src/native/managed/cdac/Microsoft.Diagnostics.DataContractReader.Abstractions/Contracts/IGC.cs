@@ -19,6 +19,27 @@ public static class GCIdentifiers
     public const string DynamicHeapCount = "dynamic_heap";
 }
 
+public enum HandleType
+{
+    WeakShort = 0,
+    WeakLong = 1,
+    Strong = 2,
+    Pinned = 3,
+    RefCounted = 5,
+    Dependent = 6,
+    WeakInteriorPointer = 10,
+    CrossReference = 11,
+}
+
+public record struct HandleData(
+    TargetPointer Handle,
+    TargetPointer Secondary,
+    uint Type,
+    bool StrongReference,
+    uint RefCount,
+    uint JupiterRefCount,
+    bool IsPegged);
+
 public readonly struct GCHeapData
 {
     public TargetPointer MarkArray { get; init; }
@@ -77,6 +98,41 @@ public readonly struct GCOomData
     public bool LohP { get; init; }
 }
 
+public enum FreeRegionKind
+{
+    FreeUnknownRegion = 0,
+    FreeGlobalHugeRegion = 1,
+    FreeGlobalRegion = 2,
+    FreeRegion = 3,
+    FreeSohSegment = 4,
+    FreeUohSegment = 5,
+}
+
+public readonly struct GCMemoryRegionData
+{
+    public TargetPointer Start { get; init; }
+    public ulong Size { get; init; }
+    public ulong ExtraData { get; init; }
+    public int Heap { get; init; }
+}
+
+public enum GCSegmentClassification
+{
+    Unknown,
+    Gen0,
+    Gen1,
+    Gen2,
+    LOH,
+    POH,
+    NonGC,
+    Ephemeral,
+}
+
+public readonly record struct GCHeapSegmentInfo(
+    TargetPointer Start,
+    TargetPointer End,
+    GCSegmentClassification Generation);
+
 public interface IGC : IContract
 {
     static string IContract.Name { get; } = nameof(GC);
@@ -102,6 +158,29 @@ public interface IGC : IContract
     GCOomData GetOomData() => throw new NotImplementedException();
     // server variant
     GCOomData GetOomData(TargetPointer heapAddress) => throw new NotImplementedException();
+    List<HandleData> GetHandles(HandleType[] types) => throw new NotImplementedException();
+    HandleType[] GetSupportedHandleTypes() => throw new NotImplementedException();
+    HandleType[] GetHandleTypes(uint[] types) => throw new NotImplementedException();
+    TargetNUInt GetHandleExtraInfo(TargetPointer handle) => throw new NotImplementedException();
+
+    void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit) => throw new NotImplementedException();
+
+    IReadOnlyList<GCMemoryRegionData> GetHandleTableMemoryRegions() => throw new NotImplementedException();
+    IReadOnlyList<GCMemoryRegionData> GetGCBookkeepingMemoryRegions() => throw new NotImplementedException();
+    IReadOnlyList<GCMemoryRegionData> GetGCFreeRegions() => throw new NotImplementedException();
+
+    // Enumerates the raw GC heap segments for a single heap as recorded by the GC's per-generation
+    // segment lists.
+    IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegments(GCHeapData heapData) => throw new NotImplementedException();
+
+    // Returns the next candidate object address within a heap segment.
+    TargetPointer GetPotentialNextObjectAddress(
+        TargetPointer currentAddress,
+        ulong currentObjectSize,
+        GCHeapSegmentInfo segment) => throw new NotImplementedException();
+
+    // Aligns an object's raw size to the alignment required by its containing segment.
+    ulong AlignObjectSize(ulong size, GCSegmentClassification generation) => throw new NotImplementedException();
 }
 
 public readonly struct GC : IGC

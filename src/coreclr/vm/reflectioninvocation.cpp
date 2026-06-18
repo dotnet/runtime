@@ -25,6 +25,8 @@
 #include "dbginterface.h"
 #include "argdestination.h"
 
+#include "interpexec.h"
+
 extern "C" void QCALLTYPE RuntimeFieldHandle_GetValue(FieldDesc* fieldDesc, QCall::ObjectHandleOnStack instance, QCall::TypeHandle fieldType, QCall::TypeHandle declaringType, BOOL* pIsClassInitialized, QCall::ObjectHandleOnStack result)
 {
     QCALL_CONTRACT;
@@ -61,7 +63,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_SetValue(FieldDesc* fieldDesc, QCal
     GCPROTECT_BEGIN(gc);
 
     TypeHandle fieldTypeHandle = fieldType.AsTypeHandle();
-    InvokeUtil::SetValidField(fieldTypeHandle.GetVerifierCorElementType(), fieldTypeHandle, fieldDesc, &gc.target, &gc.value, declaringType.AsTypeHandle(), pIsClassInitialized);
+    InvokeUtil::SetValidField(fieldTypeHandle.GetInternalCorElementType(), fieldTypeHandle, fieldDesc, &gc.target, &gc.value, declaringType.AsTypeHandle(), pIsClassInitialized);
 
     GCPROTECT_END();
     END_QCALL;
@@ -206,11 +208,13 @@ protected:
     SIGNATURENATIVEREF * m_ppNativeSig;
     bool m_fHasThis;
 
+public:
     FORCEINLINE CorElementType GetReturnType(TypeHandle * pthValueType)
     {
         WRAPPER_NO_CONTRACT;
         return (*pthValueType = (*m_ppNativeSig)->GetReturnTypeHandle()).GetInternalCorElementType();
     }
+protected:
 
     FORCEINLINE CorElementType GetNextArgumentType(DWORD iArg, TypeHandle * pthValueType)
     {
@@ -223,12 +227,24 @@ protected:
         LIMITED_METHOD_CONTRACT;
     }
 
-    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    FORCEINLINE BOOL IsRegPassedStruct(TypeHandle th)
     {
-        return pMT->IsRegPassedStruct();
+        return th.AsMethodTable()->IsRegPassedStruct();
     }
 
+#if defined(UNIX_AMD64_ABI)
+    FORCEINLINE SystemVEightByteRegistersInfo GetEightByteRegistersInfo(TypeHandle th)
+    {
+        return th.AsMethodTable()->GetClass()->GetEightByteRegistersInfo();
+    }
+#endif // defined(UNIX_AMD64_ABI)
+
 public:
+    FORCEINLINE BOOL IsRetBuffPassedAsFirstArg()
+    {
+        return ::IsRetBuffPassedAsFirstArg();
+    }
+
     BOOL HasThis()
     {
         LIMITED_METHOD_CONTRACT;
@@ -391,8 +407,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     CallDescrData callDescrData;
 
     callDescrData.pSrc = pTransitionBlock + sizeof(TransitionBlock);
-    _ASSERTE((nStackBytes % TARGET_POINTER_SIZE) == 0);
-    callDescrData.numStackSlots = nStackBytes / TARGET_POINTER_SIZE;
+    callDescrData.numStackSlots = ALIGN_UP(nStackBytes, TARGET_REGISTER_SIZE) / TARGET_REGISTER_SIZE;
 #ifdef CALLDESCR_ARGREGS
     callDescrData.pArgumentRegisters = (ArgumentRegisters*)(pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters());
 #endif
@@ -406,6 +421,25 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     callDescrData.dwRegTypeMap = 0;
 #endif
     callDescrData.fpReturnSize = argit.GetFPReturnSize();
+#ifdef TARGET_WASM
+    // WASM-TODO: this is now called from the interpreter, so the arguments layout is OK. reconsider with codegen
+    callDescrData.nArgsSize = nStackBytes;
+    callDescrData.hasThis = argit.HasThis();
+
+    TypeHandle thValueType;
+    CorElementType type = argit.GetReturnType(&thValueType);
+    DWORD retSize = 0;
+    if (type == ELEMENT_TYPE_TYPEDBYREF)
+    {
+        retSize = sizeof(TypedByRef);
+    }
+    else if (type == ELEMENT_TYPE_VALUETYPE)
+    {
+        retSize = thValueType.GetSize();
+    }
+
+    callDescrData.hasRetBuff = retSize > sizeof(callDescrData.returnValue);
+#endif // TARGET_WASM
 
     // This is duplicated logic from MethodDesc::GetCallTarget
     PCODE pTarget;
@@ -434,7 +468,11 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     TypeHandle retTH = gc.pSig->GetReturnTypeHandle();
 
     TypeHandle refReturnTargetTH;  // Valid only if retType == ELEMENT_TYPE_BYREF. Caches the TypeHandle of the byref target.
+#ifdef TARGET_WASM
+    BOOL fHasRetBuffArg = callDescrData.hasRetBuff;
+#else
     BOOL fHasRetBuffArg = argit.HasRetBuffArg();
+#endif
     CorElementType retType = retTH.GetSignatureCorElementType();
     BOOL hasValueTypeReturn = retTH.IsValueType() && retType != ELEMENT_TYPE_VOID;
     _ASSERTE(hasValueTypeReturn || !fHasRetBuffArg); // only valuetypes are returned via a return buffer.
@@ -519,7 +557,11 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
         // buffer which will be copied to gc.retVal later.
         pLocalRetBuf = _alloca(localRetBufSize);
         ZeroMemory(pLocalRetBuf, localRetBufSize);
+#ifdef TARGET_WASM
+        callDescrData.pRetBuffArg = reinterpret_cast<decltype(callDescrData.pRetBuffArg)>(pLocalRetBuf);
+#else
         *((LPVOID*) (pTransitionBlock + argit.GetRetBuffArgOffset())) = pLocalRetBuf;
+#endif
         if (pMT->ContainsGCPointers())
         {
             pValueClasses = new (_alloca(sizeof(ValueClassInfo))) ValueClassInfo(pLocalRetBuf, pMT, pValueClasses);
@@ -1265,15 +1307,22 @@ static void PrepareMethodHelper(MethodDesc * pMD)
 
     pMD->EnsureActive();
 
-    if (pMD->ShouldCallPrestub())
-        pMD->DoPrestub(NULL);
-
     if (pMD->IsWrapperStub())
     {
-        pMD = pMD->GetWrappedMethodDesc();
         if (pMD->ShouldCallPrestub())
             pMD->DoPrestub(NULL);
+        pMD = pMD->GetWrappedMethodDesc();
     }
+
+    if (pMD->IsAsyncThunkMethod())
+    {
+        if (pMD->ShouldCallPrestub())
+            pMD->DoPrestub(NULL);
+        pMD = pMD->GetAsyncVariant();
+    }
+
+    if (pMD->ShouldCallPrestub())
+        pMD->DoPrestub(NULL);
 }
 
 // This method triggers a given method to be jitted. CoreCLR implementation of this method triggers jiting of the given method only.
@@ -1361,6 +1410,23 @@ FCIMPL0(FC_BOOL_RET, ReflectionInvocation::TryEnsureSufficientExecutionStack)
     // plenty close enough for the purposes of this method.
 	UINT_PTR current = reinterpret_cast<UINT_PTR>(&pThread);
 	UINT_PTR limit = pThread->GetCachedStackSufficientExecutionLimit();
+
+#ifdef FEATURE_INTERPRETER
+    InterpThreadContext* pInterpThreadContext = pThread->GetInterpThreadContext();
+    if (pInterpThreadContext != nullptr)
+    {
+        // The interpreter has its own stack, so we need to check against that too.
+#ifdef HOST_64BIT
+        const UINT_PTR MinExecutionStackSize = 128 * 1024;
+#else // !HOST_64BIT
+        const UINT_PTR MinExecutionStackSize = 64 * 1024;
+#endif // HOST_64BIT
+        if (pInterpThreadContext->pStackPointer >= pInterpThreadContext->pStackEnd - MinExecutionStackSize)
+        {
+            FC_RETURN_BOOL(FALSE);
+        }
+    }
+#endif // FEATURE_INTERPRETER
 
 	FC_RETURN_BOOL(current >= limit);
 }
@@ -1946,7 +2012,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetBoxInfo(
 
     MethodTable* pMT = type.AsMethodTable();
 
-    _ASSERTE(pMT->IsValueType() || pMT->IsNullable() || pMT->IsEnum() || pMT->IsTruePrimitive());
+    _ASSERTE(pMT->IsValueType());
 
     *pValueOffset = 0;
 

@@ -19,21 +19,100 @@ if (CLR_CMAKE_TARGET_WIN32)
     # Needed to include AsmOffsets.inc
     include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR})
     preprocess_files(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
-    if (CMAKE_GENERATOR MATCHES "Visual Studio")
-      # Replaces .asm files in RUNTIME_SOURCES_ARCH_ASM with the corresponding .obj files
-      compile_asm(TARGET Runtime.WorkstationGC ASM_FILES ${RUNTIME_SOURCES_ARCH_ASM} OUTPUT_OBJECTS RUNTIME_ARCH_ASM_OBJECTS)
-    endif()
   endif()
 endif (CLR_CMAKE_TARGET_WIN32)
 
-add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${RUNTIME_ARCH_ASM_OBJECTS})
+if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
+  add_library(Runtime.PrivateLibunwind OBJECT ${NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES})
+
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.o")
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize")
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize.unsorted")
+  # The relocatable object includes runtime-owned objects so their references to
+  # libunwind implementation symbols are resolved before localization. The
+  # localize list is generated only from the bundled libunwind source objects.
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS "$<FILTER:$<TARGET_OBJECTS:Runtime.PrivateLibunwind>,EXCLUDE,.*(UnwindHelpers|UnixNativeCodeManager)\\.cpp\\.o$>")
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${CMAKE_LINKER}")
+  get_filename_component(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_NAME "${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER}" NAME)
+  if(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_NAME MATCHES "^llvm-link(-[0-9.]+)?(\\.exe)?$")
+    set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_VERSION "${CMAKE_MATCH_1}")
+    set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_EXTENSION "${CMAKE_MATCH_2}")
+    get_filename_component(NATIVEAOT_PRIVATE_LIBUNWIND_TOOL_DIR "${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER}" DIRECTORY)
+    find_program(NATIVEAOT_PRIVATE_LIBUNWIND_LD_LLD
+      NAMES "ld.lld${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_VERSION}${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER_EXTENSION}" ld.lld
+      PATHS "${NATIVEAOT_PRIVATE_LIBUNWIND_TOOL_DIR}"
+      NO_DEFAULT_PATH)
+    if(NATIVEAOT_PRIVATE_LIBUNWIND_LD_LLD)
+      set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${NATIVEAOT_PRIVATE_LIBUNWIND_LD_LLD}")
+    else()
+      find_program(NATIVEAOT_PRIVATE_LIBUNWIND_LD NAMES ld)
+      if(NATIVEAOT_PRIVATE_LIBUNWIND_LD)
+        set(NATIVEAOT_PRIVATE_LIBUNWIND_LINKER "${NATIVEAOT_PRIVATE_LIBUNWIND_LD}")
+      else()
+        message(FATAL_ERROR "ld.lld (preferred) or ld is required to privatize NativeAOT libunwind symbols")
+      endif()
+    endif()
+  endif()
+
+  add_custom_command(
+    OUTPUT "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
+    COMMAND "${CMAKE_COMMAND}" -E rm -f
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
+    # Generate the objcopy symbol list from libunwind-owned object files only.
+    COMMAND sh -c "nm_tool=\"$1\" && shift && \"$nm_tool\" --extern-only --defined-only --format=just-symbols \"$@\" > \"$0\""
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
+            "${CMAKE_NM}"
+            ${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS}
+    COMMAND sort -u -o
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
+    COMMAND "${CMAKE_COMMAND}" -E rm -f
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
+    COMMAND "${NATIVEAOT_PRIVATE_LIBUNWIND_LINKER}" -r $<TARGET_OBJECTS:Runtime.PrivateLibunwind> -o "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
+    COMMAND "${CMAKE_OBJCOPY}"
+            "--localize-symbols=${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
+    DEPENDS
+      Runtime.PrivateLibunwind
+      $<TARGET_OBJECTS:Runtime.PrivateLibunwind>
+    BYPRODUCTS "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
+    COMMENT "Privatizing NativeAOT libunwind symbols"
+    COMMAND_EXPAND_LISTS
+    VERBATIM
+  )
+  set_source_files_properties("${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}" PROPERTIES
+    EXTERNAL_OBJECT TRUE
+    GENERATED TRUE)
+endif()
+
+add_library(Runtime.GC.Workstation OBJECT ${GC_WKS_SVR_SOURCES})
+add_dependencies(Runtime.GC.Workstation aot_eventing_headers)
+set_target_properties(Runtime.GC.Workstation PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
+
+add_library(Runtime.GC.Server OBJECT ${GC_WKS_SVR_SOURCES})
+add_dependencies(Runtime.GC.Server aot_eventing_headers)
+target_compile_definitions(Runtime.GC.Server PRIVATE FEATURE_SVR_GC SERVER_GC)
+set_target_properties(Runtime.GC.Server PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
+
+add_library(Runtime.WorkstationGC STATIC
+    ${COMMON_RUNTIME_SOURCES}
+    ${FULL_RUNTIME_SOURCES}
+    ${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}
+    ${RUNTIME_ARCH_ASM_OBJECTS}
+    $<TARGET_OBJECTS:Runtime.GC.Workstation>)
 add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
-target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal)
+target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor)
 
-add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
+add_library(Runtime.ServerGC STATIC
+    ${COMMON_RUNTIME_SOURCES}
+    ${FULL_RUNTIME_SOURCES}
+    ${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}
+    ${RUNTIME_ARCH_ASM_OBJECTS}
+    $<TARGET_OBJECTS:Runtime.GC.Workstation>
+    $<TARGET_OBJECTS:Runtime.GC.Server>)
 add_dependencies(Runtime.ServerGC aot_eventing_headers)
-target_link_libraries(Runtime.ServerGC PRIVATE aotminipal)
-
+target_link_libraries(Runtime.ServerGC PRIVATE aotminipal nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor nativeaot_gc_svr_descriptor)
 add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
 add_dependencies(standalonegc-disabled aot_eventing_headers)
 add_library(standalonegc-enabled STATIC ${STANDALONEGC_ENABLED_SOURCES})
@@ -48,7 +127,7 @@ if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   add_library(Runtime.VxsortDisabled STATIC ${DUMMY_VXSORT_SOURCES})
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
-target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC)
+target_compile_definitions(Runtime.ServerGC PRIVATE FEATURE_SVR_GC)
 
 if (CLR_CMAKE_TARGET_WIN32)
   set_target_properties(aotminipal PROPERTIES
@@ -92,11 +171,14 @@ set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc" PROPERT
 # Avoid a race condition by adding this target as a dependency for both libraries.
 add_custom_target(
   RuntimeAsmHelpers
-  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc" "${RUNTIME_ARCH_ASM_OBJECTS}"
+  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
 )
 
-add_dependencies(Runtime.WorkstationGC RuntimeAsmHelpers)
-add_dependencies(Runtime.ServerGC RuntimeAsmHelpers)
+add_library(Runtime.AsmHelpers OBJECT ${RUNTIME_SOURCES_ARCH_ASM})
+add_dependencies(Runtime.AsmHelpers RuntimeAsmHelpers)
+
+target_link_libraries(Runtime.WorkstationGC PRIVATE Runtime.AsmHelpers)
+target_link_libraries(Runtime.ServerGC PRIVATE Runtime.AsmHelpers)
 
 install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
 install_static_library(Runtime.ServerGC aotsdk nativeaot)

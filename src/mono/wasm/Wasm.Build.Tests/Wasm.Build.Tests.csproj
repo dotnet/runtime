@@ -3,6 +3,9 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
     <IsTestProject>true</IsTestProject>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
     <BundleXunitRunner>true</BundleXunitRunner>
     <TestFramework>xunit</TestFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
@@ -11,6 +14,7 @@
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
+    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">false</TestUsingWorkloads>
     <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
     <!-- these are imported in this project instead -->
     <SkipWorkloadsTestingTargetsImport>false</SkipWorkloadsTestingTargetsImport>
@@ -51,7 +55,7 @@
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.10" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
 
-    <None Include="$(BrowserProjectRoot)\test-main.js" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
@@ -72,6 +76,11 @@
     <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' != ''">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export RUNTIME_FLAVOR=$(RuntimeFlavor)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set RUNTIME_FLAVOR=$(RuntimeFlavor)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
@@ -97,6 +106,7 @@
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">-trait category=no-fingerprinting</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">-trait category=bundler-friendly</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">-notrait category=native-mono -notrait category=mono -notrait category=workload</_XUnitTraitArg>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -104,6 +114,11 @@
       <_SdkPathForLocalTesting Condition="'$(TestUsingWorkloads)' != 'true'">$([System.IO.Path]::GetDirectoryName($(SdkWithNoWorkloadForTestingPath)))</_SdkPathForLocalTesting>
 
       <_SdkPathForLocalTesting>$([System.IO.Path]::GetFilename($(_SdkPathForLocalTesting)))</_SdkPathForLocalTesting>
+
+      <!-- CoreCLR WBT local runs need EMSDK_PATH for BrowserWasmApp.CoreCLR.targets.
+           Fall back to the in-repo provisioned emsdk (same default as WasmApp.InTree.props). -->
+      <_LocalEmsdkPathForTests Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(EMSDK_PATH)' != ''">$(EMSDK_PATH)</_LocalEmsdkPathForTests>
+      <_LocalEmsdkPathForTests Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' == ''">$([MSBuild]::NormalizeDirectory('$(BrowserProjectRoot)', 'emsdk'))</_LocalEmsdkPathForTests>
     </PropertyGroup>
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
@@ -135,6 +150,30 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)/" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />
+
+      <!-- CoreCLR WBT: local (non-Helix) runs point env vars at repo/artifact paths so Local.Directory.Build.{props,targets} can import BrowserWasmApp.CoreCLR.targets. -->
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export REPOSITORY_ENGINEERING_DIR=$(RepositoryEngineeringDir)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set REPOSITORY_ENGINEERING_DIR=$(RepositoryEngineeringDir)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export BROWSER_BUILD_TARGETS_DIR=$(BrowserProjectRoot)build/" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set BROWSER_BUILD_TARGETS_DIR=$(BrowserProjectRoot)build\" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$(WasmAppBuilderDir)WasmAppBuilder.dll" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$(WasmAppBuilderDir)WasmAppBuilder.dll" />
+
+      <!-- CoreCLR WBT: BrowserWasmApp.CoreCLR.targets adds -I include paths for
+           <minipal/...> and <callhelpers.hpp> when compiling ManagedToNativeGenerator
+           output. On Helix, MINIPAL_INCLUDE_DIR / CORECLR_VM_WASM_INCLUDE_DIR are
+           provided by sendtohelix-browser.targets via HelixPreCommand. For local
+           runs, point at the in-repo dirs so the same import paths resolve. -->
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export MINIPAL_INCLUDE_DIR=$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'native', 'minipal'))" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set MINIPAL_INCLUDE_DIR=$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'native', 'minipal'))" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export CORECLR_VM_WASM_INCLUDE_DIR=$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr', 'vm', 'wasm'))" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set CORECLR_VM_WASM_INCLUDE_DIR=$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr', 'vm', 'wasm'))" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' != ''" Include="export EMSDK_PATH=$(_LocalEmsdkPathForTests)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' != ''" Include="set EMSDK_PATH=$(_LocalEmsdkPathForTests)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -143,8 +182,11 @@
       <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' == ''">$(PackageVersion)</_RuntimePackCurrentVersion>
     </PropertyGroup>
     <ItemGroup>
-      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER10" />
+      <!-- net11 Add new entry when adding major version -->
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER11" />
 
+      <_RuntimePackVersions Include="$(PackageVersionNet10)" EnvVarName="RUNTIME_PACK_VER10" Condition="'$(PackageVersionNet10)' != ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER10" Condition="'$(PackageVersionNet10)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet9)" EnvVarName="RUNTIME_PACK_VER9" Condition="'$(PackageVersionNet9)' != ''" />
       <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER9" Condition="'$(PackageVersionNet9)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet8)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' != ''" />

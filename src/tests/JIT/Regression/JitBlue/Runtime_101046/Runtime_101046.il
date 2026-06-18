@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern xunit.core { }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly Runtime_101046 { }
 
 .class public auto ansi beforefieldinit Runtime_101046
@@ -10,7 +11,11 @@
 {
   .method public hidebysig static int32  TestEntryPoint() cil managed
   {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = ( 01 00 00 00 )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('https://github.com/dotnet/runtime/issues/106393')
+        int32(2) // Mono
+    }
     // Code size       23 (0x17)
     .entrypoint
     .maxstack  2
@@ -29,7 +34,7 @@
     IL_0016:  ret
   } // end of method Runtime_101046::TestEntryPoint
 
-  .method private hidebysig static int32 
+  .method private hidebysig static int32
           Test(uint16& p) cil managed noinlining
   {
     // Code size       9 (0x9)
@@ -45,7 +50,7 @@
 .class private abstract auto ansi sealed beforefieldinit Runtime101046Native
        extends [System.Runtime]System.Object
 {
-  .method public hidebysig static pinvokeimpl("Runtime101046Native" winapi) 
+  .method public hidebysig static pinvokeimpl("Runtime101046Native" winapi)
           int32  ReturnExtendedShort(int16 s) cil managed preservesig
   {
   }

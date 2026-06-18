@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- This test exercises the CoreCLR system assembly binder -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <!-- Loading SPCL from a separate directory is incompatible with R2R composite mode
+         because the composite image won't be found beside the redirected assembly. -->
+    <CrossGenTest>false</CrossGenTest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SystemCoreLibDirectory.cs" />
+
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+
+    <!-- Point the runtime at the Subdirectory created by the pre-commands below to look for
+         System.Private.CoreLib.dll. The %25cd%25 / $%28pwd) tokens expand at script execution
+         time to the test working directory. -->
+    <RuntimeHostConfigurationOption Include="SYSTEM_CORELIB_DIRECTORY"
+                                    Value="%25cd%25\Subdirectory"
+                                    Condition="'$(TestWrapperTargetsWindows)' == 'true'" />
+    <RuntimeHostConfigurationOption Include="SYSTEM_CORELIB_DIRECTORY"
+                                    Value="$%28pwd)/Subdirectory"
+                                    Condition="'$(TestWrapperTargetsWindows)' != 'true'" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CoreLibSetupBatch><![CDATA[
+mkdir Subdirectory
+copy /Y "%CORE_ROOT%\System.Private.CoreLib.dll" "Subdirectory\"
+    ]]></CoreLibSetupBatch>
+    <CoreLibSetupBash><![CDATA[
+mkdir -p Subdirectory
+cp "$CORE_ROOT/System.Private.CoreLib.dll" "Subdirectory/"
+    ]]></CoreLibSetupBash>
+    <CLRTestBatchPreCommands>$(CLRTestBatchPreCommands);$(CoreLibSetupBatch)</CLRTestBatchPreCommands>
+    <CLRTestBashPreCommands>$(CLRTestBashPreCommands);$(CoreLibSetupBash)</CLRTestBashPreCommands>
+  </PropertyGroup>
+</Project>

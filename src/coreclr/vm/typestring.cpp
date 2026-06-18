@@ -837,7 +837,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
         mdTypeDef td = ty.GetCl();
         if (IsNilToken(td))
         {
-            if (ty.IsContinuation())
+            if (ty.IsContinuationWithoutMetadata())
             {
                 AsyncContinuationsManager::PrintContinuationName(
                     ty.AsMethodTable(),

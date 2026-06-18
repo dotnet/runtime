@@ -16,22 +16,49 @@ namespace System.Formats.Tar
     /// </summary>
     public static class TarFile
     {
+        /// <inheritdoc cref="CreateFromDirectory(string, Stream, bool, TarEntryFormat)" />
+        public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory)
+            => CreateFromDirectory(sourceDirectoryName, destination, includeBaseDirectory, TarEntryFormat.Pax);
+
         /// <summary>
         /// Creates a tar stream that contains all the filesystem entries from the specified directory.
         /// </summary>
         /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
         /// <param name="destination">The destination stream the archive.</param>
         /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the archive entry names.</param>
+        /// <param name="format">One of the enumeration values that specifies the tar entry format to use for the archive.</param>
         /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/> or <paramref name="destination"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><para><paramref name="sourceDirectoryName"/> is empty.</para>
         /// <para>-or-</para>
         /// <para><paramref name="destination"/> does not support writing.</para></exception>
         /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
-        public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory)
+        public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarEntryFormat format)
+        {
+            ValidateFormat(format);
+            CreateFromDirectory(sourceDirectoryName, destination, includeBaseDirectory, new TarWriterOptions() { Format = format });
+        }
+
+        /// <summary>
+        /// Creates a tar stream that contains all the filesystem entries from the specified directory.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
+        /// <param name="destination">The destination stream the archive.</param>
+        /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the archive entry names.</param>
+        /// <param name="options">The options that configure the behavior of the writer.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/>, <paramref name="destination"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><para><paramref name="sourceDirectoryName"/> is empty.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="destination"/> does not support writing.</para></exception>
+        /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><see cref="TarWriterOptions.Format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
+        /// <exception cref="IOException">An I/O exception occurred.</exception>
+        public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarWriterOptions options)
         {
             ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
             ArgumentNullException.ThrowIfNull(destination);
+            ArgumentNullException.ThrowIfNull(options);
 
             if (!destination.CanWrite)
             {
@@ -40,13 +67,39 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName), sourceDirectoryName);
             }
 
             // Rely on Path.GetFullPath for validation of paths
             sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
 
-            CreateFromDirectoryInternal(sourceDirectoryName, destination, includeBaseDirectory, leaveOpen: true);
+            CreateFromDirectoryInternal(sourceDirectoryName, destination, includeBaseDirectory, leaveOpen: true, options);
+        }
+
+        /// <inheritdoc cref="CreateFromDirectoryAsync(string, Stream, bool, TarEntryFormat, CancellationToken)" />
+        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, CancellationToken cancellationToken = default)
+            => CreateFromDirectoryAsync(sourceDirectoryName, destination, includeBaseDirectory, TarEntryFormat.Pax, cancellationToken);
+
+        /// <summary>
+        /// Asynchronously creates a tar stream that contains all the filesystem entries from the specified directory.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
+        /// <param name="destination">The destination stream of the archive.</param>
+        /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
+        /// <param name="format">One of the enumeration values that specifies the tar entry format to use for the archive.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <returns>A task that represents the asynchronous creation operation.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/> or <paramref name="destination"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><para><paramref name="sourceDirectoryName"/> is empty.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="destination"/> does not support writing.</para></exception>
+        /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
+        /// <exception cref="IOException">An I/O exception occurred.</exception>
+        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarEntryFormat format, CancellationToken cancellationToken = default)
+        {
+            ValidateFormat(format);
+            return CreateFromDirectoryAsync(sourceDirectoryName, destination, includeBaseDirectory, new TarWriterOptions() { Format = format }, cancellationToken);
         }
 
         /// <summary>
@@ -55,15 +108,17 @@ namespace System.Formats.Tar
         /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
         /// <param name="destination">The destination stream of the archive.</param>
         /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
+        /// <param name="options">The options that configure the behavior of the writer.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous creation operation.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/> or <paramref name="destination"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/>, <paramref name="destination"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><para><paramref name="sourceDirectoryName"/> is empty.</para>
         /// <para>-or-</para>
         /// <para><paramref name="destination"/> does not support writing.</para></exception>
         /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><see cref="TarWriterOptions.Format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
-        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, CancellationToken cancellationToken = default)
+        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, TarWriterOptions options, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -71,6 +126,7 @@ namespace System.Formats.Tar
             }
             ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
             ArgumentNullException.ThrowIfNull(destination);
+            ArgumentNullException.ThrowIfNull(options);
 
             if (!destination.CanWrite)
             {
@@ -79,13 +135,35 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName)));
+                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName), sourceDirectoryName));
             }
 
             // Rely on Path.GetFullPath for validation of paths
             sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
 
-            return CreateFromDirectoryInternalAsync(sourceDirectoryName, destination, includeBaseDirectory, leaveOpen: true, cancellationToken);
+            return CreateFromDirectoryInternalAsync(sourceDirectoryName, destination, includeBaseDirectory, leaveOpen: true, options, cancellationToken);
+        }
+
+        /// <inheritdoc cref="CreateFromDirectory(string, string, bool, TarEntryFormat)" />
+        public static void CreateFromDirectory(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory)
+            => CreateFromDirectory(sourceDirectoryName, destinationFileName, includeBaseDirectory, TarEntryFormat.Pax);
+
+        /// <summary>
+        /// Creates a tar file that contains all the filesystem entries from the specified directory.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
+        /// <param name="destinationFileName">The path of the destination archive file.</param>
+        /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
+        /// <param name="format">One of the enumeration values that specifies the tar entry format to use for the archive.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/> or <paramref name="destinationFileName"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="sourceDirectoryName"/> or <paramref name="destinationFileName"/> is empty.</exception>
+        /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
+        /// <exception cref="IOException">An I/O exception occurred.</exception>
+        public static void CreateFromDirectory(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, TarEntryFormat format)
+        {
+            ValidateFormat(format);
+            CreateFromDirectory(sourceDirectoryName, destinationFileName, includeBaseDirectory, new TarWriterOptions() { Format = format });
         }
 
         /// <summary>
@@ -94,14 +172,17 @@ namespace System.Formats.Tar
         /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
         /// <param name="destinationFileName">The path of the destination archive file.</param>
         /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/> or <paramref name="destinationFileName"/> is <see langword="null"/>.</exception>
+        /// <param name="options">The options that configure the behavior of the writer.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/>, <paramref name="destinationFileName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="sourceDirectoryName"/> or <paramref name="destinationFileName"/> is empty.</exception>
         /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><see cref="TarWriterOptions.Format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
-        public static void CreateFromDirectory(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory)
+        public static void CreateFromDirectory(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, TarWriterOptions options)
         {
             ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
             ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
+            ArgumentNullException.ThrowIfNull(options);
 
             // Rely on Path.GetFullPath for validation of paths
             sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
@@ -109,14 +190,18 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName), sourceDirectoryName);
             }
 
             // Throws if the destination file exists
             using FileStream fs = new(destinationFileName, FileMode.CreateNew, FileAccess.Write);
 
-            CreateFromDirectoryInternal(sourceDirectoryName, fs, includeBaseDirectory, leaveOpen: false);
+            CreateFromDirectoryInternal(sourceDirectoryName, fs, includeBaseDirectory, leaveOpen: false, options);
         }
+
+        /// <inheritdoc cref="CreateFromDirectoryAsync(string, string, bool, TarEntryFormat, CancellationToken)" />
+        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, CancellationToken cancellationToken = default)
+            => CreateFromDirectoryAsync(sourceDirectoryName, destinationFileName, includeBaseDirectory, TarEntryFormat.Pax, cancellationToken);
 
         /// <summary>
         /// Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path. Can optionally include the base directory as the prefix for the entry names.
@@ -124,13 +209,35 @@ namespace System.Formats.Tar
         /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
         /// <param name="destinationFileName">The path of the destination archive file.</param>
         /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
+        /// <param name="format">One of the enumeration values that specifies the tar entry format to use for the archive.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous creation operation.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/> or <paramref name="destinationFileName"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="sourceDirectoryName"/> or <paramref name="destinationFileName"/> is empty.</exception>
         /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
-        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, CancellationToken cancellationToken = default)
+        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, TarEntryFormat format, CancellationToken cancellationToken = default)
+        {
+            ValidateFormat(format);
+            return CreateFromDirectoryAsync(sourceDirectoryName, destinationFileName, includeBaseDirectory, new TarWriterOptions() { Format = format }, cancellationToken);
+        }
+
+        /// <summary>
+        /// Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
+        /// <param name="destinationFileName">The path of the destination archive file.</param>
+        /// <param name="includeBaseDirectory"><see langword="true"/> to include the base directory name as the first path segment in all the names of the archive entries. <see langword="false"/> to exclude the base directory name from the entry name paths.</param>
+        /// <param name="options">The options that configure the behavior of the writer.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <returns>A task that represents the asynchronous creation operation.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName"/>, <paramref name="destinationFileName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="sourceDirectoryName"/> or <paramref name="destinationFileName"/> is empty.</exception>
+        /// <exception cref="DirectoryNotFoundException">The <paramref name="sourceDirectoryName"/> directory path was not found.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><see cref="TarWriterOptions.Format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
+        /// <exception cref="IOException">An I/O exception occurred.</exception>
+        public static Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, TarWriterOptions options, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -138,6 +245,7 @@ namespace System.Formats.Tar
             }
             ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
             ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
+            ArgumentNullException.ThrowIfNull(options);
 
             // Rely on Path.GetFullPath for validation of paths
             sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
@@ -145,10 +253,10 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(sourceDirectoryName))
             {
-                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName)));
+                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceDirectoryName), sourceDirectoryName));
             }
 
-            return CreateFromDirectoryInternalAsync(sourceDirectoryName, destinationFileName, includeBaseDirectory, cancellationToken);
+            return CreateFromDirectoryInternalAsync(sourceDirectoryName, destinationFileName, includeBaseDirectory, options, cancellationToken);
         }
 
         /// <summary>
@@ -169,9 +277,30 @@ namespace System.Formats.Tar
         /// <para><paramref name="source"/> does not support reading.</para></exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
         public static void ExtractToDirectory(Stream source, string destinationDirectoryName, bool overwriteFiles)
+            => ExtractToDirectory(source, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles });
+
+        /// <summary>
+        /// Extracts the contents of a stream that represents a tar archive into the specified directory.
+        /// </summary>
+        /// <param name="source">The stream containing the tar archive.</param>
+        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
+        /// <param name="options">The options that configure the behavior of the extraction.</param>
+        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/>, <paramref name="destinationDirectoryName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
+        /// <exception cref="DirectoryNotFoundException">The <paramref name="destinationDirectoryName"/> directory path was not found.</exception>
+        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
+        /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="destinationDirectoryName"/> is empty.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="source"/> does not support reading.</para></exception>
+        /// <exception cref="IOException">An I/O exception occurred.</exception>
+        public static void ExtractToDirectory(Stream source, string destinationDirectoryName, TarExtractOptions options)
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentException.ThrowIfNullOrEmpty(destinationDirectoryName);
+            ArgumentNullException.ThrowIfNull(options);
 
             if (!source.CanRead)
             {
@@ -180,14 +309,14 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName), destinationDirectoryName);
             }
 
             // Rely on Path.GetFullPath for validation of paths
             destinationDirectoryName = Path.GetFullPath(destinationDirectoryName);
             destinationDirectoryName = PathInternal.EnsureTrailingSeparator(destinationDirectoryName);
 
-            ExtractToDirectoryInternal(source, destinationDirectoryName, overwriteFiles, leaveOpen: true);
+            ExtractToDirectoryInternal(source, destinationDirectoryName, options, leaveOpen: true);
         }
 
         /// <summary>
@@ -210,6 +339,28 @@ namespace System.Formats.Tar
         /// <para><paramref name="source"/> does not support reading.</para></exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
         public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
+            => ExtractToDirectoryAsync(source, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles }, cancellationToken);
+
+        /// <summary>
+        /// Asynchronously extracts the contents of a stream that represents a tar archive into the specified directory.
+        /// </summary>
+        /// <param name="source">The stream containing the tar archive.</param>
+        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
+        /// <param name="options">The options that configure the behavior of the extraction.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <returns>A task that represents the asynchronous extraction operation.</returns>
+        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="source"/>, <paramref name="destinationDirectoryName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
+        /// <exception cref="DirectoryNotFoundException">The <paramref name="destinationDirectoryName"/> directory path was not found.</exception>
+        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
+        /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="destinationDirectoryName"/> is empty.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="source"/> does not support reading.</para></exception>
+        /// <exception cref="IOException">An I/O exception occurred.</exception>
+        public static Task ExtractToDirectoryAsync(Stream source, string destinationDirectoryName, TarExtractOptions options, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -217,6 +368,7 @@ namespace System.Formats.Tar
             }
             ArgumentNullException.ThrowIfNull(source);
             ArgumentException.ThrowIfNullOrEmpty(destinationDirectoryName);
+            ArgumentNullException.ThrowIfNull(options);
 
             if (!source.CanRead)
             {
@@ -225,14 +377,14 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName)));
+                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName), destinationDirectoryName));
             }
 
             // Rely on Path.GetFullPath for validation of paths
             destinationDirectoryName = Path.GetFullPath(destinationDirectoryName);
             destinationDirectoryName = PathInternal.EnsureTrailingSeparator(destinationDirectoryName);
 
-            return ExtractToDirectoryInternalAsync(source, destinationDirectoryName, overwriteFiles, leaveOpen: true, cancellationToken);
+            return ExtractToDirectoryInternalAsync(source, destinationDirectoryName, options, leaveOpen: true, cancellationToken);
         }
 
         /// <summary>
@@ -252,9 +404,29 @@ namespace System.Formats.Tar
         /// <para><paramref name="sourceFileName"/> or <paramref name="destinationDirectoryName"/> is empty.</para></exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
         public static void ExtractToDirectory(string sourceFileName, string destinationDirectoryName, bool overwriteFiles)
+            => ExtractToDirectory(sourceFileName, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles });
+
+        /// <summary>
+        /// Extracts the contents of a tar file into the specified directory.
+        /// </summary>
+        /// <param name="sourceFileName">The path of the tar file to extract.</param>
+        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
+        /// <param name="options">The options that configure the behavior of the extraction.</param>
+        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceFileName"/>, <paramref name="destinationDirectoryName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
+        /// <exception cref="DirectoryNotFoundException">The <paramref name="destinationDirectoryName"/> directory path was not found.</exception>
+        /// <exception cref="FileNotFoundException"> The <paramref name="sourceFileName"/> file path was not found.</exception>
+        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
+        /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="sourceFileName"/> or <paramref name="destinationDirectoryName"/> is empty.</para></exception>
+        /// <exception cref="IOException">An I/O exception occurred.</exception>
+        public static void ExtractToDirectory(string sourceFileName, string destinationDirectoryName, TarExtractOptions options)
         {
             ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
             ArgumentException.ThrowIfNullOrEmpty(destinationDirectoryName);
+            ArgumentNullException.ThrowIfNull(options);
 
             // Rely on Path.GetFullPath for validation of paths
             sourceFileName = Path.GetFullPath(sourceFileName);
@@ -268,12 +440,12 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName), destinationDirectoryName);
             }
 
             using FileStream archive = File.OpenRead(sourceFileName);
 
-            ExtractToDirectoryInternal(archive, destinationDirectoryName, overwriteFiles, leaveOpen: false);
+            ExtractToDirectoryInternal(archive, destinationDirectoryName, options, leaveOpen: false);
         }
 
         /// <summary>
@@ -295,6 +467,27 @@ namespace System.Formats.Tar
         /// <para><paramref name="sourceFileName"/> or <paramref name="destinationDirectoryName"/> is empty.</para></exception>
         /// <exception cref="IOException">An I/O exception occurred.</exception>
         public static Task ExtractToDirectoryAsync(string sourceFileName, string destinationDirectoryName, bool overwriteFiles, CancellationToken cancellationToken = default)
+            => ExtractToDirectoryAsync(sourceFileName, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles }, cancellationToken);
+
+        /// <summary>
+        /// Asynchronously extracts the contents of a tar file into the specified directory.
+        /// </summary>
+        /// <param name="sourceFileName">The path of the tar file to extract.</param>
+        /// <param name="destinationDirectoryName">The path of the destination directory where the filesystem entries should be extracted.</param>
+        /// <param name="options">The options that configure the behavior of the extraction.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <returns>A task that represents the asynchronous extraction operation.</returns>
+        /// <remarks><para>Files of type <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> or <see cref="TarEntryType.Fifo"/> can only be extracted in Unix platforms.</para>
+        /// <para>Elevation is required to extract a <see cref="TarEntryType.BlockDevice"/> or <see cref="TarEntryType.CharacterDevice"/> to disk.</para></remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceFileName"/>, <paramref name="destinationDirectoryName"/>, or <paramref name="options"/> is <see langword="null"/>.</exception>
+        /// <exception cref="DirectoryNotFoundException">The <paramref name="destinationDirectoryName"/> directory path was not found.</exception>
+        /// <exception cref="FileNotFoundException"> The <paramref name="sourceFileName"/> file path was not found.</exception>
+        /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
+        /// <exception cref="ArgumentException"><para>Extracting tar entry would have resulted in a file outside the specified destination directory.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="sourceFileName"/> or <paramref name="destinationDirectoryName"/> is empty.</para></exception>
+        /// <exception cref="IOException">An I/O exception occurred.</exception>
+        public static Task ExtractToDirectoryAsync(string sourceFileName, string destinationDirectoryName, TarExtractOptions options, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -302,6 +495,7 @@ namespace System.Formats.Tar
             }
             ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
             ArgumentException.ThrowIfNullOrEmpty(destinationDirectoryName);
+            ArgumentNullException.ThrowIfNull(options);
 
             // Rely on Path.GetFullPath for validation of paths
             sourceFileName = Path.GetFullPath(sourceFileName);
@@ -315,19 +509,19 @@ namespace System.Formats.Tar
 
             if (!Directory.Exists(destinationDirectoryName))
             {
-                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName)));
+                return Task.FromException(new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, destinationDirectoryName), destinationDirectoryName));
             }
 
-            return ExtractToDirectoryInternalAsync(sourceFileName, destinationDirectoryName, overwriteFiles, cancellationToken);
+            return ExtractToDirectoryInternalAsync(sourceFileName, destinationDirectoryName, options, cancellationToken);
         }
 
         // Creates an archive from the contents of a directory.
         // It assumes the sourceDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
-        private static void CreateFromDirectoryInternal(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen)
+        private static void CreateFromDirectoryInternal(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen, TarWriterOptions options)
         {
             VerifyCreateFromDirectoryArguments(sourceDirectoryName, destination);
 
-            using (TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen))
+            using (TarWriter writer = new TarWriter(destination, options, leaveOpen))
             {
                 DirectoryInfo di = new(sourceDirectoryName);
 
@@ -353,35 +547,35 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path.
-        private static async Task CreateFromDirectoryInternalAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, CancellationToken cancellationToken)
+        private static async Task CreateFromDirectoryInternalAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, TarWriterOptions options, CancellationToken cancellationToken)
         {
             Debug.Assert(!string.IsNullOrEmpty(sourceDirectoryName));
             Debug.Assert(!string.IsNullOrEmpty(destinationFileName));
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            FileStreamOptions options = new()
+            FileStreamOptions fileStreamOptions = new()
             {
                 Access = FileAccess.Write,
                 Mode = FileMode.CreateNew,
                 Options = FileOptions.Asynchronous,
             };
             // Throws if the destination file exists
-            FileStream archive = new(destinationFileName, options);
+            FileStream archive = new(destinationFileName, fileStreamOptions);
             await using (archive.ConfigureAwait(false))
             {
-                await CreateFromDirectoryInternalAsync(sourceDirectoryName, archive, includeBaseDirectory, leaveOpen: false, cancellationToken).ConfigureAwait(false);
+                await CreateFromDirectoryInternalAsync(sourceDirectoryName, archive, includeBaseDirectory, leaveOpen: false, options, cancellationToken).ConfigureAwait(false);
             }
         }
 
         // Asynchronously creates an archive from the contents of a directory.
         // It assumes the sourceDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
-        private static async Task CreateFromDirectoryInternalAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen, CancellationToken cancellationToken)
+        private static async Task CreateFromDirectoryInternalAsync(string sourceDirectoryName, Stream destination, bool includeBaseDirectory, bool leaveOpen, TarWriterOptions options, CancellationToken cancellationToken)
         {
             VerifyCreateFromDirectoryArguments(sourceDirectoryName, destination);
             cancellationToken.ThrowIfCancellationRequested();
 
-            TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen);
+            TarWriter writer = new TarWriter(destination, options, leaveOpen);
             await using (writer.ConfigureAwait(false))
             {
                 DirectoryInfo di = new(sourceDirectoryName);
@@ -451,9 +645,12 @@ namespace System.Formats.Tar
 
         // Extracts an archive into the specified directory.
         // It assumes the destinationDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
-        private static void ExtractToDirectoryInternal(Stream source, string destinationDirectoryFullPath, bool overwriteFiles, bool leaveOpen)
+        private static void ExtractToDirectoryInternal(Stream source, string destinationDirectoryFullPath, TarExtractOptions options, bool leaveOpen)
         {
             VerifyExtractToDirectoryArguments(source, destinationDirectoryFullPath);
+
+            bool overwriteFiles = options.OverwriteFiles;
+            TarHardLinkMode hardLinkMode = options.HardLinkMode;
 
             using TarReader reader = new TarReader(source, leaveOpen);
 
@@ -464,7 +661,7 @@ namespace System.Formats.Tar
             {
                 if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                 {
-                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes);
+                    entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode);
                 }
             }
             TarHelpers.SetPendingModes(pendingModes);
@@ -472,7 +669,7 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously extracts the contents of a tar file into the specified directory.
-        private static async Task ExtractToDirectoryInternalAsync(string sourceFileName, string destinationDirectoryFullPath, bool overwriteFiles, CancellationToken cancellationToken)
+        private static async Task ExtractToDirectoryInternalAsync(string sourceFileName, string destinationDirectoryFullPath, TarExtractOptions extractOptions, CancellationToken cancellationToken)
         {
             Debug.Assert(!string.IsNullOrEmpty(sourceFileName));
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryFullPath));
@@ -488,16 +685,19 @@ namespace System.Formats.Tar
             FileStream archive = new(sourceFileName, options);
             await using (archive.ConfigureAwait(false))
             {
-                await ExtractToDirectoryInternalAsync(archive, destinationDirectoryFullPath, overwriteFiles, leaveOpen: false, cancellationToken).ConfigureAwait(false);
+                await ExtractToDirectoryInternalAsync(archive, destinationDirectoryFullPath, extractOptions, leaveOpen: false, cancellationToken).ConfigureAwait(false);
             }
         }
 
         // Asynchronously extracts an archive into the specified directory.
         // It assumes the destinationDirectoryName is a fully qualified path, and allows choosing if the archive stream should be left open or not.
-        private static async Task ExtractToDirectoryInternalAsync(Stream source, string destinationDirectoryFullPath, bool overwriteFiles, bool leaveOpen, CancellationToken cancellationToken)
+        private static async Task ExtractToDirectoryInternalAsync(Stream source, string destinationDirectoryFullPath, TarExtractOptions options, bool leaveOpen, CancellationToken cancellationToken)
         {
             VerifyExtractToDirectoryArguments(source, destinationDirectoryFullPath);
             cancellationToken.ThrowIfCancellationRequested();
+
+            bool overwriteFiles = options.OverwriteFiles;
+            TarHardLinkMode hardLinkMode = options.HardLinkMode;
 
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
             var directoryModificationTimes = new Stack<(string, DateTimeOffset)>();
@@ -509,7 +709,7 @@ namespace System.Formats.Tar
                 {
                     if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                     {
-                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, cancellationToken).ConfigureAwait(false);
+                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, pendingModes, directoryModificationTimes, hardLinkMode, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
@@ -533,6 +733,14 @@ namespace System.Formats.Tar
             Debug.Assert(!string.IsNullOrEmpty(destinationDirectoryPath));
             Debug.Assert(Path.IsPathFullyQualified(destinationDirectoryPath));
             Debug.Assert(source.CanRead);
+        }
+
+        private static void ValidateFormat(TarEntryFormat format)
+        {
+            if (format is < TarEntryFormat.V7 or > TarEntryFormat.Gnu)
+            {
+                throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
     }
 }

@@ -32,27 +32,26 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
  *  |                        it contains the MethodTable pointer and the
  *  |                        sync block index, which is at a negative offset
  *  |
- *  +-- code:StringObject       - String objects are specialized objects for string
+ *  +-- StringObject       - String objects are specialized objects for string
  *  |                        storage/retrieval for higher performance (UCS-2 / UTF-16 data)
  *  |
- *  +-- code:Utf8StringObject       - String objects are specialized objects for string
- *  |                        storage/retrieval for higher performance (UTF-8 data)
+ *  +-- ReflectClassBaseObject    - The base object for the RuntimeType class
  *  |
- *  +-- BaseObjectWithCachedData - Object Plus one object field for caching.
- *  |       |
- *  |            +-  ReflectClassBaseObject    - The base object for the RuntimeType class
- *  |            +-  ReflectMethodObject       - The base object for the RuntimeMethodInfo class
- *  |            +-  ReflectFieldObject        - The base object for the RtFieldInfo class
+ *  +-- ReflectMethodObject       - The base object for the RuntimeMethodInfo class
  *  |
- *  +-- code:ArrayBase          - Base portion of all arrays
+ *  +-- ReflectFieldObject        - The base object for the RtFieldInfo class
+ *  |
+ *  +-- ArrayBase          - Base portion of all arrays
  *  |       |
- *  |       +-  I1Array    - Base type arrays
+ *  |       +-  I1Array    - Base type SZ arrays
  *  |       |   I2Array
  *  |       |   ...
  *  |       |
- *  |       +-  PtrArray   - Array of OBJECTREFs, different than base arrays because of pObjectClass
+ *  |       +-  PtrArray   - SZ Array of OBJECTREFs, different than base arrays because of pObjectClass
  *  |
- *  +-- code:AssemblyBaseObject - The base object for the class Assembly
+ *  +-- AssemblyBaseObject - The base object for the class Assembly
+ *  |
+ *  |   ...
  *
  *
  * PLEASE NOTE THE FOLLOWING WHEN ADDING A NEW OBJECT TYPE:
@@ -77,7 +76,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
 class MethodTable;
 class Thread;
 class Assembly;
-class DomainAssembly;
 class AssemblyNative;
 class WaitHandleNative;
 class ArgDestination;
@@ -493,7 +491,7 @@ public:
     inline DWORD GetNumComponents() const;
 
     // Get pointer to elements, handles any number of dimensions
-    PTR_BYTE GetDataPtr(BOOL inGC = FALSE) const {
+    PTR_BYTE GetGCSafeDataPtr() const {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 #ifdef _DEBUG
@@ -502,7 +500,21 @@ public:
 #endif
 #endif
         return dac_cast<PTR_BYTE>(this) +
-                        GetDataPtrOffset(inGC ? GetGCSafeMethodTable() : GetMethodTable());
+                        GetDataPtrOffset(GetGCSafeMethodTable());
+    }
+
+    PTR_BYTE GetDataPtr() const {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+#ifdef _DEBUG
+#ifndef DACCESS_COMPILE
+        EnableStressHeapHelper();
+#endif
+#endif
+        PTR_BYTE result = dac_cast<PTR_BYTE>(this) +
+                        GetDataPtrOffset(GetMethodTable());
+        _ASSERTE(result == GetGCSafeDataPtr());
+        return result;
     }
 
     // The component size is actually 16-bit WORD, but this method is returning SIZE_T to ensure
@@ -588,24 +600,14 @@ class Array : public ArrayBase
   public:
 
     typedef DPTR(KIND) PTR_KIND;
-    typedef DPTR(const KIND) PTR_CKIND;
 
     KIND          m_Array[1];
 
-    PTR_KIND        GetDirectPointerToNonObjectElements()
+    PTR_KIND        GetDirectPointerToNonObjectElements() const
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        // return m_Array;
-        return PTR_KIND(GetDataPtr()); // This also handles arrays of dim 1 with lower bounds present
-
-    }
-
-    PTR_CKIND  GetDirectConstPointerToNonObjectElements() const
-    {
-        WRAPPER_NO_CONTRACT;
-        // return m_Array;
-        return PTR_CKIND(GetDataPtr()); // This also handles arrays of dim 1 with lower bounds present
+        return dac_cast<PTR_KIND>(PTR_HOST_MEMBER_TADDR(Array, this, m_Array));
     }
 };
 
@@ -930,19 +932,13 @@ inline STRINGREF* StringObject::GetEmptyStringRefPtr(void** pinnedString) {
     return refptr;
 }
 
-// This is used to account for the remoting cache on RuntimeType,
-// RuntimeMethodInfo, and RtFieldInfo.
-class BaseObjectWithCachedData : public Object
-{
-};
-
 // This is the Class version of the Reflection object.
 //  A Class has adddition information.
 //  For a ReflectClassBaseObject the m_pData is a pointer to a FieldDesc array that
 //      contains all of the final static primitives if its defined.
 //  m_cnt = the number of elements defined in the m_pData FieldDesc array.  -1 means
 //      this hasn't yet been defined.
-class ReflectClassBaseObject : public BaseObjectWithCachedData
+class ReflectClassBaseObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -1022,7 +1018,7 @@ public:
 // (RuntimeConstructorInfo, RuntimeMethodInfo, and RuntimeMethodInfoStub). These types are unrelated in the type
 // system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
-class ReflectMethodObject : public BaseObjectWithCachedData
+class ReflectMethodObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -1066,7 +1062,7 @@ public:
 // (RtFieldInfo and RuntimeFieldInfoStub). These types are unrelated in the type
 // system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
-class ReflectFieldObject : public BaseObjectWithCachedData
+class ReflectFieldObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -1138,24 +1134,6 @@ class ReflectModuleBaseObject : public Object
 };
 
 class ThreadBaseObject;
-class SynchronizationContextObject: public Object
-{
-    friend class CoreLibBinder;
-private:
-    // These field are also defined in the managed representation.  (SecurityContext.cs)If you
-    // add or change these field you must also change the managed code so that
-    // it matches these.  This is necessary so that the object is the proper
-    // size.
-    CLR_BOOL _requireWaitNotification;
-public:
-    BOOL IsWaitNotificationRequired() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _requireWaitNotification;
-    }
-};
-
-
 class ExecutionContextObject: public Object
 {
     friend class CoreLibBinder;
@@ -1180,53 +1158,13 @@ public:
 typedef DPTR(class CultureInfoBaseObject) PTR_CultureInfoBaseObject;
 
 #ifdef USE_CHECKED_OBJECTREFS
-typedef REF<SynchronizationContextObject> SYNCHRONIZATIONCONTEXTREF;
 typedef REF<ExecutionContextObject> EXECUTIONCONTEXTREF;
-typedef REF<CultureInfoBaseObject> CULTUREINFOBASEREF;
 typedef REF<ArrayBase> ARRAYBASEREF;
 
 #else
-typedef SynchronizationContextObject*     SYNCHRONIZATIONCONTEXTREF;
-typedef CultureInfoBaseObject*     CULTUREINFOBASEREF;
 typedef ExecutionContextObject* EXECUTIONCONTEXTREF;
 typedef PTR_ArrayBase ARRAYBASEREF;
 #endif
-
-
-class CultureInfoBaseObject : public Object
-{
-    friend class CoreLibBinder;
-
-private:
-    OBJECTREF _compareInfo;
-    OBJECTREF _textInfo;
-    OBJECTREF _numInfo;
-    OBJECTREF _dateTimeInfo;
-    OBJECTREF _calendar;
-    OBJECTREF _cultureData;
-    OBJECTREF _consoleFallbackCulture;
-    STRINGREF _name;                       // "real" name - en-US, de-DE_phoneb or fj-FJ
-    STRINGREF _nonSortName;                // name w/o sort info (de-DE for de-DE_phoneb)
-    STRINGREF _sortName;                   // Sort only name (de-DE_phoneb, en-us for fj-fj (w/us sort)
-    CULTUREINFOBASEREF _parent;
-    CLR_BOOL _isReadOnly;
-    CLR_BOOL _isInherited;
-
-public:
-    CULTUREINFOBASEREF GetParent()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _parent;
-    }// GetParent
-
-
-    STRINGREF GetName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return _name;
-    }// GetName
-
-}; // class CultureInfoBaseObject
 
 typedef DPTR(class ThreadBaseObject) PTR_ThreadBaseObject;
 class ThreadBaseObject : public Object
@@ -1247,6 +1185,10 @@ private:
     OBJECTREF     m_SynchronizationContext;
     STRINGREF     m_Name;
     OBJECTREF     m_StartHelper;
+#ifdef TARGET_UNIX
+    OBJECTREF     m_WaitInfo;
+    OBJECTREF     m_joinEvent;
+#endif // TARGET_UNIX
 
     // The next field (m_InternalThread) is declared as IntPtr in the managed
     // definition of Thread.  The loader will sort it next.
@@ -1299,12 +1241,6 @@ public:
         return m_ExecutionContext;
     }
 
-    OBJECTREF GetSynchronizationContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_SynchronizationContext;
-    }
-
     void      InitExisting();
 
     void ResetStartHelper()
@@ -1330,13 +1266,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_IsDead = true;
     }
-};
-
-// MarshalByRefObjectBaseObject
-// This class is the base class for MarshalByRefObject
-//
-class MarshalByRefObjectBaseObject : public Object
-{
 };
 
 // AssemblyBaseObject
@@ -1542,7 +1471,7 @@ STRINGREF AllocateString(SString sstr);
 //
 //
 //-------------------------------------------------------------
-class ComObject : public MarshalByRefObjectBaseObject
+class ComObject : public Object
 {
     friend class CoreLibBinder;
 
@@ -1820,6 +1749,7 @@ class DelegateObject : public Object
 {
     friend class CheckAsmOffsets;
     friend class CoreLibBinder;
+    friend struct ::cdac_data<DelegateObject>;
 
 public:
     BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == 0; }
@@ -1851,8 +1781,8 @@ public:
     // BCL for this object.
 private:
     // System.Delegate
-    OBJECTREF   _target;
     OBJECTREF   _methodBase;
+    OBJECTREF   _target;
     PCODE       _methodPtr;
     PCODE       _methodPtrAux;
     // System.MulticastDelegate
@@ -1860,9 +1790,18 @@ private:
     INT_PTR     _invocationCount;
 };
 
-#define OFFSETOF__DelegateObject__target          OBJECT_SIZE /* m_pMethTab */
-#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */ + TARGET_POINTER_SIZE /* _methodBase */)
+#define OFFSETOF__DelegateObject__target          (OBJECT_SIZE /* m_pMethTab */ + TARGET_POINTER_SIZE /* _methodBase */)
+#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
 #define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
+
+template<>
+struct cdac_data<DelegateObject>
+{
+    static constexpr size_t Target = offsetof(DelegateObject, _target);
+    static constexpr size_t MethodPtr = offsetof(DelegateObject, _methodPtr);
+    static constexpr size_t MethodPtrAux = offsetof(DelegateObject, _methodPtrAux);
+    static constexpr size_t InvocationCount = offsetof(DelegateObject, _invocationCount);
+};
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<DelegateObject> DELEGATEREF;
@@ -2017,7 +1956,7 @@ private:
         WRAPPER_NO_CONTRACT;
         _ASSERTE(!!m_array);
 
-        return const_cast<I1ARRAYREF &>(m_array)->GetDirectPointerToNonObjectElements();
+        return m_array->GetDirectPointerToNonObjectElements();
     }
 
     PTR_INT8 GetRaw()
@@ -2052,6 +1991,15 @@ private:
 private:
     // put only things here that can be protected with GCPROTECT
     I1ARRAYREF m_array;
+
+    friend struct ::cdac_data<StackTraceArray>;
+};
+
+template<>
+struct cdac_data<StackTraceArray>
+{
+    static constexpr size_t Size = offsetof(StackTraceArray::ArrayHeader, m_size);
+    static constexpr size_t HeaderSize = sizeof(StackTraceArray::ArrayHeader);
 };
 
 #ifdef FEATURE_COLLECTIBLE_TYPES
@@ -2219,33 +2167,56 @@ class ContinuationObject : public Object
     PTR_BYTE GetResultStorage()
     {
         LIMITED_METHOD_CONTRACT;
-        PTR_BYTE dataAddress = dac_cast<PTR_BYTE>((dac_cast<TADDR>(this) + OFFSETOF__CORINFO_Continuation__data));
-        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ILOFFSET)
-        {
-            dataAddress += sizeof(void*);
-        }
-        if (GetFlags() & CORINFO_CONTINUATION_HAS_EXCEPTION)
-        {
-            dataAddress += sizeof(void*);
-        }
-        if (GetFlags() & CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT)
-        {
-            dataAddress += sizeof(void*);
-        }
+
+        uint32_t mask = (1u << CORINFO_CONTINUATION_RESULT_INDEX_NUM_BITS) - 1;
+        uint32_t index = ((uint32_t)Flags >> CORINFO_CONTINUATION_RESULT_INDEX_FIRST_BIT) & mask;
+        _ASSERTE(index != 0);
+
+        uint32_t offset = OFFSETOF__CORINFO_Continuation__data + (index - 1) * TARGET_POINTER_SIZE;
+        PTR_BYTE dataAddress = dac_cast<PTR_BYTE>((dac_cast<TADDR>(this) + offset));
         return dataAddress;
     }
 
-    PTR_OBJECTREF GetExceptionObjectStorage()
+    PTR_OBJECTREF GetExceptionObjectStorageOrNull()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE((GetFlags() & CORINFO_CONTINUATION_HAS_EXCEPTION));
 
-        PTR_BYTE dataAddress = dac_cast<PTR_BYTE>((dac_cast<TADDR>(this) + OFFSETOF__CORINFO_Continuation__data));
-        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ILOFFSET)
-        {
-            dataAddress += sizeof(void*);
-        }
+        uint32_t mask = (1u << CORINFO_CONTINUATION_EXCEPTION_INDEX_NUM_BITS) - 1;
+        uint32_t index = ((uint32_t)Flags >> CORINFO_CONTINUATION_EXCEPTION_INDEX_FIRST_BIT) & mask;
+        if (index == 0)
+            return NULL;
+
+        uint32_t offset = OFFSETOF__CORINFO_Continuation__data + (index - 1) * TARGET_POINTER_SIZE;
+        PTR_BYTE dataAddress = dac_cast<PTR_BYTE>(dac_cast<TADDR>(this) + offset);
         return dac_cast<PTR_OBJECTREF>(dataAddress);
+    }
+
+    PTR_OBJECTREF GetExecutionContextObjectStorageOrNull()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        uint32_t mask = (1u << CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_NUM_BITS) - 1;
+        uint32_t index = ((uint32_t)Flags >> CORINFO_CONTINUATION_EXECUTION_CONTEXT_INDEX_FIRST_BIT) & mask;
+        if (index == 0)
+            return NULL;
+
+        uint32_t offset = OFFSETOF__CORINFO_Continuation__data + (index - 1) * TARGET_POINTER_SIZE;
+        PTR_BYTE address = dac_cast<PTR_BYTE>(dac_cast<TADDR>(this) + offset);
+        return dac_cast<PTR_OBJECTREF>(address);
+    }
+
+    PTR_OBJECTREF GetContinuationContextObjectStorageOrNull()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        uint32_t mask = (1u << CORINFO_CONTINUATION_CONTEXT_INDEX_NUM_BITS) - 1;
+        uint32_t index = ((uint32_t)Flags >> CORINFO_CONTINUATION_CONTEXT_INDEX_FIRST_BIT) & mask;
+        if (index == 0)
+            return NULL;
+
+        uint32_t offset = OFFSETOF__CORINFO_Continuation__data + (index - 1) * TARGET_POINTER_SIZE;
+        PTR_BYTE address = dac_cast<PTR_BYTE>(dac_cast<TADDR>(this) + offset);
+        return dac_cast<PTR_OBJECTREF>(address);
     }
 
 #ifndef DACCESS_COMPILE
@@ -2510,43 +2481,7 @@ struct cdac_data<ExceptionObject>
     static constexpr size_t _xcode = offsetof(ExceptionObject, _xcode);
 };
 
-// Defined in Contracts.cs
-enum ContractFailureKind
-{
-    CONTRACT_FAILURE_PRECONDITION = 0,
-    CONTRACT_FAILURE_POSTCONDITION,
-    CONTRACT_FAILURE_POSTCONDITION_ON_EXCEPTION,
-    CONTRACT_FAILURE_INVARIANT,
-    CONTRACT_FAILURE_ASSERT,
-    CONTRACT_FAILURE_ASSUME,
-};
-
-typedef DPTR(class ContractExceptionObject) PTR_ContractExceptionObject;
-class ContractExceptionObject : public ExceptionObject
-{
-    friend class CoreLibBinder;
-
-public:
-    ContractFailureKind GetContractFailureKind()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return static_cast<ContractFailureKind>(_Kind);
-    }
-
-private:
-    // keep these in sync with ndp/clr/src/bcl/system/diagnostics/contracts/contractsbcl.cs
-    STRINGREF _UserMessage;
-    STRINGREF _Condition;
-    INT32 _Kind;
-};
 #include "poppack.h"
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<ContractExceptionObject> CONTRACTEXCEPTIONREF;
-#else // USE_CHECKED_OBJECTREFS
-typedef PTR_ContractExceptionObject CONTRACTEXCEPTIONREF;
-#endif // USE_CHECKED_OBJECTREFS
 
 //===============================================================================
 // #NullableFeature
@@ -2603,7 +2538,6 @@ public:
 
     static OBJECTREF Box(void* src, MethodTable* nullable);
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
-    static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return NULL; }
     // if 'Obj' is a true boxed nullable, return the form we want (either null or a boxed T)

@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 [StructLayout(LayoutKind.Explicit)]
 public struct S
@@ -30,6 +31,7 @@ public class Test_explicitStruct_empty
 {
     // Mark as no-inlining so any test failures will show the right stack trace even after
     // we consolidate test assemblies.
+    [ActiveIssue("needs triage", TestPlatforms.tvOS)]
     [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void EmptyExplicitStructCanBeLoadedAndCreated()
@@ -37,6 +39,7 @@ public class Test_explicitStruct_empty
         S s = new S();
     }
 
+    [ActiveIssue("needs triage", TestPlatforms.tvOS)]
     [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void EmptyExplicitStructCanBeLoadedAndCreatedThroughReflection()
@@ -44,6 +47,7 @@ public class Test_explicitStruct_empty
         object s = Activator.CreateInstance(Type.GetType("S2"));
     }
 
+    [ActiveIssue("needs triage", TestPlatforms.tvOS)]
     [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void EmptyExplicitClassCanBeLoadedAndCreated()
@@ -51,6 +55,7 @@ public class Test_explicitStruct_empty
         C c = new C();
     }
 
+    [ActiveIssue("needs triage", TestPlatforms.tvOS)]
     [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void EmptyExplicitClassCanBeLoadedAndCreatedThroughReflection()

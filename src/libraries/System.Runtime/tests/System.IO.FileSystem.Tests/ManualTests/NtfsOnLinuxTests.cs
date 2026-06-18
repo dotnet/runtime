@@ -11,7 +11,7 @@ namespace System.IO.ManualTests
     {
         internal static bool IsManualTestsEnabledAndElevated => FileSystemManualTests.ManualTestsEnabled && AdminHelpers.IsProcessElevated();
 
-        [ConditionalTheory(nameof(IsManualTestsEnabledAndElevated))]
+        [ConditionalTheory(typeof(NtfsOnLinuxTests), nameof(IsManualTestsEnabledAndElevated))]
         [PlatformSpecific(TestPlatforms.Linux)]
         [InlineData("Ω", 255)]
         [InlineData("あ", 255)]

@@ -21,10 +21,7 @@ function countChars(str) {
 }
 
 // Prepare base runtime parameters
-dotnet
-    .withElementOnExit()
-    .withExitCodeLogging()
-    .withExitOnUnhandledError();
+dotnet.withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, logExitCode: true });
 
 const logLevel = params.get("MONO_LOG_LEVEL");
 const logMask = params.get("MONO_LOG_MASK");
@@ -95,6 +92,12 @@ switch (testCase) {
             }
         });
         break;
+    case "AssetIntegrity":
+        dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            testOutput(`Asset '${name}' has integrity '${integrity}'`);
+            return defaultUri;
+        });
+        break;
     case "OutErrOverrideWorks":
         dotnet.withModuleConfig({
             out: (message) => {
@@ -109,21 +112,59 @@ switch (testCase) {
         break;
     case "InterpPgoTest":
         dotnet
-            .withConsoleForwarding()
+            .withConfig({ forwardConsole: true })
             .withRuntimeOptions(['--interp-pgo-logging'])
             .withInterpreterPgo(true);
         break;
     case "DownloadThenInit":
+        let dtConfigLoadedCalled = false;
+        dotnet.withModuleConfig({
+            onConfigLoaded: () => {
+                dtConfigLoadedCalled = true;
+                testOutput("onConfigLoaded called");
+            }
+        });
         const originalFetch = globalThis.fetch;
         globalThis.fetch = (url, fetchArgs) => {
             testOutput("fetching " + url);
             return originalFetch(url, fetchArgs);
         };
         await dotnet.download();
+        if (dtConfigLoadedCalled) {
+            testOutput("onConfigLoaded was called during download");
+        }
+        testOutput("download finished");
+        break;
+    case "DownloadThenInitHttpCacheOnly":
+        let loadBootResourceCalled = false;
+        let hcConfigLoadedCalled = false;
+        dotnet.withResourceLoader((type, name, defaultUri, integrity, behavior) => {
+            testOutput("loadBootResource " + type + " " + name);
+            loadBootResourceCalled = true;
+            return defaultUri;
+        });
+        dotnet.withModuleConfig({
+            onConfigLoaded: () => {
+                hcConfigLoadedCalled = true;
+                testOutput("onConfigLoaded called");
+            }
+        });
+        const originalFetch3 = globalThis.fetch;
+        globalThis.fetch = (url, fetchArgs) => {
+            testOutput("fetching " + url);
+            return originalFetch3(url, fetchArgs);
+        };
+        await dotnet.download(true);
+        if (loadBootResourceCalled) {
+            testOutput("loadBootResource was called");
+        }
+        if (hcConfigLoadedCalled) {
+            testOutput("onConfigLoaded was called during download");
+        }
         testOutput("download finished");
         break;
     case "MaxParallelDownloads":
-        const maxParallelDownloads = params.get("maxParallelDownloads");
+        const maxParallelDownloads = parseInt(params.get("maxParallelDownloads"), 10) || 16;
         let activeFetchCount = 0;
         const originalFetch2 = globalThis.fetch;
         globalThis.fetch = async (...args) => {
@@ -172,15 +213,34 @@ switch (testCase) {
         break;
     case "BrowserProfilerTest":
         break;
-    case "OverrideBootConfigName":
-        dotnet.withConfigSrc("boot.json");
-        break;
     case "MainWithArgs":
         dotnet.withApplicationArgumentsFromQuery();
         break;
+    case "BufferedAssetsTest":
+        const originalFetch4 = globalThis.fetch.bind(globalThis);
+        dotnet.withModuleConfig({
+            onConfigLoaded: (config) => {
+                const bufferedAssets = [
+                    ...config.resources.wasmNative,
+                    ...config.resources.coreAssembly,
+                    ...config.resources.assembly,
+                    ...(config.resources.corePdb ?? []),
+                    ...(config.resources.pdb ?? []),
+                    ...config.resources.wasmSymbols,
+                ];
+                for (const asset of bufferedAssets) {
+                    const url = new URL(asset.resolvedUrl ?? `./_framework/${asset.name}`, location.href);
+                    asset.buffer = originalFetch4(url).then(r => {
+                        if (!r.ok) throw new Error(`Failed to fetch buffered asset '${url}': ${r.status} ${r.statusText}`);
+                        return r.arrayBuffer();
+                    });
+                }
+            }
+        });
+        break;
 }
 
-const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
+const { setModuleImports, Module, getAssemblyExports, getConfig, INTERNAL, invokeLibraryInitializers } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
 const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
@@ -225,6 +285,12 @@ try {
         case "LibraryInitializerTest":
             exit(0);
             break;
+        case "InvokeLibraryInitializersTest":
+            await invokeLibraryInitializers("customHook", []);
+            testOutput(`customHookCalled=${globalThis.__customHookCalled === true}`);
+            testOutput(`resources.libraryInitializers.length=${config.resources.libraryInitializers.length}`);
+            exit(0);
+            break;
         case "ZipArchiveInteropTest":
             exports.ZipArchiveInteropTest.Run();
             exit(0);
@@ -238,12 +304,13 @@ try {
             exit(0);
             break;
         case "DownloadResourceProgressTest":
+        case "AssetIntegrity":
             exit(0);
             break;
         case "OutErrOverrideWorks":
         case "DotnetRun":
         case "MainWithArgs":
-            dotnet.run();
+            await dotnet.runMainAndExit();
             break;
         case "DebugLevelTest":
             testOutput("WasmDebugLevel: " + config.debugLevel);
@@ -265,6 +332,10 @@ try {
             exit(0);
             break;
         case "DownloadThenInit":
+        case "DownloadThenInitHttpCacheOnly":
+            testOutput("create finished");
+            exit(0);
+            break;
         case "MaxParallelDownloads":
             exit(0);
             break;
@@ -356,10 +427,8 @@ try {
             exit(foundB && retB == 42 ? 0 : 1);
 
             break;
-        case "OverrideBootConfigName":
-            testOutput("ConfigSrc: " + Module.configSrc);
-            exports.OverrideBootConfigNameTest.Run();
-            exit(0);
+        case "BufferedAssetsTest":
+            await dotnet.runMainAndExit();
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);
@@ -367,5 +436,7 @@ try {
             break;
     }
 } catch (e) {
-    exit(1, e);
+    if (e.name != "ExitStatus") {
+        exit(1, e);
+    }
 }

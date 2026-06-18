@@ -3,12 +3,17 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <MonoAotIncompatible>true</MonoAotIncompatible>
+    <!-- https://github.com/dotnet/runtime/issues/81676 -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvokeAssemblyMarshallingEnabled/*.cs" />
     <Compile Include="AutoLayout.cs" />
     <Compile Include="FunctionPointers.cs" />
     <Compile Include="RuntimeMarshallingDisabledAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Native_Default/DisabledRuntimeMarshallingNative_Default.csproj" />

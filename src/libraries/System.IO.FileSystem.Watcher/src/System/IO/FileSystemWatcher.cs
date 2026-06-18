@@ -218,7 +218,7 @@ namespace System.IO
                         _internalBufferSize = (uint)value;
                     }
 
-                    Restart();
+                    RestartForInternalBufferSize();
                 }
             }
         }
@@ -397,10 +397,15 @@ namespace System.IO
         {
             if (_onErrorHandler != null)
             {
-                OnError(new ErrorEventArgs(
-                        new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, _directory))));
+                OnError(new ErrorEventArgs(CreateBufferOverflowException(_directory)));
             }
         }
+
+        private static InternalBufferOverflowException CreateBufferOverflowException(string directoryPath)
+            => new InternalBufferOverflowException(SR.Format(SR.FSW_BufferOverflow, directoryPath));
+
+        private static DirectoryNotFoundException CreateWatchedDirectoryDeletedOrMovedException(string directoryPath)
+            => new DirectoryNotFoundException(SR.Format(SR.FSW_WatchedDirectoryDeletedOrMoved, directoryPath));
 
         /// <summary>
         /// Raises the event to each handler in the list.

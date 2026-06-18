@@ -1,23 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-////////////////////////////////////////////////////////////////////////////
-//
-// DateTimeFormatInfoScanner
-//
-//  Scan a specified DateTimeFormatInfo to search for data used in DateTime.Parse()
-//
-//  The data includes:
-//
-//      DateWords: such as "de" used in es-ES (Spanish) LongDatePattern.
-//      Postfix: such as "ta" used in fi-FI after the month name.
-//
-//  This class is shared among mscorlib.dll and sysglobl.dll.
-//  Use conditional CULTURE_AND_REGIONINFO_BUILDER_ONLY to differentiate between
-//  methods for mscorlib.dll and sysglobl.dll.
-//
-////////////////////////////////////////////////////////////////////////////
-
 using System.Collections.Generic;
 using System.Text;
 
@@ -67,6 +50,13 @@ namespace System.Globalization
         LAST_CALENDAR = 23      // Last calendar ID
     }
 
+    /// <summary>
+    /// Scans a specified DateTimeFormatInfo to search for data used in DateTime.Parse().
+    ///
+    /// The data includes:
+    /// DateWords: such as "de" used in es-ES (Spanish) LongDatePattern.
+    /// Postfix: such as "ta" used in fi-FI after the month name.
+    /// </summary>
     internal sealed class DateTimeFormatInfoScanner
     {
         // Special prefix-like flag char in DateWord array.
@@ -109,7 +99,7 @@ namespace System.Globalization
         internal const char CJKSecondSuff = '\u79d2';
 
         // The collection for date words & postfix.
-        internal List<string> m_dateWords = new List<string>();
+        internal List<string>? m_dateWords;
 
         ////////////////////////////////////////////////////////////////////////////
         //
@@ -210,7 +200,7 @@ namespace System.Globalization
                 }
             }
 
-            m_dateWords ??= new List<string>();
+            m_dateWords ??= [];
 
             if (formatPostfix == "MMMM")
             {
@@ -353,7 +343,7 @@ namespace System.Globalization
         internal void AddIgnorableSymbols(string? text)
         {
             // Create the date word array.
-            m_dateWords ??= new List<string>();
+            m_dateWords ??= [];
 
             // Add the ignorable symbol into the ArrayList.
             string temp = IgnorableSymbolChar + text;
@@ -478,7 +468,7 @@ namespace System.Globalization
 
         internal string[]? GetDateWordsOfDTFI(DateTimeFormatInfo dtfi)
         {
-            // Enumarate all LongDatePatterns, and get the DateWords and scan for month postfix.
+            // Enumerate all LongDatePatterns, and get the DateWords and scan for month postfix.
             string[] datePatterns = dtfi.GetAllDateTimePatterns('D');
             int i;
 
@@ -519,14 +509,11 @@ namespace System.Globalization
             }
 
             string[]? result = null;
-            if (m_dateWords != null && m_dateWords.Count > 0)
+            if (m_dateWords is { Count: > 0 } dateWords)
             {
-                result = new string[m_dateWords.Count];
-                for (i = 0; i < m_dateWords.Count; i++)
-                {
-                    result[i] = m_dateWords[i];
-                }
+                result = dateWords.ToArray();
             }
+
             return result;
         }
 

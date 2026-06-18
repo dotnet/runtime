@@ -11,11 +11,9 @@ namespace System.Threading
     {
         private const uint AccessRights = (uint)Interop.Kernel32.MAXIMUM_ALLOWED | Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.SEMAPHORE_MODIFY_STATE;
 
-#if TARGET_WINDOWS
         // Can't use MAXIMUM_ALLOWED in an access control entry (ACE)
         private const int CurrentUserOnlyAceRights =
             Interop.Kernel32.STANDARD_RIGHTS_REQUIRED | Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.SEMAPHORE_MODIFY_STATE;
-#endif
 
         private Semaphore(SafeWaitHandle handle)
         {
@@ -53,34 +51,24 @@ namespace System.Threading
         {
             ValidateArguments(initialCount, maximumCount);
 
-#if !TARGET_WINDOWS
-            if (name != null)
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
-            }
-#endif
-
             void* securityAttributesPtr = null;
             SafeWaitHandle myHandle;
             int errorCode;
-#if TARGET_WINDOWS
             Thread.CurrentUserSecurityDescriptorInfo securityDescriptorInfo = default;
-            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
+            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes;
             if (!string.IsNullOrEmpty(name) && options.WasSpecified)
             {
                 name = options.GetNameWithSessionPrefix(name);
                 if (options.CurrentUserOnly)
                 {
                     securityDescriptorInfo = new(CurrentUserOnlyAceRights);
-                    securityAttributes.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
-                    securityAttributes.lpSecurityDescriptor = (void*)securityDescriptorInfo.SecurityDescriptor;
+                    securityAttributes = Interop.Kernel32.SECURITY_ATTRIBUTES.Create((void*)securityDescriptorInfo.SecurityDescriptor);
                     securityAttributesPtr = &securityAttributes;
                 }
             }
 
             using (securityDescriptorInfo)
             {
-#endif
                 myHandle =
                     Interop.Kernel32.CreateSemaphoreEx(
                         (nint)securityAttributesPtr,
@@ -103,7 +91,6 @@ namespace System.Threading
 
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
                 }
-#if TARGET_WINDOWS
 
                 if (errorCode == Interop.Errors.ERROR_ALREADY_EXISTS && securityAttributesPtr != null)
                 {
@@ -124,7 +111,6 @@ namespace System.Threading
                     }
                 }
             }
-#endif
 
             createdNew = errorCode != Interop.Errors.ERROR_ALREADY_EXISTS;
             this.SafeWaitHandle = myHandle;
@@ -135,7 +121,6 @@ namespace System.Threading
             NamedWaitHandleOptionsInternal options,
             out Semaphore? result)
         {
-#if TARGET_WINDOWS
             ArgumentException.ThrowIfNullOrEmpty(name);
 
             if (options.WasSpecified)
@@ -186,9 +171,6 @@ namespace System.Threading
 
             result = new Semaphore(myHandle);
             return OpenExistingResult.Success;
-#else
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
-#endif
         }
 
         private int ReleaseCore(int releaseCount)

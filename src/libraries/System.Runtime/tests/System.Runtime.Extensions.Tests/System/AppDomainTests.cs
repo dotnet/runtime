@@ -841,7 +841,7 @@ namespace System.Tests
 
         public static bool FileCreateCaseSensitiveAndAssemblyLoadingSupported => PlatformDetection.FileCreateCaseSensitive && PlatformDetection.IsAssemblyLoadingSupported && PlatformDetection.HasAssemblyFiles;
 
-        [ConditionalTheory(nameof(FileCreateCaseSensitiveAndAssemblyLoadingSupported))]
+        [ConditionalTheory(typeof(AppDomainTests), nameof(FileCreateCaseSensitiveAndAssemblyLoadingSupported))]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {

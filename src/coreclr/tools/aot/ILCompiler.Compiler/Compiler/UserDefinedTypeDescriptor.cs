@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.TypesDebugInfo;
@@ -61,7 +62,7 @@ namespace ILCompiler
                     ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor
                     {
                         IsStruct = 1,
-                        Name = $"StateMachineLocals_{System.Reflection.Metadata.Ecma335.MetadataTokens.GetToken(((EcmaType)defType.GetTypeDefinition()).Handle):X}",
+                        Name = new Utf8String($"StateMachineLocals_{System.Reflection.Metadata.Ecma335.MetadataTokens.GetToken(((EcmaType)defType.GetTypeDefinition()).Handle):X}"),
                         InstanceSize = defType.InstanceByteCount.IsIndeterminate ? 0 : (ulong)defType.InstanceByteCount.AsInt,
                     };
 
@@ -122,7 +123,7 @@ namespace ILCompiler
                         {
                             FieldTypeIndex = fieldTypeIndex,
                             Offset = (ulong)fieldOffsetEmit,
-                            Name = fieldNameEmit
+                            Name = new Utf8String(fieldNameEmit)
                         };
 
                         fieldsDescs.Add(field);
@@ -233,7 +234,7 @@ namespace ILCompiler
 
                 descriptor.MemberFunction = GetMethodTypeIndex(method);
                 descriptor.ParentClass = GetTypeIndex(method.OwningType, true);
-                descriptor.Name = method.GetName();
+                descriptor.Name = new Utf8String(method.Name.ToArray());
 
                 typeIndex = _objectWriter.GetMemberFunctionId(descriptor);
                 _methodIdIndices.Add(method, typeIndex);
@@ -420,7 +421,7 @@ namespace ILCompiler
                 FieldDesc field = fieldsDescriptors[i];
                 EnumRecordTypeDescriptor recordTypeDescriptor;
                 recordTypeDescriptor.Value = GetEnumRecordValue(field);
-                recordTypeDescriptor.Name = field.GetName();
+                recordTypeDescriptor.Name = new Utf8String(field.Name.ToArray());
                 typeRecords[i] = recordTypeDescriptor;
             }
             uint typeIndex = _objectWriter.GetEnumTypeIndex(enumTypeDescriptor, typeRecords);
@@ -585,9 +586,9 @@ namespace ILCompiler
             List<DataFieldDescriptor> threadStaticFields = new List<DataFieldDescriptor>();
             List<StaticDataFieldDescriptor> staticsDescs = new List<StaticDataFieldDescriptor>();
 
-            string nonGcStaticDataName = NodeFactory.NameMangler.NodeMangler.NonGCStatics(type);
-            string gcStaticDataName = NodeFactory.NameMangler.NodeMangler.GCStatics(type);
-            string threadStaticDataName = NodeFactory.NameMangler.NodeMangler.ThreadStatics(type);
+            Utf8String nonGcStaticDataName = NodeFactory.NameMangler.NodeMangler.NonGCStatics(type);
+            Utf8String gcStaticDataName = NodeFactory.NameMangler.NodeMangler.GCStatics(type);
+            Utf8String threadStaticDataName = NodeFactory.NameMangler.NodeMangler.ThreadStatics(type);
             bool isNativeAOT = Abi == TargetAbi.NativeAot;
 
             bool hasNonGcStatics = NodeFactory.MetadataManager.HasNonGcStaticBase(defType);
@@ -665,7 +666,7 @@ namespace ILCompiler
                 {
                     FieldTypeIndex = fieldTypeIndex,
                     Offset = (ulong)fieldOffsetEmit,
-                    Name = fieldDesc.GetName()
+                    Name = new Utf8String(fieldDesc.Name.ToArray())
                 };
 
                 if (fieldDesc.IsStatic)
@@ -749,7 +750,7 @@ namespace ILCompiler
                 return typeIndex;
         }
 
-        private void InsertStaticFieldRegionMember(List<DataFieldDescriptor> fieldDescs, DefType defType, List<DataFieldDescriptor> staticFields, string staticFieldForm,
+        private void InsertStaticFieldRegionMember(List<DataFieldDescriptor> fieldDescs, DefType defType, List<DataFieldDescriptor> staticFields, Utf8String staticFieldForm,
                                                    bool staticDataInObject, bool isThreadStatic)
         {
             if (staticFields != null && (staticFields.Count > 0))
@@ -764,7 +765,7 @@ namespace ILCompiler
                 ClassTypeDescriptor classTypeDescriptor = new ClassTypeDescriptor
                 {
                     IsStruct = !staticDataInObject ? 1 : 0,
-                    Name = $"__type{staticFieldForm}{_objectWriter.GetMangledName(defType)}",
+                    Name = Utf8String.Concat("__type"u8, staticFieldForm.AsSpan(), _objectWriter.GetMangledName(defType).AsSpan()),
                     BaseClassId = 0
                 };
 
@@ -788,7 +789,7 @@ namespace ILCompiler
                     ClassTypeDescriptor helperClassTypeDescriptor = new ClassTypeDescriptor
                     {
                         IsStruct = 1,
-                        Name = $"__ThreadStaticHelper<{classTypeDescriptor.Name}>",
+                        Name = new Utf8String($"__ThreadStaticHelper<{classTypeDescriptor.Name}>"),
                         BaseClassId = 0
                     };
                     var pointerTypeDescriptor = new PointerTypeDescriptor
@@ -804,13 +805,13 @@ namespace ILCompiler
                         {
                             FieldTypeIndex = _objectWriter.GetPointerTypeIndex(pointerTypeDescriptor),
                             Offset = 0,
-                            Name = "TypeManagerSlot"
+                            Name = new Utf8String("TypeManagerSlot"u8)
                         },
                         new DataFieldDescriptor
                         {
                             FieldTypeIndex = GetVariableTypeIndex(defType.Context.GetWellKnownType(Is64Bit? WellKnownType.Int64 : WellKnownType.Int32), true),
                             Offset = (ulong)NodeFactory.Target.PointerSize,
-                            Name = "ClassIndex"
+                            Name = new Utf8String("ClassIndex"u8)
                         }
                     };
 

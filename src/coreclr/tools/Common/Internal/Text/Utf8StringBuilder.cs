@@ -43,6 +43,11 @@ namespace Internal.Text
             return Append(value.AsSpan());
         }
 
+        public Utf8StringBuilder Append(Utf8Span value)
+        {
+            return Append(value.AsSpan());
+        }
+
         public Utf8StringBuilder Append(ReadOnlySpan<byte> value)
         {
             Ensure(value.Length);
@@ -60,6 +65,19 @@ namespace Internal.Text
             return this;
         }
 
+        public Utf8StringBuilder AppendAscii(ReadOnlySpan<char> value)
+        {
+            Ensure(value.Length);
+            Debug.Assert(Ascii.IsValid(value), "Non-ASCII character detected");
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                _buffer[_length++] = (byte)value[i];
+            }
+
+            return this;
+        }
+
         public Utf8StringBuilder Append(string value)
         {
             int length = Encoding.UTF8.GetByteCount(value);
@@ -67,6 +85,20 @@ namespace Internal.Text
 
             Encoding.UTF8.GetBytes(value, _buffer.AsSpan(_length));
             _length += length;
+
+            return this;
+        }
+
+        public Utf8StringBuilder Append(int value)
+        {
+            // Max int string length is 11 chars (-2147483648)
+            Span<byte> buffer = stackalloc byte[11];
+            if (value.TryFormat(buffer, out int bytesWritten))
+            {
+                Ensure(bytesWritten);
+                buffer.Slice(0, bytesWritten).CopyTo(_buffer.AsSpan(_length));
+                _length += bytesWritten;
+            }
 
             return this;
         }

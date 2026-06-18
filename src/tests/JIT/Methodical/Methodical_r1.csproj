@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <DebugType>none</DebugType>
     <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>

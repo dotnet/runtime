@@ -117,6 +117,9 @@
   <data name="net_Websockets_ClientReceivedMaskedFrame" xml:space="preserve">
     <value>The WebSocket server sent a masked frame.</value>
   </data>
+  <data name="net_Websockets_ServerReceivedUnmaskedFrame" xml:space="preserve">
+    <value>The WebSocket client sent an unmasked frame.</value>
+  </data>
   <data name="net_Websockets_ContinuationFromFinalFrame" xml:space="preserve">
     <value>The WebSocket received a continuation frame from a previous final message.</value>
   </data>
@@ -170,6 +173,18 @@
   </data>
   <data name="net_Websockets_InvalidPayloadLength" xml:space="preserve">
     <value>The WebSocket received a frame with an invalid payload length.</value>
+  </data>
+  <data name="net_Websockets_InvalidTextPayload" xml:space="preserve">
+    <value>The WebSocket received a text message whose payload was not valid UTF-8.</value>
+  </data>
+  <data name="net_Websockets_ProtocolViolation" xml:space="preserve">
+    <value>The WebSocket peer sent invalid or malformed data, violating the WebSocket protocol.</value>
+  </data>
+  <data name="net_Websockets_InvalidCloseStatusCodeReceived" xml:space="preserve">
+    <value>The WebSocket received a close frame containing a reserved or invalid close status code.</value>
+  </data>
+  <data name="net_Websockets_InvalidCloseDescriptionPayload" xml:space="preserve">
+    <value>The WebSocket received a close frame whose status description was not valid UTF-8.</value>
   </data>
   <data name="PlatformNotSupported_WebSockets" xml:space="preserve">
     <value>WebSockets is not supported on this platform.</value>

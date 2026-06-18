@@ -5,7 +5,6 @@ build_Tests()
     echo "${__MsgPrefix}Building Tests..."
 
     __ProjectFilesDir="$__TestDir"
-    __Exclude="$__RepoRootDir/src/tests/issues.targets"
 
     if [[ -f  "${__TestBinDir}/build_info.json" ]]; then
         rm  "${__TestBinDir}/build_info.json"
@@ -59,7 +58,7 @@ build_Tests()
     MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
     export MSBUILDDEBUGPATH
 
-    if [[ "$__SkipNative" != 1 && "$__BuildTestWrappersOnly" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
+    if [[ "$__SkipNative" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
         "$__TargetOS" != "android" && "$__TargetOS" != "ios" && "$__TargetOS" != "iossimulator" && "$__TargetOS" != "tvos" && "$__TargetOS" != "tvossimulator" ]]; then
         build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "$__CMakeArgs" "CoreCLR test component"
 
@@ -91,7 +90,6 @@ build_Tests()
     export __SkipManaged
     export __SkipRestorePackages
     export __SkipGenerateLayout
-    export __SkipTestWrappers
     export __BuildTestProject
     export __BuildTestDir
     export __BuildTestTree
@@ -101,7 +99,6 @@ build_Tests()
     export __Priority
     export __CreatePerfmap
     export __CompositeBuildMode
-    export __BuildTestWrappersOnly
     export __GenerateLayoutOnly
     export __TestBuildMode
     export __MonoAot
@@ -109,7 +106,6 @@ build_Tests()
     export __MonoBinDir
     export __MsgPrefix
     export __ErrMsgPrefix
-    export __Exclude
     export EnableNativeSanitizers
 
     # Generate build command
@@ -140,16 +136,22 @@ build_Tests()
 usage_list=()
 usage_list+=("All arguments are optional and the '-' prefix is optional. The options are:")
 usage_list+=("")
+usage_list+=("Build target OS: Use '-os <value>' (handled by the common build framework) to specify the")
+usage_list+=("    target OS. Common values: linux (default on Linux), osx (default on macOS), android,")
+usage_list+=("    ios, iossimulator, tvos, tvossimulator, maccatalyst, browser, wasi.")
+usage_list+=("    For mobile/device targets (android, ios, iossimulator, tvos, tvossimulator), this script")
+usage_list+=("    automatically skips building native test components.")
+usage_list+=("-browser - Shorthand for '-os browser' (also sets architecture to wasm).")
+usage_list+=("-wasi - Shorthand for '-os wasi' (also sets architecture to wasm).")
+usage_list+=("")
 usage_list+=("-rebuild - Clean up all test artifacts prior to building tests.")
 usage_list+=("-skiprestorepackages - Skip package restore.")
 usage_list+=("-skipmanaged - Skip the managed tests build.")
 usage_list+=("-skipnative - Skip the native tests build.")
-usage_list+=("-skiptestwrappers - Skip generating test wrappers.")
 usage_list+=("-skipgeneratelayout - Skip generating the Core_Root layout.")
 usage_list+=("")
 usage_list+=("-copynativeonly - Only copy the native test binaries to the managed output. Do not build the native or managed tests.")
 usage_list+=("-generatelayoutonly - Only generate the Core_Root layout without building managed or native test components.")
-usage_list+=("-buildtestwrappersonly - Only generate test wrappers without building managed or native test components or generating layouts.")
 usage_list+=("")
 usage_list+=("-crossgen2 - Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
 usage_list+=("-composite - Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).")
@@ -157,15 +159,17 @@ usage_list+=("-nativeaot - Builds the tests for Native AOT compilation.")
 usage_list+=("-priority1 - Include priority=1 tests in the build.")
 usage_list+=("-perfmap - Emit perfmap symbol files when compiling the framework assemblies using Crossgen2.")
 usage_list+=("-allTargets - Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).")
+usage_list+=("-use-bootstrap - Use artifacts produced by the bootstrap subset for local targeting, runtime, and apphost packs.")
 usage_list+=("")
 usage_list+=("-runtests - Run tests after building them.")
 usage_list+=("-mono, -excludemonofailures - Build the tests for the Mono runtime honoring mono-specific issues.")
+usage_list+=("-coreclr - Build tests targeting the CoreCLR runtime (default; opposite of -mono/-excludemonofailures).")
 usage_list+=("-mono_aot - Use Mono AOT mode.")
 usage_list+=("-mono_fullaot - Use Mono Full AOT mode.")
 usage_list+=("")
-usage_list+=("-test:xxx - Only build the specified test project ^(relative or absolute project path under src\tests^).");
-usage_list+=("-dir:xxx - Build all test projects in the given directory ^(relative or absolute directory under src\tests^).");
-usage_list+=("-tree:xxx - Build all test projects in the given subtree ^(relative or absolute directory under src\tests^).");
+usage_list+=("-test:xxx - Only build the specified test project (relative or absolute project path under src/tests).")
+usage_list+=("-dir:xxx - Build all test projects in the given directory (relative or absolute directory under src/tests).")
+usage_list+=("-tree:xxx - Build all test projects in the given subtree (relative or absolute directory under src/tests).")
 usage_list+=("-log:xxx - Base file name to use for log files (used in lab pipelines that build tests in multiple steps to retain logs for each step).")
 usage_list+=("")
 usage_list+=("Any unrecognized arguments will be passed directly to MSBuild.")
@@ -181,7 +185,6 @@ handle_arguments_local() {
     case "$opt" in
         skipmanaged|-skipmanaged)
             __SkipManaged=1
-            __BuildTestWrappers=0
             ;;
 
         skipnative|-skipnative)
@@ -189,20 +192,11 @@ handle_arguments_local() {
             __CopyNativeProjectsAfterCombinedTestBuild=false
             ;;
 
-        buildtestwrappersonly|-buildtestwrappersonly)
-            __BuildTestWrappersOnly=1
-            ;;
-
-        skiptestwrappers|-skiptestwrappers)
-            __SkipTestWrappers=1
-            ;;
-
         copynativeonly|-copynativeonly)
             __SkipNative=1
             __CopyNativeTestBinaries=1
             __CopyNativeProjectsAfterCombinedTestBuild=false
             __SkipGenerateLayout=1
-            __SkipTestWrappers=1
             ;;
 
         crossgen2|-crossgen2)
@@ -232,6 +226,10 @@ handle_arguments_local() {
 
         alltargets|-alltargets)
             __UnprocessedBuildArgs+=("/p:CLRTestBuildAllTargets=allTargets")
+            ;;
+
+        use-bootstrap|-use-bootstrap)
+            __UnprocessedBuildArgs+=("/p:UseBootstrap=true")
             ;;
 
         rebuild|-rebuild)
@@ -309,6 +307,16 @@ handle_arguments_local() {
             __MonoFullAot=0
             ;;
 
+        browser|-browser)
+            __TargetOS=browser
+            __TargetArch=wasm
+            ;;
+
+        wasi|-wasi)
+            __TargetOS=wasi
+            __TargetArch=wasm
+            ;;
+
         log*|-log*)
             local arg="$1"
             local parts=(${arg//:/ })
@@ -334,8 +342,6 @@ __IncludeTests=INCLUDE_TESTS
 __ProjectDir="$__ProjectRoot"
 export __ProjectDir
 
-__SkipTestWrappers=0
-__BuildTestWrappersOnly=0
 __Compiler=clang
 __ConfigureOnly=0
 __CopyNativeProjectsAfterCombinedTestBuild=true
@@ -363,7 +369,6 @@ __SkipRestore=""
 __SkipRestorePackages=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=()
-__UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
 __Priority=0

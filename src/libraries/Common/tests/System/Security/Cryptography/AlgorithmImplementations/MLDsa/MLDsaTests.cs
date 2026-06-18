@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         private static bool PlatformSupportsMLDsa() =>
-            PlatformDetection.IsOpenSsl3_5 || PlatformDetection.IsWindows10Version26200OrGreater;
+            PlatformDetection.IsOpenSsl3_5 || PlatformDetection.IsWindows10Version26100OrGreater;
 
         [Fact]
         public static void DisposeIsCalledOnImplementation()

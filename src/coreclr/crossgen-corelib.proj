@@ -22,8 +22,7 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
-    <!-- TODO-WASM: we will have WASM R2R after https://github.com/dotnet/runtime/issues/121257 -->
-    <PublishReadyToRun Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">false</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(TargetOS)' == 'wasi'">false</PublishReadyToRun>
 
     <CrossgenTargetName Condition="!$(PublishReadyToRun)">CopyILCoreLib</CrossgenTargetName>
 
@@ -40,6 +39,11 @@
     <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
     <UseComposite>true</UseComposite>
     <CrossgenTargetName>$(CrossgenTargetName);LinkCoreLibMachO</CrossgenTargetName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser' and $(PublishReadyToRun)">
+    <PublishReadyToRunContainerFormat>wasm</PublishReadyToRunContainerFormat>
+    <CrossgenTargetName>CopyILCoreLib;$(CrossgenTargetName)</CrossgenTargetName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseComposite)' == 'true'">
@@ -66,6 +70,10 @@
     <CoreLibObjOutputPath>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', '$(CoreLibAssemblyName).o'))</CoreLibObjOutputPath>
     <CrossgenCoreLibOutputPath>$(CoreLibObjOutputPath)</CrossgenCoreLibOutputPath>
     <CoreLibDylibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dylib'))</CoreLibDylibOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'">
+    <CrossgenCoreLibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).NotReadyYet.wasm'))</CrossgenCoreLibOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseComposite)' == 'true'">
@@ -149,10 +157,9 @@
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' != ''">$(CrossGenDllCmd) --obj-format:$(PublishReadyToRunContainerFormat)</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'">$(CrossGenDllCmd) --codegenopt:JitWasmNyiToR2RUnsupported=1 --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 </CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(UseComposite)' == 'true'">$(CrossGenDllCmd) --composite</CrossGenDllCmd>
-      <CrossGenDllCmd Condition="'$(TargetsAndroid)' != 'true'">$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
-      <!-- Unless and until Android requires R2R specific customizations, we're just dealing with another linux -->
-      <CrossGenDllCmd Condition="'$(TargetsAndroid)' == 'true'">$(CrossGenDllCmd) --targetos:linux</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(UsingToolIbcOptimization)' != 'true' and '$(EnableNgenOptimization)' == 'true'">$(CrossGenDllCmd) -m:$(MergedMibcPath) --embed-pgo-data</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -O</CrossGenDllCmd>
       <!-- Enable type and field layout verification to make it easier to catch when the crossgen2 type layout engine and the runtime disagree on layout conventions -->
@@ -196,9 +203,10 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'osx'">12.0</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'maccatalyst'">15.2</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(TargetOS.StartsWith('ios')) or $(TargetOS.StartsWith('tvos')))">12.2</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'osx'">$(macOSVersionMin)</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'maccatalyst'">$(MacCatalystVersionMin)</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and $(TargetOS.StartsWith('ios'))">$(iOSVersionMin)</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and $(TargetOS.StartsWith('tvos'))">$(tvOSVersionMin)</AppleMinOSVersion>
 
       <_AppleSdkName Condition="'$(TargetOS)' == 'ios'">iphoneos</_AppleSdkName>
       <_AppleSdkName Condition="'$(TargetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>
@@ -252,13 +260,13 @@
       <_MachLinkerArg Include="-Wl,-dead_strip" />
     </ItemGroup>
 
-    <Exec Command="&quot;$(_AppleClang)&quot; --version" IgnoreExitCode="true" StandardOutputImportance="Low" IgnoreStandardErrorWarningFormat="true" ConsoleToMSBuild="true">
+    <Exec Command="xcodebuild -version" IgnoreExitCode="true" StandardOutputImportance="Low" IgnoreStandardErrorWarningFormat="true" ConsoleToMSBuild="true">
       <Output TaskParameter="ExitCode" PropertyName="_XcodeVersionStringExitCode" />
       <Output TaskParameter="ConsoleOutput" PropertyName="_XcodeVersionString" />
     </Exec>
 
     <PropertyGroup Condition="('$(_XcodeVersionStringExitCode)' == '0' or '$(_XcodeVersionStringExitCode)' == '1') and '$(_XcodeVersionString)' != ''">
-      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '[1-9]\d*'))</_XcodeVersion>
+      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '(?&lt;=Xcode\s)[1-9]\d*'))</_XcodeVersion>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false'">

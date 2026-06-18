@@ -219,11 +219,6 @@ EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
 #endif
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
-
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
-#endif
 
 #if defined(HOST_ARM64) && !defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
 EXTERN_C CODE_LOCATION RhpCheckedLockCmpXchgAVLocation2;
@@ -253,10 +248,6 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
         (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
 #endif
-        (uintptr_t)&RhpByRefAssignRefAVLocation1,
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-        (uintptr_t)&RhpByRefAssignRefAVLocation2,
-#endif
     };
 
     // compare the IP against the list of known possible AV locations in the write barrier helpers
@@ -276,28 +267,27 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
     return false;
 }
 
-EXTERN_C CODE_LOCATION RhpInitialInterfaceDispatch;
-EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation1;
-EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation2;
-EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation4;
-EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation8;
-EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation16;
-EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation32;
-EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation64;
+EXTERN_C CODE_LOCATION RhpInterfaceDispatch;
+#if defined(TARGET_ARM)
+EXTERN_C CODE_LOCATION RhpInterfaceDispatchAVLocation;
+#endif
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+EXTERN_C CODE_LOCATION RhpInterfaceDispatchGuarded;
+#endif
 
 static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
 {
 #ifndef FEATURE_PORTABLE_HELPERS
     static uintptr_t interfaceDispatchAVLocations[] =
     {
-        (uintptr_t)&RhpInitialInterfaceDispatch,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation1,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation2,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation4,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation8,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation16,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation32,
-        (uintptr_t)&RhpInterfaceDispatchAVLocation64,
+#if defined(TARGET_ARM)
+        (uintptr_t)&RhpInterfaceDispatchAVLocation,
+#else
+        (uintptr_t)&RhpInterfaceDispatch,
+#endif
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+        (uintptr_t)&RhpInterfaceDispatchGuarded,
+#endif
     };
 
     // compare the IP against the list of known possible AV locations in the interface dispatch helpers

@@ -4,6 +4,22 @@
 import CryptoKit
 import Foundation
 
+struct HashBox {
+    var value: any HashFunction
+}
+
+enum X25519Key {
+    case privateKey(Curve25519.KeyAgreement.PrivateKey)
+    case publicKey(Curve25519.KeyAgreement.PublicKey)
+
+    func getPublic() -> Curve25519.KeyAgreement.PublicKey {
+        switch self {
+            case .privateKey(let key): return key.publicKey
+            case .publicKey(let key): return key
+        }
+    }
+}
+
 protocol NonceProtocol {
     init<D>(data: D) throws where D : DataProtocol
 }
@@ -21,7 +37,6 @@ protocol SealedBoxProtocol {
     ) throws where C : DataProtocol, T : DataProtocol
 }
 
-@available(iOS 13, tvOS 13, *)
 protocol AEADSymmetricAlgorithm {
     associatedtype SealedBox : SealedBoxProtocol
 
@@ -31,29 +46,34 @@ protocol AEADSymmetricAlgorithm {
     static func open(_ sealedBox: SealedBox, using key: SymmetricKey) throws -> Data
 }
 
-@available(iOS 13, tvOS 13, *)
 extension AES.GCM.Nonce: NonceProtocol {}
 
-@available(iOS 13, tvOS 13, *)
 extension AES.GCM.SealedBox: SealedBoxProtocol {
     typealias Nonce = AES.GCM.Nonce
 }
 
-@available(iOS 13, tvOS 13, *)
 extension AES.GCM: AEADSymmetricAlgorithm {}
 
-@available(iOS 13, tvOS 13, *)
 extension ChaChaPoly.Nonce: NonceProtocol {}
 
-@available(iOS 13, tvOS 13, *)
 extension ChaChaPoly.SealedBox: SealedBoxProtocol {
     typealias Nonce = ChaChaPoly.Nonce
 }
 
-@available(iOS 13, tvOS 13, *)
 extension ChaChaPoly: AEADSymmetricAlgorithm {}
 
-@available(iOS 13, tvOS 13, *)
+private func allocatePointer<T>(to value: T) -> UnsafeMutableRawPointer {
+    let pointer = UnsafeMutablePointer<T>.allocate(capacity: 1)
+    pointer.initialize(to: value)
+    return UnsafeMutableRawPointer(pointer)
+}
+
+private func deallocatePointer<T>(_ pointer: UnsafeMutableRawPointer, to type: T.Type) {
+    let typedPointer = pointer.assumingMemoryBound(to: type)
+    typedPointer.deinitialize(count: 1)
+    typedPointer.deallocate()
+}
+
 func encrypt<Algorithm>(
     _ algorithm: Algorithm.Type,
     key: UnsafeBufferPointer<UInt8>,
@@ -79,7 +99,6 @@ func encrypt<Algorithm>(
     _ = resultTag.copyBytes(to: tag)
 }
 
-@available(iOS 13, tvOS 13, *)
 func decrypt<Algorithm>(
     _ algorithm: Algorithm.Type,
     key: UnsafeBufferPointer<UInt8>,
@@ -101,7 +120,6 @@ func decrypt<Algorithm>(
 }
 
 @_silgen_name("AppleCryptoNative_ChaCha20Poly1305Encrypt")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
     key: UnsafeBufferPointer<UInt8>,
     nonceData: UnsafeBufferPointer<UInt8>,
@@ -121,7 +139,6 @@ public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
 }
 
 @_silgen_name("AppleCryptoNative_ChaCha20Poly1305Decrypt")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_ChaCha20Poly1305Decrypt(
     key: UnsafeBufferPointer<UInt8>,
     nonceData: UnsafeBufferPointer<UInt8>,
@@ -141,7 +158,6 @@ public func AppleCryptoNative_ChaCha20Poly1305Decrypt(
 }
 
 @_silgen_name("AppleCryptoNative_AesGcmEncrypt")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_AesGcmEncrypt(
     key: UnsafeBufferPointer<UInt8>,
     nonceData: UnsafeBufferPointer<UInt8>,
@@ -161,7 +177,6 @@ public func AppleCryptoNative_AesGcmEncrypt(
 }
 
 @_silgen_name("AppleCryptoNative_AesGcmDecrypt")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_AesGcmDecrypt(
     key: UnsafeBufferPointer<UInt8>,
     nonceData: UnsafeBufferPointer<UInt8>,
@@ -181,7 +196,6 @@ public func AppleCryptoNative_AesGcmDecrypt(
 }
 
 @_silgen_name("AppleCryptoNative_IsAuthenticationFailure")
-@available(iOS 13, tvOS 13, *)
 public func AppleCryptoNative_IsAuthenticationFailure(error: Error) -> Bool {
     if let error = error as? CryptoKitError {
         switch error {
@@ -349,4 +363,359 @@ public func AppleCryptoNative_HKDFDeriveKey(
         let destination = UnsafeMutableRawBufferPointer(start: destinationPtr, count: destinationLengthInt)
         return Int32(keyBytes.copyBytes(to: destination))
     }
+}
+
+@_silgen_name("AppleCryptoNative_DigestOneShot")
+public func AppleCryptoNative_DigestOneShot(
+    algorithm: Int32,
+    pbData: UnsafeMutableRawPointer?,
+    cbData: Int32,
+    pbOutput: UnsafeMutablePointer<UInt8>?,
+    cbOutput: Int32,
+    cbDigest: UnsafeMutablePointer<Int32>?) -> Int32 {
+
+    guard let cbDigest, let pbOutput, let hashAlgorithm = PAL_HashAlgorithm(rawValue: algorithm) else {
+        return -1
+    }
+
+    let data: Data
+
+    if let ptr = pbData, cbData > 0 {
+        data = Data(bytesNoCopy: ptr, count: Int(cbData), deallocator: .none)
+    } else {
+        data = Data()
+    }
+
+    let destination = UnsafeMutableRawBufferPointer(start: pbOutput, count: Int(cbOutput))
+
+    switch hashAlgorithm {
+        case .md5:
+            let written = Insecure.MD5.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
+            cbDigest.pointee = Int32(Insecure.MD5.byteCount)
+            return written != Insecure.MD5.byteCount ? -1 : 1
+        case .sha1:
+            let written = Insecure.SHA1.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
+            cbDigest.pointee = Int32(Insecure.SHA1.byteCount)
+            return written != Insecure.SHA1.byteCount ? -1 : 1
+        case .sha256:
+            let written = SHA256.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
+            cbDigest.pointee = Int32(SHA256.byteCount)
+            return written != SHA256.byteCount ? -1 : 1
+        case .sha384:
+            let written = SHA384.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
+            cbDigest.pointee = Int32(SHA384.byteCount)
+            return written != SHA384.byteCount ? -1 : 1
+        case .sha512:
+            let written = SHA512.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
+            cbDigest.pointee = Int32(SHA512.byteCount)
+            return written != SHA512.byteCount ? -1 : 1
+        default:
+            cbDigest.pointee = 0
+            return -1
+    }
+}
+
+@_silgen_name("AppleCryptoNative_DigestCreate")
+public func AppleCryptoNative_DigestCreate(algorithm: Int32, pcbDigest: UnsafeMutablePointer<Int32>?) -> UnsafeMutableRawPointer? {
+    guard let pcbDigest, let hashAlgorithm = PAL_HashAlgorithm(rawValue: algorithm) else {
+        return nil
+    }
+
+    switch hashAlgorithm {
+        case .md5:
+            pcbDigest.pointee = Int32(Insecure.MD5.byteCount)
+            return allocatePointer(to: HashBox(value: Insecure.MD5()))
+        case .sha1:
+            pcbDigest.pointee = Int32(Insecure.SHA1.byteCount)
+            return allocatePointer(to: HashBox(value: Insecure.SHA1()))
+        case .sha256:
+            pcbDigest.pointee = Int32(SHA256.byteCount)
+            return allocatePointer(to: HashBox(value: SHA256()))
+        case .sha384:
+            pcbDigest.pointee = Int32(SHA384.byteCount)
+            return allocatePointer(to: HashBox(value: SHA384()))
+        case .sha512:
+            pcbDigest.pointee = Int32(SHA512.byteCount)
+            return allocatePointer(to: HashBox(value: SHA512()))
+        default:
+            pcbDigest.pointee = 0
+            return nil
+    }
+}
+
+@_silgen_name("AppleCryptoNative_DigestUpdate")
+public func AppleCryptoNative_DigestUpdate(ctx: UnsafeMutableRawPointer?, pBuf: UnsafeMutableRawPointer?, cBuf: Int32) -> Int32 {
+    if cBuf == 0 {
+        return 1
+    }
+
+    guard let ctx, let pBuf, cBuf >= 0 else {
+        return -1
+    }
+
+    let box = ctx.assumingMemoryBound(to: HashBox.self)
+    let source = Data(bytesNoCopy: pBuf, count: Int(cBuf), deallocator: Data.Deallocator.none)
+    var hash = box.pointee.value
+    hash.update(data: source)
+    box.pointee.value = hash
+    return 1
+}
+
+@_silgen_name("AppleCryptoNative_DigestReset")
+public func AppleCryptoNative_DigestReset(ctx: UnsafeMutableRawPointer?) -> Int32 {
+    guard let ctx else {
+        return -1
+    }
+
+    let box = ctx.assumingMemoryBound(to: HashBox.self)
+
+    switch box.pointee.value {
+        case is Insecure.MD5:
+            box.pointee.value = Insecure.MD5()
+            return 1
+        case is Insecure.SHA1:
+            box.pointee.value = Insecure.SHA1()
+            return 1
+        case is SHA256:
+            box.pointee.value = SHA256()
+            return 1
+        case is SHA384:
+            box.pointee.value = SHA384()
+            return 1
+        case is SHA512:
+            box.pointee.value = SHA512()
+            return 1
+        default:
+            return -2
+    }
+}
+
+@_silgen_name("AppleCryptoNative_DigestFinal")
+public func AppleCryptoNative_DigestFinal(ctx: UnsafeMutableRawPointer?, pOutput: UnsafeMutablePointer<UInt8>?, cbOutput: Int32) -> Int32 {
+    guard let ctx, let pOutput else {
+        return -1
+    }
+
+    let box = ctx.assumingMemoryBound(to: HashBox.self)
+    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
+
+    let hash = box.pointee.value.finalize()
+    let copied = hash.withUnsafeBytes { digest in
+        return digest.copyBytes(to: destination) == digest.count
+    }
+
+    if (!copied) {
+        return -1
+    }
+
+    return AppleCryptoNative_DigestReset(ctx: ctx)
+}
+
+@_silgen_name("AppleCryptoNative_DigestFree")
+public func AppleCryptoNative_DigestFree(ptr: UnsafeMutableRawPointer?) {
+    if let ptr {
+        deallocatePointer(ptr, to: HashBox.self)
+    }
+}
+
+@_silgen_name("AppleCryptoNative_DigestClone")
+public func AppleCryptoNative_DigestClone(ctx: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer? {
+    guard let ctx else {
+        return nil
+    }
+
+    let box = ctx.assumingMemoryBound(to: HashBox.self)
+    let digest = box.pointee.value
+    let clone = digest
+    return allocatePointer(to: HashBox(value: clone))
+}
+
+@_silgen_name("AppleCryptoNative_DigestCurrent")
+public func AppleCryptoNative_DigestCurrent(ctx: UnsafeMutableRawPointer?, pOutput: UnsafeMutablePointer<UInt8>?, cbOutput: Int32) -> Int32 {
+    guard let ctx, let pOutput else {
+        return -1
+    }
+
+    let box = ctx.assumingMemoryBound(to: HashBox.self)
+    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
+    let unboxed = box.pointee.value
+    let clone = unboxed
+    let hash = clone.finalize()
+    let copied = hash.withUnsafeBytes { digest in
+        return digest.copyBytes(to: destination) == digest.count
+    }
+
+    if (!copied) {
+        return -1
+    }
+
+    return 1
+}
+
+// Return values:
+//   1: success
+//   0: key agreement failed (e.g. peer is a low-order point and the shared
+//      secret would be all-zero; CryptoKit raises an error)
+//  -1: invalid arguments or unexpected error
+private func deriveRawSecretAgreement(
+    key: Curve25519.KeyAgreement.PrivateKey,
+    peerKey: Curve25519.KeyAgreement.PublicKey,
+    pOutput: UnsafeMutablePointer<UInt8>,
+    cbOutput: Int32) -> Int32 {
+    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
+
+    guard let sharedSecret = try? key.sharedSecretFromKeyAgreement(with: peerKey) else {
+        return 0
+    }
+
+    let copied = sharedSecret.withUnsafeBytes { rawSecret in
+        return rawSecret.copyBytes(to: destination) == rawSecret.count
+    }
+
+    if (!copied) {
+        return -1
+    }
+
+    return 1
+}
+
+@_silgen_name("AppleCryptoNative_X25519DeriveRawSecretAgreement")
+public func AppleCryptoNative_X25519DeriveRawSecretAgreement(
+    keyPtr: UnsafeMutableRawPointer?,
+    peerKeyPtr: UnsafeMutableRawPointer?,
+    pOutput: UnsafeMutablePointer<UInt8>?,
+    cbOutput: Int32) -> Int32 {
+    guard let keyPtr, let peerKeyPtr, let pOutput else {
+        return -1
+    }
+
+    let keyBox = keyPtr.assumingMemoryBound(to: X25519Key.self)
+    let peerBox = peerKeyPtr.assumingMemoryBound(to: X25519Key.self)
+
+    guard case .privateKey(let key) = keyBox.pointee else {
+        return -1
+    }
+
+    let peerKey = peerBox.pointee.getPublic()
+    return deriveRawSecretAgreement(key: key, peerKey: peerKey, pOutput: pOutput, cbOutput: cbOutput)
+}
+
+@_silgen_name("AppleCryptoNative_X25519DeriveRawSecretAgreementWithBytes")
+public func AppleCryptoNative_X25519DeriveRawSecretAgreementWithBytes(
+    keyPtr: UnsafeMutableRawPointer?,
+    peerKeyPtr: UnsafeMutableRawPointer?,
+    cbPeerKey: Int32,
+    pOutput: UnsafeMutablePointer<UInt8>?,
+    cbOutput: Int32) -> Int32 {
+    guard let keyPtr, let peerKeyPtr, let pOutput else {
+        return -1
+    }
+
+    let keyBox = keyPtr.assumingMemoryBound(to: X25519Key.self)
+
+    guard case .privateKey(let key) = keyBox.pointee else {
+        return -1
+    }
+
+    let source = Data(bytesNoCopy: peerKeyPtr, count: Int(cbPeerKey), deallocator: Data.Deallocator.none)
+
+    guard let peerKey = try? Curve25519.KeyAgreement.PublicKey.init(rawRepresentation: source) else {
+        return -1
+    }
+
+    return deriveRawSecretAgreement(key: key, peerKey: peerKey, pOutput: pOutput, cbOutput: cbOutput)
+}
+
+@_silgen_name("AppleCryptoNative_X25519FreeKey")
+public func AppleCryptoNative_X25519FreeKey(ptr: UnsafeMutableRawPointer?) {
+    if let ptr {
+        deallocatePointer(ptr, to: X25519Key.self)
+    }
+}
+
+@_silgen_name("AppleCryptoNative_X25519ExportPrivateKey")
+public func AppleCryptoNative_X25519ExportPrivateKey(
+    keyPtr: UnsafeMutableRawPointer?,
+    pOutput: UnsafeMutablePointer<UInt8>?,
+    cbOutput: Int32) -> Int32 {
+    guard let keyPtr, let pOutput else {
+        return -1
+    }
+
+    let box = keyPtr.assumingMemoryBound(to: X25519Key.self)
+
+    guard case .privateKey(let key) = box.pointee else {
+        return -1
+    }
+
+    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
+    let copied = key.rawRepresentation.withUnsafeBytes { privateKey in
+        return privateKey.copyBytes(to: destination) == privateKey.count
+    }
+
+    if (!copied) {
+        return -1
+    }
+
+    return 1
+}
+
+@_silgen_name("AppleCryptoNative_X25519ExportPublicKey")
+public func AppleCryptoNative_X25519ExportPublicKey(
+    keyPtr: UnsafeMutableRawPointer?,
+    pOutput: UnsafeMutablePointer<UInt8>?,
+    cbOutput: Int32) -> Int32 {
+    guard let keyPtr, let pOutput else {
+        return -1
+    }
+
+    let box = keyPtr.assumingMemoryBound(to: X25519Key.self)
+    let key = box.pointee.getPublic()
+    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
+
+    let copied = key.rawRepresentation.withUnsafeBytes { pubKey in
+        return pubKey.copyBytes(to: destination) == pubKey.count
+    }
+
+    if (!copied) {
+        return -1
+    }
+
+    return 1
+}
+
+@_silgen_name("AppleCryptoNative_X25519GenerateKey")
+public func AppleCryptoNative_X25519GenerateKey() -> UnsafeMutableRawPointer? {
+    let key = Curve25519.KeyAgreement.PrivateKey.init()
+    return allocatePointer(to: X25519Key.privateKey(key))
+}
+
+@_silgen_name("AppleCryptoNative_X25519ImportPrivateKey")
+public func AppleCryptoNative_X25519ImportPrivateKey(pKey: UnsafeMutableRawPointer?, cbKey: Int32) -> UnsafeMutableRawPointer? {
+    guard let pKey else {
+        return nil
+    }
+
+    let source = Data(bytesNoCopy: pKey, count: Int(cbKey), deallocator: Data.Deallocator.none)
+
+    guard let key = try? Curve25519.KeyAgreement.PrivateKey.init(rawRepresentation: source) else {
+        return nil
+    }
+
+    return allocatePointer(to: X25519Key.privateKey(key))
+}
+
+@_silgen_name("AppleCryptoNative_X25519ImportPublicKey")
+public func AppleCryptoNative_X25519ImportPublicKey(pKey: UnsafeMutableRawPointer?, cbKey: Int32) -> UnsafeMutableRawPointer? {
+    guard let pKey else {
+        return nil
+    }
+
+    let source = Data(bytesNoCopy: pKey, count: Int(cbKey), deallocator: Data.Deallocator.none)
+
+    guard let key = try? Curve25519.KeyAgreement.PublicKey.init(rawRepresentation: source) else {
+        return nil
+    }
+
+    return allocatePointer(to: X25519Key.publicKey(key))
 }

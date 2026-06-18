@@ -4,6 +4,9 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../interop/inc)
+if(FEATURE_INPROC_CRASHREPORT)
+    include_directories(${CLR_DIR}/debug/crashreport)
+endif(FEATURE_INPROC_CRASHREPORT)
 include_directories(${CLR_SRC_NATIVE_DIR})
 include_directories(${RUNTIME_DIR})
 
@@ -14,13 +17,11 @@ include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
-if(CLR_CMAKE_TARGET_ANDROID)
+if(CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_OPENBSD)
+    # OpenBSD's ld.so cannot resolve native TLS relocations in shared objects and has no
+    # __tls_get_addr, so the runtime must use emulated TLS (like Android).
     add_definitions(-DFEATURE_EMULATED_TLS)
-endif(CLR_CMAKE_TARGET_ANDROID)
-
-if(FEATURE_AUTO_TRACE)
-    add_definitions(-DFEATURE_AUTO_TRACE)
-endif(FEATURE_AUTO_TRACE)
+endif()
 
 foreach (Config DEBUG CHECKED)
     add_compile_definitions($<$<CONFIG:${Config}>:WRITE_BARRIER_CHECK>)
@@ -60,6 +61,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     clsload.cpp
     codeman.cpp
     codeversion.cpp
+    conditionalweaktable.cpp
     contractimpl.cpp
     corhost.cpp
     crst.cpp
@@ -68,8 +70,8 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     debuginfostore.cpp
     decodemd.cpp
     disassembler.cpp
-    domainassembly.cpp
     dynamicmethod.cpp
+    ebr.cpp
     ecall.cpp
     eedbginterfaceimpl.cpp
     eehash.cpp
@@ -87,6 +89,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     gchandleutilities.cpp
     genericdict.cpp
     generics.cpp
+    genmeth.cpp
     hash.cpp
     ilinstrumentation.cpp
     ilstubcache.cpp
@@ -167,8 +170,8 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     debuginfostore.h
     decodemd.h
     disassembler.h
-    domainassembly.h
     dynamicmethod.h
+    ebr.h
     ecall.h
     eedbginterfaceimpl.h
     eedbginterfaceimpl.inl
@@ -267,9 +270,16 @@ if(FEATURE_READYTORUN)
     )
 endif(FEATURE_READYTORUN)
 
+list(APPEND VM_SOURCES_DAC_AND_WKS_COMMON
+    pregeneratedstringthunks.cpp
+)
+list(APPEND VM_HEADERS_DAC_AND_WKS_COMMON
+    pregeneratedstringthunks.h
+    stringthunkhash.h
+)
+
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
-    conditionalweaktable.cpp # The usage of conditionalweaktable is only in the DAC, but we put the headers in the VM to enable validation.
 )
 
 set(VM_HEADERS_DAC
@@ -285,6 +295,7 @@ set(GC_HEADERS_DAC
 set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     appdomainnative.cpp
+    arraynative.cpp
     assemblynative.cpp
     assemblyprobeextension.cpp
     assemblyspec.cpp
@@ -292,6 +303,7 @@ set(VM_SOURCES_WKS
     bundle.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Coreclr.cpp
+    ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     cachelinealloc.cpp
     callconvbuilder.cpp
     callhelpers.cpp
@@ -306,12 +318,11 @@ set(VM_SOURCES_WKS
     commodule.cpp
     comsynchronizable.cpp
     comutilnative.cpp
-    comwaithandle.cpp
     coreassemblyspec.cpp
     corelib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
     customattribute.cpp
     custommarshalerinfo.cpp
-    autotrace.cpp
+    divmodint.cpp
     dllimport.cpp
     dllimportcallback.cpp
     dynamicinterfacecastable.cpp
@@ -323,13 +334,15 @@ set(VM_SOURCES_WKS
     fcall.cpp
     fieldmarshaler.cpp
     finalizerthread.cpp
+    floatdouble.cpp
+    floatsingle.cpp
+    cdacstress.cpp
     frozenobjectheap.cpp
     gccover.cpp
     gcenv.ee.cpp
     gcenv.ee.common.cpp
     gchelpers.cpp
     genanalysis.cpp
-    genmeth.cpp
     hosting.cpp
     hostinformation.cpp
     ilmarshalers.cpp
@@ -350,7 +363,6 @@ set(VM_SOURCES_WKS
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
-    olevariant.cpp
     pendingload.cpp
     pinvokeoverride.cpp
     profdetach.cpp
@@ -375,10 +387,17 @@ set(VM_SOURCES_WKS
     typeparse.cpp
     unsafeaccessors.cpp
     asyncthunks.cpp
+    varargsnative.cpp
     weakreferencenative.cpp
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
 )
+
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND VM_SOURCES_WKS
+        ${RUNTIME_DIR}/SignalSafeThreadMap.cpp
+    )
+endif()
 
 # coreclr needs to compile codeman.cpp differently depending on flavor (i.e. dll vs. static lib))
 list(REMOVE_ITEM VM_SOURCES_WKS codeman.cpp)
@@ -387,6 +406,8 @@ set(VM_HEADERS_WKS
     ${VM_HEADERS_DAC_AND_WKS_COMMON}
     ../inc/jithelpers.h
     appdomainnative.hpp
+    arraynative.h
+    arraynative.inl
     assemblynative.hpp
     ../inc/assemblyprobeextension.h
     assemblyspec.hpp
@@ -395,9 +416,7 @@ set(VM_HEADERS_WKS
     baseassemblyspec.inl
     cachelinealloc.h
     callhelpers.h
-    callsiteinspect.h
     callconvbuilder.hpp
-    cdacdata.h
     ceemain.h
     clrconfignative.h
     clrex.h
@@ -409,11 +428,10 @@ set(VM_HEADERS_WKS
     commodule.h
     comsynchronizable.h
     comutilnative.h
-    comwaithandle.h
     customattribute.h
     custommarshalerinfo.h
-    autotrace.h
     diagnosticserveradapter.h
+    divmodint.h
     dllimport.h
     dllimportcallback.h
     eeconfig.h
@@ -429,6 +447,8 @@ set(VM_HEADERS_WKS
     fcall.h
     fieldmarshaler.h
     finalizerthread.h
+    floatdouble.h
+    floatsingle.h
     frozenobjectheap.h
     gcenv.h
     gcenv.os.h
@@ -449,7 +469,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    olevariant.h
     pendingload.h
     profdetach.h
     profilingenumerators.h
@@ -472,9 +491,16 @@ set(VM_HEADERS_WKS
     tieredcompilation.h
     threadsuspend.h
     typeparse.h
+    varargsnative.h
     weakreferencenative.h
     ${VM_HEADERS_GDBJIT}
 )
+
+if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND VM_HEADERS_WKS
+        ${RUNTIME_DIR}/SignalSafeThreadMap.h
+    )
+endif()
 
 set(GC_SOURCES_WKS
     ${GC_SOURCES_DAC_AND_WKS_COMMON}
@@ -482,11 +508,7 @@ set(GC_SOURCES_WKS
     ../gc/gcconfig.cpp
     ../gc/gccommon.cpp
     ../gc/gcscan.cpp
-    ../gc/gcsvr.cpp
-    ../gc/gcwks.cpp
     ../gc/gchandletable.cpp
-    ../gc/gceesvr.cpp
-    ../gc/gceewks.cpp
     ../gc/gcload.cpp
     ../gc/gcbridge.cpp
     ../gc/softwarewritewatch.cpp
@@ -539,6 +561,12 @@ if(FEATURE_OBJCMARSHAL)
     )
 endif(FEATURE_OBJCMARSHAL)
 
+if(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)
+    list(APPEND VM_SOURCES_WKS
+        crashreportstackwalker.cpp
+    )
+endif(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)
+
 list(APPEND VM_SOURCES_WKS
     interoplibinterface_java.cpp
 )
@@ -552,14 +580,6 @@ if(CLR_CMAKE_TARGET_WIN32)
     set(VM_HEADERS_DAC_AND_WKS_WIN32
         amsi.h
     )
-
-    # COM interop scenarios
-    list(APPEND VM_SOURCES_DAC_AND_WKS_WIN32
-        clrtocomcall.cpp
-        )
-    list(APPEND VM_HEADERS_DAC_AND_WKS_WIN32
-        clrtocomcall.h
-        )
 
     list(APPEND VM_SOURCES_WKS
         ${VM_SOURCES_DAC_AND_WKS_WIN32}
@@ -579,7 +599,6 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     # COM interop scenarios
     list(APPEND VM_SOURCES_WKS
-        callsiteinspect.cpp
         classcompat.cpp
         comcache.cpp
         comcallablewrapper.cpp
@@ -587,9 +606,11 @@ if(CLR_CMAKE_TARGET_WIN32)
         cominterfacemarshaler.cpp
         commtmemberinfomap.cpp
         comtoclrcall.cpp
+        clrtocomcall.cpp
         dispatchinfo.cpp
         dispparammarshaler.cpp
         olecontexthelpers.cpp
+        olevariant.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
         stdinterfaces_wrapper.cpp
@@ -602,9 +623,11 @@ if(CLR_CMAKE_TARGET_WIN32)
         cominterfacemarshaler.h
         commtmemberinfomap.h
         comtoclrcall.h
+        clrtocomcall.h
         dispatchinfo.h
         dispparammarshaler.h
         olecontexthelpers.h
+        olevariant.h
         runtimecallablewrapper.h
         stdinterfaces.h
         stdinterfaces_internal.h
@@ -627,8 +650,15 @@ if (FEATURE_PORTABLE_HELPERS)
     list(APPEND VM_SOURCES_WKS
         ${PORTABLE_SOURCES_DIR}/AllocFast.cpp
         ${PORTABLE_VM_SOURCES_DIR}/AllocSlow.cpp
-        ${PORTABLE_SOURCES_DIR}/WriteBarriers.cpp
     )
+
+    if(CLR_CMAKE_TARGET_ARCH_WASM)
+    else()
+        list(APPEND VM_SOURCES_WKS
+            ${PORTABLE_SOURCES_DIR}/WriteBarriers.cpp
+        )
+    endif()
+
 elseif(CLR_CMAKE_TARGET_WIN32)
     if(CLR_CMAKE_TARGET_ARCH_AMD64)
         set(VM_SOURCES_WKS_ARCH_ASM
@@ -637,8 +667,6 @@ elseif(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
             ${ARCH_SOURCES_DIR}/CallDescrWorkerAMD64.asm
             ${ARCH_SOURCES_DIR}/ComCallPreStub.asm
-            ${ARCH_SOURCES_DIR}/GenericComCallStubs.asm
-            ${ARCH_SOURCES_DIR}/GenericCLRToCOMCallStubs.asm
             ${ARCH_SOURCES_DIR}/getstate.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_Fast.asm
             ${ARCH_SOURCES_DIR}/JitHelpers_FastWriteBarriers.asm
@@ -917,14 +945,27 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         ${ARCH_SOURCES_DIR}/entrypoints.h
     )
     set(VM_SOURCES_WKS_ARCH
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/writebarriers.cpp
         ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         ${ARCH_SOURCES_DIR}/helpers.cpp
-        ${ARCH_SOURCES_DIR}/callhelpers-interp-to-managed.cpp
-        ${ARCH_SOURCES_DIR}/callhelpers-reverse.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )
+    if (CLR_CMAKE_TARGET_BROWSER)
+        list(APPEND VM_SOURCES_WKS_ARCH
+            ${ARCH_SOURCES_DIR}/browserprofiler.cpp
+        )
+    endif(CLR_CMAKE_TARGET_BROWSER)
+    set(VM_SOURCES_WKS_GEN
+        ${ARCH_SOURCES_DIR}/callhelpers-interp-to-managed.cpp
+        ${ARCH_SOURCES_DIR}/callhelpers-reverse.cpp
+    )
+    if (GEN_PINVOKE)
+        list(APPEND VM_SOURCES_WKS_GEN
+            ${ARCH_SOURCES_DIR}/callhelpers-pinvoke.cpp
+        )
+    endif(GEN_PINVOKE)
 endif()
 
 set(VM_SOURCES_DAC_ARCH
@@ -1004,9 +1045,48 @@ if(CLR_CMAKE_TARGET_ARCH_I386)
 endif()
 
 convert_to_absolute_path(VM_SOURCES_WKS ${VM_SOURCES_WKS})
+convert_to_absolute_path(VM_SOURCES_WKS_GEN ${VM_SOURCES_WKS_GEN})
 convert_to_absolute_path(VM_SOURCES_WKS_ARCH_ASM ${VM_SOURCES_WKS_ARCH_ASM})
 convert_to_absolute_path(VM_SOURCES_DAC ${VM_SOURCES_DAC})
 convert_to_absolute_path(VM_SOURCES_WKS_SPECIAL ${VM_SOURCES_WKS_SPECIAL})
+
+set(GC_WKS_SVR_SOURCES
+    ../gc/gcee.cpp
+    ../gc/gc.cpp
+    ../gc/init.cpp
+    ../gc/no_gc.cpp
+    ../gc/finalization.cpp
+    ../gc/dynamic_tuning.cpp
+    ../gc/region_free_list.cpp
+    ../gc/region_allocator.cpp
+    ../gc/memory.cpp
+    ../gc/sweep.cpp
+    ../gc/collect.cpp
+    ../gc/diagnostics.cpp
+    ../gc/dynamic_heap_count.cpp
+    ../gc/card_table.cpp
+    ../gc/relocate_compact.cpp
+    ../gc/mark_phase.cpp
+    ../gc/background.cpp
+    ../gc/interface.cpp
+    ../gc/allocation.cpp
+    ../gc/plan_phase.cpp
+    ../gc/regions_segments.cpp
+    )
+
+add_library_clr(vm_gc_wks OBJECT ${GC_WKS_SVR_SOURCES})
+target_precompile_headers(vm_gc_wks PRIVATE [["common.h"]])
+target_compile_definitions(vm_gc_wks PRIVATE GC_DESCRIPTOR)
+add_dependencies(vm_gc_wks eventing_headers)
+add_pgo(vm_gc_wks)
+
+if(FEATURE_SVR_GC)
+    add_library_clr(vm_gc_svr OBJECT ${GC_WKS_SVR_SOURCES})
+    target_precompile_headers(vm_gc_svr PRIVATE [["common.h"]])
+    target_compile_definitions(vm_gc_svr PRIVATE GC_DESCRIPTOR SERVER_GC)
+    add_dependencies(vm_gc_svr eventing_headers)
+    add_pgo(vm_gc_svr)
+endif()
 
 if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
     add_library_clr(cee_dac ${VM_SOURCES_DAC})

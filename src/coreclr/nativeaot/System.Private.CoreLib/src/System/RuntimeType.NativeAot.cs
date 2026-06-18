@@ -122,6 +122,19 @@ namespace System
             return Enum.InternalGetUnderlyingType(this);
         }
 
+        public override Type? GetNullableUnderlyingType()
+        {
+            MethodTable* pEEType = _pUnderlyingEEType;
+            if (pEEType != null)
+            {
+                if (!pEEType->IsNullable)
+                    return null;
+                if (!pEEType->IsGenericTypeDefinition)
+                    return GetTypeFromMethodTable(pEEType->NullableType);
+            }
+            return GetRuntimeTypeInfo().GetNullableUnderlyingType();
+        }
+
         public override bool IsEnumDefined(object value)
         {
             ArgumentNullException.ThrowIfNull(value);
@@ -855,6 +868,9 @@ namespace System
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
             => GetRuntimeTypeInfo().MakeArrayType(rank);
+
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+            => GetRuntimeTypeInfo().MakeFunctionPointerType(parameterTypes, isUnmanaged);
 
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]

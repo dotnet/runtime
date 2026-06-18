@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
 using Internal.IL.Stubs;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -138,7 +139,7 @@ namespace ILCompiler
             }
             else if (field is ExternSymbolMappedField externField)
             {
-                return NodeFactory.ExternVariable(externField.SymbolName);
+                return NodeFactory.ExternVariable(new Utf8String(externField.SymbolName));
             }
             else
             {
@@ -175,9 +176,9 @@ namespace ILCompiler
             if (intrinsicOwningType.Module != TypeSystemContext.SystemModule)
                 return intrinsicMethod;
 
-            if (intrinsicOwningType.Name.SequenceEqual("Type"u8) && intrinsicOwningType.Namespace.SequenceEqual("System"u8))
+            if (intrinsicOwningType.Name == "Type"u8 && intrinsicOwningType.Namespace == "System"u8)
             {
-                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name.SequenceEqual("GetType"u8))
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetType"u8)
                 {
                     ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
                     if (callsiteModule != null)
@@ -187,9 +188,9 @@ namespace ILCompiler
                     }
                 }
             }
-            else if (intrinsicOwningType.Name.SequenceEqual("Assembly"u8) && intrinsicOwningType.Namespace.SequenceEqual("System.Reflection"u8))
+            else if (intrinsicOwningType.Name == "Assembly"u8 && intrinsicOwningType.Namespace == "System.Reflection"u8)
             {
-                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name.SequenceEqual("GetExecutingAssembly"u8))
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetExecutingAssembly"u8)
                 {
                     ModuleDesc callsiteModule = (callsiteMethod.OwningType as MetadataType)?.Module;
                     if (callsiteModule != null)
@@ -199,10 +200,15 @@ namespace ILCompiler
                     }
                 }
             }
-            else if (intrinsicOwningType.Name.SequenceEqual("MethodBase"u8) && intrinsicOwningType.Namespace.SequenceEqual("System.Reflection"u8))
+            else if (intrinsicOwningType.Name == "MethodBase"u8 && intrinsicOwningType.Namespace == "System.Reflection"u8)
             {
-                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name.SequenceEqual("GetCurrentMethod"u8))
+                if (intrinsicMethod.Signature.IsStatic && intrinsicMethod.Name == "GetCurrentMethod"u8)
                 {
+                    if (callsiteMethod.IsAsyncVariant())
+                    {
+                        // For async methods, we need to get the MethodBase for the thunk variant.
+                        callsiteMethod = TypeSystemContext.GetTargetOfAsyncVariantMethod(callsiteMethod);
+                    }
                     return _methodBaseGetCurrentMethodThunks.GetHelper(callsiteMethod).InstantiateAsOpen();
                 }
             }
@@ -295,7 +301,7 @@ namespace ILCompiler
                 MetadataType activatorType = type.Context.SystemModule.GetKnownType("System"u8, "Activator"u8);
                 if (type.IsValueType && type.GetParameterlessConstructor() == null)
                 {
-                    ctor = activatorType.GetKnownNestedType("StructWithNoConstructor").GetKnownMethod(".ctor"u8, null);
+                    ctor = activatorType.GetKnownNestedType("StructWithNoConstructor"u8).GetKnownMethod(".ctor"u8, null);
                 }
                 else
                 {
@@ -356,7 +362,7 @@ namespace ILCompiler
                 case ReadyToRunHelperId.ObjectAllocator:
                     {
                         var type = (TypeDesc)targetOfLookup;
-                        return NodeFactory.ExternFunctionSymbol(JitHelper.GetNewObjectHelperForType(type));
+                        return NodeFactory.ExternFunctionSymbol(new Utf8String(JitHelper.GetNewObjectHelperForType(type)));
                     }
 
                 default:
@@ -451,11 +457,11 @@ namespace ILCompiler
             if (containingMethod.OwningType is MetadataType owningType)
             {
                 // RawCalliHelper is a way for the class library to opt out of fat calls
-                if (owningType.Name.SequenceEqual("RawCalliHelper"u8))
+                if (owningType.Name == "RawCalliHelper"u8)
                     return false;
 
                 // Delegate invocation never needs fat calls
-                if (owningType.IsDelegate && containingMethod.Name.SequenceEqual("Invoke"u8))
+                if (owningType.IsDelegate && containingMethod.Name == "Invoke"u8)
                     return false;
             }
 
@@ -648,6 +654,11 @@ namespace ILCompiler
                         yield return methodBodyNode.Method;
                 }
             }
+        }
+
+        public bool IsMethodBodyCompiled(MethodDesc method)
+        {
+            return _factory.MethodEntrypoint(method).Marked;
         }
 
         public IEnumerable<TypeDesc> ConstructedEETypes

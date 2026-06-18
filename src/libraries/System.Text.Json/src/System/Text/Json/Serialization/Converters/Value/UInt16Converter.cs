@@ -16,11 +16,22 @@ namespace System.Text.Json.Serialization.Converters
 
         public override ushort Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                return ReadNumberWithCustomHandling(ref reader, options.NumberHandling, options);
+            }
+
             return reader.GetUInt16();
         }
 
         public override void Write(Utf8JsonWriter writer, ushort value, JsonSerializerOptions options)
         {
+            if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
+            {
+                WriteNumberWithCustomHandling(writer, value, options.NumberHandling);
+                return;
+            }
+
             // For performance, lift up the writer implementation.
             writer.WriteNumberValue((long)value);
         }
@@ -62,5 +73,8 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
             GetSchemaForNumericType(JsonSchemaType.Integer, numberHandling);
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) =>
+            GetSupportedJsonValueTypesForNumericType(numberHandling);
     }
 }

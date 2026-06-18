@@ -20,9 +20,37 @@ if(CLR_CMAKE_TARGET_ARCH_ARM AND CLR_CMAKE_TARGET_LINUX)
     set(WITH_NEON OFF)
 endif()
 
-if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+if (CLR_CMAKE_TARGET_WASI)
   # 'aligned_alloc' is not available in browser/wasi, yet it is set by zlib-ng/CMakeLists.txt.
   set(HAVE_ALIGNED_ALLOC FALSE CACHE BOOL "have aligned_alloc" FORCE)
+endif()
+
+if (CLR_CMAKE_TARGET_BROWSER)
+  # 'aligned_alloc' is not available in browser, yet it is set by zlib-ng/CMakeLists.txt.
+  set(HAVE_ALIGNED_ALLOC FALSE CACHE BOOL "have aligned_alloc" FORCE)
+  
+  # Pre-cache zlib-ng CMake checks to speed up configure for browser
+  # These values match the results for Emscripten/WASM target
+  set(HAVE_ARM_ACLE_H "" CACHE INTERNAL "")
+  set(HAVE_SYS_AUXV_H "" CACHE INTERNAL "")
+  set(HAVE_SYS_SDT_H "" CACHE INTERNAL "")
+  set(HAVE_UNISTD_H 1 CACHE INTERNAL "")
+  set(HAVE_LINUX_AUXVEC_H "" CACHE INTERNAL "")
+  set(HAVE_SYS_TYPES_H 1 CACHE INTERNAL "")
+  set(HAVE_STDINT_H 1 CACHE INTERNAL "")
+  set(HAVE_STDDEF_H 1 CACHE INTERNAL "")
+  set(HAVE_FSEEKO 1 CACHE INTERNAL "")
+  set(HAVE_STRERROR 1 CACHE INTERNAL "")
+  set(HAVE_POSIX_MEMALIGN 1 CACHE INTERNAL "")
+  set(HAVE_ATTRIBUTE_VISIBILITY_HIDDEN 1 CACHE INTERNAL "")
+  set(HAVE_ATTRIBUTE_VISIBILITY_INTERNAL 1 CACHE INTERNAL "")
+  set(HAVE_ATTRIBUTE_ALIGNED 1 CACHE INTERNAL "")
+  set(HAVE_BUILTIN_ASSUME_ALIGNED 1 CACHE INTERNAL "")
+  set(HAVE_BUILTIN_CTZ 1 CACHE INTERNAL "")
+  set(HAVE_BUILTIN_CTZLL 1 CACHE INTERNAL "")
+  set(HAVE_PTRDIFF_T 1 CACHE INTERNAL "")
+  set(HAVE_NO_INTERPOSITION 1 CACHE INTERNAL "")
+  set(FNO_LTO_AVAILABLE 1 CACHE INTERNAL "")
 endif()
 
 if (MSVC)

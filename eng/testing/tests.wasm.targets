@@ -35,6 +35,7 @@
     <_ShellCommandSeparator Condition="'$(OS)' == 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <_ShellCommandSeparator Condition="'$(OS)' != 'Windows_NT'">&amp;&amp;</_ShellCommandSeparator>
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
+    <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">01:30:00</WasmXHarnessTestsTimeout>
     <WasmXHarnessTestsTimeout Condition="'$(WasmXHarnessTestsTimeout)' == ''">00:30:00</WasmXHarnessTestsTimeout>
     <RunWorkingDirectory>$(BundleDir)</RunWorkingDirectory>
 
@@ -55,7 +56,7 @@
     <BuildAOTTestsOn Condition="'$(BuildAOTTestsOn)' == ''">local</BuildAOTTestsOn>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local'">
+  <PropertyGroup Condition="'$(BuildAOTTestsOn)' == 'local' and '$(TargetOS)' != 'wasi'">
     <!--
       When building for BuildAOTTestsOnHelix=true, the BrowserWasmApp.targets are *not* imported, because
       they get instead used by the AOT proxy project on helix.
@@ -91,7 +92,7 @@
 
   <ItemGroup Condition="'$(_UseWasmSymbolicator)' == 'true'">
     <Content Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" Link="wwwroot\wasm-symbol-patterns.txt" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppPrevious)\WasmSymbolicator.dll" Link="wwwroot\WasmSymbolicator.dll" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppMinimum)\WasmSymbolicator.dll" Link="wwwroot\WasmSymbolicator.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" Condition="'$(IsWasmProject)' != 'false'">
