@@ -12,6 +12,7 @@ NESTED_ENTRY RhpInterfaceDispatch, _TEXT, NoHandler
 
         // r12 currently contains the indirection cell address. We need scratch registers.
         // Allocate stack frame for register spills.
+        // Unwinder special cases this push to be able to unwind out of the potential nullref below.
         PROLOG_PUSH "{r1,r2}"
 
         // Load the MethodTable from the object instance in r0.
