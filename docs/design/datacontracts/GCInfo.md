@@ -618,7 +618,7 @@ x86 uses the legacy bit-packed `InfoHdr` byte-stream encoding (`src/coreclr/vm/g
 | `GetSizeOfStackParameterArea` | Implemented (always returns 0; x86 has no separate outgoing-argument scratch area) |
 | `GetCalleePoppedArgumentsSize` | Implemented (mirrors native `EECodeManager::GetStackParameterSize`) |
 | `EnumerateLiveSlots` | Implemented; supports untracked frame locals, VarPtr-tracked lifetimes, and live register / pushed pointer-arg state derived from the per-offset transition stream |
-| `GetInterruptibleRanges` | Not implemented -- x86 does not encode explicit interruptible ranges. The only consumer is the catch-handler PC override in `StackWalk_1`, which has no x86-relevant scenarios today. |
+| `GetInterruptibleRanges` | Implemented. Fully-interruptible methods report one range covering the post-prolog body; partially-interruptible methods emit each call site as a single-byte range. Used by `StackWalk_1.WalkStackReferences` when adjusting the GC-reporting PC for parent frames of catch funclets (x86 now uses the funclet EH model, see PR [#115957](https://github.com/dotnet/runtime/pull/115957)). |
 
 ### Deferred edges
 

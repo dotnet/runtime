@@ -423,7 +423,57 @@ public record X86GCInfo : IGCInfoDecoder
     }
 
     IReadOnlyList<InterruptibleRange> IGCInfoDecoder.GetInterruptibleRanges()
-        => throw new NotSupportedException("x86 GC info does not encode explicit interruptible ranges; per-offset transitions are used instead. Decoding for the cDAC IGCInfoDecoder consumers is not yet implemented.");
+    {
+        // The x86 GC info `interruptible` header bit divides methods into two encodings:
+        //
+        // * Fully interruptible (`Header.Interruptible == true`): every offset in the
+        //   method body (post-prolog, pre-epilog) is GC-safe. The C++ walker
+        //   (`EnumGcRefsX86` in gc_unwind_x86.inl) explicitly returns without
+        //   reporting refs when the queried offset falls inside the prolog or any
+        //   epilog, so we exclude those regions here too.
+        // * Partially interruptible (`Header.Interruptible == false`): only call sites
+        //   are GC-safe. Each call site appears as a `GcTransitionCall` at its code
+        //   offset. We surface each as a single-byte range so the only consumer
+        //   (the catch-handler PC override in `StackWalk_1.WalkStackReferences`) can
+        //   pick the first call-site offset at or after the clause start.
+        if (Header.Interruptible)
+        {
+            // Body minus prolog minus all epilogs. Epilogs are stored as code offsets
+            // (start of each epilog); each spans `EpilogSize` bytes.
+            uint cursor = Header.PrologSize;
+            uint methodSize = MethodSize;
+            List<InterruptibleRange> ranges = [];
+            foreach (int epilogStart in Header.Epilogs.OrderBy(e => e))
+            {
+                uint eStart = (uint)epilogStart;
+                uint eEnd = eStart + Header.EpilogSize;
+                if (eStart > cursor)
+                    ranges.Add(new InterruptibleRange(cursor, eStart));
+                cursor = Math.Max(cursor, eEnd);
+            }
+            if (cursor < methodSize)
+                ranges.Add(new InterruptibleRange(cursor, methodSize));
+            return ranges;
+        }
+
+        // Partially interruptible: emit each call-site offset as a (offset, offset+1) range.
+        List<InterruptibleRange> callRanges = [];
+        foreach (int offset in Transitions.Keys.OrderBy(o => o))
+        {
+            if ((uint)offset < Header.PrologSize)
+                continue;
+
+            foreach (BaseGcTransition transition in Transitions[offset])
+            {
+                if (transition is GcTransitionCall)
+                {
+                    callRanges.Add(new InterruptibleRange((uint)offset, (uint)offset + 1));
+                    break;
+                }
+            }
+        }
+        return callRanges;
+    }
 
     IReadOnlyList<LiveSlot> IGCInfoDecoder.EnumerateLiveSlots(uint instructionOffset, GcSlotEnumerationOptions options)
     {
