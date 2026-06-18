@@ -613,18 +613,33 @@ x86 uses the legacy bit-packed `InfoHdr` byte-stream encoding (`src/coreclr/vm/g
 
 | API | Status |
 |---|---|
-| `GetCodeLength` | Implemented |
-| `GetStackBaseRegister` | Implemented |
-| `GetSizeOfStackParameterArea` | Implemented (always returns 0; x86 has no separate outgoing-argument scratch area) |
-| `GetCalleePoppedArgumentsSize` | Implemented (mirrors native `EECodeManager::GetStackParameterSize`) |
-| `EnumerateLiveSlots` | Implemented; supports untracked frame locals, VarPtr-tracked lifetimes, and live register / pushed pointer-arg state derived from the per-offset transition stream |
-| `GetInterruptibleRanges` | Implemented. Fully-interruptible methods report one range covering the post-prolog body; partially-interruptible methods emit each call site as a single-byte range. Used by `StackWalk_1.WalkStackReferences` when adjusting the GC-reporting PC for parent frames of catch funclets (x86 now uses the funclet EH model, see PR [#115957](https://github.com/dotnet/runtime/pull/115957)). |
+| `GetCodeLength` | Implemented. |
+| `GetStackBaseRegister` | Implemented. |
+| `GetSizeOfStackParameterArea` | Implemented; always returns 0 (x86 has no separate outgoing-argument scratch area). |
+| `GetCalleePoppedArgumentsSize` | Implemented; mirrors `EECodeManager::GetStackParameterSize`. |
+| `GetInterruptibleRanges` | Implemented. Fully-interruptible methods report one range covering the post-prolog body; partially-interruptible methods emit each call site as a single-byte range. Used by `StackWalk_1.WalkStackReferences` when adjusting the GC-reporting PC for parent frames of catch funclets (x86 uses the funclet EH model, see PR [#115957](https://github.com/dotnet/runtime/pull/115957)). |
+| `EnumerateLiveSlots` | Implemented and validated to match `EnumGcRefsX86` across the full cDAC stress suite. See below. |
+
+### `EnumerateLiveSlots` behavior
+
+Mirrors `EnumGcRefsX86` (gc_unwind_x86.inl), `scanArgRegTableI` (fully-interruptible) and `scanArgRegTable` (partially-interruptible).
+
+Early-return gates (no slots reported):
+- `IsParentOfFuncletStackFrame` — the funclet sharing this parent's locals will report them itself.
+- Code offset is in the prolog or any epilog.
+- `IsExecutionAborted` and the method is not fully interruptible.
+- Filter funclets (`SuppressUntrackedSlots`) skip the untracked table to avoid double-reporting with the parent.
+
+Sources of live slots:
+- **Untracked frame locals** — always live for the entire method body. Encoded as signed delta-from-previous offsets in the untracked table; on EBP frames the encoded value is naturally signed and resolves to `EBP + stkOffs`.
+- **VarPtr-tracked locals** — live when the lifetime-check offset is within `[BeginOffset, EndOffset)`. EBP-frame offsets are stored as their negated form (mirrors `if (info.ebpFrame) stkOffs = -stkOffs`). Non-active frames evaluate the lifetime at `instructionOffset - 1` because a variable can be dead at the return address (e.g. when the call is the last instruction of a try and the return is the catch-block jump target).
+- **Live registers** — accumulated from the LIVE/DEAD transition stream up to the queried offset. Callee-saved registers (EBX/EBP/ESI/EDI) are reported when execution will continue; callee-trashed scratch (EAX/ECX/EDX) is reported only on the active leaf frame. On non-leaf frames register liveness is evaluated at the instruction *before* the call (`regOffset = instructionOffset - 1`) since liveness can change across calls.
+- **Pushed pointer args** — for fully-interruptible code, accumulated from the PUSH/POP transition stream and emitted as positive SP-relative offsets at emit time once final depth is known (`addr = ESP_call + (finalDepth - 1 - pushIndex) * 4`, mirroring `pPendingArgFirst - i * sizeof(DWORD)`). For partially-interruptible call sites, taken directly from the matching `GcTransitionCall`: explicit per-pointer offsets in the huge (0xFB) encoding, or a uint32 bitmap (`ArgMask` / `IArgs`) walked low-to-high with `addr = ESP + i * sizeof(DWORD)` for the tiny / small / medium / large encodings.
 
 ### Deferred edges
 
-These do not affect the GC root scan / `WalkStackReferences` path used by SOS today, but are noted for future work:
+These do not affect the GC root scan / `WalkStackReferences` path validated by the cDAC stress suite, but are noted for future work:
 
-- "this"-pointer special-case reporting for synchronized methods (VarPtr `0x2` tracked-local bit is currently masked out -- on x86 it means "this", not pinned).
-- `IPtrMask` interior-pointer bitmaps for pushed args -- the decoder currently uses the simpler per-push `Iptr` flag instead of consuming the IPtrMask transitions.
-- Funclet handling beyond the existing `IsParentOfFuncletStackFrame` caller-side early-skip.
-- Finer `IsActiveFrame` register filter precision (currently emits live registers when the frame is active or when an active call-site transition was found).
+- `info.thisPtrResult` reporting for synchronized methods on the `!willContinueExecution` path (the regular live-register report covers `willContinueExecution`, which is what stress exercises).
+- VarPtr `0x2` legacy-encoder "this" bit (the modern x86 JIT uses `0x2` only for pinned, which we already pass through; the legacy "this" interpretation never appears in code from the current JIT).
+- `IPtrMask` (`0xF0`) interior-pointer bitmaps for pushed args — only used in the partial-interruptible ESP-frame walker, not exercised by current x86 codegen because all post-funclet x86 methods are EBP frames.

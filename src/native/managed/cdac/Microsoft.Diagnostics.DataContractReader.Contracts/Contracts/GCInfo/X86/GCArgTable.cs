@@ -197,6 +197,9 @@ public class GCArgTable
     /// </summary>
     private void GetTransitionsEbpFrame(ref TargetPointer offset)
     {
+        // Cumulative method-relative offset accumulated across iterations as deltas are read.
+        // Must remain outside the loop so partial-interrupt EBP-frame call sites are emitted at
+        // true offsets, not per-iteration deltas.
         uint curOffs = 0;
         while (true)
         {
