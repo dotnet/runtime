@@ -181,6 +181,6 @@
   </data>
   <data name="AotCannotCreateEnumerableValueType" xml:space="preserve">
     <value>Unable to create an Enumerable service of type '{0}' because it is a ValueType. Native code to support creating Enumerable services might not be available with native AOT.</value>
-    <comment>{0} = service type</comment>
+    <comment>{0} = element type</comment>
   </data>
 </root>
