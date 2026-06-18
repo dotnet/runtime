@@ -79,7 +79,7 @@ void SystemNative_Exit(int32_t exitCode)
 DEBUGNOTRETURN
 void SystemNative__Exit(int32_t exitCode)
 {
-    _exit(exitCode);
+    _Exit(exitCode);
 }
 
 DEBUGNOTRETURN

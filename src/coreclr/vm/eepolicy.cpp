@@ -680,6 +680,7 @@ using FatalErrorHandlerFunc = int (DOTNET_CALLCONV *)(int hresult, void* errorDa
 static void DOTNET_CALLCONV GetFatalErrorLogCallback(FatalErrorInfo* errorData, FatalErrorLogAction pfnLogAction, void* userContext)
 {
     LIMITED_METHOD_CONTRACT;
+    (void)errorData;
 
     size_t length = 0;
     char* buffer = GetCrashLogBuffer(&length);

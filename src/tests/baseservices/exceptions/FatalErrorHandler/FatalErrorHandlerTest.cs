@@ -263,8 +263,10 @@ unsafe class FatalErrorHandlerTest
     {
         if (OperatingSystem.IsWindows())
         {
+            // COR_E_FAILFAST (used by CoreCLR FailFast via TerminateProcess)
             // STATUS_STACK_BUFFER_OVERRUN (used by NativeAOT fast-fail)
-            return exitCode == unchecked((int)0xC0000409);
+            return exitCode == unchecked((int)0x80131623)
+                || exitCode == unchecked((int)0xC0000409);
         }
         else
         {
