@@ -168,3 +168,39 @@ baseservices/exceptions/regressions/Dev11/154243/dynamicmethodliveness/dynamicme
 # WASI corerun's `FEATURE_TYPEEQUIVALENCE` path is not yet wired up
 # (no `FEATURE_COMINTEROP` on the WASI build). Real gap, low priority.
 baseservices/typeequivalence/signatures/nopiatestil/nopiatestil.sh
+
+# =============================================================================
+# JIT/Methodical
+# =============================================================================
+
+# ----- finalizer-dependent GC tests (no host-loop tick) ----------------------
+#
+# Same blocker as the Finalization smoke test and Dev10_535767:
+# GC.WaitForPendingFinalizers does not drain finalizers on WASI
+# without a host event-loop turn. These tests deliberately stress the
+# finalizer queue.
+JIT/Methodical/Arrays/misc/arrres_d/arrres_d.sh
+JIT/Methodical/Arrays/misc/arrres_do/arrres_do.sh
+JIT/Methodical/Arrays/misc/arrres_r/arrres_r.sh
+JIT/Methodical/Arrays/misc/arrres_ro/arrres_ro.sh
+
+# ----- threading (single-threaded WASI by design) -----------------------------
+#
+# All call Thread.Start / new Thread(...) and hit
+# PlatformNotSupportedException from
+# RuntimeFeature.ThrowIfMultithreadingIsNotSupported().
+JIT/Methodical/Boxing/misc/concurgc_d/concurgc_d.sh
+JIT/Methodical/Boxing/misc/concurgc_r/concurgc_r.sh
+JIT/Methodical/cctor/misc/threads2_cs_d/threads2_cs_d.sh
+JIT/Methodical/cctor/misc/threads2_cs_do/threads2_cs_do.sh
+JIT/Methodical/cctor/misc/threads2_cs_r/threads2_cs_r.sh
+JIT/Methodical/cctor/misc/threads2_cs_ro/threads2_cs_ro.sh
+JIT/Methodical/tailcall_v4/hijacking/hijacking.sh
+
+# ----- vararg calling convention (WASM interpreter gap) ----------------------
+#
+# Same family as the JIT/Regression b* tests:
+# InvalidProgramException: Vararg calling convention not supported.
+JIT/Methodical/Coverage/arglist_pos/arglist_pos.sh
+JIT/Methodical/refany/seq_d/seq_d.sh
+JIT/Methodical/refany/seq_r/seq_r.sh
