@@ -1,5 +1,29 @@
 set(GC_DIR ../../gc)
 
+set(GC_WKS_SVR_SOURCES
+    ${GC_DIR}/gc.cpp
+    ${GC_DIR}/init.cpp
+    ${GC_DIR}/no_gc.cpp
+    ${GC_DIR}/finalization.cpp
+    ${GC_DIR}/dynamic_tuning.cpp
+    ${GC_DIR}/region_free_list.cpp
+    ${GC_DIR}/region_allocator.cpp
+    ${GC_DIR}/memory.cpp
+    ${GC_DIR}/sweep.cpp
+    ${GC_DIR}/collect.cpp
+    ${GC_DIR}/diagnostics.cpp
+    ${GC_DIR}/dynamic_heap_count.cpp
+    ${GC_DIR}/card_table.cpp
+    ${GC_DIR}/relocate_compact.cpp
+    ${GC_DIR}/mark_phase.cpp
+    ${GC_DIR}/background.cpp
+    ${GC_DIR}/interface.cpp
+    ${GC_DIR}/allocation.cpp
+    ${GC_DIR}/plan_phase.cpp
+    ${GC_DIR}/regions_segments.cpp
+    ${GC_DIR}/gcee.cpp
+)
+
 set(COMMON_RUNTIME_SOURCES
     rhassert.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
@@ -41,8 +65,6 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/gcconfig.cpp
     ${GC_DIR}/gchandletable.cpp
     ${GC_DIR}/gccommon.cpp
-    ${GC_DIR}/gceewks.cpp
-    ${GC_DIR}/gcwks.cpp
     ${GC_DIR}/gcscan.cpp
     ${GC_DIR}/handletable.cpp
     ${GC_DIR}/handletablecache.cpp
@@ -58,11 +80,6 @@ if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
         ${RUNTIME_DIR}/SignalSafeThreadMap.cpp
     )
 endif()
-
-set(SERVER_GC_SOURCES
-    ${GC_DIR}/gceesvr.cpp
-    ${GC_DIR}/gcsvr.cpp
-)
 
 set(STANDALONEGC_DISABLED_SOURCES
     clrgc.disabled.cpp
@@ -179,8 +196,26 @@ else()
 
   include(${CLR_SRC_NATIVE_DIR}/external/llvm-libunwind.cmake)
 
-  list(APPEND FULL_RUNTIME_SOURCES ${LLVM_LIBUNWIND_SOURCES})
-  set(RUNTIME_SOURCES_ARCH_ASM ${LLVM_LIBUNWIND_ASM_SOURCES})
+  set(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS OFF)
+  if(CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    set(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS ON)
+  endif()
+
+  if(NATIVEAOT_LOCALIZE_LIBUNWIND_SYMBOLS)
+    # Build the bundled libunwind implementation and the runtime unwinder code
+    # that references it into one relocatable object. The runtime sources are
+    # part of the partial link so their references to libunwind's implementation
+    # symbols are resolved before those symbols are localized.
+    set(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES
+      unix/UnwindHelpers.cpp
+      unix/UnixNativeCodeManager.cpp
+      ${LLVM_LIBUNWIND_SOURCES}
+      ${LLVM_LIBUNWIND_ASM_SOURCES})
+    list(REMOVE_ITEM FULL_RUNTIME_SOURCES unix/UnwindHelpers.cpp unix/UnixNativeCodeManager.cpp)
+  else()
+    list(APPEND FULL_RUNTIME_SOURCES ${LLVM_LIBUNWIND_SOURCES})
+    set(RUNTIME_SOURCES_ARCH_ASM ${LLVM_LIBUNWIND_ASM_SOURCES})
+  endif()
 
   set(ASM_SUFFIX S)
 endif()
@@ -316,9 +351,10 @@ list(APPEND COMMON_RUNTIME_SOURCES ${GC_HEADERS})
 
 convert_to_absolute_path(COMMON_RUNTIME_SOURCES ${COMMON_RUNTIME_SOURCES})
 convert_to_absolute_path(FULL_RUNTIME_SOURCES ${FULL_RUNTIME_SOURCES})
-convert_to_absolute_path(SERVER_GC_SOURCES ${SERVER_GC_SOURCES})
+convert_to_absolute_path(GC_WKS_SVR_SOURCES ${GC_WKS_SVR_SOURCES})
 convert_to_absolute_path(STANDALONEGC_DISABLED_SOURCES ${STANDALONEGC_DISABLED_SOURCES})
 convert_to_absolute_path(STANDALONEGC_ENABLED_SOURCES ${STANDALONEGC_ENABLED_SOURCES})
+convert_to_absolute_path(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES ${NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES})
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
 convert_to_absolute_path(VXSORT_SOURCES ${VXSORT_SOURCES})
 convert_to_absolute_path(DUMMY_VXSORT_SOURCES ${DUMMY_VXSORT_SOURCES})
