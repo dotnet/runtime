@@ -18035,18 +18035,6 @@ bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, e
 // Returns:
 //   True if the fold was performed and the (relocatable) load was emitted; false otherwise.
 //
-// Notes:
-//   The fold is only valid when the destination equals the base register (reg1 == reg2): the
-//   "add" produced the full cell address into that register, and having the load overwrite it
-//   proves the full address has no other use (only the page base from the "adrp" is still needed).
-//   This is the common pattern for loading a value through an R2R/relocatable indirection cell
-//   (string literals, static bases, helper-call targets, ...). It deliberately does not fire for
-//   call indirection cells, where the full address must stay live for the call's delay-load stub
-//   (there reg1 != reg2). Only 64-bit general-register loads are folded, matching the PAGEOFFSET_12L
-//   encoding (a 64-bit LDR with an 8-byte-scaled immediate); cells are pointer-sized and aligned.
-//   GCREF/BYREF loads qualify too (they are EA_8BYTE in a general register); the GC kind is carried
-//   by 'attr' into the re-emitted load exactly as on the unfolded path.
-//
 bool emitter::TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 {
     if (ins != INS_ldr)
