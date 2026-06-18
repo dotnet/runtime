@@ -1359,15 +1359,19 @@ PhaseStatus Compiler::fgWasmControlFlow()
             // This interval will inspire a try_table in codegen to handle the resumption
             // request from the runtime.
             //
-            unsigned            endCursor   = cursor + tryRegion->NumBlocks();
-            WasmInterval* const tryInterval = WasmInterval::NewTry(this, block, initialLayout[endCursor]);
+            unsigned const      tryEndCursor = cursor + tryRegion->NumBlocks();
+            WasmInterval* const tryInterval  = WasmInterval::NewTry(this, block, initialLayout[tryEndCursor]);
             fgWasmIntervals->push_back(tryInterval);
 
-            // Pair the TRY with a same-range [exnref]-wrapper Block so
-            // `catch_ref TAG 0` from inside try_table has a valid target.
-            // The sort tiebreaker places the wrapper just outside the TRY.
+            // Pair the TRY with an [exnref]-wrapper Block whose end lands at the
+            // BBF_CATCH_RESUMPTION dispatcher so catch_ref resumes there.
             //
-            WasmInterval* const wrapperInterval = WasmInterval::NewExnRefWrapper(this, block, initialLayout[endCursor]);
+            assert(block->KindIs(BBJ_COND));
+            BasicBlock* const cresume = block->GetTrueTarget();
+            assert((cresume != nullptr) && cresume->HasFlag(BBF_CATCH_RESUMPTION));
+            unsigned const      wrapperEndCursor = max(tryEndCursor, cresume->bbPreorderNum);
+            WasmInterval* const wrapperInterval =
+                WasmInterval::NewExnRefWrapper(this, block, initialLayout[wrapperEndCursor]);
             fgWasmIntervals->push_back(wrapperInterval);
         }
 
