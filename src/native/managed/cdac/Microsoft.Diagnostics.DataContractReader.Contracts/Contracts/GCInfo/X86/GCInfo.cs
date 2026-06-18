@@ -73,14 +73,14 @@ public record X86GCInfo : IGCInfoDecoder
     /// The untracked frame variable table, always-live GC frame slots.
     /// Decoded lazily on first access.
     /// </summary>
-    public ImmutableArray<UntrackedSlot> UntrackedSlots => _untrackedSlots.Value;
+    internal ImmutableArray<UntrackedSlot> UntrackedSlots => _untrackedSlots.Value;
     private readonly Lazy<ImmutableArray<UntrackedSlot>> _untrackedSlots;
 
     /// <summary>
     /// The frame variable lifetime (VarPtr) table, per-offset-range tracked GC variables.
     /// Decoded lazily on first access. Empty for non-EBP frames (only EBP frames track variables this way).
     /// </summary>
-    public ImmutableArray<VarPtrLifetime> VarPtrLifetimes => _varPtrLifetimes.Value;
+    internal ImmutableArray<VarPtrLifetime> VarPtrLifetimes => _varPtrLifetimes.Value;
     private readonly Lazy<ImmutableArray<VarPtrLifetime>> _varPtrLifetimes;
 
     public X86GCInfo(Target target, TargetPointer gcInfoAddress, uint gcInfoVersion, uint relativeOffset = 0)
@@ -335,7 +335,7 @@ public record X86GCInfo : IGCInfoDecoder
 
         // Each entry is three unsigned varints: (varOffs, begOffs, endOffs).
         // varOffs is absolute; begOffs is delta-from-previous-begOffs; endOffs is delta-from-begOffs.
-        // Low 2 bits of varOffs hold flags (byref=0x1, this=0x2 -- NOT pinned for tracked locals).
+        // Low 2 bits of varOffs are flags matching LiveSlot.GcFlags (0x1 = byref/interior, 0x2 = pinned).
         // Reference: gc_unwind_x86.inl varPtrTable processing and
         // ILCompiler.Reflection.ReadyToRun/x86/GcSlotTable.cs (DecodeFrameVariableLifetimeTable).
         ImmutableArray<VarPtrLifetime>.Builder builder = ImmutableArray.CreateBuilder<VarPtrLifetime>((int)Header.VarPtrTableSize);
@@ -536,6 +536,11 @@ public record X86GCInfo : IGCInfoDecoder
         // (3) Live registers and pushed pointer args from the transition stream.
         EnumerateTransitionLiveSlots(instructionOffset, options, result, SP_REL);
 
+        // ReportFPBasedSlotsOnly: drop register slots and any stack slot that isn't
+        // frame-register-relative. Mirrors GCInfoDecoder.ReportSlot.
+        if (options.ReportFPBasedSlotsOnly)
+            result.RemoveAll(s => s.IsRegister || s.SpBase != FRAMEREG_REL);
+
         return result;
     }
 
@@ -652,7 +657,7 @@ public record X86GCInfo : IGCInfoDecoder
         // the highest offset; the last push at offset 0.
         foreach (KeyValuePair<int, uint> pushed in pushedPtrs)
         {
-            int spOffset = (depthSlots - 1 - pushed.Key) * 4;
+            int spOffset = (depthSlots - 1 - pushed.Key) * (int)_target.PointerSize;
             result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: spOffset, SpBase: spRelBase, GcFlags: pushed.Value));
         }
 
@@ -686,7 +691,7 @@ public record X86GCInfo : IGCInfoDecoder
                     if ((argMask & 1) != 0)
                     {
                         uint gcFlags = (iargMask & 1) != 0 ? 0x1u : 0u;
-                        result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: i * 4, SpBase: spRelBase, GcFlags: gcFlags));
+                        result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: i * (int)_target.PointerSize, SpBase: spRelBase, GcFlags: gcFlags));
                     }
                     argMask >>= 1;
                     iargMask >>= 1;
@@ -787,7 +792,7 @@ public record X86GCInfo : IGCInfoDecoder
 /// <param name="StackOffset">Frame-relative byte offset of the slot.</param>
 /// <param name="IsEbpRelative">True if <see cref="StackOffset"/> is EBP-relative; false if ESP-relative.</param>
 /// <param name="LowBits">Raw flag bits from the encoded offset (0x1 = byref/interior, 0x2 = pinned).</param>
-public readonly record struct UntrackedSlot(int StackOffset, bool IsEbpRelative, uint LowBits);
+internal readonly record struct UntrackedSlot(int StackOffset, bool IsEbpRelative, uint LowBits);
 
 /// <summary>
 /// A tracked GC frame variable with a per-offset lifetime range (entry of the
@@ -799,4 +804,4 @@ public readonly record struct UntrackedSlot(int StackOffset, bool IsEbpRelative,
 /// <param name="EndOffset">Exclusive code offset at which the slot becomes dead.</param>
 /// <param name="StackOffset">Frame-relative byte offset of the slot (EBP-relative on EBP frames, ESP-relative otherwise).</param>
 /// <param name="LowBits">Raw flag bits from the encoded offset (0x1 = byref/interior, 0x2 = pinned).</param>
-public readonly record struct VarPtrLifetime(uint BeginOffset, uint EndOffset, int StackOffset, uint LowBits);
+internal readonly record struct VarPtrLifetime(uint BeginOffset, uint EndOffset, int StackOffset, uint LowBits);

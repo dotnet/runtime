@@ -628,6 +628,8 @@ Sources of live slots:
 - **Live registers** — accumulated from the LIVE/DEAD transition stream up to the queried offset. Callee-saved registers (EBX/EBP/ESI/EDI) are reported when execution will continue; callee-trashed scratch (EAX/ECX/EDX) is reported only on the active leaf frame. On non-leaf frames register liveness is evaluated at the instruction *before* the call (`regOffset = instructionOffset - 1`) since liveness can change across calls.
 - **Pushed pointer args** — for fully-interruptible code, accumulated from the PUSH/POP transition stream and emitted as positive SP-relative offsets at emit time once final depth is known (`addr = ESP_call + (finalDepth - 1 - pushIndex) * 4`, mirroring `pPendingArgFirst - i * sizeof(DWORD)`). For partially-interruptible call sites, taken directly from the matching `GcTransitionCall`: explicit per-pointer offsets in the huge (0xFB) encoding, or a uint32 bitmap (`ArgMask` / `IArgs`) walked low-to-high with `addr = ESP + i * sizeof(DWORD)` for the tiny / small / medium / large encodings.
 
+When `ReportFPBasedSlotsOnly` is set, the result list is filtered to drop register slots and any stack slot whose base is not the frame register (matching `GCInfoDecoder.ReportSlot`).
+
 ### Deferred edges
 
 These do not affect the GC root scan / `WalkStackReferences` path validated by the cDAC stress suite, but are noted for future work:
