@@ -107,26 +107,28 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 }
 
 //------------------------------------------------------------------------
-// emitIns_BaseGlobal: Emit a 'global.get'/'global.set' of a well-known base global as a
+// emitIns_BaseGlobalGet: Emit a 'global.get' of a well-known base global as a
 // WASM_GLOBAL_INDEX_LEB relocation against that base global's symbol.
 //
 // Arguments:
-//   ins              - INS_global_get or INS_global_set
 //   baseGlobalIndex  - the fixed wasm global index of the base global (0/1/2)
 //
 // Notes:
+//   The JIT only ever reads these base globals (the shadow stack pointer is read once at the root
+//   frame and then threaded through locals; the image base and table base are immutable relocation
+//   bases set by the loader), so only 'global.get' is supported.
 //   The bare immediate is replaced by a maximally-padded, relocatable global index. The object
 //   writer resolves the relocation to the final global index: crossgen2/R2R self-resolves it back
 //   to the same fixed index, while a relocatable NativeAOT object leaves it for wasm-ld to assign.
 //   The relocation target is encoded as the fixed index; the EE (recordRelocation) maps it to the
 //   corresponding base global symbol.
 //
-void emitter::emitIns_BaseGlobal(instruction ins, unsigned baseGlobalIndex)
+void emitter::emitIns_BaseGlobalGet(unsigned baseGlobalIndex)
 {
-    assert((ins == INS_global_get) || (ins == INS_global_set));
+    assert(baseGlobalIndex <= WASM_TABLE_BASE_GLOBAL);
 
     instrDesc* id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)baseGlobalIndex);
-    id->idIns(ins);
+    id->idIns(INS_global_get);
     id->idInsFmt(IF_GLOBALIDX);
 
     dispIns(id);
@@ -222,7 +224,7 @@ bool emitter::emitInsIsStore(instruction ins)
 void emitter::emitAddressConstant(void* address)
 {
     // Load our module base from the image base global, then load our address constant, then sum them.
-    emitIns_BaseGlobal(INS_global_get, WASM_IMAGE_BASE_GLOBAL);
+    emitIns_BaseGlobalGet(WASM_IMAGE_BASE_GLOBAL);
     emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
     emitIns(INS_i32_add);
 }
@@ -230,7 +232,7 @@ void emitter::emitAddressConstant(void* address)
 void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
 {
     // Load our table base, then load our funclet pointer offset, then sum them.
-    emitIns_BaseGlobal(INS_global_get, WASM_TABLE_BASE_GLOBAL);
+    emitIns_BaseGlobalGet(WASM_TABLE_BASE_GLOBAL);
     emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
     emitIns(INS_i32_add);
 }
