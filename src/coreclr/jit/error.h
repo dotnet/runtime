@@ -122,11 +122,6 @@ extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const c
 // supported by our current implementation because of various
 // limitations (that could be removed in the future)
 #define IMPL_LIMITATION(msg) (debugError(msg, __FILE__, __LINE__), implLimitation())
-#ifdef TARGET_WASM
-#define WASM_IMPL_LIMITATION(msg) IMPL_LIMITATION(msg)
-#else
-#define WASM_IMPL_LIMITATION(msg)
-#endif // TARGET_WASM
 
 #else // !DEBUG
 
@@ -138,11 +133,6 @@ extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const c
 // supported by our current implementation because of various
 // limitations (that could be removed in the future)
 #define IMPL_LIMITATION(msg) implLimitation()
-#ifdef TARGET_WASM
-#define WASM_IMPL_LIMITATION(msg) IMPL_LIMITATION(msg)
-#else
-#define WASM_IMPL_LIMITATION(msg)
-#endif // TARGET_WASM
 
 #define noway_assert(cond)                                                                                             \
     do                                                                                                                 \
