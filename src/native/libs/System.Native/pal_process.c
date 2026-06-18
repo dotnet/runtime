@@ -226,7 +226,7 @@ handler_from_sigaction (struct sigaction *sa)
     }
     else
     {
-        return sa->sa_handler;
+        return (VoidIntFn)sa->sa_handler;
     }
 }
 
@@ -845,7 +845,10 @@ static int32_t ForkAndExecProcessInternal(
         struct sigaction sa_default;
         struct sigaction sa_old;
         memset(&sa_default, 0, sizeof(sa_default)); // On some architectures, sa_mask is a struct so assigning zero to it doesn't compile
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wstrict-prototypes"
         sa_default.sa_handler = SIG_DFL;
+    #pragma clang diagnostic pop
         for (int sig = 1; sig < NSIG; ++sig)
         {
             if (sig == SIGKILL || sig == SIGSTOP)
@@ -855,7 +858,12 @@ static int32_t ForkAndExecProcessInternal(
             if (!sigaction(sig, NULL, &sa_old))
             {
                 void (*oldhandler)(int) = handler_from_sigaction (&sa_old);
-                if (oldhandler != SIG_IGN && oldhandler != SIG_DFL)
+                bool hasCustomHandler;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wstrict-prototypes"
+                hasCustomHandler = oldhandler != SIG_IGN && oldhandler != SIG_DFL;
+#pragma clang diagnostic pop
+                if (hasCustomHandler)
                 {
                     // It has a custom handler, put the default handler back.
                     // We check first to preserve flags on default handlers.

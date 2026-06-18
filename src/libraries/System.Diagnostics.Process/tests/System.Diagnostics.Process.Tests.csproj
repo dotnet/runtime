@@ -44,6 +44,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="SafeProcessHandleTests.cs" />
     <Compile Include="PseudoTerminalTests.cs" />
+    <Compile Include="StartSuspendedTests.cs" />
     <Compile Include="ProcessOpenTests.cs" />
     <Compile Include="KillOnParentExitTests.cs" />
   </ItemGroup>

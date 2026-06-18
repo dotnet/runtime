@@ -95,9 +95,7 @@ public struct DacDbiTypeRefData
 [StructLayout(LayoutKind.Sequential)]
 public struct DacDbiSharedReJitInfo
 {
-    public uint state;
     public ulong pbIL;
-    public uint dwCodegenFlags;
     public uint cInstrumentedMapEntries;
     public ulong rgInstrumentedMapEntries;
 }
@@ -276,6 +274,15 @@ public struct DebuggerIPCE_BasicTypeData
     [FieldOffset(16)] public ulong vmTypeHandle;   // VMPTR_TypeHandle (Portable<CORDB_ADDRESS>)
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct EnCHangingFieldInfo
+{
+    public DebuggerIPCE_BasicTypeData objectTypeData;
+    public ulong vmObject;
+    public uint offsetToVars;
+    public uint fldToken;
+}
+
 // Matches native DebuggerIPCE_ExpandedTypeData layout (40 bytes).
 // Contains a union at offset 8 (4 bytes of padding after elementType to align the
 // 8-byte VMPTR fields inside the union). All fields are stored in little-endian format.
@@ -411,7 +418,7 @@ public unsafe partial interface IDacDbiInterface
     int GetModuleForAssembly(ulong vmAssembly, ulong* pModule, Interop.BOOL* pIsModuleLoaded);
 
     [PreserveSig]
-    int GetAddressType(ulong address, int* pRetVal);
+    int IsManagedCode(ulong address, Interop.BOOL* pIsManaged);
 
     [PreserveSig]
     int GetCompilerFlags(ulong vmAssembly, Interop.BOOL* pfAllowJITOpts, Interop.BOOL* pfEnableEnC);
@@ -598,7 +605,7 @@ public unsafe partial interface IDacDbiInterface
     int GetCollectibleTypeStaticAddress(ulong vmField, ulong* pRetVal);
 
     [PreserveSig]
-    int GetEnCHangingFieldInfo(nint pEnCFieldInfo, nint pFieldData, Interop.BOOL* pfStatic);
+    int GetEnCHangingFieldInfo(EnCHangingFieldInfo* pEnCFieldInfo, FieldData* pFieldData);
 
     [PreserveSig]
     int EnumerateTypeHandleParams(ulong vmTypeHandle,
