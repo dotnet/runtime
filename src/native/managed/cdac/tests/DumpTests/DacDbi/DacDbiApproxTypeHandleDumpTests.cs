@@ -162,7 +162,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
             case CorElementType.SzArray:
             case CorElementType.Ptr:
             case CorElementType.Byref:
-                pSelf->numTypeArgs = 1;
+                pSelf->numTypeArgs = BitConverter.IsLittleEndian ? 1u : System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(1u);
                 FillTypeNodes(dbi, rts, rts.GetTypeParam(th), nodes, ref idx);
                 break;
 
@@ -170,7 +170,8 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
             case CorElementType.ValueType:
                 {
                     ReadOnlySpan<TypeHandle> inst = rts.GetInstantiation(th);
-                    pSelf->numTypeArgs = (uint)inst.Length;
+                    uint numTypeArgs = (uint)inst.Length;
+                    pSelf->numTypeArgs = BitConverter.IsLittleEndian ? numTypeArgs : System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(numTypeArgs);
                     for (int i = 0; i < inst.Length; i++)
                         FillTypeNodes(dbi, rts, inst[i], nodes, ref idx);
                     break;
