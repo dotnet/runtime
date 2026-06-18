@@ -149,8 +149,9 @@ namespace System.Net.Sockets
 
             // _currentOutgoingConnectAttempts tracks managed Connect calls. A non-blocking Connect call
             // can return WouldBlock (Windows) or InProgress (Unix) while the OS connect attempt remains
-            // pending after this method decrements that counter; its eventual outcome is not observable
-            // here. Don't report these pending results as failures.
+            // pending after this method returns. That later result may be observed by Socket when it
+            // checks whether the pending non-blocking connect completed, but it is not available to this
+            // synchronous Connect telemetry callback. Don't report these pending results as failures.
             bool connectPending = error is SocketError.WouldBlock or SocketError.InProgress;
 
             if (activity is not null)
