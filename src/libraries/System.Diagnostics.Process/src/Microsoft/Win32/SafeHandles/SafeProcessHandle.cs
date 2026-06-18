@@ -217,7 +217,15 @@ namespace Microsoft.Win32.SafeHandles
         /// <exception cref="Win32Exception">The thread could not be resumed.</exception>
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("macos")]
-        public void Resume() => ResumeCore();
+        public void Resume()
+        {
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            ResumeCore();
+        }
 
         /// <summary>
         /// Sends a request to the OS to terminate the process.

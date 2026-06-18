@@ -16,7 +16,7 @@ internal static partial class Interop
             string filename, string[] argv, IDictionary<string, string?> env, string? cwd,
             bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, SafeFileHandle? stdinFd, SafeFileHandle? stdoutFd, SafeFileHandle? stderrFd,
-            bool startDetached, bool killOnParentExit, bool startSuspended, SafeHandle[]? inheritedHandles = null)
+            ProcessStartInfo startInfo, SafeHandle[]? inheritedHandles = null)
         {
             byte** argvPtr = null, envpPtr = null;
             int result = -1;
@@ -71,11 +71,13 @@ internal static partial class Interop
                 fixed (uint* pGroups = groups)
                 fixed (int* pInheritedFds = inheritedFds)
                 {
+#pragma warning disable CA1416 // StartDetached/KillOnParentExit/StartSuspended getters work on all platforms; StartSuspended is handled natively on macOS, no-op elsewhere
                     result = ForkAndExecProcess(
                         filename, argvPtr, envpPtr, cwd,
                         setUser ? 1 : 0, userId, groupId, pGroups, groups?.Length ?? 0,
                         out lpChildPid, stdinRawFd, stdoutRawFd, stderrRawFd,
-                        pInheritedFds, inheritedFdCount, startDetached ? 1 : 0, killOnParentExit ? 1 : 0, startSuspended ? 1 : 0);
+                        pInheritedFds, inheritedFdCount, startInfo.StartDetached ? 1 : 0, startInfo.KillOnParentExit ? 1 : 0, startInfo.StartSuspended ? 1 : 0);
+#pragma warning restore CA1416
                 }
                 return result == 0 ? 0 : Marshal.GetLastPInvokeError();
             }

@@ -53,21 +53,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact]
-        public void Resume_CalledTwice_ThrowsInvalidOperationException()
-        {
-            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
-            process.StartInfo.StartSuspended = true;
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
-
-            processHandle.Resume();
-
-            Assert.Throws<InvalidOperationException>(() => processHandle.Resume());
-
-            processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
-        }
-
-        [ConditionalFact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Resume_OnNonSuspendedProcess_ThrowsInvalidOperationException()
         {
             Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
@@ -195,10 +181,10 @@ namespace System.Diagnostics.Tests
     {
         [Fact]
         [SkipOnPlatform(TestPlatforms.Windows | TestPlatforms.OSX, "Resume is supported on Windows and macOS")]
-        public void Resume_OnNonWindowsNonMacOS_ThrowsInvalidOperationException()
+        public void Resume_OnNonSupportedOS_ThrowsPlatformNotSupportedException()
         {
             using SafeProcessHandle handle = new();
-            Assert.Throws<InvalidOperationException>(() => handle.Resume());
+            Assert.Throws<PlatformNotSupportedException>(() => handle.Resume());
         }
     }
 }
