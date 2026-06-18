@@ -43,6 +43,10 @@ namespace System.Net
             for (int i = 0; i < _servers.Length; i++)
             {
                 IPEndPoint server = servers[i];
+                if (server is null)
+                {
+                    throw new ArgumentException(SR.net_dns_servers_contains_null, $"{nameof(options)}.{nameof(DnsResolverOptions.Servers)}");
+                }
                 _servers[i] = new IPEndPoint(server.Address, server.Port);
             }
         }

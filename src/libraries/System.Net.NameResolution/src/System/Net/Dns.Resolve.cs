@@ -14,7 +14,7 @@ namespace System.Net
         private static DnsResolver? s_defaultResolver;
 
         private static DnsResolver DefaultResolver =>
-            s_defaultResolver ??= new DnsResolver();
+            LazyInitializer.EnsureInitialized(ref s_defaultResolver, static () => new DnsResolver());
 
         /// <summary>
         /// Resolves the IPv4 (A) and IPv6 (AAAA) addresses for the specified host name using the system-configured DNS servers.

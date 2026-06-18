@@ -648,7 +648,7 @@ namespace System.Net
             {
                 if (servers[i].AddressFamily != family)
                 {
-                    throw new ArgumentException(SR.net_dns_mixed_address_families, nameof(servers));
+                    throw new ArgumentException(SR.net_dns_mixed_address_families, nameof(DnsResolverOptions.Servers));
                 }
             }
 

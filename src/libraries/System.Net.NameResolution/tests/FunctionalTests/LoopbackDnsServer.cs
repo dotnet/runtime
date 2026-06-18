@@ -3,6 +3,7 @@
 
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text;
@@ -34,7 +35,7 @@ namespace System.Net.NameResolution.Tests
         private readonly CancellationTokenSource _cts = new();
         private readonly Task _udpListenTask;
         private readonly Task _tcpListenTask;
-        private readonly Dictionary<(string Name, DnsRecordType Type), ResponseBuilder> _responses = new();
+        private readonly ConcurrentDictionary<(string Name, DnsRecordType Type), ResponseBuilder> _responses = new();
         private int _requestCount;
 
         public IPEndPoint EndPoint { get; }
