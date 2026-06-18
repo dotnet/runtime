@@ -1793,6 +1793,18 @@ void EEJitManager::SetCpuInfo()
     }
 #endif
 
+#if defined(FEATURE_INTERPRETER) && (defined(TARGET_X86) || defined(TARGET_AMD64))
+    if (interpreterOnly)
+    {
+        // The interpreter only supports 128-bit vectors, so clear AVX to let the
+        // dependency resolution below cascade-remove AVX2, AVX512, Vector256 and Vector512
+        // while keeping Vector128 and X86Base, matching the x86-64-v2 ReadyToRun baseline
+        // used for these targets so the reported ISA stays in sync with R2R and the
+        // 128-bit path is taken.
+        CPUCompileFlags.Clear(InstructionSet_AVX);
+    }
+#endif
+
     // These calls are very important as it ensures the flags are consistent with any
     // removals specified above. This includes removing corresponding 64-bit ISAs
     // and any other implications such as SSE2 depending on SSE or AdvSimd on ArmBase
