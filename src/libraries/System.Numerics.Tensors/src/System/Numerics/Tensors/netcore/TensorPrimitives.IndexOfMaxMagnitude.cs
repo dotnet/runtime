@@ -28,6 +28,7 @@ namespace System.Numerics.Tensors
 
         internal readonly struct IndexOfMaxMagnitudeOperator<T> : IIndexOfMinMaxOperator<T> where T : INumber<T>
         {
+            public static bool ShouldEarlyExitOnNan => true;
             public static T Aggregate(Vector128<T> x) => HorizontalAggregate<T, MaxMagnitudeOperator<T>>(x);
             public static T Aggregate(Vector256<T> x) => HorizontalAggregate<T, MaxMagnitudeOperator<T>>(x);
             public static T Aggregate(Vector512<T> x) => HorizontalAggregate<T, MaxMagnitudeOperator<T>>(x);

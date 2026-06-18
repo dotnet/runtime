@@ -11,6 +11,7 @@ namespace System.Numerics.Tensors
     {
         private interface IIndexOfMinMaxOperator<T>
         {
+            static abstract bool ShouldEarlyExitOnNan { get; }
             static abstract T Aggregate(Vector128<T> value);
             static abstract T Aggregate(Vector256<T> value);
             static abstract T Aggregate(Vector512<T> value);
@@ -60,7 +61,7 @@ namespace System.Numerics.Tensors
         {
             T result = x[0];
             int resultIndex = 0;
-            if (T.IsNaN(result))
+            if (TOperator.ShouldEarlyExitOnNan && T.IsNaN(result))
             {
                 return resultIndex;
             }
@@ -68,7 +69,7 @@ namespace System.Numerics.Tensors
             for (int i = 1; i < x.Length; i++)
             {
                 T current = x[i];
-                if (T.IsNaN(current))
+                if (TOperator.ShouldEarlyExitOnNan && T.IsNaN(current))
                 {
                     return i;
                 }
@@ -79,7 +80,7 @@ namespace System.Numerics.Tensors
                 }
             }
 
-            return resultIndex;
+            return !TOperator.ShouldEarlyExitOnNan && T.IsNaN(result) ? -1 : resultIndex;
         }
 
         private static int IndexOfMinMaxVectorized128Size4Plus<T, TOperator, TInt>(ReadOnlySpan<T> x)
@@ -91,7 +92,7 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector128<T> result = Vector128.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
             {
                 Vector128<T> nanMask = IsNaN(result);
                 if (nanMask != Vector128<T>.Zero)
@@ -124,7 +125,7 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                 {
                     Vector128<T> nanMask = IsNaN(current);
                     if (nanMask != Vector128<T>.Zero)
@@ -145,8 +146,14 @@ namespace System.Numerics.Tensors
             {
                 // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
+                if (!TOperator.ShouldEarlyExitOnNan && T.IsNaN(aggResult))
+                {
+                    return -1;
+                }
+
                 Vector128<TInt> aggMask = ~Vector128.Equals(result.As<T, TInt>(), Vector128.Create(aggResult).As<T, TInt>());
                 Vector128<TInt> aggIndex = resultIndex | aggMask;
+
                 return int.CreateTruncating(HorizontalAggregate<TInt, MinOperator<TInt>>(aggIndex));
             }
         }
@@ -158,7 +165,7 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector128<T> result = Vector128.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
             {
                 Vector128<T> nanMask = IsNaN(result);
                 if (nanMask != Vector128<T>.Zero)
@@ -192,7 +199,7 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TOperator.ShouldEarlyExitOnNan && typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
                     Vector128<T> nanMask = IsNaN(current);
                     if (nanMask != Vector128<T>.Zero)
@@ -216,8 +223,12 @@ namespace System.Numerics.Tensors
             {
                 // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
-                Vector128<short> aggMask = ~Vector128.Equals(result.AsInt16(), Vector128.Create(aggResult).AsInt16());
+                if (!TOperator.ShouldEarlyExitOnNan && T.IsNaN(aggResult))
+                {
+                    return -1;
+                }
 
+                Vector128<short> aggMask = ~Vector128.Equals(result.AsInt16(), Vector128.Create(aggResult).AsInt16());
                 (Vector128<int> mask1, Vector128<int> mask2) = Vector128.Widen(aggMask);
                 Vector128<uint> aggIndex = resultIndex1 | mask1.AsUInt32();
                 aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex2 | mask2.AsUInt32());
@@ -233,7 +244,7 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector128<T> result = Vector128.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            if (TOperator.ShouldEarlyExitOnNan && typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
                 Vector128<T> nanMask = IsNaN(result);
                 if (nanMask != Vector128<T>.Zero)
@@ -269,7 +280,7 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                 {
                     Vector128<T> nanMask = IsNaN(current);
                     if (nanMask != Vector128<T>.Zero)
@@ -299,8 +310,12 @@ namespace System.Numerics.Tensors
             {
                 // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
-                Vector128<sbyte> aggMask = ~Vector128.Equals(result.AsSByte(), Vector128.Create(aggResult).AsSByte());
+                if (!TOperator.ShouldEarlyExitOnNan && T.IsNaN(aggResult))
+                {
+                    return -1;
+                }
 
+                Vector128<sbyte> aggMask = ~Vector128.Equals(result.AsSByte(), Vector128.Create(aggResult).AsSByte());
                 (Vector128<short> lowerMask, Vector128<short> upperMask) = Vector128.Widen(aggMask);
                 (Vector128<int> mask1, Vector128<int> mask2) = Vector128.Widen(lowerMask);
                 (Vector128<int> mask3, Vector128<int> mask4) = Vector128.Widen(upperMask);
@@ -322,7 +337,7 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector256<T> result = Vector256.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
             {
                 Vector256<T> nanMask = IsNaN(result);
                 if (nanMask != Vector256<T>.Zero)
@@ -355,7 +370,7 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                 {
                     Vector256<T> nanMask = IsNaN(current);
                     if (nanMask != Vector256<T>.Zero)
@@ -376,8 +391,14 @@ namespace System.Numerics.Tensors
             {
                 // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
+                if (!TOperator.ShouldEarlyExitOnNan && T.IsNaN(aggResult))
+                {
+                    return -1;
+                }
+
                 Vector256<TInt> aggMask = ~Vector256.Equals(result.As<T, TInt>(), Vector256.Create(aggResult).As<T, TInt>());
                 Vector256<TInt> aggIndex = resultIndex | aggMask;
+
                 return int.CreateTruncating(HorizontalAggregate<TInt, MinOperator<TInt>>(aggIndex));
             }
         }
@@ -389,7 +410,7 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector256<T> result = Vector256.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
             {
                 Vector256<T> nanMask = IsNaN(result);
                 if (nanMask != Vector256<T>.Zero)
@@ -423,7 +444,7 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                 {
                     Vector256<T> nanMask = IsNaN(current);
                     if (nanMask != Vector256<T>.Zero)
@@ -447,8 +468,12 @@ namespace System.Numerics.Tensors
             {
                 // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
-                Vector256<short> aggMask = ~Vector256.Equals(result.AsInt16(), Vector256.Create(aggResult).AsInt16());
+                if (!TOperator.ShouldEarlyExitOnNan && T.IsNaN(aggResult))
+                {
+                    return -1;
+                }
 
+                Vector256<short> aggMask = ~Vector256.Equals(result.AsInt16(), Vector256.Create(aggResult).AsInt16());
                 (Vector256<int> mask1, Vector256<int> mask2) = Vector256.Widen(aggMask);
                 Vector256<uint> aggIndex = resultIndex1 | mask1.AsUInt32();
                 aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex2 | mask2.AsUInt32());
@@ -464,7 +489,7 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector256<T> result = Vector256.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
             {
                 Vector256<T> nanMask = IsNaN(result);
                 if (nanMask != Vector256<T>.Zero)
@@ -500,7 +525,7 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                 {
                     Vector256<T> nanMask = IsNaN(current);
                     if (nanMask != Vector256<T>.Zero)
@@ -530,8 +555,12 @@ namespace System.Numerics.Tensors
             {
                 // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
-                Vector256<sbyte> aggMask = ~Vector256.Equals(result.AsSByte(), Vector256.Create(aggResult).AsSByte());
+                if (!TOperator.ShouldEarlyExitOnNan && T.IsNaN(aggResult))
+                {
+                    return -1;
+                }
 
+                Vector256<sbyte> aggMask = ~Vector256.Equals(result.AsSByte(), Vector256.Create(aggResult).AsSByte());
                 (Vector256<short> lowerMask, Vector256<short> upperMask) = Vector256.Widen(aggMask);
                 (Vector256<int> mask1, Vector256<int> mask2) = Vector256.Widen(lowerMask);
                 (Vector256<int> mask3, Vector256<int> mask4) = Vector256.Widen(upperMask);
@@ -553,7 +582,7 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector512<T> result = Vector512.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
             {
                 Vector512<T> nanMask = IsNaN(result);
                 if (nanMask != Vector512<T>.Zero)
@@ -586,7 +615,7 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                 {
                     Vector512<T> nanMask = IsNaN(current);
                     if (nanMask != Vector512<T>.Zero)
@@ -607,8 +636,14 @@ namespace System.Numerics.Tensors
             {
                 // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
+                if (!TOperator.ShouldEarlyExitOnNan && T.IsNaN(aggResult))
+                {
+                    return -1;
+                }
+
                 Vector512<TInt> aggMask = ~Vector512.Equals(result.As<T, TInt>(), Vector512.Create(aggResult).As<T, TInt>());
                 Vector512<TInt> aggIndex = resultIndex | aggMask;
+
                 return int.CreateTruncating(HorizontalAggregate<TInt, MinOperator<TInt>>(aggIndex));
             }
         }
@@ -620,7 +655,7 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector512<T> result = Vector512.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
             {
                 Vector512<T> nanMask = IsNaN(result);
                 if (nanMask != Vector512<T>.Zero)
@@ -654,7 +689,7 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                 {
                     Vector512<T> nanMask = IsNaN(current);
                     if (nanMask != Vector512<T>.Zero)
@@ -678,8 +713,12 @@ namespace System.Numerics.Tensors
             {
                 // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
-                Vector512<short> aggMask = ~Vector512.Equals(result.AsInt16(), Vector512.Create(aggResult).AsInt16());
+                if (!TOperator.ShouldEarlyExitOnNan && T.IsNaN(aggResult))
+                {
+                    return -1;
+                }
 
+                Vector512<short> aggMask = ~Vector512.Equals(result.AsInt16(), Vector512.Create(aggResult).AsInt16());
                 (Vector512<int> mask1, Vector512<int> mask2) = Vector512.Widen(aggMask);
                 Vector512<uint> aggIndex = resultIndex1 | mask1.AsUInt32();
                 aggIndex = MinOperator<uint>.Invoke(aggIndex, resultIndex2 | mask2.AsUInt32());
@@ -695,7 +734,7 @@ namespace System.Numerics.Tensors
 
             // Initialize result by reading first vector and quick return if possible.
             Vector512<T> result = Vector512.Create(x);
-            if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
             {
                 Vector512<T> nanMask = IsNaN(result);
                 if (nanMask != Vector512<T>.Zero)
@@ -731,7 +770,7 @@ namespace System.Numerics.Tensors
                 }
 
                 // Quick return if possible.
-                if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                if (TOperator.ShouldEarlyExitOnNan && (typeof(T) == typeof(float) || typeof(T) == typeof(double)))
                 {
                     Vector512<T> nanMask = IsNaN(current);
                     if (nanMask != Vector512<T>.Zero)
@@ -761,8 +800,12 @@ namespace System.Numerics.Tensors
             {
                 // Where result does not bitwise-equal the aggregate min/max value; replace indices with uint.MaxValue. Then find the min index.
                 T aggResult = TOperator.Aggregate(result);
-                Vector512<sbyte> aggMask = ~Vector512.Equals(result.AsSByte(), Vector512.Create(aggResult).AsSByte());
+                if (!TOperator.ShouldEarlyExitOnNan && T.IsNaN(aggResult))
+                {
+                    return -1;
+                }
 
+                Vector512<sbyte> aggMask = ~Vector512.Equals(result.AsSByte(), Vector512.Create(aggResult).AsSByte());
                 (Vector512<short> lowerMask, Vector512<short> upperMask) = Vector512.Widen(aggMask);
                 (Vector512<int> mask1, Vector512<int> mask2) = Vector512.Widen(lowerMask);
                 (Vector512<int> mask3, Vector512<int> mask4) = Vector512.Widen(upperMask);
