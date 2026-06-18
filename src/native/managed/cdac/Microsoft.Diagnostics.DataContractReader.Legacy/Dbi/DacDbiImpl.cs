@@ -4139,11 +4139,12 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         int hr = HResults.S_OK;
         RefWalk? walk = null;
-        *pHandle = 0;
         try
         {
             if (pHandle is null)
                 throw new NullReferenceException(nameof(pHandle));
+
+            *pHandle = 0;
             walk = new RefWalk(_target, walkStacks != Interop.BOOL.FALSE, handleWalkMask);
             *pHandle = (nuint)((IEnum<DacGcReference>)walk).GetHandle();
         }
