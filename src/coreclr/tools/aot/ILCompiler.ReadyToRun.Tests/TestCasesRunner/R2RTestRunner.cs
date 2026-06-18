@@ -33,8 +33,16 @@ internal sealed class CompiledAssembly
     /// </summary>
     public List<CompiledAssembly> References { get; init; } = new();
 
+    /// <summary>
+    /// Optional subdirectory under the per-test <c>IL/</c> output folder. Use this to disambiguate
+    /// the output path when several assemblies share the same <see cref="AssemblyName"/> (for example
+    /// two versions of one assembly built for a reference-conflict test). Defaults to none, placing
+    /// the assembly directly under <c>IL/</c>.
+    /// </summary>
+    public string? OutputSubdirectory { get; init; }
+
     private string? _outputDir = null;
-    public string FilePath => _outputDir != null ? Path.Combine(_outputDir, "IL", AssemblyName + ".dll")
+    public string FilePath => _outputDir != null ? Path.Combine(_outputDir, "IL", OutputSubdirectory ?? "", AssemblyName + ".dll")
         : throw new InvalidOperationException("Output directory not set");
 
     public void SetOutputDir(string outputDir)
@@ -93,6 +101,14 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     /// Optional validator for this compilation's R2R output image.
     /// </summary>
     public Action<ReadyToRunReader>? Validate { get; init; }
+
+    /// <summary>
+    /// Optional validator for this compilation's crossgen2 result (exit code and console output).
+    /// Use this to assert on diagnostics crossgen2 writes to stdout/stderr (e.g. warnings), as
+    /// opposed to <see cref="Validate"/> which inspects the emitted R2R image. When set, the runner
+    /// does not auto-assert success, so the validator fully owns result validation.
+    /// </summary>
+    public Action<R2RCompilationResult>? ValidateResult { get; init; }
 
     public string Name => name;
 
@@ -201,7 +217,7 @@ internal sealed class R2RTestRunner
         try
         {
             // Step 1: Compile all assemblies with Roslyn in order
-            var assemblyPaths = CompileAllAssemblies(assembliesToCompile);
+            CompileAllAssemblies(assembliesToCompile);
 
             // Step 2: Run each crossgen2 compilation and validate
             var driver = new R2RDriver(_output, _paths);
@@ -209,11 +225,21 @@ internal sealed class R2RTestRunner
 
             foreach(var compilation in testCase.Compilations)
             {
-                string outputPath = RunCrossgenCompilation(
-                    testCase.Name, compilation, driver, compilation.FilePath, refPaths, assemblyPaths);
+                R2RCompilationResult result = RunCrossgenCompilation(
+                    testCase.Name, compilation, driver, refPaths);
 
-                if (compilation.Validate is not null)
+                if (compilation.ValidateResult is not null)
                 {
+                    _output.WriteLine($"  Validating crossgen2 result (exit code {result.ExitCode})");
+                    compilation.ValidateResult(result);
+                }
+
+                // Only inspect the emitted image when the compilation actually produced one. A test
+                // may legitimately pair ValidateResult with an expected failure (no image written),
+                // in which case there is nothing to read here.
+                if (compilation.Validate is not null && result.Success)
+                {
+                    string outputPath = compilation.FilePath;
                     Assert.True(File.Exists(outputPath), $"R2R image not found: {outputPath}");
                     _output.WriteLine($"  Validating R2R image: {outputPath}");
                     var reader = new ReadyToRunReader(new SimpleAssemblyResolver(_paths), outputPath);
@@ -266,14 +292,13 @@ internal sealed class R2RTestRunner
         }
     }
 
-    private static string RunCrossgenCompilation(
+    private static R2RCompilationResult RunCrossgenCompilation(
         string testName,
         CrossgenCompilation compilation,
         R2RDriver driver,
-        string outputFile,
-        List<string> refPaths,
-        Dictionary<string, string> assemblyPaths)
+        List<string> refPaths)
     {
+        string outputFile = compilation.FilePath;
         var args = new List<string>();
 
         var inputFiles = new List<string>();
@@ -281,10 +306,9 @@ internal sealed class R2RTestRunner
         foreach (var asm in compilation.Assemblies)
         {
             var ilAssemblyName = asm.ILAssembly.AssemblyName;
-            Assert.True(assemblyPaths.ContainsKey(ilAssemblyName),
-                $"Assembly '{ilAssemblyName}' not found in compiled assemblies.");
-
             string ilPath = asm.ILAssembly.FilePath;
+            Assert.True(File.Exists(ilPath),
+                $"Compiled assembly '{ilAssemblyName}' not found at '{ilPath}'.");
 
             if (asm.Kind == Crossgen2InputKind.InputAssembly)
             {
@@ -320,10 +344,16 @@ internal sealed class R2RTestRunner
         args.Add($"--out");
         args.Add($"{outputFile}");
         var result = driver.Compile(args);
-        Assert.True(result.Success,
-            $"crossgen2 failed for '{testName}':\n{result.StandardError}\n{result.StandardOutput}");
 
-        return outputFile;
+        // When a test provides its own result validator it fully owns success/failure checking
+        // (e.g. asserting a warning was emitted while the compilation still succeeds).
+        if (compilation.ValidateResult is null)
+        {
+            Assert.True(result.Success,
+                $"crossgen2 failed for '{testName}':\n{result.StandardError}\n{result.StandardOutput}");
+        }
+
+        return result;
     }
 
     private static void AddRefArgs(List<string> args, List<string> refPaths)

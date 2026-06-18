@@ -87,6 +87,10 @@ internal sealed class R2RTestCaseCompiler
             new CSharpCompilationOptions(outputKind)
                 .WithOptimizationLevel(OptimizationLevel.Release)
                 .WithAllowUnsafe(true)
+                // Deterministic emit makes the module MVID a function of the inputs, so compiling
+                // identical sources twice yields byte-identical assemblies. Tests rely on this to
+                // produce same-identity (no conflict) vs. different-identity references.
+                .WithDeterministic(true)
                 .WithNullableContextOptions(NullableContextOptions.Enable));
 
         EmitResult result = compilation.Emit(outputPath);
