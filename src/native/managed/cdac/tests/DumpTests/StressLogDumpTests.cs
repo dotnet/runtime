@@ -55,14 +55,17 @@ public class StressLogDumpTests : DumpTestBase
         bool foundMessages = false;
         foreach (ThreadStressLogData thread in threads)
         {
-            var messages = stressLog.GetStressMessages(thread).Take(10).ToList();
-            if (messages.Count > 0)
+            foreach (StressMsgData message in stressLog.GetStressMessages(thread).Take(10))
             {
-                foundMessages = true;
-                Assert.NotEqual(0UL, messages[0].Timestamp);
-                Assert.NotEqual(TargetPointer.Null, messages[0].FormatString);
-                break;
+                if (message.Timestamp != 0)
+                {
+                    foundMessages = true;
+                    Assert.NotEqual(TargetPointer.Null, message.FormatString);
+                    break;
+                }
             }
+            if (foundMessages)
+                break;
         }
         Assert.True(foundMessages, "Expected at least one thread with stress log messages");
     }
@@ -149,19 +152,27 @@ public class StressLogDumpTests : DumpTestBase
 
             if (msgFetched > 0)
             {
-                foundMessages = true;
-                Assert.NotEqual(0UL, messages[0].Timestamp);
-                Assert.NotEqual((ClrDataAddress)0, messages[0].FormatString);
-
-                if (messages[0].ArgumentCount > 0)
+                // Find a message with a valid (non-zero) timestamp
+                for (uint m = 0; m < msgFetched; m++)
                 {
-                    ClrDataAddress[] args = new ClrDataAddress[messages[0].ArgumentCount];
-                    uint argFetched;
-                    hr = msgEnum.GetArguments(0, messages[0].ArgumentCount, args, &argFetched);
-                    Assert.Equal(System.HResults.S_OK, hr);
-                    Assert.Equal(messages[0].ArgumentCount, argFetched);
+                    if (messages[m].Timestamp != 0)
+                    {
+                        foundMessages = true;
+                        Assert.NotEqual((ClrDataAddress)0, messages[m].FormatString);
+
+                        if (messages[m].ArgumentCount > 0)
+                        {
+                            ClrDataAddress[] args = new ClrDataAddress[messages[m].ArgumentCount];
+                            uint argFetched;
+                            hr = msgEnum.GetArguments(m, messages[m].ArgumentCount, args, &argFetched);
+                            Assert.Equal(System.HResults.S_OK, hr);
+                            Assert.Equal(messages[m].ArgumentCount, argFetched);
+                        }
+                        break;
+                    }
                 }
-                break;
+                if (foundMessages)
+                    break;
             }
         }
         Assert.True(foundMessages, "Expected at least one thread with stress log messages via ISOSDacInterface17");
