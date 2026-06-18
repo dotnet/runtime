@@ -244,6 +244,9 @@ CDAC_TYPE_FIELD(SyncBlock, TYPE(ObjectHandle), Lock, cdac_data<SyncBlock>::Lock)
 CDAC_TYPE_FIELD(SyncBlock, T_UINT32, ThinLock, cdac_data<SyncBlock>::ThinLock)
 CDAC_TYPE_FIELD(SyncBlock, T_POINTER, LinkNext, cdac_data<SyncBlock>::LinkNext)
 CDAC_TYPE_FIELD(SyncBlock, T_UINT32, HashCode, cdac_data<SyncBlock>::HashCode)
+#ifdef FEATURE_METADATA_UPDATER
+CDAC_TYPE_FIELD(SyncBlock, T_POINTER, EnCInfo, cdac_data<SyncBlock>::EnCInfo)
+#endif // FEATURE_METADATA_UPDATER
 CDAC_TYPE_END(SyncBlock)
 
 
@@ -334,9 +337,33 @@ CDAC_TYPE_END(EnCEEClassData)
 
 CDAC_TYPE_BEGIN(EnCAddedFieldElement)
 CDAC_TYPE_INDETERMINATE(EnCAddedFieldElement)
-CDAC_TYPE_FIELD(EnCAddedFieldElement, T_POINTER, Next, cdac_data<EnCAddedFieldElement>::Next)
-CDAC_TYPE_FIELD(EnCAddedFieldElement, T_POINTER, FieldDesc, cdac_data<EnCAddedFieldElement>::FieldDesc)
+CDAC_TYPE_FIELD(EnCAddedFieldElement, T_POINTER, Next, offsetof(EnCAddedFieldElement, m_next))
+CDAC_TYPE_FIELD(EnCAddedFieldElement, T_POINTER, FieldDesc, offsetof(EnCAddedFieldElement, m_fieldDesc))
 CDAC_TYPE_END(EnCAddedFieldElement)
+
+CDAC_TYPE_BEGIN(EnCFieldDesc)
+CDAC_TYPE_INDETERMINATE(EnCFieldDesc)
+CDAC_TYPE_FIELD(EnCFieldDesc, T_INT32, NeedsFixup, cdac_data<EnCFieldDesc>::NeedsFixup)
+CDAC_TYPE_FIELD(EnCFieldDesc, T_POINTER, StaticFieldData, cdac_data<EnCFieldDesc>::StaticFieldData)
+CDAC_TYPE_END(EnCFieldDesc)
+
+CDAC_TYPE_BEGIN(EnCAddedField)
+CDAC_TYPE_INDETERMINATE(EnCAddedField)
+CDAC_TYPE_FIELD(EnCAddedField, T_POINTER, Next, offsetof(EnCAddedField, m_pNext))
+CDAC_TYPE_FIELD(EnCAddedField, T_POINTER, FieldDesc, offsetof(EnCAddedField, m_pFieldDesc))
+CDAC_TYPE_FIELD(EnCAddedField, TYPE(ObjectHandle), FieldData, offsetof(EnCAddedField, m_FieldData))
+CDAC_TYPE_END(EnCAddedField)
+
+CDAC_TYPE_BEGIN(EnCAddedStaticField)
+CDAC_TYPE_INDETERMINATE(EnCAddedStaticField)
+CDAC_TYPE_FIELD(EnCAddedStaticField, T_POINTER, FieldDesc, offsetof(EnCAddedStaticField, m_pFieldDesc))
+CDAC_TYPE_FIELD(EnCAddedStaticField, T_UINT8, FieldData, offsetof(EnCAddedStaticField, m_FieldData))
+CDAC_TYPE_END(EnCAddedStaticField)
+
+CDAC_TYPE_BEGIN(EnCSyncBlockInfo)
+CDAC_TYPE_INDETERMINATE(EnCSyncBlockInfo)
+CDAC_TYPE_FIELD(EnCSyncBlockInfo, T_POINTER, List, cdac_data<EnCSyncBlockInfo>::List)
+CDAC_TYPE_END(EnCSyncBlockInfo)
 #endif // FEATURE_METADATA_UPDATER
 
 CDAC_TYPE_BEGIN(ModuleLookupMap)
@@ -458,12 +485,19 @@ CDAC_TYPE_FIELD(Debugger, T_POINTER, RCThread, cdac_data<Debugger>::RCThread)
 CDAC_TYPE_FIELD(Debugger, T_INT32, RSRequestedSync, cdac_data<Debugger>::RSRequestedSync)
 CDAC_TYPE_FIELD(Debugger, T_INT32, SendExceptionsOutsideOfJMC, cdac_data<Debugger>::SendExceptionsOutsideOfJMC)
 CDAC_TYPE_FIELD(Debugger, T_INT32, GCNotificationEventsEnabled, cdac_data<Debugger>::GCNotificationEventsEnabled)
+CDAC_TYPE_FIELD(Debugger, T_POINTER, RgHijackFunction, cdac_data<Debugger>::RgHijackFunction)
 CDAC_TYPE_END(Debugger)
 
 CDAC_TYPE_BEGIN(DebuggerRCThread)
 CDAC_TYPE_INDETERMINATE(DebuggerRCThread)
 CDAC_TYPE_FIELD(DebuggerRCThread, T_POINTER, DCB, cdac_data<DebuggerRCThread>::DCB)
 CDAC_TYPE_END(DebuggerRCThread)
+
+CDAC_TYPE_BEGIN(MemoryRange)
+CDAC_TYPE_SIZE(sizeof(MemoryRange))
+CDAC_TYPE_FIELD(MemoryRange, T_POINTER, StartAddress, cdac_data<MemoryRange>::StartAddress)
+CDAC_TYPE_FIELD(MemoryRange, T_NUINT, Size, cdac_data<MemoryRange>::Size)
+CDAC_TYPE_END(MemoryRange)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 
 CDAC_TYPE_BEGIN(ArrayListBase)
@@ -1522,6 +1556,8 @@ CDAC_GLOBAL_STRING(Architecture, wasm)
 #error TARGET_{ARCH} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
 #endif
 
+CDAC_GLOBAL_STRING(RuntimeFlavor, Coreclr)
+
 CDAC_GLOBAL_STRING(RID, RID_STRING)
 
 CDAC_GLOBAL(GCInfoVersion, T_UINT32, GCINFO_VERSION)
@@ -1536,6 +1572,7 @@ CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
 CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
+CDAC_GLOBAL(MaxHijackFunctions, T_UINT32, cdac_data<Debugger>::MaxHijackFunctions)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 #ifdef FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)

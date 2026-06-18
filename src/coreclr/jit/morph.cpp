@@ -7318,7 +7318,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 goto USE_HELPER_FOR_ARITH;
             }
 
-#if USE_HELPERS_FOR_INT_DIV
+#ifdef TARGET_ARM
+            // Note that TARGET_ARM32 does not have a native remainder instruction, so we always use the helper.
             if (typ == TYP_INT)
             {
                 if (oper == GT_UMOD)
@@ -7332,7 +7333,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                     goto USE_HELPER_FOR_ARITH;
                 }
             }
-#endif
+#endif // TARGET_ARM
 #endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
             if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
@@ -9610,6 +9611,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         // We need the base types to be of the same kind and size
                         // that is, we can't mix floating-point and integers or int and long
                         // but we can mix int and uint or long and ulong.
+                        break;
+                    }
+
+                    if (!gtCanSwapOrder(op1, op2))
+                    {
                         break;
                     }
 
