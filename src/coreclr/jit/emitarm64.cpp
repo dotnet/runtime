@@ -18042,8 +18042,10 @@ bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, e
 //   This is the common pattern for loading a value through an R2R/relocatable indirection cell
 //   (string literals, static bases, helper-call targets, ...). It deliberately does not fire for
 //   call indirection cells, where the full address must stay live for the call's delay-load stub
-//   (there reg1 != reg2). Only 64-bit integer loads are folded, matching the PAGEOFFSET_12L
+//   (there reg1 != reg2). Only 64-bit general-register loads are folded, matching the PAGEOFFSET_12L
 //   encoding (a 64-bit LDR with an 8-byte-scaled immediate); cells are pointer-sized and aligned.
+//   GCREF/BYREF loads qualify too (they are EA_8BYTE in a general register); the GC kind is carried
+//   by 'attr' into the re-emitted load exactly as on the unfolded path.
 //
 bool emitter::TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
 {
@@ -18058,7 +18060,8 @@ bool emitter::TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber
         return false;
     }
 
-    // PAGEOFFSET_12L patches a 64-bit LDR (offset scaled by 8); restrict to 64-bit integer loads.
+    // PAGEOFFSET_12L patches a 64-bit LDR (offset scaled by 8); restrict to 64-bit general-register
+    // loads (this includes GCREF/BYREF, which are EA_8BYTE in a general register).
     if ((EA_SIZE(attr) != EA_8BYTE) || !isGeneralRegister(reg1))
     {
         return false;
