@@ -51,5 +51,17 @@ namespace System.IO.Tests
             Assert.Equal(expected.Length, bytesRead);
             Assert.Equal(expected, result);
         }
+
+        [Fact]
+        public void GetBuffer_Throws_TryGetBuffer_ReturnsFalse()
+        {
+            var stream = new ReadOnlyMemoryStream(new byte[] { 1, 2, 3 });
+
+            Assert.Throws<UnauthorizedAccessException>(() => stream.GetBuffer());
+            Assert.False(stream.TryGetBuffer(out ArraySegment<byte> segment));
+            Assert.Null(segment.Array);
+            Assert.Equal(0, segment.Offset);
+            Assert.Equal(0, segment.Count);
+        }
     }
 }

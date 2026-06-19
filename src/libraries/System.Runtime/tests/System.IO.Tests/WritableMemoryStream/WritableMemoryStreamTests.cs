@@ -113,5 +113,17 @@ namespace System.IO.Tests
             Assert.Equal(data, manager.GetSpan().ToArray());
             Assert.Equal(data.Length, stream.Position);
         }
+
+        [Fact]
+        public void GetBuffer_Throws_TryGetBuffer_ReturnsFalse()
+        {
+            using var stream = new WritableMemoryStream(new byte[8]);
+
+            Assert.Throws<UnauthorizedAccessException>(() => stream.GetBuffer());
+            Assert.False(stream.TryGetBuffer(out ArraySegment<byte> segment));
+            Assert.Null(segment.Array);
+            Assert.Equal(0, segment.Offset);
+            Assert.Equal(0, segment.Count);
+        }
     }
 }

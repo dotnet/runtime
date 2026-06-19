@@ -7,7 +7,14 @@ using System.Threading.Tasks;
 
 namespace System.Buffers
 {
-
+    /// <summary>
+    /// Provides a seekable, read-only <see cref="Stream"/> over a <see cref="ReadOnlySequence{Byte}"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>The underlying sequence is not copied; reads are served directly from its segments.</para>
+    /// <para>This type is not thread-safe. Synchronize access if the stream is used concurrently.</para>
+    /// <para>The stream cannot be written to. <see cref="CanWrite"/> always returns <see langword="false"/>.</para>
+    /// </remarks>
     public sealed class ReadOnlySequenceStream : Stream
     {
         private ReadOnlySequence<byte> _sequence;
@@ -243,7 +250,7 @@ namespace System.Buffers
                 SeekOrigin.Begin => offset,
                 SeekOrigin.Current => _absolutePosition + offset,
                 SeekOrigin.End => _sequence.Length + offset,
-                _ => throw new ArgumentOutOfRangeException(nameof(origin))
+                _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin))
             };
 
             if (absolutePosition < 0)

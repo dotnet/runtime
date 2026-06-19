@@ -319,7 +319,7 @@ namespace System.IO
                 SeekOrigin.Begin => offset,
                 SeekOrigin.Current => _position + offset,
                 SeekOrigin.End => _length + offset,
-                _ => throw new ArgumentOutOfRangeException(nameof(origin))
+                _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin))
             };
 
             // Order matches MemoryStream.SeekCore / Common/src/System/IO/ReadOnlyMemoryStream.cs:

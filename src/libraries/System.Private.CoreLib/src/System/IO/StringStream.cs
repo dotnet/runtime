@@ -115,7 +115,12 @@ namespace System.IO
             // Encoding.GetBytes is stateless and emits any reset/shift sequences
             // required by stateful encodings for a complete conversion, so we can
             // mark the encoder as flushed without ever allocating an Encoder.
+            //
+            // Guard against Encoding.GetMaxByteCount overflowing for very large inputs
+            // ((_text.Length + 1) * _maxBytesPerChar must fit in int). If it would,
+            // fall through to the streaming path instead of throwing from Read.
             if (_charPosition == 0 && _pendingCount == 0 &&
+                _text.Length <= (int.MaxValue / _maxBytesPerChar) - 1 &&
                 buffer.Length >= _encoding.GetMaxByteCount(_text.Length))
             {
                 int written = _encoding.GetBytes(_text.Span, buffer);
@@ -299,12 +304,7 @@ namespace System.IO
             ValidateCopyToArguments(destination, bufferSize);
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            // Size the rented buffer to the remaining encoded payload (capped by bufferSize).
-            // The base Stream.CopyTo falls back to an 80 KB buffer because our Length throws;
-            // sizing here avoids that waste and lets the single-shot Read fast path consume
-            // the entire input in one call when the rented buffer is large enough.
-            int maxBytes = _encoding.GetMaxByteCount(_text.Length - _charPosition);
-            int rentSize = Math.Max(1, Math.Min(maxBytes, bufferSize));
+            int rentSize = ComputeCopyToRentSize(bufferSize);
             byte[] buffer = ArrayPool<byte>.Shared.Rent(rentSize);
             try
             {
@@ -331,9 +331,25 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
             }
 
-            int maxBytes = _encoding.GetMaxByteCount(_text.Length - _charPosition);
-            int rentSize = Math.Max(1, Math.Min(maxBytes, bufferSize));
+            int rentSize = ComputeCopyToRentSize(bufferSize);
             return CopyToAsyncCore(destination, rentSize, cancellationToken);
+        }
+
+        // Size the rented buffer to the remaining encoded payload (capped by bufferSize).
+        // Stream.CopyTo's default buffer is 80 KB because this stream is non-seekable;
+        // sizing here avoids that waste and lets the single-shot Read fast path consume
+        // the entire input in one call when the rented buffer is large enough.
+        // Falls back to bufferSize when Encoding.GetMaxByteCount would overflow.
+        private int ComputeCopyToRentSize(int bufferSize)
+        {
+            int remainingChars = _text.Length - _charPosition;
+            if (remainingChars <= (int.MaxValue / _maxBytesPerChar) - 1)
+            {
+                int maxBytes = _encoding.GetMaxByteCount(remainingChars);
+                return Math.Max(1, Math.Min(maxBytes, bufferSize));
+            }
+
+            return bufferSize;
         }
 
         private async Task CopyToAsyncCore(Stream destination, int rentSize, CancellationToken cancellationToken)
