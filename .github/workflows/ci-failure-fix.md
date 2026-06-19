@@ -206,7 +206,10 @@ straight to the loop-in comment path.
      `jit-experimental`, `interpreter`.
 3. **Short-circuit when gated.** If the gate matches, do NOT attempt a fix and do
    NOT open a PR (neither a product fix nor a workaround such as changing library
-   buffer sizes or API call patterns to sidestep a codegen bug). Go directly to the
+   buffer sizes or API call patterns to sidestep a codegen bug — see
+   [#129360](https://github.com/dotnet/runtime/pull/129360), where a
+   StreamReader/StreamWriter workaround for a PGO codegen bug was rejected by a
+   maintainer). Go directly to the
    loop-in comment path (Step 5.5) and record
    `-> routed to loop-in: JIT/GC/PGO stress pipeline (def <id> / <name>), out of bounds for fix PR`.
    Respect Hard rule 5 (at most one loop-in comment per KBE) when emitting.
