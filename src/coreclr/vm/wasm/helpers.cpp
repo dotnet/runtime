@@ -465,7 +465,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     SyncRegDisplayToCurrentContext(pRD);
 
 #ifdef FEATURE_INTERPRETER
-    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    if ((m_Next != FRAME_TOP) && (m_Next != NULL) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
     {
         // If the next frame is an interpreter frame, we also need to set the first argument register to point to the interpreter frame.
         SetFirstArgReg(pRD->pCurrentContext, dac_cast<TADDR>(m_Next));
@@ -494,28 +494,24 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
 size_t CallDescrWorkerInternalReturnAddressOffset = 0;
 
-// File-local WebAssembly exception tag used only by RtlRestoreContext.
+// File-local WebAssembly exception tag used only by RtlRestoreContext. Carries
+// no payload; the resume IP is communicated via the JIT-managed resumeIP local.
 asm(".globl __coreclr_wasm_rtlrestorecontext_tag\n"
-    ".tagtype __coreclr_wasm_rtlrestorecontext_tag i32, i32\n"
+    ".tagtype __coreclr_wasm_rtlrestorecontext_tag\n"
     "__coreclr_wasm_rtlrestorecontext_tag:\n");
 
-__attribute__((naked)) void ThrowRtlRestoreContextTag(uint32_t ip, uint32_t sp)
+__attribute__((naked)) void ThrowRtlRestoreContextTag()
 {
-    asm("local.get 0\n"
-        "local.get 1\n"
-        "throw __coreclr_wasm_rtlrestorecontext_tag\n"
+    asm("throw __coreclr_wasm_rtlrestorecontext_tag\n"
         "unreachable\n" ::);
 }
 
 VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD ExceptionRecord)
 {
+    UNREFERENCED_PARAMETER(ContextRecord);
     UNREFERENCED_PARAMETER(ExceptionRecord);
 
-    uint32_t ip = (uint32_t)GetIP(ContextRecord);
-    uint32_t sp = (uint32_t)GetSP(ContextRecord);
-
-    // Tag payload order: first ip, then sp.
-    ThrowRtlRestoreContextTag(ip, sp);
+    ThrowRtlRestoreContextTag();
 
     __builtin_unreachable();
 }
