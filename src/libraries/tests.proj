@@ -582,6 +582,7 @@
     <!-- Don't want the default smoke tests - just verify that threading works -->
     <SmokeTestProject Remove="@(SmokeTestProject)" />
     <SmokeTestProject Include="$(MonoProjectRoot)sample\wasm\browser-threads\Wasm.Browser.Threads.Sample.csproj" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)Common/tests/Common.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
@@ -642,6 +643,7 @@
   <ItemGroup Condition="('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst') and '$(RuntimeFlavor)' == 'CoreCLR' and '$(UseNativeAOTRuntime)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit\tests\System.Reflection.Emit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.ILGeneration\tests\System.Reflection.Emit.ILGeneration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.External.Tests\Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" Condition="'$(TargetArchitecture)' == 'x64'" />
   </ItemGroup>
 
