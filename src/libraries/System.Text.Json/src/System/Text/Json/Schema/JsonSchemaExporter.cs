@@ -182,25 +182,35 @@ namespace System.Text.Json.Schema
                 JsonTypeInfo elementTypeInfo = typeInfo.Options.GetTypeInfo(elementConverter.Type!);
                 schema = MapJsonSchemaCore(ref state, elementTypeInfo, customConverter: elementConverter, cacheResult: false);
 
-                if (schema.Enum != null)
+                if (schema.AnyOf is { } anyOf)
                 {
-                    Debug.Assert(elementTypeInfo.Type.IsEnum, "The enum keyword should only be populated by schemas for enum types.");
-                    schema.Enum.Add(null); // Append null to the enum array.
-                }
-                else if (schema.AnyOf is { } anyOf)
-                {
-                    // The element schema is an "anyOf" composition, which for a nullable value type
-                    // can only originate from an IEEE floating-point type formatted under
-                    // AllowNamedFloatingPointLiterals. Append null to the enum branch listing the
-                    // named floating-point literals, mirroring the enum handling above.
+                    // The element schema is an "anyOf" composition, which for nullable value types
+                    // should only originate from IEEE floating-point types using
+                    // AllowNamedFloatingPointLiterals.
+                    Debug.Assert((effectiveNumberHandling & JsonNumberHandling.AllowNamedFloatingPointLiterals) != 0 &&
+                        (elementTypeInfo.Type == typeof(double) || elementTypeInfo.Type == typeof(float)
+#if NET
+                            || elementTypeInfo.Type == typeof(Half)
+#endif
+                        ));
+
+                    bool foundNumberBranch = false;
                     foreach (JsonSchema branch in anyOf)
                     {
-                        if (branch.Enum is { } enumValues)
+                        if ((branch.Type & JsonSchemaType.Number) != 0)
                         {
-                            enumValues.Add(null); // Append null to the enum array.
+                            branch.Type |= JsonSchemaType.Null;
+                            foundNumberBranch = true;
                             break;
                         }
                     }
+
+                    Debug.Assert(foundNumberBranch);
+                }
+                else if (schema.Enum != null)
+                {
+                    Debug.Assert(elementTypeInfo.Type.IsEnum, "The enum keyword should only be populated by schemas for enum types.");
+                    schema.Enum.Add(null); // Append null to the enum array.
                 }
 
                 return CompleteSchema(ref state, schema);
