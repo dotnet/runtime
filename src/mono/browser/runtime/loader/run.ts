@@ -479,5 +479,5 @@ async function createEmscriptenWorker (): Promise<EmscriptenModuleInternal> {
 }
 
 if (ENVIRONMENT_IS_WORKER) {
-    createEmscriptenWorker();
+    void createEmscriptenWorker().catch((err) => mono_exit(1, err));
 }
