@@ -302,7 +302,7 @@ function allocateUnusedWorker (): PThreadWorker {
     if (!WasmEnableThreads) return null as any;
 
     const uri = loaderHelpers.scriptUrl;
-    mono_assert(uri !== undefined, "could not resolve the uri for the js-module-dotnet asset");
+    mono_assert(uri !== undefined, "loaderHelpers.scriptUrl must be defined");
     const workerNumber = loaderHelpers.workerNextNumber++;
     const worker = new Worker(uri, {
         name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
