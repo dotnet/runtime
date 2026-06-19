@@ -340,4 +340,36 @@ public abstract class Target
         ProcessedData.Clear();
         Contracts.Flush(scope);
     }
+
+    /// <summary>
+    /// Begin a scope during which reads from this target may be served by <paramref name="cache"/>.
+    /// Returns a handle that ends the scope when disposed. Callers should typically wrap the
+    /// scope in a <c>using</c> block.
+    /// </summary>
+    /// <param name="cache">The caching strategy to install for the duration of the scope.</param>
+    /// <remarks>
+    /// Only one cache scope may be active per target at a time; opening a second scope while one
+    /// is still active throws <see cref="InvalidOperationException"/>. The default implementation
+    /// does not route reads through the cache and is suitable for targets (such as test stubs)
+    /// that do not need caching; it still invalidates and disposes the cache when the scope ends
+    /// so that <see cref="ITargetReadCache"/> implementations see a consistent lifecycle.
+    /// </remarks>
+    public virtual IDisposable BeginCacheScope(ITargetReadCache cache)
+    {
+        ArgumentNullException.ThrowIfNull(cache);
+        return new DefaultCacheScope(cache);
+    }
+
+    private sealed class DefaultCacheScope(ITargetReadCache cache) : IDisposable
+    {
+        private bool _disposed;
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+            cache.Invalidate();
+            cache.Dispose();
+        }
+    }
 }

@@ -138,9 +138,39 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
         _config = mainDescriptor.Config;
         _dataTargetDelegates = dataTargetDelegates;
+        _rawReadBuffer = ReadBufferRaw;
 
         AddDescriptor(mainDescriptor);
         BuildDescriptors(forceBuild: true);
+    }
+
+    // Cached delegate over ReadBufferRaw so opening a cache scope does not allocate.
+    private readonly RawReadDelegate _rawReadBuffer;
+    private ITargetReadCache? _activeCache;
+
+    public override IDisposable BeginCacheScope(ITargetReadCache cache)
+    {
+        ArgumentNullException.ThrowIfNull(cache);
+        if (_activeCache is not null)
+            throw new InvalidOperationException("A cache scope is already active on this target.");
+
+        _activeCache = cache;
+        return new CacheScope(this, cache);
+    }
+
+    private sealed class CacheScope(ContractDescriptorTarget target, ITargetReadCache cache) : IDisposable
+    {
+        private bool _disposed;
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+            Debug.Assert(ReferenceEquals(target._activeCache, cache), "Cache scope disposed out of order");
+            target._activeCache = null;
+            cache.Invalidate();
+            cache.Dispose();
+        }
     }
 
     public override void Flush(FlushScope scope)
@@ -438,7 +468,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <returns>Value read from the target</returns>
     public override T ReadLittleEndian<T>(ulong address)
     {
-        if (!TryRead(address, true, _dataTargetDelegates, out T value))
+        if (!TryReadCore(address, isLittleEndian: true, out T value))
             throw new VirtualReadException($"Failed to read {typeof(T)} at 0x{address:x8}.");
 
         return value;
@@ -453,13 +483,27 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public override bool TryRead<T>(ulong address, out T value)
     {
         value = default;
-        if (!TryRead(address, _config.IsLittleEndian, _dataTargetDelegates, out T readValue))
+        if (!TryReadCore(address, _config.IsLittleEndian, out T readValue))
             return false;
 
         value = readValue;
         return true;
     }
 
+    private bool TryReadCore<T>(ulong address, bool isLittleEndian, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        value = default;
+        Span<byte> buffer = stackalloc byte[sizeof(T)];
+        if (!TryReadBuffer(address, buffer))
+            return false;
+
+        return isLittleEndian
+            ? T.TryReadLittleEndian(buffer, !IsSigned<T>(), out value)
+            : T.TryReadBigEndian(buffer, !IsSigned<T>(), out value);
+    }
+
+    // Bootstrap-time read helper: runs before a target instance exists, so it cannot route
+    // through TryReadBuffer / the cache. Used by TryReadContractDescriptor only.
     private static bool TryRead<T>(ulong address, bool isLittleEndian, DataTargetDelegates dataTargetDelegates, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         value = default;
@@ -537,7 +581,28 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     private bool TryReadBuffer(ulong address, Span<byte> buffer)
     {
+        if (_activeCache is { } cache)
+        {
+            try
+            {
+                cache.ReadBuffer(address, buffer, _rawReadBuffer);
+                return true;
+            }
+            catch (VirtualReadException)
+            {
+                return false;
+            }
+        }
+
         return _dataTargetDelegates.ReadFromTarget(address, buffer) >= 0;
+    }
+
+    // Read directly from the underlying target, bypassing any active cache. Used as the
+    // miss fallback handed to ITargetReadCache implementations.
+    private void ReadBufferRaw(ulong address, Span<byte> buffer)
+    {
+        if (_dataTargetDelegates.ReadFromTarget(address, buffer) < 0)
+            throw new VirtualReadException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
     }
 
     public override void WriteBuffer(ulong address, Span<byte> buffer)
@@ -575,14 +640,62 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <returns>Pointer read from the target</returns>
     public override TargetPointer ReadPointer(ulong address)
     {
-        if (!TryReadPointer(address, _config, _dataTargetDelegates, out TargetPointer pointer))
+        if (!TryReadPointerCore(address, out TargetPointer pointer))
             throw new VirtualReadException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
     }
 
     public override bool TryReadPointer(ulong address, out TargetPointer value)
-        => TryReadPointer(address, _config, _dataTargetDelegates, out value);
+        => TryReadPointerCore(address, out value);
+
+    private bool TryReadPointerCore(ulong address, out TargetPointer pointer)
+    {
+        pointer = TargetPointer.Null;
+        if (!TryReadNUIntCore(address, out ulong value))
+            return false;
+
+        pointer = new TargetPointer(value);
+        return true;
+    }
+
+    private bool TryReadNUIntCore(ulong address, out ulong value)
+    {
+        value = 0;
+        if (_config.PointerSize == sizeof(uint)
+            && TryReadCore(address, _config.IsLittleEndian, out uint value32))
+        {
+            value = value32;
+            return true;
+        }
+        else if (_config.PointerSize == sizeof(ulong)
+            && TryReadCore(address, _config.IsLittleEndian, out ulong value64))
+        {
+            value = value64;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryReadNIntCore(ulong address, out long value)
+    {
+        value = 0;
+        if (_config.PointerSize == sizeof(uint)
+            && TryReadCore(address, _config.IsLittleEndian, out int value32))
+        {
+            value = value32;
+            return true;
+        }
+        else if (_config.PointerSize == sizeof(ulong)
+            && TryReadCore(address, _config.IsLittleEndian, out long value64))
+        {
+            value = value64;
+            return true;
+        }
+
+        return false;
+    }
 
     public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
     {
@@ -707,7 +820,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     /// <returns>Value read from the target</returns>
     public override TargetNUInt ReadNUInt(ulong address)
     {
-        if (!TryReadNUInt(address, _config, _dataTargetDelegates, out ulong value))
+        if (!TryReadNUIntCore(address, out ulong value))
             throw new VirtualReadException($"Failed to read nuint at 0x{address:x8}.");
 
         return new TargetNUInt(value);
@@ -715,7 +828,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     public override TargetNInt ReadNInt(ulong address)
     {
-        if (!TryReadNInt(address, _config, _dataTargetDelegates, out long value))
+        if (!TryReadNIntCore(address, out long value))
             throw new VirtualReadException($"Failed to read nint at 0x{address:x8}.");
 
         return new TargetNInt(value);
