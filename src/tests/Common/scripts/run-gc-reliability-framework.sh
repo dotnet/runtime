@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-__ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"
-__RepoRootDir="$(cd "$__ProjectRoot"/../../../..; pwd -P)"
+__RepoRootDir="$(cd "$(dirname "$0")/../../../.." && pwd -P)"
 
 . "$__RepoRootDir/eng/common/native/init-os-and-arch.sh"
 
