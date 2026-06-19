@@ -3488,12 +3488,6 @@ public:
     GenTree* gtNewSimdCreateSequenceNode(
         var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
 
-    GenTree* gtNewSimdCreateGeometricSequenceNode(
-        var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
-
-    GenTree* gtNewSimdCreateAlternatingSequenceNode(
-        var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
-
     GenTree* gtNewSimdDotProdNode(var_types   type,
                                   GenTree*    op1,
                                   GenTree*    op2,
@@ -3623,30 +3617,6 @@ public:
                                  GenTree*    op2,
                                  var_types   simdBaseType,
                                  unsigned    simdSize);
-
-    GenTree* gtNewSimdConcatNode(var_types type,
-                                 GenTree*  op1,
-                                 GenTree*  op2,
-                                 var_types simdBaseType,
-                                 unsigned  simdSize,
-                                 bool      leftUpper,
-                                 bool      rightUpper);
-
-    GenTree* gtNewSimdZipNode(var_types type,
-                              GenTree*  op1,
-                              GenTree*  op2,
-                              var_types simdBaseType,
-                              unsigned  simdSize,
-                              bool      upper);
-
-    GenTree* gtNewSimdUnzipNode(var_types type,
-                                GenTree*  op1,
-                                GenTree*  op2,
-                                var_types simdBaseType,
-                                unsigned  simdSize,
-                                bool      odd);
-
-    GenTree* gtNewSimdReverseNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
 
     GenTree* gtNewSimdRoundNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
@@ -10460,33 +10430,6 @@ public:
             noway_assert(!"Unexpected size for SIMD type");
         }
         return simdType;
-    }
-
-    static var_types getIndexTypeForShuffle(var_types simdBaseType)
-    {
-        switch (simdBaseType)
-        {
-            case TYP_BYTE:
-            case TYP_UBYTE:
-                return TYP_UBYTE;
-
-            case TYP_SHORT:
-            case TYP_USHORT:
-                return TYP_USHORT;
-
-            case TYP_INT:
-            case TYP_UINT:
-            case TYP_FLOAT:
-                return TYP_UINT;
-
-            case TYP_LONG:
-            case TYP_ULONG:
-            case TYP_DOUBLE:
-                return TYP_ULONG;
-
-            default:
-                unreached();
-        }
     }
 
 private:

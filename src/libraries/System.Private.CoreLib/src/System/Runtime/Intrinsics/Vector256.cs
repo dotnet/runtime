@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -128,14 +127,6 @@ namespace System.Runtime.Intrinsics
             {
                 [Intrinsic]
                 get => Create(T.NegativeOne);
-            }
-
-            /// <inheritdoc cref="Vector128.get_SignSequence{T}" />
-            public static Vector256<T> SignSequence
-            {
-                [Intrinsic]
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get => CreateAlternatingSequence(T.One, T.NegativeOne);
             }
         }
 
@@ -1649,179 +1640,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> CreateSequence<T>(T start, T step) => (Vector256<T>.Indices * step) + Create(start);
-
-        /// <summary>Creates a new <see cref="Vector256{T}" /> instance where the elements begin at a specified value and are multiplied by another specified value.</summary>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <param name="initial">The value that element 0 will be initialized to.</param>
-        /// <param name="multiplier">The value that indicates how each element should be scaled from the previous.</param>
-        /// <returns>A new <see cref="Vector256{T}" /> instance with each element initialized to <paramref name="initial" /> multiplied by <paramref name="multiplier" /> raised to the element index.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="initial"/> and <paramref name="multiplier"/> (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
-        {
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            if (Scalar<T>.IsFloatingPoint)
-            {
-                for (int index = 0; index < Vector256<T>.Count; index++)
-                {
-                    T power = Scalar<T>.Pow(multiplier, Scalar<T>.Convert(index));
-                    T value = Scalar<T>.Multiply(initial, power);
-                    result.SetElementUnsafe(index, value);
-                }
-
-                return result;
-            }
-
-            result.SetElementUnsafe(0, initial);
-
-            for (int index = 1; index < Vector256<T>.Count; index++)
-            {
-                initial = Scalar<T>.Multiply(initial, multiplier);
-                result.SetElementUnsafe(index, initial);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new <see cref="Vector256{T}" /> instance whose elements alternate between two specified values.</summary>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <param name="even">The value assigned to even-indexed elements.</param>
-        /// <param name="odd">The value assigned to odd-indexed elements.</param>
-        /// <returns>A new <see cref="Vector256{T}" /> instance whose even-indexed elements are initialized to <paramref name="even" /> and odd-indexed elements are initialized to <paramref name="odd" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="even"/> and <paramref name="odd"/> (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> CreateAlternatingSequence<T>(T even, T odd)
-        {
-            Vector128<T> sequence = Vector128.CreateAlternatingSequence(even, odd);
-            return Create(sequence, sequence);
-        }
-
-        /// <summary>Creates a new <see cref="Vector256{T}" /> instance whose elements are the reciprocal of an arithmetic sequence.</summary>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <param name="start">The value that element 0 of the arithmetic sequence will be initialized to.</param>
-        /// <param name="step">The value that indicates how far apart each element of the arithmetic sequence should be from the previous.</param>
-        /// <returns>A new <see cref="Vector256{T}" /> instance whose elements are initialized to one divided by the corresponding element of the arithmetic sequence.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="start"/> and <paramref name="step"/> (<typeparamref name="T" />) is not supported.</exception>
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> CreateHarmonicSequence<T>(T start, T step)
-        {
-            if (IsHardwareAccelerated)
-            {
-                return Vector256<T>.One / CreateSequence(start, step);
-            }
-
-            T upperStart = Scalar<T>.Add(start, Scalar<T>.Multiply(Scalar<T>.Convert(Vector128<T>.Count), step));
-
-            return Create(
-                Vector128.CreateHarmonicSequence(start, step),
-                Vector128.CreateHarmonicSequence(upperStart, step)
-            );
-        }
-
-        /// <inheritdoc cref="Vector.ConcatLowerLower{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> ConcatLowerLower<T>(Vector256<T> left, Vector256<T> right) => Create(left.GetLower(), right.GetLower());
-
-        /// <inheritdoc cref="Vector.ConcatUpperLower{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> ConcatUpperLower<T>(Vector256<T> left, Vector256<T> right) => Create(left.GetUpper(), right.GetLower());
-
-        /// <inheritdoc cref="Vector.ConcatUpperUpper{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> ConcatUpperUpper<T>(Vector256<T> left, Vector256<T> right) => Create(left.GetUpper(), right.GetUpper());
-
-        /// <inheritdoc cref="Vector.ConcatLowerUpper{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> ConcatLowerUpper<T>(Vector256<T> left, Vector256<T> right) => Create(left.GetLower(), right.GetUpper());
-
-        /// <inheritdoc cref="Vector.ZipLower{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> ZipLower<T>(Vector256<T> left, Vector256<T> right) => Create(
-            Vector128.ZipLower(left.GetLower(), right.GetLower()),
-            Vector128.ZipUpper(left.GetLower(), right.GetLower())
-        );
-
-        /// <inheritdoc cref="Vector.ZipUpper{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> ZipUpper<T>(Vector256<T> left, Vector256<T> right) => Create(
-            Vector128.ZipLower(left.GetUpper(), right.GetUpper()),
-            Vector128.ZipUpper(left.GetUpper(), right.GetUpper())
-        );
-
-        /// <inheritdoc cref="Vector.Zip{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (Vector256<T> Lower, Vector256<T> Upper) Zip<T>(Vector256<T> left, Vector256<T> right)
-        {
-            if (Avx2.IsSupported && ((typeof(T) == typeof(int)) || (typeof(T) == typeof(uint))))
-            {
-                Vector256<int> lower = Avx2.UnpackLow(left.AsInt32(), right.AsInt32());
-                Vector256<int> upper = Avx2.UnpackHigh(left.AsInt32(), right.AsInt32());
-
-                return (
-                    Avx2.Permute2x128(lower, upper, 0x20).As<int, T>(),
-                    Avx2.Permute2x128(lower, upper, 0x31).As<int, T>()
-                );
-            }
-
-            return (ZipLower(left, right), ZipUpper(left, right));
-        }
-
-        /// <inheritdoc cref="Vector.UnzipEven{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> UnzipEven<T>(Vector256<T> left, Vector256<T> right) => Create(
-            Vector128.UnzipEven(left.GetLower(), left.GetUpper()),
-            Vector128.UnzipEven(right.GetLower(), right.GetUpper())
-        );
-
-        /// <inheritdoc cref="Vector.UnzipOdd{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> UnzipOdd<T>(Vector256<T> left, Vector256<T> right) => Create(
-            Vector128.UnzipOdd(left.GetLower(), left.GetUpper()),
-            Vector128.UnzipOdd(right.GetLower(), right.GetUpper())
-        );
-
-        /// <inheritdoc cref="Vector.Unzip{T}(Vector{T}, Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (Vector256<T> Even, Vector256<T> Odd) Unzip<T>(Vector256<T> left, Vector256<T> right)
-        {
-            if (Avx2.IsSupported && ((typeof(T) == typeof(int)) || (typeof(T) == typeof(uint))))
-            {
-                Vector256<int> leftUnzip = Avx2.Shuffle(left.AsInt32(), 0xD8);
-                leftUnzip = Avx2.Permute4x64(leftUnzip.AsInt64(), 0xD8).AsInt32();
-
-                Vector256<int> rightUnzip = Avx2.Shuffle(right.AsInt32(), 0xD8);
-                rightUnzip = Avx2.Permute4x64(rightUnzip.AsInt64(), 0xD8).AsInt32();
-
-                return (
-                    Avx2.Permute2x128(leftUnzip, rightUnzip, 0x20).As<int, T>(),
-                    Avx2.Permute2x128(leftUnzip, rightUnzip, 0x31).As<int, T>()
-                );
-            }
-
-            return (UnzipEven(left, right), UnzipOdd(left, right));
-        }
-
-        /// <inheritdoc cref="Vector.Reverse{T}(Vector{T})" />
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> Reverse<T>(Vector256<T> vector) => Create(
-            Vector128.Reverse(vector.GetUpper()),
-            Vector128.Reverse(vector.GetLower())
-        );
 
         /// <inheritdoc cref="Vector128.DegreesToRadians(Vector128{double})" />
         [Intrinsic]
