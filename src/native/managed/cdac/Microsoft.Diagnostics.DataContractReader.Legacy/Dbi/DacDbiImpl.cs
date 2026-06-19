@@ -2739,7 +2739,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
         ulong vmAssembly = ReadLittleEndian(pData->vmAssembly);
         uint metadataToken = ReadLittleEndian(pData->metadataToken);
-        return DbiHelpers.LookupTypeDefOrRefInAssembly(_target, rts, vmAssembly, metadataToken);
+        return LookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
     }
 
     private TypeHandle GetExactArrayTypeHandle(IRuntimeTypeSystem rts, DebuggerIPCE_ExpandedTypeData* pTopLevel, ArgInfoList* pArgInfo)
@@ -2765,7 +2765,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         ulong vmAssembly = ReadLittleEndian(pTopLevel->ClassTypeData_vmAssembly);
         uint metadataToken = ReadLittleEndian(pTopLevel->ClassTypeData_metadataToken);
-        TypeHandle typeConstructor = DbiHelpers.LookupTypeDefOrRefInAssembly(_target, rts, vmAssembly, metadataToken);
+        TypeHandle typeConstructor = LookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
 
         int argCount = pArgInfo->m_nEntries;
         if (argCount == 0)
@@ -3015,7 +3015,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             uint metadataToken = ReadLittleEndian(pEnCFieldInfo->objectTypeData.metadataToken);
             uint fldToken = pEnCFieldInfo->fldToken;
 
-            _ = DbiHelpers.LookupTypeDefOrRefInAssembly(_target, rts, vmAssembly, metadataToken);
+            _ = LookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
             Contracts.ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
             TargetPointer fieldDescPointer = loader.GetModuleLookupMapElement(lookupTables.FieldDefToDesc, fldToken, out _);
@@ -3095,6 +3095,37 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 #endif
         return hr;
+    }
+
+    internal TypeHandle LookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
+    {
+        TypeHandle th = TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
+        if (th.IsNull)
+            throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+        return th;
+    }
+
+    internal TypeHandle TryLookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
+    {
+        ILoader loader = _target.Contracts.Loader;
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
+        ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
+        TargetPointer mt;
+        switch ((EcmaMetadataUtils.TokenType)(metadataToken & EcmaMetadataUtils.TokenTypeMask))
+        {
+            case EcmaMetadataUtils.TokenType.mdtTypeDef:
+                mt = loader.GetModuleLookupMapElement(lookupTables.TypeDefToMethodTable, metadataToken, out _);
+                break;
+            case EcmaMetadataUtils.TokenType.mdtTypeRef:
+                mt = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, metadataToken, out _);
+                break;
+            default:
+                return default;
+        }
+        if (mt == TargetPointer.Null)
+            return default;
+        return rts.GetTypeHandle(mt);
     }
 
     public int EnumerateTypeHandleParams(ulong vmTypeHandle,

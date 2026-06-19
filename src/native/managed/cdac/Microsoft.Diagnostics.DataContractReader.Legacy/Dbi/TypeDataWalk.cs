@@ -116,7 +116,7 @@ internal unsafe ref struct TypeDataWalk
     // Read an instantiation and ask the runtime-type-system for the loaded handle.
     private TypeHandle ReadLoadedInstantiation(ulong vmAssembly, uint metadataToken, uint nTypeArgs)
     {
-        TypeHandle typeDef = DbiHelpers.TryLookupTypeDefOrRefInAssembly(_target, _rts, vmAssembly, metadataToken);
+        TypeHandle typeDef = TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
         if (typeDef.IsNull)
             return default;
 
@@ -166,7 +166,7 @@ internal unsafe ref struct TypeDataWalk
         uint numTypeArgs = DacDbiImpl.ReadLittleEndian(pInfo->numTypeArgs);
         CorElementType et = (CorElementType)DacDbiImpl.ReadLittleEndian(pInfo->data.elementType);
 
-        TypeHandle typeDef = DbiHelpers.TryLookupTypeDefOrRefInAssembly(_target, _rts, vmAssembly, metadataToken);
+        TypeHandle typeDef = TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
 
         if ((!typeDef.IsNull && _rts.IsValueType(typeDef)) || et == CorElementType.ValueType)
         {
@@ -208,5 +208,28 @@ internal unsafe ref struct TypeDataWalk
         if (_rts.IsCorElementTypeObjRef(elementType))
             return _canonTh;
         return _rts.GetPrimitiveType(elementType);
+    }
+
+    private TypeHandle TryLookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
+    {
+        ILoader loader = _target.Contracts.Loader;
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(new TargetPointer(vmAssembly));
+        ModuleLookupTables lookupTables = loader.GetLookupTables(moduleHandle);
+        TargetPointer mt;
+        switch ((EcmaMetadataUtils.TokenType)(metadataToken & EcmaMetadataUtils.TokenTypeMask))
+        {
+            case EcmaMetadataUtils.TokenType.mdtTypeDef:
+                mt = loader.GetModuleLookupMapElement(lookupTables.TypeDefToMethodTable, metadataToken, out _);
+                break;
+            case EcmaMetadataUtils.TokenType.mdtTypeRef:
+                mt = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, metadataToken, out _);
+                break;
+            default:
+                return default;
+        }
+        if (mt == TargetPointer.Null)
+            return default;
+        return rts.GetTypeHandle(mt);
     }
 }
