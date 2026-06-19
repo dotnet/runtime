@@ -117,12 +117,13 @@ internal class GcScanContext
     private TargetPointer GetInteriorPointer(TargetPointer obj)
     {
         TargetPointer outerObj = TargetPointer.Null;
+        LinearReadCache cache = new();
         foreach ((GCHeapSegmentInfo seg, GCHeapData _) in _gc.EnumerateAllSegments())
         {
             if (obj.Value < seg.Start.Value || obj.Value >= seg.End.Value)
                 continue;
 
-            using IDisposable _ = _target.BeginCacheScope(new LinearReadCache(_target));
+            using IDisposable _ = _target.BeginCacheScope(cache);
             TargetPointer currentObj = _gc.GetPotentialNextObjectAddress(seg.Start, 0, seg);
             while (currentObj.Value <= obj.Value)
             {

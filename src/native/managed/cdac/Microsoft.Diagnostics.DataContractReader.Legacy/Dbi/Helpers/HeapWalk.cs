@@ -30,10 +30,11 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
     private IEnumerable<COR_HEAPOBJECT> Walk()
     {
         bool pendingFailure = false;
+        LinearReadCache cache = new();
 
         foreach ((GCHeapSegmentInfo seg, GCHeapData _) in _gc.EnumerateAllSegments())
         {
-            using IDisposable _ = _target.BeginCacheScope(new LinearReadCache(_target));
+            using IDisposable _ = _target.BeginCacheScope(cache);
             if (seg.Start.Value >= seg.End.Value)
                 continue;
 

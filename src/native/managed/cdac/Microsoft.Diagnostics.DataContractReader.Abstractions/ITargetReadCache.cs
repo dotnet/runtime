@@ -4,8 +4,11 @@
 using System;
 
 namespace Microsoft.Diagnostics.DataContractReader;
+
+public delegate void RawReadDelegate(ulong address, Span<byte> destination);
+
 public interface ITargetReadCache : IDisposable
 {
-    bool TryRead(ulong address, Span<byte> destination);
+    bool TryRead(ulong address, Span<byte> destination, RawReadDelegate readDelegate);
     void Invalidate();
 }
