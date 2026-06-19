@@ -5377,14 +5377,13 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             if (addr->IsLclVarAddr())
             {
                 CORINFO_CLASS_HANDLE toTypeHnd = sig->sigInst.methInst[1];
-                ClassLayout*         toLayout  = nullptr;
-                var_types            toType    = TypeHandleToVarType(toTypeHnd, &toLayout);
+                var_types            toType    = TypeHandleToVarType(toTypeHnd);
 
                 if (varTypeIsSIMD(toType))
                 {
                     CORINFO_CLASS_HANDLE fromTypeHnd = sig->sigInst.methInst[0];
                     ClassLayout*         fromLayout  = nullptr;
-                    var_types            fromType    = TypeHandleToVarType(fromTypeHnd, &fromLayout);
+                    TypeHandleToVarType(fromTypeHnd, &fromLayout);
 
                     if ((fromLayout != nullptr) && (fromLayout->GetSize() == genTypeSize(toType)))
                     {

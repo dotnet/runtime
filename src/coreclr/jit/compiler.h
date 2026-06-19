@@ -833,7 +833,7 @@ public:
     /////////////////////
 
 #ifdef FEATURE_SIMD
-    // Is this is a TY_STRUCT which is bitcast to a TYP_SIMD
+    // Is this a TY_STRUCT which is bitcast to a TYP_SIMD
     bool IsBitcastToSimd() const
     {
         return lvIsBitcastToSimd;
@@ -10035,21 +10035,6 @@ private:
     // that require indexed access to the individual fields of the vector, which is not well supported
     // by the hardware.  It is allocated when/if such situations are encountered during Lowering.
     unsigned lvaSIMDInitTempVarNum = BAD_VAR_NUM;
-
-    struct SIMDHandlesCache
-    {
-        CORINFO_CLASS_HANDLE PlaneHandle;
-        CORINFO_CLASS_HANDLE QuaternionHandle;
-        CORINFO_CLASS_HANDLE Vector2Handle;
-        CORINFO_CLASS_HANDLE Vector3Handle;
-        CORINFO_CLASS_HANDLE Vector4Handle;
-        CORINFO_CLASS_HANDLE VectorHandle;
-
-        SIMDHandlesCache()
-        {
-            memset(this, 0, sizeof(*this));
-        }
-    };
 
     bool isSystemHalfClass(CORINFO_CLASS_HANDLE clsHnd)
     {

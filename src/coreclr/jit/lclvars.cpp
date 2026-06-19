@@ -1733,9 +1733,9 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     {
         // TYP_SIMD and TYP_MASK locals should never be promoted because they either don't have accessible fields
         // or they have specialized IR support that transforms those field accesses into appropriate codegen. While
-        // could potentially be a little smarter here if the user is only touching the fields, this is not a recommend
+        // could potentially be a little smarter here if the user is only touching the fields, this is not a recommended
         // pattern in the first place and so its not something we want to spend effort optimizing. Rather, developers
-        // should treat it as a proper SIMD primitive type and do the "right" thing
+        // should treat it as a proper SIMD primitive type and do the "right" thing.
 
         JITDUMP("  struct promotion of V%02u is disabled because it is a SIMD or MASK type\n", lclNum);
         return false;

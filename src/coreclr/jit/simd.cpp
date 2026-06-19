@@ -200,7 +200,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
     const char* namespaceName;
     const char* className = getClassNameFromMetadata(typeHnd, &namespaceName);
 
-    // fast path search using cached type handles of important types
     var_types simdBaseType = TYP_UNDEF;
     unsigned  size         = 0;
 

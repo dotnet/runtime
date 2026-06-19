@@ -10064,8 +10064,7 @@ GenTreeFieldAddr* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HAN
 //------------------------------------------------------------------------
 // gtInitializeStoreNode: Initialize a store node.
 //
-// Common initialization for all STORE nodes. Marks SIMD locals as "used in
-// a HW intrinsic".
+// Common initialization for all STORE nodes.
 //
 // Arguments:
 //    store - The store node
