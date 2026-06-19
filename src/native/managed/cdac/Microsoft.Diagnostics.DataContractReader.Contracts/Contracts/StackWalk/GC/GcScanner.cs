@@ -236,14 +236,23 @@ internal class GcScanner
         Data.TransitionBlock tb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(transitionBlock);
         TargetPointer argRegStart = tb.ArgumentRegisters;
 
+        // x86 lays out ArgumentRegisters as { EDX, ECX } (see ENUM_ARGUMENT_REGISTERS_BACKWARD
+        // in src/coreclr/vm/i386/cgencpu.h). Native DynamicHelperFrame::GcScanRoots_Impl reports
+        // ObjectArg at offsetof(ArgumentRegisters, ECX) and ObjectArg2 at offsetof(EDX), which
+        // is the reverse of the layout-order indices used on other architectures.
+        bool isX86 = _target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86;
+        int objectArgOffset = isX86 ? _target.PointerSize : 0;
+        int objectArg2Offset = isX86 ? 0 : _target.PointerSize;
+
         if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg) != 0)
         {
-            scanContext.GCReportCallback(argRegStart, GcScanFlags.None);
+            TargetPointer argAddr = new(argRegStart.Value + (uint)objectArgOffset);
+            scanContext.GCReportCallback(argAddr, GcScanFlags.None);
         }
 
         if ((dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg2) != 0)
         {
-            TargetPointer argAddr = new(argRegStart.Value + (uint)_target.PointerSize);
+            TargetPointer argAddr = new(argRegStart.Value + (uint)objectArg2Offset);
             scanContext.GCReportCallback(argAddr, GcScanFlags.None);
         }
     }
