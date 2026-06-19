@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -467,23 +468,6 @@ namespace System.Reflection.PortableExecutable
         internal static Blob GetPrefixBlob(Blob container, Blob blob) => new Blob(container.Buffer, container.Start, blob.Start - container.Start);
         internal static Blob GetSuffixBlob(Blob container, Blob blob) => new Blob(container.Buffer, blob.Start + blob.Length, container.Start + container.Length - blob.Start - blob.Length);
 
-        // internal for testing
-        internal static IEnumerable<Blob> GetContentToChecksum(BlobBuilder peImage, Blob checksumFixup)
-        {
-            foreach (var blob in peImage.GetBlobs())
-            {
-                if (blob.Buffer == checksumFixup.Buffer)
-                {
-                    yield return GetPrefixBlob(blob, checksumFixup);
-                    yield return GetSuffixBlob(blob, checksumFixup);
-                }
-                else
-                {
-                    yield return blob;
-                }
-            }
-        }
-
         internal void Sign(BlobBuilder peImage, Blob strongNameSignatureFixup, Func<IEnumerable<Blob>, byte[]> signatureProvider)
         {
             Debug.Assert(peImage != null);
@@ -509,47 +493,21 @@ namespace System.Reflection.PortableExecutable
         // internal for testing
         internal static uint CalculateChecksum(BlobBuilder peImage, Blob checksumFixup)
         {
-            return CalculateChecksum(GetContentToChecksum(peImage, checksumFixup)) + (uint)peImage.Count;
-        }
-
-        private static unsafe uint CalculateChecksum(IEnumerable<Blob> blobs)
-        {
             uint checksum = 0;
             int pendingByte = -1;
 
-            foreach (var blob in blobs)
+            foreach (Blob blob in peImage.GetBlobs())
             {
-                var segment = blob.GetBytes();
-                fixed (byte* arrayPtr = segment.Array)
+                if (blob.Buffer == checksumFixup.Buffer)
                 {
-                    Debug.Assert(segment.Count > 0);
-
-                    byte* ptr = arrayPtr + segment.Offset;
-                    byte* end = ptr + segment.Count;
-
-                    if (pendingByte >= 0)
-                    {
-                        // little-endian encoding:
-                        checksum = AggregateChecksum(checksum, (ushort)(*ptr << 8 | pendingByte));
-                        ptr++;
-                    }
-
-                    if ((end - ptr) % 2 != 0)
-                    {
-                        end--;
-                        pendingByte = *end;
-                    }
-                    else
-                    {
-                        pendingByte = -1;
-                    }
-
-                    while (ptr < end)
-                    {
-                        // little-endian encoding:
-                        checksum = AggregateChecksum(checksum, (ushort)(ptr[1] << 8 | ptr[0]));
-                        ptr += sizeof(ushort);
-                    }
+                    // The checksum field itself is excluded, so checksum the content before and
+                    // after the fixup as two separate segments.
+                    AddToChecksum(GetPrefixBlob(blob, checksumFixup).GetBytes(), ref checksum, ref pendingByte);
+                    AddToChecksum(GetSuffixBlob(blob, checksumFixup).GetBytes(), ref checksum, ref pendingByte);
+                }
+                else
+                {
+                    AddToChecksum(blob.GetBytes(), ref checksum, ref pendingByte);
                 }
             }
 
@@ -558,7 +516,37 @@ namespace System.Reflection.PortableExecutable
                 checksum = AggregateChecksum(checksum, (ushort)pendingByte);
             }
 
-            return checksum;
+            return checksum + (uint)peImage.Count;
+        }
+
+        private static void AddToChecksum(ArraySegment<byte> bytes, ref uint checksum, ref int pendingByte)
+        {
+            ReadOnlySpan<byte> segment = bytes.AsSpan();
+            Debug.Assert(segment.Length > 0);
+
+            if (pendingByte >= 0)
+            {
+                // little-endian encoding:
+                checksum = AggregateChecksum(checksum, (ushort)(segment[0] << 8 | pendingByte));
+                segment = segment.Slice(1);
+            }
+
+            if (segment.Length % 2 != 0)
+            {
+                pendingByte = segment[segment.Length - 1];
+                segment = segment.Slice(0, segment.Length - 1);
+            }
+            else
+            {
+                pendingByte = -1;
+            }
+
+            while (segment.Length >= sizeof(ushort))
+            {
+                // little-endian encoding:
+                checksum = AggregateChecksum(checksum, BinaryPrimitives.ReadUInt16LittleEndian(segment));
+                segment = segment.Slice(sizeof(ushort));
+            }
         }
 
         private static uint AggregateChecksum(uint checksum, ushort value)
