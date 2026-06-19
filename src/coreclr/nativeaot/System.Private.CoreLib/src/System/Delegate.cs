@@ -602,7 +602,7 @@ namespace System
         //  look at the invocation list.)  If this is found we remove it from
         //  this list and return a new delegate.  If its not found a copy of the
         //  current list is returned.
-        protected virtual Delegate? RemoveImpl(Delegate d)
+        protected virtual Delegate? RemoveImpl(Delegate? d)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case

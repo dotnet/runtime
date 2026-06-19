@@ -197,7 +197,7 @@ namespace System
             return -1;
         }
 
-        protected sealed override Delegate? RemoveImpl(Delegate value)
+        protected sealed override Delegate? RemoveImpl(Delegate? value)
         {
             if (value == null)
                 return this;

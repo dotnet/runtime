@@ -22,46 +22,6 @@ namespace System
             throw new SerializationException(SR.Serialization_DelegatesNotSupported);
         }
 
-        // equals returns true IIF the delegate is not null and has the
-        //    same target, method and invocation list as this object
-        public sealed override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            if (obj == null)
-                return false;
-            if (ReferenceEquals(this, obj))
-                return true;
-            if (!InternalEqualTypes(this, obj))
-                return false;
-
-            // Since this is a MulticastDelegate and we know
-            // the types are the same, obj should also be a
-            // MulticastDelegate
-            Debug.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
-            MulticastDelegate other = Unsafe.As<MulticastDelegate>(obj);
-
-            if (IsMulticastOrUnmanagedOrOpenVirtual)
-            {
-                // there are 3 kind of delegate kinds that fall into this bucket
-                // 1- Multicast (_invocationList is Object[])
-                // 2- Unmanaged FntPtr (_invocationList == null)
-                // 3- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
-                if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
-                {
-                    return other.TryGetInvocations(out ReadOnlySpan<MulticastDelegate> otherInvocations) && invocations.SequenceEqual(otherInvocations);
-                }
-
-                if (IsUnmanagedFunctionPtr)
-                {
-                    return other.IsUnmanagedFunctionPtr &&
-                           _methodPtr == other._methodPtr &&
-                           _methodPtrAux == other._methodPtrAux;
-                }
-            }
-
-            Debug.Assert(HasSingleTarget);
-            return base.Equals(other);
-        }
-
         private static bool TrySetSlot(object?[] a, int index, object o)
         {
             if (a[index] == null && Interlocked.CompareExchange(ref a[index], o, null) == null)
@@ -329,37 +289,6 @@ namespace System
             }
 
             return null;
-        }
-
-        public sealed override int GetHashCode()
-        {
-            if (IsUnmanagedFunctionPtr)
-                return HashCode.Combine(_methodPtr, _methodPtr);
-
-            if (!IsMulticastOrUnmanagedOrOpenVirtual || !TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
-            {
-                return base.GetHashCode();
-            }
-
-            int hash = 0;
-            foreach (MulticastDelegate multicastDelegate in invocations)
-            {
-                hash = hash * 33 + multicastDelegate.GetHashCode();
-            }
-            return hash;
-        }
-
-        internal override object? GetTarget()
-        {
-            if (IsMulticastOrUnmanagedOrOpenVirtual)
-            {
-                // IsMulticastOrUnmanagedOrOpenVirtual we are in one of these cases:
-                // - Multicast -> return the target of the last delegate in the list
-                // - unmanaged function pointer - return null
-                // - virtual open delegate - return null
-                return TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations) ? invocations[^1].Target : null;
-            }
-            return base.GetTarget();
         }
 
         // this should help inlining

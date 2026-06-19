@@ -34,7 +34,7 @@ namespace System
         // In the case of a static method passed to a delegate, this field stores
         // whatever _methodPtr would have stored: and _methodPtr points to a
         // small thunk which removes the "this" pointer before going on
-        // to _methodPtr.
+        // to _methodPtrAux.
         internal nint _methodPtrAux;
 
         internal nint _invocationCount;
@@ -57,6 +57,7 @@ namespace System
 
         public partial bool HasSingleTarget => _invocationList is not object[];
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations)
         {
             if (_invocationList is not object[] invocationList)
@@ -128,13 +129,40 @@ namespace System
             return invoke.Invoke(this, BindingFlags.Default, null, args, null);
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        // equals returns true IIF the delegate is not null and has the
+        // same target, method and invocation list as this object
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (obj == null || !InternalEqualTypes(this, obj))
+            if (obj == null)
+                return false;
+            if (ReferenceEquals(this, obj))
+                return true;
+            if (!InternalEqualTypes(this, obj))
                 return false;
 
-            Debug.Assert(obj is Delegate);
+            // Since this is a Delegate and we know the types are the same, obj should also be a Delegate
+            Debug.Assert(obj is Delegate, "Shouldn't have failed here since we already checked the types are the same!");
             Delegate other = Unsafe.As<Delegate>(obj);
+
+            if (IsMulticastOrUnmanagedOrOpenVirtual)
+            {
+                // there are 3 kind of delegate kinds that fall into this bucket
+                // 1- Multicast (_invocationList is Object[])
+                // 2- Unmanaged FntPtr (_invocationList == null)
+                // 3- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
+                if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
+                {
+                    return other.TryGetInvocations(out ReadOnlySpan<MulticastDelegate> otherInvocations) && invocations.SequenceEqual(otherInvocations);
+                }
+
+                if (IsUnmanagedFunctionPtr)
+                {
+                    return other.IsUnmanagedFunctionPtr &&
+                           _methodPtr == other._methodPtr &&
+                           _methodPtrAux == other._methodPtrAux;
+                }
+            }
+            Debug.Assert(HasSingleTarget);
 
             // do an optimistic check first. This is hopefully cheap enough to be worth
             if (_target == other._target &&
@@ -175,8 +203,23 @@ namespace System
             return MethodDesc == other.MethodDesc;
         }
 
-        public override int GetHashCode()
+        public sealed override int GetHashCode()
         {
+            if (IsUnmanagedFunctionPtr)
+                return HashCode.Combine(_methodPtr, _methodPtr);
+
+            if (IsMulticastOrUnmanagedOrOpenVirtual &&
+                TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
+            {
+                int hash = 0;
+                foreach (MulticastDelegate multicastDelegate in invocations)
+                {
+                    hash = hash * 33 + multicastDelegate.GetHashCode();
+                }
+
+                return hash;
+            }
+
             int hashCode = MethodDesc.GetHashCode();
             if (_methodPtrAux == 0 && _target != null)
             {
@@ -185,8 +228,17 @@ namespace System
             return hashCode;
         }
 
-        internal virtual object? GetTarget()
+        private object? GetTarget()
         {
+            if (IsMulticastOrUnmanagedOrOpenVirtual)
+            {
+                // IsMulticastOrUnmanagedOrOpenVirtual we are in one of these cases:
+                // - Multicast -> return the target of the last delegate in the list
+                // - unmanaged function pointer - return null
+                // - virtual open delegate - return null
+                return TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations) ? invocations[^1].Target : null;
+            }
+
             return _methodPtrAux == 0 ? _target : null;
         }
 
