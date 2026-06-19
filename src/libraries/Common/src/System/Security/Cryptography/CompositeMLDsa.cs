@@ -674,6 +674,11 @@ namespace System.Security.Cryptography
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
 
+                if (!IsAlgorithmSupported(algorithm))
+                {
+                    throw new CryptographicException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLDsa)));
+                }
+
                 if (!algorithm.IsValidPublicKeySize(key.Length))
                 {
                     throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
@@ -866,6 +871,11 @@ namespace System.Security.Cryptography
                 out CompositeMLDsa dsa)
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
+
+                if (!IsAlgorithmSupported(algorithm))
+                {
+                    throw new CryptographicException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLDsa)));
+                }
 
                 if (!algorithm.IsValidPrivateKeySize(privateKeyContents.Length))
                 {

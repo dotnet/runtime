@@ -76,7 +76,7 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe void BCryptSignHashPqcPure(
+        internal static unsafe int BCryptSignHashPqcPure(
             SafeBCryptKeyHandle key,
             ReadOnlySpan<byte> data,
             ReadOnlySpan<byte> context,
@@ -104,12 +104,14 @@ internal static partial class Interop
                     BCryptSignVerifyFlags.BCRYPT_PAD_PQDSA);
             }
 
-            Debug.Assert(bytesWritten == destination.Length);
-
             if (status != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
             {
                 throw Interop.BCrypt.CreateCryptographicException(status);
             }
+
+            Debug.Assert(bytesWritten <= destination.Length);
+
+            return bytesWritten;
         }
 
         internal static unsafe void BCryptSignHashPqcPreHash(

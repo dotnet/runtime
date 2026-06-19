@@ -44,7 +44,8 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_NoPrivateKeyAvailable);
             }
 
-            Interop.BCrypt.BCryptSignHashPqcPure(_key, data, context, destination);
+            int written = Interop.BCrypt.BCryptSignHashPqcPure(_key, data, context, destination);
+            Debug.Assert(written == destination.Length);
         }
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
