@@ -16,7 +16,7 @@ namespace System
     {
         // MethodBase, either cached after first request or assigned from a DynamicMethod
         // For open delegates to collectible types, this may be a LoaderAllocator object
-        internal object? _methodBase;
+        internal object? _helperObject;
 
         // _target is the object we will invoke on; null if static delegate
         internal object? _target; // Keep _target and _methodPtr next to each other for optimal delegate invoke performance
@@ -132,8 +132,8 @@ namespace System
 
             // method ptrs don't match, go down long path
 
-            if (_methodBase is MethodInfo && d._methodBase is MethodInfo)
-                return _methodBase.Equals(d._methodBase);
+            if (_helperObject is MethodInfo && d._helperObject is MethodInfo)
+                return _helperObject.Equals(d._helperObject);
             else
                 return InternalEqualMethodHandles(this, d);
         }
@@ -158,7 +158,7 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            if (_methodBase is MethodInfo methodInfo)
+            if (_helperObject is MethodInfo methodInfo)
             {
                 return methodInfo;
             }
@@ -214,8 +214,8 @@ namespace System
                 }
             }
 
-            _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
-            return (MethodInfo)_methodBase;
+            _helperObject = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
+            return (MethodInfo)_helperObject;
         }
 
         public object? Target => GetTarget();

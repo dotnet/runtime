@@ -167,7 +167,7 @@ namespace System
         internal void StoreDynamicMethod(MethodInfo dynamicMethod)
         {
             Debug.Assert(_invocationCount == 0);
-            _methodBase = dynamicMethod;
+            _helperObject = dynamicMethod;
         }
 
         // This method will combine this delegate with the passed delegate
@@ -455,7 +455,7 @@ namespace System
             {
                 // we handle unmanaged function pointers here because the generic ones (used for WinRT) would otherwise
                 // be treated as open delegates by the base implementation, resulting in failure to get the MethodInfo
-                if (_methodBase is MethodInfo methodInfo)
+                if (_helperObject is MethodInfo methodInfo)
                 {
                     return methodInfo;
                 }
@@ -471,8 +471,8 @@ namespace System
                     declaringType = reflectedType;
                 }
 
-                _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
-                return (MethodInfo)_methodBase;
+                _helperObject = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
+                return (MethodInfo)_helperObject;
             }
 
             return base.GetMethodImpl();
@@ -537,7 +537,7 @@ namespace System
         {
             this._target = target;
             this._methodPtr = methodPtr;
-            this._methodBase = GCHandle.InternalGet(gchandle);
+            this._helperObject = GCHandle.InternalGet(gchandle);
         }
 
         [DebuggerNonUserCode]
@@ -547,7 +547,7 @@ namespace System
             this._target = this;
             this._methodPtr = shuffleThunk;
             this._methodPtrAux = methodPtr;
-            this._methodBase = GCHandle.InternalGet(gchandle);
+            this._helperObject = GCHandle.InternalGet(gchandle);
         }
 
         [DebuggerNonUserCode]
@@ -556,7 +556,7 @@ namespace System
         {
             this._target = this;
             this._methodPtr = shuffleThunk;
-            this._methodBase = GCHandle.InternalGet(gchandle);
+            this._helperObject = GCHandle.InternalGet(gchandle);
             this.InitializeVirtualCallStub(methodPtr);
         }
 #pragma warning restore IDE0060
