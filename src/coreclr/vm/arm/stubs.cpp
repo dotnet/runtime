@@ -980,20 +980,11 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     // In the more complex case we need to re-write at least some of the arguments on the stack as well as
     // argument registers. We need some temporary registers to perform stack-to-stack copies. r12 will hold
     // the IndirectionCell address (address of _methodPtrAux) throughout so that VSD stubs receive it intact.
-    // So we're going to generate a hybrid-tail call. Using a tail call has the advantage that we don't need to
-    // erect and link an explicit CLR frame to enable crawling of this thunk. Additionally re-writing the
-    // stack can be more performant in some scenarios than copying the stack (in the presence of floating point
-    // or arguments requieing 64-bit alignment we might not have to move some or even most of the values).
-    // The hybrid nature is that we'll erect a standard native frame (with a proper prolog and epilog) so we
-    // can save some non-volatile registers to act as temporaries. Once we've performed the stack re-write
-    // we'll poke the saved LR value (which will become a PC value on the pop in the epilog) to return to the
-    // target method instead of us, thus atomically removing our frame from the stack and tail-calling the
-    // real target.
+    // We save r4-r6 as scratch registers, do the stack re-write, restore them, then tail-call the target
+    // through the IndirectionCell using ldr pc, [r12]. We don't save lr because we're not making any calls.
 
-    // Prolog:
-    ThumbEmitProlog(3,      // Save r4-r6,lr (count doesn't include lr)
-                    0,      // No additional space in the stack frame required
-                    FALSE); // Don't push argument registers
+    // push {r4, r5, r6}
+    ThumbEmitPush(ThumbReg(4).Mask() | ThumbReg(5).Mask() | ThumbReg(6).Mask());
 
     // On entry r0 holds the delegate instance. Load r12 = address of _methodPtrAux (IndirectionCell for
     // VSD). Do this before the shuffle entries overwrite r0.
@@ -1008,7 +999,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     // stack frame in the prolog.
     //  add r4, sp, #cbSavedRegs
     //  add r5, sp, #cbSavedRegs
-    DWORD cbSavedRegs = 4 * 4; // r4, r5, r6, lr
+    DWORD cbSavedRegs = 3 * 4; // r4, r5, r6
     ThumbEmitAdd(ThumbReg(4), thumbRegSp, cbSavedRegs);
     ThumbEmitAdd(ThumbReg(5), thumbRegSp, cbSavedRegs);
 
@@ -1089,16 +1080,12 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         pEntry++;
     }
 
-    // Arguments are copied. Load the real target address through the IndirectionCell in r12 into r6
-    // (which is free at this point), then store it to the saved LR slot so the epilog pops it into PC.
-    // r12 (IndirectionCell address) is preserved through the epilog since it is not saved/restored.
-    //  ldr r6, [r12]
-    ThumbEmitLoadRegIndirect(ThumbReg(6), ThumbReg(12), 0);
-    //  str r6, [sp + #(cbSavedRegs-4)]
-    ThumbEmitStoreRegIndirect(ThumbReg(6), thumbRegSp, cbSavedRegs - 4);
-
-    // Epilog:
-    ThumbEmitEpilog();
+    // Arguments are copied. Restore scratch registers, then tail-call the real target through
+    // the IndirectionCell. r12 still holds _methodPtrAux address throughout.
+    //  pop {r4, r5, r6}
+    ThumbEmitPop(ThumbReg(4).Mask() | ThumbReg(5).Mask() | ThumbReg(6).Mask());
+    //  ldr pc, [r12]
+    ThumbEmitLoadRegIndirect(thumbRegPc, ThumbReg(12), 0);
 }
 
 
