@@ -74,6 +74,7 @@ namespace System.Security.AccessControl
         //  Define an ACL and the ACE format.  The structure of an ACL header
         //  followed by one or more ACEs.  Pictorally the structure of an ACL header
         //  is as follows:
+        //
         //       3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1
         //       1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
         //      +-------------------------------+---------------+---------------+
@@ -654,6 +655,7 @@ namespace System.Security.AccessControl
         //    LessThan if ace1 < ace2
         //    EqualTo if ace1 == ace2
         //    GreaterThan if ace1 > ace2
+        //
         // The order is:
         //        - explicit Access Denied ACEs
         //          [regular aces first, then object aces]
@@ -704,6 +706,7 @@ namespace System.Security.AccessControl
         //    LessThan if ace1 < ace2
         //    EqualTo if ace1 == ace2
         //    GreaterThan if ace1 > ace2
+        //
         // The order is:
         //        - explicit audit or alarm ACEs
         //        - explicit audit or alarm object ACEs
@@ -1086,9 +1089,12 @@ namespace System.Security.AccessControl
             {
                 // If the aces have access bits in common which refer to object types
                 // then we follow these rules:
+                //
                 //       Remove    No OT    OT = A        OT = B
                 // Existing
+                //
                 //   No OT          Remove   Invalid        Invalid
+                //
                 //   OT = A        Remove   Remove      Nothing Common
                 if (ace is ObjectAce objectAce)
                 {
@@ -1128,9 +1134,12 @@ namespace System.Security.AccessControl
             {
                 // If the aces have inheritance bits in common
                 // then we follow these rules:
+                //
                 //       Remove    No IOT    IOT = A        IOT = B
                 // Existing
+                //
                 //   No IOT          Remove   Invalid        Invalid
+                //
                 //   IOT = A        Remove   Remove      Nothing Common
                 if (ace is ObjectAce objectAce)
                 {
@@ -1226,6 +1235,7 @@ namespace System.Security.AccessControl
             }
 
             // The modification algorithm proceeds in stages
+            //
             // Stage 1: if flags match, add to the access mask
             if (ace.AceFlags == newAce.AceFlags)
             {

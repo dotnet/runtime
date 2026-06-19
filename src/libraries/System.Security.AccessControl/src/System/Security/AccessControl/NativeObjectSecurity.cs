@@ -297,6 +297,7 @@ namespace System.Security.AccessControl
 
         // Persists the changes made to the object
         // by calling the underlying Windows API
+        //
         // This overloaded method takes a name of an existing object
         protected sealed override void Persist(string name, AccessControlSections includeSections)
         {
@@ -312,6 +313,7 @@ namespace System.Security.AccessControl
 
         // Persists the changes made to the object
         // by calling the underlying Windows API
+        //
         // This overloaded method takes a handle to an existing object
         protected sealed override void Persist(SafeHandle handle, AccessControlSections includeSections)
         {

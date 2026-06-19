@@ -243,6 +243,7 @@ namespace System.Security.AccessControl
         }
 
         // Persists the changes made to the object
+        //
         // This overloaded method takes a name of an existing object
         protected virtual void Persist(string name, AccessControlSections includeSections)
         {
@@ -285,6 +286,7 @@ namespace System.Security.AccessControl
         }
 
         // Persists the changes made to the object
+        //
         // This overloaded method takes a handle to an existing object
         protected virtual void Persist(SafeHandle handle, AccessControlSections includeSections)
         {

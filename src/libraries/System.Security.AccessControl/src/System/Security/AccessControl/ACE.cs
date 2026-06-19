@@ -64,6 +64,7 @@ namespace System.Security.AccessControl
         internal const int HeaderLength = 4;
 
         // Format of the ACE header from ntseapi.h
+        //
         // typedef struct _ACE_HEADER {
         //     UCHAR AceType;
         //     UCHAR AceFlags;
@@ -967,44 +968,52 @@ namespace System.Security.AccessControl
     // The following eight classes are boilerplate, differing only by their ACE type
     // and support for callbacks
     // Thus their implementation will derive from the same class: CommonAce
+    //
     // typedef struct _ACCESS_ALLOWED_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
     // } ACCESS_ALLOWED_ACE;
+    //
     // typedef struct _ACCESS_DENIED_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
     // } ACCESS_DENIED_ACE;
+    //
     // typedef struct _SYSTEM_AUDIT_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
     // } SYSTEM_AUDIT_ACE;
+    //
     // typedef struct _SYSTEM_ALARM_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
     // } SYSTEM_ALARM_ACE;
+    //
     // typedef struct _ACCESS_ALLOWED_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
     //     // Opaque resource manager specific data
     // } ACCESS_ALLOWED_CALLBACK_ACE, *PACCESS_ALLOWED_CALLBACK_ACE;
+    //
     // typedef struct _ACCESS_DENIED_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
     //     // Opaque resource manager specific data
     // } ACCESS_DENIED_CALLBACK_ACE, *PACCESS_DENIED_CALLBACK_ACE;
+    //
     // typedef struct _SYSTEM_AUDIT_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
     //     ULONG SidStart;
     //     // Opaque resource manager specific data
     // } SYSTEM_AUDIT_CALLBACK_ACE, *PSYSTEM_AUDIT_CALLBACK_ACE;
+    //
     // typedef struct _SYSTEM_ALARM_CALLBACK_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
@@ -1215,6 +1224,7 @@ namespace System.Security.AccessControl
     // The following eight classes are boilerplate, differing only by their ACE type
     // and support for opaque data
     // Thus their implementation will derive from the same class: ObjectAce
+    //
     // typedef struct _ACCESS_ALLOWED_OBJECT_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
@@ -1223,6 +1233,7 @@ namespace System.Security.AccessControl
     //     GUID InheritedObjectType;
     //     ULONG SidStart;
     // } ACCESS_ALLOWED_OBJECT_ACE, *PACCESS_ALLOWED_OBJECT_ACE;
+    //
     // typedef struct _ACCESS_DENIED_OBJECT_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
@@ -1231,6 +1242,7 @@ namespace System.Security.AccessControl
     //     GUID InheritedObjectType;
     //     ULONG SidStart;
     // } ACCESS_DENIED_OBJECT_ACE, *PACCESS_DENIED_OBJECT_ACE;
+    //
     // typedef struct _SYSTEM_AUDIT_OBJECT_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
@@ -1239,6 +1251,7 @@ namespace System.Security.AccessControl
     //     GUID InheritedObjectType;
     //     ULONG SidStart;
     // } SYSTEM_AUDIT_OBJECT_ACE, *PSYSTEM_AUDIT_OBJECT_ACE;
+    //
     // typedef struct _SYSTEM_ALARM_OBJECT_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
@@ -1247,6 +1260,7 @@ namespace System.Security.AccessControl
     //     GUID InheritedObjectType;
     //     ULONG SidStart;
     // } SYSTEM_ALARM_OBJECT_ACE, *PSYSTEM_ALARM_OBJECT_ACE;
+    //
     // typedef struct _ACCESS_ALLOWED_CALLBACK_OBJECT_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
@@ -1256,6 +1270,7 @@ namespace System.Security.AccessControl
     //     ULONG SidStart;
     //     // Opaque resource manager specific data
     // } ACCESS_ALLOWED_CALLBACK_OBJECT_ACE, *PACCESS_ALLOWED_CALLBACK_OBJECT_ACE;
+    //
     // typedef struct _ACCESS_DENIED_CALLBACK_OBJECT_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
@@ -1265,6 +1280,7 @@ namespace System.Security.AccessControl
     //     ULONG SidStart;
     //     // Opaque resource manager specific data
     // } ACCESS_DENIED_CALLBACK_OBJECT_ACE, *PACCESS_DENIED_CALLBACK_OBJECT_ACE;
+    //
     // typedef struct _SYSTEM_AUDIT_CALLBACK_OBJECT_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
@@ -1274,6 +1290,7 @@ namespace System.Security.AccessControl
     //     ULONG SidStart;
     //     // Opaque resource manager specific data
     // } SYSTEM_AUDIT_CALLBACK_OBJECT_ACE, *PSYSTEM_AUDIT_CALLBACK_OBJECT_ACE;
+    //
     // typedef struct _SYSTEM_ALARM_CALLBACK_OBJECT_ACE {
     //     ACE_HEADER Header;
     //     ACCESS_MASK Mask;
@@ -1310,6 +1327,7 @@ namespace System.Security.AccessControl
 
         // The following access mask bits in object aces may refer to an objectType that
         // identifies the property set, property, extended right, or type of child object to which the ACE applies
+        //
         //    ADS_RIGHT_DS_CREATE_CHILD = 0x1,
         //    ADS_RIGHT_DS_DELETE_CHILD = 0x2,
         //    ADS_RIGHT_DS_SELF = 0x8,
