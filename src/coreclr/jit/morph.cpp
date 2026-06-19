@@ -11831,6 +11831,47 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
     }
 #endif // TARGET_XARCH
 
+    switch (intrinsic)
+    {
+#if defined(TARGET_ARM64)
+        case NI_Vector64_CreateGeometricSequence:
+#endif // TARGET_ARM64
+        case NI_Vector128_CreateGeometricSequence:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_CreateGeometricSequence:
+        case NI_Vector512_CreateGeometricSequence:
+#endif // TARGET_XARCH
+        {
+            assert(tree->GetOperandCount() == 2);
+
+            GenTree* op1 = tree->Op(1);
+            GenTree* op2 = tree->Op(2);
+
+            if (op2->OperIsConst())
+            {
+#if defined(TARGET_ARM64)
+                bool canGenerate = !varTypeIsLong(simdBaseType) || op1->OperIsConst() || (simdSize == 8);
+#elif defined(TARGET_XARCH)
+                bool canGenerate = op1->OperIsConst() || (simdSize != 32) || !varTypeIsIntegral(simdBaseType) ||
+                                   compOpportunisticallyDependsOn(InstructionSet_AVX2);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+                if (canGenerate)
+                {
+                    return fgMorphTree(gtNewSimdCreateGeometricSequenceNode(retType, op1, op2, simdBaseType, simdSize));
+                }
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
     switch (oper)
     {
         // Transforms:
