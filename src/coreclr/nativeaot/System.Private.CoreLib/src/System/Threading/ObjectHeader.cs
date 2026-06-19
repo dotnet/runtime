@@ -436,7 +436,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void Release(object obj)
         {
-            ArgumentNullException.ThrowIfNull(obj);
+            Debug.Assert(obj != null);
 
             int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
             // transform uninitialized ID into -1, so it will not match any possible lock owner

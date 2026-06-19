@@ -237,7 +237,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe HeaderLockResult Release(object obj)
         {
-            ArgumentNullException.ThrowIfNull(obj);
+            Debug.Assert(obj != null);
 
             // In CoreCLR, the managed ID is set by the runtime, thus we do not
             // call CurrentManagedThreadIdUnchecked like we do in NativeAOT
@@ -254,7 +254,6 @@ namespace System.Threading
                 while (true)
                 {
                     int oldBits = *pHeader;
-
                     int newBits;
 
                     // Common case: the lock is thin, owned by us and held only once.
@@ -271,24 +270,20 @@ namespace System.Threading
                         // thread id is the same as subtracting it from the header.
                         newBits = oldBits - currentThreadID;
                     }
-                    // Otherwise, if the lock is still thin
-                    else if ((oldBits & (BIT_SBLK_SPIN_LOCK | BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)) == 0)
+                    // Otherwise, if the lock is not thin
+                    else if ((oldBits & (BIT_SBLK_SPIN_LOCK | BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)) != 0)
                     {
-                        // If we own the lock it must be held recursively (the single-hold case is handled above),
-                        // so just decrement the recursion level.
-                        if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
-                        {
-                            newBits = oldBits - SBLK_LOCK_RECLEVEL_INC;
-                        }
-                        else
-                        {
-                            return HeaderLockResult.Failure;
-                        }
+                        return HeaderLockResult.UseSlowPath;
+                    }
+                    // If we own the lock it must be held recursively (the single-hold case is handled above),
+                    // so just decrement the recursion level.
+                    else if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
+                    {
+                        newBits = oldBits - SBLK_LOCK_RECLEVEL_INC;
                     }
                     else
                     {
-                        // Has a hashcode/syncblock index, or another thread is upgrading it (spin lock).
-                        return HeaderLockResult.UseSlowPath;
+                        return HeaderLockResult.Failure;
                     }
 
                     if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)

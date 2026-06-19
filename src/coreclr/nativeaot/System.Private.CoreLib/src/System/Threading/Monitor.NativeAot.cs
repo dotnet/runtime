@@ -94,6 +94,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Exit(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
             ObjectHeader.Release(obj);
         }
 
