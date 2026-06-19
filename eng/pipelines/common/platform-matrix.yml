@@ -949,8 +949,4 @@ jobs:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
-        # windows_arm64 agents are slower; give a larger default timeout,
-        # but only when the calling pipeline hasn't specified its own.
-        ${{ if eq(parameters.jobParameters.timeoutInMinutes, '') }}:
-          timeoutInMinutes: 75
         ${{ insert }}: ${{ parameters.jobParameters }}
