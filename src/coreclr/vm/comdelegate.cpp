@@ -1823,11 +1823,8 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         // this is one of the following:
         // - multicast - _invocationList is Array && _invocationCount != 0
         // - unamanaged ftn ptr - _invocationList == NULL && _invocationCount == -1
-        // - wrapper delegate - _invocationList is Delegate && _invocationCount != NULL
         // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
-        //                    or _invocationList points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Wrapper Delegate)
-        // in the wrapper delegate case we want to unwrap and return the method desc of the inner delegate
-        // in the other cases we return the method desc for the invoke
+        //                    or _invocationList points to a LoaderAllocator/DynamicResolver
         innerDel = (DELEGATEREF) thisDel->GetInvocationList();
         bool fOpenVirtualDelegate = false;
 
