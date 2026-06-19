@@ -22,6 +22,11 @@ namespace Microsoft.Win32.SafeHandles
         // by the OS, which terminates all child processes in the job.
         private static readonly Lazy<Interop.Kernel32.SafeJobHandle> s_killOnParentExitJob = new(CreateKillOnParentExitJob);
 
+        // When the process was started with StartSuspended, this holds the main thread handle
+        // so that Resume() can call ResumeThread on it. The handle is closed after Resume() is called
+        // or when the SafeProcessHandle is disposed.
+        private IntPtr _mainThreadHandle;
+
         /// <summary>
         /// Gets the process ID.
         /// </summary>
@@ -48,6 +53,12 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
+            IntPtr threadHandle = Interlocked.Exchange(ref _mainThreadHandle, IntPtr.Zero);
+            if (threadHandle != IntPtr.Zero)
+            {
+                Interop.Kernel32.CloseHandle(threadHandle);
+            }
+
             return Interop.Kernel32.CloseHandle(handle);
         }
 
@@ -181,6 +192,8 @@ namespace Microsoft.Win32.SafeHandles
                 if (startInfo.CreateNoWindow) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NO_WINDOW;
                 if (startInfo.CreateNewProcessGroup) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NEW_PROCESS_GROUP;
                 if (startInfo.StartDetached) creationFlags |= Interop.Advapi32.StartupInfoOptions.DETACHED_PROCESS;
+                bool startSuspended = startInfo.StartSuspended;
+                if (startSuspended) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_SUSPENDED;
 
                 // set up the environment block parameter
                 string? environmentBlock = null;
@@ -318,7 +331,16 @@ namespace Microsoft.Win32.SafeHandles
                     // assign it to the job object and then resume the thread.
                     if (killOnParentExit && logon)
                     {
-                        AssignJobAndResumeThread(processInfo.hThread, procSH);
+                        // Assign to the job. Resume the thread only if the user didn't request StartSuspended.
+                        AssignJobAndResumeThread(processInfo.hThread, procSH, resume: !startSuspended);
+                    }
+
+                    if (startSuspended && !IsInvalidHandle(processInfo.hThread))
+                    {
+                        // Store the main thread handle so that Resume() can use it later.
+                        // The handle will be closed either in Resume() or in ReleaseHandle().
+                        procSH._mainThreadHandle = processInfo.hThread;
+                        processInfo.hThread = IntPtr.Zero; // Prevent the finally block from closing it.
                     }
                 }
 
@@ -657,7 +679,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private static void AssignJobAndResumeThread(IntPtr hThread, SafeProcessHandle procSH)
+        private static void AssignJobAndResumeThread(IntPtr hThread, SafeProcessHandle procSH, bool resume)
         {
             Debug.Assert(!IsInvalidHandle(hThread), "Thread handle must be valid for suspended process.");
 
@@ -668,7 +690,7 @@ namespace Microsoft.Win32.SafeHandles
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
 
-                if (Interop.Kernel32.ResumeThread(hThread) == 0xFFFFFFFF)
+                if (resume && Interop.Kernel32.ResumeThread(hThread) == 0xFFFFFFFF)
                 {
                     throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
@@ -678,6 +700,29 @@ namespace Microsoft.Win32.SafeHandles
                 // If we fail to assign to the job or resume the thread, terminate the process.
                 Interop.Kernel32.TerminateProcess(procSH, -1);
                 throw;
+            }
+        }
+
+        private void ResumeCore()
+        {
+            Validate();
+
+            IntPtr threadHandle = Interlocked.Exchange(ref _mainThreadHandle, IntPtr.Zero);
+            if (threadHandle == IntPtr.Zero)
+            {
+                throw new InvalidOperationException(SR.ProcessNotStartedSuspended);
+            }
+
+            try
+            {
+                if (Interop.Kernel32.ResumeThread(threadHandle) == 0xFFFFFFFF)
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+            }
+            finally
+            {
+                Interop.Kernel32.CloseHandle(threadHandle);
             }
         }
 

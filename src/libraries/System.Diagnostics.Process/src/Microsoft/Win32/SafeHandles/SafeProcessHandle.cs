@@ -206,6 +206,19 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         /// <summary>
+        /// Resumes the process that was started with <see cref="ProcessStartInfo.StartSuspended" /> set to <see langword="true" />.
+        /// </summary>
+        /// <remarks>
+        /// This method can only be called once. After the process has been resumed, calling this method again
+        /// throws <see cref="InvalidOperationException" />.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The process was not started with <see cref="ProcessStartInfo.StartSuspended" /> set to <see langword="true" />, or has already been resumed.</exception>
+        /// <exception cref="PlatformNotSupportedException">The current operating system is not Windows.</exception>
+        /// <exception cref="Win32Exception">The thread could not be resumed.</exception>
+        [SupportedOSPlatform("windows")]
+        public void Resume() => ResumeCore();
+
+        /// <summary>
         /// Sends a request to the OS to terminate the process.
         /// </summary>
         /// <remarks>
