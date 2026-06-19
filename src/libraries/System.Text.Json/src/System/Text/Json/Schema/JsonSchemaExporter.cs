@@ -184,16 +184,9 @@ namespace System.Text.Json.Schema
 
                 if (schema.AnyOf is { } anyOf)
                 {
-                    // The element schema is an "anyOf" composition, which for nullable value types
-                    // should only originate from IEEE floating-point types using
-                    // AllowNamedFloatingPointLiterals.
-                    Debug.Assert((effectiveNumberHandling & JsonNumberHandling.AllowNamedFloatingPointLiterals) != 0 &&
-                        (elementTypeInfo.Type == typeof(double) || elementTypeInfo.Type == typeof(float)
-#if NET
-                            || elementTypeInfo.Type == typeof(Half)
-#endif
-                        ));
-
+                    // The element schema is an "anyOf" composition. For nullable value types,
+                    // this typically originates from IEEE floating-point types using
+                    // AllowNamedFloatingPointLiterals, though other internal wrappers may also use anyOf.
                     bool foundNumberBranch = false;
                     foreach (JsonSchema branch in anyOf)
                     {
@@ -205,7 +198,20 @@ namespace System.Text.Json.Schema
                         }
                     }
 
-                    Debug.Assert(foundNumberBranch);
+                    if (!foundNumberBranch)
+                    {
+                        // If no numeric branch was found, append a standalone null type to ensure nullability.
+                        // For IEEE floating-point types, we expect a numeric branch to be present.
+                        Debug.Assert((effectiveNumberHandling & JsonNumberHandling.AllowNamedFloatingPointLiterals) == 0 ||
+                            (elementTypeInfo.Type != typeof(double) && elementTypeInfo.Type != typeof(float)
+#if NET
+                                && elementTypeInfo.Type != typeof(Half)
+#endif
+                            ),
+                            "Expected a numeric branch for IEEE floating-point types with AllowNamedFloatingPointLiterals.");
+                        
+                        anyOf.Add(JsonSchema.CreateTrue().MakeNullable());
+                    }
                 }
                 else if (schema.Enum != null)
                 {

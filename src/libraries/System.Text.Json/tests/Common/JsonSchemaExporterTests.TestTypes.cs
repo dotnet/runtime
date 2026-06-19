@@ -313,6 +313,21 @@ namespace System.Text.Json.Schema.Tests
                     """,
                 SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
 
+#if NET
+            yield return new TestData<Half?>(
+                Value: (Half)1.5,
+                AdditionalValues: [null, Half.NaN, Half.PositiveInfinity, Half.NegativeInfinity],
+                ExpectedJsonSchema: """
+                    {
+                        "anyOf": [
+                            { "type": ["number", "null"] },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] }
+                        ]
+                    }
+                    """,
+                SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
+#endif
+
             yield return new TestData<PocoWithNullableFloatingPoint>(
                 Value: new() { Latitude = 3.14, Longitude = 1.2f },
                 AdditionalValues: [new() { Latitude = null, Longitude = null }],

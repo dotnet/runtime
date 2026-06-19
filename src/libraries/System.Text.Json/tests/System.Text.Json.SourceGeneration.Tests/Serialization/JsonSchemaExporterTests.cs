@@ -73,6 +73,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(int?))]
         [JsonSerializable(typeof(double?))]
         [JsonSerializable(typeof(float?))]
+#if NET
+        [JsonSerializable(typeof(Half?))]
+#endif
         [JsonSerializable(typeof(Guid?))]
         [JsonSerializable(typeof(JsonElement?))]
         [JsonSerializable(typeof(IntEnum?))]
