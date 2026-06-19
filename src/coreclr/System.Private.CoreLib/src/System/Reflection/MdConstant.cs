@@ -72,25 +72,12 @@ namespace System.Reflection
                         #endregion
                 }
 
-                if (fieldType.ContainsGenericParameters)
+                if (!fieldType.ContainsGenericParameters)
                 {
-                    // Open generic enum instances are not expected to exist. Return the underlying primitive value.
-                    return corElementType switch
-                    {
-                        CorElementType.ELEMENT_TYPE_CHAR => (char)defaultValue,
-                        CorElementType.ELEMENT_TYPE_I1 => (sbyte)defaultValue,
-                        CorElementType.ELEMENT_TYPE_U1 => (byte)defaultValue,
-                        CorElementType.ELEMENT_TYPE_I2 => (short)defaultValue,
-                        CorElementType.ELEMENT_TYPE_U2 => (ushort)defaultValue,
-                        CorElementType.ELEMENT_TYPE_I4 => (int)defaultValue,
-                        CorElementType.ELEMENT_TYPE_U4 => (uint)defaultValue,
-                        CorElementType.ELEMENT_TYPE_I8 => defaultValue,
-                        CorElementType.ELEMENT_TYPE_U8 => (ulong)defaultValue,
-                        _ => throw new FormatException(SR.Arg_BadLiteralFormat),
-                    };
+                    return Enum.ToObject(fieldType, defaultValue);
                 }
-
-                return Enum.ToObject(fieldType, defaultValue);
+                
+                // Open generic enum instances are not expected to exist. Fall through to underlying primitive value.
             }
             else if (fieldType == typeof(DateTime))
             {
