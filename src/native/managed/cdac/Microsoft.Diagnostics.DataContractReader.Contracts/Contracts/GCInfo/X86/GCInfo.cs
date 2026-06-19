@@ -78,10 +78,16 @@ public record X86GCInfo : IGCInfoDecoder
 
     /// <summary>
     /// The frame variable lifetime (VarPtr) table, per-offset-range tracked GC variables.
-    /// Decoded lazily on first access. Empty for non-EBP frames (only EBP frames track variables this way).
+    /// Decoded lazily on first access.
     /// </summary>
     internal ImmutableArray<VarPtrLifetime> VarPtrLifetimes => _varPtrLifetimes.Value;
     private readonly Lazy<ImmutableArray<VarPtrLifetime>> _varPtrLifetimes;
+
+    // Transition offsets sorted ascending. Cached so EnumerateLiveSlots /
+    // CalculatePushedArgSizeAt / GetInterruptibleRanges don't re-sort on every call
+    // (EnumerateLiveSlots fires once per managed frame during stack walking).
+    private ImmutableArray<int> SortedTransitionOffsets => _sortedTransitionOffsets.Value;
+    private readonly Lazy<ImmutableArray<int>> _sortedTransitionOffsets;
 
     public X86GCInfo(Target target, TargetPointer gcInfoAddress, uint gcInfoVersion, uint relativeOffset = 0)
     {
@@ -169,6 +175,10 @@ public record X86GCInfo : IGCInfoDecoder
         // Lazily decode the untracked-locals and VarPtr tables
         _untrackedSlots = new(DecodeUntrackedSlots);
         _varPtrLifetimes = new(DecodeVarPtrLifetimes);
+
+        // Sorted offsets walked by EnumerateLiveSlots / CalculatePushedArgSizeAt /
+        // GetInterruptibleRanges. Cached once instead of re-sorting per call.
+        _sortedTransitionOffsets = new(() => [.. Transitions.Keys.OrderBy(o => o)]);
     }
 
     private ImmutableDictionary<int, List<BaseGcTransition>> DecodeTransitions()
@@ -224,7 +234,7 @@ public record X86GCInfo : IGCInfoDecoder
     private uint CalculatePushedArgSizeAt(uint codeOffset)
     {
         int depth = 0;
-        foreach (int offset in Transitions.Keys.OrderBy(i => i))
+        foreach (int offset in SortedTransitionOffsets)
         {
             if (offset > codeOffset)
                 break; // calculate only to current offset
@@ -265,6 +275,10 @@ public record X86GCInfo : IGCInfoDecoder
             }
         }
 
+        // Clamp to >= 0: StackDepthTransition can carry negative deltas (call-site arg pops in
+        // partial-interrupt ESP-frame encoding) and a transient under-flow shouldn't wrap to a
+        // huge uint.
+        if (depth < 0) depth = 0;
         return (uint)(depth * _target.PointerSize);
     }
 
@@ -456,8 +470,12 @@ public record X86GCInfo : IGCInfoDecoder
             {
                 uint eStart = (uint)epilogStart;
                 uint eEnd = eStart + Header.EpilogSize;
-                if (eStart > cursor)
-                    ranges.Add(new InterruptibleRange(cursor, eStart));
+                // IsCodeOffsetInEpilog treats `epilogStart` itself as NOT in the epilog
+                // (strict `>`), so the epilogStart byte is interruptible. End the preceding
+                // range at eStart+1 (clamped) to include that one byte.
+                uint rangeEnd = Math.Min(eStart + 1, methodSize);
+                if (rangeEnd > cursor)
+                    ranges.Add(new InterruptibleRange(cursor, rangeEnd));
                 cursor = Math.Max(cursor, eEnd);
             }
             if (cursor < methodSize)
@@ -467,7 +485,7 @@ public record X86GCInfo : IGCInfoDecoder
 
         // Partially interruptible: emit each call-site offset as a (offset, offset+1) range.
         List<InterruptibleRange> callRanges = [];
-        foreach (int offset in Transitions.Keys.OrderBy(o => o))
+        foreach (int offset in SortedTransitionOffsets)
         {
             if ((uint)offset < Header.PrologSize)
                 continue;
@@ -531,7 +549,6 @@ public record X86GCInfo : IGCInfoDecoder
         // (2) VarPtr-tracked frame locals -- live when the lifetime-check offset is within [Begin, End).
         // On non-active frames EnumGcRefsX86 evaluates lifetimes at curOffs-1: a variable can be dead
         // at the return address (call was last instruction of a try, return jumps to a catch handler).
-        // Only EBP frames produce entries; the table is empty for ESP frames.
         {
             uint spBase = Header.EbpFrame ? FRAMEREG_REL : SP_REL;
             uint varPtrOffset = (options.IsActiveFrame || instructionOffset == 0)
@@ -603,7 +620,7 @@ public record X86GCInfo : IGCInfoDecoder
             ? instructionOffset
             : instructionOffset - 1;
 
-        foreach (int offset in Transitions.Keys.OrderBy(o => o))
+        foreach (int offset in SortedTransitionOffsets)
         {
             // Walk through instructionOffset (inclusive) so the call-site GcTransitionCall is
             // captured for the partially-interruptible path; the regOffset adjustment above
