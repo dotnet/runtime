@@ -46,6 +46,7 @@ internal sealed class StressLogTraversal(Target target, IStressMessageReader mes
             stressLog.TotalChunks,
             stressLog.TickFrequency,
             stressLog.StartTimestamp,
+            stressLog.StartTime,
             stressLog.Logs);
     }
 
@@ -79,6 +80,7 @@ internal sealed class StressLogTraversal(Target target, IStressMessageReader mes
             }
 
             yield return new ThreadStressLogData(
+                currentPointer,
                 threadStressLog.Next,
                 threadStressLog.ThreadId,
                 threadStressLog.WriteHasWrapped,
