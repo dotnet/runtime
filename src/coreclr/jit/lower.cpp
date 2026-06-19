@@ -9503,6 +9503,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         {
             const GenTreeLclVarCommon* lclVarAddr = node->AsLclVarCommon();
             const LclVarDsc*           varDsc     = compiler->lvaGetDesc(lclVarAddr);
+#if !defined(TARGET_WASM)
             if (((lclVarAddr->gtFlags & GTF_VAR_DEF) != 0) && varDsc->HasGCPtr())
             {
                 // Emitter does not correctly handle live updates for LCL_ADDR
@@ -9515,6 +9516,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
                 assert(lclVarAddr->isContained() || !varDsc->lvTracked || varTypeIsStruct(varDsc));
                 // TODO: support this assert for uses, see https://github.com/dotnet/runtime/issues/51900.
             }
+#endif // !TARGET_WASM
 
             assert(varDsc->lvDoNotEnregister);
             break;
