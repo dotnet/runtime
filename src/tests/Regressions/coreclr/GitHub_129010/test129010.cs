@@ -15,9 +15,10 @@ public class Program
     private static void Alloc()
     {
         data = new byte[65536];
-        if (count % 256 == 255)
+        if (count % 16 == 0)
         {
-            GC.Collect();
+            // Force compacting GC
+            GC.Collect(2, GCCollectionMode.Forced, true, true);
         }
         count++;
     }
@@ -95,7 +96,7 @@ public class Program
     [Fact]
     public static void TestEntryPoint()
     {
-        for (int i = 0; i < 1000000; i++)
+        for (int i = 0; i < 100; i++)
         {
             Test3();
         }
