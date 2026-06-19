@@ -247,9 +247,9 @@ public class ConvertDllsToWebcil : Task
     // webcil-in-wasm assembly, so failing to read it is a build error rather than a silent skip.
     private void RecordWebcilSize(string webcilPath, string culture)
     {
-        if (!TryReadWebcilSizes(webcilPath, out int payloadSize, out int tableSize))
+        if (!TryReadWebcilSizes(webcilPath, out int payloadSize, out int tableSize, out string failureReason))
         {
-            Log.LogError($"Could not read the Webcil payload/table sizes from '{webcilPath}'. The runtime loader requires payloadSize for every webcil-in-wasm assembly.");
+            Log.LogError($"Could not read the Webcil payload/table sizes from '{webcilPath}' ({failureReason}). The runtime loader requires payloadSize for every webcil-in-wasm assembly.");
             return;
         }
 
@@ -267,10 +267,11 @@ public class ConvertDllsToWebcil : Task
     // KB; this streams through the section headers, seeking past each body, instead of reading a
     // fixed prefix. All multi-byte integers in the wasm binary format are little-endian and are read
     // as such regardless of host endianness. See docs/design/mono/webcil.md.
-    private static bool TryReadWebcilSizes(string path, out int payloadSize, out int tableSize)
+    private static bool TryReadWebcilSizes(string path, out int payloadSize, out int tableSize, out string failureReason)
     {
         payloadSize = 0;
         tableSize = 0;
+        failureReason = null;
         try
         {
             using var fs = File.OpenRead(path);
@@ -280,6 +281,7 @@ public class ConvertDllsToWebcil : Task
                 || ReadUInt32LE(header, 0) != 0x6d736100 /* \0asm */
                 || ReadUInt32LE(header, 4) != 1 /* wasm version */)
             {
+                failureReason = "not a WebAssembly module (missing '\\0asm' magic or unexpected version)";
                 return false;
             }
 
@@ -287,23 +289,41 @@ public class ConvertDllsToWebcil : Task
             {
                 int sectionCode = fs.ReadByte();
                 if (sectionCode < 0)
-                    return false; // reached EOF without finding a data section
-                if (!TryReadULEB128(fs, out uint sectionSize))
+                {
+                    failureReason = "reached end of file without finding a data section";
                     return false;
+                }
+                if (!TryReadULEB128(fs, out uint sectionSize))
+                {
+                    failureReason = "malformed section size (truncated ULEB128)";
+                    return false;
+                }
 
                 if (sectionCode == 11 /* data section */)
                 {
                     if (!TryReadULEB128(fs, out uint segmentCount) || segmentCount < 1)
+                    {
+                        failureReason = "data section has no segments";
                         return false;
+                    }
                     if (fs.ReadByte() != 1 /* passive segment */)
+                    {
+                        failureReason = "data segment 0 is not a passive segment";
                         return false;
+                    }
                     if (!TryReadULEB128(fs, out uint dataLength) || dataLength < 4)
+                    {
+                        failureReason = "data segment 0 is too small to hold a payload size";
                         return false;
+                    }
 
                     int want = dataLength >= 8 ? 8 : 4;
                     byte[] sizes = new byte[8];
                     if (!TryFill(fs, sizes, want))
+                    {
+                        failureReason = "data segment 0 was truncated before the sizes could be read";
                         return false;
+                    }
 
                     payloadSize = (int)ReadUInt32LE(sizes, 0);
                     tableSize = want == 8 ? (int)ReadUInt32LE(sizes, 4) : 0;
@@ -313,8 +333,9 @@ public class ConvertDllsToWebcil : Task
                 fs.Seek(sectionSize, SeekOrigin.Current);
             }
         }
-        catch
+        catch (Exception ex)
         {
+            failureReason = ex.Message;
             return false;
         }
     }
