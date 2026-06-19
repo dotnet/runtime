@@ -196,17 +196,12 @@ namespace System.IO.Hashing
             {
                 Debug.Assert(Sse42.IsSupported || ArmCrc32.IsSupported);
 
-                // Consume 8 bytes at a time when a 64-bit CRC intrinsic is available, then 4 bytes,
-                // then the remaining bytes individually. Sse42.IsSupported is a JIT-time constant, so
-                // each ternary folds away and only the platform's intrinsic remains in the codegen.
                 if (Sse42.X64.IsSupported || ArmCrc32.Arm64.IsSupported)
                 {
                     while (source.Length >= sizeof(ulong))
                     {
                         ulong value = BinaryPrimitives.ReadUInt64LittleEndian(source);
-                        crc = Sse42.IsSupported ?
-                            (uint)Sse42.X64.Crc32(crc, value) :
-                            ArmCrc32.Arm64.ComputeCrc32C(crc, value);
+                        crc = Sse42.IsSupported ? (uint)Sse42.X64.Crc32(crc, value) : ArmCrc32.Arm64.ComputeCrc32C(crc, value);
                         source = source.Slice(sizeof(ulong));
                     }
                 }
@@ -214,17 +209,13 @@ namespace System.IO.Hashing
                 while (source.Length >= sizeof(uint))
                 {
                     uint value = BinaryPrimitives.ReadUInt32LittleEndian(source);
-                    crc = Sse42.IsSupported ?
-                        Sse42.Crc32(crc, value) :
-                        ArmCrc32.ComputeCrc32C(crc, value);
+                    crc = Sse42.IsSupported ? Sse42.Crc32(crc, value) : ArmCrc32.ComputeCrc32C(crc, value);
                     source = source.Slice(sizeof(uint));
                 }
 
                 foreach (byte value in source)
                 {
-                    crc = Sse42.IsSupported ?
-                        Sse42.Crc32(crc, value) :
-                        ArmCrc32.ComputeCrc32C(crc, value);
+                    crc = Sse42.IsSupported ? Sse42.Crc32(crc, value) : ArmCrc32.ComputeCrc32C(crc, value);
                 }
 
                 return crc;
