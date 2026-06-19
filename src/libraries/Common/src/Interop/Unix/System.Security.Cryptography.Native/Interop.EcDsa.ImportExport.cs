@@ -11,34 +11,53 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters", StringMarshalling = StringMarshalling.Utf8)]
-        private static partial int EcKeyCreateByKeyParameters(
-            out SafeEcKeyHandle key,
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyCreateByEcParameters", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int EvpPKeyCreateByEcParameters(
+            out SafeEvpPKeyHandle pkey,
             string oid,
             byte[]? qx, int qxLength,
             byte[]? qy, int qyLength,
-            byte[]? d, int dLength);
+            byte[]? d, int dLength,
+            out int keySize);
 
-        internal static SafeEcKeyHandle EcKeyCreateByKeyParameters(
+        internal static SafeEvpPKeyHandle EvpPKeyCreateByEcParameters(
             string oid,
-            byte[]? qx, int qxLength,
-            byte[]? qy, int qyLength,
-            byte[]? d, int dLength)
+            byte[]? qx,
+            byte[]? qy,
+            byte[]? d,
+            out int keySize)
         {
-            SafeEcKeyHandle key;
-            int rc = EcKeyCreateByKeyParameters(out key, oid, qx, qxLength, qy, qyLength, d, dLength);
-            if (rc == -1)
-            {
-                key?.Dispose();
-                Interop.Crypto.ErrClearError();
+            SafeEvpPKeyHandle pkey;
+            int rc = EvpPKeyCreateByEcParameters(
+                out pkey, oid,
+                qx, qx?.Length ?? 0,
+                qy, qy?.Length ?? 0,
+                d, d?.Length ?? 0,
+                out keySize);
 
+            if (rc == 2)
+            {
+                pkey?.Dispose();
+                Interop.Crypto.ErrClearError();
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));
             }
-            return key;
+
+            if (rc != 1 || pkey == null || pkey.IsInvalid)
+            {
+                Exception ex = Interop.Crypto.CreateOpenSslCryptographicException();
+                pkey?.Dispose();
+                throw ex;
+            }
+
+            // EvpPKeyCreateByEcParameters may have polluted the error queue, but key was good in the end.
+            // Clean up the error queue.
+            Interop.Crypto.ErrClearError();
+
+            return pkey;
         }
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByExplicitParameters")]
-        internal static partial SafeEcKeyHandle EcKeyCreateByExplicitParameters(
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyCreateByEcExplicitParameters")]
+        private static partial int EvpPKeyCreateByEcExplicitParameters(
             ECCurve.ECCurveType curveType,
             byte[]? qx, int qxLength,
             byte[]? qy, int qyLength,
@@ -48,11 +67,18 @@ internal static partial class Interop
             byte[] b, int bLength,
             byte[] gx, int gxLength,
             byte[] gy, int gyLength,
-            byte[] order, int nLength,
+            byte[] order, int orderLength,
             byte[]? cofactor, int cofactorLength,
-            byte[]? seed, int seedLength);
+            byte[]? seed, int seedLength,
+            out SafeEvpPKeyHandle pkey,
+            out int keySize);
 
-        internal static SafeEcKeyHandle EcKeyCreateByExplicitCurve(ECCurve curve)
+        internal static SafeEvpPKeyHandle EvpPKeyCreateByEcExplicitParameters(
+            ECCurve curve,
+            byte[]? qx,
+            byte[]? qy,
+            byte[]? d,
+            out int keySize)
         {
             byte[] p;
             if (curve.IsPrime)
@@ -68,32 +94,65 @@ internal static partial class Interop
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
             }
 
-            SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(
+            int rc = EvpPKeyCreateByEcExplicitParameters(
                 curve.CurveType,
-                null, 0,
-                null, 0,
-                null, 0,
+                qx, qx?.Length ?? 0,
+                qy, qy?.Length ?? 0,
+                d, d?.Length ?? 0,
                 p, p.Length,
                 curve.A!, curve.A!.Length,
                 curve.B!, curve.B!.Length,
                 curve.G.X!, curve.G.X!.Length,
                 curve.G.Y!, curve.G.Y!.Length,
                 curve.Order!, curve.Order!.Length,
-                curve.Cofactor, curve.Cofactor!.Length,
-                curve.Seed, curve.Seed == null ? 0 : curve.Seed.Length);
+                curve.Cofactor, curve.Cofactor?.Length ?? 0,
+                curve.Seed, curve.Seed?.Length ?? 0,
+                out SafeEvpPKeyHandle pkey,
+                out keySize);
 
-            if (key == null || key.IsInvalid)
+            if (rc != 1 || pkey == null || pkey.IsInvalid)
             {
-                Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
-                key?.Dispose();
-                throw e;
+                Exception ex = Interop.Crypto.CreateOpenSslCryptographicException();
+                pkey?.Dispose();
+                throw ex;
             }
 
-            // EcKeyCreateByExplicitParameters may have polluted the error queue, but key was good in the end.
+            // EvpPKeyCreateByEcExplicitParameters may have polluted the error queue, but key was good in the end.
             // Clean up the error queue.
             Interop.Crypto.ErrClearError();
 
-            return key;
+            return pkey;
+        }
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyGenerateByEcCurveOid", StringMarshalling = StringMarshalling.Utf8)]
+        private static partial int EvpPKeyGenerateByEcCurveOid(
+            out SafeEvpPKeyHandle pkey,
+            string oid,
+            out int keySize);
+
+        internal static SafeEvpPKeyHandle EvpPKeyGenerateByEcCurveOid(string oid, out int keySize)
+        {
+            int rc = EvpPKeyGenerateByEcCurveOid(out SafeEvpPKeyHandle pkey, oid, out keySize);
+
+            if (rc == 2)
+            {
+                pkey?.Dispose();
+                Interop.Crypto.ErrClearError();
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));
+            }
+
+            if (rc != 1 || pkey == null || pkey.IsInvalid)
+            {
+                Exception ex = Interop.Crypto.CreateOpenSslCryptographicException();
+                pkey?.Dispose();
+                throw ex;
+            }
+
+            // EvpPKeyGenerateByEcCurveOid may have polluted the error queue, but key was good in the end.
+            // Clean up the error queue.
+            Interop.Crypto.ErrClearError();
+
+            return pkey;
         }
 
         [LibraryImport(Libraries.CryptoNative)]
@@ -104,11 +163,12 @@ internal static partial class Interop
             int rc = CryptoNative_EvpPKeyGetEcGroupNid(pkey, out int nidCurveName);
             if (rc == 1)
             {
-                // Key is invalid or doesn't have a curve
-                return (nidCurveName != Interop.Crypto.NID_undef);
+                return nidCurveName != Interop.Crypto.NID_undef;
             }
 
-            throw Interop.Crypto.CreateOpenSslCryptographicException();
+            // rc == 0 means the group name could not be retrieved
+            // (e.g., explicit curve or OpenSSL < 3.0). Treat as no curve name.
+            return false;
         }
 
         /// <summary>
@@ -122,7 +182,36 @@ internal static partial class Interop
                 return nidCurveName != Interop.Crypto.NID_undef ? CurveNidToOidValue(nidCurveName) : null;
             }
 
-            throw Interop.Crypto.CreateOpenSslCryptographicException();
+            // rc == 0 means the group name could not be retrieved
+            // (e.g., explicit curve or OpenSSL < 3.0).
+            return null;
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_EvpPKeyEcHasExplicitEncoding(SafeEvpPKeyHandle pkey);
+
+        /// <summary>
+        /// Returns <see langword="true"/> if the key has explicit encoding, <see langword="false"/> if named.
+        /// </summary>
+        /// <exception cref="CryptographicException">The encoding could not be determined from the key.</exception>
+        internal static bool EvpPKeyEcHasExplicitEncoding(SafeEvpPKeyHandle pkey)
+        {
+            int result = CryptoNative_EvpPKeyEcHasExplicitEncoding(pkey);
+
+            if (result < 0)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return result == 1;
+        }
+
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_EvpPKeyGetEcKeySize(SafeEvpPKeyHandle pkey);
+
+        internal static int EvpPKeyGetEcKeySize(SafeEvpPKeyHandle pkey)
+        {
+            return CryptoNative_EvpPKeyGetEcKeySize(pkey);
         }
 
         [LibraryImport(Libraries.CryptoNative)]

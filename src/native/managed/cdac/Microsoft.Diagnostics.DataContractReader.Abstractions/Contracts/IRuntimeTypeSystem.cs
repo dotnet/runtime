@@ -70,6 +70,8 @@ public readonly struct MethodDescHandle
     public TargetPointer Address { get; }
 }
 
+public readonly record struct TypedByRefInfo(TargetPointer Data, TargetPointer TypeHandle);
+
 public enum ArrayFunctionType
 {
     Get = 0,
@@ -95,6 +97,16 @@ public enum GenericContextLoc
     InstArgMethodDesc,
     InstArgMethodTable,
     ThisPtr,
+}
+
+public enum WellKnownMethodTable
+{
+    Object,
+    String,
+    Array,
+    Exception,
+    Free,
+    Canon,
 }
 
 
@@ -131,6 +143,9 @@ public interface IRuntimeTypeSystem : IContract
     // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
     bool IsObject(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsString(TypeHandle typeHandle) => throw new NotImplementedException();
+    // Returns the address of one of the runtime's well-known singleton MethodTables,
+    // or TargetPointer.Null if the runtime has not yet initialized that global.
+    TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind) => throw new NotImplementedException();
     bool IsObjRef(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
@@ -201,6 +216,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv) => throw new NotImplementedException();
     bool IsPointer(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsTypeDesc(TypeHandle typeHandle) => throw new NotImplementedException();
+    TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef) => throw new NotImplementedException();
     // Returns null if the TypeHandle is not a class/struct/generic variable
     #endregion TypeHandle inspection APIs
 

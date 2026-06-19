@@ -89,30 +89,10 @@
     <Compile Include="EcDiffieHellmanOpenSslTests.cs" />
     <Compile Include="EcDsaOpenSslProvider.cs" />
     <Compile Include="RsaOpenSslTests.cs" />
-    <Compile Include="DsaOpenSslProvider.cs" />
-    <Compile Include="DsaOpenSslTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AsymmetricSignatureFormatter.cs"
              Link="CommonTest\System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactoryTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactoryTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DsaFamilySignatureFormatTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DsaFamilySignatureFormatTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAImportExport.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAImportExport.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyGeneration.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyGeneration.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignatureFormatter.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignatureFormatter.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignatureFormatTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignatureFormatTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAXml.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAXml.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaXml.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaXml.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\RSAKeyExchangeFormatter.cs"
@@ -123,10 +103,6 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyFileTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyFileTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyPemTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyPemTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\EC\ECKeyFileTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\EC\ECKeyFileTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\EC\ECKeyFileTests.LimitedPrivate.cs"
