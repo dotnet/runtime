@@ -1032,6 +1032,26 @@ namespace ILCompiler.ObjectWriter
         }
 #nullable disable
 
+        // --- R2R Webcil-in-Wasm host ABI (single source of truth) ---
+        // Each R2R/Webcil image is a standalone wasm module that imports its runtime context from the
+        // host under the "webcil" module and exports a small handshake surface. Any host that loads
+        // these images MUST match the names/types emitted by CreateDefaultGlobalImports/WriteExports
+        // below. Current consumers (keep in sync):
+        //   - src/coreclr/hosts/corerun/wasm/libCorerun.js  (BrowserHost_ExternalAssemblyProbe)
+        //   - src/native/libs/Common/JavaScript/host/assets.ts  (instantiateWebcilModule)
+        // Imports (module "webcil"):
+        //   memory                : the runtime's linear memory
+        //   stackPointer (mut i32): the __stack_pointer global
+        //   imageBase  (const i32): pointer to a host-allocated payload buffer (posix_memalign(16, payloadSize))
+        //   tableBase  (const i32): wasmTable.length captured BEFORE growing the table by tableSize
+        //   table                 : the runtime's indirect-call function table (host grows it by tableSize)
+        //   rtlRestoreContextTag  : the __coreclr_wasm_rtlrestorecontext_tag exception tag
+        // Exports the host calls after instantiation:
+        //   webcilVersion (i32 global)               : supported range [0, 1]
+        //   getWebcilPayload(payloadPtr, payloadSize): copy the payload into the host buffer
+        //   fillWebcilTable()                        : populate the grown table slots (only when tableSize > 0)
+        // payloadSize/tableSize live in data segment 0; hosts obtain them either by parsing that segment
+        // (corerun) or from precomputed boot-config metadata (the browser SDK loader).
         public const int StackPointerGlobalIndex = 0;
         public const int ImageBaseGlobalIndex = 1;
         public const int TableBaseGlobalIndex = 2;

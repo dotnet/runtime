@@ -98,7 +98,12 @@ function allocWebcilPayload(payloadSize: number): number {
 
 // Builds the `webcil` import object. For R2R images (tableSize > 0) the module imports the runtime's
 // stack pointer, exception tag, indirect-call table and base globals; this also grows the table.
-// Mirror the corerun host (src/coreclr/hosts/corerun/wasm/libCorerun.js).
+// These import names and the webcilVersion/getWebcilPayload/fillWebcilTable handshake in
+// finishWebcilInstance are the R2R Webcil-in-Wasm host ABI defined by crossgen's WasmObjectWriter
+// (src/coreclr/tools/Common/Compiler/ObjectWriter/WasmObjectWriter.cs, CreateDefaultGlobalImports/
+// WriteExports). Keep in sync with the corerun host
+// (src/coreclr/hosts/corerun/wasm/libCorerun.js, BrowserHost_ExternalAssemblyProbe). Unlike corerun,
+// which parses data segment 0 for payloadSize/tableSize, this loader receives them from boot config.
 function buildWebcilImports(memory: WebAssembly.Memory, payloadPtr: number, tableSize: number): Record<string, WebAssembly.ImportValue> {
     const webcilImports: Record<string, WebAssembly.ImportValue> = { memory };
     if (tableSize > 0) {

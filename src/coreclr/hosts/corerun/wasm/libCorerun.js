@@ -55,7 +55,7 @@ function libCoreRunFactory() {
                 let value = 0;
                 let shift = 0;
 
-                for (;;) {
+                for (; ;) {
                     if (offset >= limit) {
                         throw new RangeError("Unexpected end of input while reading ULEB128");
                     }
@@ -183,7 +183,7 @@ function libCoreRunFactory() {
                 wasmModule = new WebAssembly.Module(wasmBytes);
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to construct WebAssembly module for Webcil image:", {wasmPath, errorMessage});
+                console.error("Failed to construct WebAssembly module for Webcil image:", { wasmPath, errorMessage });
                 return false;
             }
 
@@ -208,7 +208,7 @@ function libCoreRunFactory() {
                 wasmTable.grow(tableSize);
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to grow WebAssembly table for Webcil image:", {wasmPath, errorMessage});
+                console.error("Failed to grow WebAssembly table for Webcil image:", { wasmPath, errorMessage });
                 return false;
             }
 
@@ -227,6 +227,13 @@ function libCoreRunFactory() {
                     throw new Error("__coreclr_wasm_rtlrestorecontext_tag was not preserved by the linker or optimizer");
                 }
                 payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
+                // The "webcil" import object and the webcilVersion/getWebcilPayload/fillWebcilTable
+                // handshake below are the R2R Webcil-in-Wasm host ABI defined by crossgen's
+                // WasmObjectWriter (src/coreclr/tools/Common/Compiler/ObjectWriter/WasmObjectWriter.cs,
+                // CreateDefaultGlobalImports/WriteExports). Keep in sync with the browser SDK loader
+                // src/native/libs/Common/JavaScript/host/assets.ts (instantiateWebcilModule). corerun
+                // reads payloadSize/tableSize by parsing data segment 0; the browser loader gets them
+                // from boot-config metadata instead.
                 wasmInstance = new WebAssembly.Instance(wasmModule, {
                     webcil: {
                         memory: wasmMemory,
@@ -235,10 +242,11 @@ function libCoreRunFactory() {
                         table: wasmTable,
                         tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
                         imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr)
-                    }});
+                    }
+                });
             } catch (e) {
                 const errorMessage = e instanceof Error ? e.message : String(e);
-                console.error("Failed to construct WebAssembly instance for Webcil image:", {wasmPath, errorMessage});
+                console.error("Failed to construct WebAssembly instance for Webcil image:", { wasmPath, errorMessage });
                 return false;
             } finally {
                 stackRestore(sp);

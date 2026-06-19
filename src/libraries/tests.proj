@@ -532,6 +532,7 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Threading.Tasks.Tests\System.Threading.Tasks.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
+    <SmokeTestProject Include="$(MonoProjectRoot)sample\wasm\browser-R2R\Wasm.Browser.R2R.csproj" />
   </ItemGroup>
 
   <!-- wasi/interp smoke tests -->
