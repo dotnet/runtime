@@ -58,13 +58,13 @@ namespace Microsoft.Extensions.Logging.Console
 
         private static void AppendEscaped(ref ValueStringBuilder builder, char c)
         {
-            builder.Append('\\');
-            builder.Append('u');
-            Span<char> hex = builder.AppendSpan(4);
-            hex[0] = HexConverter.ToCharUpper(c >> 12);
-            hex[1] = HexConverter.ToCharUpper(c >> 8);
-            hex[2] = HexConverter.ToCharUpper(c >> 4);
-            hex[3] = HexConverter.ToCharUpper(c);
+            Span<char> escaped = builder.AppendSpan(6);
+            escaped[0] = '\\';
+            escaped[1] = 'u';
+            escaped[2] = HexConverter.ToCharUpper(c >> 12);
+            escaped[3] = HexConverter.ToCharUpper(c >> 8);
+            escaped[4] = HexConverter.ToCharUpper(c >> 4);
+            escaped[5] = HexConverter.ToCharUpper(c);
         }
 
         private static int IndexOfFirstCharToEscape(ReadOnlySpan<char> value)
