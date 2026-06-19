@@ -7,98 +7,25 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-using System.Text;
 
 unsafe class FatalErrorHandlerTest
 {
-    // Marker string written to stderr by the handler to prove it was invoked.
+    // Marker strings written to stderr by the native handlers.
     const string HandlerInvokedMarker = "FATAL_HANDLER_INVOKED";
-
-    // Marker string written to stderr by the pfnGetFatalErrorLog callback.
     const string LogReceivedMarker = "FATAL_LOG_RECEIVED:";
 
-    // Mirror of the native FatalErrorInfo struct from FatalErrorHandling.h.
-    [StructLayout(LayoutKind.Sequential)]
-    struct FatalErrorInfo
-    {
-        public nuint Size;
-        public void* Address;
-        public void* Info;
-        public void* Context;
-        public delegate* unmanaged<FatalErrorInfo*, delegate* unmanaged<byte*, void*, void>, void*, void> PfnGetFatalErrorLog;
-    }
-
     //
-    // Handlers — each scenario gets its own [UnmanagedCallersOnly] handler.
+    // P/Invoke declarations for the native handler library.
     //
 
-    [UnmanagedCallersOnly]
-    static int HandlerSkipDefault(int hresult, void* pErrorInfo)
-    {
-        WriteToStdErr(HandlerInvokedMarker);
-        return 1; // SkipDefaultHandler
-    }
+    [DllImport("FatalErrorHandlerNative")]
+    private static extern delegate* unmanaged<int, void*, int> GetHandlerSkipDefault();
 
-    [UnmanagedCallersOnly]
-    static int HandlerRunDefault(int hresult, void* pErrorInfo)
-    {
-        WriteToStdErr(HandlerInvokedMarker);
-        return 0; // RunDefaultHandler
-    }
+    [DllImport("FatalErrorHandlerNative")]
+    private static extern delegate* unmanaged<int, void*, int> GetHandlerRunDefault();
 
-    [UnmanagedCallersOnly]
-    static int HandlerWithLog(int hresult, void* pErrorInfo)
-    {
-        WriteToStdErr(HandlerInvokedMarker);
-
-        FatalErrorInfo* info = (FatalErrorInfo*)pErrorInfo;
-        if (info->PfnGetFatalErrorLog != null)
-        {
-            info->PfnGetFatalErrorLog(info, &LogAction, null);
-        }
-
-        return 1; // SkipDefaultHandler
-    }
-
-    [UnmanagedCallersOnly]
-    static void LogAction(byte* logString, void* userContext)
-    {
-        string? log = Utf8StringMarshaller.ConvertToManaged(logString);
-        WriteToStdErr(LogReceivedMarker + log);
-    }
-
-    //
-    // Helper to write to stderr from unmanaged context.
-    // Console.Error may not be safe during a fatal error, so
-    // use low-level interop.
-    //
-    static void WriteToStdErr(string message)
-    {
-        byte[] utf8 = Encoding.UTF8.GetBytes(message + "\n");
-        fixed (byte* p = utf8)
-        {
-#if TARGET_WINDOWS
-            IntPtr hStdErr = GetStdHandle(STD_ERROR_HANDLE);
-            WriteFile(hStdErr, p, (uint)utf8.Length, out _, IntPtr.Zero);
-#else
-            write(2, p, (nuint)utf8.Length);
-#endif
-        }
-    }
-
-#if TARGET_WINDOWS
-    private const int STD_ERROR_HANDLE = -12;
-
-    [DllImport("kernel32", ExactSpelling = true)]
-    private static extern IntPtr GetStdHandle(int nStdHandle);
-
-    [DllImport("kernel32", ExactSpelling = true)]
-    private static extern bool WriteFile(IntPtr hFile, byte* lpBuffer, uint nNumberOfBytesToWrite, out uint lpNumberOfBytesWritten, IntPtr lpOverlapped);
-#else
-    [DllImport("libc", ExactSpelling = true)]
-    private static extern nint write(int fd, byte* buf, nuint count);
-#endif
+    [DllImport("FatalErrorHandlerNative")]
+    private static extern delegate* unmanaged<int, void*, int> GetHandlerWithLog();
 
     //
     // Child process entry points — register handler, trigger FailFast.
@@ -107,21 +34,21 @@ unsafe class FatalErrorHandlerTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void RunChildSkipHandler()
     {
-        ExceptionHandling.SetFatalErrorHandler(&HandlerSkipDefault);
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerSkipDefault());
         Environment.FailFast("test fatal error");
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void RunChildRunHandler()
     {
-        ExceptionHandling.SetFatalErrorHandler(&HandlerRunDefault);
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerRunDefault());
         Environment.FailFast("test fatal error");
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void RunChildLogHandler()
     {
-        ExceptionHandling.SetFatalErrorHandler(&HandlerWithLog);
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerWithLog());
         Environment.FailFast("test fatal error");
     }
 
@@ -142,10 +69,10 @@ unsafe class FatalErrorHandlerTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int RunChildSetTwice()
     {
-        ExceptionHandling.SetFatalErrorHandler(&HandlerSkipDefault);
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerSkipDefault());
         try
         {
-            ExceptionHandling.SetFatalErrorHandler(&HandlerRunDefault);
+            ExceptionHandling.SetFatalErrorHandler(GetHandlerRunDefault());
             return 1;
         }
         catch (InvalidOperationException)
