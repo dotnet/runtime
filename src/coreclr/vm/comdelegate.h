@@ -90,9 +90,11 @@ public:
     static MethodDesc* GetDelegateCtor(TypeHandle delegateType, MethodDesc *pTargetMethod, DelegateCtorArgs *pCtorData);
 
     static void BindToMethod(MethodTable* pDelegateMT,
+                             MethodTable   *pTargetMT,
                              MethodDesc    *pTargetMethod,
                              MethodTable   *pExactMethodType,
                              BOOL           fIsOpenDelegate,
+                             QCall::ObjectHandleOnStack targetParameter,
                              BindToMethodDetails *pBindToMethodDetails);
 };
 
@@ -117,11 +119,11 @@ enum DelegateBindingFlags
     DBF_RelaxedSignature    =   0x00000040, // Allow relaxed signature matching (co/contra variance)
 };
 
-extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack target,
-    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags);
+extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT,
+    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails);
 
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT,
-    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags, BindToMethodDetails *pBindToMethodDetails);
+    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails);
 
 extern "C" void QCALLTYPE Delegate_FindMethodHandle(QCall::ObjectHandleOnStack d, QCall::ObjectHandleOnStack retMethodInfo);
 

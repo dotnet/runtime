@@ -208,6 +208,12 @@ public:
             return ObjectToOBJECTREF(*m_ppObject);
         }
 
+        Object** GetObjectPointer() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_ppObject;
+        }
+
 #ifndef DACCESS_COMPILE
         //
         // Helpers for returning common managed types from QCall

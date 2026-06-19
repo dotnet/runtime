@@ -991,7 +991,7 @@ static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
 }
 
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT,
-    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags, BindToMethodDetails *pBindToMethodDetails)
+    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails)
 {
     QCALL_CONTRACT;
 
@@ -1001,9 +1001,6 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, Me
 
 
     TypeHandle methodType = pMethodType.AsTypeHandle();
-
-    TypeHandle targetType = TypeHandle(pTargetMT);
-    MethodTable *pDelegateMT;
 
     // get the invoke of the delegate
     MethodDesc* pInvokeMeth = COMDelegate::FindDelegateInvokeMethod(pDelegateMT);
@@ -1062,10 +1059,10 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, Me
                                                                  false /* do not allow code with a shared-code calling convention to be returned */,
                                                                  true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
                 bool fIsOpenDelegate;
-                if (!COMDelegate::IsMethodDescCompatible(targetType,
+                if (!COMDelegate::IsMethodDescCompatible(TypeHandle(pTargetMT),
                                                         methodType,
                                                         pCurMethod,
-                                                        TypeHandle(pDelegateType),
+                                                        TypeHandle(pDelegateMT),
                                                         pInvokeMeth,
                                                         flags,
                                                         &fIsOpenDelegate))
@@ -1077,9 +1074,11 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, Me
                 // Found the target that matches the signature and satisfies security transparency rules
                 // Initialize the delegate to point to the target method.
                 COMDelegate::BindToMethod(pDelegateMT,
+                            pTargetMT,
                             pCurMethod,
                             methodType.GetMethodTable(),
                             fIsOpenDelegate,
+                            targetParameter,
                             pBindToMethodDetails);
 
                 pMatchingMethod = pCurMethod;
@@ -1097,7 +1096,7 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, Me
 }
 
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT,
-    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags, BindToMethodDetails *pBindToMethodDetails)
+    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails)
 {
     QCALL_CONTRACT;
 
@@ -1117,7 +1116,6 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, Me
 
     // See the comment in BindToMethodName
     bool fIsOpenDelegate;
-    bool fIsMethodDescCompatible;
 
     method = MethodDesc::FindOrCreateAssociatedMethodDesc(method,
                                                         pMethMT,
@@ -1136,9 +1134,11 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, Me
     {
         // Initialize the delegate to point to the target method.
         COMDelegate::BindToMethod(pDelegateMT,
+                     pTargetMT,
                      method,
                      pMethMT,
                      fIsOpenDelegate,
+                     targetParameter,
                      pBindToMethodDetails);
 
         result = TRUE;
@@ -1157,10 +1157,11 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, Me
 // (signature matching etc.) have been done at this point, this method will simply initialize the delegate, with any required
 // wrapping. The delegate returned will be ready for invocation immediately.
 void COMDelegate::BindToMethod(MethodTable* pDelegateMT,
-                               MethodTable* pTargetMT,
+                               MethodTable   *pTargetMT,
                                MethodDesc    *pTargetMethod,
                                MethodTable   *pExactMethodType,
                                BOOL           fIsOpenDelegate,
+                               QCall::ObjectHandleOnStack targetParameter,
                                BindToMethodDetails *pBindToMethodDetails)
 {
     CONTRACTL
@@ -1243,7 +1244,7 @@ void COMDelegate::BindToMethod(MethodTable* pDelegateMT,
             && pTargetMT != NULL
             && pTargetMethod->GetMethodTable() != pTargetMT)
         {
-            pTargetCode = pTargetMethod->GetMultiCallableAddrOfVirtualizedCode(pRefFirstArg, pTargetMethod->GetMethodTable());
+            pTargetCode = pTargetMethod->GetMultiCallableAddrOfVirtualizedCode((OBJECTREF*)targetParameter.GetObjectPointer(), pTargetMethod->GetMethodTable());
         }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
         else if (pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())

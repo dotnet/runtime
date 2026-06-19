@@ -410,9 +410,8 @@ namespace System
             Justification = "The parameter 'methodType' is passed by ref to QCallTypeHandle")]
         private bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] RuntimeType methodType, string method, DelegateBindingFlags flags)
         {
-            Delegate d = this;
-            bool ret = BindToMethodName(RuntimeHelpers.GetMethodTable(d), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
-                new QCallTypeHandle(ref methodType), method, flags, out BindToMethodDetails bindToMethodDetails);
+            bool ret = BindToMethodName(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                new QCallTypeHandle(ref methodType), method, flags, ObjectHandleOnStack.Create(ref target), out BindToMethodDetails bindToMethodDetails);
 
             if (ret)
             {
@@ -434,7 +433,7 @@ namespace System
             return ret;
         }
 
-        struct BindToMethodDetails
+        private struct BindToMethodDetails
         {
             public int selfReferentialTarget; // Whether the delegate's target object is the same as the first argument of the method to bind to. Only meaningful for open instance delegates.
             public IntPtr methodPtr;
@@ -445,12 +444,12 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodName", StringMarshalling = StringMarshalling.Utf8)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT, QCallTypeHandle methodType, string method, DelegateBindingFlags flags, out BindToMethodDetails bindToMethodDetails);
+        private static partial bool BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT, QCallTypeHandle methodType, string method, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
 
         private bool BindToMethodInfo(object? target, IRuntimeMethodInfo method, RuntimeType methodType, DelegateBindingFlags flags)
         {
             bool ret = BindToMethodInfo(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
-                method.Value, new QCallTypeHandle(ref methodType), flags, out BindToMethodDetails bindToMethodDetails);
+                method.Value, new QCallTypeHandle(ref methodType), flags, ObjectHandleOnStack.Create(ref target), out BindToMethodDetails bindToMethodDetails);
 
             if (ret)
             {
@@ -474,7 +473,7 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_BindToMethodInfo")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags);
+        private static partial bool BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT, RuntimeMethodHandleInternal method, QCallTypeHandle methodType, DelegateBindingFlags flags, ObjectHandleOnStack targetParameter, out BindToMethodDetails bindToMethodDetails);
 
         private static MulticastDelegate InternalAlloc(RuntimeType type)
         {
