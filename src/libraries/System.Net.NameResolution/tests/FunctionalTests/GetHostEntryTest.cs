@@ -267,6 +267,8 @@ namespace System.Net.NameResolution.Tests
             Assert.Throws<ArgumentException>(() => Dns.GetHostAddresses(hostNameOrAddress));
             await Assert.ThrowsAsync<ArgumentException>(() => Dns.GetHostEntryAsync(hostNameOrAddress));
             await Assert.ThrowsAsync<ArgumentException>(() => Dns.GetHostAddressesAsync(hostNameOrAddress));
+            await Assert.ThrowsAsync<ArgumentException>(() => Task.Factory.FromAsync(Dns.BeginGetHostEntry, Dns.EndGetHostEntry, hostNameOrAddress, null));
+            await Assert.ThrowsAsync<ArgumentException>(() => Task.Factory.FromAsync(Dns.BeginGetHostAddresses, Dns.EndGetHostAddresses, hostNameOrAddress, null));
         }
 
         [Theory]
