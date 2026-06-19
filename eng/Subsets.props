@@ -530,6 +530,7 @@
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdactests+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\UnitTests\Microsoft.Diagnostics.DataContractReader.Tests.csproj" Test="true" Category="tools"/>
+    <ProjectToBuild Include="$(SharedNativeRoot)managed\cdac\tests\DataGenerator\Microsoft.Diagnostics.DataContractReader.DataGenerator.Tests.csproj" Test="true" Category="tools"/>
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+tools.cdacdumptests+'))">

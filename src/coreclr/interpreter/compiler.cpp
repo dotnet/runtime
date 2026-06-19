@@ -45,6 +45,13 @@ static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "
 
 const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 
+#ifdef PERFTRACING_DISABLE_THREADS
+bool InterpCompiler::s_samplingProfilerEnabled = false;
+#ifdef TARGET_BROWSER
+bool InterpCompiler::s_browserProfilerEnabled = false;
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
+
 #if MEASURE_MEM_ALLOC
 #include <minipal/mutex.h>
 
@@ -1092,6 +1099,15 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
                 m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::STACK_EMPTY;
                 m_ILToNativeMapSize++;
             }
+
+            if (ins->flags & INTERP_INST_FLAG_DBG_CALL_INSTRUCTION)
+            {
+                InterpCallReturnInfo info;
+                info.ilOffset             = ilOffset;
+                info.postCallNativeOffset = ConvertOffset(ins->nativeOffset + GetInsLength(ins));
+                info.returnValueVarOffset = m_pVars[ins->dVar].offset;
+                m_callReturnInfos.Add(info);
+            }
         }
     }
 
@@ -1258,10 +1274,12 @@ void InterpCompiler::EmitCode()
 
     PatchRelocations(&relocs);
 
-    if (m_numILVars > 0)
+    int32_t callReturnCount = m_callReturnInfos.GetSize();
+    int32_t totalVarCount = m_numILVars + callReturnCount;
+    if (totalVarCount > 0)
     {
         // This will eventually be freed by the VM, using freeArray.
-        ICorDebugInfo::NativeVarInfo* eeVars = (ICorDebugInfo::NativeVarInfo*)m_compHnd->allocateArray(m_numILVars * sizeof(ICorDebugInfo::NativeVarInfo));
+        ICorDebugInfo::NativeVarInfo* eeVars = (ICorDebugInfo::NativeVarInfo*)m_compHnd->allocateArray(totalVarCount * sizeof(ICorDebugInfo::NativeVarInfo));
 
         int j = 0;
         for (int i = 0; i < m_numILVars; i++)
@@ -1276,7 +1294,22 @@ void InterpCompiler::EmitCode()
             j++;
         }
 
-        m_compHnd->setVars(m_methodInfo->ftn, m_numILVars, eeVars);
+        // Append a CALL_RETURN_ILNUM entry per managed call site so the debugger can read the
+        // return value when stepping out of the callee.
+        for (int i = 0; i < callReturnCount; i++)
+        {
+            const InterpCallReturnInfo& callReturn = m_callReturnInfos.Get(i);
+            eeVars[j].startOffset             = callReturn.postCallNativeOffset;
+            eeVars[j].endOffset               = callReturn.postCallNativeOffset + 1; // implicit, recomputed on decode
+            eeVars[j].varNumber               = (uint32_t)ICorDebugInfo::CALL_RETURN_ILNUM;
+            eeVars[j].callReturnValueILOffset = callReturn.ilOffset;
+            eeVars[j].loc.vlType              = ICorDebugInfo::VLT_STK;
+            eeVars[j].loc.vlStk.vlsBaseReg    = ICorDebugInfo::REGNUM_FP;
+            eeVars[j].loc.vlStk.vlsOffset     = callReturn.returnValueVarOffset;
+            j++;
+        }
+
+        m_compHnd->setVars(m_methodInfo->ftn, totalVarCount, eeVars);
     }
 
     if (m_ILToNativeMapSize == 0 && m_pILToNativeMap != NULL)
@@ -2187,6 +2220,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     , m_initLocals(false)
     , m_unmanagedCallersOnly(false)
     , m_publishSecretStubParam(false)
+    , m_callReturnInfos(GetMemPoolAllocator(IMK_NativeToILMapping))
     , m_globalVarsWithRefsStackTop(0)
     , m_varIntervalMaps(GetMemPoolAllocator(IMK_IntervalMap))
 #ifdef DEBUG
@@ -2207,6 +2241,16 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_classHnd   = compHnd->getMethodClass(m_methodHnd);
     DWORD jitFlagsSize = m_compHnd->getJitFlags(&m_corJitFlags, sizeof(m_corJitFlags));
     assert(jitFlagsSize == sizeof(m_corJitFlags));
+
+#ifdef PERFTRACING_DISABLE_THREADS
+    m_emitSamplingProfiler = s_samplingProfilerEnabled
+        && InterpConfig.WasmPerformanceInstrumentation().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args);
+
+#ifdef TARGET_BROWSER
+    m_emitBrowserProfiler = s_browserProfilerEnabled
+        && InterpConfig.WasmPerformanceInstrumentation().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args);
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
 
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
@@ -2917,7 +2961,13 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
 
     // Backwards branch, emit safepoint
     if (ilOffset < 0)
+    {
         AddIns(INTOP_SAFEPOINT);
+#ifdef PERFTRACING_DISABLE_THREADS
+        if (m_emitSamplingProfiler)
+            AddIns(INTOP_PROF_SAMPLEPOINT);
+#endif // PERFTRACING_DISABLE_THREADS
+    }
 
     InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
     if (pTargetBB == NULL)
@@ -5645,6 +5695,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
 
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
+    if (!tailcall && !newObj && !isCalli && callInfo.sig.retType != CORINFO_TYPE_VOID)
+        m_pLastNewIns->flags |= INTERP_INST_FLAG_DBG_CALL_INSTRUCTION;
     m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
@@ -5738,6 +5790,13 @@ void InterpCompiler::EmitRet(CORINFO_METHOD_INFO* methodInfo)
         EmitLeave(ilOffset, target);
         return;
     }
+
+#ifdef PERFTRACING_DISABLE_THREADS
+#ifdef TARGET_BROWSER
+    if (m_emitBrowserProfiler)
+        AddIns(INTOP_PROF_LEAVE);
+#endif // TARGET_BROWSER
+#endif // PERFTRACING_DISABLE_THREADS
 
     if (m_methodInfo->args.isAsyncCall())
     {
@@ -8262,6 +8321,17 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     // Safepoint at each method entry. This could be done as part of a call, rather than
     // adding an opcode.
     AddIns(INTOP_SAFEPOINT);
+#ifdef PERFTRACING_DISABLE_THREADS
+    if (m_emitSamplingProfiler)
+        AddIns(INTOP_PROF_SAMPLEPOINT);
+#ifdef TARGET_BROWSER
+    if (m_emitBrowserProfiler)
+    {
+        AddIns(INTOP_PROF_ENTER);
+        m_pLastNewIns->data[0] = GetMethodDataItemIndex(m_methodHnd);
+    }
+#endif // TARGET_BROWSER
+#endif // PERFTRACING_DISABLE_THREADS
 
     if (m_continuationArgIndex != -1)
     {
