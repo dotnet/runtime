@@ -214,12 +214,19 @@ public record X86GCInfo : IGCInfoDecoder
         return argTable.Transitions.ToImmutableDictionary();
     }
 
-    private uint CalculatePushedArgSize()
+    private uint CalculatePushedArgSize() => CalculatePushedArgSizeAt(RelativeOffset);
+
+    /// <summary>
+    /// Number of bytes pushed for outgoing arguments at <paramref name="codeOffset"/>,
+    /// derived by walking the transition stream. Equivalent to native EnumGcRefsX86's
+    /// `pushedSize` from `scanArgRegTableI` / `scanArgRegTable`.
+    /// </summary>
+    private uint CalculatePushedArgSizeAt(uint codeOffset)
     {
         int depth = 0;
         foreach (int offset in Transitions.Keys.OrderBy(i => i))
         {
-            if (offset > RelativeOffset)
+            if (offset > codeOffset)
                 break; // calculate only to current offset
             foreach (BaseGcTransition gcTransition in Transitions[offset])
             {
@@ -501,6 +508,12 @@ public record X86GCInfo : IGCInfoDecoder
 
         List<LiveSlot> result = [];
 
+        // For ESP-based frames, untracked locals (and VarPtr locals when applicable) are
+        // argBase-relative where `argBase = ESP + pushedSize` (gc_unwind_x86.inl EnumGcRefsX86).
+        // Translate to a true SP-relative offset by adding the pushed size at the queried offset.
+        // EBP-frame offsets are FRAMEREG-relative and need no adjustment.
+        int espBias = Header.EbpFrame ? 0 : (int)CalculatePushedArgSizeAt(instructionOffset);
+
         // (1) Untracked frame locals -- always live for the entire method body.
         // Filter funclets suppress untracked reporting because the parent frame already reports them
         // (mirrors the isFilterFunclet path in EnumGcRefsX86).
@@ -510,7 +523,8 @@ public record X86GCInfo : IGCInfoDecoder
             {
                 // LowBits encoding matches LiveSlot.GcFlags exactly: 0x1 = interior, 0x2 = pinned.
                 uint spBase = us.IsEbpRelative ? FRAMEREG_REL : SP_REL;
-                result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: us.StackOffset, SpBase: spBase, GcFlags: us.LowBits));
+                int spOffset = us.IsEbpRelative ? us.StackOffset : us.StackOffset + espBias;
+                result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: spOffset, SpBase: spBase, GcFlags: us.LowBits));
             }
         }
 
@@ -529,7 +543,8 @@ public record X86GCInfo : IGCInfoDecoder
                     continue;
 
                 // LowBits encoding matches LiveSlot.GcFlags exactly.
-                result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: vp.StackOffset, SpBase: spBase, GcFlags: vp.LowBits));
+                int spOffset = Header.EbpFrame ? vp.StackOffset : vp.StackOffset + espBias;
+                result.Add(new LiveSlot(IsRegister: false, RegisterNumber: 0, SpOffset: spOffset, SpBase: spBase, GcFlags: vp.LowBits));
             }
         }
 
