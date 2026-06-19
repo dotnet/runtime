@@ -5,6 +5,7 @@ using System;
 
 using Internal.IL;
 using Internal.IL.Stubs;
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -25,8 +26,8 @@ namespace ILCompiler
             _owningType = owningType;
         }
 
-        public override ReadOnlySpan<byte> Name => _targetMethod.Name;
-        public override string DiagnosticName => _targetMethod.DiagnosticName;
+        public override Utf8Span Name => _targetMethod.Name;
+        public override string DiagnosticName => "RESUME_" + _targetMethod.DiagnosticName;
 
         public override TypeDesc OwningType => _owningType;
 
@@ -35,6 +36,12 @@ namespace ILCompiler
         public override TypeSystemContext Context => _targetMethod.Context;
 
         public MethodDesc TargetMethod => _targetMethod;
+
+        /// <summary>
+        /// The hash of the async variant method is used at runtime to find the bucket of the resumption stub.
+        /// These should be identical for the async variant and the resumption stub.
+        /// </summary>
+        protected override int ComputeHashCode() => _targetMethod.GetHashCode();
 
         private MethodSignature InitializeSignature()
         {
@@ -109,6 +116,7 @@ namespace ILCompiler
             }
             ilStream.EmitLdLoc(newContinuationLocal);
             ilStream.Emit(ILOpcode.ret);
+            ilEmitter.SetHasGeneratedTokens();
 
             return ilEmitter.Link(this);
         }

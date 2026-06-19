@@ -444,6 +444,21 @@ public struct DacpJitManagerInfo
     public ClrDataAddress ptrHeapList;
 };
 
+[StructLayout(LayoutKind.Explicit, Size = 0x18)]
+public struct DacpJitCodeHeapInfo
+{
+    public enum CodeHeapType : uint
+    {
+        CODEHEAP_LOADER = 0,
+        CODEHEAP_HOST,
+        CODEHEAP_UNKNOWN,
+    }
+    [FieldOffset(0)]    public CodeHeapType codeHeapType;
+    [FieldOffset(8)]    public ClrDataAddress LoaderHeap;    // valid when codeHeapType == CODEHEAP_LOADER
+    [FieldOffset(8)]    public ClrDataAddress baseAddr;      // valid when codeHeapType == CODEHEAP_HOST
+    [FieldOffset(0x10)] public ClrDataAddress currentAddr;  // valid when codeHeapType == CODEHEAP_HOST
+};
+
 public struct DacpSyncBlockData
 {
     public enum COMFlagsEnum : uint
@@ -493,10 +508,34 @@ public unsafe partial interface ISOSHandleEnum : ISOSEnum
     int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSHandleData[] handles, uint* pNeeded);
 }
 
+public struct DACEHInfo
+{
+    public enum EHClauseType : uint
+    {
+        EHFault,
+        EHFinally,
+        EHFilter,
+        EHTyped,
+        EHUnknown,
+    }
+    public EHClauseType clauseType;
+    public ClrDataAddress tryStartOffset;
+    public ClrDataAddress tryEndOffset;
+    public ClrDataAddress handlerStartOffset;
+    public ClrDataAddress handlerEndOffset;
+    public Interop.BOOL isDuplicateClause;
+    public ClrDataAddress filterOffset;
+    public Interop.BOOL isCatchAllHandler;
+    public ClrDataAddress moduleAddr;
+    public ClrDataAddress mtCatch;
+    public uint tokCatch;
+}
+
 public enum SOSStackSourceType : uint
 {
     SOS_StackSourceIP = 0,
-    SOS_StackSourceFrame = 1
+    SOS_StackSourceFrame = 1,
+    SOS_StackSourceOther = 2,
 }
 
 public struct SOSStackRefData
@@ -554,6 +593,59 @@ public unsafe partial interface ISOSMemoryEnum : ISOSEnum
     int Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMemoryRegion[] memRegions, uint* pNeeded);
 }
 
+public struct DacpCCWData
+{
+    public ClrDataAddress outerIUnknown;
+    public ClrDataAddress managedObject;
+    public ClrDataAddress handle;
+    public ClrDataAddress ccwAddress;
+    public int refCount;
+    public int interfaceCount;
+    public Interop.BOOL isNeutered;
+    public int jupiterRefCount;
+    public Interop.BOOL isPegged;
+    public Interop.BOOL isGlobalPegged;
+    public Interop.BOOL hasStrongRef;
+    public Interop.BOOL isExtendsCOMObject;
+    public Interop.BOOL isAggregated;
+}
+
+public struct DacpCOMInterfacePointerData
+{
+    public ClrDataAddress methodTable;
+    public ClrDataAddress interfacePtr;
+    public ClrDataAddress comContext;
+}
+
+public struct DacpRCWData
+{
+    public ClrDataAddress identityPointer;
+    public ClrDataAddress unknownPointer;
+    public ClrDataAddress managedObject;
+    public ClrDataAddress jupiterObject;
+    public ClrDataAddress vtablePtr;
+    public ClrDataAddress creatorThread;
+    public ClrDataAddress ctxCookie;
+    public int refCount;
+    public int interfaceCount;
+    public Interop.BOOL isJupiterObject;
+    public Interop.BOOL supportsIInspectable;
+    public Interop.BOOL isAggregated;
+    public Interop.BOOL isContained;
+    public Interop.BOOL isFreeThreaded;
+    public Interop.BOOL isDisconnected;
+}
+
+public enum VCSHeapType : int
+{
+    IndcellHeap = 0,
+    LookupHeap = 1,
+    ResolveHeap = 2,
+    DispatchHeap = 3,
+    CacheEntryHeap = 4,
+    VtableHeap = 5
+}
+
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
 public unsafe partial interface ISOSDacInterface
@@ -591,7 +683,7 @@ public unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetModuleData(ClrDataAddress moduleAddr, DacpModuleData* data);
     [PreserveSig]
-    int TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged[Stdcall]<uint, /*ClrDataAddress*/ ulong, void*, void> pCallback, void* token);
+    int TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged<uint, /*ClrDataAddress*/ ulong, void*, void> pCallback, void* token);
     [PreserveSig]
     int GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] modules, uint* pNeeded);
     [PreserveSig]
@@ -723,7 +815,7 @@ public unsafe partial interface ISOSDacInterface
 
     // EH
     [PreserveSig]
-    int TraverseEHInfo(ClrDataAddress ip, /*DUMPEHINFO*/ void* pCallback, void* token);
+    int TraverseEHInfo(ClrDataAddress ip, /*DUMPEHINFO*/ delegate* unmanaged<uint, uint, DACEHInfo*, void*, int> pCallback, void* token);
     [PreserveSig]
     int GetNestedExceptionData(ClrDataAddress exception, ClrDataAddress* exceptionObject, ClrDataAddress* nextNestedException);
 
@@ -733,11 +825,11 @@ public unsafe partial interface ISOSDacInterface
 
     // Heaps
     [PreserveSig]
-    int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*VISITHEAP*/ void* pCallback);
+    int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*VISITHEAP*/ delegate* unmanaged</*ClrDataAddress*/ ulong, nuint, Interop.BOOL, void> pCallback);
     [PreserveSig]
-    int GetCodeHeapList(ClrDataAddress jitManager, uint count, /*struct DacpJitCodeHeapInfo*/ void* codeHeaps, uint* pNeeded);
+    int GetCodeHeapList(ClrDataAddress jitManager, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpJitCodeHeapInfo[]? codeHeaps, uint* pNeeded);
     [PreserveSig]
-    int TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, /*VCSHeapType*/ int heaptype, /*VISITHEAP*/ void* pCallback);
+    int TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, VCSHeapType heaptype, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback);
 
     // Other
     [PreserveSig]
@@ -751,15 +843,15 @@ public unsafe partial interface ISOSDacInterface
 
     // COM
     [PreserveSig]
-    int GetRCWData(ClrDataAddress addr, /*struct DacpRCWData */ void* data);
+    int GetRCWData(ClrDataAddress addr, DacpRCWData* data);
     [PreserveSig]
-    int GetRCWInterfaces(ClrDataAddress rcw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
+    int GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]
-    int GetCCWData(ClrDataAddress ccw, /*struct DacpCCWData */ void* data);
+    int GetCCWData(ClrDataAddress ccw, DacpCCWData* data);
     [PreserveSig]
-    int GetCCWInterfaces(ClrDataAddress ccw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
+    int GetCCWInterfaces(ClrDataAddress ccw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded);
     [PreserveSig]
-    int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ delegate* unmanaged[Stdcall]</*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token);
+    int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ delegate* unmanaged</*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, /*ClrDataAddress*/ ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token);
 
     // GC Reference Functions
 
@@ -878,12 +970,37 @@ public unsafe partial interface ISOSDacInterface4
     int GetClrNotification([In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] arguments, int count, int* pNeeded);
 };
 
+public struct DacpTieredVersionData
+{
+    public enum OptimizationTier
+    {
+        Unknown = 0,
+        MinOptJitted = 1,
+        Optimized = 2,
+        QuickJitted = 3,
+        OptimizedTier1 = 4,
+        ReadyToRun = 5,
+        OptimizedTier1OSR = 6,
+        QuickJittedInstrumented = 7,
+        OptimizedTier1Instrumented = 8,
+    }
+
+    public ClrDataAddress nativeCodeAddr;
+    public OptimizationTier optimizationTier;
+    public ClrDataAddress nativeCodeVersionNodePtr;
+}
+
 [GeneratedComInterface]
 [Guid("127d6abe-6c86-4e48-8e7b-220781c58101")]
 public unsafe partial interface ISOSDacInterface5
 {
     [PreserveSig]
-    int GetTieredVersions(ClrDataAddress methodDesc, int rejitId, /*struct DacpTieredVersionData*/void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs);
+    int GetTieredVersions(
+        ClrDataAddress methodDesc,
+        int rejitId,
+        [In, Out, MarshalUsing(CountElementName = nameof(cNativeCodeAddrs))] DacpTieredVersionData[]? nativeCodeAddrs,
+        int cNativeCodeAddrs,
+        int* pcNativeCodeAddrs);
 };
 
 public struct DacpMethodTableCollectibleData
@@ -979,7 +1096,7 @@ public partial interface ISOSDacInterface9
 public unsafe partial interface ISOSDacInterface10
 {
     [PreserveSig]
-    int GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded);
+    int GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[]? mowList, uint* pNeeded);
     [PreserveSig]
     int IsComWrappersCCW(ClrDataAddress ccw, Interop.BOOL* isComWrappersCCW);
     [PreserveSig]
@@ -1013,7 +1130,7 @@ public unsafe partial interface ISOSDacInterface12
 public unsafe partial interface ISOSDacInterface13
 {
     [PreserveSig]
-    int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback);
+    int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged< /*ClrDataAddress*/ ulong, nuint, Interop.BOOL, void> pCallback);
     [PreserveSig]
     int GetDomainLoaderAllocator(ClrDataAddress domainAddress, ClrDataAddress* pLoaderAllocator);
     [PreserveSig]
@@ -1074,4 +1191,79 @@ public unsafe partial interface ISOSDacInterface16
 {
     [PreserveSig]
     int GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode);
+}
+
+// StressLog data structures for ISOSDacInterface17
+
+public struct SOSStressLogData
+{
+    public uint LoggedFacilities;
+    public uint Level;
+    public uint MaxSizePerThread;
+    public uint MaxSizeTotal;
+    public int TotalChunks;
+    public ulong TickFrequency;
+    public ulong StartTimestamp;
+    public ulong StartTime;
+}
+
+public struct SOSThreadStressLogData
+{
+    public ClrDataAddress ThreadLogAddress;
+    public ulong ThreadId;
+}
+
+public struct SOSStressMsgData
+{
+    public uint Facility;
+    public ClrDataAddress FormatString;
+    public ulong Timestamp;
+    public uint ArgumentCount;
+}
+
+[GeneratedComInterface]
+[Guid("94a2bd3d-ab3d-43bf-81d8-3ae96b8e33cd")]
+public unsafe partial interface ISOSStressLogThreadEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count,
+             [In, Out, MarshalUsing(CountElementName = nameof(count))]
+             SOSThreadStressLogData[] values,
+             uint* pFetched);
+}
+
+[GeneratedComInterface]
+[Guid("437cb033-afe7-4c0f-a4a7-82c891bc049e")]
+public unsafe partial interface ISOSStressLogMsgEnum : ISOSEnum
+{
+    [PreserveSig]
+    int Next(uint count,
+             [In, Out, MarshalUsing(CountElementName = nameof(count))]
+             SOSStressMsgData[] values,
+             uint* pFetched);
+
+    [PreserveSig]
+    int GetArguments(uint messageIndex,
+                     uint argCount,
+                     [In, Out, MarshalUsing(CountElementName = nameof(argCount))]
+                     ClrDataAddress[] args,
+                     uint* pFetched);
+}
+
+[GeneratedComInterface]
+[Guid("2f4bb585-ed50-479e-bbe0-10a95a5da3bb")]
+public unsafe partial interface ISOSDacInterface17
+{
+    [PreserveSig]
+    int GetStressLogData(SOSStressLogData* data);
+
+    [PreserveSig]
+    int GetStressLogThreadEnumerator(
+        DacComNullableByRef<ISOSStressLogThreadEnum> ppEnum);
+
+    [PreserveSig]
+    int GetStressLogMessageEnumerator(
+        ClrDataAddress threadStressLogAddress,
+        DacComNullableByRef<ISOSStressLogMsgEnum> ppEnum);
+
 }

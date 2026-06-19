@@ -27,19 +27,21 @@
         - eng/native/build-commons.sh
         - eng/native/gen-buildsys.cmd
         - src/native/libs/build-native.sh
-        - src/coreclr/tools/aot/ILCompiler.Compiler/Compiler/ObjectWriter/MachObjectWriter.cs
+        - src/coreclr/tools/Common/Compiler/ObjectWriter/MachObjectWriter.cs
         - src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets
-        - src/mono/mono/tools/offsets-tool/offsets-tool.py
+        - src/mono/mono/offsets/offsets-tool.py
         - src/mono/msbuild/apple/build/AppleBuild.targets
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-x64.xml
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-arm64.xml
         - src/mono/msbuild/common/MonoAOTCompiler.props
         - src/tasks/AppleAppBuilder/Xcode.cs
         - src/tasks/MobileBuildTasks/Apple/AppleProject.cs
+        - src/tasks/MobileBuildTasks/Android/AndroidProject.cs
+        - src/tasks/AndroidAppBuilder/ApkBuilder.cs
         - src/tasks/Crossgen2Tasks/Microsoft.NET.CrossGen.targets
         - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
      -->
-    <AndroidApiLevelMin>21</AndroidApiLevelMin>
+    <AndroidApiLevelMin>24</AndroidApiLevelMin>
     <iOSVersionMin>13.0</iOSVersionMin>
     <tvOSVersionMin>13.0</tvOSVersionMin>
     <macOSVersionMin>14.0</macOSVersionMin>
@@ -150,6 +152,7 @@
     <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
     <TestExclusionListTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'TestExclusionListTasks', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)'))</TestExclusionListTasksDir>
     <InstallerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', '$(TasksConfiguration)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
+    <HelixTestTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'HelixTestTasks', '$(TasksConfiguration)', '$(NetCoreAppToolCurrent)', 'HelixTestTasks.dll'))</HelixTestTasksAssemblyPath>
     <Crossgen2SdkOverridePropsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', 'Microsoft.NET.CrossGen.props'))</Crossgen2SdkOverridePropsPath>
     <Crossgen2SdkOverrideTargetsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', '$(TasksConfiguration)', 'Microsoft.NET.CrossGen.targets'))</Crossgen2SdkOverrideTargetsPath>
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>

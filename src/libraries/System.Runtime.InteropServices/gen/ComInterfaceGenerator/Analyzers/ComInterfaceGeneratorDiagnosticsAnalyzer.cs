@@ -36,8 +36,10 @@ namespace Microsoft.Interop.Analyzers
                 GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly,
                 // Method-level diagnostics
                 GeneratorDiagnostics.MethodNotDeclaredInAttributedInterface,
-                GeneratorDiagnostics.InstancePropertyDeclaredInInterface,
                 GeneratorDiagnostics.InstanceEventDeclaredInInterface,
+                GeneratorDiagnostics.InvalidAttributedMethodSignature,
+                GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface,
+                GeneratorDiagnostics.PropertyAccessorsMustBeAllOrNothing,
                 GeneratorDiagnostics.CannotAnalyzeMethodPattern,
                 GeneratorDiagnostics.CannotAnalyzeInterfacePattern,
                 // Stub-level diagnostics
@@ -60,6 +62,8 @@ namespace Microsoft.Interop.Analyzers
                 GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallOutParam,
                 GeneratorDiagnostics.SizeOfInCollectionMustBeDefinedAtCallReturnValue,
                 GeneratorDiagnostics.InvalidExceptionMarshallingConfiguration,
+                GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType,
+                GeneratorDiagnostics.MarshalAttributeOnDefaultImplementedComInterfaceMember,
                 GeneratorDiagnostics.GeneratedComInterfaceUsageDoesNotFollowBestPractices);
 
         public override void Initialize(AnalysisContext context)
@@ -185,11 +189,11 @@ namespace Microsoft.Interop.Analyzers
 
                 if (srcCtx.VtableIndexData.Direction is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                 {
-                    (_, managedToNativeDiags) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(srcCtx, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
+                    (_, managedToNativeDiags) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(srcCtx, static (env, dir) => new ByValueContentsMarshalKindValidator(ComInterfaceGeneratorHelpers.GetGeneratorResolver(env, dir)));
                 }
                 if (srcCtx.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                 {
-                    (_, nativeToManagedDiags) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(srcCtx, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
+                    (_, nativeToManagedDiags) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(srcCtx, static (env, dir) => new ByValueContentsMarshalKindValidator(ComInterfaceGeneratorHelpers.GetGeneratorResolver(env, dir)));
                 }
 
                 // Deduplicate diagnostics reported for both directions (matching original generator behavior)

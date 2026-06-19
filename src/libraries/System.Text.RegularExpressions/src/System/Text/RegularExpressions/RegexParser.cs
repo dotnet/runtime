@@ -87,7 +87,7 @@ namespace System.Text.RegularExpressions
             (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 #pragma warning restore RS1035
 
-        public static RegexOptions ParseOptionsInPattern(string pattern, RegexOptions options)
+        public static unsafe RegexOptions ParseOptionsInPattern(string pattern, RegexOptions options)
         {
             using var parser = new RegexParser(pattern, options, CultureInfo.InvariantCulture, // since we won't perform case conversions, culture doesn't matter in this case.
                 new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
@@ -100,7 +100,7 @@ namespace System.Text.RegularExpressions
             return foundOptionsInPattern;
         }
 
-        public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
+        public static unsafe RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
         {
             using var parser = new RegexParser(pattern, options, culture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
 
@@ -134,7 +134,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>This static call constructs a flat concatenation node given a replacement pattern.</summary>
-        public static RegexReplacement ParseReplacement(string pattern, RegexOptions options, Hashtable caps, int capsize, Hashtable capnames)
+        public static unsafe RegexReplacement ParseReplacement(string pattern, RegexOptions options, Hashtable caps, int capsize, Hashtable capnames)
         {
 #pragma warning disable RS1035 // The symbol 'CultureInfo.CurrentCulture' is banned for use by analyzers.
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
@@ -156,7 +156,7 @@ namespace System.Text.RegularExpressions
                 : EscapeImpl(input.AsSpan(), indexOfMetachar);
         }
 
-        private static string EscapeImpl(ReadOnlySpan<char> input, int indexOfMetachar)
+        private static unsafe string EscapeImpl(ReadOnlySpan<char> input, int indexOfMetachar)
         {
             // For small inputs we allocate on the stack. In most cases a buffer three
             // times larger the original string should be sufficient as usually not all
@@ -218,7 +218,7 @@ namespace System.Text.RegularExpressions
                 input;
         }
 
-        private static string UnescapeImpl(string input, int i)
+        private static unsafe string UnescapeImpl(string input, int i)
         {
             var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
 
@@ -391,17 +391,40 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '^':
-                        _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Bol : RegexNodeKind.Beginning, _options);
+                        if ((_options & (RegexOptions.AnyNewLine | RegexOptions.Multiline)) == (RegexOptions.AnyNewLine | RegexOptions.Multiline))
+                        {
+                            _unit = AnyNewLineBolNode();
+                        }
+                        else
+                        {
+                            _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Bol : RegexNodeKind.Beginning, _options);
+                        }
                         break;
 
                     case '$':
-                        _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
+                        if ((_options & RegexOptions.AnyNewLine) != 0)
+                        {
+                            _unit = (_options & RegexOptions.Multiline) != 0 ? AnyNewLineEolNode() : AnyNewLineEndZNode();
+                        }
+                        else
+                        {
+                            _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
+                        }
                         break;
 
                     case '.':
-                        _unit = (_options & RegexOptions.Singleline) != 0 ?
-                            new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass) :
-                            new RegexNode(RegexNodeKind.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
+                        if ((_options & RegexOptions.Singleline) != 0)
+                        {
+                            _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass);
+                        }
+                        else if ((_options & RegexOptions.AnyNewLine) != 0)
+                        {
+                            _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.NotAnyNewLineClass);
+                        }
+                        else
+                        {
+                            _unit = new RegexNode(RegexNodeKind.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
+                        }
                         break;
 
                     case '{':
@@ -1047,8 +1070,9 @@ namespace System.Text.RegularExpressions
                         --_pos;
 
                         nodeType = RegexNodeKind.Group;
-                        // Disallow options in the children of a testgroup node
-                        if (_group!.Kind != RegexNodeKind.ExpressionConditional)
+                        // While parsing the test of a conditional (ExpressionConditional with no children yet),
+                        // disallow inline options; allow them once the test has been parsed and in the yes/no branches.
+                        if (_group!.Kind != RegexNodeKind.ExpressionConditional || _group.ChildCount() > 0)
                         {
                             ScanOptions();
                         }
@@ -1131,11 +1155,15 @@ namespace System.Text.RegularExpressions
                 case 'B':
                 case 'A':
                 case 'G':
-                case 'Z':
                 case 'z':
                     _pos++;
                     return scanOnly ? null :
                         new RegexNode(TypeFromCode(ch), _options);
+
+                case 'Z':
+                    _pos++;
+                    return scanOnly ? null :
+                        (_options & RegexOptions.AnyNewLine) != 0 ? AnyNewLineEndZNode() : new RegexNode(RegexNodeKind.EndZ, _options);
 
                 case 'w':
                     _pos++;
@@ -1694,6 +1722,125 @@ namespace System.Text.RegularExpressions
             }
 
             return capname;
+        }
+
+        /// <summary>
+        /// Creates (?!(?&lt;=\r)\n) — a negative lookahead that blocks matching
+        /// between \r and \n of a \r\n sequence. Used as a guard by all
+        /// AnyNewLine anchor lowerings to prevent anchors from firing
+        /// at the \r\n boundary.
+        /// </summary>
+        private RegexNode AnyNewLineCrLfGuardNode()
+        {
+            RegexOptions lookaheadOpts = _options & ~RegexOptions.RightToLeft;
+            RegexOptions lookbehindOpts = _options | RegexOptions.RightToLeft;
+            RegexOptions lookaheadOptsNoCase = lookaheadOpts & ~RegexOptions.IgnoreCase;
+            RegexOptions lookbehindOptsNoCase = lookbehindOpts & ~RegexOptions.IgnoreCase;
+
+            // (?<=\r)
+            var lookbehindCr = new RegexNode(RegexNodeKind.PositiveLookaround, lookbehindOpts);
+            lookbehindCr.AddChild(new RegexNode(RegexNodeKind.One, lookbehindOptsNoCase, '\r'));
+
+            // (?<=\r)\n
+            var crThenLf = new RegexNode(RegexNodeKind.Concatenate, lookaheadOpts);
+            crThenLf.AddChild(lookbehindCr);
+            crThenLf.AddChild(new RegexNode(RegexNodeKind.One, lookaheadOptsNoCase, '\n'));
+
+            // (?!(?<=\r)\n)
+            var guard = new RegexNode(RegexNodeKind.NegativeLookaround, lookaheadOpts);
+            guard.AddChild(crThenLf);
+
+            return guard;
+        }
+
+        /// <summary>
+        /// Builds a tree equivalent to $ or \Z with AnyNewLine (non-Multiline).
+        /// Matches at end of string, or before any newline at end of string,
+        /// but not between \r and \n.
+        /// Equivalent to: (?=\r\n\z|[\n\r\v\f\u0085\u2028\u2029]?\z)(?!(?&lt;=\r)\n)
+        /// </summary>
+        private RegexNode AnyNewLineEndZNode()
+        {
+            RegexOptions opts = _options;
+            RegexOptions lookaheadOpts = opts & ~RegexOptions.RightToLeft;
+            RegexOptions lookaheadOptsNoCase = lookaheadOpts & ~RegexOptions.IgnoreCase;
+
+            // \r\n\z
+            var crlfEnd = new RegexNode(RegexNodeKind.Concatenate, lookaheadOpts);
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.One, lookaheadOptsNoCase, '\r'));
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.One, lookaheadOptsNoCase, '\n'));
+            crlfEnd.AddChild(new RegexNode(RegexNodeKind.End, lookaheadOpts));
+
+            // [\n\r\v\f\u0085\u2028\u2029]?\z — optional any-newline followed by end of string
+            var anyNewLineOptEnd = new RegexNode(RegexNodeKind.Concatenate, lookaheadOpts);
+            anyNewLineOptEnd.AddChild(new RegexNode(RegexNodeKind.Set, lookaheadOptsNoCase, RegexCharClass.AnyNewLineClass).MakeQuantifier(false, 0, 1));
+            anyNewLineOptEnd.AddChild(new RegexNode(RegexNodeKind.End, lookaheadOpts));
+
+            // (?=\r\n\z|[\n\r\v\f\u0085\u2028\u2029]?\z)
+            var innerAlt = new RegexNode(RegexNodeKind.Alternate, lookaheadOpts);
+            innerAlt.AddChild(crlfEnd);
+            innerAlt.AddChild(anyNewLineOptEnd);
+            var lookahead = new RegexNode(RegexNodeKind.PositiveLookaround, lookaheadOpts);
+            lookahead.AddChild(innerAlt);
+
+            // (?=\r\n\z|[\n\r\v\f\u0085\u2028\u2029]?\z)(?!(?<=\r)\n)
+            var result = new RegexNode(RegexNodeKind.Concatenate, opts);
+            result.AddChild(lookahead);
+            result.AddChild(AnyNewLineCrLfGuardNode());
+
+            return result;
+        }
+
+        /// <summary>
+        /// Builds a tree equivalent to $ with AnyNewLine and Multiline.
+        /// Matches before any newline or at end of string, but not between \r and \n.
+        /// Equivalent to: (?=[\n\r\v\f\u0085\u2028\u2029]|\z)(?!(?&lt;=\r)\n)
+        /// </summary>
+        private RegexNode AnyNewLineEolNode()
+        {
+            RegexOptions opts = _options;
+            RegexOptions lookaheadOpts = opts & ~RegexOptions.RightToLeft;
+            RegexOptions lookaheadOptsNoCase = lookaheadOpts & ~RegexOptions.IgnoreCase;
+
+            // (?=[\n\r\v\f\u0085\u2028\u2029]|\z)
+            var innerAlt = new RegexNode(RegexNodeKind.Alternate, lookaheadOpts);
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lookaheadOptsNoCase, RegexCharClass.AnyNewLineClass));
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.End, lookaheadOpts));
+            var lookahead = new RegexNode(RegexNodeKind.PositiveLookaround, lookaheadOpts);
+            lookahead.AddChild(innerAlt);
+
+            // (?=[\n\r\v\f\u0085\u2028\u2029]|\z)(?!(?<=\r)\n)
+            var result = new RegexNode(RegexNodeKind.Concatenate, opts);
+            result.AddChild(lookahead);
+            result.AddChild(AnyNewLineCrLfGuardNode());
+
+            return result;
+        }
+
+        /// <summary>
+        /// Builds a tree equivalent to ^ with AnyNewLine and Multiline.
+        /// Matches after any newline or at start of string, but not between \r and \n.
+        /// Equivalent to: (?&lt;=[\n\r\v\f\u0085\u2028\u2029]|\A)(?!(?&lt;=\r)\n)
+        /// </summary>
+        private RegexNode AnyNewLineBolNode()
+        {
+            RegexOptions opts = _options;
+            RegexOptions lookbehindOpts = opts | RegexOptions.RightToLeft;
+            RegexOptions lookbehindOptsNoCase = lookbehindOpts & ~RegexOptions.IgnoreCase;
+
+            // (?<=[\n\r\v\f\u0085\u2028\u2029]|\A)
+            var innerAlt = new RegexNode(RegexNodeKind.Alternate, lookbehindOpts);
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Set, lookbehindOptsNoCase, RegexCharClass.AnyNewLineClass));
+            innerAlt.AddChild(new RegexNode(RegexNodeKind.Beginning, lookbehindOpts));
+            var lookbehind = new RegexNode(RegexNodeKind.PositiveLookaround, lookbehindOpts);
+            lookbehind.AddChild(innerAlt);
+
+            // (?<=[\n\r\v\f\u0085\u2028\u2029]|\A)(?!(?<=\r)\n)
+            var result = new RegexNode(RegexNodeKind.Concatenate, opts);
+            result.AddChild(lookbehind);
+            result.AddChild(AnyNewLineCrLfGuardNode());
+
+            return result;
         }
 
         /// <summary>Returns the node kind for zero-length assertions with a \ code.</summary>

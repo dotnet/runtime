@@ -136,7 +136,6 @@ int main(int argc, char **argv) {
 }" HAVE_SIGALTSTACK)
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
 check_function_exists(vm_read HAVE_VM_READ)
-check_function_exists(directio HAVE_DIRECTIO)
 check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
@@ -549,7 +548,6 @@ int main(int argc, char **argv)
         return 0;
 }" UNWIND_CONTEXT_IS_UCONTEXT_T)
 
-check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
 check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
 check_symbol_exists(unw_get_proc_info_in_range libunwind.h HAVE_GET_PROC_INFO_IN_RANGE)
 
@@ -630,7 +628,7 @@ endif(CLR_CMAKE_TARGET_APPLE)
 check_struct_has_member(
     "struct statfs"
     f_fstypename
-    "sys/mount.h"
+    "sys/types.h;sys/mount.h"
     HAVE_STATFS_FSTYPENAME)
 
 check_struct_has_member(
@@ -650,7 +648,7 @@ check_prototype_definition(
     statfs
     "int statfs(const char *path, struct statfs *buf)"
     0
-    ${STATFS_INCLUDES}
+    "sys/types.h;${STATFS_INCLUDES}"
     HAVE_NON_LEGACY_STATFS)
 
 configure_file(${CMAKE_CURRENT_LIST_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)

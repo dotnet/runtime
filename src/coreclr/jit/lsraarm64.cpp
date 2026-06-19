@@ -840,6 +840,22 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildOperandUses(tree->gtGetOp1());
             break;
 
+        case GT_PATCHPOINT:
+            // Patchpoint takes two args: counter addr (x0) and IL offset (x1)
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildOperandUses(tree->gtGetOp2(), RBM_ARG_1.GetIntRegSet());
+            srcCount++;
+            BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT));
+            break;
+
+        case GT_PATCHPOINT_FORCED:
+            // Forced patchpoint takes one arg: IL offset (x0)
+            // Calls helper and jumps to returned address - no value produced
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_ARG_0.GetIntRegSet());
+            BuildKills(tree, m_compiler->compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED));
+            break;
+
         case GT_JMP:
             srcCount = 0;
             assert(dstCount == 0);
@@ -898,6 +914,14 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
             break;
 
+        case GT_BFX:
+        {
+            srcCount = BuildOperandUses(tree->gtGetOp1());
+            assert(dstCount == 1);
+            BuildDef(tree);
+            break;
+        }
+
         case GT_RETURNTRAP:
             // this just turns into a compare of its child with an int
             // + a conditional call
@@ -949,6 +973,32 @@ int LinearScan::BuildNode(GenTree* tree)
                 {
                     assert(varTypeIsFloating(tree->gtGetOp1()));
                     assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
+
+                    BuildUse(tree->gtGetOp1());
+                    srcCount = 1;
+                    assert(dstCount == 1);
+                    BuildDef(tree);
+                    break;
+                }
+
+                case NI_PRIMITIVE_PopCount:
+                {
+                    assert(varTypeIsIntegral(tree->gtGetOp1()));
+
+                    // We need a SIMD register to execute popcnt
+                    buildInternalFloatRegisterDefForNode(tree, allSIMDRegs());
+
+                    BuildUse(tree->gtGetOp1());
+                    buildInternalRegisterUses();
+                    srcCount = 1;
+                    assert(dstCount == 1);
+                    BuildDef(tree);
+                    break;
+                }
+
+                case NI_PRIMITIVE_TrailingZeroCount:
+                {
+                    assert(varTypeIsIntegral(tree->gtGetOp1()));
 
                     BuildUse(tree->gtGetOp1());
                     srcCount = 1;
@@ -1159,7 +1209,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 // (if it's set, Lower will emit a STORE_BLK for this LCLHEAP), but we still need to
                 // do stack-probing for large allocations.
                 //
-                size_t sizeVal = size->AsIntCon()->gtIconVal;
+                size_t sizeVal = size->AsIntCon()->IconValue();
                 if (AlignUp(sizeVal, STACK_ALIGN) >= m_compiler->eeGetPageSize())
                 {
                     // We need two registers: regCnt and RegTmp
@@ -1389,6 +1439,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // Build any additional special cases
     switch (intrin.id)
     {
+        case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
+        case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
+        case NI_Sve2_GatherVectorNonTemporal:
+        case NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal:
+        case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
         case NI_Sve2_Scatter16BitNarrowingNonTemporal:
         case NI_Sve2_Scatter32BitNarrowingNonTemporal:
         case NI_Sve2_ScatterNonTemporal:

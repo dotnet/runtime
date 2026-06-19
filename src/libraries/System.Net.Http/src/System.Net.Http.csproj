@@ -11,7 +11,6 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_NetHttp</GeneratePlatformNotSupportedAssemblyMessage>
-    <FeatureWasmManagedThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmManagedThreads>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(TargetPlatformIdentifier)' == 'maccatalyst'">$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos'">$(DefineConstants);TARGET_MOBILE</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'android'">$(DefineConstants);TARGET_ANDROID</DefineConstants>
@@ -20,7 +19,6 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'tvos'">$(DefineConstants);TARGET_TVOS</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'wasi'">$(DefineConstants);TARGET_WASI</DefineConstants>
-    <DefineConstants Condition="'$(FeatureWasmManagedThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_MANAGED_THREADS</DefineConstants>
     <EmitCompilerGeneratedFiles Condition="'$(Configuration)' == 'Debug' and '$(TargetPlatformIdentifier)' == 'browser'">true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
@@ -128,6 +126,8 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\SocketsHttpPlaintextStreamFilterContext.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs"
+             Link="Common\System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
              Link="Common\System\IO\DelegatingStream.cs" />
     <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs"
@@ -146,6 +146,8 @@
              Link="Common\System\Text\SimpleRegex.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="Common\System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
              Link="Common\System\Net\ArrayBuffer.cs"/>
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs"
@@ -181,6 +183,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\AuthenticationHelper.NtAuth.cs" />
+    <Compile Include="System\Net\Http\LocalAppContextSwitches.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ChunkedEncodingWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectHelper.cs" />
@@ -456,16 +459,18 @@
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiOutputStream.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiInputStream.cs" />
     <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttp.cs" />
-    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.clocks.v0_2_0.MonotonicClockInterop.cs" />
-    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.http.v0_2_0.ITypes.cs" />
-    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.http.v0_2_0.OutgoingHandlerInterop.cs" />
-    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.http.v0_2_0.TypesInterop.cs" />
-    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.io.v0_2_0.ErrorInterop.cs" />
-    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.io.v0_2_0.IError.cs" />
-    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.io.v0_2_0.IPoll.cs" />
-    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.io.v0_2_0.IStreams.cs" />
-    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.io.v0_2_0.PollInterop.cs" />
-    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.imports.wasi.io.v0_2_0.StreamsInterop.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.clocks.v0_2_8.IMonotonicClockImports.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.clocks.v0_2_8.MonotonicClockImportsInterop.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.http.v0_2_8.IOutgoingHandlerImports.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.http.v0_2_8.ITypesImports.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.http.v0_2_8.OutgoingHandlerImportsInterop.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.http.v0_2_8.TypesImportsInterop.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.ErrorImportsInterop.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.IErrorImports.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.IPollImports.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.IStreamsImports.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.PollImportsInterop.cs" />
+    <Compile Include="System\Net\Http\WasiHttpHandler\WasiHttpWorld.wit.Imports.wasi.io.v0_2_8.StreamsImportsInterop.cs" />
   </ItemGroup>
 
   <ItemGroup>

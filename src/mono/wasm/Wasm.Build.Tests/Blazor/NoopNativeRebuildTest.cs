@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.Blazor
 {
-    [TestCategory("native")]
+    [TestCategory("native-mono")]
     public class NoopNativeRebuildTest : BlazorWasmTestBase
     {
         public NoopNativeRebuildTest(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

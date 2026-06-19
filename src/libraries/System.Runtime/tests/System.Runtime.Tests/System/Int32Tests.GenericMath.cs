@@ -193,6 +193,34 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal(0, BinaryIntegerHelper<int>.Log10(0));
+            Assert.Equal(0, BinaryIntegerHelper<int>.Log10(1));
+            Assert.Equal(0, BinaryIntegerHelper<int>.Log10(9));
+            Assert.Equal(1, BinaryIntegerHelper<int>.Log10(10));
+            Assert.Equal(1, BinaryIntegerHelper<int>.Log10(99));
+            Assert.Equal(2, BinaryIntegerHelper<int>.Log10(100));
+            Assert.Equal(2, BinaryIntegerHelper<int>.Log10(999));
+            Assert.Equal(3, BinaryIntegerHelper<int>.Log10(1_000));
+            Assert.Equal(3, BinaryIntegerHelper<int>.Log10(9_999));
+            Assert.Equal(4, BinaryIntegerHelper<int>.Log10(10_000));
+            Assert.Equal(4, BinaryIntegerHelper<int>.Log10(99_999));
+            Assert.Equal(5, BinaryIntegerHelper<int>.Log10(100_000));
+            Assert.Equal(5, BinaryIntegerHelper<int>.Log10(999_999));
+            Assert.Equal(6, BinaryIntegerHelper<int>.Log10(1_000_000));
+            Assert.Equal(6, BinaryIntegerHelper<int>.Log10(9_999_999));
+            Assert.Equal(7, BinaryIntegerHelper<int>.Log10(10_000_000));
+            Assert.Equal(7, BinaryIntegerHelper<int>.Log10(99_999_999));
+            Assert.Equal(8, BinaryIntegerHelper<int>.Log10(100_000_000));
+            Assert.Equal(8, BinaryIntegerHelper<int>.Log10(999_999_999));
+            Assert.Equal(9, BinaryIntegerHelper<int>.Log10(1_000_000_000));
+            Assert.Equal(9, BinaryIntegerHelper<int>.Log10(2_147_483_647));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<int>.Log10(-2_147_483_648));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<int>.Log10(-1));
+        }
+
+        [Fact]
         public static void PopCountTest()
         {
             Assert.Equal((int)0x00000000, BinaryIntegerHelper<int>.PopCount((int)0x00000000));
@@ -1026,7 +1054,12 @@ namespace System.Tests
             Assert.Equal((int)0x00000000, BinaryNumberHelper<int>.Log2((int)0x00000001));
             Assert.Equal((int)0x0000001E, BinaryNumberHelper<int>.Log2((int)0x7FFFFFFF));
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryNumberHelper<int>.Log2(unchecked((int)0x80000000)));
-            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryNumberHelper<int>.Log2(unchecked((int)0xFFFFFFFF)));
+
+            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => BinaryNumberHelper<int>.Log2(unchecked((int)0xFFFFFFFF)));
+
+            // We assert these to ensure intrinsification preserves the information.
+            Assert.Equal("value", exception.ParamName);
+            Assert.Equal("Non-negative number required. (Parameter 'value')", exception.Message);
         }
 
         //

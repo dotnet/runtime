@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers.X86;
 using static Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86Context;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
@@ -58,11 +59,11 @@ public class X86Unwinder(Target target)
 
         eman.GetGCInfo(cbh, out TargetPointer gcInfoAddress, out uint gcInfoVersion);
         uint relOffset = (uint)eman.GetRelativeOffset(cbh).Value;
-        TargetPointer methodStart = eman.GetStartAddress(cbh).AsTargetPointer;
-        TargetPointer funcletStart = eman.GetFuncletStartAddress(cbh).AsTargetPointer;
+        TargetPointer methodStart = eman.GetStartAddress(cbh);
+        TargetPointer funcletStart = eman.GetFuncletStartAddress(cbh);
         bool isFunclet = eman.IsFunclet(cbh);
 
-        GCInfo gcInfo = new(_target, gcInfoAddress, gcInfoVersion, relOffset);
+        X86GCInfo gcInfo = new(_target, gcInfoAddress, gcInfoVersion, relOffset);
 
         if (gcInfo.IsInEpilog)
         {
@@ -96,7 +97,7 @@ public class X86Unwinder(Target target)
     #endregion
     #region Unwind Logic
 
-    private void UnwindEpilog(ref X86Context context, GCInfo gcInfo, TargetPointer epilogBase)
+    private void UnwindEpilog(ref X86Context context, X86GCInfo gcInfo, TargetPointer epilogBase)
     {
         Debug.Assert(gcInfo.IsInEpilog);
         Debug.Assert(gcInfo.EpilogOffset > 0);
@@ -114,7 +115,7 @@ public class X86Unwinder(Target target)
         context.Esp += ESPIncrementOnReturn(gcInfo);
     }
 
-    private void UnwindEbpDoubleAlignFrameEpilog(ref X86Context context, GCInfo gcInfo, TargetPointer epilogBase)
+    private void UnwindEbpDoubleAlignFrameEpilog(ref X86Context context, X86GCInfo gcInfo, TargetPointer epilogBase)
     {
         /* See how many instructions we have executed in the
             epilog to determine which callee-saved registers
@@ -241,7 +242,7 @@ public class X86Unwinder(Target target)
         context.Esp = esp;
     }
 
-    private void UnwindEspFrameEpilog(ref X86Context context, GCInfo gcInfo, TargetPointer epilogBase)
+    private void UnwindEspFrameEpilog(ref X86Context context, X86GCInfo gcInfo, TargetPointer epilogBase)
     {
         Debug.Assert(gcInfo.IsInEpilog);
         Debug.Assert(!gcInfo.Header.EbpFrame && !gcInfo.Header.DoubleAlign);
@@ -307,7 +308,7 @@ public class X86Unwinder(Target target)
         context.Esp = esp;
     }
 
-    private void UnwindEspFrame(ref X86Context context, GCInfo gcInfo, TargetPointer methodStart)
+    private void UnwindEspFrame(ref X86Context context, X86GCInfo gcInfo, TargetPointer methodStart)
     {
         Debug.Assert(!gcInfo.Header.EbpFrame && !gcInfo.Header.DoubleAlign);
         Debug.Assert(!gcInfo.IsInEpilog);
@@ -347,7 +348,7 @@ public class X86Unwinder(Target target)
         context.Esp = esp + ESPIncrementOnReturn(gcInfo);
     }
 
-    private void UnwindEspFrameProlog(ref X86Context context, GCInfo gcInfo, TargetPointer methodStart)
+    private void UnwindEspFrameProlog(ref X86Context context, X86GCInfo gcInfo, TargetPointer methodStart)
     {
         Debug.Assert(gcInfo.IsInProlog);
         Debug.Assert(!gcInfo.Header.EbpFrame && !gcInfo.Header.DoubleAlign);
@@ -426,7 +427,7 @@ public class X86Unwinder(Target target)
 
     private bool UnwindEbpDoubleAlignFrame(
         ref X86Context context,
-        GCInfo gcInfo,
+        X86GCInfo gcInfo,
         TargetPointer methodStart,
         TargetPointer funcletStart,
         bool isFunclet)
@@ -510,7 +511,7 @@ public class X86Unwinder(Target target)
         return true;
     }
 
-    private void UnwindEbpDoubleAlignFrameProlog(ref X86Context context, GCInfo gcInfo, TargetPointer methodStart)
+    private void UnwindEbpDoubleAlignFrameProlog(ref X86Context context, X86GCInfo gcInfo, TargetPointer methodStart)
     {
         Debug.Assert(gcInfo.IsInProlog);
         Debug.Assert(gcInfo.Header.EbpFrame || gcInfo.Header.DoubleAlign);
@@ -610,7 +611,7 @@ public class X86Unwinder(Target target)
         return walkOffset < actualHaltOffset;
     }
 
-    private uint ESPIncrementOnReturn(GCInfo gcInfo)
+    private uint ESPIncrementOnReturn(X86GCInfo gcInfo)
     {
 
         uint stackParameterSize = gcInfo.Header.VarArgs ? 0 // varargs are caller-popped

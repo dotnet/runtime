@@ -391,17 +391,8 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 
             if (call->TypeIs(TYP_VOID) && call->AsCall()->ShouldHaveRetBufArg())
             {
-                GenTree* retBuf;
-                if (call->AsCall()->ShouldHaveRetBufArg())
-                {
-                    assert(call->AsCall()->gtArgs.HasRetBuffer());
-                    retBuf = call->AsCall()->gtArgs.GetRetBufferArg()->GetNode();
-                }
-                else
-                {
-                    assert(!call->AsCall()->gtArgs.HasThisPointer());
-                    retBuf = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-                }
+                assert(call->AsCall()->gtArgs.HasRetBuffer());
+                GenTree* retBuf = call->AsCall()->gtArgs.GetRetBufferArg()->GetNode();
 
                 assert(retBuf->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
@@ -483,10 +474,6 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
     impAppendStmtCheck(stmt, chkLevel);
 
     impAppendStmt(stmt);
-
-#ifdef FEATURE_SIMD
-    impMarkContiguousSIMDFieldStores(stmt);
-#endif
 
     // Once we set the current offset as debug info in an appended tree, we are
     // ready to report the following offsets. Note that we need to compare
@@ -798,12 +785,6 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
         if (srcCall->ShouldHaveRetBufArg())
         {
             // Case of call returning a struct via hidden retbuf arg.
-            // Some calls have an "out buffer" that is not actually a ret buff
-            // in the ABI sense. We take the path here for those but it should
-            // not be marked as the ret buff arg since it always follow the
-            // normal ABI for parameters.
-            WellKnownArg wellKnownArgType =
-                srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
@@ -823,7 +804,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
                 return impStoreStruct(store, curLevel, pAfterStmt, di, block);
             }
 
-            NewCallArg newArg = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
+            NewCallArg newArg = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
 
             if (destAddr->OperIs(GT_LCL_ADDR))
             {
@@ -1384,11 +1365,11 @@ GenTree* Compiler::impLookupToTree(CORINFO_LOOKUP* pLookup, GenTreeFlags handleF
 
         if (handle != nullptr)
         {
-            addr->AsIntCon()->gtTargetHandle = handleToTrack;
+            addr->AsIntCon()->SetTargetHandle(handleToTrack);
         }
         else
         {
-            addr->gtGetOp1()->AsIntCon()->gtTargetHandle = handleToTrack;
+            addr->gtGetOp1()->AsIntCon()->SetTargetHandle(handleToTrack);
         }
 #endif
         return addr;
@@ -1428,7 +1409,7 @@ bool Compiler::impIsCastHelperEligibleForClassProbe(GenTree* tree)
 
     if (tree->IsHelperCall())
     {
-        switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
+        switch (tree->AsCall()->GetHelperNum())
         {
             case CORINFO_HELP_ISINSTANCEOFINTERFACE:
             case CORINFO_HELP_ISINSTANCEOFARRAY:
@@ -2646,7 +2627,7 @@ bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
         // Disallow the tailcall for this kind.
         CORINFO_CLASS_HANDLE classHandle;
         CorInfoType          ciType = strip(info.compCompHnd->getArgType(&sig, args, &classHandle));
-        if ((ciType == CORINFO_TYPE_PTR) || (ciType == CORINFO_TYPE_BYREF) || (ciType == CORINFO_TYPE_REFANY))
+        if ((ciType == CORINFO_TYPE_PTR) || (ciType == CORINFO_TYPE_BYREF))
         {
             return false;
         }
@@ -2748,7 +2729,10 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
                                                         runtimeMethodHandle);
     }
 
-#ifdef FEATURE_READYTORUN
+    // Wasm R2R cannot use the CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR fast path because it
+    // relies on DelayLoad_Helper_Obj dynamic-helper thunks, which are not implemented on wasm.
+    // Fall through to the runtime CORINFO_HELP_VIRTUAL_FUNC_PTR helper instead.
+#if defined(FEATURE_READYTORUN) && !defined(TARGET_WASM)
     else if (IsAot())
     {
         if (!pCallInfo->exactContextNeedsRuntimeLookup)
@@ -2765,7 +2749,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
             call = gtNewRuntimeLookupHelperCallNode(&pCallInfo->codePointerLookup.runtimeLookup, ctxTree, nullptr);
         }
     }
-#endif
+#endif // FEATURE_READYTORUN && !TARGET_WASM
 
     if (call == nullptr)
     {
@@ -2802,6 +2786,59 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 
     return call;
 }
+
+#if defined(FEATURE_HW_INTRINSICS)
+//----------------------------------------------------------------------------------------------
+// Compiler::impSimdCreateScalarHalf: Creates a new Vector128.CreateScalar node for a System.Half value
+//
+//  Arguments:
+//    op1 - The System.Half value
+//
+// Returns:
+//    The Vector128.CreateScalar node that contains op1
+//
+GenTree* Compiler::impSimdCreateScalarHalf(GenTree* op1)
+{
+    unsigned op1Tmp;
+
+    if (!op1->OperIs(GT_LCL_VAR))
+    {
+        op1Tmp = lvaGrabTemp(true DEBUGARG("System.Half tmp"));
+        impStoreToTemp(op1Tmp, op1, CHECK_SPILL_ALL);
+    }
+    else
+    {
+        op1Tmp = op1->AsLclVarCommon()->GetLclNum();
+    }
+
+    op1 = gtNewLclFldNode(op1Tmp, TYP_USHORT, 0);
+    return gtNewSimdCreateScalarNode(TYP_SIMD16, op1, TYP_USHORT, 16);
+}
+
+//----------------------------------------------------------------------------------------------
+// Compiler::impSimdToScalarHalf: Creates a new Vector128.ToScalar node for a System.Half value
+//
+//  Arguments:
+//    op1        - The Vector128 from which to extract the System.Half value
+//    halfClsHnd - The class handle for System.Half
+//
+// Returns:
+//    The System.Half value extracted from op1
+//
+GenTree* Compiler::impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd)
+{
+    assert(isSystemHalfClass(halfClsHnd));
+
+    unsigned resTmp = lvaGrabTemp(true DEBUGARG("System.Half tmp"));
+    lvaSetStruct(resTmp, halfClsHnd, false);
+
+    op1 = gtNewSimdToScalarNode(TYP_INT, op1, TYP_USHORT, 16);
+    op1 = gtNewStoreLclFldNode(resTmp, TYP_USHORT, 0, op1);
+
+    impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
+    return gtNewLclvNode(resTmp, TYP_STRUCT);
+}
+#endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // impInlineUnboxNullable: Generate code for unboxing Nullable<T> from an object (obj)
@@ -3893,6 +3930,32 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 }
 
 //------------------------------------------------------------------------
+// impCanReorderWithNullCheck:
+//   Check if the specified tree can be reordered with a null check.
+//
+// Arguments:
+//    tree - The tree
+//
+// Return Value:
+//    True if it would not be observable whether a null check threw before or
+//    after the specified node.
+//
+bool Compiler::impCanReorderWithNullCheck(GenTree* tree)
+{
+    if ((tree->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0)
+    {
+        return false;
+    }
+
+    if (((tree->gtFlags & GTF_EXCEPT) != 0) && (gtCollectExceptions(tree) != ExceptionSetFlags::NullReferenceException))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // impImportStaticReadOnlyField: Tries to import 'static readonly' field
 //    as a constant if the host type is statically initialized.
 //
@@ -4340,7 +4403,7 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
             }
             isHoistable = true;
             op1         = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
-            INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
+            INDEBUG(op1->AsIntCon()->SetTargetHandle(reinterpret_cast<size_t>(pResolvedToken->hField)));
 
             if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
             {
@@ -5950,8 +6013,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-    bool enablePatchpoints =
+    bool enableOSR =
         !opts.compDbgCode && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0);
+    bool enablePartialCompilation =
+        opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation() > 0);
 
 #ifdef DEBUG
 
@@ -5961,11 +6026,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     JitEnablePatchpointRange.EnsureInit(JitConfig.JitEnablePatchpointRange());
     const unsigned hash    = impInlineRoot()->info.compMethodHash();
     const bool     inRange = JitEnablePatchpointRange.Contains(hash);
-    enablePatchpoints &= inRange;
-
+    enableOSR &= inRange;
+    enablePartialCompilation &= inRange;
 #endif // DEBUG
 
-    if (enablePatchpoints)
+    if (enableOSR)
     {
         // We don't inline at Tier0, if we do, we may need rethink our approach.
         // Could probably support inlines that don't introduce flow.
@@ -6079,7 +6144,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                                 // We may already have decided to put a patchpoint in succBlock. If not, add one.
                                 //
-                                if (succBlock->HasFlag(BBF_PATCHPOINT))
+                                if (succBlock->HasFlag(BBF_OSR_PATCHPOINT))
                                 {
                                     // In some cases the target may not be stack-empty at entry.
                                     // If so, we will bypass patchpoints for this backedge.
@@ -6097,7 +6162,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                 block->bbNum, succBlock->bbNum);
 
                                         assert(!succBlock->hasHndIndex());
-                                        succBlock->SetFlags(BBF_PATCHPOINT);
+                                        succBlock->SetFlags(BBF_OSR_PATCHPOINT);
                                     }
                                 }
                             }
@@ -6106,7 +6171,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     else
                     {
                         assert(!block->hasHndIndex());
-                        block->SetFlags(BBF_PATCHPOINT);
+                        block->SetFlags(BBF_OSR_PATCHPOINT);
                     }
 
                     setMethodHasPatchpoint();
@@ -6133,7 +6198,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         const bool tryRandomOSR = randomOSR > 0;
 
         if (compCanHavePatchpoints() && (tryOffsetOSR || tryRandomOSR) && (stackState.esStackDepth == 0) &&
-            !block->hasHndIndex() && !block->HasFlag(BBF_PATCHPOINT))
+            !block->hasHndIndex() && !block->HasFlag(BBF_OSR_PATCHPOINT))
         {
             // Block start can have a patchpoint. See if we should add one.
             //
@@ -6163,7 +6228,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             if (addPatchpoint)
             {
-                block->SetFlags(BBF_PATCHPOINT);
+                block->SetFlags(BBF_OSR_PATCHPOINT);
                 setMethodHasPatchpoint();
             }
 
@@ -6186,9 +6251,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     //
     // Note unlike OSR, it's ok to forgo these.
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation() > 0) &&
-        compCanHavePatchpoints() && !compTailPrefixSeen && (stackState.esStackDepth == 0) &&
-        !block->HasFlag(BBF_PATCHPOINT) && !block->hasHndIndex())
+    // For runtime async we cannot allow partial compilation as that removes IR from the blocks
+    // that we need to do proper liveness analysis.
+    //
+    if (enablePartialCompilation && compCanHavePatchpoints() && !compTailPrefixSeen && !compIsAsync() &&
+        (stackState.esStackDepth == 0) && !block->HasFlag(BBF_OSR_PATCHPOINT) && !block->hasHndIndex())
     {
         // Is this block a good place for partial compilation?
         //
@@ -6217,7 +6284,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             JITDUMP("\nBlock " FMT_BB " (%s) will be a partial compilation patchpoint -- not importing\n", block->bbNum,
                     reason);
             block->SetFlags(BBF_PARTIAL_COMPILATION_PATCHPOINT);
-            setMethodHasPartialCompilationPatchpoint();
+            setMethodHasPatchpoint();
 
             // Block will no longer flow to any of its successors.
             //
@@ -6923,7 +6990,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
 
             case CEE_ARGLIST:
-
+            {
                 if (!info.compIsVarArgs)
                 {
                     BADCODE("arglist in non-vararg method");
@@ -6934,9 +7001,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // The ARGLIST cookie is a hidden 'last' parameter, we have already
                 // adjusted the arg count cos this is like fetching the last param.
                 assertImp(numArgs > 0);
-                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_BYREF);
+                clsHnd = impGetRuntimeArgumentHandle();
+
+                unsigned argListTmp = lvaGrabTemp(false DEBUGARG("arglist tmp"));
+                lvaSetStruct(argListTmp, clsHnd, false);
+
+                op1 = gtNewLclVarAddrNode(lvaVarargsHandleArg, TYP_I_IMPL);
+                impAppendTree(gtNewStoreLclFldNode(argListTmp, TYP_I_IMPL, 0, op1), CHECK_SPILL_ALL, impCurStmtDI);
+
+                op1      = gtNewLclVarNode(argListTmp, TYP_STRUCT);
+                tiRetVal = makeTypeInfo(clsHnd);
                 impPushOnStack(op1, tiRetVal);
                 break;
+            }
 
             case CEE_ENDFINALLY:
 
@@ -7018,6 +7095,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_JMP:
 
                 assert(!compIsForInlining());
+
+                if (IsReadyToRun())
+                {
+                    // jmp is not supported on ReadyToRun
+                    // The call to the delayload method would not be properly set up to put the indirection cell address
+                    // in the correct register. See https://github.com/dotnet/runtime/issues/125252
+                    implReadyToRunUnsupported();
+                }
 
                 if ((info.compFlags & CORINFO_FLG_SYNCH) || block->hasTryIndex() || block->hasHndIndex())
                 {
@@ -7230,7 +7315,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // The array helper takes a native int for array length.
                 // So if we have an int, explicitly extend it to be a native int.
                 index = impImplicitIorI4Cast(index, TYP_I_IMPL);
-                op1   = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
+
+                GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
+                INDEBUG(call->gtRawILOffset = opcodeOffs);
+                impConvertToUserCallAndMarkForInlining(call);
+                op1 = call;
+
                 goto SPILL_APPEND;
             }
 
@@ -7663,7 +7753,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (block->KindIs(BBJ_COND))
                     {
-                        bool const      isCondTrue   = effectiveOp1->AsIntCon()->gtIconVal != 0;
+                        bool const      isCondTrue   = effectiveOp1->AsIntCon()->IconValue() != 0;
                         FlowEdge* const removedEdge  = isCondTrue ? block->GetFalseEdge() : block->GetTrueEdge();
                         FlowEdge* const retainedEdge = isCondTrue ? block->GetTrueEdge() : block->GetFalseEdge();
 
@@ -7922,7 +8012,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled() && op1->OperIs(GT_CNS_INT))
                 {
                     // Find the jump target
-                    size_t     switchVal = (size_t)op1->AsIntCon()->gtIconVal;
+                    size_t     switchVal = (size_t)op1->AsIntCon()->IconValue();
                     unsigned   jumpCnt   = block->GetSwitchTargets()->GetCaseCount();
                     FlowEdge** jumpTab   = block->GetSwitchTargets()->GetCases();
                     bool       foundVal  = false;
@@ -8146,7 +8236,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (op2->OperIs(GT_CNS_INT))
                     {
-                        ssize_t ival = op2->AsIntCon()->gtIconVal;
+                        ssize_t ival = op2->AsIntCon()->IconValue();
                         ssize_t mask, umask;
 
                         switch (lclTyp)
@@ -9070,43 +9160,57 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     bool hasTailPrefix = (prefixFlags & PREFIX_TAILCALL_EXPLICIT);
                     if (newBBcreatedForTailcallStress && !hasTailPrefix)
                     {
-                        // Do a more detailed evaluation of legality
-                        const bool passedConstraintCheck =
-                            checkTailCallConstraint(opcode, &resolvedToken,
-                                                    constraintCall ? &constrainedResolvedToken : nullptr);
-
-                        // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
-                        // patchpoints.
-                        //
-                        const bool mayHavePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                                        (JitConfig.TC_OnStackReplacement() > 0) &&
-                                                        compCanHavePatchpoints();
-                        if (passedConstraintCheck && (mayHavePatchpoints || compHasBackwardJump))
+                        // Don't stress-tailcall named intrinsics: many of them are imported as
+                        // non-CALL IR nodes (e.g. GC.KeepAlive -> GT_KEEPALIVE), which would
+                        // leave a BBJ_RETURN block that doesn't end in a CALL/RETURN and
+                        // confuse later phases (see
+                        // https://github.com/dotnet/runtime/issues/122479). Suppress both the
+                        // explicit and the implicit tailcall promotion in that case.
+                        if ((callInfo.methodFlags & CORINFO_FLG_INTRINSIC) != 0)
                         {
-                            // Now check with the runtime
-                            CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
-                            bool                  isVirtual         = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) ||
-                                             (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
-                            CORINFO_METHOD_HANDLE exactCalleeHnd = isVirtual ? nullptr : declaredCalleeHnd;
-                            if (info.compCompHnd->canTailCall(info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd,
-                                                              hasTailPrefix)) // Is it legal to do tailcall?
-                            {
-                                // Stress the tailcall.
-                                JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
-                                prefixFlags |= PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS;
-                            }
-                            else
-                            {
-                                // Runtime disallows this tail call
-                                JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
-                                passedStressModeValidation = false;
-                            }
+                            JITDUMP(" (Tailcall stress: skipping intrinsic)");
+                            passedStressModeValidation = false;
                         }
                         else
                         {
-                            // Constraints disallow this tail call
-                            JITDUMP(" (Tailcall stress: constraint check failed)");
-                            passedStressModeValidation = false;
+                            // Do a more detailed evaluation of legality
+                            const bool passedConstraintCheck =
+                                checkTailCallConstraint(opcode, &resolvedToken,
+                                                        constraintCall ? &constrainedResolvedToken : nullptr);
+
+                            // Avoid setting compHasBackwardsJump = true via tail call stress if the method cannot have
+                            // patchpoints.
+                            //
+                            const bool mayHavePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
+                                                            (JitConfig.TC_OnStackReplacement() > 0) &&
+                                                            compCanHavePatchpoints();
+                            if (passedConstraintCheck && (mayHavePatchpoints || compHasBackwardJump))
+                            {
+                                // Now check with the runtime
+                                CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
+                                bool                  isVirtual         = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) ||
+                                                 (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
+                                CORINFO_METHOD_HANDLE exactCalleeHnd = isVirtual ? nullptr : declaredCalleeHnd;
+                                if (info.compCompHnd->canTailCall(info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd,
+                                                                  hasTailPrefix)) // Is it legal to do tailcall?
+                                {
+                                    // Stress the tailcall.
+                                    JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
+                                    prefixFlags |= PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS;
+                                }
+                                else
+                                {
+                                    // Runtime disallows this tail call
+                                    JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
+                                    passedStressModeValidation = false;
+                                }
+                            }
+                            else
+                            {
+                                // Constraints disallow this tail call
+                                JITDUMP(" (Tailcall stress: constraint check failed)");
+                                passedStressModeValidation = false;
+                            }
                         }
                     }
                 }
@@ -9516,12 +9620,28 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Handle the cases that might trigger type initialization
                 // (and possibly need to spill the tree for the stored value)
+                bool expandAddrInline =
+                    (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE) && !fgIsBigOffset(fieldInfo.offset);
                 switch (fieldInfo.fieldAccessor)
                 {
                     case CORINFO_FIELD_INSTANCE:
 #ifdef FEATURE_READYTORUN
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
+                        // We will create STOREIND/STOREBLK(FIELD_ADDR(obj, fld), data).
+                        // The required IL evaluation order is obj -> data -> nullcheck(obj) -> store.
+                        // Take care not to reorder the data with the null check.
+                        //
+                        // When the field offset is small enough, we can expand the address
+                        // inline and rely on the store itself to perform the null check,
+                        // so no spill is needed.
+                        if (!expandAddrInline && !impCanReorderWithNullCheck(impStackTop().val) &&
+                            fgAddrCouldBeNull(impStackTop(1).val))
+                        {
+                            impSpillStackEntry(stackState.esStackDepth - 1,
+                                               BAD_VAR_NUM DEBUGARG(false) DEBUGARG("non-reorderable data to stfld"));
+                        }
+                        break;
                     case CORINFO_FIELD_STATIC_TLS:
                     case CORINFO_FIELD_STATIC_ADDR_HELPER:
                     case CORINFO_FIELD_INSTANCE_HELPER:
@@ -9598,17 +9718,62 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_INSTANCE_WITH_BASE:
 #endif
                     {
-                        op1 = gtNewFieldAddrNode(resolvedToken.hField, obj, fieldInfo.offset);
+                        bool mayOverlap =
+                            StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass));
+
+                        if (expandAddrInline)
+                        {
+                            if (obj->IsLclVarAddr())
+                            {
+                                lvaGetDesc(obj->AsLclFld())->lvFieldAccessed = true;
+                            }
+                            // When the offset is small enough, expand the address inline
+                            // as ADD(obj, offset). The null check will happen as part of
+                            // the store itself.
+                            FieldSeq* fieldSeq = nullptr;
+                            if (obj->TypeIs(TYP_REF) && !mayOverlap)
+                            {
+                                fieldSeq = GetFieldSeqStore()->Create(resolvedToken.hField, fieldInfo.offset,
+                                                                      FieldSeq::FieldKind::Instance);
+                            }
+
+                            if (fieldInfo.offset != 0)
+                            {
+                                if (obj->OperIs(GT_LCL_ADDR) &&
+                                    IsValidLclAddr(obj->AsLclFld()->GetLclNum(),
+                                                   obj->AsLclFld()->GetLclOffs() + fieldInfo.offset))
+                                {
+                                    obj->AsLclFld()->SetLclOffs(obj->AsLclFld()->GetLclOffs() + fieldInfo.offset);
+                                    op1 = obj;
+                                }
+                                else
+                                {
+                                    var_types addrType = obj->TypeIs(TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
+                                    op1 =
+                                        gtNewOperNode(GT_ADD, addrType, obj, gtNewIconNode(fieldInfo.offset, fieldSeq));
+
+                                    if (obj->OperIsConst())
+                                    {
+                                        op1 = gtFoldExprConst(op1);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                op1 = obj;
+                            }
+                        }
+                        else
+                        {
+                            op1 = gtNewFieldAddrNode(resolvedToken.hField, obj, fieldInfo.offset);
 
 #ifdef FEATURE_READYTORUN
-                        if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
-                        {
-                            op1->AsFieldAddr()->gtFieldLookup = fieldInfo.fieldLookup;
-                        }
+                            if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
+                            {
+                                op1->AsFieldAddr()->gtFieldLookup = fieldInfo.fieldLookup;
+                            }
 #endif
-                        if (StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass)))
-                        {
-                            op1->AsFieldAddr()->gtFldMayOverlap = true;
+                            op1->AsFieldAddr()->gtFldMayOverlap = mayOverlap;
                         }
 
                         if (compIsForInlining() &&
@@ -9698,9 +9863,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // Field's type is a byref-like struct -> address is not on the heap.
                     indirFlags |= GTF_IND_TGT_NOT_HEAP;
                 }
-                else
+                else if ((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC) == 0)
                 {
-                    // Field's owner is a byref-like struct -> address is not on the heap.
+                    // Field's owner is a byref-like struct and the field is not static -> address is not on the heap.
                     CORINFO_CLASS_HANDLE fldOwner = info.compCompHnd->getFieldClass(resolvedToken.hField);
                     if ((fldOwner != NO_CLASS_HANDLE) && eeIsByrefLike(fldOwner))
                     {
@@ -9978,8 +10143,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
-                        // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
-                        op1->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
+                        // We do not model stack overflow from localloc as an exception side effect.
+                        // Obviously, we don't want locallocs to be CSE'd.
+                        op1->gtFlags |= GTF_DONT_CSE;
 
                         // Request stack security for this method.
                         setNeedsGSSecurityCookie();
@@ -12779,11 +12945,7 @@ bool Compiler::impIsInvariant(const GenTree* tree)
 //
 bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
-    const GenTree* op = tree;
-    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
-    {
-        op = op->AsFieldAddr()->GetFldObj();
-    }
+    const GenTree* op = gtPeelFieldAddrs(tree);
 
     if (op->OperIs(GT_LCL_ADDR))
     {
@@ -13198,7 +13360,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     if (impIsInvariant(curArgVal))
     {
         argInfo->argIsInvariant = true;
-        if (argInfo->argIsThis && curArgVal->OperIs(GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
+        if (argInfo->argIsThis && curArgVal->OperIs(GT_CNS_INT) && (curArgVal->AsIntCon()->IconValue() == 0))
         {
             // Abort inlining at this call site
             inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);

@@ -344,7 +344,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            internal sealed override void ExecuteFromThreadPool(Thread threadPoolThread) => MoveNext(threadPoolThread);
+            internal sealed override void ExecuteDirectly(Thread? threadPoolThread) => MoveNext(threadPoolThread);
 
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext() => MoveNext(threadPoolThread: null);

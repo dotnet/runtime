@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -134,6 +135,15 @@ namespace System.Runtime.Intrinsics
                 [Intrinsic]
                 get => Create(T.NegativeOne);
             }
+
+            /// <summary>Gets a new vector with elements that alternate between <see cref="INumberBase{TSelf}.One" /> and <see cref="ISignedNumber{TSelf}.NegativeOne" />, starting with one.</summary>
+            /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> SignSequence
+            {
+                [Intrinsic]
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => CreateAlternatingSequence(T.One, T.NegativeOne);
+            }
         }
 
         /// <summary>Computes the absolute value of each element in a vector.</summary>
@@ -145,11 +155,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> Abs<T>(Vector128<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return vector;
             }
@@ -393,25 +399,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector128<T> Ceiling<T>(Vector128<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 return Create(
                     Vector64.Ceiling(vector._lower),
                     Vector64.Ceiling(vector._upper)
                 );
+            }
+            else
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return vector;
             }
         }
 
@@ -721,11 +719,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> CopySign<T>(Vector128<T> value, Vector128<T> sign)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return value;
             }
@@ -806,6 +800,53 @@ namespace System.Runtime.Intrinsics
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
         }
 
+        /// <summary>Computes the arc sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc sine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc sine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Asin(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.AsinDouble<Vector128<double>, Vector128<ulong>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Asin(vector._lower),
+                    Vector64.Asin(vector._upper)
+                );
+            }
+        }
+
+        /// <summary>Computes the arc sine of each element in a vector.</summary>
+        /// <param name="vector">The vector whose arc sine is to be computed.</param>
+        /// <returns>A vector whose elements are the arc sine of the corresponding elements in <paramref name="vector" />.</returns>
+        /// <remarks>The angles are returned in radians, and the input should be in the range [-1, 1].</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Asin(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.AsinSingle<Vector128<float>, Vector128<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.AsinSingle<Vector128<float>, Vector128<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Asin(vector._lower),
+                    Vector64.Asin(vector._upper)
+                );
+            }
+        }
+
         /// <inheritdoc cref="Vector64.Cos(Vector64{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<double> Cos(Vector128<double> vector)
@@ -850,7 +891,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector64.Count{T}(Vector64{T}, T)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Count<T>(Vector128<T> vector, T value) => BitOperations.PopCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+        public static int Count<T>(Vector128<T> vector, T value) => CountMatches(Equals(vector, Create(value)));
 
         /// <inheritdoc cref="Vector64.CountWhereAllBitsSet{T}(Vector64{T})" />
         [Intrinsic]
@@ -1530,6 +1571,164 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> CreateSequence<T>(T start, T step) => (Vector128<T>.Indices * step) + Create(start);
 
+        /// <summary>Creates a new <see cref="Vector128{T}" /> instance where the elements begin at a specified value and are multiplied by another specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="initial">The value that element 0 will be initialized to.</param>
+        /// <param name="multiplier">The value that indicates how each element should be scaled from the previous.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> instance with each element initialized to <paramref name="initial" /> multiplied by <paramref name="multiplier" /> raised to the element index.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="initial"/> and <paramref name="multiplier"/> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
+        {
+            Unsafe.SkipInit(out Vector128<T> result);
+
+            if (Scalar<T>.IsFloatingPoint)
+            {
+                for (int index = 0; index < Vector128<T>.Count; index++)
+                {
+                    T power = Scalar<T>.Pow(multiplier, Scalar<T>.Convert(index));
+                    T value = Scalar<T>.Multiply(initial, power);
+                    result.SetElementUnsafe(index, value);
+                }
+
+                return result;
+            }
+
+            result.SetElementUnsafe(0, initial);
+
+            for (int index = 1; index < Vector128<T>.Count; index++)
+            {
+                initial = Scalar<T>.Multiply(initial, multiplier);
+                result.SetElementUnsafe(index, initial);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{T}" /> instance whose elements alternate between two specified values.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="even">The value assigned to even-indexed elements.</param>
+        /// <param name="odd">The value assigned to odd-indexed elements.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> instance whose even-indexed elements are initialized to <paramref name="even" /> and odd-indexed elements are initialized to <paramref name="odd" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="even"/> and <paramref name="odd"/> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> CreateAlternatingSequence<T>(T even, T odd)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return Create(Vector64.Create(even), Vector64.Create(odd));
+            }
+
+            Vector64<T> sequence = Vector64.CreateAlternatingSequence(even, odd);
+            return Create(sequence);
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{T}" /> instance whose elements are the reciprocal of an arithmetic sequence.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="start">The value that element 0 of the arithmetic sequence will be initialized to.</param>
+        /// <param name="step">The value that indicates how far apart each element of the arithmetic sequence should be from the previous.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> instance whose elements are initialized to one divided by the corresponding element of the arithmetic sequence.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="start"/> and <paramref name="step"/> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> CreateHarmonicSequence<T>(T start, T step) => Vector128<T>.One / CreateSequence(start, step);
+
+        /// <inheritdoc cref="Vector.ConcatLowerLower{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> ConcatLowerLower<T>(Vector128<T> left, Vector128<T> right) => Create(left.GetLower(), right.GetLower());
+
+        /// <inheritdoc cref="Vector.ConcatUpperLower{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> ConcatUpperLower<T>(Vector128<T> left, Vector128<T> right) => Create(left.GetUpper(), right.GetLower());
+
+        /// <inheritdoc cref="Vector.ConcatUpperUpper{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> ConcatUpperUpper<T>(Vector128<T> left, Vector128<T> right) => Create(left.GetUpper(), right.GetUpper());
+
+        /// <inheritdoc cref="Vector.ConcatLowerUpper{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> ConcatLowerUpper<T>(Vector128<T> left, Vector128<T> right) => Create(left.GetLower(), right.GetUpper());
+
+        /// <inheritdoc cref="Vector.ZipLower{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> ZipLower<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return Create(left.GetLower(), right.GetLower());
+            }
+
+            return Create(
+                Vector64.ZipLower(left.GetLower(), right.GetLower()),
+                Vector64.ZipUpper(left.GetLower(), right.GetLower())
+            );
+        }
+
+        /// <inheritdoc cref="Vector.ZipUpper{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> ZipUpper<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return Create(left.GetUpper(), right.GetUpper());
+            }
+
+            return Create(
+                Vector64.ZipLower(left.GetUpper(), right.GetUpper()),
+                Vector64.ZipUpper(left.GetUpper(), right.GetUpper())
+            );
+        }
+
+        /// <inheritdoc cref="Vector.Zip{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector128<T> Lower, Vector128<T> Upper) Zip<T>(Vector128<T> left, Vector128<T> right) => (ZipLower(left, right), ZipUpper(left, right));
+
+        /// <inheritdoc cref="Vector.UnzipEven{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> UnzipEven<T>(Vector128<T> left, Vector128<T> right) => Create(
+            Vector64.UnzipEven(left.GetLower(), left.GetUpper()),
+            Vector64.UnzipEven(right.GetLower(), right.GetUpper())
+        );
+
+        /// <inheritdoc cref="Vector.UnzipOdd{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> UnzipOdd<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (Vector64<T>.Count == 1)
+            {
+                return Create(left.GetUpper(), right.GetUpper());
+            }
+
+            return Create(
+                Vector64.UnzipOdd(left.GetLower(), left.GetUpper()),
+                Vector64.UnzipOdd(right.GetLower(), right.GetUpper())
+            );
+        }
+
+        /// <inheritdoc cref="Vector.Unzip{T}(Vector{T}, Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector128<T> Even, Vector128<T> Odd) Unzip<T>(Vector128<T> left, Vector128<T> right) => (UnzipEven(left, right), UnzipOdd(left, right));
+
+        /// <inheritdoc cref="Vector.Reverse{T}(Vector{T})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> Reverse<T>(Vector128<T> vector) => Create(
+            Vector64.Reverse(vector.GetUpper()),
+            Vector64.Reverse(vector.GetLower())
+        );
+
         /// <inheritdoc cref="Vector64.DegreesToRadians(Vector64{double})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1695,25 +1894,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector128<T> Floor<T>(Vector128<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-                 || (typeof(T) == typeof(short))
-                 || (typeof(T) == typeof(int))
-                 || (typeof(T) == typeof(long))
-                 || (typeof(T) == typeof(nint))
-                 || (typeof(T) == typeof(nuint))
-                 || (typeof(T) == typeof(sbyte))
-                 || (typeof(T) == typeof(ushort))
-                 || (typeof(T) == typeof(uint))
-                 || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 return Create(
                     Vector64.Floor(vector._lower),
                     Vector64.Floor(vector._upper)
                 );
+            }
+            else
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return vector;
             }
         }
 
@@ -1930,11 +2121,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector64.IndexOf{T}(Vector64{T}, T)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOf<T>(Vector128<T> vector, T value)
-        {
-            int result = BitOperations.TrailingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
-            return (result != 32) ? result : -1;
-        }
+        public static int IndexOf<T>(Vector128<T> vector, T value) => IndexOfFirstMatch(Equals(vector, Create(value)));
 
         /// <inheritdoc cref="Vector64.IndexOfWhereAllBitsSet{T}(Vector64{T})" />
         [Intrinsic]
@@ -2028,11 +2215,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> IsNegative<T>(Vector128<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return Vector128<T>.Zero;
             }
@@ -2103,11 +2286,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> IsPositive<T>(Vector128<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return Vector128<T>.AllBitsSet;
             }
@@ -2165,7 +2344,7 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="Vector64.LastIndexOf{T}(Vector64{T}, T)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOf<T>(Vector128<T> vector, T value) => 31 - BitOperations.LeadingZeroCount(Equals(vector, Create(value)).ExtractMostSignificantBits());
+        public static int LastIndexOf<T>(Vector128<T> vector, T value) => IndexOfLastMatch(Equals(vector, Create(value)));
 
         /// <inheritdoc cref="Vector64.LastIndexOfWhereAllBitsSet{T}(Vector64{T})" />
         [Intrinsic]
@@ -2964,25 +3143,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector128<T> Round<T>(Vector128<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 return Create(
                     Vector64.Round(vector._lower),
                     Vector64.Round(vector._upper)
                 );
+            }
+            else
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return vector;
             }
         }
 
@@ -3227,83 +3398,44 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> vector, int shiftCount) => vector >>> shiftCount;
 
-#if !MONO
-        // These fallback methods only exist so that ShuffleNative has the same behaviour when called directly or via
+        private static Vector128<T> ShuffleFallback<T, TIndex>(Vector128<T> vector, Vector128<TIndex> indices)
+            where TIndex : IBinaryInteger<TIndex>
+        {
+            Debug.Assert(Vector128<T>.Count == Vector128<TIndex>.Count);
+            Vector128<T> result = Vector128<T>.Zero;
+
+            for (int index = 0; index < Vector128<T>.Count; index++)
+            {
+                int selectedIndex = int.CreateSaturating(indices.GetElementUnsafe(index));
+
+                if ((uint)selectedIndex < (uint)Vector128<T>.Count)
+                {
+                    T selectedValue = vector.GetElementUnsafe(selectedIndex);
+                    result.SetElementUnsafe(index, selectedValue);
+                }
+            }
+            return result;
+        }
+
+        // This method only exists so that ShuffleNative has the same behaviour when called directly or via
         // reflection - reflecting into internal runtime methods is not supported, so we don't worry about others
         // reflecting into these. TODO: figure out if this can be solved in a nicer way.
 
         [Intrinsic]
-        internal static Vector128<byte> ShuffleNativeFallback(Vector128<byte> vector, Vector128<byte> indices)
+        private static Vector128<T> ShuffleNativeFallback<T, TIndex>(Vector128<T> vector, Vector128<TIndex> indices)
+            where TIndex : IBinaryInteger<TIndex>
         {
-            return Shuffle(vector, indices);
+            return ShuffleFallback(vector, indices);
         }
-
-        [Intrinsic]
-        internal static Vector128<sbyte> ShuffleNativeFallback(Vector128<sbyte> vector, Vector128<sbyte> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector128<short> ShuffleNativeFallback(Vector128<short> vector, Vector128<short> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector128<ushort> ShuffleNativeFallback(Vector128<ushort> vector, Vector128<ushort> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector128<int> ShuffleNativeFallback(Vector128<int> vector, Vector128<int> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector128<uint> ShuffleNativeFallback(Vector128<uint> vector, Vector128<uint> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector128<float> ShuffleNativeFallback(Vector128<float> vector, Vector128<int> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector128<long> ShuffleNativeFallback(Vector128<long> vector, Vector128<long> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector128<ulong> ShuffleNativeFallback(Vector128<ulong> vector, Vector128<ulong> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-
-        [Intrinsic]
-        internal static Vector128<double> ShuffleNativeFallback(Vector128<double> vector, Vector128<long> indices)
-        {
-            return Shuffle(vector, indices);
-        }
-#endif
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         [Intrinsic]
-#if MONO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         public static Vector128<byte> Shuffle(Vector128<byte> vector, Vector128<byte> indices)
         {
-#if MONO
             if (AdvSimd.Arm64.IsSupported)
             {
                 return AdvSimd.Arm64.VectorTableLookup(vector, indices);
@@ -3317,473 +3449,173 @@ namespace System.Runtime.Intrinsics
             return ShuffleFallback(vector, indices);
         }
 
-        private static Vector128<byte> ShuffleFallback(Vector128<byte> vector, Vector128<byte> indices)
+        /// <inheritdoc cref="Shuffle(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        public static Vector128<double> Shuffle(Vector128<double> vector, Vector128<long> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        public static Vector128<short> Shuffle(Vector128<short> vector, Vector128<short> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        public static Vector128<int> Shuffle(Vector128<int> vector, Vector128<int> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        public static Vector128<long> Shuffle(Vector128<long> vector, Vector128<long> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        public static Vector128<nint> Shuffle(Vector128<nint> vector, Vector128<nint> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<sbyte> Shuffle(Vector128<sbyte> vector, Vector128<sbyte> indices)
         {
-#endif
-            Unsafe.SkipInit(out Vector128<byte> result);
-
-            for (int index = 0; index < Vector128<byte>.Count; index++)
+            if (AdvSimd.Arm64.IsSupported)
             {
-                byte selectedIndex = indices.GetElementUnsafe(index);
-                byte selectedValue = 0;
-
-                if (selectedIndex < Vector128<byte>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
+                return AdvSimd.Arm64.VectorTableLookup(vector, indices);
             }
 
-            return result;
+            if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.Swizzle(vector, indices);
+            }
+
+            return ShuffleFallback(vector, indices);
         }
+
+        /// <inheritdoc cref="Shuffle(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        public static Vector128<float> Shuffle(Vector128<float> vector, Vector128<int> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<ushort> Shuffle(Vector128<ushort> vector, Vector128<ushort> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<uint> Shuffle(Vector128<uint> vector, Vector128<uint> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<ulong> Shuffle(Vector128<ulong> vector, Vector128<ulong> indices) => ShuffleFallback(vector, indices);
+
+        /// <inheritdoc cref="Shuffle(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<nuint> Shuffle(Vector128<nuint> vector, Vector128<nuint> indices) => ShuffleFallback(vector, indices);
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, Count - 1].</remarks>
         [Intrinsic]
-        [CLSCompliant(false)]
-#if MONO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector128<sbyte> Shuffle(Vector128<sbyte> vector, Vector128<sbyte> indices)
-        {
-#if MONO
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                return AdvSimd.Arm64.VectorTableLookup(vector, indices);
-            }
-
-            if (PackedSimd.IsSupported)
-            {
-                return PackedSimd.Swizzle(vector, indices);
-            }
-
-            return ShuffleFallback(vector, indices);
-        }
-
-        private static Vector128<sbyte> ShuffleFallback(Vector128<sbyte> vector, Vector128<sbyte> indices)
-        {
-#endif
-            Unsafe.SkipInit(out Vector128<sbyte> result);
-
-            for (int index = 0; index < Vector128<sbyte>.Count; index++)
-            {
-                byte selectedIndex = (byte)indices.GetElementUnsafe(index);
-                sbyte selectedValue = 0;
-
-                if (selectedIndex < Vector128<sbyte>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
-        /// Behavior is platform-dependent for out-of-range indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Ssse3))]
-#endif
         public static Vector128<byte> ShuffleNative(Vector128<byte> vector, Vector128<byte> indices)
         {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
             if (Ssse3.IsSupported)
             {
                 return Ssse3.Shuffle(vector, indices);
             }
 
-            return Shuffle(vector, indices);
-#endif
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                return AdvSimd.Arm64.VectorTableLookup(vector, indices);
+            }
+
+            if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.Swizzle(vector, indices);
+            }
+
+            return ShuffleNativeFallback(vector, indices);
         }
 
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
-        /// Behavior is platform-dependent for out-of-range indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 15].</remarks>
-#if !MONO
+        /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
-#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [CompExactlyDependsOn(typeof(Ssse3))]
-#endif
+        public static Vector128<double> ShuffleNative(Vector128<double> vector, Vector128<long> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<short> ShuffleNative(Vector128<short> vector, Vector128<short> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<int> ShuffleNative(Vector128<int> vector, Vector128<int> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<long> ShuffleNative(Vector128<long> vector, Vector128<long> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<nint> ShuffleNative(Vector128<nint> vector, Vector128<nint> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
         public static Vector128<sbyte> ShuffleNative(Vector128<sbyte> vector, Vector128<sbyte> indices)
         {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
             if (Ssse3.IsSupported)
             {
                 return Ssse3.Shuffle(vector, indices);
             }
 
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector128<short> Shuffle(Vector128<short> vector, Vector128<short> indices)
-        {
-            Unsafe.SkipInit(out Vector128<short> result);
-
-            for (int index = 0; index < Vector128<short>.Count; index++)
+            if (AdvSimd.Arm64.IsSupported)
             {
-                ushort selectedIndex = (ushort)indices.GetElementUnsafe(index);
-                short selectedValue = 0;
-
-                if (selectedIndex < Vector128<short>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
+                return AdvSimd.Arm64.VectorTableLookup(vector, indices);
             }
 
-            return result;
+            if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.Swizzle(vector, indices);
+            }
+
+            return ShuffleNativeFallback(vector, indices);
         }
 
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> ShuffleNative(Vector128<float> vector, Vector128<int> indices) => ShuffleNativeFallback(vector, indices);
+
+        /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static Vector128<ushort> Shuffle(Vector128<ushort> vector, Vector128<ushort> indices)
-        {
-            Unsafe.SkipInit(out Vector128<ushort> result);
+        public static Vector128<ushort> ShuffleNative(Vector128<ushort> vector, Vector128<ushort> indices) => ShuffleNativeFallback(vector, indices);
 
-            for (int index = 0; index < Vector128<ushort>.Count; index++)
-            {
-                ushort selectedIndex = indices.GetElementUnsafe(index);
-                ushort selectedValue = 0;
-
-                if (selectedIndex < Vector128<ushort>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe(selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
-#if !MONO
+        /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
-#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector128<short> ShuffleNative(Vector128<short> vector, Vector128<short> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 7].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         [CLSCompliant(false)]
-        public static Vector128<ushort> ShuffleNative(Vector128<ushort> vector, Vector128<ushort> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
+        public static Vector128<uint> ShuffleNative(Vector128<uint> vector, Vector128<uint> indices) => ShuffleNativeFallback(vector, indices);
 
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
-        public static Vector128<int> Shuffle(Vector128<int> vector, Vector128<int> indices)
-        {
-            Unsafe.SkipInit(out Vector128<int> result);
-
-            for (int index = 0; index < Vector128<int>.Count; index++)
-            {
-                uint selectedIndex = (uint)indices.GetElementUnsafe(index);
-                int selectedValue = 0;
-
-                if (selectedIndex < Vector128<int>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static Vector128<uint> Shuffle(Vector128<uint> vector, Vector128<uint> indices)
-        {
-            Unsafe.SkipInit(out Vector128<uint> result);
+        public static Vector128<ulong> ShuffleNative(Vector128<ulong> vector, Vector128<ulong> indices) => ShuffleNativeFallback(vector, indices);
 
-            for (int index = 0; index < Vector128<uint>.Count; index++)
-            {
-                uint selectedIndex = indices.GetElementUnsafe(index);
-                uint selectedValue = 0;
-
-                if (selectedIndex < Vector128<uint>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <inheritdoc cref="ShuffleNative(Vector128{byte}, Vector128{byte})" />
         [Intrinsic]
-        public static Vector128<float> Shuffle(Vector128<float> vector, Vector128<int> indices)
-        {
-            Unsafe.SkipInit(out Vector128<float> result);
-
-            for (int index = 0; index < Vector128<float>.Count; index++)
-            {
-                uint selectedIndex = (uint)indices.GetElementUnsafe(index);
-                float selectedValue = 0;
-
-                if (selectedIndex < Vector128<float>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector128<int> ShuffleNative(Vector128<int> vector, Vector128<int> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
         [CLSCompliant(false)]
-        public static Vector128<uint> ShuffleNative(Vector128<uint> vector, Vector128<uint> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 3].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector128<float> ShuffleNative(Vector128<float> vector, Vector128<int> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector128<long> Shuffle(Vector128<long> vector, Vector128<long> indices)
-        {
-            Unsafe.SkipInit(out Vector128<long> result);
-
-            for (int index = 0; index < Vector128<long>.Count; index++)
-            {
-                ulong selectedIndex = (ulong)indices.GetElementUnsafe(index);
-                long selectedValue = 0;
-
-                if (selectedIndex < (uint)Vector128<long>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        [CLSCompliant(false)]
-        public static Vector128<ulong> Shuffle(Vector128<ulong> vector, Vector128<ulong> indices)
-        {
-            Unsafe.SkipInit(out Vector128<ulong> result);
-
-            for (int index = 0; index < Vector128<ulong>.Count; index++)
-            {
-                ulong selectedIndex = indices.GetElementUnsafe(index);
-                ulong selectedValue = 0;
-
-                if (selectedIndex < (uint)Vector128<ulong>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        [Intrinsic]
-        public static Vector128<double> Shuffle(Vector128<double> vector, Vector128<long> indices)
-        {
-            Unsafe.SkipInit(out Vector128<double> result);
-
-            for (int index = 0; index < Vector128<double>.Count; index++)
-            {
-                ulong selectedIndex = (ulong)indices.GetElementUnsafe(index);
-                double selectedValue = 0;
-
-                if (selectedIndex < (uint)Vector128<double>.Count)
-                {
-                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
-                }
-                result.SetElementUnsafe(index, selectedValue);
-            }
-
-            return result;
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 1].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector128<long> ShuffleNative(Vector128<long> vector, Vector128<long> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 1].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        [CLSCompliant(false)]
-        public static Vector128<ulong> ShuffleNative(Vector128<ulong> vector, Vector128<ulong> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
-
-        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
-        /// <param name="vector">The input vector from which values are selected.</param>
-        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
-        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
-        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 1].</remarks>
-#if !MONO
-        [Intrinsic]
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        public static Vector128<double> ShuffleNative(Vector128<double> vector, Vector128<long> indices)
-        {
-#if !MONO
-            return ShuffleNativeFallback(vector, indices);
-#else
-            return Shuffle(vector, indices);
-#endif
-        }
+        public static Vector128<nuint> ShuffleNative(Vector128<nuint> vector, Vector128<nuint> indices) => ShuffleNativeFallback(vector, indices);
 
         /// <inheritdoc cref="Vector64.Sin(Vector64{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -4074,25 +3906,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector128<T> Truncate<T>(Vector128<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 return Create(
                     Vector64.Truncate(vector._lower),
                     Vector64.Truncate(vector._upper)
                 );
+            }
+            else
+            {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+                return vector;
             }
         }
 
@@ -4452,11 +4276,99 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> Xor<T>(Vector128<T> left, Vector128<T> right) => left ^ right;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        internal static ulong AdvSimdExtractBitMask<T>(Vector128<T> vector)
+        {
+            if (!AdvSimd.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            // This expects vector to have each element be one of Zero or AllBitsSet
+            // and will not produce correct results otherwise.
+            //
+            // Given this, we can treat it as ushort and do a logical-right-shift by 4 to
+            // compact the mask into half the space, giving us the following possibilities for
+            // each pair of bytes:
+            // * 0x00_00 - 0x00
+            // * 0x00_FF - 0x0F
+            // * 0xFF_00 - 0xF0
+            // * 0xFF_FF - 0xFF
+            //
+            // This allows us to extract the full metadata as a 64-bit scalar which can then
+            // be consumed by bit-counting APIs, such as PopCount, LeadingZeroCount, or TrailingZeroCount,
+            // and then adjusted by AdvSimdFixupBitCount to get the actual count of elements
+            // that were masked.
+
+            return AdvSimd.ShiftRightLogicalNarrowingLower(vector.AsUInt16(), 4).AsUInt64().ToScalar();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        internal static int AdvSimdFixupBitCount<T>(int bitCount)
+        {
+            if (!AdvSimd.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            // This API is meant to be consumed alongside AdvSimdExtractBitMask and will
+            // not produce correct results for arbitrary inputs. It adjusts the bit count
+            // assuming that sequences of 1 or 0 were in groups of 4 bits per byte.
+
+            unsafe
+            {
+                return bitCount >>> (2 + int.Log2(sizeof(T)));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int CountMatches<T>(Vector128<T> vector)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimdFixupBitCount<T>(BitOperations.PopCount(AdvSimdExtractBitMask(vector)));
+            }
+            else
+            {
+                return BitOperations.PopCount(vector.ExtractMostSignificantBits());
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static T GetElementUnsafe<T>(in this Vector128<T> vector, int index)
         {
             Debug.Assert((index >= 0) && (index < Vector128<T>.Count));
             ref T address = ref Unsafe.As<Vector128<T>, T>(ref Unsafe.AsRef(in vector));
             return Unsafe.Add(ref address, index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfFirstMatch<T>(Vector128<T> vector)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                int result = AdvSimdFixupBitCount<T>(BitOperations.TrailingZeroCount(AdvSimdExtractBitMask(vector)));
+                return (result != Vector128<T>.Count) ? result : -1;
+            }
+            else
+            {
+                int result = BitOperations.TrailingZeroCount(vector.ExtractMostSignificantBits());
+                return (result != 32) ? result : -1;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int IndexOfLastMatch<T>(Vector128<T> vector)
+        {
+            if (AdvSimd.IsSupported)
+            {
+                return (Vector128<T>.Count - 1) - AdvSimdFixupBitCount<T>(BitOperations.LeadingZeroCount(AdvSimdExtractBitMask(vector)));
+            }
+            else
+            {
+                return 31 - BitOperations.LeadingZeroCount(vector.ExtractMostSignificantBits());
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

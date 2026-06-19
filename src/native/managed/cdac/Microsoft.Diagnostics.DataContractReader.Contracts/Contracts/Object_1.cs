@@ -13,15 +13,21 @@ internal readonly struct Object_1 : IObject
     private readonly ulong _methodTableOffset;
     private readonly byte _objectToMethodTableUnmask;
     private readonly TargetPointer _stringMethodTable;
-    private readonly TargetPointer _syncTableEntries;
+    private readonly uint _syncBlockIsHashOrSyncBlockIndex;
+    private readonly uint _syncBlockIsHashCode;
+    private readonly uint _syncBlockHashCodeMask;
+    private readonly uint _syncBlockIndexMask;
 
-    internal Object_1(Target target, ulong methodTableOffset, byte objectToMethodTableUnmask, TargetPointer stringMethodTable, TargetPointer syncTableEntries)
+    internal Object_1(Target target)
     {
         _target = target;
-        _methodTableOffset = methodTableOffset;
-        _stringMethodTable = stringMethodTable;
-        _objectToMethodTableUnmask = objectToMethodTableUnmask;
-        _syncTableEntries = syncTableEntries;
+        _methodTableOffset = (ulong)target.GetTypeInfo(DataType.Object).Fields["m_pMethTab"].Offset;
+        _objectToMethodTableUnmask = target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
+        _stringMethodTable = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
+        _syncBlockIsHashOrSyncBlockIndex = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex);
+        _syncBlockIsHashCode = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashCode);
+        _syncBlockHashCodeMask = target.ReadGlobal<uint>(Constants.Globals.SyncBlockHashCodeMask);
+        _syncBlockIndexMask = target.ReadGlobal<uint>(Constants.Globals.SyncBlockIndexMask);
     }
 
     public TargetPointer GetMethodTableAddress(TargetPointer address)
@@ -45,6 +51,19 @@ internal readonly struct Object_1 : IObject
         Span<byte> span = stackalloc byte[(int)str.StringLength * sizeof(char)];
         _target.ReadBuffer(str.FirstChar, span);
         return new string(MemoryMarshal.Cast<byte, char>(span));
+    }
+
+    public void GetStringData(TargetPointer address, out uint length, out uint offsetToFirstChar)
+    {
+        TargetPointer mt = GetMethodTableAddress(address);
+        if (mt == TargetPointer.Null)
+            throw new ArgumentException("Address represents a set-free object");
+        if (mt != _stringMethodTable)
+            throw new ArgumentException("Address does not represent a string object", nameof(address));
+
+        Data.String str = _target.ProcessedData.GetOrAdd<Data.String>(address);
+        length = str.StringLength;
+        offsetToFirstChar = (uint)(str.FirstChar.Value - address.Value);
     }
 
     public TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds)
@@ -82,7 +101,7 @@ internal readonly struct Object_1 : IObject
         }
 
         // Sync block is before `this` pointer, so substract the object header size
-        ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - _target.ReadGlobal<uint>(Constants.Globals.ObjectHeaderSize);
+        ulong dataOffset = typeSystemContract.GetBaseSize(typeHandle) - _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
         return address + dataOffset;
     }
 
@@ -92,19 +111,101 @@ internal readonly struct Object_1 : IObject
         ccw = TargetPointer.Null;
         ccf = TargetPointer.Null;
 
-        uint syncBlockValue = _target.Read<uint>(address - _target.ReadGlobal<ushort>(Constants.Globals.SyncBlockValueToObjectOffset));
-
-        // Check if the sync block value represents a sync block index
-        if ((syncBlockValue & (_target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashCode) | _target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex)))
-                != _target.ReadGlobal<uint>(Constants.Globals.SyncBlockIsHashOrSyncBlockIndex))
+        TargetPointer syncBlockPtr = GetSyncBlockAddress(address);
+        if (syncBlockPtr == TargetPointer.Null)
             return false;
 
-        uint index = syncBlockValue & _target.ReadGlobal<uint>(Constants.Globals.SyncBlockIndexMask);
-        ulong offsetInSyncTableEntries = index * (ulong)_target.GetTypeInfo(DataType.SyncTableEntry).Size!;
-        Data.SyncTableEntry entry = _target.ProcessedData.GetOrAdd<Data.SyncTableEntry>(_syncTableEntries + offsetInSyncTableEntries);
-        if (entry.SyncBlock is not Data.SyncBlock syncBlock)
-            return false;
+        return _target.Contracts.SyncBlock.GetBuiltInComData(syncBlockPtr, out rcw, out ccw, out ccf);
+    }
 
-        return _target.Contracts.SyncBlock.GetBuiltInComData(syncBlock.Address, out rcw, out ccw, out ccf);
+    int IObject.TryGetHashCode(TargetPointer address)
+    {
+        ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
+        uint syncBlockValue = header.SyncBlockValue;
+
+        if ((syncBlockValue & _syncBlockIsHashOrSyncBlockIndex) != 0)
+        {
+            if ((syncBlockValue & _syncBlockIsHashCode) != 0)
+            {
+                return (int)(syncBlockValue & _syncBlockHashCodeMask);
+            }
+            else
+            {
+                TargetPointer syncBlockPtr = GetSyncBlockAddress(address);
+                if (syncBlockPtr != TargetPointer.Null)
+                {
+                    Data.SyncBlock syncBlock = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlockPtr);
+                    return (int)syncBlock.HashCode;
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    public TargetPointer GetSyncBlockAddress(TargetPointer address)
+    {
+        ulong objectHeaderSize = _target.GetTypeInfo(DataType.ObjectHeader).Size!.Value;
+        Data.ObjectHeader header = _target.ProcessedData.GetOrAdd<Data.ObjectHeader>(address - objectHeaderSize);
+        uint syncBlockValue = header.SyncBlockValue;
+
+        // Check if the sync block value represents a sync block index (not a hash code)
+        if ((syncBlockValue & (_syncBlockIsHashCode | _syncBlockIsHashOrSyncBlockIndex))
+                != _syncBlockIsHashOrSyncBlockIndex)
+            return TargetPointer.Null;
+
+        uint index = syncBlockValue & _syncBlockIndexMask;
+        return _target.Contracts.SyncBlock.GetSyncBlock(index);
+    }
+
+    public DelegateInfo GetDelegateInfo(TargetPointer address)
+    {
+        Data.Delegate del = _target.ProcessedData.GetOrAdd<Data.Delegate>(address);
+
+        // Classify by invocation count first:
+        // anything other than 0 indicates a multicast/wrapper/special-sig delegate
+        // that this API does not interpret further. Only when invocationCount==0
+        // do MethodPtr/MethodPtrAux unambiguously identify a closed/open delegate.
+        DelegateType delegateType = DelegateType.Unknown;
+        if (del.InvocationCount.Value == 0)
+        {
+            if (del.MethodPtrAux == TargetCodePointer.Null)
+                delegateType = DelegateType.Closed;
+            else
+                delegateType = DelegateType.Open;
+        }
+
+        (TargetPointer targetObject, TargetCodePointer targetMethodPtr) = delegateType switch
+        {
+            DelegateType.Closed => (del.Target, del.MethodPtr),
+            DelegateType.Open => (TargetPointer.Null, del.MethodPtrAux),
+            _ => (TargetPointer.Null, TargetCodePointer.Null),
+        };
+
+        return new DelegateInfo(
+            TargetObject: targetObject,
+            TargetMethodPtr: targetMethodPtr,
+            DelegateType: delegateType);
+    }
+
+    public ulong GetSize(TargetPointer address)
+    {
+        TargetPointer mt = GetMethodTableAddress(address);
+        if (mt == TargetPointer.Null)
+            throw new ArgumentException("Address represents a free object");
+        Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
+        TypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
+
+        ulong size = typeSystemContract.GetBaseSize(typeHandle);
+        uint componentSize = typeSystemContract.GetComponentSize(typeHandle);
+        if (componentSize > 0)
+        {
+            // Variable-size object (array or string): add the component data size.
+            // Both Array and String share the m_NumComponents/m_StringLength field layout.
+            Data.Array arr = _target.ProcessedData.GetOrAdd<Data.Array>(address);
+            size += (ulong)arr.NumComponents * componentSize;
+        }
+        return size;
     }
 }

@@ -64,6 +64,17 @@ CONFIG_INTEGER(JitCloneLoopsWithGdvTests, "JitCloneLoopsWithGdvTests", 1)     //
                                                                               // invariant type/method address tests
 RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, "JitCloneLoopsSizeLimit", 400) // limit cloning to loops with no more
                                                                               // than this many tree nodes
+RELEASE_CONFIG_INTEGER(JitCloneLoopsMinPerCallRatio, "JitCloneLoopsMinPerCallRatio", 4) // Gate cloning on per-call
+                                                                                        // benefit ratio: (cycles saved
+                                                                                        // per method call) /
+                                                                                        // (duplicated body nodes).
+                                                                                        // Value is interpreted in
+                                                                                        // hundredths (config / 100), so
+                                                                                        // the default 4 means a
+                                                                                        // threshold of 0.04. Higher
+                                                                                        // values are stricter and
+                                                                                        // produce fewer clones; 0
+                                                                                        // disables the gate.
 CONFIG_INTEGER(JitDebugLogLoopCloning, "JitDebugLogLoopCloning", 0) // In debug builds log places where loop cloning
                                                                     // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, "JitDefaultFill", 0xdd) // In debug builds, initialize the memory allocated by the nra
@@ -91,6 +102,7 @@ CONFIG_INTEGER(JitHideAlignBehindJmp, "JitHideAlignBehindJmp", 1)
 
 // Track stores to locals done through return buffers.
 CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, "JitOptimizeStructHiddenBuffer", 1)
+RELEASE_CONFIG_INTEGER(JitEnableStoreLclFldCoalescing, "JitEnableStoreLclFldCoalescing", 1)
 
 CONFIG_INTEGER(JitUnrollLoopMaxIterationCount,
                "JitUnrollLoopMaxIterationCount",
@@ -125,6 +137,9 @@ CONFIG_STRING(JitInlineMethodsWithEHRange, "JitInlineMethodsWithEHRange")
 
 CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
+#if defined(TARGET_ARM64)
+RELEASE_CONFIG_INTEGER(JitPacEnabled, "JitPacEnabled", 0)
+#endif
 
 // Enable devirtualization for generic virtual methods
 RELEASE_CONFIG_INTEGER(JitEnableGenericVirtualDevirtualization, "JitEnableGenericVirtualDevirtualization", 1)
@@ -346,7 +361,7 @@ CONFIG_INTEGER(JitDisasmWithDebugInfo, "JitDisasmWithDebugInfo", 0)
 CONFIG_INTEGER(JitDisasmSpilled, "JitDisasmSpilled", 0)
 
 // Print the process address next to each instruction of the disassembly
-CONFIG_INTEGER(JitDasmWithAddress, "JitDasmWithAddress", 0)
+CONFIG_INTEGER(JitDisasmWithAddress, "JitDisasmWithAddress", 0)
 
 RELEASE_CONFIG_STRING(JitStdOutFile, "JitStdOutFile") // If set, sends JIT's stdout output to this file.
 
@@ -429,6 +444,11 @@ RELEASE_CONFIG_INTEGER(EnableArm64Sha1,             "EnableArm64Sha1",          
 RELEASE_CONFIG_INTEGER(EnableArm64Sha256,           "EnableArm64Sha256",         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sve,              "EnableArm64Sve",            1) // Allows Arm64 Sve+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sve2,             "EnableArm64Sve2",           1) // Allows Arm64 Sve2+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64Sha3,             "EnableArm64Sha3",           1) // Allows Arm64 Sha3+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64Sm4,              "EnableArm64Sm4",            1) // Allows Arm64 Sm4+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64SveAes,           "EnableArm64SveAes",         1) // Allows Arm64 SveAes+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64SveSha3,          "EnableArm64SveSha3",        1) // Allows Arm64 SveSha3+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64SveSm4,           "EnableArm64SveSm4",         1) // Allows Arm64 SveSm4+ hardware intrinsics to be disabled
 #elif defined(TARGET_RISCV64)
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zba,            "EnableRiscV64Zba",          1) // Allows RiscV64 Zba hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zbb,            "EnableRiscV64Zbb",          1) // Allows RiscV64 Zbb hardware intrinsics to be disabled
@@ -439,7 +459,8 @@ RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",  
 RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       "EnableEmbeddedMasking",     1) // Allows embedded masking to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxNDD,                "EnableApxNDD",              0) // Allows APX NDD feature to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxConditionalChaining, "EnableApxConditionalChaining",        0) // Allows APX conditional compare chaining
-RELEASE_CONFIG_INTEGER(EnableApxPPX,                "EnableApxPPX",              0) // Allows APX PPX feature to be disabled
+RELEASE_CONFIG_INTEGER(EnableApxPPHint,                "EnableApxPPHint",              0) // Allows APX PPX Hint feature to be disabled
+RELEASE_CONFIG_INTEGER(EnableApxPP2,                "EnableApxPP2",              0) // Allows APX PP2 feature to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxZU,                 "EnableApxZU",              0)  // Allows APX ZU feature to be disabled
 
 // clang-format on
@@ -592,6 +613,18 @@ OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, "JitDoOptimizeMaskConversions",
 OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
 OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
                   "JitAsyncDefaultValueAnalysisRange") // Enable async default value analysis based on method hash range
+
+// Enable async preserved value analysis based on method hash range. This
+// analysis computes state that is guaranteed to not have been changed since
+// the last time suspension happened, and skips storing them in the case where
+// a continuation is being reused.
+OPT_CONFIG_STRING(JitAsyncPreservedValueAnalysisRange, "JitAsyncPreservedValueAnalysisRange")
+
+// Enable continuation reuse based on method hash range
+OPT_CONFIG_STRING(JitAsyncReuseContinuationsRange, "JitAsyncReuseContinuationsRange")
+// Save and reuse continuation instances in runtime async functions. Also
+// implies use of shared continuation layouts for all suspension points.
+RELEASE_CONFIG_INTEGER(JitAsyncReuseContinuations, "JitAsyncReuseContinuations", 1)
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
@@ -863,6 +896,18 @@ CONFIG_INTEGER(JitUseScalableVectorT, "JitUseScalableVectorT", 0)
 // Disable emitDispIns by default
 CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #endif // defined(TARGET_LOONGARCH64)
+
+#if defined(TARGET_WASM)
+// Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
+RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
+RELEASE_CONFIG_INTEGER(JitWasmSimdNyiToR2RUnsupported, "JitWasmSimdNyiToR2RUnsupported", 0)
+
+// Specify methods that will fail with R2R unsupported after codegen.
+// Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
+CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
+// Enable processing methods with funclets. Set to 0 to bail to R2R unsupported before codegen.
+RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 1)
+#endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.
 RELEASE_CONFIG_INTEGER(JitEnregStructLocals, "JitEnregStructLocals", 1)

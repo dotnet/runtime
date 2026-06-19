@@ -121,7 +121,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Encode the GC pointer map
                 GCPointerMap gcMap = GCPointerMap.FromInstanceLayout(defType);
 
-                byte[] encodedGCRefMap = new byte[(size / pointerSize + 7) / 8];
+                byte[] encodedGCRefMap = new byte[((size + (pointerSize - 1)) / pointerSize + 7) / 8];
                 int bitIndex = 0;
                 foreach (bool bit in gcMap)
                 {
@@ -213,11 +213,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
             }
 
+            // We record the usage of this type, so that GVM dependency analysis can resolve all implementations.
+            if (!_typeDesc.IsGenericDefinition &&
+                !_typeDesc.IsInterface &&
+                _typeDesc.IsDefType &&
+                (factory.CompilationCurrentPhase == 0) &&
+                factory.CompilationModuleGroup.VersionsWithType(_typeDesc) &&
+                TypeHasGVMSlots(_typeDesc))
+            {
+                dependencies.Add(factory.InheritedVirtualMethods(_typeDesc), "Inherited virtual/interface methods on type");
+            }
+
             if (_fixupKind == ReadyToRunFixupKind.TypeHandle)
             {
                 AddDependenciesForAsyncStateMachineBox(ref dependencies, factory, _typeDesc);
             }
             return dependencies;
+        }
+
+        private static bool TypeHasGVMSlots(TypeDesc type)
+        {
+            TypeDesc currentType = type;
+            while (currentType != null)
+            {
+                foreach (MethodDesc method in currentType.GetVirtualMethods())
+                {
+                    if (method.HasInstantiation)
+                        return true;
+                }
+                currentType = currentType.BaseType;
+            }
+
+            return false;
         }
 
         public static void AddDependenciesForAsyncStateMachineBox(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)

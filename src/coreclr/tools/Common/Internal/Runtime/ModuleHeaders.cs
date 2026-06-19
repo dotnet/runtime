@@ -15,8 +15,8 @@ namespace Internal.Runtime
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 18;
-        public const ushort CurrentMinorVersion = 2;
+        public const ushort CurrentMajorVersion = 24;
+        public const ushort CurrentMinorVersion = 0;
     }
 #if READYTORUN
 #pragma warning disable 0169
@@ -80,6 +80,11 @@ namespace Internal.Runtime
         EnclosingTypeMap = 122, // Added in V9.0
         TypeGenericInfoMap = 123, // Added in V9.0
 
+        // Shared ReadyToRun sections
+        ExternalTypeMaps            = 124, // Added to CoreCLR in V18.3
+        ProxyTypeMaps               = 125, // Added to CoreCLR in V18.3
+        TypeMapAssemblyTargets      = 126, // Added in V18.3
+
         //
         // NativeAOT ReadyToRun sections
         //
@@ -92,8 +97,8 @@ namespace Internal.Runtime
         FrozenObjectRegion = 206,
         DehydratedData = 207,
         ThreadStaticOffsetRegion = 208,
-        // 209 is unused - it was used by ThreadStaticGCDescRegion
-        // 210 is unused - it was used by ThreadStaticIndex
+        InterfaceDispatchCellInfoRegion = 209,
+        InterfaceDispatchCellRegion = 210,
         // 211 is unused - it was used by LoopHijackFlag
         ImportAddressTables = 212,
         ModuleInitializerList = 213,

@@ -78,6 +78,7 @@ class   MethodTable;
 class   Module;
 class   Object;
 class   Stub;
+enum class AsyncMethodFlags;
 class   Substitution;
 class   SystemDomain;
 class   TypeHandle;
@@ -792,6 +793,9 @@ private:
         mdMethodDef methodDef,
         DWORD dwImplFlags,
         DWORD dwMemberAttrs,
+        AsyncMethodFlags asyncFlags,
+        PCCOR_SIGNATURE pAsyncSig,
+        DWORD cbAsyncSig,
         MethodDesc** ppNewMD);
 public:
     // Add a new field to an already loaded type for EnC
@@ -1468,16 +1472,6 @@ public:
         GetOptionalFields()->m_pCoClassForIntf = th;
     }
 
-    OBJECTHANDLE GetOHDelegate()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_ohDelegate;
-    }
-    void SetOHDelegate (OBJECTHANDLE _ohDelegate)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_ohDelegate = _ohDelegate;
-    }
     // Set the COM interface type.
     CorIfaceAttr GetComInterfaceType()
     {
@@ -1688,16 +1682,8 @@ private:
     PTR_MethodDescChunk m_pChunks;
 
 #ifdef FEATURE_COMINTEROP
-    union
-    {
-        // For CLR wrapper objects that extend an unmanaged class, this field
-        // may contain a delegate to be called to allocate the aggregated
-        // unmanaged class (instead of using CoCreateInstance).
-        OBJECTHANDLE    m_ohDelegate;
-
-        // For interfaces this contains the COM interface type.
-        CorIfaceAttr    m_ComInterfaceType;
-    };
+    // For interfaces this contains the COM interface type.
+    CorIfaceAttr    m_ComInterfaceType;
 
     ComCallWrapperTemplate *m_pccwTemplate;   // points to interop data structures used when this type is exposed to COM
 #endif // FEATURE_COMINTEROP
@@ -1798,6 +1784,7 @@ template<> struct cdac_data<EEClass>
     static constexpr size_t NumStaticFields = offsetof(EEClass, m_NumStaticFields);
     static constexpr size_t NumThreadStaticFields = offsetof(EEClass, m_NumThreadStaticFields);
     static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
+    static constexpr size_t BaseSizePadding = offsetof(EEClass, m_cbBaseSizePadding);
 };
 
 // --------------------------------------------------------------------------------------------
@@ -1886,7 +1873,6 @@ public:
     PTR_Stub                         m_pInstRetBuffCallStub;
     PTR_MethodDesc                   m_pInvokeMethod;
     PCODE                            m_pMultiCastInvokeStub;
-    PCODE                            m_pWrapperDelegateInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
     Volatile<PCODE>                  m_pMarshalStub;
 

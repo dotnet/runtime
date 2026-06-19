@@ -151,6 +151,54 @@ namespace JIT.HardwareIntrinsics.Arm
             return T.CreateChecked(bitSize - (highest + 1));
         }
 
+        public static U CountMatchingElements<T, U>(T[] mask, T[] left, T[] right, int i)
+            where U : unmanaged, INumber<U>
+            where T : unmanaged, INumber<T>
+        {
+            int result = 0;
+
+            if (mask[i] != T.Zero)
+            {
+                for (int j = 0; j <= i; j++)
+                {
+                    if (mask[j] != T.Zero && left[i] == right[j])
+                    {
+                        result++;
+                    }
+                }
+            }
+
+            return U.CreateChecked(result);
+        }
+
+        public static unsafe byte CountMatchingElementsIn128BitSegments<T>(T[] left, T[] right, int i)
+            where T : unmanaged, INumber<T>
+        {
+            int result = 0;
+            int elementSize = sizeof(T);
+            int segmentStartByte = ((i * elementSize) / 16) * 16;
+            int segmentEndByte = segmentStartByte + 16;
+            int rightLengthBytes = right.Length * elementSize;
+
+            if (segmentEndByte > rightLengthBytes)
+            {
+                segmentEndByte = rightLengthBytes;
+            }
+
+            int segmentStart = segmentStartByte / elementSize;
+            int segmentEnd = segmentEndByte / elementSize;
+
+            for (int j = segmentStart; j < segmentEnd; j++)
+            {
+                if (left[i] == right[j])
+                {
+                    result++;
+                }
+            }
+
+            return byte.CreateChecked(result);
+        }
+
         public static unsafe int HighestSetBit<T>(T value)
             where T : unmanaged, INumber<T>, IBitwiseOperators<T, T, T>
         {
@@ -6251,6 +6299,46 @@ namespace JIT.HardwareIntrinsics.Arm
             return (ulong)((op1 <= op2) ? 1 : 0);
         }
 
+        public static int WhileGreaterThanMask(int op1, int op2)
+        {
+            return (op1 > op2) ? 1 : 0;
+        }
+
+        public static uint WhileGreaterThanMask(uint op1, uint op2)
+        {
+            return (uint)((op1 > op2) ? 1 : 0);
+        }
+
+        public static long WhileGreaterThanMask(long op1, long op2)
+        {
+            return (op1 > op2) ? 1 : 0;
+        }
+
+        public static ulong WhileGreaterThanMask(ulong op1, ulong op2)
+        {
+            return (ulong)((op1 > op2) ? 1 : 0);
+        }
+
+        public static int WhileGreaterThanOrEqualMask(int op1, int op2)
+        {
+            return (op1 >= op2) ? 1 : 0;
+        }
+
+        public static uint WhileGreaterThanOrEqualMask(uint op1, uint op2)
+        {
+            return (uint)((op1 >= op2) ? 1 : 0);
+        }
+
+        public static long WhileGreaterThanOrEqualMask(long op1, long op2)
+        {
+            return (op1 >= op2) ? 1 : 0;
+        }
+
+        public static ulong WhileGreaterThanOrEqualMask(ulong op1, ulong op2)
+        {
+            return (ulong)((op1 >= op2) ? 1 : 0);
+        }
+
         public static ulong MaskBothSet(byte[] op1, byte[] op2)
         {
             ulong acc = 0;
@@ -7796,6 +7884,44 @@ namespace JIT.HardwareIntrinsics.Arm
             }
             return even;
         }
+
+        public static T[] Match<T>(T[] mask, T[] left, T[] right, bool isNoMatch = false)
+            where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] result = new T[left.Length];
+            for (int i = 0; i < left.Length; i++)
+            {
+                if (mask[i] != T.Zero)
+                {
+                    bool found = false;
+                    for (int j = 0; j < right.Length; j++)
+                    {
+                        if (left[i] == right[j])
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (isNoMatch)
+                    {
+                        result[i] = found ? T.Zero : T.One;
+                    }
+                    else
+                    {
+                        result[i] = found ? T.One : T.Zero;
+                    }
+                }
+                else
+                {
+                    result[i] = T.Zero;
+                }
+            }
+            return result;
+        }
+
+        public static T[] NoMatch<T>(T[] mask, T[] left, T[] right)
+            where T : unmanaged, IBinaryInteger<T>
+            => Match(mask, left, right, isNoMatch: true);
 
         public static T[] SubtractBorrowWideningEven<T>(T[] op1, T[] op2, T[] op3)
             where T : unmanaged, IBinaryInteger<T>

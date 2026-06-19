@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma once
+
 #ifndef _DEBUG
 #ifdef _MSC_VER
 // optimize for speed
@@ -140,13 +142,15 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now disable regions for standalone GC and macOS builds
+// For now disable regions for standalone GC builds
 // For SunOS or illumos this is temporary, until we can add MAP_PRIVATE
 // to the mmap() calls in unix/gcenv.unix.cpp  More details here:
 //    https://github.com/dotnet/runtime/issues/104211
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(__sun)
+// Apple non-macOS platforms (such as iOS, tvOS, and Mac Catalyst) disallow
+// the large virtual address space reservations that GC regions require.
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__sun) && (!defined(HOST_APPLE) || defined(HOST_OSX))
 #define USE_REGIONS
-#endif //HOST_64BIT && BUILD_AS_STANDALONE && !__APPLE__
+#endif //HOST_64BIT && !BUILD_AS_STANDALONE && !__sun && (!HOST_APPLE || HOST_OSX)
 
 //#define SPINLOCK_HISTORY
 //#define RECORD_LOH_STATE
@@ -188,7 +192,9 @@ inline void FATAL_GC_ERROR()
 #define FEATURE_PREMORTEM_FINALIZATION
 #define GC_HISTORY
 
+#ifndef TARGET_WASM
 #define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
+#endif //!TARGET_WASM
 
 // We need the lower 3 bits in the MT to do our bookkeeping so doubly linked free list is only for 64-bit
 #if defined(BACKGROUND_GC) && defined(HOST_64BIT)
@@ -1206,7 +1212,9 @@ struct last_recorded_gc_info
 
 // alignment helpers
 //Alignment constant for allocation
+// [cDAC] [GC]: Contract depends on these values.
 #define ALIGNCONST (DATA_ALIGNMENT-1)
+#define ALIGNCONST_LARGE 7
 
 inline
 size_t Align (size_t nbytes, int alignment=ALIGNCONST)
@@ -1223,7 +1231,7 @@ int get_alignment_constant (BOOL small_object_p)
     // the compiler will tell us so.  Let's not guess an alignment here.
     return ALIGNCONST;
 #else // FEATURE_STRUCTALIGN
-    return small_object_p ? ALIGNCONST : 7;
+    return small_object_p ? ALIGNCONST : ALIGNCONST_LARGE;
 #endif // FEATURE_STRUCTALIGN
 }
 
@@ -1692,7 +1700,10 @@ private:
     PER_HEAP_METHOD void set_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_demoted (heap_segment* region);
-    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region, int* no_pinned_surv_region_count);
+    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region,
+                                                      int* no_pinned_surv_region_count,
+                                                      bool promote_gen1_pins_p,
+                                                      bool large_pins_p);
     PER_HEAP_METHOD void skip_pins_in_alloc_region (generation* consing_gen, int plan_gen_num);
     PER_HEAP_METHOD void process_last_np_surv_region (generation* consing_gen,
                                       int current_plan_gen_num,
@@ -1750,7 +1761,7 @@ private:
     PER_HEAP_ISOLATED_METHOD void move_aged_regions(region_free_list dest[count_free_region_kinds], region_free_list& src, free_region_kind kind, bool joined_last_gc_before_oom);
     PER_HEAP_ISOLATED_METHOD bool aged_region_p(heap_segment* region, free_region_kind kind);
     PER_HEAP_ISOLATED_METHOD void move_regions_to_decommit(region_free_list oregions[count_free_region_kinds]);
-    PER_HEAP_ISOLATED_METHOD size_t compute_basic_region_budgets(size_t heap_basic_budget_in_region_units[MAX_SUPPORTED_CPUS], size_t min_heap_basic_budget_in_region_units[MAX_SUPPORTED_CPUS], size_t total_basic_free_regions);
+    PER_HEAP_ISOLATED_METHOD size_t compute_basic_region_budgets(size_t heap_basic_budget_in_region_units[MAX_SUPPORTED_HEAPS], size_t min_heap_basic_budget_in_region_units[MAX_SUPPORTED_HEAPS], size_t total_basic_free_regions);
     PER_HEAP_ISOLATED_METHOD bool near_heap_hard_limit_p();
     PER_HEAP_ISOLATED_METHOD bool distribute_surplus_p(ptrdiff_t balance, int kind, bool aggressive_decommit_large_p);
     PER_HEAP_ISOLATED_METHOD void decide_on_decommit_strategy(bool joined_last_gc_before_oom);
@@ -2623,6 +2634,15 @@ private:
 #ifndef USE_REGIONS
     PER_HEAP_METHOD generation*  ensure_ephemeral_heap_segment (generation* consing_gen);
 #endif //!USE_REGIONS
+
+    PER_HEAP_ISOLATED_METHOD bool decide_on_gen1_pin_promotion (float pin_frag_ratio, float pin_surv_ratio);
+
+    PER_HEAP_METHOD void attribute_pin_higher_gen_alloc (
+#ifdef USE_REGIONS
+                                                        heap_segment* seg, int to_gen_number,
+#endif
+                                                        uint8_t* plug, size_t len);
+
     PER_HEAP_METHOD uint8_t* allocate_in_condemned_generations (generation* gen,
                                              size_t size,
                                              int from_gen_number,
@@ -2644,6 +2664,8 @@ private:
     PER_HEAP_METHOD size_t get_promoted_bytes();
 
 #ifdef USE_REGIONS
+    PER_HEAP_METHOD void attribute_pin_higher_gen_alloc (int frgn, int togn, size_t len);
+
     PER_HEAP_ISOLATED_METHOD void sync_promoted_bytes();
 
     PER_HEAP_ISOLATED_METHOD void set_heap_for_contained_basic_regions (heap_segment* region, gc_heap* hp);
@@ -3527,6 +3549,8 @@ private:
     // Set during a GC and checked by allocator after that GC
     PER_HEAP_FIELD_SINGLE_GC BOOL sufficient_gen0_space_p;
 
+    PER_HEAP_FIELD_SINGLE_GC BOOL decide_promote_gen1_pins_p;
+
     PER_HEAP_FIELD_SINGLE_GC bool no_gc_oom_p;
     PER_HEAP_FIELD_SINGLE_GC heap_segment* saved_loh_segment_no_gc;
 
@@ -3666,7 +3690,6 @@ private:
 
     PER_HEAP_FIELD_SINGLE_GC uint8_t* demotion_low;
     PER_HEAP_FIELD_SINGLE_GC uint8_t* demotion_high;
-    PER_HEAP_FIELD_SINGLE_GC BOOL demote_gen1_p;
     PER_HEAP_FIELD_SINGLE_GC uint8_t* last_gen1_pin_end;
 
     PER_HEAP_FIELD_SINGLE_GC BOOL ephemeral_promotion;
@@ -5352,7 +5375,17 @@ private:
 #endif
 
     // Indicate to use large pages. This only works if hardlimit is also enabled.
+    // GCLargePages=1 uses real OS large pages, GCLargePages=2 emulates it for testing.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool use_large_pages_p;
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool large_pages_emulation_mode_p;
+
+    // Indicates that the underlying OS does not support decommitting memory.
+    // Implies that VirtualCommit/VirtualDecommit are no-ops on heap memory and
+    // that GC code paths that rely on returning memory to the OS must be skipped.
+    // Set unconditionally on WASM and whenever use_large_pages_p is set (large pages
+    // are pre-committed and cannot be decommitted). Code that wants to skip a
+    // decommit-related path should test this flag rather than use_large_pages_p.
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool never_decommit_p;
 
 #ifdef MULTIPLE_HEAPS
     // Init-ed in gc_heap::initialize_gc
@@ -6820,6 +6853,142 @@ public:
 #else
 #define THIS_ARG
 #endif // FEATURE_CARD_MARKING_STEALING
+
+inline
+size_t gc_heap::get_promoted_bytes()
+{
+#ifdef USE_REGIONS
+    if (!survived_per_region)
+    {
+        dprintf (REGIONS_LOG, ("no space to store promoted bytes"));
+        return 0;
+    }
+
+    dprintf (3, ("h%d getting surv", heap_number));
+    size_t promoted = 0;
+    for (size_t i = 0; i < region_count; i++)
+    {
+        if (survived_per_region[i] > 0)
+        {
+            heap_segment* region = get_region_at_index (i);
+            dprintf (REGIONS_LOG, ("h%d region[%zd] %p(g%d)(%s) surv: %zd(%p)",
+                heap_number, i,
+                heap_segment_mem (region),
+                heap_segment_gen_num (region),
+                (heap_segment_loh_p (region) ? "LOH" : (heap_segment_poh_p (region) ? "POH" :"SOH")),
+                survived_per_region[i],
+                &survived_per_region[i]));
+
+            promoted += survived_per_region[i];
+        }
+    }
+
+#ifdef _DEBUG
+    dprintf (REGIONS_LOG, ("h%d global recorded %zd, regions recorded %zd",
+        heap_number, promoted_bytes (heap_number), promoted));
+    assert (promoted_bytes (heap_number) == promoted);
+#endif //_DEBUG
+
+    return promoted;
+
+#else //USE_REGIONS
+
+#ifdef MULTIPLE_HEAPS
+    return g_promoted [heap_number*16];
+#else //MULTIPLE_HEAPS
+    return g_promoted;
+#endif //MULTIPLE_HEAPS
+#endif //USE_REGIONS
+}
+
+// For regions -
+// n_gen means it's pointing into the condemned regions so it's incremented
+// if the child object's region is <= condemned_gen.
+// cg_pointers_found means it's pointing into a lower generation so it's incremented
+// if the child object's region is < current_gen.
+inline void
+gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
+                                    size_t& cg_pointers_found,
+                                    card_fn fn, uint8_t* nhigh,
+                                    uint8_t* next_boundary,
+                                    int condemned_gen,
+                                    // generation of the parent object
+                                    int current_gen
+                                    CARD_MARKING_STEALING_ARG(gc_heap* hpt))
+{
+#if defined(FEATURE_CARD_MARKING_STEALING) && defined(MULTIPLE_HEAPS)
+    int thread = hpt->heap_number;
+#else
+    THREAD_FROM_HEAP;
+#ifdef MULTIPLE_HEAPS
+    gc_heap* hpt = this;
+#endif //MULTIPLE_HEAPS
+#endif //FEATURE_CARD_MARKING_STEALING && MULTIPLE_HEAPS
+
+#ifdef USE_REGIONS
+    assert (nhigh == 0);
+    assert (next_boundary == 0);
+    uint8_t* child_object = *poo;
+    if ((child_object < ephemeral_low) || (ephemeral_high <= child_object))
+        return;
+
+    int child_object_gen = get_region_gen_num (child_object);
+    int saved_child_object_gen = child_object_gen;
+    uint8_t* saved_child_object = child_object;
+
+    if (child_object_gen <= condemned_gen)
+    {
+        n_gen++;
+        call_fn(hpt,fn) (poo THREAD_NUMBER_ARG);
+    }
+
+    if (fn == &gc_heap::relocate_address)
+    {
+        child_object_gen = get_region_plan_gen_num (*poo);
+    }
+
+    if (child_object_gen < current_gen)
+    {
+        cg_pointers_found++;
+        dprintf (4, ("cg pointer %zx found, %zd so far",
+                        (size_t)*poo, cg_pointers_found ));
+    }
+#else //USE_REGIONS
+    assert (condemned_gen == -1);
+    if ((gc_low <= *poo) && (gc_high > *poo))
+    {
+        n_gen++;
+        call_fn(hpt,fn) (poo THREAD_NUMBER_ARG);
+    }
+#ifdef MULTIPLE_HEAPS
+    else if (*poo)
+    {
+        gc_heap* hp = heap_of_gc (*poo);
+        if (hp != this)
+        {
+            if ((hp->gc_low <= *poo) &&
+                (hp->gc_high > *poo))
+            {
+                n_gen++;
+                call_fn(hpt,fn) (poo THREAD_NUMBER_ARG);
+            }
+            if ((fn == &gc_heap::relocate_address) ||
+                ((hp->ephemeral_low <= *poo) &&
+                 (hp->ephemeral_high > *poo)))
+            {
+                cg_pointers_found++;
+            }
+        }
+    }
+#endif //MULTIPLE_HEAPS
+    if ((next_boundary <= *poo) && (nhigh > *poo))
+    {
+        cg_pointers_found ++;
+        dprintf (4, ("cg pointer %zx found, %zd so far",
+                     (size_t)*poo, cg_pointers_found ));
+    }
+#endif //USE_REGIONS
+}
 
 using std::min;
 using std::max;

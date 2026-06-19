@@ -676,8 +676,10 @@ namespace System.Net.Sockets
                 SocketError ec = ErrorCode;
                 Memory<byte> buffer = Buffer;
 
-                if (buffer.Length == 0)
+                if (buffer.Length == 0 || ec != SocketError.Success)
                 {
+                    AssociatedContext._socket.SetBlocking();
+
                     // Invoke callback only when we are completely done.
                     // In case data were provided for Connect we may or may not send them all.
                     // If we did not we will need follow-up with Send operation
@@ -1350,8 +1352,10 @@ namespace System.Net.Sockets
             //
             // Our sockets may start as blocking, and later transition to non-blocking, either because the user
             // explicitly requested non-blocking mode, or because we need non-blocking mode to support async
-            // operations.  We never transition back to blocking mode, to avoid problems synchronizing that
-            // transition with the async infrastructure.
+            // operations. After ConnectAsync completes (success or failure), if there is no pending follow-up
+            // async send, we may transition back to blocking mode to optimize subsequent synchronous operations
+            // (see SetHandleBlocking). The socket will be set back to non-blocking when another async operation
+            // is performed.
             //
             // Note that there's no synchronization here, so we may set the non-blocking option multiple times
             // in a race.  This should be fine.
@@ -1368,6 +1372,23 @@ namespace System.Net.Sockets
         }
 
         public bool IsHandleNonBlocking => _isHandleNonBlocking;
+
+        public void SetHandleBlocking()
+        {
+            if (OperatingSystem.IsWasi())
+            {
+                // WASI sockets are always non-blocking
+                return;
+            }
+
+            if (_isHandleNonBlocking)
+            {
+                if (Interop.Sys.Fcntl.SetIsNonBlocking(_socket, 0) == 0)
+                {
+                    _isHandleNonBlocking = false;
+                }
+            }
+        }
 
         private void PerformSyncOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, int timeout, int observedSequenceNumber)
             where TOperation : AsyncOperation
@@ -1549,7 +1570,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             _sendQueue.IsReady(this, out observedSequenceNumber);
-#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFORM
             if (SocketPal.TryStartConnect(_socket, socketAddress, out errorCode, buffer.Span, _socket.TfoEnabled, out sentBytes))
 #else
             if (SocketPal.TryStartConnect(_socket, socketAddress, out errorCode, buffer.Span, false, out sentBytes)) // In Linux, we can figure it out as needed inside PAL.
@@ -1562,6 +1583,11 @@ namespace System.Net.Sockets
                 if (errorCode == SocketError.Success && remains > 0)
                 {
                     errorCode = SendToAsync(buffer.Slice(sentBytes), 0, remains, SocketFlags.None, Memory<byte>.Empty, ref sentBytes, callback!, default);
+                }
+
+                if (remains == 0 || errorCode != SocketError.IOPending)
+                {
+                    _socket.SetBlocking();
                 }
                 return errorCode;
             }
@@ -1580,6 +1606,12 @@ namespace System.Net.Sockets
                 {
                     sentBytes += operation.BytesTransferred;
                 }
+
+                if (buffer.Length == 0 || operation.ErrorCode != SocketError.Success)
+                {
+                    _socket.SetBlocking();
+                }
+
                 return operation.ErrorCode;
             }
 

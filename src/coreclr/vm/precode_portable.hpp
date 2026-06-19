@@ -13,6 +13,7 @@
 class PortableEntryPoint final
 {
 public: // static
+    // Returns true if the _pActualCode field of a given PortableEntryPoint is set to a non-null address and that address is the preferred entry point instead of preferring InterpreterCode usage.
     static bool HasNativeEntryPoint(PCODE addr);
     static bool HasInterpreterData(PCODE addr);
 
@@ -21,6 +22,7 @@ public: // static
     static MethodDesc* GetMethodDesc(PCODE addr);
     static void* GetInterpreterData(PCODE addr);
     static void SetInterpreterData(PCODE addr, PCODE interpreterData);
+    static bool PrefersInterpreterEntryPoint(PCODE addr);
 
 private:
     Volatile<void*> _pActualCode;
@@ -32,6 +34,7 @@ private:
         kNone = 0,
         kUnmanagedCallersOnly_Has = 0x1,
         kUnmanagedCallersOnly_Checked = 0x2,
+        kPrefersInterpreterEntryPoint = 0x4,
     };
     Volatile<int32_t> _flags;
 
@@ -48,6 +51,8 @@ public: // static
 public:
     void Init(MethodDesc* pMD);
     void Init(void* nativeEntryPoint);
+    void Init_WithInterpreterThunk(void* nativeEntryPoint, MethodDesc* pMD);
+    void Init_WithNativeCode(void* nativeEntryPoint, MethodDesc* pMD);
 
     // Check if the entry point represents a method with the UnmanagedCallersOnly attribute.
     // If it does, update the entry point to point to the UnmanagedCallersOnly thunk if not
@@ -69,6 +74,13 @@ public:
         return _pActualCode != nullptr;
     }
 
+    // This api can be used on a PortableEntryPoint which has not yet been initted
+    bool HasNativeCodeUnchecked() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return _pActualCode != nullptr;
+    }
+
     bool IsPreparedForNativeCall() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -77,14 +89,53 @@ public:
         // pActualCode is a managed calling convention -> interpreter executor call stub in this case.
         return _pInterpreterData != nullptr && _pActualCode != nullptr;
     }
+
+    bool PrefersInterpreterEntryPoint() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return (_flags & kPrefersInterpreterEntryPoint) != 0;
+    }
+
+private:
+    void SetFlagsInterlocked(int32_t flags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedOr(reinterpret_cast<LONG volatile*>(&_flags), static_cast<LONG>(flags));
+    }
+    void ClearFlagsInterlocked(int32_t flags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedAnd(reinterpret_cast<LONG volatile*>(&_flags), static_cast<LONG>(~flags));
+    }
+public:
+    void ClearPrefersInterpreterEntryPoint()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        ClearFlagsInterlocked(kPrefersInterpreterEntryPoint);
+    }
+
+    // Atomically install an interpreter thunk if _pActualCode is still NULL.
+    // Returns true if the thunk was installed, false if _pActualCode was already set.
+    bool TrySetInterpreterThunk(void* thunk)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        _ASSERTE(thunk != nullptr);
+        return InterlockedCompareExchangeT(&_pActualCode, thunk, (void*)nullptr) == nullptr;
+    }
+
     friend struct ::cdac_data<PortableEntryPoint>;
 };
+
 template<>
 struct cdac_data<PortableEntryPoint>
 {
     static constexpr size_t MethodDesc = offsetof(PortableEntryPoint, _pMD);
-};
 
+    static_assert(offsetof(PortableEntryPoint, _pActualCode) == 0, "CLR ABI requires _pActualCode to be at offset 0 of PortableEntryPoint");
+};
 
 extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
 

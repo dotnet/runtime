@@ -6,7 +6,8 @@ import type {
     EmscriptenModuleInternal, InternalExchange, InternalExchangeSubscriber,
     RuntimeAPI, LoaderExports, BrowserUtilsExports, RuntimeExports,
     VoidPtr, JSMarshalerArguments, CSFnHandle, TypedArray,
-    MemOffset, CharPtrPtr
+    MemOffset, CharPtrPtr,
+    CharPtr
 } from "../types";
 
 // we want to use the cross-module symbols defined in closure of dotnet.native.js
@@ -28,6 +29,9 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     _SystemJS_ExecuteTimerCallback: () => void;
     _SystemJS_ExecuteBackgroundJobCallback: () => void;
     _SystemJS_ExecuteFinalizationCallback: () => void;
+    _SystemJS_ExecuteDiagnosticServerCallback: () => void;
+    _SystemJS_ScheduleDiagnosticServer: (delayMs: number) => void;
+    _SystemJS_GetMethodName: (pMethodDesc: number) => CharPtr;
     _BrowserHost_CreateHostContract: () => VoidPtr;
     _BrowserHost_InitializeDotnet: (propertiesCount: number, propertyKeys: CharPtrPtr, propertyValues: CharPtrPtr) => number;
     _BrowserHost_ExecuteAssembly: (mainAssemblyNamePtr: number, argsLength: number, argsPtr: number) => number;
@@ -51,6 +55,7 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
         lastScheduledTimerId?: number;
         lastScheduledThreadPoolId?: number;
         lastScheduledFinalizationId?: number;
+        lastScheduledDiagnosticServerId?: number;
         cryptoWarnOnce?: boolean;
         isAborting?: boolean;
         isAsyncMain?: boolean;
@@ -94,6 +99,8 @@ export type EmsAmbientSymbolsType = EmscriptenModuleInternal & {
     writeI53ToI64(ptr: MemOffset, value: number): void;
     readI53FromI64(ptr: MemOffset): number;
     readI53FromU64(ptr: MemOffset): number;
+    UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
+    UTF8Decoder: TextDecoder | null;
 
     wasmMemory: WebAssembly.Memory;
     wasmTable: WebAssembly.Table;

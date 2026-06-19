@@ -364,7 +364,7 @@ namespace System.Security.Cryptography.X509Certificates
             return s_ocspDir;
         }
 
-        private static string GetCrlFileName(SafeX509Handle cert, string crlUrl)
+        private static unsafe string GetCrlFileName(SafeX509Handle cert, string crlUrl)
         {
             // X509_issuer_name_hash returns "unsigned long", which is marshalled as ulong.
             // But it only sets 32 bits worth of data, so force it down to uint just... in case.
@@ -387,7 +387,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException();
             }
 
-            uint urlHash = MemoryMarshal.Read<uint>(hash);
+            uint urlHash = BitConverter.ToUInt32(hash);
 
             // OpenSSL's hashed filename algorithm is the 8-character hex version of the 32-bit value
             // of X509_issuer_name_hash (or X509_subject_name_hash, depending on the context).
@@ -424,8 +424,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(crlDistributionPoints, AsnEncodingRules.DER);
-                AsnValueReader sequenceReader = reader.ReadSequence();
+                ValueAsnReader reader = new ValueAsnReader(crlDistributionPoints, AsnEncodingRules.DER);
+                ValueAsnReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 while (sequenceReader.HasData)

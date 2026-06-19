@@ -83,11 +83,11 @@ namespace ILCompiler
             // that would cause the entire image to be invalidated.
             bool isVectorTOptimistic = true;
 
-            TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
-            TargetOS targetOS = Get(_command.TargetOS);
+            (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
+                Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
-            if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst)
+            if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst or TargetOS.Browser)
             {
                 // These platforms do not support jitted code, so we want to ensure that we don't
                 // need to fall back to the interpreter for any hardware-intrinsic optimizations.
@@ -100,7 +100,7 @@ namespace ILCompiler
                 allowOptimistic: allowOptimistic,
                 isReadyToRun: true);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
-            var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
+            var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, instructionSetSupport.GetVectorTSimdVector());
 
             ConfigureImageBase(targetDetails);
 
@@ -411,10 +411,29 @@ namespace ILCompiler
                         throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
                     }
 
+                    string rtrHeaderSymbolName = Get(_command.ReadyToRunHeaderSymbolName);
+
                     ReadyToRunContainerFormat format = Get(_command.OutputFormat);
+                    if (format == ReadyToRunContainerFormat.PE && typeSystemContext.Target.Architecture == TargetArchitecture.Wasm32)
+                    {
+                        format = ReadyToRunContainerFormat.Wasm;
+                    }
                     if (!composite && format != ReadyToRunContainerFormat.PE && format != ReadyToRunContainerFormat.Wasm)
                     {
                         throw new Exception(string.Format(SR.ErrorContainerFormatRequiresComposite, format));
+                    }
+
+                    if (rtrHeaderSymbolName is not null)
+                    {
+                        if (!composite)
+                        {
+                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameRequiresComposite);
+                        }
+
+                        if (string.IsNullOrWhiteSpace(rtrHeaderSymbolName))
+                        {
+                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameEmpty);
+                        }
                     }
 
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
@@ -604,6 +623,11 @@ namespace ILCompiler
                         compositeImageSettings.PublicKey = compositeStrongNameKey.ToImmutableArray();
                     }
 
+                    if (rtrHeaderSymbolName != null)
+                    {
+                        compositeImageSettings.ReadyToRunHeaderSymbolName = rtrHeaderSymbolName;
+                    }
+
                     //
                     // Compile
                     //
@@ -624,6 +648,9 @@ namespace ILCompiler
                     nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
                     nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
+                    nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
+                    nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
+                    nodeFactoryFlags.StripILBodies = Get(_command.StripILBodies);
 
                     builder
                         .UseMapFile(Get(_command.Map))
@@ -652,12 +679,9 @@ namespace ILCompiler
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
 
-                    if (Get(_command.EnableGenericCycleDetection))
-                    {
-                        builder.UseGenericCycleDetection(
-                            depthCutoff: Get(_command.GenericCycleDepthCutoff),
-                            breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
-                    }
+                    builder.UseGenericCycleDetection(
+                        depthCutoff: Get(_command.GenericCycleDepthCutoff),
+                        breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
@@ -791,7 +815,7 @@ namespace ILCompiler
                 int curIndex = 0;
                 foreach (var searchMethod in method.OwningType.GetMethods())
                 {
-                    if (!searchMethod.Name.SequenceEqual(method.Name))
+                    if (searchMethod.Name != method.Name)
                         continue;
 
                     curIndex++;

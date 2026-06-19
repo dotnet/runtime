@@ -59,15 +59,12 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withConfigSrc (configSrc: string): DotnetHostBuilder {
-        try {
-            mono_assert(configSrc && typeof configSrc === "string", "must be file path or URL");
-            deep_merge_module(emscriptenModule, { configSrc });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
+    /**
+     * @deprecated This method is no longer supported and will be removed in a future version.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    withConfigSrc (_configSrc: string): DotnetHostBuilder {
+        return this;
     }
 
     withVirtualWorkingDirectory (vfsPath: string): DotnetHostBuilder {
@@ -454,19 +451,11 @@ async function createEmscriptenWorker (): Promise<EmscriptenModuleInternal> {
     await loaderHelpers.afterConfigLoaded.promise;
 
     prepareAssetsWorker();
-
-    setTimeout(async () => {
-        try {
-            // load subset which is on JS heap rather than in WASM linear memory
-            await mono_download_assets();
-        } catch (err) {
-            mono_exit(1, err);
-        }
-    }, 0);
-
     const promises = importModules();
     const es6Modules = await Promise.all(promises);
     await initializeModules(es6Modules as any);
+
+    await mono_download_assets();
 
     return emscriptenModule;
 }

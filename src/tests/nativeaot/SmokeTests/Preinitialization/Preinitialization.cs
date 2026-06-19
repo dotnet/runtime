@@ -40,6 +40,7 @@ internal class Program
         TestDelegateReflectionVisible.Run();
         TestInitFromOtherClass.Run();
         TestInitFromOtherClassDouble.Run();
+        TestNestedPreinitIdentity.Run();
         TestDelegateToOtherClass.Run();
         TestLotsOfBackwardsBranches.Run();
         TestSwitch.Run();
@@ -69,6 +70,9 @@ internal class Program
         TestByRefFieldAddressEquality.Run();
         TestComInterfaceEntry.Run();
         TestPreinitializedBclTypes.Run();
+        TestArrayLoadBounds.Run();
+        TestFloatNaNComparison.Run();
+        TestDivisionOverflow.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -724,6 +728,38 @@ class TestInitFromOtherClassDouble
     }
 }
 
+class TestNestedPreinitIdentity
+{
+    class OtherClass
+    {
+        public static readonly object ObjectValue = new object();
+    }
+
+    class YetAnotherClass
+    {
+        public static readonly object ObjectValue = OtherClass.ObjectValue;
+    }
+
+    static bool s_areSame;
+    static bool s_areSameIndirect;
+
+    static TestNestedPreinitIdentity()
+    {
+        object first = OtherClass.ObjectValue;
+        object second = OtherClass.ObjectValue;
+        object third = YetAnotherClass.ObjectValue;
+
+        s_areSame = first == second;
+        s_areSameIndirect = first == third;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestNestedPreinitIdentity));
+        Assert.True(s_areSame);
+        Assert.True(s_areSameIndirect);
+    }
+}
 
 class TestDelegateToOtherClass
 {
@@ -1901,6 +1937,20 @@ class TestVTableManipulation
         }
     }
 
+    public unsafe class TinyVtableClearSlotImpl
+    {
+        [FixedAddressValueType]
+        public static readonly ITinyVtableB Vtbl;
+
+        static TinyVtableClearSlotImpl()
+        {
+            Vtbl.First = &First;
+            Vtbl.Second = &Second;
+            Vtbl.Third = &Third;
+            Vtbl.Second = default;
+        }
+    }
+
     public unsafe struct ITinyVtableA
     {
         public delegate*<void> First;
@@ -1943,6 +1993,11 @@ class TestVTableManipulation
         Assert.AreEqual((nuint)(delegate*<void>)&Second, (nuint)TinyVtableCImpl.Vtbl.Second);
         Assert.AreEqual((nuint)(delegate*<void>)&Third, (nuint)TinyVtableCImpl.Vtbl.Third);
         Assert.AreEqual((nuint)(delegate*<void>)&Fourth, (nuint)TinyVtableCImpl.Vtbl.Fourth);
+
+        Assert.IsPreinitialized(typeof(TinyVtableClearSlotImpl));
+        Assert.AreEqual((void*)(delegate*<void>)&First, TinyVtableClearSlotImpl.Vtbl.First);
+        Assert.AreEqual((void*)null, TinyVtableClearSlotImpl.Vtbl.Second);
+        Assert.AreEqual((void*)(delegate*<void>)&Third, TinyVtableClearSlotImpl.Vtbl.Third);
     }
 }
 
@@ -2125,6 +2180,164 @@ unsafe class TestPreinitializedBclTypes
     public static void Run()
     {
         Assert.IsPreinitialized(Type.GetType("System.Runtime.InteropServices.ComWrappers+VtableImplementations, System.Private.CoreLib"));
+    }
+}
+
+class TestArrayLoadBounds
+{
+    static int GetLength() => 3;
+
+    class ArrayLoadAtLength
+    {
+        internal static int[] s_array;
+        internal static bool s_finished;
+
+        static ArrayLoadAtLength()
+        {
+            s_array = new int[GetLength()];
+
+            try
+            {
+                _ = s_array[GetLength()];
+                s_finished = true;
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsLazyInitialized(typeof(ArrayLoadAtLength));
+        Assert.AreEqual(false, ArrayLoadAtLength.s_finished);
+    }
+}
+
+class TestFloatNaNComparison
+{
+    static double GetNaN() => double.NaN;
+    static float GetFloatNaN() => float.NaN;
+
+    class NaNEquality
+    {
+        internal static bool s_nanEqualsNan;
+        internal static bool s_nanNotEqualsNan;
+        internal static bool s_floatNanEqualsNan;
+        internal static bool s_nanEqualsZero;
+
+        static NaNEquality()
+        {
+            s_nanEqualsNan = GetNaN() == GetNaN();
+            s_nanNotEqualsNan = GetNaN() != GetNaN();
+            s_floatNanEqualsNan = GetFloatNaN() == GetFloatNaN();
+            s_nanEqualsZero = GetNaN() == 0.0;
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(NaNEquality));
+        Assert.AreEqual(false, NaNEquality.s_nanEqualsNan);
+        Assert.AreEqual(true, NaNEquality.s_nanNotEqualsNan);
+        Assert.AreEqual(false, NaNEquality.s_floatNanEqualsNan);
+        Assert.AreEqual(false, NaNEquality.s_nanEqualsZero);
+    }
+}
+
+class TestDivisionOverflow
+{
+    static int GetIntMinValue() => int.MinValue;
+    static int GetMinusOne() => -1;
+    static long GetLongMinValue() => long.MinValue;
+    static long GetLongMinusOne() => -1L;
+
+    class IntDivOverflow
+    {
+        internal static bool s_caught;
+
+        static IntDivOverflow()
+        {
+            try
+            {
+                int a = GetIntMinValue();
+                int b = GetMinusOne();
+                int c = a / b;
+            }
+            catch (OverflowException)
+            {
+                s_caught = true;
+            }
+        }
+    }
+
+    class LongDivOverflow
+    {
+        internal static bool s_caught;
+
+        static LongDivOverflow()
+        {
+            try
+            {
+                long a = GetLongMinValue();
+                long b = GetLongMinusOne();
+                long c = a / b;
+            }
+            catch (OverflowException)
+            {
+                s_caught = true;
+            }
+        }
+    }
+
+    class IntRemOverflow
+    {
+        internal static bool s_caught;
+
+        static IntRemOverflow()
+        {
+            try
+            {
+                int a = GetIntMinValue();
+                int b = GetMinusOne();
+                int c = a % b;
+            }
+            catch (OverflowException)
+            {
+                s_caught = true;
+            }
+        }
+    }
+
+    class LongRemOverflow
+    {
+        internal static bool s_caught;
+
+        static LongRemOverflow()
+        {
+            try
+            {
+                long a = GetLongMinValue();
+                long b = GetLongMinusOne();
+                long c = a % b;
+            }
+            catch (OverflowException)
+            {
+                s_caught = true;
+            }
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsLazyInitialized(typeof(IntDivOverflow));
+        Assert.AreEqual(true, IntDivOverflow.s_caught);
+        Assert.IsLazyInitialized(typeof(LongDivOverflow));
+        Assert.AreEqual(true, LongDivOverflow.s_caught);
+        Assert.IsLazyInitialized(typeof(IntRemOverflow));
+        Assert.AreEqual(true, IntRemOverflow.s_caught);
+        Assert.IsLazyInitialized(typeof(LongRemOverflow));
+        Assert.AreEqual(true, LongRemOverflow.s_caught);
     }
 }
 

@@ -86,6 +86,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
 
     STUBHASHENTRY *phe = NULL;
 
+    StubHolder<Stub> pstub;
     {
         CrstHolder ch(&m_crst);
 
@@ -93,15 +94,13 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
         phe = (STUBHASHENTRY*)Find((LPVOID)pRawStub);
         if (phe)
         {
-            StubHolder<Stub> pstub;
             pstub = phe->m_pStub;
 
             ExecutableWriterHolder<Stub> stubWriterHolder(pstub, sizeof(Stub));
             // IncRef as we're returning a reference to our caller.
             stubWriterHolder.GetRW()->IncRef();
 
-            pstub.SuppressRelease();
-            RETURN pstub;
+            RETURN pstub.Detach();
         }
     }
 
@@ -114,7 +113,6 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
     // and link up the stub.
     CodeLabel *plabel = psl->EmitNewCodeLabel();
     psl->EmitBytes(pRawStub, Length(pRawStub));
-    StubHolder<Stub> pstub;
     pstub = psl->Link(m_heap, linkFlags, stubType);
     UINT32 offset = psl->GetLabelOffset(plabel);
 
@@ -162,8 +160,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
         COMPlusThrowOM();
     }
 
-    pstub.SuppressRelease();
-    RETURN pstub;
+    RETURN pstub.Detach();
 }
 
 

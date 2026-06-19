@@ -209,6 +209,13 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
         if (m_c1->OperIs(GT_LCL_VAR) && m_c2->OperIs(GT_LCL_VAR) &&
             m_c1->AsLclVarCommon()->GetLclNum() == m_c2->AsLclVarCommon()->GetLclNum())
         {
+            // The folded comparisons below are signed (e.g. "c1 <= 0", "c1 >= 0"), so
+            // bail if either input has GTF_UNSIGNED.
+            if (m_testInfo1.GetTestOp()->IsUnsigned() || m_testInfo2.GetTestOp()->IsUnsigned())
+            {
+                return false;
+            }
+
             if ((m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_EQ)) ||
                 (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_LT)))
             {
@@ -271,6 +278,13 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
         if (m_c1->OperIs(GT_LCL_VAR) && m_c2->OperIs(GT_LCL_VAR) &&
             m_c1->AsLclVarCommon()->GetLclNum() == m_c2->AsLclVarCommon()->GetLclNum())
         {
+            // The folded comparisons below are signed (e.g. "c1 > 0", "c1 < 0"), so
+            // bail if either input has GTF_UNSIGNED.
+            if (m_testInfo1.GetTestOp()->IsUnsigned() || m_testInfo2.GetTestOp()->IsUnsigned())
+            {
+                return false;
+            }
+
             if ((m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_NE)) ||
                 (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_GE)))
             {
@@ -448,23 +462,30 @@ static bool GetIntersection(var_types  type,
     }
 
     // Convert to a canonical form with GT_GE or GT_LE (inclusive).
-    auto normalize = [](genTreeOps* cmp, ssize_t* cns) {
+    auto normalize = [](genTreeOps* cmp, ssize_t* cns) -> bool {
         if (*cmp == GT_GT)
         {
             // "X > cns" -> "X >= cns + 1"
+            if (*cns == SSIZE_T_MAX)
+            {
+                return false;
+            }
             *cns = *cns + 1;
             *cmp = GT_GE;
         }
         if (*cmp == GT_LT)
         {
             // "X < cns" -> "X <= cns - 1"
+            // cns is non-negative (checked above), so cns - 1 >= -1 and cannot underflow.
             *cns = *cns - 1;
             *cmp = GT_LE;
         }
-        // whether these overflow or not is checked below.
+        return true;
     };
-    normalize(&cmp1, &cns1);
-    normalize(&cmp2, &cns2);
+    if (!normalize(&cmp1, &cns1) || !normalize(&cmp2, &cns2))
+    {
+        return false;
+    }
 
     if (cmp1 == cmp2)
     {
@@ -1234,8 +1255,8 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         }
         else
         {
-            // We originally reached B2's true target via
-            // B1 false OR B1 true B2 false.
+            // We originally reached B2's true target only via
+            // B1 false, then B2 true.
             //
             // We will now reach via B1 true.
             // Modify flow for true side of B1
@@ -1243,8 +1264,7 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
             m_compiler->fgRedirectEdge(m_b1->TrueEdgeRef(), m_b2->GetTrueTarget());
             origB1TrueEdge->setHeuristicBased(origB2TrueEdge->isHeuristicBased());
 
-            newB1TrueLikelihood =
-                (1.0 - origB1TrueLikelihood) + origB1TrueLikelihood * origB2FalseEdge->getLikelihood();
+            newB1TrueLikelihood = (1.0 - origB1TrueLikelihood) * origB2TrueEdge->getLikelihood();
         }
 
         // Fix B1 true edge likelihood
@@ -1409,12 +1429,12 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
         return nullptr;
     }
 
-    ssize_t ival2 = opr2->AsIntCon()->gtIconVal;
+    ssize_t ival2 = opr2->AsIntCon()->IconValue();
 
     // Is the value a boolean?
-    // We can either have a boolean expression (marked GTF_BOOLEAN) or a constant 0/1.
+    // Currently we only recognize constant 0/1.
 
-    if (opr1->OperIs(GT_CNS_INT) && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
+    if (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1))
     {
         pOptTest->isBool = true;
     }
@@ -1427,7 +1447,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
         if (pOptTest->isBool)
         {
             m_compiler->gtReverseCond(cond);
-            opr2->AsIntCon()->gtIconVal = 0;
+            opr2->AsIntCon()->SetIconValue(0);
         }
         else
         {
@@ -1659,7 +1679,8 @@ PhaseStatus Compiler::optOptimizeBools()
                 // trigger or not
                 // else if ((compOpportunisticallyDependsOn(InstructionSet_APX) || JitConfig.JitEnableApxIfConv()) &&
                 // optBoolsDsc.optOptimizeCompareChainCondBlock())
-                else if (JitConfig.EnableApxConditionalChaining() && !optSwitchDetectAndConvert(b1, true, &ccmpVec) &&
+                else if (canUseApxEvexEncoding() && JitConfig.EnableApxConditionalChaining() &&
+                         !optSwitchDetectAndConvert(b1, true, &ccmpVec) &&
                          optBoolsDsc.optOptimizeCompareChainCondBlock())
                 {
                     // The optimization will have merged b1 and b2. Retry the loop so that
@@ -1767,12 +1788,25 @@ bool Compiler::fgFoldCondToReturnBlock(BasicBlock* block)
         return modified;
     }
 
-    // Is block a BBJ_RETURN(1/0) ? (single statement)
+    // Is block a BBJ_RETURN(1/0) ?
     auto isReturnBool = [](const BasicBlock* block, bool value) {
-        if (block->KindIs(BBJ_RETURN) && block->hasSingleStmt() && (block->lastStmt() != nullptr))
+        if (block->KindIs(BBJ_RETURN) && (block->lastStmt() != nullptr))
         {
             GenTree* node = block->lastStmt()->GetRootNode();
-            return node->OperIs(GT_RETURN) && node->gtGetOp1()->IsIntegralConst(value ? 1 : 0);
+            if (!(node->OperIs(GT_RETURN) && node->gtGetOp1()->IsIntegralConst(value ? 1 : 0)))
+            {
+                return false;
+            }
+            // Allow preceding statements if they have no globally visible side effects
+            // (e.g., dead local stores left over from inlining).
+            for (Statement* const stmt : block->Statements())
+            {
+                if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(stmt->GetRootNode()->gtFlags))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
         return false;
     };

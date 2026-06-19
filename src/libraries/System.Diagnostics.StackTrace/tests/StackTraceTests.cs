@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Threading.Tasks;
@@ -64,6 +65,14 @@ namespace System.Diagnostics
         public static async Task Test2(int i)
         {
             throw new NullReferenceException("Exception from Test2");
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
+#line 1 "EdiOuter.cs"
+        public static async Task EdiOuter()
+        {
+            await V2Methods.EdiMiddle();
         }
     }
 
@@ -205,6 +214,22 @@ namespace System.Diagnostics
             if (Random.Shared.Next(1) == 100) await Task.Yield();
             throw new Exception("Exception from Baz method.");
         }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "EdiMiddle.cs"
+        public static async Task EdiMiddle()
+        {
+            await EdiInner();
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
+#line 1 "EdiInner.cs"
+        public static async Task EdiInner()
+        {
+            throw new InvalidOperationException("Exception from EdiInner");
+        }
     }
 }
 #line default
@@ -220,7 +245,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         public void Ctor_Default()
         {
             var stackTrace = new StackTrace();
@@ -228,7 +253,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(true)]
         [InlineData(false)]
         public void Ctor_FNeedFileInfo(bool fNeedFileInfo)
@@ -238,7 +263,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(0)]
         [InlineData(1)]
         public void Ctor_SkipFrames(int skipFrames)
@@ -262,7 +287,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(0, true)]
         [InlineData(1, true)]
         [InlineData(0, false)]
@@ -290,7 +315,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         public void Ctor_ThrownException_GetFramesReturnsExpected()
         {
             var stackTrace = new StackTrace(InvokeException());
@@ -308,7 +333,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(true)]
         [InlineData(false)]
         public void Ctor_Bool_ThrownException_GetFramesReturnsExpected(bool fNeedFileInfo)
@@ -331,7 +356,7 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31796", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(0)]
         [InlineData(1)]
         public void Ctor_Exception_SkipFrames(int skipFrames)
@@ -541,24 +566,7 @@ namespace System.Diagnostics.Tests
                 }
             }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
 
-            // Assembly.Load(Byte[]) case
-            RemoteExecutor.Invoke((asmPath, asmName, p) =>
-            {
-                AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
-                var inMemBlob = File.ReadAllBytes(asmPath);
-                var asm2 = Assembly.Load(inMemBlob);
-                try
-                {
-                    asm2.GetType("Program").GetMethod("Foo").Invoke(null, null);
-                }
-                catch (Exception e)
-                {
-                    Assert.Contains(asmName, e.InnerException.StackTrace);
-                    Assert.Matches(p, e.InnerException.StackTrace);
-                }
-            }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
-
-            // AssmblyBuilder.DefineDynamicAssembly() case
+            // AssemblyBuilder.DefineDynamicAssembly() case
             RemoteExecutor.Invoke((p) =>
             {
                 AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
@@ -583,10 +591,46 @@ namespace System.Diagnostics.Tests
             }, regPattern).Dispose();
         }
 
-        // On Android, stack traces do not include file names and line numbers
+        // Assembly.Load(byte[]) triggers an AMSI (Antimalware Scan Interface) scan via Windows Defender.
+        // On some Windows x86 CI machines the AMSI RPC call hangs indefinitely,
+        // so we retry with a shorter timeout to work around the transient OS issue.
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ToString_ShowILOffset_ByteArrayLoad()
+        {
+            string AssemblyName = "ExceptionTestAssembly.dll";
+            string SourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, AssemblyName);
+            string regPattern = @":token 0x([a-f0-9]*)\+0x([a-f0-9]*)";
+
+            const int maxAttempts = 3;
+            for (int attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    var options = new RemoteInvokeOptions { TimeOut = 30_000 };
+                    RemoteExecutor.Invoke((asmPath, asmName, p) =>
+                    {
+                        AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
+                        var inMemBlob = File.ReadAllBytes(asmPath);
+                        var asm = Assembly.Load(inMemBlob);
+                        TargetInvocationException ex = Assert.Throws<TargetInvocationException>(
+                            () => asm.GetType("Program").GetMethod("Foo").Invoke(null, null));
+                        Assert.Contains(asmName, ex.InnerException.StackTrace);
+                        Assert.Matches(p, ex.InnerException.StackTrace);
+                    }, SourceTestAssemblyPath, AssemblyName, regPattern, options).Dispose();
+                    break;
+                }
+                catch (RemoteExecutionException ex) when (OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X86 && attempt < maxAttempts && ex.Message.Contains("Timed out"))
+                {
+                    // AMSI hang: on some Windows x86 CI machines, Assembly.Load(byte[]) triggers an AMSI scan
+                    // whose RPC call hangs indefinitely. Retry with a fresh process.
+                }
+            }
+        }
+
+        // On Android and Apple mobile, stack traces do not include file names and line numbers
         // Tracking issue: https://github.com/dotnet/runtime/issues/124087
         private static string FileInfoPattern(string fileLinePattern) =>
-            PlatformDetection.IsAndroid ? "" : fileLinePattern;
+            PlatformDetection.IsAndroid || PlatformDetection.IsAppleMobile ? "" : fileLinePattern;
 
         public static Dictionary<string, string[]> MethodExceptionStrings = new()
         {
@@ -620,6 +664,12 @@ namespace System.Diagnostics.Tests
                 @"V2Methods\.Baz\(\)" + FileInfoPattern(@".*Baz.*\.cs:line 4"),
                 @"V2Methods\.Bux\(\)" + FileInfoPattern(@".*Bux.*\.cs:line 6")
             }},
+            { "EdiOuter", new[] {
+                @"Exception from EdiInner",
+                @"V2Methods\.EdiInner\(\)" + FileInfoPattern(@".*EdiInner.*\.cs:line 3"),
+                @"V2Methods\.EdiMiddle\(\)" + FileInfoPattern(@".*EdiMiddle.*\.cs:line 3"),
+                @"V1Methods.*EdiOuter"
+            }},
         };
 
         public static IEnumerable<object[]> Ctor_Async_TestData()
@@ -629,10 +679,11 @@ namespace System.Diagnostics.Tests
             yield return new object[] { () => V2Methods.Quux(), MethodExceptionStrings["Quux"] };
             yield return new object[] { () => V2Methods.Quuux(), MethodExceptionStrings["Quuux"] };
             yield return new object[] { () => V2Methods.Bux(), MethodExceptionStrings["Bux"] };
+            yield return new object[] { () => V1Methods.EdiOuter(), MethodExceptionStrings["EdiOuter"] };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123979", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
         [MemberData(nameof(Ctor_Async_TestData))]
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         public async Task ToString_Async(Func<Task> asyncMethod, string[] expectedPatterns)
@@ -656,6 +707,12 @@ namespace System.Diagnostics.Tests
                 Match match = regex.Match(exceptionText, startIndex);
                 Assert.True(match.Success, $"Could not find expected pattern '{pattern}' in exception text:\n{exceptionText} starting at index {startIndex}.");
                 startIndex = match.Index + match.Length;
+            }
+
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/129155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+            if (!PlatformDetection.IsNativeAot)
+            {
+                Assert.DoesNotContain("--- End of stack trace from previous location ---", exceptionText);
             }
         }
 

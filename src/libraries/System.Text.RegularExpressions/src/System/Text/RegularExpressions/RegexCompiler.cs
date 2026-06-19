@@ -387,7 +387,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Generates the implementation for TryFindNextPossibleStartingPosition.</summary>
-        protected void EmitTryFindNextPossibleStartingPosition()
+        protected unsafe void EmitTryFindNextPossibleStartingPosition()
         {
             Debug.Assert(_regexTree != null);
             _int32LocalsPool?.Clear();
@@ -736,6 +736,11 @@ namespace System.Text.RegularExpressions
                                     }
                                     Ldloc(pos);
                                     BltFar(returnFalse);
+
+                                    // base.runtextpos = pos;
+                                    Ldthis();
+                                    Ldloc(pos);
+                                    Stfld(RuntextposField);
                                 }
 
                                 MarkLabel(label);
@@ -1421,7 +1426,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Generates the implementation for TryMatchAtCurrentPosition.</summary>
-        protected void EmitTryMatchAtCurrentPosition()
+        protected unsafe void EmitTryMatchAtCurrentPosition()
         {
             // In .NET Framework and up through .NET Core 3.1, the code generated for RegexOptions.Compiled was effectively an unrolled
             // version of what RegexInterpreter would process.  The RegexNode tree would be turned into a series of opcodes via
@@ -2524,7 +2529,7 @@ namespace System.Text.RegularExpressions
                 EmitNode(yesBranch);
                 TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                 Label postYesDoneLabel = doneLabel;
-                if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                 {
                     // resumeAt = 0;
                     Ldc(0);
@@ -2555,7 +2560,7 @@ namespace System.Text.RegularExpressions
                     EmitNode(noBranch);
                     TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
                     postNoDoneLabel = doneLabel;
-                    if (!isAtomic && postNoDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postNoDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         // resumeAt = 1;
                         Ldc(1);
@@ -2567,7 +2572,7 @@ namespace System.Text.RegularExpressions
                     // There's only a yes branch.  If it's going to cause us to output a backtracking
                     // label but code may not end up taking the yes branch path, we need to emit a resumeAt
                     // that will cause the backtracking to immediately pass through this node.
-                    if (!isAtomic && postYesDoneLabel != originalDoneLabel)
+                    if ((!isAtomic && postYesDoneLabel != originalDoneLabel) || isInLoop)
                     {
                         // resumeAt = 2;
                         Ldc(2);
@@ -3184,7 +3189,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Gets the node to treat as the subsequent one to node.Child(index)
-                static RegexNode? GetSubsequent(int index, RegexNode node, RegexNode? subsequent)
+                static unsafe RegexNode? GetSubsequent(int index, RegexNode node, RegexNode? subsequent)
                 {
                     int childCount = node.ChildCount();
                     for (int i = index + 1; i < childCount; i++)
@@ -3650,44 +3655,103 @@ namespace System.Text.RegularExpressions
                     subsequent?.FindStartingLiteralNode() is RegexNode literal &&
                     CanEmitIndexOf(literal, out int literalLength))
                 {
-                    // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
-                    // if (endingPos < 0)
-                    // {
-                    //     goto doneLabel;
-                    // }
-                    Ldloca(inputSpan);
-                    Ldloc(startingPos);
-                    if (literalLength > 1)
+                    // If CanReduceLoopBacktrackingToSinglePosition determines only the last consumed character
+                    // can succeed, we can just check it directly instead of repeatedly searching with LastIndexOf.
+                    if (subsequent is not null && RegexNode.CanReduceLoopBacktrackingToSinglePosition(node, subsequent))
                     {
-                        // Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos
-                        Ldloca(inputSpan);
-                        Call(SpanGetLengthMethod);
+                        // endingPos--;
                         Ldloc(endingPos);
-                        Ldc(literalLength - 1);
-                        Add();
-                        Call(MathMinIntIntMethod);
+                        Ldc(1);
+                        Sub();
+                        Stloc(endingPos);
+
+                        // if (!literal.Matches(inputSpan[endingPos])) goto doneLabel;
+                        Ldloca(inputSpan);
+                        Ldloc(endingPos);
+                        Call(SpanGetItemMethod);
+                        LdindU2();
+                        switch (literal.Kind)
+                        {
+                            case RegexNodeKind.One or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy:
+                                Ldc(literal.Ch);
+                                BneFar(doneLabel);
+                                break;
+
+                            case RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy:
+                                Ldc(literal.Ch);
+                                BeqFar(doneLabel);
+                                break;
+
+                            case RegexNodeKind.Multi:
+                                Ldc(literal.Str![0]);
+                                BneFar(doneLabel);
+                                break;
+
+                            default: // Set, Setloop, Setloopatomic, Setlazy
+                                EmitMatchCharacterClass(literal.Str!);
+                                BrfalseFar(doneLabel);
+                                break;
+                        }
+
+                        // pos = endingPos;
+                        Ldloc(endingPos);
+                        Stloc(pos);
+
+                        // We've now checked the only backtrack position that can succeed. Force any
+                        // subsequent backtrack to fail immediately by setting endingPos to 0, which
+                        // guarantees the "startingPos >= endingPos" guard (emitted above) will be true
+                        // on re-entry. Note: if the emitter's backtracking structure changes (e.g. the
+                        // guard condition or how endingPos is used beyond the guard and stack save/restore),
+                        // this assumption would need to be revisited.
+                        // endingPos = 0;
+                        Ldc(0);
+                        Stloc(endingPos);
                     }
                     else
                     {
-                        // endingPos - startingPos
+                        // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
+                        // if (endingPos < 0)
+                        // {
+                        //     goto doneLabel;
+                        // }
+                        Ldloca(inputSpan);
+                        Ldloc(startingPos);
+                        if (literalLength > 1)
+                        {
+                            // Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos
+                            Ldloca(inputSpan);
+                            Call(SpanGetLengthMethod);
+                            Ldloc(endingPos);
+                            Ldc(literalLength - 1);
+                            Add();
+                            Call(MathMinIntIntMethod);
+                        }
+                        else
+                        {
+                            // endingPos - startingPos
+                            Ldloc(endingPos);
+                        }
+                        Ldloc(startingPos);
+                        Sub();
+                        Call(SpanSliceIntIntMethod);
+
+                        EmitIndexOf(literal, useLast: true, negate: false);
+                        Stloc(endingPos);
+
                         Ldloc(endingPos);
+                        Ldc(0);
+                        BltFar(doneLabel);
+
+                        // endingPos += startingPos;
+                        Ldloc(endingPos);
+                        Ldloc(startingPos);
+                        Add();
+                        Stloc(endingPos);
+
+                        // pos = endingPos;
+                        Ldloc(endingPos);
+                        Stloc(pos);
                     }
-                    Ldloc(startingPos);
-                    Sub();
-                    Call(SpanSliceIntIntMethod);
-
-                    EmitIndexOf(literal, useLast: true, negate: false);
-                    Stloc(endingPos);
-
-                    Ldloc(endingPos);
-                    Ldc(0);
-                    BltFar(doneLabel);
-
-                    // endingPos += startingPos;
-                    Ldloc(endingPos);
-                    Ldloc(startingPos);
-                    Add();
-                    Stloc(endingPos);
                 }
                 else
                 {
@@ -3696,11 +3760,11 @@ namespace System.Text.RegularExpressions
                     Ldc(!rtl ? 1 : -1);
                     Sub();
                     Stloc(endingPos);
-                }
 
-                // pos = endingPos;
-                Ldloc(endingPos);
-                Stloc(pos);
+                    // pos = endingPos;
+                    Ldloc(endingPos);
+                    Stloc(pos);
+                }
 
                 if (!rtl)
                 {
@@ -4521,9 +4585,10 @@ namespace System.Text.RegularExpressions
                     return;
                 }
 
-                // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
-                // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.
-                const int MaxUnrollSize = 16;
+                // Limit for unrolling vs creating a loop. Benchmarking shows vectorized operations
+                // (e.g. ContainsAnyExcept) beat unrolled scalar checks at counts above ~4-8, so
+                // we unroll up to/including this threshold and use a loop with vectorization beyond it.
+                const int MaxUnrollSize = 7;
 
                 if (iterations <= MaxUnrollSize)
                 {
@@ -5717,7 +5782,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Emits a check for whether the character is in the specified character class.</summary>
         /// <remarks>The character to be checked has already been loaded onto the stack.</remarks>
-        private void EmitMatchCharacterClass(string charClass)
+        private unsafe void EmitMatchCharacterClass(string charClass)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
             // but that call is relatively expensive.  Before we fall back to it, we try to optimize
@@ -5886,7 +5951,7 @@ namespace System.Text.RegularExpressions
             // we get smaller code), and it's what we'd do for the fallback (which we get to avoid generating) as part of CharInClass.
             // Unlike the source generator, however, we only handle the case of a single UnicodeCategory: the source generator is able
             // to rely on C# compiler optimizations to handle dealing with multiple values efficiently.
-            Span<UnicodeCategory> categories = stackalloc UnicodeCategory[1]; // handle the case of one and only one category
+            Span<UnicodeCategory> categories = [default]; // handle the case of one and only one category
             if (RegexCharClass.TryGetOnlyCategories(charClass, categories, out int numCategories, out bool negated))
             {
                 // char.GetUnicodeCategory(ch) == category
@@ -5904,7 +5969,7 @@ namespace System.Text.RegularExpressions
 
             // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixes),
             // it's cheaper and smaller to compare against each than it is to use a lookup table.
-            Span<char> setChars = stackalloc char[3];
+            Span<char> setChars = ['\0', '\0', '\0'];
             int numChars = RegexCharClass.GetSetChars(charClass, setChars);
             if (numChars is 2 or 3)
             {

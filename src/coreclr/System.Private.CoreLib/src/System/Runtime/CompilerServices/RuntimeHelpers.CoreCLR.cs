@@ -386,6 +386,7 @@ namespace System.Runtime.CompilerServices
             throw new InvalidOperationException();
         }
 #endif
+
         [DebuggerHidden]
         [DebuggerStepThrough]
         internal static ref byte GetRawData(this object obj) =>
@@ -654,6 +655,25 @@ namespace System.Runtime.CompilerServices
                 *pException = ex;
             }
         }
+
+        // Dummy method providing a MethodDesc with the correct signature (IntPtr -> object)
+        // for newobj allocator JIT helpers on portable entry point platforms. The interpreter
+        // uses the MethodDesc to derive the call cookie; the method itself is never executed.
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern object NewobjHelperDummy(IntPtr methodTable);
+
+        [UnmanagedCallersOnly]
+        internal static unsafe void CallDefaultConstructor(object* pObj, delegate*<object, void> pCtor, Exception* pException)
+        {
+            try
+            {
+                pCtor(*pObj);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
@@ -824,14 +844,17 @@ namespace System.Runtime.CompilerServices
 #if FEATURE_TYPEEQUIVALENCE
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
 #endif // FEATURE_TYPEEQUIVALENCE
+#if FEATURE_OBJCMARSHAL
+        private const uint enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000;
+#endif // FEATURE_OBJCMARSHAL
         private const uint enum_flag_HasFinalizer = 0x00100000;
         private const uint enum_flag_Collectible = 0x00200000;
         private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_Nullable = 0x00050000;
-        private const uint enum_flag_Category_IsPrimitiveMask = 0x000E0000;
-        private const uint enum_flag_Category_PrimitiveValueType = 0x00060000; // sub-category of ValueType, Enum or primitive value type
-        private const uint enum_flag_Category_TruePrimitive = 0x00070000; // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.)
+        private const uint enum_flag_Category_ElementTypeMask = 0x000E0000;
+        private const uint enum_flag_Category_Primitive = 0x00060000;
+        private const uint enum_flag_Category_TruePrimitive = 0x00070000;
         private const uint enum_flag_Category_Array = 0x00080000;
         private const uint enum_flag_Category_Array_Mask = 0x000C0000;
         private const uint enum_flag_Category_ValueType_Mask = 0x000C0000;
@@ -884,6 +907,10 @@ namespace System.Runtime.CompilerServices
         public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
 #endif // FEATURE_TYPEEQUIVALENCE
 
+#if FEATURE_OBJCMARSHAL
+        public bool IsTrackedReferenceWithFinalizer => (Flags & enum_flag_IsTrackedReferenceWithFinalizer) != 0;
+#endif // FEATURE_OBJCMARSHAL
+
         public bool HasFinalizer => (Flags & enum_flag_HasFinalizer) != 0;
 
         public bool IsCollectible => (Flags & enum_flag_Collectible) != 0;
@@ -935,7 +962,7 @@ namespace System.Runtime.CompilerServices
         public bool IsByRefLike => (Flags & (enum_flag_HasComponentSize | enum_flag_IsByRefLike)) == enum_flag_IsByRefLike;
 
         // Warning! UNLIKE the similarly named Reflection api, this method also returns "true" for Enums.
-        public bool IsPrimitive => (Flags & enum_flag_Category_IsPrimitiveMask) == enum_flag_Category_PrimitiveValueType;
+        public bool IsPrimitive => (Flags & enum_flag_Category_ElementTypeMask) == enum_flag_Category_Primitive;
 
         public bool IsTruePrimitive => (Flags & enum_flag_Category_Mask) is enum_flag_Category_TruePrimitive;
 
@@ -1090,6 +1117,7 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct MethodTableAuxiliaryData
     {
         private uint Flags;
+        private int CachedVersionResilientHashCode;
         private void* LoaderModule;
         private nint ExposedClassObjectRaw;
 

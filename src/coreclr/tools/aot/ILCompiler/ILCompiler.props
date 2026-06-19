@@ -25,9 +25,11 @@
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
 
   <ItemGroup>
-    <Content Include="$(CoreDisToolsLibrary)" Condition="Exists('$(CoreDisToolsLibrary)') and '$(IncludeCoreDisTools)' == 'true'">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Content Include="$(CoreDisToolsLibrary)"
+      CopyToOutputDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
+      Condition="Exists('$(CoreDisToolsLibrary)') and '$(IncludeCoreDisTools)' == 'true'"
+      />
   </ItemGroup>
 
   <ItemGroup>
@@ -66,6 +68,7 @@
     <Content Include="$(CoreCLRArtifactsPath)/$(JitInterfaceLibraryName)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       Condition="'$(TargetsWasm)' != 'true'"
       />
@@ -73,6 +76,7 @@
     <Content Include="$(CoreCLRArtifactsPath)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       />
   </ItemGroup>

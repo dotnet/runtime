@@ -141,12 +141,12 @@ inline unsigned genLog2(uint64_t value)
     return BitOperations::BitScanForward(value);
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 inline unsigned genLog2(size_t value)
 {
     return genLog2((uint64_t)value);
 }
-#endif // __APPLE__
+#endif // __APPLE__ || __OpenBSD__
 
 // Given an unsigned 64-bit value, returns the lower 32-bits in unsigned format
 //
@@ -1973,8 +1973,8 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     switch (oper)
     {
         case GT_CNS_INT:
-            AsIntCon()->gtFieldSeq = nullptr;
-            INDEBUG(AsIntCon()->gtTargetHandle = 0);
+            AsIntCon()->SetFieldSeq(nullptr);
+            INDEBUG(AsIntCon()->SetTargetHandle(0));
             break;
 #if defined(TARGET_ARM)
         case GT_MUL_LONG:
@@ -2101,7 +2101,8 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
             }
 
             AsIntCon()->SetIconValue(static_cast<ssize_t>(value));
-            AsIntCon()->gtFieldSeq = nullptr;
+            AsIntCon()->SetFieldSeq(nullptr);
+            AsIntCon()->SetCompileTimeHandle(0);
             break;
 
 #if !defined(TARGET_64BIT)
@@ -2616,7 +2617,7 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     if (genericsContextIsThis)
     {
         const bool mustKeep      = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
-        const bool hasPatchpoint = doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints();
+        const bool hasPatchpoint = doesMethodHavePatchpoints();
 
         if (lvaGenericsContextInUse || mustKeep || hasPatchpoint)
         {
@@ -2656,7 +2657,7 @@ inline bool Compiler::lvaReportParamTypeArg()
 
         // Methoods that have patchpoints always report context as live
         //
-        if (doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints())
+        if (doesMethodHavePatchpoints())
         {
             return true;
         }
@@ -2721,6 +2722,7 @@ inline
     bool fConservative = false;
     if (varNum >= 0)
     {
+        assert(!lvaIsUnknownSizeLocal(varNum));
         LclVarDsc* varDsc          = lvaGetDesc(varNum);
         bool       isPrespilledArg = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
@@ -2772,13 +2774,8 @@ inline
         FPbased = isFramePointerUsed();
         if (lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT)
         {
-            TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
-            // The temp might be in use, since this might be during code generation.
-            if (tmpDsc == nullptr)
-            {
-                tmpDsc = codeGen->regSet.tmpFindNum(varNum, RegSet::TEMP_USAGE_USED);
-            }
-            assert(tmpDsc != nullptr);
+            TempDsc* tmpDsc = codeGen->regSet.tmpGetNum(varNum);
+            assert(!varTypeHasUnknownSize(tmpDsc->tdTempType()));
             varOffset = tmpDsc->tdTempOffs();
         }
         else
@@ -2972,7 +2969,7 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
     assert(ILargNum < info.compILargsCount);
 
 #if defined(TARGET_WASM)
-    if (ILargNum >= lvaWasmSpArg)
+    if ((ILargNum >= lvaWasmSpArg) && (lvaWasmSpArg != BAD_VAR_NUM) && lvaGetDesc(lvaWasmSpArg)->lvIsParam)
     {
         ILargNum++;
         assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
@@ -3324,7 +3321,7 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 }
 
 //------------------------------------------------------------------------
-// IsValidLclAddr: Can the given local address be represented as "LCL_FLD_ADDR"?
+// IsValidLclAddr: Can the given local address be represented as "LCL_ADDR"?
 //
 // Local address nodes cannot point beyond the local and can only store
 // 16 bits worth of offset.
@@ -3334,17 +3331,70 @@ inline bool Compiler::fgIsBigOffset(size_t offset)
 //    offset - The address' offset
 //
 // Return Value:
-//    Whether "LCL_FLD_ADDR<lclNum> [+offset]" would be valid IR.
+//    Whether "LCL_ADDR<lclNum> [+offset]" would be valid IR.
 //
 inline bool Compiler::IsValidLclAddr(unsigned lclNum, unsigned offset)
 {
 #ifdef TARGET_ARM64
-    if (varTypeHasUnknownSize(lvaGetDesc(lclNum)))
+    if (lvaIsUnknownSizeLocal(lclNum))
     {
-        return false;
+        return (offset == 0);
     }
 #endif
     return (offset < UINT16_MAX) && (offset < lvaLclExactSize(lclNum));
+}
+
+//------------------------------------------------------------------------
+// IsEntireAccess: Is the access to a local entire?
+//
+// The access is entire when the size of the access is equivalent to the size
+// of the local, and the access address is equivalent to the local address
+// (offset == 0).
+//
+// Arguments:
+//    lclNum - The local's number
+//    offset - The access offset
+//    accessSize - The size of the access (may be unknown at compile-time)
+//
+// Return Value:
+//     True is the access is entire by the definition above, else false.
+//
+inline bool Compiler::IsEntireAccess(unsigned lclNum, unsigned offset, ValueSize accessSize)
+{
+    return (lvaLclValueSize(lclNum) == accessSize) && (offset == 0);
+}
+
+//------------------------------------------------------------------------
+// IsWideAccess: Is the access to a local wide?
+//
+// An access is wide when the access overflows the end of the local. If the
+// access size is unknown, the access is assumed wide if it is not entire.
+//
+// Arguments:
+//    lclNum - The local's number
+//    offset - The access offset
+//    accessSize - The size of the access (may be unknown at compile-time)
+//
+// Return Value:
+//     True is the access is wide by the definition above, else false.
+//
+inline bool Compiler::IsWideAccess(unsigned lclNum, unsigned offset, ValueSize accessSize)
+{
+    assert(!accessSize.IsNull());
+    if (accessSize.IsExact())
+    {
+        ClrSafeInt<uint32_t> extent = ClrSafeInt<uint32_t>(offset) + ClrSafeInt<uint32_t>(accessSize.GetExact());
+        // The access is wide if:
+        // * The offset computation overflows uint16_t.
+        // * The address at `offset + accessSize - 1`, (the last byte of the access) is out of bounds of the local.
+        return extent.IsOverflow() || !FitsIn<uint16_t>(extent.Value()) || !IsValidLclAddr(lclNum, extent.Value() - 1);
+    }
+    else
+    {
+        // If we don't know the size of the access or the local at compile time, we assume any access overflows if
+        // it is not an entire access to the local.
+        return !IsEntireAccess(lclNum, offset, accessSize);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3394,14 +3444,34 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-/* static */ inline unsigned RegSet::tmpSlot(unsigned size)
+/* static */ inline unsigned RegSet::tmpSlot(var_types type)
 {
-    noway_assert(size >= sizeof(int));
-    noway_assert(size <= TEMP_MAX_SIZE);
-    assert((size % sizeof(int)) == 0);
-
-    assert(size < UINT32_MAX);
-    return size / sizeof(int) - 1;
+    unsigned slot = UINT32_MAX;
+    switch (type)
+    {
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
+        // Special slots are allocated for TYP_SIMD and TYP_MASK, because they
+        // have unknown size and therefore can't share slots with other types.
+        case TYP_SIMD:
+            slot = TEMP_SLOT_COUNT - 1;
+            break;
+        case TYP_MASK:
+            slot = TEMP_SLOT_COUNT - 2;
+            break;
+#endif
+        default:
+        {
+            assert(!varTypeHasUnknownSize(type));
+            unsigned size = genTypeSize(type);
+            noway_assert(size >= sizeof(int));
+            noway_assert(size <= TEMP_MAX_SIZE);
+            assert((size % sizeof(int)) == 0);
+            slot = size / sizeof(int) - 1;
+        }
+        break;
+    }
+    assert(slot < TEMP_SLOT_COUNT);
+    return slot;
 }
 
 /*****************************************************************************
@@ -3843,7 +3913,7 @@ inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* is
     bool                    gc     = false;
     bool                    result = false;
     StaticHelperReturnValue retVal = {};
-    switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
+    switch (tree->AsCall()->GetHelperNum())
     {
         case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
         case CORINFO_HELP_GET_GCSTATIC_BASE:
@@ -3884,7 +3954,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         return false;
     }
 
-    CorInfoHelpFunc helper = eeGetHelperNum(tree->AsCall()->gtCallMethHnd);
+    CorInfoHelpFunc helper = tree->AsCall()->GetHelperNum();
 
     bool result1 =
         // More helpers being added to IsSharedStaticHelper (that have similar behaviors but are not true
@@ -4284,6 +4354,11 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         // Below conditions guarantee block initialization, which will initialize
         // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
         // changes, these conditions need to be updated.
+#ifdef TARGET_WASM
+        // On WASM the prolog always uses a single memory.fill to zero any
+        // locals that need initialization, regardless of size.
+        return false;
+#else // !TARGET_WASM
         unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 #ifdef TARGET_64BIT
 #if defined(TARGET_AMD64)
@@ -4299,6 +4374,7 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         {
             return false;
         }
+#endif // !TARGET_WASM
     }
 
     return !info.compInitMem || (varDsc->lvIsTemp && !varDsc->HasGCPtr());
@@ -4341,94 +4417,56 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
 template <typename TVisitor>
 GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
 {
+    if (OperIsLeaf())
+    {
+        return VisitResult::Continue;
+    }
+
+    if (OperIsBinary())
+    {
+        GenTreeOp* op = AsOp();
+
+        if (op->gtOp1 != nullptr)
+        {
+            RETURN_IF_ABORT(visitor(&op->gtOp1));
+        }
+        else
+        {
+            assert(NullOp1Legal());
+        }
+
+        // We can have null op1 and non-null op2 for some nodes, such as GT_LEA
+
+        if (op->gtOp2 != nullptr)
+        {
+            return visitor(&op->gtOp2);
+        }
+        else
+        {
+            assert(NullOp2Legal());
+        }
+        return VisitResult::Continue;
+    }
+
+    if (OperIsUnary())
+    {
+        GenTreeUnOp* unOp = AsUnOp();
+
+        if (unOp->gtOp1 != nullptr)
+        {
+            return visitor(&unOp->gtOp1);
+        }
+        else
+        {
+            assert(NullOp1Legal());
+        }
+        return VisitResult::Continue;
+    }
+
+    assert(OperIsSpecial());
+
     switch (OperGet())
     {
-        // Leaf nodes
-        case GT_LCL_VAR:
-        case GT_LCL_FLD:
-        case GT_LCL_ADDR:
-        case GT_CATCH_ARG:
-        case GT_ASYNC_CONTINUATION:
-        case GT_ASYNC_RESUME_INFO:
-        case GT_LABEL:
-        case GT_FTN_ADDR:
-        case GT_RET_EXPR:
-        case GT_CNS_INT:
-        case GT_CNS_LNG:
-        case GT_CNS_DBL:
-        case GT_CNS_STR:
-#if defined(FEATURE_SIMD)
-        case GT_CNS_VEC:
-#endif // FEATURE_SIMD
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        case GT_CNS_MSK:
-#endif // FEATURE_MASKED_HW_INTRINSICS
-        case GT_MEMORYBARRIER:
-        case GT_JMP:
-        case GT_JCC:
-        case GT_SETCC:
-        case GT_NO_OP:
-        case GT_START_NONGC:
-        case GT_START_PREEMPTGC:
-        case GT_PROF_HOOK:
-        case GT_PHI_ARG:
-        case GT_JMPTABLE:
-        case GT_PHYSREG:
-        case GT_EMITNOP:
-        case GT_PINVOKE_PROLOG:
-        case GT_PINVOKE_EPILOG:
-        case GT_IL_OFFSET:
-        case GT_RECORD_ASYNC_RESUME:
-        case GT_NOP:
-        case GT_SWIFT_ERROR:
-        case GT_GCPOLL:
-            return VisitResult::Continue;
-
-            // Unary operators with an optional operand
-        case GT_FIELD_ADDR:
-        case GT_RETURN:
-        case GT_RETFILT:
-            if (this->AsUnOp()->gtOp1 == nullptr)
-            {
-                return VisitResult::Continue;
-            }
-            FALLTHROUGH;
-
-            // Standard unary operators
-        case GT_STORE_LCL_VAR:
-        case GT_STORE_LCL_FLD:
-        case GT_NOT:
-        case GT_NEG:
-        case GT_BSWAP:
-        case GT_BSWAP16:
-        case GT_COPY:
-        case GT_RELOAD:
-        case GT_ARR_LENGTH:
-        case GT_MDARR_LENGTH:
-        case GT_MDARR_LOWER_BOUND:
-        case GT_CAST:
-        case GT_BITCAST:
-        case GT_CKFINITE:
-        case GT_LCLHEAP:
-        case GT_IND:
-        case GT_BLK:
-        case GT_BOX:
-        case GT_ALLOCOBJ:
-        case GT_INIT_VAL:
-        case GT_RUNTIMELOOKUP:
-        case GT_ARR_ADDR:
-        case GT_JTRUE:
-        case GT_SWITCH:
-        case GT_NULLCHECK:
-        case GT_PUTARG_REG:
-        case GT_PUTARG_STK:
-        case GT_RETURNTRAP:
-        case GT_KEEPALIVE:
-        case GT_INC_SATURATE:
-        case GT_RETURN_SUSPEND:
-            return visitor(&this->AsUnOp()->gtOp1);
-
-            // Variadic nodes
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
             for (GenTree** use : this->AsMultiOp()->UseEdges())
@@ -4436,9 +4474,8 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
                 RETURN_IF_ABORT(visitor(use));
             }
             return VisitResult::Continue;
-#endif // defined(FEATURE_HW_INTRINSICS)
+#endif
 
-            // Special nodes
         case GT_PHI:
             for (GenTreePhi::Use& use : AsPhi()->Uses())
             {
@@ -4485,11 +4522,6 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             {
                 RETURN_IF_ABORT(visitor(&arg.LateNodeRef()));
             }
-
-            if (call->gtCallType == CT_INDIRECT)
-            {
-                RETURN_IF_ABORT(visitor(&call->gtCallAddr));
-            }
             if (call->gtControlExpr != nullptr)
             {
                 return visitor(&call->gtControlExpr);
@@ -4505,19 +4537,11 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             return visitor(&cond->gtOp2);
         }
 
-        // Binary nodes
         default:
-            assert(this->OperIsBinary());
-            if (AsOp()->gtOp1 != nullptr)
-            {
-                RETURN_IF_ABORT(visitor(&AsOp()->gtOp1));
-            }
-
-            if (AsOp()->gtOp2 != nullptr)
-            {
-                return visitor(&AsOp()->gtOp2);
-            }
+        {
+            assert(!"unhandled special node");
             return VisitResult::Continue;
+        }
     }
 }
 
@@ -4557,7 +4581,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
         {
             unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
 
-            bool isEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
+            bool isEntire = comp->IsEntireAccess(lclAddr->GetLclNum(), lclAddr->GetLclOffs(), ValueSize(storeSize));
 
             return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), ValueSize(storeSize)));
         }
@@ -5227,12 +5251,140 @@ BasicBlockVisit FlowGraphNaturalLoop::VisitRegularExitBlocks(TFunc func)
     return BasicBlockVisit::Continue;
 }
 
+//------------------------------------------------------------------------
+// fgVisitBlocksInTryAwareLoopAwareRPO: Visit the blocks in 'dfsTree' in reverse post-order,
+// but ensure try regions (for try/catch) and loop bodies are visited before their successors.
+// Where these conflict, give priority to try regions.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Parameters:
+//   dfsTree    - The DFS tree of the flow graph
+//   tryRegions - A collection of the try regions in the flow graph
+//   loops      - A collection of the loops in the flow graph
+//   func       - Callback functor that operates on a BasicBlock*
+//
+// Returns:
+//   A postorder traversal with compact loop bodies.
+//
+template <typename TFunc>
+void Compiler::fgVisitBlocksInTryAwareLoopAwareRPO(FlowGraphDfsTree*      dfsTree,
+                                                   FlowGraphTryRegions*   tryRegions,
+                                                   FlowGraphNaturalLoops* loops,
+                                                   TFunc                  func)
+{
+    assert(dfsTree != nullptr);
+    assert(loops != nullptr);
+    assert(tryRegions != nullptr);
+
+    // We will start by visiting blocks in reverse post-order.
+    // If we encounter the header of a loop, we will visit the loop's remaining blocks next
+    // to keep the loop body compact in the visitation order.
+    // We have to do this recursively to handle nested loops.
+    // Since the presence of loops implies we will try to visit some blocks more than once,
+    // we need to track visited blocks.
+    struct TryAwareLoopAwareVisitor
+    {
+        BitVecTraits           traits;
+        BitVec                 visitedBlocks;
+        FlowGraphTryRegions*   tryRegions;
+        FlowGraphNaturalLoops* loops;
+        TFunc                  func;
+
+        TryAwareLoopAwareVisitor(FlowGraphDfsTree*      dfsTree,
+                                 FlowGraphTryRegions*   tryRegions,
+                                 FlowGraphNaturalLoops* loops,
+                                 TFunc                  func)
+            : traits(dfsTree->PostOrderTraits())
+            , visitedBlocks(BitVecOps::MakeEmpty(&traits))
+            , tryRegions(tryRegions)
+            , loops(loops)
+            , func(func)
+        {
+        }
+
+        void VisitBlock(BasicBlock* block)
+        {
+            if (BitVecOps::TryAddElemD(&traits, visitedBlocks, block->bbPostorderNum))
+            {
+                func(block);
+
+                FlowGraphTryRegion* const tryRegion = tryRegions->GetTryRegionByHeader(block);
+                if ((tryRegion != nullptr) && tryRegion->HasCatchHandler())
+                {
+                    tryRegion->VisitTryRegionBlocksReversePostOrder([&](BasicBlock* block) {
+                        VisitBlock(block);
+                        return BasicBlockVisit::Continue;
+                    });
+                }
+
+                FlowGraphNaturalLoop* const loop = loops->GetLoopByHeader(block);
+                if (loop != nullptr)
+                {
+                    loop->VisitLoopBlocksReversePostOrder([&](BasicBlock* block) {
+                        VisitBlock(block);
+                        return BasicBlockVisit::Continue;
+                    });
+                }
+            }
+        }
+    };
+
+    if (tryRegions->NumTryCatchRegions() == 0)
+    {
+        fgVisitBlocksInLoopAwareRPO(dfsTree, loops, func);
+        return;
+    }
+
+    // Add no-loop special case here?
+    //
+    TryAwareLoopAwareVisitor visitor(dfsTree, tryRegions, loops, func);
+    for (unsigned i = dfsTree->GetPostOrderCount(); i != 0; i--)
+    {
+        BasicBlock* const block = dfsTree->GetPostOrder(i - 1);
+        visitor.VisitBlock(block);
+    }
+}
+
+//------------------------------------------------------------------------------
+// FlowGraphTryRegion::VisitTryRegionBlocksReversePostOrder: Visit all of the
+// try region's blocks in reverse post order.
+//
+// Type parameters:
+//   TFunc - Callback functor type
+//
+// Arguments:
+//   func - Callback functor that takes a BasicBlock* and returns a
+//   BasicBlockVisit.
+//
+// Returns:
+//    BasicBlockVisit that indicated whether the visit was aborted by the
+//    callback or whether all blocks were visited.
+//
+// Notes:
+//   FlowGraphTryRegion does not currently use a "compressed BV" like loops do.
+//
+template <typename TFunc>
+BasicBlockVisit FlowGraphTryRegion::VisitTryRegionBlocksReversePostOrder(TFunc func)
+{
+    assert(CanEnumerateInReversePostOrder());
+    FlowGraphDfsTree* const dfsTree = m_regions->GetDfsTree();
+    BitVecTraits*           traits  = m_regions->GetBlockBitVecTraits();
+    bool                    result  = BitVecOps::VisitBitsReverse(traits, m_blocks, [=](unsigned index) {
+        assert(index < dfsTree->GetPostOrderCount());
+        return func(dfsTree->GetPostOrder(index)) == BasicBlockVisit::Continue;
+    });
+
+    return result ? BasicBlockVisit::Continue : BasicBlockVisit::Abort;
+}
+
 //-----------------------------------------------------------
 // gtComplexityExceeds: Check if a tree exceeds a specified complexity limit.
 //
 // Type parameters:
 //   TFunc - Callback functor type
-
+//
 // Arguments:
 //    tree              - The tree to check
 //    limit             - complexity limit
@@ -5436,9 +5588,30 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
         BitVecOps::AddElemD(&traits, actualPreds, pred->bbNum);
     }
 
+    // Fast opportunistic check: a block is considered unreachable if it has no normal
+    // preds and isn't the entry block. Note that bbPreds excludes EH flow, so
+    // handler-begin blocks may have no normal preds yet still be reachable via
+    // exception flow; conservatively treat them as reachable.
+    //
+    auto isUnreachableBlock = [this](BasicBlock* block) -> bool {
+        return (block->bbPreds == nullptr) && (block != fgFirstBB) && !bbIsHandlerBeg(block);
+    };
+
     for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
     {
         GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
+
+        // Ignore phi-args coming from unreachable blocks.
+        if (isUnreachableBlock(phiArg->gtPredBB))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": phi-pred " FMT_BB " is unreachable, ignoring\n",
+                    ssaDef->GetBlock()->bbNum, phiArg->gtPredBB->bbNum);
+
+            // Mark as visited so the coverage check below doesn't fail if this block is
+            // still listed in ssaDef's pred list.
+            BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
+            continue;
+        }
 
         if (!BitVecOps::IsMember(&traits, actualPreds, phiArg->gtPredBB->bbNum))
         {
@@ -5451,8 +5624,13 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
             return AssertVisit::Abort;
         }
 
-        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
-        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
+        // fgValueNumberPhiDef may leave gtVNPair as NoVN when it refuses to back-patch
+        // a loop-varying SSA-def VN into the phi-arg slot (a hygiene constraint for general
+        // gtVNPair consumers that does not apply here, since we hand the VN to the visitor
+        // together with this edge's assertion set and never write it back into any tree).
+        LclSsaVarDsc* phiArgSsaDef = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum());
+        ValueNum      phiArgVN     = vnStore->VNConservativeNormalValue(phiArgSsaDef->m_vnPair);
+        ASSERT_TP     assertions   = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
         {
             // The visitor wants to abort the walk.

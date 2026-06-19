@@ -15,7 +15,7 @@ using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.Depend
 namespace ILCompiler.DependencyAnalysis
 {
     [DebuggerTypeProxy(typeof(MethodCodeNodeDebugView))]
-    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, ISymbolDefinitionNode, ISpecialUnboxThunkNode
+    public class MethodCodeNode : ObjectNode, IMethodBodyNode, INodeWithCodeInfo, INodeWithDebugInfo, INodeWithFunclets, ISpecialUnboxThunkNode, IMethodCodeNodeWithTypeSignature
     {
         private MethodDesc _method;
         private ObjectData _methodCode;
@@ -117,6 +117,9 @@ namespace ILCompiler.DependencyAnalysis
         public FrameInfo[] FrameInfos => _frameInfos;
         public byte[] GCInfo => _gcInfo;
         public MethodExceptionHandlingInfoNode EHInfo => _ehInfo;
+
+        // TODO-WASM: Appropriately extract funclet kinds from eh clause info
+        public FuncletKind[] GetFuncletKinds() => throw new NotImplementedException();
 
         public ISymbolNode GetAssociatedDataNode(NodeFactory factory)
         {

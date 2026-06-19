@@ -22,8 +22,10 @@
     <Compile Include="IFuzzer.cs" />
     <Compile Include="PooledBoundedMemory.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="SR.Fake.cs" />
     <Compile Include="$(TestUtilities)\System\Buffers\BoundedMemory.*" Link="TestUtilities\%(Filename)%(Extension)" />
     <Compile Include="$(TestUtilities)\System\Buffers\PoisonPagePlacement.cs" Link="TestUtilities\PoisonPagePlacement.cs" />
+    <Compile Include="$(CommonPath)System\IO\ReadOnlyMemoryStream.cs" Link="Common\System\IO\ReadOnlyMemoryStream.cs" />
   </ItemGroup>
 
   <ItemGroup>
