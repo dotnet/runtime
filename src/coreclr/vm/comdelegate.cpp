@@ -1244,6 +1244,7 @@ void COMDelegate::BindToMethod(MethodTable* pDelegateMT,
             && pTargetMT != NULL
             && pTargetMethod->GetMethodTable() != pTargetMT)
         {
+            // Casting Object** to OBJECTREF* is safe as long as no code attempts to mutate the OBJECTREF through the OBJECTREF* (and we don't, we only use it to read the this pointer/target object)
             pTargetCode = pTargetMethod->GetMultiCallableAddrOfVirtualizedCode((OBJECTREF*)targetParameter.GetObjectPointer(), pTargetMethod->GetMethodTable());
         }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
