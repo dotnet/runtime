@@ -191,6 +191,9 @@ internal readonly struct Object_1 : IObject
 
     public ulong GetSize(TargetPointer address)
     {
+        // NOTE NOTE NOTE NOTE NOTE
+        // This method is called on every managed object in the debuggee during a heap walk.
+        // Do NOT allocate managed objects here in a way that scales with the number of heap objects.
         TargetPointer mt = GetMethodTableAddress(address);
         if (mt == TargetPointer.Null)
             throw new ArgumentException("Address represents a free object");

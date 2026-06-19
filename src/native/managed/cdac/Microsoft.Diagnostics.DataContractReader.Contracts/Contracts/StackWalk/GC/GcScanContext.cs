@@ -122,14 +122,14 @@ internal class GcScanContext
             if (obj.Value < seg.Start.Value || obj.Value >= seg.End.Value)
                 continue;
 
+            using IDisposable _ = _target.BeginCacheScope(new LinearReadCache(_target));
             TargetPointer currentObj = _gc.GetPotentialNextObjectAddress(seg.Start, 0, seg);
             while (currentObj.Value <= obj.Value)
             {
                 ulong size;
                 try
                 {
-                    using (_target.BeginReadCache())
-                        size = _target.Contracts.Object.GetSize(currentObj);
+                    size = _target.Contracts.Object.GetSize(currentObj);
                 }
                 catch
                 {

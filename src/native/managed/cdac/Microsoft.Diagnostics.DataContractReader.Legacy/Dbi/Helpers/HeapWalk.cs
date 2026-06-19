@@ -33,6 +33,7 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
 
         foreach ((GCHeapSegmentInfo seg, GCHeapData _) in _gc.EnumerateAllSegments())
         {
+            using IDisposable _ = _target.BeginCacheScope(new LinearReadCache(_target));
             if (seg.Start.Value >= seg.End.Value)
                 continue;
 
@@ -43,8 +44,7 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
                 ulong size;
                 try
                 {
-                    using (_target.BeginReadCache())
-                        mt = _object.GetMethodTableAddress(currentObj);
+                    mt = _object.GetMethodTableAddress(currentObj);
                 }
                 catch
                 {
@@ -54,8 +54,7 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
 
                 try
                 {
-                    using (_target.BeginReadCache())
-                        size = _object.GetSize(currentObj);
+                    size = _object.GetSize(currentObj);
                 }
                 catch
                 {
