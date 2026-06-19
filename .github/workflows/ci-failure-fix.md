@@ -187,33 +187,15 @@ Apply these fixer-specific bounds on top of the skill's guidance:
 
 #### Step 5.1.1 — Pipeline-category gate (mandatory, before any fix attempt)
 
-Before attempting any fix, resolve the KBE's pipeline and short-circuit when it
-is a JIT / GC / PGO / codegen-stress pipeline. This makes the fix-policy table
-above enforceable rather than advisory: such pipelines have **no producible safe
-diff** (neither a product fix nor a workaround in unrelated code), so they go
-straight to the loop-in comment path.
+Before Step 5.2, resolve the KBE's pipeline and short-circuit JIT/GC/PGO
+codegen-stress failures. No fix or workaround PR is in bounds for them.
 
-1. **Parse the pipeline metadata.** From the KBE's `Build:` link, read the AzDO
-   build definition id (`_apis/build/builds/{id}?api-version=7.1` -> `definition.id`,
-   or the `definitionId=` / `?definitionId=` query parameter on the build URL) and
-   the pipeline/definition name. Combine with the `Build error leg or test failing:`
-   leg name.
-2. **Apply the gate.** Treat the KBE as JIT/GC/PGO stress — and therefore OUT of
-   bounds for any fix or workaround PR — when **either** of the following holds:
-   - **Definition id** is in `109`–`160` (inclusive), or is `230` or `235`.
-   - **Pipeline / definition name or leg name** matches (case-insensitive) any of:
-     `jitstress`, `gcstress`, `pgo`, `r2r`, `superpmi`, `jit-cfg`,
-     `jit-experimental`, `interpreter`.
-3. **Short-circuit when gated.** If the gate matches, do NOT attempt a fix and do
-   NOT open a PR (neither a product fix nor a workaround such as changing library
-   buffer sizes or API call patterns to sidestep a codegen bug — see
-   [#129360](https://github.com/dotnet/runtime/pull/129360), where a
-   StreamReader/StreamWriter workaround for a PGO codegen bug was rejected by a
-   maintainer). Go directly to the
-   loop-in comment path (Step 5.5) and record
-   `-> routed to loop-in: JIT/GC/PGO stress pipeline (def <id> / <name>), out of bounds for fix PR`.
-   Respect Hard rule 5 (at most one loop-in comment per KBE) when emitting.
-4. **Otherwise continue.** If the gate does not match, proceed to Step 5.2.
+1. Read the build definition name and id from the KBE's `Build:` link and the
+   `Build error leg or test failing:` leg name.
+2. Treat as codegen-stress when the name or leg matches (case-insensitive)
+   `jitstress`, `gcstress`, `pgo`, `superpmi`, `jit-cfg`, or `jit-experimental`.
+3. If matched, skip Steps 5.2–5.4 and go to Step 5.5 (Branch COMMENT), recording
+   `-> routed to loop-in: codegen-stress pipeline (<name>)`. Otherwise continue.
 
 #### Step 5.2 — Attempt a fix, then classify confidence
 
