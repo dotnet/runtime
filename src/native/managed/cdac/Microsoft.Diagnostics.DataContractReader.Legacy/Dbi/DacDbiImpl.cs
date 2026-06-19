@@ -2619,11 +2619,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
-            TargetPointer canonMtPtr = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.CanonMethodTable));
-            TypeHandle canonTh = rts.GetTypeHandle(canonMtPtr);
-
-            if (pTypeData->m_nEntries <= 0 || pTypeData->m_pList == null)
+            TargetPointer canonMtPtr = rts.GetWellKnownMethodTable(WellKnownMethodTable.Canon);
+            if (canonMtPtr == TargetPointer.Null)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+            TypeHandle canonTh = rts.GetTypeHandle(canonMtPtr);
 
             TypeDataWalk walk = new TypeDataWalk(_target, rts, canonTh, pTypeData->m_pList, (uint)pTypeData->m_nEntries);
             TypeHandle th = walk.ReadLoadedTypeHandle();
