@@ -249,9 +249,17 @@ namespace Microsoft.Extensions.Primitives
                     // to the code that triggers the change token, just like the sync overload does.
                     Task consumerTask = _changeTokenConsumer(State);
 
-                    // Asynchronous exceptions can't be propagated without blocking, so they are left unobserved
-                    // (meaning they can be observed only through TaskScheduler.UnobservedTaskException).
-                    _ = AwaitConsumerAndRegisterCallback(consumerTask, token);
+                    if (consumerTask.Status == TaskStatus.RanToCompletion)
+                    {
+                        // The common case where the consumer completes synchronously: re-register without allocations.
+                        RegisterChangeTokenCallback(token);
+                    }
+                    else
+                    {
+                        // Asynchronous exceptions can't be propagated without blocking, so they are left unobserved
+                        // (meaning they can be observed only through TaskScheduler.UnobservedTaskException).
+                        _ = AwaitConsumerAndRegisterCallback(consumerTask, token);
+                    }
                 }
                 catch
                 {
