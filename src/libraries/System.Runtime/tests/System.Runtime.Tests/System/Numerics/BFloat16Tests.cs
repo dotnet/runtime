@@ -532,13 +532,17 @@ namespace System.Numerics.Tests
 
             foreach ((float original, BFloat16 expected) in data)
             {
+                // WASM (f32.min / f32.add) canonicalizes NaN payloads per the WebAssembly
+                // spec, so the bit-strict NaN cases in this theory don't round-trip through
+                // the software conversion path. Tracked in https://github.com/dotnet/runtime/issues/103347.
+                if (PlatformDetection.IsWasm && float.IsNaN(original))
+                    continue;
                 yield return new object[] { original, expected };
             }
         }
 
         [MemberData(nameof(ExplicitConversion_FromSingle_TestData))]
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103347", TestPlatforms.Browser)]
         public static void ExplicitConversion_FromSingle(float f, BFloat16 expected) // Check the underlying bits for verifying NaNs
         {
             BFloat16 b16 = (BFloat16)f;
@@ -618,13 +622,17 @@ namespace System.Numerics.Tests
 
             foreach ((double original, BFloat16 expected) in data)
             {
+                // WASM (f64.min / f64.add) canonicalizes NaN payloads per the WebAssembly
+                // spec, so the bit-strict NaN cases in this theory don't round-trip through
+                // the software conversion path. Tracked in https://github.com/dotnet/runtime/issues/103347.
+                if (PlatformDetection.IsWasm && double.IsNaN(original))
+                    continue;
                 yield return new object[] { original, expected };
             }
         }
 
         [MemberData(nameof(ExplicitConversion_FromDouble_TestData))]
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103347", TestPlatforms.Browser)]
         public static void ExplicitConversion_FromDouble(double d, BFloat16 expected) // Check the underlying bits for verifying NaNs
         {
             BFloat16 b16 = (BFloat16)d;
