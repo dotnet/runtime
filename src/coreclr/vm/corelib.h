@@ -701,6 +701,7 @@ DEFINE_METHOD(RUNTIME_HELPERS,      CALL_TO_STRING,         CallToString,       
 DEFINE_METHOD(RUNTIME_HELPERS,      NEWOBJ_HELPER_DUMMY,    NewobjHelperDummy,          SM_IntPtr_RetObj)
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 DEFINE_METHOD(RUNTIME_HELPERS,      CALL_DEFAULT_CONSTRUCTOR, CallDefaultConstructor, NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      INVOKE_FUNC_EVAL,       InvokeFuncEval,             NoSig)
 
 DEFINE_CLASS(ASYNC_HELPERS,       CompilerServices,          AsyncHelpers)
 DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION,        AllocContinuation, NoSig)

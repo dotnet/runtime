@@ -228,6 +228,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     PVOID* args,
     QCall::ObjectHandleOnStack pSigUNSAFE,
     BOOL fConstructor,
+    PVOID pRawThisByRef,
     QCall::ObjectHandleOnStack result);
 
 extern "C" void QCALLTYPE RuntimeMethodHandle_ConstructInstantiation(MethodDesc * pMethod, DWORD format, QCall::StringHandleOnStack retString);

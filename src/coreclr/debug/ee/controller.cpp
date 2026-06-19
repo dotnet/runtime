@@ -6782,6 +6782,12 @@ bool DebuggerStepper::IsInterestingFrame(FrameInfo * pFrame)
         {
             return false;
         }
+
+        // Ignore the managed funceval trampoline (RuntimeHelpers.InvokeFuncEval)
+        if (pFrame->md == g_pInvokeFuncEvalMethodDesc)
+        {
+            return false;
+        }
     }
 
     return true;

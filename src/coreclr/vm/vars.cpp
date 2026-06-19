@@ -119,6 +119,7 @@ GPTR_IMPL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_IMPL(MethodTable,      g_pStackFrameIteratorClass);
 
 GPTR_IMPL(MethodDesc,       g_pEnvironmentCallEntryPointMethodDesc);
+GPTR_IMPL(MethodDesc,       g_pInvokeFuncEvalMethodDesc);
 
 GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
 

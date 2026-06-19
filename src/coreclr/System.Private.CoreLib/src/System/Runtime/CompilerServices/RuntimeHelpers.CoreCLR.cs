@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
@@ -674,6 +675,110 @@ namespace System.Runtime.CompilerServices
                 *pException = ex;
             }
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private unsafe struct FuncEvalInvokeArgs
+        {
+            public nint MethodHandle;
+            public nint OwnerType;
+            public object* ThisObj;
+            public object?[]* Args;
+            public int IsNewObj;
+            // Byref-like value types (for example Span<T>) cannot go through heap boxes:
+            // the GC does not track embedded byrefs in boxed payloads. Native funceval
+            // passes raw byrefs in RawByRefs[i] and leaves Args[i] null.
+            public IntPtr* RawByRefs;
+            // For byref-like instance method receivers (e.g. Span<T>.Length) there is no
+            // object representation of `this`. Native funceval allocates a stable carrier
+            // for the receiver, wraps it in a ProtectValueClassFrame, and passes the raw
+            // byref here; in that case *ThisObj is null and the trampoline forwards the
+            // byref straight into RuntimeMethodHandle.InvokeMethod.
+            public IntPtr RawThisByRef;
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void InvokeFuncEval(FuncEvalInvokeArgs* pInvokeArgs, object* pResult, Exception* pException)
+        {
+            try
+            {
+                RuntimeMethodHandleInternal handle = new RuntimeMethodHandleInternal(pInvokeArgs->MethodHandle);
+                RuntimeType? ownerType = pInvokeArgs->OwnerType != 0
+                    ? RuntimeTypeHandle.GetRuntimeTypeFromHandle(pInvokeArgs->OwnerType)
+                    : null;
+                MethodBase method = RuntimeType.GetMethodBase(ownerType, handle)!;
+
+                object? thisObj = *pInvokeArgs->ThisObj;
+                object?[]? args = *pInvokeArgs->Args;
+                bool isNewObj = pInvokeArgs->IsNewObj != 0;
+
+                // Call RuntimeMethodHandle.InvokeMethod directly instead of public
+                // MethodBase.Invoke:
+                // 1. Public invoke blocks byref-like signatures (ContainsStackPointers).
+                // 2. ConstructorInfo.Invoke forces isConstructor=false, which breaks
+                //    value-type ctor funceval by mutating a temporary copy.
+                Signature sig = method switch
+                {
+                    RuntimeMethodInfo rmi => rmi.Signature,
+                    RuntimeConstructorInfo rci => rci.Signature,
+                    _ => throw new NotSupportedException(),
+                };
+
+                int argCount = args is null ? 0 : args.Length;
+                if (sig.Arguments.Length != argCount)
+                {
+                    throw new TargetParameterCountException();
+                }
+
+                // Build QCall byref arguments (same shape as MethodBaseInvoker):
+                // value types point at boxed payload; reference types point at args[] slots.
+                // Register this unmanaged storage as byrefs so GC can retarget them.
+                IntPtr* pByRefStorage = stackalloc IntPtr[Math.Max(argCount, 1)];
+                NativeMemory.Clear(pByRefStorage, (nuint)Math.Max(argCount, 1) * (nuint)sizeof(IntPtr));
+                GCFrameRegistration regByRefStorage =
+                    new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
+
+                object? result;
+                GCFrameRegistration.RegisterForGCReporting(&regByRefStorage);
+                try
+                {
+                    IntPtr* pRawByRefs = pInvokeArgs->RawByRefs;
+                    for (int i = 0; i < argCount; i++)
+                    {
+                        IntPtr raw = pRawByRefs != null ? pRawByRefs[i] : IntPtr.Zero;
+                        if (raw != IntPtr.Zero)
+                        {
+                            // Native side already provided a stable byref for this arg.
+                            *(IntPtr*)(pByRefStorage + i) = raw;
+                            continue;
+                        }
+
+                        ref object? slot = ref args![i];
+                        if (sig.Arguments[i].IsValueType)
+                        {
+                            // Value-type args are pre-boxed by native ReadAndBoxArgValue.
+                            *(ByReference*)(pByRefStorage + i) = ByReference.Create(ref slot!.GetRawData());
+                        }
+                        else
+                        {
+                            *(ByReference*)(pByRefStorage + i) = ByReference.Create(ref slot);
+                        }
+                    }
+
+                    result = RuntimeMethodHandle.InvokeMethod(thisObj, (void**)pByRefStorage, sig, isConstructor: isNewObj, rawThisByRef: (void*)pInvokeArgs->RawThisByRef);
+                }
+                finally
+                {
+                    GCFrameRegistration.UnregisterForGCReporting(&regByRefStorage);
+                }
+
+                if (result is not null)
+                    *pResult = result;
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
     }
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
@@ -724,7 +829,7 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct MethodDescChunk
     {
         public MethodTable* MethodTable;
-        public MethodDescChunk*  Next;
+        public MethodDescChunk* Next;
         public byte Size;        // The size of this chunk minus 1 (in multiples of MethodDesc::ALIGNMENT)
         public byte Count;       // The number of MethodDescs in this chunk minus 1
         public ushort FlagsAndTokenRange;
@@ -1124,11 +1229,11 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
         private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
 
-        private const uint enum_flag_Initialized                = 0x0001;
-        private const uint enum_flag_HasCheckedStreamOverride   = 0x0400;
-        private const uint enum_flag_StreamOverriddenRead       = 0x0800;
-        private const uint enum_flag_StreamOverriddenWrite      = 0x1000;
-        private const uint enum_flag_EnsuredInstanceActive      = 0x2000;
+        private const uint enum_flag_Initialized = 0x0001;
+        private const uint enum_flag_HasCheckedStreamOverride = 0x0400;
+        private const uint enum_flag_StreamOverriddenRead = 0x0800;
+        private const uint enum_flag_StreamOverriddenWrite = 0x1000;
+        private const uint enum_flag_EnsuredInstanceActive = 0x2000;
 
 
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
