@@ -19,12 +19,12 @@ public sealed class LinearReadCache : ITargetReadCache, IDisposable
         if (addr < _currPageStart || addr - _currPageStart >= _currPageSize)
         {
             if (!MoveToPage(addr, readDelegate))
-                return false;
+                return DirectRead(addr, dest, readDelegate);
         }
 
         ulong offset = addr - _currPageStart;
         if (offset + (ulong)dest.Length > _currPageSize)
-            return false;
+            return DirectRead(addr, dest, readDelegate);
 
         _page.AsSpan((int)offset, dest.Length).CopyTo(dest);
         return true;
@@ -57,6 +57,19 @@ public sealed class LinearReadCache : ITargetReadCache, IDisposable
         {
             _currPageStart = 0;
             _currPageSize = 0;
+            return false;
+        }
+    }
+
+    private static bool DirectRead(ulong addr, Span<byte> dest, RawReadDelegate readDelegate)
+    {
+        try
+        {
+            readDelegate(addr, dest);
+            return true;
+        }
+        catch
+        {
             return false;
         }
     }
