@@ -2441,9 +2441,15 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 {
     assert(tree->OperIs(GT_LCL_FLD));
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree);
+    var_types  type   = tree->TypeGet();
+
+    if (type == TYP_SIMD16)
+    {
+        NYI_WASM_SIMD("SIMD16 local field load");
+    }
 
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-    GetEmitter()->emitIns_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->GetLclNum(), tree->GetLclOffs());
+    GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(tree), tree->GetLclNum(), tree->GetLclOffs());
     WasmProduceReg(tree);
 }
 
@@ -2465,6 +2471,11 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     if (!varDsc->lvIsRegCandidate())
     {
         var_types type = varDsc->GetRegisterType(tree);
+        if (type == TYP_SIMD16)
+        {
+            NYI_WASM_SIMD("SIMD16 local load");
+        }
+
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
         WasmProduceReg(tree);
@@ -2549,8 +2560,13 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_IND));
 
-    var_types   type = tree->TypeGet();
-    instruction ins  = ins_Load(type);
+    var_types type = tree->TypeGet();
+    if (type == TYP_SIMD16)
+    {
+        NYI_WASM_SIMD("SIMD16 indirect load");
+    }
+
+    instruction ins = ins_Load(type);
 
     genConsumeAddress(tree->Addr());
 
@@ -3483,6 +3499,14 @@ void CodeGen::genCallFinally(BasicBlock* block)
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
         GetEmitter()->emitIns(INS_unreachable);
+
+        // A retless BBJ_CALLFINALLY can be the last block of a wasm function/funclet;
+        // every wasm function body must end with `end`.
+        //
+        if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+        {
+            GetEmitter()->emitIns(INS_end);
+        }
     }
 }
 
@@ -3563,6 +3587,11 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 {
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
     var_types  type   = varDsc->GetRegisterType();
+    if (type == TYP_SIMD16)
+    {
+        NYI_WASM_SIMD("SIMD16 local load");
+    }
+
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
     GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), lclNum, 0);
     GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(type), WasmRegToIndex(targetReg));
