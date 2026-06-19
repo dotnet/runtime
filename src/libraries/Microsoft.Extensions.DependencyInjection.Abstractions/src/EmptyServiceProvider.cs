@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -119,6 +120,10 @@ namespace Microsoft.Extensions.DependencyInjection
         private static bool IsEnumerable(Type serviceType) =>
             serviceType.IsConstructedGenericType && serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>);
 
+        // Caches the empty array returned for each element type so that repeated IEnumerable<T> resolutions
+        // are allocation-free, matching the root-level caching a real ServiceProvider performs.
+        private static readonly ConcurrentDictionary<Type, Array> s_emptyEnumerables = new();
+
         // Wraps RuntimeFeature.IsDynamicCodeSupported across target frameworks.
         private static bool IsDynamicCodeSupported =>
 #if NETFRAMEWORK || NETSTANDARD2_0
@@ -132,6 +137,11 @@ namespace Microsoft.Extensions.DependencyInjection
         private static Array CreateEmptyEnumerable(Type serviceType)
         {
             Type itemType = serviceType.GenericTypeArguments[0];
+            if (s_emptyEnumerables.TryGetValue(itemType, out Array? cached))
+            {
+                return cached;
+            }
+
             if (!IsDynamicCodeSupported && itemType.IsValueType)
             {
                 // Native AOT apps are not able to make an Enumerable of a ValueType service
@@ -139,7 +149,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new InvalidOperationException(SR.Format(SR.AotCannotCreateEnumerableValueType, itemType));
             }
 
-            return Array.CreateInstance(itemType, 0);
+            Array empty = Array.CreateInstance(itemType, 0);
+            return s_emptyEnumerables.GetOrAdd(itemType, empty);
         }
 
         [DoesNotReturn]
