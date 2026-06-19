@@ -3,9 +3,11 @@
 
 #if NET
 using System.Buffers.Binary;
+using System.Runtime.Intrinsics.X86;
+// Aliased because this type's own "Crc32" property would otherwise shadow the Arm intrinsic.
+using ArmCrc32 = System.Runtime.Intrinsics.Arm.Crc32;
 #endif
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace System.IO.Hashing
 {
@@ -181,7 +183,7 @@ namespace System.IO.Hashing
         {
             public Crc32CParameterSet()
                 : base(
-                    System.Runtime.Intrinsics.X86.Sse42.IsSupported || System.Runtime.Intrinsics.Arm.Crc32.IsSupported ? 8 : 1,
+                    Sse42.IsSupported || ArmCrc32.IsSupported ? 8 : 1,
                     0x1edc6f41,
                     0xffffffff,
                     0xffffffff)
@@ -192,66 +194,37 @@ namespace System.IO.Hashing
 
             private static uint UpdateIntrinsic(uint crc, ReadOnlySpan<byte> source)
             {
-                if (System.Runtime.Intrinsics.X86.Sse42.IsSupported)
+                Debug.Assert(Sse42.IsSupported || ArmCrc32.IsSupported);
+
+                // Consume 8 bytes at a time when a 64-bit CRC intrinsic is available, then 4 bytes,
+                // then the remaining bytes individually. Sse42.IsSupported is a JIT-time constant, so
+                // each ternary folds away and only the platform's intrinsic remains in the codegen.
+                if (Sse42.X64.IsSupported || ArmCrc32.Arm64.IsSupported)
                 {
-                    if (System.Runtime.Intrinsics.X86.Sse42.X64.IsSupported)
+                    while (source.Length >= sizeof(ulong))
                     {
-                        ReadOnlySpan<ulong> ulongData = MemoryMarshal.Cast<byte, ulong>(source);
-                        ulong crc64 = crc;
-
-                        foreach (ulong value in ulongData)
-                        {
-                            crc64 = System.Runtime.Intrinsics.X86.Sse42.X64.Crc32(crc64, value);
-                        }
-
-                        crc = (uint)crc64;
-                        source = source.Slice(ulongData.Length * sizeof(ulong));
-                    }
-
-                    ReadOnlySpan<uint> uintData = MemoryMarshal.Cast<byte, uint>(source);
-
-                    foreach (uint value in uintData)
-                    {
-                        crc = System.Runtime.Intrinsics.X86.Sse42.Crc32(crc, value);
-                    }
-
-                    // SSE 4.2 defines a ushort version as well, but that will only save us one byte,
-                    // so not worth the branch and cast.
-
-                    ReadOnlySpan<byte> remainingBytes = source.Slice(uintData.Length * sizeof(uint));
-
-                    foreach (byte value in remainingBytes)
-                    {
-                        crc = System.Runtime.Intrinsics.X86.Sse42.Crc32(crc, value);
+                        ulong value = BinaryPrimitives.ReadUInt64LittleEndian(source);
+                        crc = Sse42.IsSupported ?
+                            (uint)Sse42.X64.Crc32(crc, value) :
+                            ArmCrc32.Arm64.ComputeCrc32C(crc, value);
+                        source = source.Slice(sizeof(ulong));
                     }
                 }
-                else
+
+                while (source.Length >= sizeof(uint))
                 {
-                    Debug.Assert(System.Runtime.Intrinsics.Arm.Crc32.IsSupported);
+                    uint value = BinaryPrimitives.ReadUInt32LittleEndian(source);
+                    crc = Sse42.IsSupported ?
+                        Sse42.Crc32(crc, value) :
+                        ArmCrc32.ComputeCrc32C(crc, value);
+                    source = source.Slice(sizeof(uint));
+                }
 
-                    if (System.Runtime.Intrinsics.Arm.Crc32.Arm64.IsSupported)
-                    {
-                        while (source.Length >= sizeof(ulong))
-                        {
-                            crc = System.Runtime.Intrinsics.Arm.Crc32.Arm64.ComputeCrc32C(
-                                crc,
-                                BinaryPrimitives.ReadUInt64LittleEndian(source));
-                            source = source.Slice(sizeof(ulong));
-                        }
-                    }
-
-                    while (source.Length >= sizeof(uint))
-                    {
-                        crc = System.Runtime.Intrinsics.Arm.Crc32.ComputeCrc32C(
-                            crc,
-                            BinaryPrimitives.ReadUInt32LittleEndian(source));
-                        source = source.Slice(sizeof(uint));
-                    }
-
-                    foreach (byte value in source)
-                    {
-                        crc = System.Runtime.Intrinsics.Arm.Crc32.ComputeCrc32C(crc, value);
-                    }
+                foreach (byte value in source)
+                {
+                    crc = Sse42.IsSupported ?
+                        Sse42.Crc32(crc, value) :
+                        ArmCrc32.ComputeCrc32C(crc, value);
                 }
 
                 return crc;
