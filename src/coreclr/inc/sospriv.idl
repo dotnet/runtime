@@ -573,3 +573,86 @@ interface ISOSDacInterface16 : IUnknown
 {
     HRESULT GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode);
 }
+
+cpp_quote("#ifndef _SOS_StressLogData")
+cpp_quote("#define _SOS_StressLogData")
+
+typedef struct _SOSStressLogData
+{
+    unsigned int LoggedFacilities;
+    unsigned int Level;
+    unsigned int MaxSizePerThread;
+    unsigned int MaxSizeTotal;
+    int TotalChunks;
+    UINT64 TickFrequency;
+    UINT64 StartTimestamp;
+    UINT64 StartTime;
+} SOSStressLogData;
+
+cpp_quote("#endif //_SOS_StressLogData")
+
+cpp_quote("#ifndef _SOS_ThreadStressLogData")
+cpp_quote("#define _SOS_ThreadStressLogData")
+
+typedef struct _SOSThreadStressLogData
+{
+    CLRDATA_ADDRESS ThreadLogAddress;
+    UINT64 ThreadId;
+} SOSThreadStressLogData;
+
+cpp_quote("#endif //_SOS_ThreadStressLogData")
+
+cpp_quote("#ifndef _SOS_StressMsgData")
+cpp_quote("#define _SOS_StressMsgData")
+
+typedef struct _SOSStressMsgData
+{
+    unsigned int Facility;
+    CLRDATA_ADDRESS FormatString;
+    UINT64 Timestamp;
+    unsigned int ArgumentCount;
+} SOSStressMsgData;
+
+cpp_quote("#endif //_SOS_StressMsgData")
+
+[
+    object,
+    local,
+    uuid(94a2bd3d-ab3d-43bf-81d8-3ae96b8e33cd)
+]
+interface ISOSStressLogThreadEnum : ISOSEnum
+{
+    HRESULT Next([in] unsigned int count,
+                 [out, size_is(count), length_is(*pFetched)] SOSThreadStressLogData values[],
+                 [out] unsigned int *pFetched);
+}
+
+[
+    object,
+    local,
+    uuid(437cb033-afe7-4c0f-a4a7-82c891bc049e)
+]
+interface ISOSStressLogMsgEnum : ISOSEnum
+{
+    HRESULT Next([in] unsigned int count,
+                 [out, size_is(count), length_is(*pFetched)] SOSStressMsgData values[],
+                 [out] unsigned int *pFetched);
+
+    HRESULT GetArguments([in] unsigned int messageIndex,
+                         [in] unsigned int argCount,
+                         [out, size_is(argCount), length_is(*pFetched)] CLRDATA_ADDRESS args[],
+                         [out] unsigned int *pFetched);
+}
+
+[
+    object,
+    local,
+    uuid(2f4bb585-ed50-479e-bbe0-10a95a5da3bb)
+]
+interface ISOSDacInterface17 : IUnknown
+{
+    HRESULT GetStressLogData([out] SOSStressLogData *data);
+    HRESULT GetStressLogThreadEnumerator([out] ISOSStressLogThreadEnum **ppEnum);
+    HRESULT GetStressLogMessageEnumerator([in] CLRDATA_ADDRESS threadStressLogAddress,
+                                          [out] ISOSStressLogMsgEnum **ppEnum);
+}
