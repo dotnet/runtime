@@ -601,8 +601,6 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "RetBuffer";
         case WellKnownArg::PInvokeFrame:
             return "PInvokeFrame";
-        case WellKnownArg::WrapperDelegateCell:
-            return "WrapperDelegateCell";
         case WellKnownArg::ShiftLow:
             return "ShiftLow";
         case WellKnownArg::ShiftHigh:
@@ -1654,40 +1652,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     // The logic here must remain in sync with GetNonStandardAddedArgCount(), which is used to map arguments
     // in the implementation of fast tail call.
     // *********** END NOTE *********
-
-#if defined(TARGET_ARM)
-    // A non-standard calling convention using wrapper delegate invoke is used on ARM, only, for wrapper
-    // delegates. It is used for VSD delegate calls where the VSD custom calling convention ABI requires passing
-    // R4, a callee-saved register, with a special value. Since R4 is a callee-saved register, its value needs
-    // to be preserved. Thus, the VM uses a wrapper delegate IL stub, which preserves R4 and also sets up R4
-    // correctly for the VSD call. The VM is simply reusing an existing mechanism (wrapper delegate IL stub)
-    // to achieve its goal for delegate VSD call. See COMDelegate::NeedsWrapperDelegate() in the VM for details.
-    if (call->gtCallMoreFlags & GTF_CALL_M_WRAPPER_DELEGATE_INV)
-    {
-        CallArg* thisArg = GetThisArg();
-        assert((thisArg != nullptr) && (thisArg->GetEarlyNode() != nullptr));
-
-        GenTree* cloned;
-        if (thisArg->GetEarlyNode()->OperIsLocal())
-        {
-            cloned = comp->gtClone(thisArg->GetEarlyNode(), true);
-        }
-        else
-        {
-            cloned = comp->fgInsertCommaFormTemp(&thisArg->EarlyNodeRef());
-            call->gtFlags |= GTF_ASG;
-        }
-        noway_assert(cloned != nullptr);
-
-        GenTree* offsetNode = comp->gtNewIconNode(comp->eeGetEEInfo()->offsetOfWrapperDelegateIndirectCell, TYP_I_IMPL);
-        GenTree* newArg     = comp->gtNewOperNode(GT_ADD, TYP_BYREF, cloned, offsetNode);
-
-        newArg->SetMorphed(comp, /* doChildren */ true);
-
-        // Append newArg as the last arg
-        PushBack(comp, NewCallArg::Primitive(newArg).WellKnown(WellKnownArg::WrapperDelegateCell));
-    }
-#endif // defined(TARGET_ARM)
 
     bool addStubCellArg = true;
 
@@ -4457,14 +4421,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 
-#ifdef TARGET_ARM
-    if (call->gtCallMoreFlags & GTF_CALL_M_WRAPPER_DELEGATE_INV)
-    {
-        failTailCall("Non-standard calling convention");
-        return nullptr;
-    }
-#endif
-
     if (call->IsNoReturn() && !call->IsTailPrefixedCall())
     {
         // Such tail calls always throw an exception and we won't be able to see current
@@ -5401,7 +5357,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
     call->gtControlExpr = nullptr;
     call->gtCallMethHnd = help.hStoreArgs;
     call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
-    call->gtCallMoreFlags &= ~(GTF_CALL_M_TAILCALL | GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
+    call->gtCallMoreFlags &= ~(GTF_CALL_M_TAILCALL | GTF_CALL_M_DELEGATE_INV);
 
     // The store-args stub returns no value.
     call->gtRetClsHnd  = nullptr;
