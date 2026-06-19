@@ -290,11 +290,18 @@ namespace Microsoft.NET.Sdk.WebAssembly
                     cache = GetCacheControl(a.Key, resources)
                 };
 
-                if (r2rSizes != null && r2rSizes.TryGetValue(a.Key, out var sizes))
+                // Webcil payload/table sizes. For satellites (subFolder == culture) the key is
+                // culture-qualified to match GenerateWasmBootJson's store key and disambiguate
+                // same-named satellites across cultures.
+                if (r2rSizes != null)
                 {
-                    asset.payloadSize = sizes.payloadSize;
-                    if (sizes.tableSize > 0)
-                        asset.tableSize = sizes.tableSize;
+                    string r2rKey = subFolder != null ? subFolder + "/" + a.Key : a.Key;
+                    if (r2rSizes.TryGetValue(r2rKey, out var sizes))
+                    {
+                        asset.payloadSize = sizes.payloadSize;
+                        if (sizes.tableSize > 0)
+                            asset.tableSize = sizes.tableSize;
+                    }
                 }
 
                 if (bundlerFriendly)

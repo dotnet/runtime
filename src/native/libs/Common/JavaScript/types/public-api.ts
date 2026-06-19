@@ -254,12 +254,17 @@ export type AssemblyAsset = Asset & {
     name: string;
     hash?: string | null | "";
     /**
-     * For ReadyToRun (R2R) webcil-in-wasm images: the number of table entries the module needs and
-     * the size in bytes of the Webcil payload. When present, the runtime can stream-instantiate the
-     * image without buffering its bytes or parsing the wasm data section.
+     * The size in bytes of the Webcil payload to allocate. Present for every Webcil-in-wasm
+     * assembly; the runtime uses it to instantiate the image without buffering its bytes or parsing
+     * the wasm data section.
+     */
+    payloadSize?: number;
+    /**
+     * For ReadyToRun (R2R) webcil-in-wasm images only: the number of table entries the module needs.
+     * The runtime grows the indirect-call table by this amount before instantiation. Absent for
+     * plain (non-R2R) webcil.
      */
     tableSize?: number;
-    payloadSize?: number;
 };
 export type PdbAsset = Asset & {
     virtualPath: string;

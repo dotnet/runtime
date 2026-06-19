@@ -29,8 +29,8 @@ public class ConvertDllsToWebcil : Task
     /// <summary>
     /// Optional prebuilt ReadyToRun webcil-in-wasm images that replace the plain Webcil conversion
     /// for the matching assembly (matched by file name without extension). ItemSpec is the path to
-    /// the R2R .wasm; optional metadata TableSize/PayloadSize are propagated onto the produced
-    /// webcil item as WasmR2RTableSize/WasmR2RPayloadSize.
+    /// the R2R .wasm. The payload/table sizes are read from the staged image itself and surfaced via
+    /// <see cref="WebcilSizes"/>; no size metadata is required on these items.
     /// </summary>
     public ITaskItem[] R2RWebcilCandidates { get; set; }
 
@@ -38,9 +38,11 @@ public class ConvertDllsToWebcil : Task
     public ITaskItem[] WebcilCandidates { get; set; }
 
     /// <summary>
-    /// Payload/table sizes for each produced webcil, keyed by file name (e.g. "System.Console.wasm").
-    /// Lets the boot config carry the sizes so the runtime loader doesn't buffer/parse the wasm or
-    /// call getWebcilSize. PayloadSize is set for every webcil; TableSize is set (non-zero) for R2R.
+    /// Payload/table sizes for each produced webcil, keyed by webcil route: the file name
+    /// (e.g. "System.Console.wasm"), or "{culture}/{name}.wasm" for satellite assemblies so that
+    /// same-named satellites in different cultures don't collide. Lets the boot config carry the
+    /// sizes so the runtime loader doesn't buffer/parse the wasm. PayloadSize is set for every
+    /// webcil; TableSize is non-zero only for R2R images.
     /// </summary>
     [Output]
     public ITaskItem[] WebcilSizes { get; set; }
@@ -153,15 +155,17 @@ public class ConvertDllsToWebcil : Task
     {
         var dllFilePath = candidate.ItemSpec;
         var webcilFileName = Path.GetFileNameWithoutExtension(dllFilePath) + Utils.WebcilInWasmExtension;
-        string candidatePath = candidate.GetMetadata("AssetTraitName") == "Culture"
-            ? Path.Combine(OutputPath, candidate.GetMetadata("AssetTraitValue"))
+        bool isCulture = candidate.GetMetadata("AssetTraitName") == "Culture";
+        string culture = isCulture ? candidate.GetMetadata("AssetTraitValue") : null;
+        string candidatePath = isCulture
+            ? Path.Combine(OutputPath, culture)
             : OutputPath;
 
         string finalWebcil = Path.Combine(candidatePath, webcilFileName);
 
         if (_r2rByName != null && _r2rByName.TryGetValue(Path.GetFileNameWithoutExtension(dllFilePath), out var r2rReplacement))
         {
-            return StageR2RWebcil(tmpDir, candidate, r2rReplacement, webcilFileName, candidatePath, finalWebcil);
+            return StageR2RWebcil(tmpDir, candidate, r2rReplacement, webcilFileName, candidatePath, finalWebcil, culture);
         }
 
         if (Utils.IsNewerThan(dllFilePath, finalWebcil))
@@ -198,14 +202,14 @@ public class ConvertDllsToWebcil : Task
             Log.LogMessage(MessageImportance.Low, $"Changing related asset of {webcilItem} to {relatedAsset}.");
         }
 
-        RecordWebcilSize(finalWebcil);
+        RecordWebcilSize(finalWebcil, culture);
         return webcilItem;
     }
 
     // Stage a prebuilt R2R webcil-in-wasm image in place of converting the .dll. The produced item
     // mirrors ConvertDll's output (same path, RelativePath, OriginalItemSpec) so downstream
     // fingerprinting/integrity is computed from the R2R bytes.
-    private TaskItem StageR2RWebcil(string tmpDir, ITaskItem candidate, ITaskItem r2r, string webcilFileName, string candidatePath, string finalWebcil)
+    private TaskItem StageR2RWebcil(string tmpDir, ITaskItem candidate, ITaskItem r2r, string webcilFileName, string candidatePath, string finalWebcil, string culture)
     {
         string r2rPath = r2r.ItemSpec;
 
@@ -233,85 +237,81 @@ public class ConvertDllsToWebcil : Task
         webcilItem.SetMetadata("RelativePath", Path.ChangeExtension(candidate.GetMetadata("RelativePath"), Utils.WebcilInWasmExtension));
         webcilItem.SetMetadata("OriginalItemSpec", finalWebcil);
 
-        RecordWebcilSize(finalWebcil);
+        RecordWebcilSize(finalWebcil, culture);
         return webcilItem;
     }
 
-    // Parses the produced webcil's data segment 0 and records payloadSize/tableSize keyed by file
-    // name, so GenerateWasmBootJson can emit them into the boot config without re-parsing.
-    private void RecordWebcilSize(string webcilPath)
+    // Parses the produced webcil's data segment 0 and records payloadSize/tableSize keyed by webcil
+    // route (file name, or "{culture}/{name}.wasm" for satellites), so GenerateWasmBootJson can emit
+    // them into the boot config without re-parsing. The runtime loader requires payloadSize for every
+    // webcil-in-wasm assembly, so failing to read it is a build error rather than a silent skip.
+    private void RecordWebcilSize(string webcilPath, string culture)
     {
         if (!TryReadWebcilSizes(webcilPath, out int payloadSize, out int tableSize))
         {
-            Log.LogMessage(MessageImportance.Low, $"Could not read Webcil sizes from {webcilPath}.");
+            Log.LogError($"Could not read the Webcil payload/table sizes from '{webcilPath}'. The runtime loader requires payloadSize for every webcil-in-wasm assembly.");
             return;
         }
 
-        var item = new TaskItem(Path.GetFileName(webcilPath));
+        string fileName = Path.GetFileName(webcilPath);
+        string key = string.IsNullOrEmpty(culture) ? fileName : culture + "/" + fileName;
+        var item = new TaskItem(key);
         item.SetMetadata("PayloadSize", payloadSize.ToString(CultureInfo.InvariantCulture));
         item.SetMetadata("TableSize", tableSize.ToString(CultureInfo.InvariantCulture));
         _webcilSizes.Add(item);
     }
 
     // Reads payloadSize and tableSize from data segment 0 of a Webcil-in-wasm image without
-    // instantiating it. tableSize > 0 indicates a ReadyToRun image. Only a small prefix is read
-    // (the sizes live at the start of the data section). See docs/design/mono/webcil.md.
+    // instantiating it. tableSize > 0 indicates a ReadyToRun image. The data section is the last
+    // wasm section, so for R2R images (large code sections) it can start well beyond the first few
+    // KB; this streams through the section headers, seeking past each body, instead of reading a
+    // fixed prefix. All multi-byte integers in the wasm binary format are little-endian and are read
+    // as such regardless of host endianness. See docs/design/mono/webcil.md.
     private static bool TryReadWebcilSizes(string path, out int payloadSize, out int tableSize)
     {
         payloadSize = 0;
         tableSize = 0;
         try
         {
-            byte[] bytes;
-            using (var fs = File.OpenRead(path))
-            {
-                int len = (int)Math.Min(fs.Length, 4096);
-                bytes = new byte[len];
-                int read = 0;
-                while (read < len)
-                {
-                    int r = fs.Read(bytes, read, len - read);
-                    if (r == 0)
-                        break;
-                    read += r;
-                }
-            }
+            using var fs = File.OpenRead(path);
 
-            if (bytes.Length < 8
-                || BitConverter.ToUInt32(bytes, 0) != 0x6d736100 /* \0asm */
-                || BitConverter.ToUInt32(bytes, 4) != 1 /* wasm version */)
+            byte[] header = new byte[8];
+            if (!TryFill(fs, header, 8)
+                || ReadUInt32LE(header, 0) != 0x6d736100 /* \0asm */
+                || ReadUInt32LE(header, 4) != 1 /* wasm version */)
             {
                 return false;
             }
 
-            int offset = 8;
-            while (offset < bytes.Length)
+            while (true)
             {
-                byte sectionCode = bytes[offset++];
-                if (!TryReadULEB128(bytes, ref offset, out uint sectionSize))
+                int sectionCode = fs.ReadByte();
+                if (sectionCode < 0)
+                    return false; // reached EOF without finding a data section
+                if (!TryReadULEB128(fs, out uint sectionSize))
                     return false;
 
                 if (sectionCode == 11 /* data section */)
                 {
-                    int p = offset;
-                    if (!TryReadULEB128(bytes, ref p, out uint segmentCount) || segmentCount < 1)
+                    if (!TryReadULEB128(fs, out uint segmentCount) || segmentCount < 1)
                         return false;
-                    if (p >= bytes.Length || bytes[p++] != 1 /* passive */)
+                    if (fs.ReadByte() != 1 /* passive segment */)
                         return false;
-                    if (!TryReadULEB128(bytes, ref p, out uint dataLength) || dataLength < 4)
-                        return false;
-                    if (p + 4 > bytes.Length)
+                    if (!TryReadULEB128(fs, out uint dataLength) || dataLength < 4)
                         return false;
 
-                    payloadSize = (int)BitConverter.ToUInt32(bytes, p);
-                    tableSize = dataLength >= 8 && p + 8 <= bytes.Length ? (int)BitConverter.ToUInt32(bytes, p + 4) : 0;
+                    int want = dataLength >= 8 ? 8 : 4;
+                    byte[] sizes = new byte[8];
+                    if (!TryFill(fs, sizes, want))
+                        return false;
+
+                    payloadSize = (int)ReadUInt32LE(sizes, 0);
+                    tableSize = want == 8 ? (int)ReadUInt32LE(sizes, 4) : 0;
                     return true;
                 }
 
-                offset += (int)sectionSize;
+                fs.Seek(sectionSize, SeekOrigin.Current);
             }
-
-            return false;
         }
         catch
         {
@@ -319,15 +319,33 @@ public class ConvertDllsToWebcil : Task
         }
     }
 
-    private static bool TryReadULEB128(byte[] bytes, ref int offset, out uint value)
+    private static bool TryFill(Stream stream, byte[] buffer, int count)
+    {
+        int read = 0;
+        while (read < count)
+        {
+            int r = stream.Read(buffer, read, count - read);
+            if (r == 0)
+                return false;
+            read += r;
+        }
+        return true;
+    }
+
+    private static uint ReadUInt32LE(byte[] bytes, int offset)
+        => (uint)(bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24));
+
+    private static bool TryReadULEB128(Stream stream, out uint value)
     {
         value = 0;
         int shift = 0;
         while (true)
         {
-            if (offset >= bytes.Length || shift >= 35)
+            if (shift >= 35)
                 return false;
-            byte b = bytes[offset++];
+            int b = stream.ReadByte();
+            if (b < 0)
+                return false;
             value |= (uint)(b & 0x7f) << shift;
             if ((b & 0x80) == 0)
                 return true;
