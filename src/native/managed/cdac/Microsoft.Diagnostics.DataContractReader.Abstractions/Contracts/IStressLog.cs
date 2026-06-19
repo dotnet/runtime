@@ -14,9 +14,11 @@ public record struct StressLogData(
     int TotalChunks,
     ulong TickFrequency,
     ulong StartTimestamp,
+    ulong StartTime,
     TargetPointer Logs);
 
 public record struct ThreadStressLogData(
+    TargetPointer Address,
     TargetPointer NextPointer,
     ulong ThreadId,
     bool WriteHasWrapped,

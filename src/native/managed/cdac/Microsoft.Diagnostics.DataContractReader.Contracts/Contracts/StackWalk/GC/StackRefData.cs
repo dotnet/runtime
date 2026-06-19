@@ -9,6 +9,7 @@ internal class StackRefData
     {
         StackSourceIP = 0,
         StackSourceFrame = 1,
+        StackSourceOther = 2,
     }
 
     public bool HasRegisterInformation { get; set; }

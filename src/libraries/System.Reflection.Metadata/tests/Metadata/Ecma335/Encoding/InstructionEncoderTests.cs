@@ -233,7 +233,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             il.LoadLocal(4);
             il.LoadLocal(byte.MaxValue);
             il.LoadLocal(byte.MaxValue + 1);
-            il.LoadLocal(int.MaxValue);
+            il.LoadLocal(ushort.MaxValue);
 
             AssertEx.Equal(new byte[]
             {
@@ -243,12 +243,14 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 (byte)ILOpCode.Ldloc_3,
                 (byte)ILOpCode.Ldloc_s, 0x04,
                 (byte)ILOpCode.Ldloc_s, 0xFF,
-                0xFE, 0x0C, 0x00, 0x01, 0x00, 0x00,
-                0xFE, 0x0C, 0xFF, 0xFF, 0xFF, 0x7F
+                0xFE, 0x0C, 0x00, 0x01,
+                0xFE, 0x0C, 0xFF, 0xFF
             }, builder.ToArray());
 
             Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadLocal(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadLocal(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadLocal(ushort.MaxValue + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadLocal(int.MaxValue));
         }
 
         [Fact]
@@ -264,7 +266,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             il.StoreLocal(4);
             il.StoreLocal(byte.MaxValue);
             il.StoreLocal(byte.MaxValue + 1);
-            il.StoreLocal(int.MaxValue);
+            il.StoreLocal(ushort.MaxValue);
 
             AssertEx.Equal(new byte[]
             {
@@ -274,12 +276,14 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 (byte)ILOpCode.Stloc_3,
                 (byte)ILOpCode.Stloc_s, 0x04,
                 (byte)ILOpCode.Stloc_s, 0xFF,
-                0xFE, 0x0E, 0x00, 0x01, 0x00, 0x00,
-                0xFE, 0x0E, 0xFF, 0xFF, 0xFF, 0x7F
+                0xFE, 0x0E, 0x00, 0x01,
+                0xFE, 0x0E, 0xFF, 0xFF
             }, builder.ToArray());
 
             Assert.Throws<ArgumentOutOfRangeException>(() => il.StoreLocal(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => il.StoreLocal(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => il.StoreLocal(ushort.MaxValue + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => il.StoreLocal(int.MaxValue));
         }
 
         [Fact]
@@ -295,7 +299,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             il.LoadLocalAddress(4);
             il.LoadLocalAddress(byte.MaxValue);
             il.LoadLocalAddress(byte.MaxValue + 1);
-            il.LoadLocalAddress(int.MaxValue);
+            il.LoadLocalAddress(ushort.MaxValue);
 
             AssertEx.Equal(new byte[]
             {
@@ -305,12 +309,14 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 (byte)ILOpCode.Ldloca_s, 0x03,
                 (byte)ILOpCode.Ldloca_s, 0x04,
                 (byte)ILOpCode.Ldloca_s, 0xFF,
-                0xFE, 0x0D, 0x00, 0x01, 0x00, 0x00,
-                0xFE, 0x0D, 0xFF, 0xFF, 0xFF, 0x7F
+                0xFE, 0x0D, 0x00, 0x01,
+                0xFE, 0x0D, 0xFF, 0xFF
             }, builder.ToArray());
 
             Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadLocalAddress(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadLocalAddress(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadLocalAddress(ushort.MaxValue + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadLocalAddress(int.MaxValue));
         }
 
         [Fact]
@@ -326,7 +332,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             il.LoadArgument(4);
             il.LoadArgument(byte.MaxValue);
             il.LoadArgument(byte.MaxValue + 1);
-            il.LoadArgument(int.MaxValue);
+            il.LoadArgument(ushort.MaxValue);
 
             AssertEx.Equal(new byte[]
             {
@@ -336,12 +342,14 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 (byte)ILOpCode.Ldarg_3,
                 (byte)ILOpCode.Ldarg_s, 0x04,
                 (byte)ILOpCode.Ldarg_s, 0xFF,
-                0xFE, 0x09, 0x00, 0x01, 0x00, 0x00,
-                0xFE, 0x09, 0xFF, 0xFF, 0xFF, 0x7F
+                0xFE, 0x09, 0x00, 0x01,
+                0xFE, 0x09, 0xFF, 0xFF
             }, builder.ToArray());
 
             Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadArgument(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadArgument(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadArgument(ushort.MaxValue + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadArgument(int.MaxValue));
         }
 
         [Fact]
@@ -357,7 +365,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             il.LoadArgumentAddress(4);
             il.LoadArgumentAddress(byte.MaxValue);
             il.LoadArgumentAddress(byte.MaxValue + 1);
-            il.LoadArgumentAddress(int.MaxValue);
+            il.LoadArgumentAddress(ushort.MaxValue);
 
             AssertEx.Equal(new byte[]
             {
@@ -367,12 +375,14 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 (byte)ILOpCode.Ldarga_s, 0x03,
                 (byte)ILOpCode.Ldarga_s, 0x04,
                 (byte)ILOpCode.Ldarga_s, 0xFF,
-                0xFE, 0x0A, 0x00, 0x01, 0x00, 0x00,
-                0xFE, 0x0A, 0xFF, 0xFF, 0xFF, 0x7F
+                0xFE, 0x0A, 0x00, 0x01,
+                0xFE, 0x0A, 0xFF, 0xFF
             }, builder.ToArray());
 
             Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadArgumentAddress(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadArgumentAddress(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadArgumentAddress(ushort.MaxValue + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => il.LoadArgumentAddress(int.MaxValue));
         }
 
         [Fact]
@@ -388,7 +398,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             il.StoreArgument(4);
             il.StoreArgument(byte.MaxValue);
             il.StoreArgument(byte.MaxValue + 1);
-            il.StoreArgument(int.MaxValue);
+            il.StoreArgument(ushort.MaxValue);
 
             AssertEx.Equal(new byte[]
             {
@@ -398,12 +408,14 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 (byte)ILOpCode.Starg_s, 0x03,
                 (byte)ILOpCode.Starg_s, 0x04,
                 (byte)ILOpCode.Starg_s, 0xFF,
-                0xFE, 0x0B, 0x00, 0x01, 0x00, 0x00,
-                0xFE, 0x0B, 0xFF, 0xFF, 0xFF, 0x7F
+                0xFE, 0x0B, 0x00, 0x01,
+                0xFE, 0x0B, 0xFF, 0xFF
             }, builder.ToArray());
 
             Assert.Throws<ArgumentOutOfRangeException>(() => il.StoreArgument(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => il.StoreArgument(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => il.StoreArgument(ushort.MaxValue + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => il.StoreArgument(int.MaxValue));
         }
 
         [Fact]

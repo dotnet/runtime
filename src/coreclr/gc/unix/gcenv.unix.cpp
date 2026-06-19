@@ -568,7 +568,7 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
     st = madvise(address, size, MADV_DONTDUMP);
 #endif
 
-#ifdef MADV_FREE
+#if defined(MADV_FREE) && !defined(TARGET_SUNOS)
     // Tell the kernel that the application doesn't need the pages in the range.
     // Freeing the pages can be delayed until a memory pressure occurs.
     st = madvise(address, size, MADV_FREE);
