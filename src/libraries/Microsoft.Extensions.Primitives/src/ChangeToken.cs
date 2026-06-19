@@ -132,13 +132,13 @@ namespace Microsoft.Extensions.Primitives
                 {
                     return;
                 }
-                IDisposable registraton = token.RegisterChangeCallback(static s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
+                IDisposable registration = token.RegisterChangeCallback(static s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
                 if (token.HasChanged && token.ActiveChangeCallbacks)
                 {
-                    registraton?.Dispose();
+                    registration?.Dispose();
                     return;
                 }
-                SetDisposable(registraton);
+                SetDisposable(registration);
             }
 
             private void SetDisposable(IDisposable disposable)
