@@ -1,13 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-** Classes:  Security Descriptor family of classes
-**
-**
-===========================================================*/
-
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -20,7 +13,6 @@ using Microsoft.Win32;
 namespace System.Security.AccessControl
 {
     [Flags]
-
     public enum ControlFlags
     {
         None = 0x0000,
@@ -44,11 +36,7 @@ namespace System.Security.AccessControl
 
     public abstract class GenericSecurityDescriptor
     {
-        #region Protected Members
-
-        //
         // Pictorially the structure of a security descriptor is as follows:
-        //
         //       3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1
         //       1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
         //      +---------------------------------------------------------------+
@@ -62,22 +50,13 @@ namespace System.Security.AccessControl
         //      +---------------------------------------------------------------+
         //      |                            Dacl                               |
         //      +---------------------------------------------------------------+
-        //
-
         internal const int HeaderLength = 20;
         internal const int OwnerFoundAt = 4;
         internal const int GroupFoundAt = 8;
         internal const int SaclFoundAt = 12;
         internal const int DaclFoundAt = 16;
 
-        #endregion
-
-        #region Private Methods
-
-        //
         // Stores an integer in big-endian format into an array at a given offset
-        //
-
         private static void MarshalInt(byte[] binaryForm, int offset, int number)
         {
             binaryForm[offset + 0] = (byte)(number >> 0);
@@ -86,10 +65,7 @@ namespace System.Security.AccessControl
             binaryForm[offset + 3] = (byte)(number >> 24);
         }
 
-        //
         // Retrieves an integer stored in big-endian format at a given offset in an array
-        //
-
         internal static int UnmarshalInt(byte[] binaryForm, int offset)
         {
             return (int)(
@@ -99,22 +75,11 @@ namespace System.Security.AccessControl
                 (binaryForm[offset + 3] << 24));
         }
 
-        #endregion
-
-        #region Constructors
-
         internal GenericSecurityDescriptor()
         { }
 
-        #endregion
-
-        #region Protected Properties
-
-        //
         // Marshaling logic requires calling into the derived
         // class to obtain pointers to SACL and DACL
-        //
-
         internal abstract GenericAcl? GenericSacl { get; }
         internal abstract GenericAcl? GenericDacl { get; }
         private bool IsCraftedAefaDacl
@@ -124,10 +89,6 @@ namespace System.Security.AccessControl
                 return (GenericDacl is DiscretionaryAcl dacl) && dacl.EveryOneFullAccessForNullDacl;
             }
         }
-
-        #endregion
-
-        #region Public Properties
 
         public static bool IsSddlConversionSupported()
         {
@@ -139,29 +100,17 @@ namespace System.Security.AccessControl
             get { return 1; }
         }
 
-        //
         // Allows retrieving and setting the control bits for this security descriptor
-        //
-
         public abstract ControlFlags ControlFlags { get; }
 
-        //
         // Allows retrieving and setting the owner SID for this security descriptor
-        //
-
         public abstract SecurityIdentifier? Owner { get; set; }
 
-        //
         // Allows retrieving and setting the group SID for this security descriptor
-        //
-
         public abstract SecurityIdentifier? Group { get; set; }
 
-        //
         // Retrieves the length of the binary representation
         // of the security descriptor
-        //
-
         public int BinaryLength
         {
             get
@@ -194,14 +143,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        #endregion
-
-        #region Public Methods
-
-        //
         // Converts the security descriptor to its SDDL form
-        //
-
         public string GetSddlForm(AccessControlSections includeSections)
         {
             byte[] binaryForm = new byte[BinaryLength];
@@ -237,10 +179,7 @@ namespace System.Security.AccessControl
             if (error == Interop.Errors.ERROR_INVALID_PARAMETER ||
                 error == Interop.Errors.ERROR_UNKNOWN_REVISION)
             {
-                //
                 // Indicates that the marshaling logic in GetBinaryForm is busted
-                //
-
                 Debug.Fail("binaryForm produced invalid output");
                 throw new InvalidOperationException();
             }
@@ -253,10 +192,7 @@ namespace System.Security.AccessControl
             return resultSddl!;
         }
 
-        //
         // Converts the security descriptor to its binary form
-        //
-
         public void GetBinaryForm(byte[] binaryForm, int offset)
         {
             ArgumentNullException.ThrowIfNull(binaryForm);
@@ -270,18 +206,12 @@ namespace System.Security.AccessControl
                     SR.ArgumentOutOfRange_ArrayTooSmall);
             }
 
-            //
             // the offset will grow as we go for each additional field (owner, group,
             // acl, etc) being written. But for each of such fields, we must use the
             // original offset as passed in, not the growing offset
-            //
-
             int originalOffset = offset;
 
-            //
             // Populate the header
-            //
-
             byte rmControl =
                 ((this is RawSecurityDescriptor rsd) &&
                  ((ControlFlags & ControlFlags.RMControlValid) != 0)) ? (rsd.ResourceManagerControl) : (byte)0;
@@ -298,10 +228,7 @@ namespace System.Security.AccessControl
             binaryForm[offset + 2] = unchecked((byte)((int)materializedControlFlags >> 0));
             binaryForm[offset + 3] = (byte)((int)materializedControlFlags >> 8);
 
-            //
             // Compute offsets at which owner, group, SACL and DACL are stored
-            //
-
             int ownerOffset, groupOffset, saclOffset, daclOffset;
 
             ownerOffset = offset + OwnerFoundAt;
@@ -311,10 +238,7 @@ namespace System.Security.AccessControl
 
             offset += HeaderLength;
 
-            //
             // Marhsal the Owner SID into place
-            //
-
             if (Owner != null)
             {
                 MarshalInt(binaryForm, ownerOffset, offset - originalOffset);
@@ -323,17 +247,11 @@ namespace System.Security.AccessControl
             }
             else
             {
-                //
                 // If Owner SID is null, store 0 in the offset field
-                //
-
                 MarshalInt(binaryForm, ownerOffset, 0);
             }
 
-            //
             // Marshal the Group SID into place
-            //
-
             if (Group != null)
             {
                 MarshalInt(binaryForm, groupOffset, offset - originalOffset);
@@ -342,17 +260,11 @@ namespace System.Security.AccessControl
             }
             else
             {
-                //
                 // If Group SID is null, store 0 in the offset field
-                //
-
                 MarshalInt(binaryForm, groupOffset, 0);
             }
 
-            //
             // Marshal the SACL into place, if present
-            //
-
             if ((ControlFlags & ControlFlags.SystemAclPresent) != 0 &&
                 GenericSacl != null)
             {
@@ -362,17 +274,11 @@ namespace System.Security.AccessControl
             }
             else
             {
-                //
                 // If SACL is null or not present, store 0 in the offset field
-                //
-
                 MarshalInt(binaryForm, saclOffset, 0);
             }
 
-            //
             // Marshal the DACL into place, if present
-            //
-
             if ((ControlFlags & ControlFlags.DiscretionaryAclPresent) != 0 &&
                 GenericDacl != null && !IsCraftedAefaDacl)
             {
@@ -381,31 +287,20 @@ namespace System.Security.AccessControl
             }
             else
             {
-                //
                 // If DACL is null or not present, store 0 in the offset field
-                //
-
                 MarshalInt(binaryForm, daclOffset, 0);
             }
         }
-        #endregion
     }
-
 
     public sealed class RawSecurityDescriptor : GenericSecurityDescriptor
     {
-        #region Private Members
-
         private SecurityIdentifier? _owner;
         private SecurityIdentifier? _group;
         private ControlFlags _flags;
         private RawAcl? _sacl;
         private RawAcl? _dacl;
         private byte _rmControl; // the not-so-reserved SBZ1 field
-
-        #endregion
-
-        #region Protected Properties
 
         internal override GenericAcl? GenericSacl
         {
@@ -417,10 +312,6 @@ namespace System.Security.AccessControl
             get { return _dacl; }
         }
 
-        #endregion
-
-        #region Private methods
-
         private void CreateFromParts(ControlFlags flags, SecurityIdentifier? owner, SecurityIdentifier? group, RawAcl? systemAcl, RawAcl? discretionaryAcl)
         {
             SetFlags(flags);
@@ -431,49 +322,30 @@ namespace System.Security.AccessControl
             ResourceManagerControl = 0;
         }
 
-        #endregion
-
-        #region Constructors
-
-        //
         // Creates a security descriptor explicitly
-        //
-
         public RawSecurityDescriptor(ControlFlags flags, SecurityIdentifier? owner, SecurityIdentifier? group, RawAcl? systemAcl, RawAcl? discretionaryAcl)
             : base()
         {
             CreateFromParts(flags, owner, group, systemAcl, discretionaryAcl);
         }
 
-        //
         // Creates a security descriptor from an SDDL string
-        //
-
         public RawSecurityDescriptor(string sddlForm)
             : this(BinaryFormFromSddlForm(sddlForm), 0)
         {
         }
 
-        //
         // Creates a security descriptor from its binary representation
         // Important: the representation must be in self-relative format
-        //
-
         public RawSecurityDescriptor(byte[] binaryForm, int offset)
             : base()
         {
             ArgumentNullException.ThrowIfNull(binaryForm);
 
-            //
             // The array passed in must be valid
-            //
-
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
-            //
             // At least make sure the header is in place
-            //
-
             if (binaryForm.Length - offset < HeaderLength)
             {
                 throw new ArgumentOutOfRangeException(
@@ -481,38 +353,25 @@ namespace System.Security.AccessControl
                     SR.ArgumentOutOfRange_ArrayTooSmall);
             }
 
-            //
             // We only understand revision-1 security descriptors
-            //
-
             if (binaryForm[offset + 0] != Revision)
             {
                 throw new ArgumentOutOfRangeException(nameof(binaryForm),
                      SR.AccessControl_InvalidSecurityDescriptorRevision);
             }
 
-
             ControlFlags flags;
             SecurityIdentifier? owner, group;
             RawAcl? sacl, dacl;
             byte rmControl;
 
-            //
             // Extract the ResourceManagerControl field
-            //
-
             rmControl = binaryForm[offset + 1];
 
-            //
             // Extract the control flags
-            //
-
             flags = (ControlFlags)((binaryForm[offset + 2] << 0) + (binaryForm[offset + 3] << 8));
 
-            //
             // Make sure that the input is in self-relative format
-            //
-
             if ((flags & ControlFlags.SelfRelative) == 0)
             {
                 throw new ArgumentException(
@@ -520,10 +379,7 @@ namespace System.Security.AccessControl
                     nameof(binaryForm));
             }
 
-            //
             // Extract the owner SID
-            //
-
             int ownerOffset = UnmarshalInt(binaryForm, offset + OwnerFoundAt);
 
             if (ownerOffset != 0)
@@ -535,10 +391,7 @@ namespace System.Security.AccessControl
                 owner = null;
             }
 
-            //
             // Extract the group SID
-            //
-
             int groupOffset = UnmarshalInt(binaryForm, offset + GroupFoundAt);
 
             if (groupOffset != 0)
@@ -550,10 +403,7 @@ namespace System.Security.AccessControl
                 group = null;
             }
 
-            //
             // Extract the SACL
-            //
-
             int saclOffset = UnmarshalInt(binaryForm, offset + SaclFoundAt);
 
             if (((flags & ControlFlags.SystemAclPresent) != 0) &&
@@ -566,10 +416,7 @@ namespace System.Security.AccessControl
                 sacl = null;
             }
 
-            //
             // Extract the DACL
-            //
-
             int daclOffset = UnmarshalInt(binaryForm, offset + DaclFoundAt);
 
             if (((flags & ControlFlags.DiscretionaryAclPresent) != 0) &&
@@ -582,26 +429,16 @@ namespace System.Security.AccessControl
                 dacl = null;
             }
 
-            //
             // Create the resulting security descriptor
-            //
-
             CreateFromParts(flags, owner, group, sacl, dacl);
 
-            //
             // In the offchance that the flags indicate that the rmControl
             // field is meaningful, remember what was there.
-            //
-
             if ((flags & ControlFlags.RMControlValid) != 0)
             {
                 ResourceManagerControl = rmControl;
             }
         }
-
-        #endregion
-
-        #region Static Methods
 
         private static byte[] BinaryFormFromSddlForm(string sddlForm)
         {
@@ -650,17 +487,12 @@ namespace System.Security.AccessControl
 
                 binaryForm = new byte[byteArraySize];
 
-                //
                 // Extract the data from the returned pointer
-                //
-
                 Marshal.Copy(byteArray, binaryForm, 0, (int)byteArraySize);
             }
             finally
             {
-                //
                 // Now is a good time to get rid of the returned pointer
-                //
                 if (byteArray != IntPtr.Zero)
                 {
                     Marshal.FreeHGlobal(byteArray);
@@ -670,17 +502,10 @@ namespace System.Security.AccessControl
             return binaryForm;
         }
 
-        #endregion
-
-        #region Public Properties
-
-        //
         // Allows retrieving the control bits for this security descriptor
         // Important: Special checks must be applied when setting flags and not
         // all flags can be set (for instance, we only deal with self-relative
         // security descriptors), thus flags can be set through other methods.
-        //
-
         public override ControlFlags ControlFlags
         {
             get
@@ -689,10 +514,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        //
         // Allows retrieving and setting the owner SID for this security descriptor
-        //
-
         public override SecurityIdentifier? Owner
         {
             get
@@ -706,10 +528,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        //
         // Allows retrieving and setting the group SID for this security descriptor
-        //
-
         public override SecurityIdentifier? Group
         {
             get
@@ -723,10 +542,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        //
         // Allows retrieving and setting the SACL for this security descriptor
-        //
-
         public RawAcl? SystemAcl
         {
             get
@@ -740,10 +556,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        //
         // Allows retrieving and setting the DACL for this security descriptor
-        //
-
         public RawAcl? DiscretionaryAcl
         {
             get
@@ -757,13 +570,10 @@ namespace System.Security.AccessControl
             }
         }
 
-        //
         // CORNER CASE (LEGACY)
         // The ostensibly "reserved" field in the Security Descriptor header
         // can in fact be used by obscure resource managers which in this
         // case must set the RMControlValid flag.
-        //
-
         public byte ResourceManagerControl
         {
             get
@@ -777,38 +587,22 @@ namespace System.Security.AccessControl
             }
         }
 
-
-        #endregion
-
-        #region Public Methods
-
         public void SetFlags(ControlFlags flags)
         {
-            //
             // We can not deal with non-self-relative descriptors
             // so just forget about it
-            //
-
             _flags = (flags | ControlFlags.SelfRelative);
         }
-        #endregion
     }
-
 
     public sealed class CommonSecurityDescriptor : GenericSecurityDescriptor
     {
-        #region Private Members
-
         private bool _isContainer;
         private bool _isDS;
         private RawSecurityDescriptor _rawSd;
         private SystemAcl? _sacl;
         private DiscretionaryAcl? _dacl;
 
-
-        #endregion
-
-        #region Private Methods
         [MemberNotNull(nameof(_rawSd))]
         private void CreateFromParts(bool isContainer, bool isDS, ControlFlags flags, SecurityIdentifier? owner, SecurityIdentifier? group, SystemAcl? systemAcl, DiscretionaryAcl? discretionaryAcl)
         {
@@ -858,28 +652,16 @@ namespace System.Security.AccessControl
 
             _sacl = systemAcl;
 
-            //
             // Replace null DACL with an allow-all for everyone DACL
-            //
-
-            //
             // to conform to native behavior, we will add allow everyone ace for DACL
-            //
-
             discretionaryAcl ??= DiscretionaryAcl.CreateAllowEveryoneFullAccess(_isDS, _isContainer);
 
             _dacl = discretionaryAcl;
 
-            //
             // DACL is never null. So always set the flag bit on
-            //
-
             ControlFlags actualFlags = flags | ControlFlags.DiscretionaryAclPresent;
 
-            //
             // Keep SACL and the flag bit in sync.
-            //
-
             if (systemAcl == null)
             {
                 unchecked { actualFlags &= ~(ControlFlags.SystemAclPresent); }
@@ -892,14 +674,7 @@ namespace System.Security.AccessControl
             _rawSd = new RawSecurityDescriptor(actualFlags, owner, group, systemAcl?.RawAcl, discretionaryAcl.RawAcl);
         }
 
-        #endregion
-
-        #region Constructors
-
-        //
         // Creates a security descriptor explicitly
-        //
-
         public CommonSecurityDescriptor(bool isContainer, bool isDS, ControlFlags flags, SecurityIdentifier? owner, SecurityIdentifier? group, SystemAcl? systemAcl, DiscretionaryAcl? discretionaryAcl)
         {
             CreateFromParts(isContainer, isDS, flags, owner, group, systemAcl, discretionaryAcl);
@@ -929,27 +704,17 @@ namespace System.Security.AccessControl
                 rawSecurityDescriptor.DiscretionaryAcl == null ? null : new DiscretionaryAcl(isContainer, isDS, rawSecurityDescriptor.DiscretionaryAcl, trusted));
         }
 
-        //
         // Create a security descriptor from an SDDL string
-        //
-
         public CommonSecurityDescriptor(bool isContainer, bool isDS, string sddlForm)
             : this(isContainer, isDS, new RawSecurityDescriptor(sddlForm), true)
         {
         }
 
-        //
         // Create a security descriptor from its binary representation
-        //
-
         public CommonSecurityDescriptor(bool isContainer, bool isDS, byte[] binaryForm, int offset)
             : this(isContainer, isDS, new RawSecurityDescriptor(binaryForm, offset), true)
         {
         }
-
-        #endregion
-
-        #region Protected Properties
 
         internal sealed override GenericAcl? GenericSacl
         {
@@ -961,10 +726,6 @@ namespace System.Security.AccessControl
             get { return _dacl; }
         }
 
-        #endregion
-
-        #region Public Properties
-
         public bool IsContainer
         {
             get { return _isContainer; }
@@ -975,11 +736,7 @@ namespace System.Security.AccessControl
             get { return _isDS; }
         }
 
-
-        //
         // Allows retrieving the control bits for this security descriptor
-        //
-
         public override ControlFlags ControlFlags
         {
             get
@@ -988,10 +745,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        //
         // Allows retrieving and setting the owner SID for this security descriptor
-        //
-
         public override SecurityIdentifier? Owner
         {
             get
@@ -1005,10 +759,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        //
         // Allows retrieving and setting the group SID for this security descriptor
-        //
-
         public override SecurityIdentifier? Group
         {
             get
@@ -1022,7 +773,6 @@ namespace System.Security.AccessControl
             }
         }
 
-
         public SystemAcl? SystemAcl
         {
             get
@@ -1034,19 +784,19 @@ namespace System.Security.AccessControl
             {
                 if (value != null)
                 {
-                    if (value.IsContainer != this.IsContainer)
+                    if (value.IsContainer != IsContainer)
                     {
                         throw new ArgumentException(
-                            this.IsContainer ?
+                            IsContainer ?
                                 SR.AccessControl_MustSpecifyContainerAcl :
                                 SR.AccessControl_MustSpecifyLeafObjectAcl,
                             nameof(value));
                     }
 
-                    if (value.IsDS != this.IsDS)
+                    if (value.IsDS != IsDS)
                     {
                         throw new ArgumentException(
-                            this.IsDS ?
+                            IsDS ?
                                 SR.AccessControl_MustSpecifyDirectoryObjectAcl :
                                 SR.AccessControl_MustSpecifyNonDirectoryObjectAcl,
                             nameof(value));
@@ -1068,10 +818,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        //
         // Allows retrieving and setting the DACL for this security descriptor
-        //
-
         public DiscretionaryAcl? DiscretionaryAcl
         {
             get
@@ -1083,29 +830,26 @@ namespace System.Security.AccessControl
             {
                 if (value != null)
                 {
-                    if (value.IsContainer != this.IsContainer)
+                    if (value.IsContainer != IsContainer)
                     {
                         throw new ArgumentException(
-                            this.IsContainer ?
+                            IsContainer ?
                                 SR.AccessControl_MustSpecifyContainerAcl :
                                 SR.AccessControl_MustSpecifyLeafObjectAcl,
                             nameof(value));
                     }
 
-                    if (value.IsDS != this.IsDS)
+                    if (value.IsDS != IsDS)
                     {
                         throw new ArgumentException(
-                            this.IsDS ?
+                            IsDS ?
                                 SR.AccessControl_MustSpecifyDirectoryObjectAcl :
                                 SR.AccessControl_MustSpecifyNonDirectoryObjectAcl,
                             nameof(value));
                     }
                 }
 
-                //
                 // NULL DACLs are replaced with allow everyone full access DACLs.
-                //
-
                 if (value == null)
                 {
                     _dacl = DiscretionaryAcl.CreateAllowEveryoneFullAccess(IsDS, IsContainer);
@@ -1129,10 +873,6 @@ namespace System.Security.AccessControl
         {
             get { return (DiscretionaryAcl == null || DiscretionaryAcl.IsCanonical); }
         }
-
-        #endregion
-
-        #region Public Methods
 
         public void SetSystemAclProtection(bool isProtected, bool preserveInheritance)
         {
@@ -1188,31 +928,25 @@ namespace System.Security.AccessControl
 
         public void AddDiscretionaryAcl(byte revision, int trusted)
         {
-            this.DiscretionaryAcl = new DiscretionaryAcl(this.IsContainer, this.IsDS, revision, trusted);
-            this.AddControlFlags(ControlFlags.DiscretionaryAclPresent);
+            DiscretionaryAcl = new DiscretionaryAcl(IsContainer, IsDS, revision, trusted);
+            AddControlFlags(ControlFlags.DiscretionaryAclPresent);
         }
 
         public void AddSystemAcl(byte revision, int trusted)
         {
-            this.SystemAcl = new SystemAcl(this.IsContainer, this.IsDS, revision, trusted);
-            this.AddControlFlags(ControlFlags.SystemAclPresent);
+            SystemAcl = new SystemAcl(IsContainer, IsDS, revision, trusted);
+            AddControlFlags(ControlFlags.SystemAclPresent);
         }
 
-        #endregion
-
-        #region internal Methods
         internal void UpdateControlFlags(ControlFlags flagsToUpdate, ControlFlags newFlags)
         {
             ControlFlags finalFlags = newFlags | (_rawSd.ControlFlags & (~flagsToUpdate));
             _rawSd.SetFlags(finalFlags);
         }
 
-        //
         // These two add/remove method must be called with great care (and thus it is internal)
         // The caller is responsible for keeping the SaclPresent and DaclPresent bits in sync
         // with the actual SACL and DACL.
-        //
-
         internal void AddControlFlags(ControlFlags flags)
         {
             _rawSd.SetFlags(_rawSd.ControlFlags | flags);
@@ -1241,6 +975,5 @@ namespace System.Security.AccessControl
                 return (_rawSd.ControlFlags & ControlFlags.DiscretionaryAclPresent) != 0;
             }
         }
-        #endregion
     }
 }
