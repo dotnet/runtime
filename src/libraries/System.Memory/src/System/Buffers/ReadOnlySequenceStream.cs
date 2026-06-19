@@ -129,8 +129,19 @@ namespace System.Buffers
                 return Task.FromCanceled<int>(cancellationToken);
             }
 
-            int n = Read(buffer, offset, count);
-            return _lastReadTask.GetTask(n);
+            try
+            {
+                int n = Read(buffer, offset, count);
+                return _lastReadTask.GetTask(n);
+            }
+            catch (OperationCanceledException oce)
+            {
+                return Task.FromCanceled<int>(oce.CancellationToken);
+            }
+            catch (Exception ex)
+            {
+                return Task.FromException<int>(ex);
+            }
         }
 
         /// <inheritdoc/>
@@ -143,8 +154,19 @@ namespace System.Buffers
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
-            int n = Read(buffer.Span);
-            return new ValueTask<int>(n);
+            try
+            {
+                int n = Read(buffer.Span);
+                return new ValueTask<int>(n);
+            }
+            catch (OperationCanceledException oce)
+            {
+                return ValueTask.FromCanceled<int>(oce.CancellationToken);
+            }
+            catch (Exception ex)
+            {
+                return ValueTask.FromException<int>(ex);
+            }
         }
 
         /// <inheritdoc />
@@ -211,12 +233,7 @@ namespace System.Buffers
         /// <inheritdoc/>
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
-        /// <summary>
-        /// Sets the position within the current stream.
-        /// </summary>
-        /// <param name="offset">A byte offset relative to the <paramref name="origin"/> parameter.</param>
-        /// <param name="origin">A value of type <see cref="SeekOrigin"/> indicating the reference point used to obtain the new position.</param>
-        /// <returns>The new position within the stream.</returns>
+        /// <inheritdoc/>
         public override long Seek(long offset, SeekOrigin origin)
         {
             EnsureNotDisposed();

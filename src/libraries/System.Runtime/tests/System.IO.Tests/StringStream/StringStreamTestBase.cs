@@ -130,5 +130,26 @@ namespace System.IO.Tests
             int finalRead = ReadFromStream(stream, buffer, 0, buffer.Length);
             Assert.Equal(0, finalRead);
         }
+
+        [Fact]
+        public void PendingBytesDrainAcrossSingleByteReads()
+        {
+            // '你' encodes to 3 UTF-8 bytes (0xE4 0xBD 0xA0). A 1-byte buffer forces
+            // the encoder spillover path; subsequent reads must drain _pendingBytes
+            // before encoding the next character.
+            string input = "你";
+            byte[] expected = Encoding.UTF8.GetBytes(input);
+
+            using Stream stream = CreateStream(input, Encoding.UTF8);
+            byte[] buffer = new byte[1];
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                Assert.Equal(1, ReadFromStream(stream, buffer, 0, 1));
+                Assert.Equal(expected[i], buffer[0]);
+            }
+
+            Assert.Equal(0, ReadFromStream(stream, buffer, 0, 1));
+        }
     }
 }

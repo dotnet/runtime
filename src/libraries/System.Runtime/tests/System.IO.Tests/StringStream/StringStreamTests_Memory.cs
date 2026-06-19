@@ -114,32 +114,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void UnsupportedOperationsThrow()
-        {
-            var stream = new StringStream("test".AsMemory(), Encoding.UTF8);
-
-            Assert.Throws<NotSupportedException>(() => stream.Length);
-            Assert.Throws<NotSupportedException>(() => stream.Position);
-            Assert.Throws<NotSupportedException>(() => stream.Position = 0);
-            Assert.Throws<NotSupportedException>(() => stream.Seek(0, SeekOrigin.Begin));
-            Assert.Throws<NotSupportedException>(() => stream.Write(new byte[1], 0, 1));
-            Assert.Throws<NotSupportedException>(() => stream.SetLength(100));
-        }
-
-        [Fact]
-        public void DisposeIsIdempotent()
-        {
-            var stream = new StringStream("test".AsMemory(), Encoding.UTF8);
-
-            stream.Dispose();
-            Assert.False(stream.CanRead);
-            Assert.Throws<ObjectDisposedException>(() => stream.Read(new byte[10], 0, 10));
-
-            stream.Dispose();
-            stream.Dispose();
-        }
-
-        [Fact]
         public void TruncatedSurrogatePairProducesReplacementChar()
         {
             // "🌍" is U+1F30D = surrogate pair (0xD83C, 0xDF0D)

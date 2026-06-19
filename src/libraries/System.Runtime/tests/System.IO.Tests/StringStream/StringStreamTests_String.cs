@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
@@ -82,26 +84,16 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void UnsupportedOperationsThrow()
+        public async Task CopyToAsync_HonorsCancellation()
         {
-            var stream = new StringStream("test", Encoding.UTF8);
+            using var stream = new StringStream("hello", Encoding.UTF8);
+            using var destination = new MemoryStream();
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
 
-            Assert.Throws<NotSupportedException>(() => stream.Length);
-            Assert.Throws<NotSupportedException>(() => stream.Position);
-            Assert.Throws<NotSupportedException>(() => stream.Position = 0);
-            Assert.Throws<NotSupportedException>(() => stream.Seek(0, SeekOrigin.Begin));
-            Assert.Throws<NotSupportedException>(() => stream.Write(new byte[1], 0, 1));
-            Assert.Throws<NotSupportedException>(() => stream.SetLength(100));
+            await Assert.ThrowsAsync<TaskCanceledException>(
+                () => stream.CopyToAsync(destination, bufferSize: 81920, cts.Token));
         }
 
-        [Fact]
-        public void DisposeRendersStreamUnreadable()
-        {
-            var stream = new StringStream("test", Encoding.UTF8);
-            stream.Dispose();
-
-            Assert.False(stream.CanRead);
-            Assert.Throws<ObjectDisposedException>(() => stream.Read(new byte[1], 0, 1));
-        }
     }
 }
