@@ -380,6 +380,68 @@ namespace Microsoft.Extensions.Primitives
             reg.Dispose();
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DisposingWhileConsumerInFlightSuppressesReRegistration(bool useAsyncConsumer)
+        {
+            var provider = new ObservableChangeTokenProvider();
+            int invocations = 0;
+            TaskCompletionSource<bool> started = NewTcs();
+            TaskCompletionSource<bool> gate = NewTcs();
+
+            IDisposable reg;
+            if (useAsyncConsumer)
+            {
+                reg = ChangeToken.OnChange(provider.GetChangeToken, () =>
+                {
+                    Interlocked.Increment(ref invocations);
+                    started.SetResult(true);
+
+                    // Stay in flight by returning an incomplete task; re-registration is deferred until it completes.
+                    return gate.Task;
+                });
+            }
+            else
+            {
+                reg = ChangeToken.OnChange(provider.GetChangeToken, () =>
+                {
+                    Interlocked.Increment(ref invocations);
+                    started.SetResult(true);
+
+                    // Stay in flight by blocking the triggering thread until the gate is released.
+                    gate.Task.GetAwaiter().GetResult();
+                });
+            }
+
+            // Trigger the change on a background thread: a synchronous consumer blocks the triggering thread
+            // until the gate is released.
+            Task trigger = Task.Run(provider.Changed);
+
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(1, invocations);
+
+            // Dispose while the consumer is still in flight. This also disposes the initial registration.
+            reg.Dispose();
+
+            // Arm a signal for the re-registration that happens once the in-flight consumer completes. The
+            // deferred re-registration must observe the disposal and immediately dispose the new registration
+            // instead of arming a live callback.
+            Task reRegistrationDisposed = provider.ArmRegistrationDisposed();
+
+            gate.SetResult(true);
+            await reRegistrationDisposed.WaitAsync(TimeSpan.FromSeconds(30));
+            await trigger.WaitAsync(TimeSpan.FromSeconds(30));
+
+            // Subsequent changes must not invoke the consumer again, because disposal suppressed re-registration.
+            for (int i = 0; i < 5; i++)
+            {
+                provider.Changed();
+            }
+
+            Assert.Equal(1, invocations);
+        }
+
         private static TaskCompletionSource<bool> NewTcs() =>
             new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -606,6 +668,70 @@ namespace Microsoft.Extensions.Primitives
                 var previous = _cts;
                 _cts = new CancellationTokenSource();
                 previous.Cancel();
+            }
+        }
+
+        // A change token provider that signals whenever a registration it produced is disposed, so tests can
+        // deterministically wait for a (possibly deferred) re-registration to complete.
+        public class ObservableChangeTokenProvider
+        {
+            private CancellationTokenSource _cts = new CancellationTokenSource();
+            private TaskCompletionSource<bool> _registrationDisposed = NewTcs();
+
+            public IChangeToken GetChangeToken() => new ObservableChangeToken(_cts.Token, this);
+
+            public void Changed()
+            {
+                var previous = _cts;
+                _cts = new CancellationTokenSource();
+                previous.Cancel();
+            }
+
+            // Arms a fresh signal and returns a task that completes the next time a registration produced by
+            // this provider is disposed.
+            public Task ArmRegistrationDisposed()
+            {
+                var tcs = NewTcs();
+                Volatile.Write(ref _registrationDisposed, tcs);
+                return tcs.Task;
+            }
+
+            private void OnRegistrationDisposed() => Volatile.Read(ref _registrationDisposed).TrySetResult(true);
+
+            private sealed class ObservableChangeToken : IChangeToken
+            {
+                private readonly CancellationChangeToken _inner;
+                private readonly ObservableChangeTokenProvider _owner;
+
+                public ObservableChangeToken(CancellationToken token, ObservableChangeTokenProvider owner)
+                {
+                    _inner = new CancellationChangeToken(token);
+                    _owner = owner;
+                }
+
+                public bool HasChanged => _inner.HasChanged;
+                public bool ActiveChangeCallbacks => _inner.ActiveChangeCallbacks;
+
+                public IDisposable RegisterChangeCallback(Action<object> callback, object state) =>
+                    new SignalingRegistration(_inner.RegisterChangeCallback(callback, state), _owner);
+
+                private sealed class SignalingRegistration : IDisposable
+                {
+                    private readonly IDisposable _inner;
+                    private readonly ObservableChangeTokenProvider _owner;
+
+                    public SignalingRegistration(IDisposable inner, ObservableChangeTokenProvider owner)
+                    {
+                        _inner = inner;
+                        _owner = owner;
+                    }
+
+                    public void Dispose()
+                    {
+                        _inner.Dispose();
+                        _owner.OnRegistrationDisposed();
+                    }
+                }
             }
         }
     }
