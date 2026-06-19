@@ -317,6 +317,81 @@ static MethodDesc * FindTightlyBoundUnboxingStub_DEBUG(MethodDesc * pMD)
 
 #ifndef DACCESS_COMPILE
 
+static BOOL SatisfiesMethodConstraintsForInstantiation(MethodDesc *pGenericMethodDef,
+                                                       TypeHandle thParent,
+                                                       Instantiation methodInst,
+                                                       BOOL fThrowIfNotSatisfied)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM());
+        PRECONDITION(CheckPointer(pGenericMethodDef));
+    }
+    CONTRACTL_END;
+
+    if (methodInst.IsEmpty())
+        return TRUE;
+
+    Instantiation typicalInst = pGenericMethodDef->LoadTypicalMethodDefinition()->GetMethodInstantiation();
+
+    //NB: according to the constructor's signature, thParent should be the declaring type,
+    // but the code appears to admit derived types too.
+    SigTypeContext typeContext(pGenericMethodDef, thParent, methodInst);
+    InstantiationContext instContext(&typeContext, NULL);
+
+    bool typicalInstMatchesMethodInst = true;
+    for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
+    {
+        if (typicalInst[i] != methodInst[i])
+        {
+            typicalInstMatchesMethodInst = false;
+            break;
+        }
+    }
+
+    for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
+    {
+        TypeHandle thArg = methodInst[i];
+        _ASSERTE(!thArg.IsNull());
+
+        TypeVarTypeDesc* tyvar = (TypeVarTypeDesc*) (typicalInst[i].AsTypeDesc());
+        _ASSERTE(tyvar != NULL);
+        _ASSERTE(TypeFromToken(tyvar->GetTypeOrMethodDef()) == mdtMethodDef);
+
+        // Pass in the InstantiationContext so constraints can be correctly evaluated
+        // if this is an instantiation where the type variable is in its open position
+        if (!tyvar->SatisfiesConstraints(&typeContext, thArg, typicalInstMatchesMethodInst ? &instContext : NULL))
+        {
+            if (fThrowIfNotSatisfied)
+            {
+                SString sParentName;
+                TypeString::AppendType(sParentName, thParent);
+
+                SString sMethodName(SString::Utf8, pGenericMethodDef->GetName());
+
+                SString sActualParamName;
+                TypeString::AppendType(sActualParamName, methodInst[i]);
+
+                SString sFormalParamName;
+                TypeString::AppendType(sFormalParamName, typicalInst[i]);
+
+                COMPlusThrow(kVerificationException,
+                             IDS_EE_METHOD_CONSTRAINTS_VIOLATION,
+                             sParentName.GetUnicode(),
+                             sMethodName.GetUnicode(),
+                             sActualParamName.GetUnicode(),
+                             sFormalParamName.GetUnicode()
+                            );
+            }
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
 /* static */
 InstantiatedMethodDesc *
 InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
@@ -366,8 +441,21 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
     pAllocator->EnsureInstantiation(pExactMT->GetLoaderModule(), pExactMT->GetInstantiation());
     pAllocator->EnsureInstantiation(pGenericMDescInRepMT->GetLoaderModule(), methodInst);
 
+    if (!methodInst.IsEmpty())
     {
-        // Acquire crst to prevent tripping up other threads searching in the same hashtable
+        BOOL fExempt =
+            TypeHandle::IsCanonicalSubtypeInstantiation(methodInst) ||
+            TypeHandle::IsCanonicalSubtypeInstantiation(pExactMT->GetInstantiation());
+
+        if (!fExempt)
+        {
+            SatisfiesMethodConstraintsForInstantiation(pGenericMDescInRepMT, TypeHandle(pExactMT), methodInst, TRUE);
+        }
+    }
+
+    {
+        // Hold the lock across lookup and creation so that only one thread allocates
+        // the MethodDesc for a given instantiation.
         CrstHolder ch(&pExactMDLoaderModule->m_InstMethodHashTableCrst);
 
         // Check whether another thread beat us to it!
@@ -377,173 +465,136 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                                                   getWrappedCode,
                                                   pGenericMDescInRepMT->IsAsyncVariantMethod());
 
-        // Crst goes out of scope here
-        // We don't need to hold the crst while we build the MethodDesc, but we reacquire it later
-    }
-
-    if (pNewMD != NULL)
-    {
-        pNewMD->CheckRestore();
-    }
-    else
-    {
-        TypeHandle *pInstOrPerInstInfo = NULL;
-        DictionaryLayout *pDL = NULL;
-        DWORD infoSize = 0;
-        AllocMemTracker amt;
-
-        if (!methodInst.IsEmpty())
+        if (pNewMD == NULL)
         {
+            TypeHandle *pInstOrPerInstInfo = NULL;
+            DictionaryLayout *pDL = NULL;
+            DWORD infoSize = 0;
+            AllocMemTracker amt;
+
+            if (!methodInst.IsEmpty())
+            {
+                if (pWrappedMD)
+                {
+                    if (pWrappedMD->IsSharedByGenericMethodInstantiations())
+                    {
+                        // Note that it is possible for the dictionary layout to be expanded in size by other threads while we're still
+                        // creating this method. In other words: this method will have a smaller dictionary that its layout. This is not a
+                        // problem however because whenever we need to load a value from the dictionary of this method beyond its size, we
+                        // will expand the dictionary at that point.
+                        pDL = pWrappedMD->AsInstantiatedMethodDesc()->GetDictLayoutRaw();
+                    }
+                }
+                else if (getWrappedCode)
+                {
+                    pDL = DictionaryLayout::Allocate(NUM_DICTIONARY_SLOTS, pAllocator, &amt);
+#ifdef _DEBUG
+                    {
+                        SString name;
+                        TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
+                        DWORD dictionarySlotSize;
+                        DWORD dictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL, &dictionarySlotSize);
+                        LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %s\n",
+                            dictionarySlotSize, dictionaryAllocSize, name.GetUTF8()));
+                    }
+#endif // _DEBUG
+                }
+
+                // Allocate space for the instantiation and dictionary
+                DWORD allocSize = DictionaryLayout::GetDictionarySizeFromLayout(methodInst.GetNumArgs(), pDL, &infoSize);
+                pInstOrPerInstInfo = (TypeHandle*)(void*)amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(allocSize)));
+                for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
+                    pInstOrPerInstInfo[i] = methodInst[i];
+
+                if (pDL != NULL)
+                {
+                    _ASSERTE(pDL->GetMaxSlots() > 0);
+
+                    // Has to be at least larger than the first slots containing the instantiation arguments,
+                    // and the slot with size information. Otherwise, we shouldn't really have a size slot
+                    _ASSERTE(infoSize > sizeof(TypeHandle*) * (methodInst.GetNumArgs() + 1));
+
+                    DWORD* pDictSizeSlot = (DWORD*)(pInstOrPerInstInfo + methodInst.GetNumArgs());
+                    *pDictSizeSlot = infoSize;
+                }
+            }
+
+            // Create a new singleton chunk for the new instantiated method descriptor
+            // Notice that we've passed in the method table pointer; this gets
+            // used in some of the subsequent setup methods for method descs.
+            //
+            pNewMD = (InstantiatedMethodDesc*) (CreateMethodDesc(pAllocator,
+                                                                 pExactMDLoaderModule,
+                                                                 pExactMT,
+                                                                 pGenericMDescInRepMT,
+                                                                 mcInstantiated,
+                                                                 !pWrappedMD, // This is pessimistic estimate for fNativeCodeSlot
+                                                                 &amt));
+
+            // Initialize the MD the way it needs to be
             if (pWrappedMD)
             {
-                if (pWrappedMD->IsSharedByGenericMethodInstantiations())
-                {
-                    // Note that it is possible for the dictionary layout to be expanded in size by other threads while we're still
-                    // creating this method. In other words: this method will have a smaller dictionary that its layout. This is not a
-                    // problem however because whenever we need to load a value from the dictionary of this method beyond its size, we
-                    // will expand the dictionary at that point.
-                    pDL = pWrappedMD->AsInstantiatedMethodDesc()->GetDictLayoutRaw();
-                }
+                pNewMD->SetupWrapperStubWithInstantiations(pWrappedMD, methodInst.GetNumArgs(), pInstOrPerInstInfo);
+                _ASSERTE(pNewMD->IsInstantiatingStub());
             }
             else if (getWrappedCode)
             {
-                pDL = DictionaryLayout::Allocate(NUM_DICTIONARY_SLOTS, pAllocator, &amt);
-#ifdef _DEBUG
-                {
-                    SString name;
-                    TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
-                    DWORD dictionarySlotSize;
-                    DWORD dictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL, &dictionarySlotSize);
-                    LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %s\n",
-                        dictionarySlotSize, dictionaryAllocSize, name.GetUTF8()));
-                }
-#endif // _DEBUG
-            }
-
-            // Allocate space for the instantiation and dictionary
-            DWORD allocSize = DictionaryLayout::GetDictionarySizeFromLayout(methodInst.GetNumArgs(), pDL, &infoSize);
-            pInstOrPerInstInfo = (TypeHandle*)(void*)amt.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(allocSize)));
-            for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
-                pInstOrPerInstInfo[i] = methodInst[i];
-
-            if (pDL != NULL)
-            {
-                _ASSERTE(pDL->GetMaxSlots() > 0);
-
-                // Has to be at least larger than the first slots containing the instantiation arguments,
-                // and the slot with size information. Otherwise, we shouldn't really have a size slot
-                _ASSERTE(infoSize > sizeof(TypeHandle*) * (methodInst.GetNumArgs() + 1));
-
-                DWORD* pDictSizeSlot = (DWORD*)(pInstOrPerInstInfo + methodInst.GetNumArgs());
-                *pDictSizeSlot = infoSize;
-            }
-        }
-
-        // Create a new singleton chunk for the new instantiated method descriptor
-        // Notice that we've passed in the method table pointer; this gets
-        // used in some of the subsequent setup methods for method descs.
-        //
-        pNewMD = (InstantiatedMethodDesc*) (CreateMethodDesc(pAllocator,
-                                                             pExactMDLoaderModule,
-                                                             pExactMT,
-                                                             pGenericMDescInRepMT,
-                                                             mcInstantiated,
-                                                             !pWrappedMD, // This is pesimistic estimate for fNativeCodeSlot
-                                                             &amt));
-
-        // Initialize the MD the way it needs to be
-        if (pWrappedMD)
-        {
-            pNewMD->SetupWrapperStubWithInstantiations(pWrappedMD, methodInst.GetNumArgs(), pInstOrPerInstInfo);
-            _ASSERTE(pNewMD->IsInstantiatingStub());
-        }
-        else if (getWrappedCode)
-        {
-            pNewMD->SetupSharedMethodInstantiation(methodInst.GetNumArgs(), pInstOrPerInstInfo, pDL);
-            _ASSERTE(!pNewMD->IsInstantiatingStub());
-        }
-        else
-        {
-            pNewMD->SetupUnsharedMethodInstantiation(methodInst.GetNumArgs(), pInstOrPerInstInfo);
-        }
-
-        // Check that whichever field holds the inst. got setup correctly
-        _ASSERTE((PVOID)pNewMD->GetMethodInstantiation().GetRawArgs() == (PVOID)pInstOrPerInstInfo);
-
-        pNewMD->SetTemporaryEntryPoint(&amt);
-
-        {
-            // The canonical instantiation is exempt from constraint checks. It's used as the basis
-            // for all other reference instantiations so we can't not load it. The Canon type is
-            // not visible to users so it can't be abused.
-
-            BOOL fExempt =
-                TypeHandle::IsCanonicalSubtypeInstantiation(methodInst) ||
-                TypeHandle::IsCanonicalSubtypeInstantiation(pNewMD->GetClassInstantiation());
-
-            if (!fExempt)
-            {
-                pNewMD->SatisfiesMethodConstraints(TypeHandle(pExactMT), TRUE);
-            }
-        }
-
-        // OK, now we have a candidate MethodDesc.
-        {
-            CrstHolder ch(&pExactMDLoaderModule->m_InstMethodHashTableCrst);
-
-            // We checked before, but make sure again that another thread didn't beat us to it!
-            InstantiatedMethodDesc *pOldMD = FindLoadedInstantiatedMethodDesc(pExactMT,
-                                                      pGenericMDescInRepMT->GetMemberDef(),
-                                                      methodInst,
-                                                      getWrappedCode,
-                                                      pGenericMDescInRepMT->IsAsyncVariantMethod());
-
-            if (pOldMD == NULL)
-            {
-                // No one else got there first, our MethodDesc wins.
-                amt.SuppressRelease();
-
-#ifdef _DEBUG
-                SString name;
-                TypeString::AppendMethodDebug(name, pNewMD);
-                const char* pDebugNameUTF8 = name.GetUTF8();
-                const char* verb = "Created";
-                if (pWrappedMD)
-                    LOG((LF_CLASSLOADER, LL_INFO1000,
-                        "GENERICS: %s instantiating-stub method desc %s with dictionary size %d\n",
-                        verb, pDebugNameUTF8, infoSize));
-                else
-                    LOG((LF_CLASSLOADER, LL_INFO1000,
-                         "GENERICS: %s instantiated method desc %s\n",
-                         verb, pDebugNameUTF8));
-
-                S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);
-                if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
-
-                size_t len = safeLen.Value();
-                pNewMD->m_pszDebugMethodName = (char*) (void*)pAllocator->GetLowFrequencyHeap()->AllocMem(safeLen);
-                _ASSERTE(pNewMD->m_pszDebugMethodName);
-                strcpy_s((char *) pNewMD->m_pszDebugMethodName, len, pDebugNameUTF8);
-                pNewMD->m_pszDebugClassName = pExactMT->GetDebugClassName();
-                pNewMD->m_pszDebugMethodSignature = (LPUTF8)pNewMD->m_pszDebugMethodName;
-#endif // _DEBUG
-
-                // Generic methods can't be varargs. code:MethodTableBuilder::ValidateMethods should have checked it.
-                _ASSERTE(!pNewMD->IsVarArg());
-
-                // Verify that we are not creating redundant MethodDescs
-                _ASSERTE(!pNewMD->IsTightlyBoundToMethodTable());
-
-                // The method desc is fully set up; now add to the table
-                InstMethodHashTable* pTable = pExactMDLoaderModule->GetInstMethodHashTable();
-                pTable->InsertMethodDesc(pNewMD);
+                pNewMD->SetupSharedMethodInstantiation(methodInst.GetNumArgs(), pInstOrPerInstInfo, pDL);
+                _ASSERTE(!pNewMD->IsInstantiatingStub());
             }
             else
-                pNewMD = pOldMD;
-            // CrstHolder goes out of scope here
-        }
+            {
+                pNewMD->SetupUnsharedMethodInstantiation(methodInst.GetNumArgs(), pInstOrPerInstInfo);
+            }
 
+            // Check that whichever field holds the inst. got setup correctly
+            _ASSERTE((PVOID)pNewMD->GetMethodInstantiation().GetRawArgs() == (PVOID)pInstOrPerInstInfo);
+
+            pNewMD->SetTemporaryEntryPoint(&amt);
+
+#ifdef _DEBUG
+            SString name;
+            TypeString::AppendMethodDebug(name, pNewMD);
+            const char* pDebugNameUTF8 = name.GetUTF8();
+            const char* verb = "Created";
+            if (pWrappedMD)
+                LOG((LF_CLASSLOADER, LL_INFO1000,
+                    "GENERICS: %s instantiating-stub method desc %s with dictionary size %d\n",
+                    verb, pDebugNameUTF8, infoSize));
+            else
+                LOG((LF_CLASSLOADER, LL_INFO1000,
+                     "GENERICS: %s instantiated method desc %s\n",
+                     verb, pDebugNameUTF8));
+
+            S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);
+            if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
+
+            size_t len = safeLen.Value();
+            pNewMD->m_pszDebugMethodName = (char*) (void*)pAllocator->GetLowFrequencyHeap()->AllocMem(safeLen);
+            _ASSERTE(pNewMD->m_pszDebugMethodName);
+            strcpy_s((char *) pNewMD->m_pszDebugMethodName, len, pDebugNameUTF8);
+            pNewMD->m_pszDebugClassName = pExactMT->GetDebugClassName();
+            pNewMD->m_pszDebugMethodSignature = (LPUTF8)pNewMD->m_pszDebugMethodName;
+#endif // _DEBUG
+
+            // Generic methods can't be varargs. code:MethodTableBuilder::ValidateMethods should have checked it.
+            _ASSERTE(!pNewMD->IsVarArg());
+
+            // Verify that we are not creating redundant MethodDescs
+            _ASSERTE(!pNewMD->IsTightlyBoundToMethodTable());
+
+            // The method desc is fully set up; now add to the table
+            InstMethodHashTable* pTable = pExactMDLoaderModule->GetInstMethodHashTable();
+            pTable->InsertMethodDesc(pNewMD);
+
+            // The method desc is now registered in the global table.
+            amt.SuppressRelease();
+        }
+        // CrstHolder goes out of scope here
     }
+
+    _ASSERTE(pNewMD != NULL);
+    pNewMD->CheckRestore();
 
     RETURN pNewMD;
 }
@@ -1608,65 +1659,10 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
     if (!HasMethodInstantiation())
        return TRUE;
 
-    Instantiation methodInst = LoadMethodInstantiation();
-    Instantiation typicalInst = LoadTypicalMethodDefinition()->GetMethodInstantiation();
-
-    //NB: according to the constructor's signature, thParent should be the declaring type,
-    // but the code appears to admit derived types too.
-    SigTypeContext typeContext(this,thParent);
-    InstantiationContext instContext(&typeContext, NULL);
-
-    bool typicalInstMatchesMethodInst = true;
-    for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
-    {
-        if (typicalInst[i] != methodInst[i])
-        {
-            typicalInstMatchesMethodInst = false;
-            break;
-        }
-    }
-
-    for (DWORD i = 0; i < methodInst.GetNumArgs(); i++)
-    {
-        TypeHandle thArg = methodInst[i];
-        _ASSERTE(!thArg.IsNull());
-
-        TypeVarTypeDesc* tyvar = (TypeVarTypeDesc*) (typicalInst[i].AsTypeDesc());
-        _ASSERTE(tyvar != NULL);
-        _ASSERTE(TypeFromToken(tyvar->GetTypeOrMethodDef()) == mdtMethodDef);
-
-        // Pass in the InstatiationContext so constraints can be correctly evaluated
-        // if this is an instantiation where the type variable is in its open position
-        if (!tyvar->SatisfiesConstraints(&typeContext,thArg, typicalInstMatchesMethodInst ? &instContext : NULL))
-        {
-            if (fThrowIfNotSatisfied)
-            {
-                SString sParentName;
-                TypeString::AppendType(sParentName, thParent);
-
-                SString sMethodName(SString::Utf8, GetName());
-
-                SString sActualParamName;
-                TypeString::AppendType(sActualParamName, methodInst[i]);
-
-                SString sFormalParamName;
-                TypeString::AppendType(sFormalParamName, typicalInst[i]);
-
-                COMPlusThrow(kVerificationException,
-                             IDS_EE_METHOD_CONSTRAINTS_VIOLATION,
-                             sParentName.GetUnicode(),
-                             sMethodName.GetUnicode(),
-                             sActualParamName.GetUnicode(),
-                             sFormalParamName.GetUnicode()
-                            );
-
-
-            }
-            return FALSE;
-        }
-
-    }
-    return TRUE;
+    return SatisfiesMethodConstraintsForInstantiation(LoadTypicalMethodDefinition(),
+                                                      thParent,
+                                                      LoadMethodInstantiation(),
+                                                      fThrowIfNotSatisfied);
 }
 
 #endif // !DACCESS_COMPILE

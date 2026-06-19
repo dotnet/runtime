@@ -2856,7 +2856,7 @@ private:
     // represents different thead redirection functions recognized by the debugger
     enum HijackFunction
     {
-        kUnhandledException = 0,
+        kUnhandledException = 0, // [cDAC] [Debugger]: Contract depends on this value.
         kRedirectedForGCThreadControl,
         kRedirectedForDbgThreadControl,
         kRedirectedForUserSuspend,
@@ -3848,6 +3848,8 @@ struct cdac_data<Debugger>
     static constexpr size_t RSRequestedSync = offsetof(Debugger, m_RSRequestedSync);
     static constexpr size_t SendExceptionsOutsideOfJMC = offsetof(Debugger, m_sendExceptionsOutsideOfJMC);
     static constexpr size_t GCNotificationEventsEnabled = offsetof(Debugger, m_isGarbageCollectionEventsEnabled);
+    static constexpr size_t RgHijackFunction = offsetof(Debugger, m_rgHijackFunction);
+    static constexpr size_t MaxHijackFunctions = Debugger::kMaxHijackFunctions;
 };
 
 template<>

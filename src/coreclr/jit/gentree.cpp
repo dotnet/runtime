@@ -1171,7 +1171,6 @@ bool CallArg::IsArgAddedLate() const
     // static_cast to "enum class" for old gcc support
     switch (static_cast<WellKnownArg>(m_wellKnownArg))
     {
-        case WellKnownArg::WrapperDelegateCell:
         case WellKnownArg::VirtualStubCell:
         case WellKnownArg::PInvokeCookie:
         case WellKnownArg::PInvokeTarget:
@@ -1550,20 +1549,6 @@ bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, We
         // The x86 and arm32 CORINFO_HELP_INIT_PINVOKE_FRAME helpers have a custom calling convention.
         case WellKnownArg::PInvokeFrame:
             *reg = REG_PINVOKE_FRAME;
-            return true;
-#endif
-#if defined(TARGET_ARM)
-        // A non-standard calling convention using wrapper delegate invoke is used
-        // on ARM, only, for wrapper delegates. It is used for VSD delegate calls
-        // where the VSD custom calling convention ABI requires passing R4, a
-        // callee-saved register, with a special value. Since R4 is a callee-saved
-        // register, its value needs to be preserved. Thus, the VM uses a wrapper
-        // delegate IL stub, which preserves R4 and also sets up R4 correctly for
-        // the VSD call. The VM is simply reusing an existing mechanism (wrapper
-        // delegate IL stub) to achieve its goal for delegate VSD call. See
-        // COMDelegate::NeedsWrapperDelegate() in the VM for details.
-        case WellKnownArg::WrapperDelegateCell:
-            *reg = comp->virtualStubParamInfo->GetReg();
             return true;
 #endif
 #if defined(TARGET_X86)
@@ -14559,8 +14544,6 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "retbuf";
         case WellKnownArg::PInvokeFrame:
             return "pinv frame";
-        case WellKnownArg::WrapperDelegateCell:
-            return "wrap cell";
         case WellKnownArg::ShiftLow:
             return "shift low";
         case WellKnownArg::ShiftHigh:
