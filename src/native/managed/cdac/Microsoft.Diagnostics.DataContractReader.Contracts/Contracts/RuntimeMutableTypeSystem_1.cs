@@ -81,4 +81,87 @@ internal readonly struct RuntimeMutableTypeSystem_1 : IRuntimeMutableTypeSystem
             node = element.Next;
         }
     }
+
+    bool IRuntimeMutableTypeSystem.DoesEnCFieldDescNeedFixup(TargetPointer encFieldDescPointer)
+    {
+        Data.EnCFieldDesc encFieldDesc = _target.ProcessedData.GetOrAdd<Data.EnCFieldDesc>(encFieldDescPointer);
+        return encFieldDesc.NeedsFixup != 0;
+    }
+
+    TargetPointer IRuntimeMutableTypeSystem.GetEnCStaticFieldDataAddress(TargetPointer encFieldDescPointer)
+    {
+        Data.EnCFieldDesc encFieldDesc = _target.ProcessedData.GetOrAdd<Data.EnCFieldDesc>(encFieldDescPointer);
+        if (encFieldDesc.StaticFieldData == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        Data.EnCAddedStaticField staticField = _target.ProcessedData.GetOrAdd<Data.EnCAddedStaticField>(encFieldDesc.StaticFieldData);
+        return staticField.FieldData;
+    }
+
+    TargetPointer IRuntimeMutableTypeSystem.GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPointer encFieldDescPointer)
+    {
+        IObject objectContract = _target.Contracts.Object;
+        IGC gcContract = _target.Contracts.GC;
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        TargetPointer syncBlockAddress = objectContract.GetSyncBlockAddress(objectAddress);
+        if (syncBlockAddress == TargetPointer.Null)
+            return TargetPointer.Null;
+
+        Data.SyncBlock syncBlock = _target.ProcessedData.GetOrAdd<Data.SyncBlock>(syncBlockAddress);
+        if (syncBlock.EnCInfo is not TargetPointer encInfoAddress)
+            return TargetPointer.Null;
+
+        Data.EnCSyncBlockInfo encInfo = _target.ProcessedData.GetOrAdd<Data.EnCSyncBlockInfo>(encInfoAddress);
+
+        // Walk the linked list of EnCAddedField entries to find the matching FieldDesc
+        TargetPointer entryPtr = encInfo.List;
+        while (entryPtr != TargetPointer.Null)
+        {
+            Data.EnCAddedField entry = _target.ProcessedData.GetOrAdd<Data.EnCAddedField>(entryPtr);
+            if (entry.FieldDesc == encFieldDescPointer)
+            {
+                // Found it. Get the dependent handle secondary (the EnC helper object).
+                TargetPointer handleAddress = entry.FieldData.Handle;
+                if (handleAddress == TargetPointer.Null)
+                    return TargetPointer.Null;
+
+                TargetNUInt secondary = gcContract.GetHandleExtraInfo(handleAddress);
+                TargetPointer helperObjectAddress = new TargetPointer(secondary.Value);
+                if (helperObjectAddress == TargetPointer.Null)
+                    return TargetPointer.Null;
+
+                Data.EditAndContinueHelperObject helper =
+                    _target.ProcessedData.GetOrAdd<Data.EditAndContinueHelperObject>(helperObjectAddress);
+                TargetPointer objectReferenceAddress = helper.ObjectReferenceAddress;
+
+                // Read the OBJECTREF stored in _objectReference
+                TargetPointer fieldObject = _target.ReadPointer(objectReferenceAddress);
+                // Determine field type and compute final address
+                CorElementType fieldType = rts.GetFieldDescType(encFieldDescPointer);
+                if (fieldType == CorElementType.ValueType)
+                {
+                    // Value type is boxed, so unbox to get at the data
+                    if (fieldObject == TargetPointer.Null)
+                        return TargetPointer.Null;
+                    Data.Object boxedObj = _target.ProcessedData.GetOrAdd<Data.Object>(fieldObject);
+                    return boxedObj.Data;
+                }
+                else if (fieldType == CorElementType.Class)
+                {
+                    // The OBJECTREF slot itself is the field value location
+                    return objectReferenceAddress;
+                }
+                else
+                {
+                    // Primitive stored in a 1-element array. Get pointer to first element.
+                    if (fieldObject == TargetPointer.Null)
+                        return TargetPointer.Null;
+                    return objectContract.GetArrayData(fieldObject, out _, out _, out _);
+                }
+            }
+            entryPtr = entry.Next;
+        }
+
+        return TargetPointer.Null;
+    }
 }

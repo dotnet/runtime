@@ -51,7 +51,8 @@ record struct ModuleLookupTables(
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
     TargetPointer TypeRefToMethodTable,
-    TargetPointer MethodDefToILCodeVersioningState);
+    TargetPointer MethodDefToILCodeVersioningState,
+    uint TableDataOffset);
 
 readonly struct LoaderHeapBlockData
 {
@@ -82,6 +83,7 @@ ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
 IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
 string GetAppDomainFriendlyName();
+TargetPointer GetAppDomain();
 TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
@@ -411,6 +413,12 @@ string ILoader.GetAppDomainFriendlyName()
     return new string(name);
 }
 
+TargetPointer GetAppDomain()
+{
+    TargetPointer appDomainPointer = target.ReadGlobalPointer("AppDomain");
+    return target.ReadPointer(appDomainPointer);
+}
+
 TargetPointer ILoader.GetModule(ModuleHandle handle)
 {
     return handle.Address;
@@ -678,6 +686,7 @@ TargetPointer ILoader.GetAssemblyLoadContext(ModuleHandle handle)
 
 ModuleLookupTables GetLookupTables(ModuleHandle handle)
 {
+    uint tableDataOffset = (uint)/* ModuleLookupMap::TableData offset */;
     return new ModuleLookupTables(
         FieldDefToDescMap: target.ReadPointer(handle.Address + /* Module::FieldDefToDescMap */),
         ManifestModuleReferencesMap: target.ReadPointer(handle.Address + /* Module::ManifestModuleReferencesMap */),
@@ -686,7 +695,8 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         TypeDefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */),
         TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */),
         MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
-        Module::MethodDefToILCodeVersioningState */));
+        Module::MethodDefToILCodeVersioningState */),
+        TableDataOffset: tableDataOffset);
 }
 
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);

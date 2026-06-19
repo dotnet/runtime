@@ -2013,12 +2013,12 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     // Check if loop is small enough to consider for inversion.
     // Large loops are less likely to benefit from inversion.
-    const int invertSizeLimit = JitConfig.JitLoopInversionSizeLimit();
+    bool      mightBenefitFromCloning = false;
+    const int invertSizeLimit         = JitConfig.JitLoopInversionSizeLimit();
     if (invertSizeLimit >= 0)
     {
-        const int cloneSizeLimit          = JitConfig.JitCloneLoopsSizeLimit();
-        bool      mightBenefitFromCloning = false;
-        unsigned  loopSize                = 0;
+        const int cloneSizeLimit = JitConfig.JitCloneLoopsSizeLimit();
+        unsigned  loopSize       = 0;
 
         // Loops with bounds checks can benefit from cloning, which depends on inversion running.
         // Thus, we will try to proceed with inversion for slightly oversize loops if they show potential for cloning.
@@ -2085,7 +2085,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     bool costIsTooHigh = (estDupCostSz > maxDupCostSz);
 
-    OptInvertCountTreeInfoType optInvertTotalInfo = {};
+    OptInvertCountTreeInfoType optInvertTotalInfo         = {};
+    bool                       hasSplitIVTestAndIncrement = false;
     if (costIsTooHigh)
     {
         // If we already know that the cost is acceptable, then don't waste time walking the tree
@@ -2096,6 +2097,34 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         // be executed on every loop iteration.
         //
         // If the condition has array.Length operations, also boost, as they are likely to be CSE'd.
+        //
+        // Also boost if the IV increment happens in a backedge source block.
+
+        if (mightBenefitFromCloning)
+        {
+            for (FlowEdge* const backEdge : loop->BackEdges())
+            {
+                BasicBlock* const latchBlock = backEdge->getSourceBlock();
+                if (latchBlock == condBlock)
+                {
+                    continue;
+                }
+
+                for (Statement* const stmt : latchBlock->Statements())
+                {
+                    if (optIsLoopIncrTree(stmt->GetRootNode()) != BAD_VAR_NUM)
+                    {
+                        hasSplitIVTestAndIncrement = true;
+                        break;
+                    }
+                }
+
+                if (hasSplitIVTestAndIncrement)
+                {
+                    break;
+                }
+            }
+        }
 
         for (int i = 0; i < duplicatedBlocks.Height() && costIsTooHigh; i++)
         {
@@ -2108,14 +2137,15 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
                 optInvertTotalInfo.sharedStaticHelperCount += optInvertInfo.sharedStaticHelperCount;
                 optInvertTotalInfo.arrayLengthCount += optInvertInfo.arrayLengthCount;
 
-                if ((optInvertInfo.sharedStaticHelperCount > 0) || (optInvertInfo.arrayLengthCount > 0))
+                if ((optInvertInfo.sharedStaticHelperCount > 0) || (optInvertInfo.arrayLengthCount > 0) ||
+                    hasSplitIVTestAndIncrement)
                 {
                     // Calculate a new maximum cost. We might be able to early exit.
 
                     unsigned newMaxDupCostSz =
                         maxDupCostSz +
                         24 * min(optInvertTotalInfo.sharedStaticHelperCount, (int)(loopIterations + 1.5)) +
-                        8 * optInvertTotalInfo.arrayLengthCount;
+                        8 * optInvertTotalInfo.arrayLengthCount + (hasSplitIVTestAndIncrement ? 24 : 0);
 
                     // Is the cost too high now?
                     costIsTooHigh = (estDupCostSz > newMaxDupCostSz);
@@ -2138,12 +2168,13 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     {
         // Note that `optInvertTotalInfo.sharedStaticHelperCount = 0` means either there were zero helpers, or the
         // tree walk to count them was not done.
-        printf(
-            "\nDuplication of loop condition [%06u] is %s, because the cost of duplication (%i) is %s than %i,"
-            "\n   loopIterations = %7.3f, optInvertTotalInfo.sharedStaticHelperCount >= %d, haveProfileWeights = %s\n",
-            dspTreeID(condBlock->lastStmt()->GetRootNode()), costIsTooHigh ? "not done" : "performed", estDupCostSz,
-            costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, loopIterations,
-            optInvertTotalInfo.sharedStaticHelperCount, dspBool(haveProfileWeights));
+        printf("\nDuplication of loop condition [%06u] is %s, because the cost of duplication (%i) is %s than %i,"
+               "\n   loopIterations = %7.3f, optInvertTotalInfo.sharedStaticHelperCount >= %d,"
+               " hasSplitIVTestAndIncrement = %s, haveProfileWeights = %s\n",
+               dspTreeID(condBlock->lastStmt()->GetRootNode()), costIsTooHigh ? "not done" : "performed", estDupCostSz,
+               costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, loopIterations,
+               optInvertTotalInfo.sharedStaticHelperCount, dspBool(hasSplitIVTestAndIncrement),
+               dspBool(haveProfileWeights));
     }
 #endif
 
@@ -3178,6 +3209,12 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 #endif
 
             case GT_CNS_INT:
+
+                // Do not narrow relocatable handle constants.
+                if (tree->AsIntCon()->ImmedValNeedsReloc(this))
+                {
+                    return false;
+                }
 
                 ssize_t ival;
                 ival = tree->AsIntCon()->IconValue();

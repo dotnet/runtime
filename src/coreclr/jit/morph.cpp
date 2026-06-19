@@ -4264,11 +4264,15 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // the fast tail call cannot be performed. This is common to all platforms.
     // Note that the GC'ness of on stack args need not match since the arg setup area is marked
     // as non-interruptible for fast tail calls.
+    //
+    // Wasm passes args via fresh wasm locals, not the caller's stack, so this check doesn't apply.
+#ifndef TARGET_WASM
     if (calleeArgStackSize > callerArgStackSize)
     {
         reportFastTailCallDecision("Not enough incoming arg space");
         return false;
     }
+#endif // !TARGET_WASM
 
     // For Windows some struct parameters are copied on the local frame
     // and then passed by reference. We cannot fast tail call in these situation
@@ -7314,7 +7318,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                 goto USE_HELPER_FOR_ARITH;
             }
 
-#if USE_HELPERS_FOR_INT_DIV
+#ifdef TARGET_ARM
+            // Note that TARGET_ARM32 does not have a native remainder instruction, so we always use the helper.
             if (typ == TYP_INT)
             {
                 if (oper == GT_UMOD)
@@ -7328,7 +7333,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
                     goto USE_HELPER_FOR_ARITH;
                 }
             }
-#endif
+#endif // TARGET_ARM
 #endif // !defined(TARGET_64BIT) && !defined(TARGET_WASM)
 
             if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
@@ -9609,6 +9614,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         break;
                     }
 
+                    if (!gtCanSwapOrder(op1, op2))
+                    {
+                        break;
+                    }
+
                     op1 = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
 
                     NamedIntrinsic subIntrinsic =
@@ -10060,7 +10070,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     op1Intrin->ResetHWIntrinsicId(newId, cmpOp1, cmpOp2);
                     ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
-
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                     if (lookupType != op1RetType)
                     {
                         assert(cvtIntrin == nullptr);
@@ -10076,6 +10086,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         cvtIntrin->Op(1) = op1Intrin;
                         op1Intrin        = cvtIntrin;
                     }
+#else
+                    assert((lookupType == op1RetType) && (cvtIntrin == nullptr));
+#endif
                     return fgMorphHWIntrinsicRequired(op1Intrin);
                 }
             }
@@ -11711,14 +11724,17 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 #elif defined(TARGET_ARM64)
                         op1 = op1Intrinsic->Op(2);
                         DEBUG_DESTROY_NODE(op1Intrinsic->Op(1));
+#elif defined(TARGET_WASM)
+                        NYI_WASM_SIMD("fgMorphHWIntrinsicRequired");
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
 
                         op1Type = op1->TypeGet();
                         DEBUG_DESTROY_NODE(op1Intrinsic);
                     }
 
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                     if (op1Type == TYP_MASK)
                     {
 #if defined(TARGET_XARCH)
@@ -11726,6 +11742,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 #endif // TARGET_XARCH
                     }
                     else
+#endif
                     {
                         newNode = gtNewSimdUnOpNode(GT_NOT, op1Type, op1, simdBaseType, simdSize);
 
@@ -11738,7 +11755,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     {
                         DEBUG_DESTROY_NODE(op2);
                         DEBUG_DESTROY_NODE(tree);
-
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                         if (op1Type != retType)
                         {
                             newNode = fgMorphHWIntrinsicRequired(newNode->AsHWIntrinsic());
@@ -11758,6 +11775,9 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                                 newNode = gtNewSimdCvtMaskToVectorNode(retType, newNode, simdBaseType, simdSize);
                             }
                         }
+#else
+                        assert(op1Type == retType);
+#endif
 
                         return fgMorphHWIntrinsicRequired(newNode->AsHWIntrinsic());
                     }
@@ -11787,6 +11807,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             {
                 tree->ResetHWIntrinsicId(newId, op2, op1);
 
+#ifdef FEATURE_MASKED_HW_INTRINSICS
                 if (lookupType != retType)
                 {
                     assert(varTypeIsSIMD(retType));
@@ -11796,6 +11817,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
                     tree         = gtNewSimdCvtMaskToVectorNode(retType, tree, simdBaseType, simdSize)->AsHWIntrinsic();
                     return fgMorphHWIntrinsicRequired(tree);
                 }
+#endif
             }
         }
     }
