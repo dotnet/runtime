@@ -58,6 +58,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.OpenBSD, "libinotify on OpenBSD does not preserve event ordering.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
