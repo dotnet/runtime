@@ -239,7 +239,7 @@ namespace System.Security.AccessControl
 
             offset += HeaderLength;
 
-            // Marhsal the Owner SID into place
+            // Marshal the Owner SID into place
             if (Owner != null)
             {
                 MarshalInt(binaryForm, ownerOffset, offset - originalOffset);

@@ -28,12 +28,12 @@ namespace System.Security.AccessControl
         private static readonly Dictionary<string, Luid> s_luids = new Dictionary<string, Luid>();
         private static readonly ReaderWriterLockSlim s_privilegeLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
-        private bool needToRevert;
-        private bool initialState;
-        private bool stateWasChanged;
-        private Luid luid;
+        private bool _needToRevert;
+        private bool _initialState;
+        private bool _stateWasChanged;
+        private Luid _luid;
         private readonly Thread _currentThread = Thread.CurrentThread;
-        private TlsContents? tlsContents;
+        private TlsContents? _tlsContents;
 
         public const string CreateToken = "SeCreateTokenPrivilege";
         public const string AssignPrimaryToken = "SeAssignPrimaryTokenPrivilege";
@@ -140,13 +140,13 @@ namespace System.Security.AccessControl
 
         private sealed class TlsContents : IDisposable
         {
-            private bool disposed;
-            private int referenceCount = 1;
-            private SafeTokenHandle? threadHandle = new SafeTokenHandle(IntPtr.Zero);
-            private readonly bool isImpersonating;
+            private bool _disposed;
+            private int _referenceCount = 1;
+            private SafeTokenHandle? _threadHandle = new SafeTokenHandle(IntPtr.Zero);
+            private readonly bool _isImpersonating;
 
-            private static SafeTokenHandle processHandle = new SafeTokenHandle(IntPtr.Zero);
-            private static readonly object syncRoot = new object();
+            private static SafeTokenHandle s_processHandle = new SafeTokenHandle(IntPtr.Zero);
+            private static readonly object s_syncRoot = new object();
 
             public TlsContents()
             {
@@ -154,11 +154,11 @@ namespace System.Security.AccessControl
                 int cachingError = 0;
                 bool success = true;
 
-                if (processHandle.IsInvalid)
+                if (s_processHandle.IsInvalid)
                 {
-                    lock (syncRoot)
+                    lock (s_syncRoot)
                     {
-                        if (processHandle.IsInvalid)
+                        if (s_processHandle.IsInvalid)
                         {
                             SafeTokenHandle localProcessHandle;
                             if (!Interop.Advapi32.OpenProcessToken(
@@ -169,7 +169,7 @@ namespace System.Security.AccessControl
                                 cachingError = Marshal.GetLastPInvokeError();
                                 success = false;
                             }
-                            processHandle = localProcessHandle;
+                            s_processHandle = localProcessHandle;
                         }
                     }
                 }
@@ -178,36 +178,36 @@ namespace System.Security.AccessControl
                 {
                     // Open the thread token; if there is no thread token, get one from
                     // the process token by impersonating self.
-                    SafeTokenHandle? threadHandleBefore = threadHandle;
+                    SafeTokenHandle? threadHandleBefore = _threadHandle;
                     error = OpenThreadToken(
                                   TokenAccessLevels.Query | TokenAccessLevels.AdjustPrivileges,
                                   WinSecurityContext.Process,
-                                  out threadHandle);
+                                  out _threadHandle);
                     unchecked { error &= ~(int)0x80070000; }
 
                     if (error != 0)
                     {
                         if (success)
                         {
-                            threadHandle = threadHandleBefore;
+                            _threadHandle = threadHandleBefore;
 
                             if (error != Interop.Errors.ERROR_NO_TOKEN)
                             {
                                 success = false;
                             }
 
-                            System.Diagnostics.Debug.Assert(!isImpersonating, "Incorrect isImpersonating state");
+                            System.Diagnostics.Debug.Assert(!_isImpersonating, "Incorrect isImpersonating state");
 
                             if (success)
                             {
                                 error = 0;
                                 if (!Interop.Advapi32.DuplicateTokenEx(
-                                                processHandle,
+                                                s_processHandle,
                                                 TokenAccessLevels.Impersonate | TokenAccessLevels.Query | TokenAccessLevels.AdjustPrivileges,
                                                 IntPtr.Zero,
                                                 Interop.Advapi32.SECURITY_IMPERSONATION_LEVEL.SecurityImpersonation,
                                                 System.Security.Principal.TokenType.TokenImpersonation,
-                                                ref threadHandle))
+                                                ref _threadHandle))
                                 {
                                     error = Marshal.GetLastPInvokeError();
                                     success = false;
@@ -216,7 +216,7 @@ namespace System.Security.AccessControl
 
                             if (success)
                             {
-                                error = SetThreadToken(threadHandle);
+                                error = SetThreadToken(_threadHandle);
                                 unchecked { error &= ~(int)0x80070000; }
 
                                 if (error != 0)
@@ -227,7 +227,7 @@ namespace System.Security.AccessControl
 
                             if (success)
                             {
-                                isImpersonating = true;
+                                _isImpersonating = true;
                             }
                         }
                         else
@@ -266,7 +266,7 @@ namespace System.Security.AccessControl
 
             ~TlsContents()
             {
-                if (!disposed)
+                if (!_disposed)
                 {
                     Dispose(false);
                 }
@@ -280,33 +280,33 @@ namespace System.Security.AccessControl
 
             private void Dispose(bool disposing)
             {
-                if (disposed) return;
+                if (_disposed) return;
 
                 if (disposing)
                 {
-                    if (threadHandle != null)
+                    if (_threadHandle != null)
                     {
-                        threadHandle.Dispose();
-                        threadHandle = null!;
+                        _threadHandle.Dispose();
+                        _threadHandle = null!;
                     }
                 }
 
-                if (isImpersonating)
+                if (_isImpersonating)
                 {
                     Interop.Advapi32.RevertToSelf();
                 }
 
-                disposed = true;
+                _disposed = true;
             }
 
             public void IncrementReferenceCount()
             {
-                referenceCount++;
+                _referenceCount++;
             }
 
             public int DecrementReferenceCount()
             {
-                int result = --referenceCount;
+                int result = --_referenceCount;
 
                 if (result == 0)
                 {
@@ -318,20 +318,20 @@ namespace System.Security.AccessControl
 
             public int ReferenceCountValue
             {
-                get { return referenceCount; }
+                get { return _referenceCount; }
             }
 
             public SafeTokenHandle ThreadHandle
             {
                 get
                 {
-                    return threadHandle!;
+                    return _threadHandle!;
                 }
             }
 
             public bool IsImpersonating
             {
-                get { return isImpersonating; }
+                get { return _isImpersonating; }
             }
         }
 
@@ -339,15 +339,15 @@ namespace System.Security.AccessControl
         {
             ArgumentNullException.ThrowIfNull(privilegeName);
 
-            luid = LuidFromPrivilege(privilegeName);
+            _luid = LuidFromPrivilege(privilegeName);
         }
 
         // Finalizer simply ensures that the privilege was not leaked
         ~Privilege()
         {
-            System.Diagnostics.Debug.Assert(!needToRevert, "Must revert privileges that you alter!");
+            System.Diagnostics.Debug.Assert(!_needToRevert, "Must revert privileges that you alter!");
 
-            if (needToRevert)
+            if (_needToRevert)
             {
                 Revert();
             }
@@ -360,7 +360,7 @@ namespace System.Security.AccessControl
 
         public bool NeedToRevert
         {
-            get { return needToRevert; }
+            get { return _needToRevert; }
         }
 
         private unsafe void ToggleState(bool enable)
@@ -374,7 +374,7 @@ namespace System.Security.AccessControl
             }
 
             // This privilege was already altered and needs to be reverted before it can be altered again
-            if (needToRevert)
+            if (_needToRevert)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_MustRevertPrivilege);
             }
@@ -382,21 +382,21 @@ namespace System.Security.AccessControl
             try
             {
                 // Retrieve TLS state
-                tlsContents = t_tlsSlotData;
+                _tlsContents = t_tlsSlotData;
 
-                if (tlsContents == null)
+                if (_tlsContents == null)
                 {
-                    tlsContents = new TlsContents();
-                    t_tlsSlotData = tlsContents;
+                    _tlsContents = new TlsContents();
+                    t_tlsSlotData = _tlsContents;
                 }
                 else
                 {
-                    tlsContents.IncrementReferenceCount();
+                    _tlsContents.IncrementReferenceCount();
                 }
 
                 Interop.Advapi32.TOKEN_PRIVILEGE newState;
                 newState.PrivilegeCount = 1;
-                newState.Privileges.Luid = luid;
+                newState.Privileges.Luid = _luid;
                 newState.Privileges.Attributes = enable ? Interop.Advapi32.SEPrivileges.SE_PRIVILEGE_ENABLED : Interop.Advapi32.SEPrivileges.SE_PRIVILEGE_DISABLED;
 
                 Interop.Advapi32.TOKEN_PRIVILEGE previousState = default;
@@ -404,7 +404,7 @@ namespace System.Security.AccessControl
 
                 // Place the new privilege on the thread token and remember the previous state.
                 if (!Interop.Advapi32.AdjustTokenPrivileges(
-                                  tlsContents.ThreadHandle,
+                                  _tlsContents.ThreadHandle,
                                   false,
                                   &newState,
                                   (uint)sizeof(Interop.Advapi32.TOKEN_PRIVILEGE),
@@ -420,18 +420,18 @@ namespace System.Security.AccessControl
                 else
                 {
                     // This is the initial state that revert will have to go back to
-                    initialState = ((previousState.Privileges.Attributes & Interop.Advapi32.SEPrivileges.SE_PRIVILEGE_ENABLED) != 0);
+                    _initialState = ((previousState.Privileges.Attributes & Interop.Advapi32.SEPrivileges.SE_PRIVILEGE_ENABLED) != 0);
 
                     // Remember whether state has changed at all
-                    stateWasChanged = (initialState != enable);
+                    _stateWasChanged = (_initialState != enable);
 
                     // If we had to impersonate, or if the privilege state changed we'll need to revert
-                    needToRevert = tlsContents.IsImpersonating || stateWasChanged;
+                    _needToRevert = _tlsContents.IsImpersonating || _stateWasChanged;
                 }
             }
             finally
             {
-                if (!needToRevert)
+                if (!_needToRevert)
                 {
                     Reset();
                 }
@@ -439,7 +439,7 @@ namespace System.Security.AccessControl
 
             if (error == Interop.Errors.ERROR_NOT_ALL_ASSIGNED)
             {
-                throw new PrivilegeNotHeldException(s_privileges[luid]);
+                throw new PrivilegeNotHeldException(s_privileges[_luid]);
             }
             if (error == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY)
             {
@@ -477,17 +477,17 @@ namespace System.Security.AccessControl
             {
                 // Only call AdjustTokenPrivileges if we're not going to be reverting to self,
                 // on this Revert, since doing the latter obliterates the thread token anyway
-                if (stateWasChanged &&
-                    (tlsContents!.ReferenceCountValue > 1 ||
-                      !tlsContents.IsImpersonating))
+                if (_stateWasChanged &&
+                    (_tlsContents!.ReferenceCountValue > 1 ||
+                      !_tlsContents.IsImpersonating))
                 {
                     Interop.Advapi32.TOKEN_PRIVILEGE newState;
                     newState.PrivilegeCount = 1;
-                    newState.Privileges.Luid = luid;
-                    newState.Privileges.Attributes = (initialState ? Interop.Advapi32.SEPrivileges.SE_PRIVILEGE_ENABLED : Interop.Advapi32.SEPrivileges.SE_PRIVILEGE_DISABLED);
+                    newState.Privileges.Luid = _luid;
+                    newState.Privileges.Attributes = (_initialState ? Interop.Advapi32.SEPrivileges.SE_PRIVILEGE_ENABLED : Interop.Advapi32.SEPrivileges.SE_PRIVILEGE_DISABLED);
 
                     if (!Interop.Advapi32.AdjustTokenPrivileges(
-                                      tlsContents.ThreadHandle,
+                                      _tlsContents.ThreadHandle,
                                       false,
                                       &newState,
                                       0,
@@ -524,15 +524,15 @@ namespace System.Security.AccessControl
 
         private void Reset()
         {
-            stateWasChanged = false;
-            initialState = false;
-            needToRevert = false;
+            _stateWasChanged = false;
+            _initialState = false;
+            _needToRevert = false;
 
-            if (tlsContents != null)
+            if (_tlsContents != null)
             {
-                if (0 == tlsContents.DecrementReferenceCount())
+                if (0 == _tlsContents.DecrementReferenceCount())
                 {
-                    tlsContents = null;
+                    _tlsContents = null;
                     t_tlsSlotData = null;
                 }
             }
