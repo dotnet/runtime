@@ -38,10 +38,10 @@ cached mapping table).
 | runtime-coreclr pgostress | |
 | runtime-coreclr jit-cfg | Sat-Sun 22:00 UTC | Control flow guard. |
 | runtime-coreclr gc-simulator | Daily 11:00 UTC | |
-| gc-standalone | Daily 5:00 UTC | |
-| runtime-coreclr crossgen2 | Daily 6:00 UTC | |
-| runtime-coreclr r2r | Daily 5:00 UTC | |
-| runtime-coreclr r2r-extra | Sun + Mon 2:00 UTC | |
+| gc-standalone | Daily 05:00 UTC | |
+| runtime-coreclr crossgen2 | Daily 06:00 UTC | |
+| runtime-coreclr r2r | Daily 05:00 UTC | |
+| runtime-coreclr r2r-extra | Sun + Mon 02:00 UTC | |
 | runtime-interpreter | Mon-Wed-Fri 13:00 UTC | |
 | runtime-libraries-interpreter | Mon-Wed-Fri 13:00 UTC | |
 | runtime-nativeaot-outerloop | 2x daily 9:00, 21:00 UTC | |
