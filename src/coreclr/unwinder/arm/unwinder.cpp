@@ -5,8 +5,50 @@
 
 #include "stdafx.h"
 #include "utilcode.h"
+#include "crosscomp.h"
 
 #include "unwinder.h"
+
+// Definitions added to the Windows code copy
+
+#define DBS_EXTEND64(x) ((DWORD64)x)
+
+#define ARM_CONTEXT T_CONTEXT
+
+#ifndef HOST_ARM
+#define CONTEXT T_CONTEXT
+#define PCONTEXT PT_CONTEXT
+#define KNONVOLATILE_CONTEXT_POINTERS T_KNONVOLATILE_CONTEXT_POINTERS
+#define PKNONVOLATILE_CONTEXT_POINTERS PT_KNONVOLATILE_CONTEXT_POINTERS
+#define RUNTIME_FUNCTION T_RUNTIME_FUNCTION
+#define PRUNTIME_FUNCTION PT_RUNTIME_FUNCTION
+#endif
+
+#ifndef __in
+#define __in _In_
+#define __out _Out_
+#endif
+
+#ifndef FIELD_OFFSET
+#define FIELD_OFFSET(type, field)    ((LONG)__builtin_offsetof(type, field))
+#endif
+
+#ifndef NT_ASSERT
+#define NT_ASSERT _ASSERTE
+#endif
+
+#define ProbeForReadExceptionStructure(ControlPc, Ptr, DataSize, Alignment)
+
+//
+// MessageId: STATUS_BAD_FUNCTION_TABLE
+//
+// MessageText:
+//
+// A malformed function table was encountered during an unwind operation.
+//
+#define STATUS_BAD_FUNCTION_TABLE        ((NTSTATUS)0xC00000FFL)
+
+// End of definitions added to the Windows code copy
 
 #ifndef INLINE
 #define INLINE __inline
@@ -97,26 +139,7 @@ do {                                                                            
     }                                                                           \
 } while (0)
 
-#define VALIDATE_STACK_ADDRESS_EX(Params, Context, Address, DataSize, Alignment, OutStatus) \
-do {                                                                            \
-    __try {                                                                     \
-        ProbeForReadExceptionStructure((Context)->Pc, (Address),                \
-                                       DataSize, Alignment);                    \
-    }                                                                           \
-    __except (EXCEPTION_EXECUTE_HANDLER) {                                      \
-        *OutStatus = GetExceptionCode();                                        \
-        break;                                                                  \
-    }                                                                           \
-                                                                                \
-    if (ARGUMENT_PRESENT((Params)->LowLimit) &&                                 \
-        (((ULONG)(Address) < *(Params)->LowLimit) ||                            \
-         ((ULONG)(Address) > *(Params)->HighLimit - DataSize))) {               \
-                                                                                \
-        *OutStatus = STATUS_BAD_STACK;                                          \
-    } else {                                                                    \
-        *OutStatus = STATUS_SUCCESS;                                            \
-    }                                                                           \
-} while (0)
+#define VALIDATE_STACK_ADDRESS_EX(Params, Context, Address, DataSize, Alignment, OutStatus)
 
 #define VALIDATE_STACK_ADDRESS(Params, Context, DataSize, Alignment, OutStatus) \
     VALIDATE_STACK_ADDRESS_EX(Params, Context, (Context)->Sp, DataSize, Alignment, OutStatus)
@@ -630,6 +653,7 @@ Return Value:
     switch (Opcode)
     {
 
+/*
     //
     // Trap frame case
     //
@@ -796,7 +820,7 @@ Return Value:
         ContextRecord->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
         break;
     }
-
+*/
     //
     // Machine frame case
     //
@@ -2187,9 +2211,9 @@ Return Value:
     // Make sure out-of-bound stack accesses don't send us into an infinite
     // unwinding loop.
     //
-
+#if 0
     __try {
-
+#endif
         //
         // Build an UnwindParams structure containing the starting PC, stack
         // limits, and context pointers.
@@ -2246,6 +2270,7 @@ Return Value:
                                             HandlerData,
                                             &UnwindParams);
         }
+#if 0
     }
 
     //
@@ -2259,7 +2284,7 @@ Return Value:
     __except (EXCEPTION_EXECUTE_HANDLER) {
         Status = GetExceptionCode();
     }
-
+#endif
     return Status;
 }
 
@@ -2451,50 +2476,3 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 
     return res;
 }
-
-#if defined(HOST_UNIX)
-PEXCEPTION_ROUTINE RtlVirtualUnwind(
-    _In_ ULONG HandlerType,
-    _In_ ULONG ImageBase,
-    _In_ ULONG ControlPc,
-    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
-    _In_ OUT PCONTEXT ContextRecord,
-    _Out_ PVOID *HandlerData,
-    _Out_ PULONG EstablisherFrame,
-    __inout_opt PT_KNONVOLATILE_CONTEXT_POINTERS ContextPointers
-    )
-{
-    PEXCEPTION_ROUTINE handlerRoutine;
-    HRESULT res;
-
-    ARM_UNWIND_PARAMS unwindParams;
-    unwindParams.ContextPointers = ContextPointers;
-
-    if ((FunctionEntry->UnwindData & 3) != 0)
-    {
-        res = RtlpUnwindFunctionCompact(ControlPc - ImageBase,
-                                        FunctionEntry,
-                                        ContextRecord,
-                                        EstablisherFrame,
-                                        &handlerRoutine,
-                                        HandlerData,
-                                        &unwindParams);
-
-    }
-    else
-    {
-        res = RtlpUnwindFunctionFull(ControlPc - ImageBase,
-                                    ImageBase,
-                                    FunctionEntry,
-                                    ContextRecord,
-                                    EstablisherFrame,
-                                    &handlerRoutine,
-                                    HandlerData,
-                                    &unwindParams);
-    }
-
-    _ASSERTE(SUCCEEDED(res));
-
-    return handlerRoutine;
-}
-#endif
