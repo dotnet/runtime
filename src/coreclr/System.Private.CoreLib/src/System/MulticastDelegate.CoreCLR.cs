@@ -41,7 +41,7 @@ namespace System
 
             if (IsSpecialDelegate)
             {
-                // there are 4 kind of delegate kinds that fall into this bucket
+                // there are 3 kind of delegate kinds that fall into this bucket
                 // 1- Multicast (_invocationList is Object[])
                 // 2- Wrapper (_invocationList is Delegate)
                 // 3- Unmanaged FntPtr (_invocationList == null)
@@ -386,7 +386,6 @@ namespace System
             {
                 // IsSpecialDelegate we are in one of these cases:
                 // - Multicast -> return the target of the last delegate in the list
-                // - Wrapper delegate -> return the target of the inner delegate
                 // - unmanaged function pointer - return null
                 // - virtual open delegate - return null
                 if (InvocationListLogicallyNull)
