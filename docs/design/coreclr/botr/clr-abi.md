@@ -385,7 +385,7 @@ When a funclet finishes execution, and the VM returns execution to the function 
 
 Any register value changes made in the funclet are lost. If a funclet wants to make a variable change known to the main function (or the funclet that contains the "try" region), that variable change needs to be made to the shared main function stack frame. This not a fundamental limitation. If necessary, the runtime can be updated to preserve non-volatile register changes made in funclets.
 
-Funclets are not required to preserve non-volatile registers.
+Funclets are not required to preserve non-volatile registers that are saved by main method body.
 
 # EH Info, GC Info, and Hot & Cold Splitting
 
