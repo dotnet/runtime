@@ -105,7 +105,7 @@ namespace System
             };
         }
 
-        public object? Target => GetTarget();
+        public partial bool HasSingleTarget => Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
 
         internal virtual object? GetTarget() => _target;
 

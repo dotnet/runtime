@@ -37,41 +37,29 @@ namespace System
             // the types are the same, obj should also be a
             // MulticastDelegate
             Debug.Assert(obj is MulticastDelegate, "Shouldn't have failed here since we already checked the types are the same!");
-            MulticastDelegate other = Unsafe.AsAssert<MulticastDelegate>(obj);
+            MulticastDelegate other = Unsafe.As<MulticastDelegate>(obj);
 
-            if (IsSpecialDelegate)
+            if (IsMulticastOrUnmanagedOrOpenVirtual)
             {
                 // there are 3 kind of delegate kinds that fall into this bucket
                 // 1- Multicast (_invocationList is Object[])
-                // 2- Wrapper (_invocationList is Delegate)
-                // 3- Unmanaged FntPtr (_invocationList == null)
-                // 4- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
-                switch (_invocationList)
+                // 2- Unmanaged FntPtr (_invocationList == null)
+                // 3- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
+                if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
                 {
-                    case object[]:
-                        return other._invocationList is object[] && GetInvocationsUnchecked().SequenceEqual(other.GetInvocationsUnchecked());
-                    // this is a wrapper delegate so we need to unwrap and check the inner one
-                    case Delegate wrapper:
-                        return wrapper.Equals(other);
-                    default:
-                        if (!IsUnmanagedFunctionPtr)
-                        {
-                            break;
-                        }
+                    return other.TryGetInvocations(out ReadOnlySpan<MulticastDelegate> otherInvocations) && invocations.SequenceEqual(otherInvocations);
+                }
 
-                        return other.IsUnmanagedFunctionPtr &&
-                               _methodPtr == other._methodPtr &&
-                               _methodPtrAux == other._methodPtrAux;
+                if (IsUnmanagedFunctionPtr)
+                {
+                    return other.IsUnmanagedFunctionPtr &&
+                           _methodPtr == other._methodPtr &&
+                           _methodPtrAux == other._methodPtrAux;
                 }
             }
 
-            Debug.Assert(InvocationListLogicallyNull);
-            // now we know 'this' is not a special one, so we can work out what the other is
-            return other._invocationList is Delegate ?
-                // this is a wrapper delegate so we need to unwrap and check the inner one
-                Equals(other._invocationList) :
-                // we can call on the base
-                base.Equals(other);
+            Debug.Assert(HasSingleTarget);
+            return base.Equals(other);
         }
 
         private static bool TrySetSlot(object?[] a, int index, object o)
@@ -99,7 +87,7 @@ namespace System
         private unsafe MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
-            MulticastDelegate result = Unsafe.AsAssert<MulticastDelegate>(RuntimeTypeHandle.InternalAllocNoChecks(RuntimeHelpers.GetMethodTable(this)));
+            MulticastDelegate result = Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAllocNoChecks(RuntimeHelpers.GetMethodTable(this)));
 
             // Performance optimization - if this already points to a true multicast delegate,
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
@@ -213,7 +201,8 @@ namespace System
 
         private object[] DeleteFromInvocationList(object[] invocationList, int invocationCount, int deleteIndex, int deleteCount)
         {
-            object[]? thisInvocationList = Unsafe.AsAssert<object[]>(_invocationList);
+            Debug.Assert(_invocationList is object[]);
+            object[]? thisInvocationList = Unsafe.As<object[]>(_invocationList);
             Debug.Assert(thisInvocationList is not null);
 
             int allocCount = thisInvocationList.Length;
@@ -255,38 +244,7 @@ namespace System
             if (v == null)
                 return this;
 
-            if (!v.HasSingleTarget)
-            {
-                if (_invocationList is object[] invocationList)
-                {
-                    int invocationCount = (int)_invocationCount;
-                    int vInvocationCount = (int)v._invocationCount;
-                    object[] vInvocationList = (object[])v._invocationList!;
-                    for (int i = invocationCount - vInvocationCount; i >= 0; i--)
-                    {
-                        if (!EqualInvocationLists(invocationList, vInvocationList, i, vInvocationCount))
-                        {
-                            continue;
-                        }
-
-                        switch (invocationCount - vInvocationCount)
-                        {
-                            case 0:
-                                // Special case - no values left
-                                return null;
-                            case 1:
-                                // Special case - only one value left, either at the beginning or the end
-                                return (Delegate)invocationList[i != 0 ? 0 : invocationCount - 1];
-                            default:
-                            {
-                                object[] list = DeleteFromInvocationList(invocationList, invocationCount, i, vInvocationCount);
-                                return NewMulticastDelegate(list, invocationCount - vInvocationCount, true);
-                            }
-                        }
-                    }
-                }
-            }
-            else
+            if (v.HasSingleTarget)
             {
                 if (_invocationList is object[] invocationList)
                 {
@@ -315,6 +273,38 @@ namespace System
                         return null;
                 }
             }
+            else
+            {
+                if (_invocationList is object[] invocationList)
+                {
+                    int invocationCount = (int)_invocationCount;
+                    int vInvocationCount = (int)v._invocationCount;
+                    object[] vInvocationList = (object[])v._invocationList!;
+                    for (int i = invocationCount - vInvocationCount; i >= 0; i--)
+                    {
+                        if (!EqualInvocationLists(invocationList, vInvocationList, i, vInvocationCount))
+                        {
+                            continue;
+                        }
+
+                        switch (invocationCount - vInvocationCount)
+                        {
+                            case 0:
+                                // Special case - no values left
+                                return null;
+                            case 1:
+                                // Special case - only one value left, either at the beginning or the end
+                                return (Delegate)invocationList[i != 0 ? 0 : invocationCount - 1];
+                            default:
+                            {
+                                object[] list = DeleteFromInvocationList(invocationList, invocationCount, i,
+                                    vInvocationCount);
+                                return NewMulticastDelegate(list, invocationCount - vInvocationCount, true);
+                            }
+                        }
+                    }
+                }
+            }
 
             return this;
         }
@@ -322,31 +312,20 @@ namespace System
         // This method returns the Invocation list of this multicast delegate.
         public sealed override Delegate[] GetInvocationList()
         {
-            if (_invocationList is not object[])
-            {
-                return [this];
-            }
-
-            // Copy the invocations into a new array
-            ReadOnlySpan<Delegate> invocationList = GetInvocationsUnchecked();
-            return invocationList.ToArray();
+            return TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations) ? ((ReadOnlySpan<Delegate>)invocations).ToArray() : [this];
         }
-
-        internal new bool HasSingleTarget => _invocationList is not object[];
 
         // Used by delegate invocation list enumerator
         internal MulticastDelegate? TryGetAt(int index)
         {
-            if (HasSingleTarget)
+            if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
             {
-                if (index == 0)
-                    return this;
+                if ((uint)index < (uint)invocations.Length)
+                    return invocations[index];
             }
-            else
+            else if (index == 0)
             {
-                ReadOnlySpan<MulticastDelegate> invocationList = GetInvocationsUnchecked();
-                if ((uint)index < (uint)invocationList.Length)
-                    return invocationList[index];
+                return this;
             }
 
             return null;
@@ -357,50 +336,28 @@ namespace System
             if (IsUnmanagedFunctionPtr)
                 return HashCode.Combine(_methodPtr, _methodPtr);
 
-            if (IsSpecialDelegate)
+            if (!IsMulticastOrUnmanagedOrOpenVirtual || !TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
             {
-                switch (_invocationList)
-                {
-                    case object[]:
-                    {
-                        int hash = 0;
-                        foreach (MulticastDelegate multicastDelegate in GetInvocationsUnchecked())
-                        {
-                            hash = hash * 33 + multicastDelegate.GetHashCode();
-                        }
-
-                        return hash;
-                    }
-                    case Delegate wrapper:
-                        // this is a wrapper delegate so we need to unwrap and check the inner one
-                        return wrapper.GetHashCode();
-                }
+                return base.GetHashCode();
             }
 
-            return base.GetHashCode();
+            int hash = 0;
+            foreach (MulticastDelegate multicastDelegate in invocations)
+            {
+                hash = hash * 33 + multicastDelegate.GetHashCode();
+            }
+            return hash;
         }
 
         internal override object? GetTarget()
         {
-            if (IsSpecialDelegate)
+            if (IsMulticastOrUnmanagedOrOpenVirtual)
             {
-                // IsSpecialDelegate we are in one of these cases:
+                // IsMulticastOrUnmanagedOrOpenVirtual we are in one of these cases:
                 // - Multicast -> return the target of the last delegate in the list
                 // - unmanaged function pointer - return null
                 // - virtual open delegate - return null
-                if (InvocationListLogicallyNull)
-                {
-                    // both open virtual and ftn pointer return null for the target
-                    return null;
-                }
-
-                switch (_invocationList)
-                {
-                    case object[]:
-                        return GetLastInvocationUnchecked().Target;
-                    case Delegate receiver:
-                        return receiver.Target;
-                }
+                return TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations) ? invocations[^1].Target : null;
             }
             return base.GetTarget();
         }
@@ -465,7 +422,7 @@ namespace System
             _target = target;
             _methodPtr = (nuint)methodPtr;
             _invocationList = GCHandle.InternalGet(gchandle);
-            Debug.Assert(InvocationListLogicallyNull);
+            Debug.Assert(HasSingleTarget);
         }
 
         [DebuggerNonUserCode]
@@ -476,7 +433,7 @@ namespace System
             _methodPtr = (nuint)shuffleThunk;
             _methodPtrAux = methodPtr;
             _invocationList = GCHandle.InternalGet(gchandle);
-            Debug.Assert(InvocationListLogicallyNull);
+            Debug.Assert(HasSingleTarget);
         }
 
         [DebuggerNonUserCode]
@@ -486,7 +443,7 @@ namespace System
             _target = this;
             _methodPtr = (nuint)shuffleThunk;
             _invocationList = GCHandle.InternalGet(gchandle);
-            Debug.Assert(InvocationListLogicallyNull);
+            Debug.Assert(HasSingleTarget);
             InitializeVirtualCallStub(methodPtr);
         }
 #pragma warning restore IDE0060
