@@ -697,7 +697,7 @@
         <Otherwise>
           <PropertyGroup>
             <_BuildCoreCLRRuntimePack Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(CoreCLRSupported)' == 'true'">true</_BuildCoreCLRRuntimePack>
-            <_BuildMonoRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono' and '$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
+            <_BuildMonoRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono' and '$(MonoSupported)' == 'true' and '$(TargetsAppleMobile)' != 'true' and '$(TargetOS)' != 'android'">true</_BuildMonoRuntimePack>
             <_BuildHostPack Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildHostPack>
             <_BuildCdacPack Condition="'$(_CDacToolsBuilt)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'linux')">true</_BuildCdacPack>
             <_BuildBundle Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildBundle>
@@ -705,17 +705,13 @@
 
           <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(DotNetBuildSourceOnly)' != 'true'">
             <_BuildCoreCLRRuntimePack Condition="'$(CoreCLRSupported)' == 'true' and '$(TargetsBrowser)' != 'true'">true</_BuildCoreCLRRuntimePack>
-            <_BuildMonoRuntimePack Condition="'$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
+            <_BuildMonoRuntimePack Condition="'$(MonoSupported)' == 'true' and '$(TargetsAppleMobile)' != 'true' and '$(TargetOS)' != 'android'">true</_BuildMonoRuntimePack>
           </PropertyGroup>
 
           <!-- In source build, mono is only supported as primary runtime flavor, and when Mono is the primary runtime flavor, CoreCLR is not supported. -->
           <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true' and '$(DotNetBuildSourceOnly)' == 'true'">
             <_BuildCoreCLRRuntimePack Condition="'$(PrimaryRuntimeFlavor)' == 'CoreCLR'">true</_BuildCoreCLRRuntimePack>
-            <_BuildMonoRuntimePack Condition="'$(PrimaryRuntimeFlavor)' == 'Mono'">true</_BuildMonoRuntimePack>
-          </PropertyGroup>
-
-          <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android'">
-            <_BuildMonoRuntimePack></_BuildMonoRuntimePack>
+            <_BuildMonoRuntimePack Condition="'$(PrimaryRuntimeFlavor)' == 'Mono' and '$(TargetsAppleMobile)' != 'true' and '$(TargetOS)' != 'android'">true</_BuildMonoRuntimePack>
           </PropertyGroup>
 
           <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true'">
