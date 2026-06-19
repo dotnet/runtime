@@ -11,6 +11,7 @@ using System.Threading;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 using Internal.TypeSystem;
@@ -50,7 +51,7 @@ namespace Internal.Runtime.TypeLoader
 
         public override RuntimeMethodHandle GetRuntimeMethodHandleForComponents(RuntimeTypeHandle declaringTypeHandle, MethodHandle handle, RuntimeTypeHandle[] genericMethodArgs)
         {
-            return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeHandle, handle, genericMethodArgs, isAsyncVariant: false);
+            return TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(declaringTypeHandle, handle, genericMethodArgs);
         }
 
         public override IntPtr TryGetDefaultConstructorForType(RuntimeTypeHandle runtimeTypeHandle)
@@ -58,9 +59,12 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryGetDefaultConstructorForType(runtimeTypeHandle);
         }
 
-        public override IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeMethodHandle declMethod)
+        public override unsafe IntPtr ResolveGenericVirtualMethodTarget(RuntimeTypeHandle targetTypeHandle, RuntimeTypeHandle declaringTypeHandle, MethodHandle methodHandle, bool isAsyncVariant, void* methodInstantiation, bool isMethodInstantiationDataRelative)
         {
-            return TypeLoaderEnvironment.Instance.ResolveGenericVirtualMethodTarget(targetTypeHandle, declMethod);
+            if (TypeLoaderEnvironment.GenericVirtualMethodsPresent())
+                return TypeLoaderEnvironment.Instance.ResolveGenericVirtualMethodTarget(targetTypeHandle, declaringTypeHandle, methodHandle, isAsyncVariant, methodInstantiation, isMethodInstantiationDataRelative);
+
+            return 0;
         }
 
         public override RuntimeFieldHandle GetRuntimeFieldHandleForComponents(RuntimeTypeHandle declaringTypeHandle, FieldHandle handle)
@@ -110,6 +114,10 @@ namespace Internal.Runtime.TypeLoader
         // small enough in size (which is the case today).
         [ThreadStatic]
         private static LowLevelDictionary<TypeManagerHandle, NativeReader> t_moduleNativeReaders;
+
+        [Intrinsic]
+        [AnalysisCharacteristic]
+        internal static extern bool GenericVirtualMethodsPresent();
 
         // Eager initialization called from LibraryInitializer for the assembly.
         internal static void Initialize()

@@ -21,3 +21,22 @@ LEAF_ENTRY RhpInterfaceDispatch, _TEXT
         b       C_FUNC(RhpUniversalTransitionTailCall)
 
 LEAF_END RhpInterfaceDispatch, _TEXT
+
+// Resolve helper for the standard calling convention.
+// $a0 = object instance, $a1 = indirection cell address, result in $a0.
+LEAF_ENTRY RhpDispatchResolve, _TEXT
+
+        // Load the MethodTable from the object instance in $a0.
+        // Trigger an AV if we're dispatching on a null this.
+        ld.d    $t0, $a0, 0
+
+        ld.d    $t1, $a1, 0             // load cached MethodTable
+        bne     $t0, $t1, LOCAL_LABEL(ResolveInterfaceMethod)
+
+        ld.d    $a0, $a1, 8             // return cached monomorphic resolved code address
+        jirl    $r0, $ra, 0
+
+LOCAL_LABEL(ResolveInterfaceMethod):
+        b       C_FUNC(RhpResolveInterfaceMethod)
+
+LEAF_END RhpDispatchResolve, _TEXT

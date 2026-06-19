@@ -71,6 +71,7 @@ namespace System.Runtime
             return dispatchResolveTarget;
         }
 
+        [RuntimeExport("RhpCidResolve_Worker")]
         private static IntPtr RhpCidResolve_Worker(object pObject, IntPtr pCell)
         {
             var resolver = (delegate*<object, nint, nint>)InternalCalls.RhpGetClasslibFunctionFromEEType(pObject.GetMethodTable(), ClassLibFunctionId.ResolveDispatch);

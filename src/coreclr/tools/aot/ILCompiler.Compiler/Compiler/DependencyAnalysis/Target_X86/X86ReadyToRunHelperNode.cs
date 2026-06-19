@@ -159,7 +159,7 @@ namespace ILCompiler.DependencyAnalysis
                         MethodDesc targetMethod = (MethodDesc)Target;
                         if (targetMethod.OwningType.IsInterface)
                         {
-                            encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
+                            encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.DispatchCell(targetMethod));
                             encoder.EmitJMP(factory.ExternFunctionSymbol(s_RhpResolveInterfaceMethod));
                         }
                         else

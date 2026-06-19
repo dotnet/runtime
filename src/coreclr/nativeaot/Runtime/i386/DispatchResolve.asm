@@ -9,6 +9,7 @@
 include AsmMacros.inc
 
 EXTERN RhpCidResolve : PROC
+EXTERN RhpCidResolve_Worker : PROC
 EXTERN _RhpUniversalTransitionTailCall@0 : PROC
 
 EXTERN _g_pDispatchCache : DWORD
@@ -139,5 +140,109 @@ ALTERNATE_ENTRY _RhpInterfaceDispatch
         jmp     _RhpUniversalTransitionTailCall@0
 
 FASTCALL_ENDFUNC
+
+;; Resolve helper for standard x86 calling convention.
+;; Arguments are passed on the stack: object, dispatch cell.
+RhpDispatchResolve PROC public
+
+        mov     ecx, dword ptr [esp + 4] ;; this
+        mov     eax, dword ptr [esp + 8] ;; dispatch cell
+
+        ;; Load the MethodTable from the object instance in ecx.
+        ;; Trigger an AV if we're dispatching on a null this.
+        mov     edx, dword ptr [ecx]
+
+        cmp     dword ptr [eax], edx     ;; is this the monomorphic MethodTable?
+        jne     DispatchResolveHashtable
+
+        mov     eax, dword ptr [eax + 4] ;; return cached monomorphic resolved code address
+        ret     8
+
+      DispatchResolveHashtable:
+
+        ;; edx = MethodTable, eax = cell
+        ;; Look up the target in the dispatch cache hashtable (GenericCache<Key, nint>).
+        push    ebx
+        push    esi
+        push    edi
+
+        ;; Stack layout from esp:
+        ;; [esp+0]  = saved edi
+        ;; [esp+4]  = saved esi
+        ;; [esp+8]  = saved ebx
+        ;; [esp+12] = return address
+        ;; [esp+16] = this
+        ;; [esp+20] = cell
+
+        ;; Load the _table field (Entry[]) from the cache struct.
+        mov     edi, dword ptr [_g_pDispatchCache]
+        mov     edi, dword ptr [edi]
+
+        ;; Compute 32-bit hash from Key.GetHashCode():
+        ;; hash = RotateLeft(dispatchCell, 16) ^ objectType
+        ;; On 32-bit, IntPtr.GetHashCode() is identity.
+        mov     ecx, eax
+        rol     ecx, 10h
+        xor     ecx, edx
+
+        ;; HashToBucket: bucket = ((uint)hash * 0x9E3779B9) >> hashShift
+        imul    ebx, ecx, -1640531527
+        movzx   ecx, byte ptr [edi + 8]
+        shr     ebx, cl
+        xor     ecx, ecx
+
+      DispatchResolveProbeLoop:
+        ;; Compute entry address: table + 8 + (index + 1) * 16
+        lea     eax, [ebx + 1]
+        shl     eax, 4
+        lea     eax, [edi + eax + 8]
+
+        ;; Read version snapshot before key comparison (seqlock protocol).
+        mov     edx, dword ptr [eax]
+        test    edx, 1
+        jne     DispatchResolveProbeMiss
+
+        ;; Compare key (dispatchCell, objectType)
+        mov     esi, dword ptr [esp + 20]
+        cmp     esi, dword ptr [eax + 4]
+        jne     DispatchResolveProbeMiss
+        mov     esi, dword ptr [esp + 16]
+        mov     esi, dword ptr [esi]
+        cmp     esi, dword ptr [eax + 8]
+        jne     DispatchResolveProbeMiss
+
+        ;; Read the cached code pointer, then re-verify the version has not changed.
+        mov     esi, dword ptr [eax + 0Ch]
+        cmp     edx, dword ptr [eax]
+        jne     DispatchResolveCacheMiss
+
+        ;; Return cached target.
+        mov     eax, esi
+        pop     edi
+        pop     esi
+        pop     ebx
+        ret     8
+
+      DispatchResolveProbeMiss:
+        ;; If version is zero the rest of the bucket is unclaimed - stop probing.
+        test    edx, edx
+        je      DispatchResolveCacheMiss
+
+        ;; Quadratic reprobe: i++; index = (index + i) & tableMask
+        inc     ecx
+        add     ebx, ecx
+        mov     eax, dword ptr [edi + 4]
+        add     eax, -2
+        and     ebx, eax
+        cmp     ecx, 8
+        jl      DispatchResolveProbeLoop
+
+      DispatchResolveCacheMiss:
+        pop     edi
+        pop     esi
+        pop     ebx
+        jmp     RhpCidResolve_Worker
+
+RhpDispatchResolve ENDP
 
 end

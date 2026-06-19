@@ -55,6 +55,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 yield return new DependencyListEntry(factory.TypeGVMEntries(_method.OwningType.GetTypeDefinition()), "Resolution metadata");
             }
+            yield return new DependencyListEntry(factory.AnalysisCharacteristic("GenericVirtualMethodsPresent"), "Runtime GVM resolution needed");
 #endif
         }
 

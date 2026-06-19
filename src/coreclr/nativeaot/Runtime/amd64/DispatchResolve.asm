@@ -5,6 +5,7 @@ include AsmMacros.inc
 
 
 EXTERN RhpCidResolve : PROC
+EXTERN RhpCidResolve_Worker : PROC
 EXTERN RhpUniversalTransitionTailCall : PROC
 EXTERN RhpUniversalTransitionGuardedTailCall : PROC
 
@@ -12,10 +13,13 @@ EXTERN g_pDispatchCache : QWORD
 
 EXTERN __guard_dispatch_icall_fptr : QWORD
 
-;; Macro that generates an interface dispatch stub.
+;; Macro that generates an interface dispatch or dispatch resolve stub.
 ;; DispatchName: the name of the dispatch entry point
 ;; Guarded: if non-zero, validate indirect call targets using Control Flow Guard
-INTERFACE_DISPATCH macro DispatchName, Guarded
+;; ReturnTarget: if non-zero, return the resolved target in rax instead of dispatching to it
+;; DispatchCellReg: register containing the indirection cell address
+;; VersionReg32: scratch register used for entry version checks
+INTERFACE_DISPATCH macro DispatchName, Guarded, ReturnTarget, DispatchCellReg, VersionReg32
 
 LOCAL Hashtable, ProbeLoop, ProbeMiss, CacheMiss, SlowPath
 
@@ -28,27 +32,37 @@ LEAF_ENTRY DispatchName, _TEXT
         ;; to a NullReferenceException at the callsite.
         mov     r10, [rcx]
 
-        ;; r11 currently contains the indirection cell address.
-        cmp     qword ptr [r11], r10 ;; is this the monomorhpic MethodTable?
+        ;; DispatchCellReg currently contains the indirection cell address.
+        cmp     qword ptr [DispatchCellReg], r10 ;; is this the monomorhpic MethodTable?
         jne     Hashtable
 
-        mov     rax, [r11 + 8] ;; load the cached monomorphic resolved code address into rax
+        mov     rax, [DispatchCellReg + 8] ;; load the cached monomorphic resolved code address into rax
+if ReturnTarget ne 0
+        ret
+else
 if Guarded ne 0
         jmp     [__guard_dispatch_icall_fptr]
 else
         jmp     rax
 endif
+endif
 
       Hashtable:
 
-        ;; r10 = MethodTable, r11 = indirection cell address
+        ;; r10 = MethodTable, DispatchCellReg = indirection cell address
         ;; Look up the target in the dispatch cache hashtable (GenericCache<Key, nint>).
+if ReturnTarget ne 0
+        ;; Preserve this for the slow path. The return-only helper doesn't need
+        ;; to preserve the rest of the argument registers.
+        mov     [rsp + 8h], rcx
+else
         ;; Spill argument registers to the caller-provided shadow space
         ;; so we don't modify rsp (this is a LEAF_ENTRY with no unwind info).
         mov     [rsp + 8h], rcx
         mov     [rsp + 10h], rdx
         mov     [rsp + 18h], r8
         mov     [rsp + 20h], r9
+endif
 
         ;; Load the _table field (Entry[]) from the cache struct.
         mov     r8, qword ptr [g_pDispatchCache]
@@ -56,7 +70,7 @@ endif
 
         ;; Compute 32-bit hash from Key.GetHashCode():
         ;; hash = IntPtr.GetHashCode(RotateLeft(dispatchCell, 16) ^ objectType)
-        mov     rcx, r11
+        mov     rcx, DispatchCellReg
         rol     rcx, 10h
         xor     rcx, r10
         mov     r9, rcx
@@ -79,24 +93,27 @@ endif
         lea     rax, [r8 + rax + 10h]
 
         ;; Read version snapshot before key comparison (seqlock protocol).
-        mov     edx, dword ptr [rax]
-        test    edx, 1
+        mov     VersionReg32, dword ptr [rax]
+        test    VersionReg32, 1
         jne     ProbeMiss
 
         ;; Compare key (dispatchCell, objectType)
-        cmp     r11, qword ptr [rax + 8]
+        cmp     DispatchCellReg, qword ptr [rax + 8]
         jne     ProbeMiss
         cmp     r10, qword ptr [rax + 10h]
         jne     ProbeMiss
 
         ;; Read the cached code pointer, then re-verify the version has not changed.
         mov     r10, qword ptr [rax + 18h]
-        cmp     edx, dword ptr [rax]
+        cmp     VersionReg32, dword ptr [rax]
         jne     CacheMiss
 
         ;; Dispatch to cached target.
         mov     rax, r10
 
+if ReturnTarget ne 0
+        ret
+else
         mov     r9, [rsp + 20h]
         mov     r8, [rsp + 18h]
         mov     rdx, [rsp + 10h]
@@ -107,10 +124,11 @@ if Guarded ne 0
 else
         jmp     rax
 endif
+endif
 
       ProbeMiss:
         ;; If version is zero the rest of the bucket is unclaimed - stop probing.
-        test    edx, edx
+        test    VersionReg32, VersionReg32
         je      CacheMiss
 
         ;; Quadratic reprobe: i++; index = (index + i) & tableMask
@@ -123,25 +141,32 @@ endif
         jl      ProbeLoop
 
       CacheMiss:
+if ReturnTarget ne 0
+        mov     rcx, [rsp + 8h]
+        mov     rdx, DispatchCellReg
+        jmp     RhpCidResolve_Worker
+else
         mov     r9, [rsp + 20h]
         mov     r8, [rsp + 18h]
         mov     rdx, [rsp + 10h]
         mov     rcx, [rsp + 8h]
 
       SlowPath:
-        ;; r11 contains indirection cell address
+        ;; DispatchCellReg contains indirection cell address
         lea     r10, RhpCidResolve
 if Guarded ne 0
         jmp     RhpUniversalTransitionGuardedTailCall
 else
         jmp     RhpUniversalTransitionTailCall
 endif
+endif
 
 LEAF_END DispatchName, _TEXT
 
         endm
 
-        INTERFACE_DISPATCH RhpInterfaceDispatch, 0
-        INTERFACE_DISPATCH RhpInterfaceDispatchGuarded, 1
+        INTERFACE_DISPATCH RhpInterfaceDispatch, 0, 0, r11, edx
+        INTERFACE_DISPATCH RhpInterfaceDispatchGuarded, 1, 0, r11, edx
+        INTERFACE_DISPATCH RhpDispatchResolve, 0, 1, rdx, r11d
 
 end
