@@ -209,8 +209,8 @@ namespace System.Text.Json.Schema
 #endif
                             ),
                             "Expected a numeric branch for IEEE floating-point types with AllowNamedFloatingPointLiterals.");
-                        
-                        anyOf.Add(JsonSchema.CreateTrue().MakeNullable());
+
+                        anyOf.Add(new JsonSchema { Type = JsonSchemaType.Null });
                     }
                 }
                 else if (schema.Enum != null)
