@@ -195,9 +195,9 @@ namespace System.Text.Json.Schema
                     // named floating-point literals, mirroring the enum handling above.
                     foreach (JsonSchema branch in anyOf)
                     {
-                        if (branch.Enum != null)
+                        if (branch.Enum is { } enumValues)
                         {
-                            branch.Enum.Add(null); // Append null to the enum array.
+                            enumValues.Add(null); // Append null to the enum array.
                             break;
                         }
                     }
