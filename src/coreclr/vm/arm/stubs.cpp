@@ -937,11 +937,9 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         // or unwind.
 
         // On entry r0 holds the delegate instance. Load r12 = address of _methodPtrAux (IndirectionCell
-        // for VSD) and load the real target address into lr.
+        // for VSD). Do this before the shuffle entries overwrite r0.
         //  add r12, r0, #offsetof(DelegateObject, _methodPtrAux)
         ThumbEmitAdd(ThumbReg(12), ThumbReg(0), DelegateObject::GetOffsetOfMethodPtrAux());
-        //  ldr lr, [r12]
-        ThumbEmitLoadRegIndirect(thumbRegLr, ThumbReg(12), 0);
 
         // Emit the instructions to rewrite the argument registers. Most will be register-to-register (e.g.
         // move r1 to r0) but one or two of them might move values from the top of the incoming stack
@@ -971,9 +969,10 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
             pEntry++;
         }
 
-        // Tail call to real target.
-        //  bx lr
-        ThumbEmitJumpRegister(thumbRegLr);
+        // Tail call to real target via the IndirectionCell in r12. Using ldr pc, [r12] preserves lr
+        // (which holds the caller's return address) and leaves r12 intact as the IndirectionCell for VSD.
+        //  ldr pc, [r12]
+        ThumbEmitLoadRegIndirect(thumbRegPc, ThumbReg(12), 0);
 
         return;
     }
