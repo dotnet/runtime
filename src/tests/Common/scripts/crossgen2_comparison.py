@@ -823,6 +823,31 @@ def compare_and_print_message(base_result, diff_result, base_dirname, diff_dirna
 
     return base_diff_are_equal
 
+def copy_artifacts_to_dump_folder(assembly_name, base_dirname, diff_dirname):
+    """
+        Copies the crossgen compilation artifacts (the produced native/ReadyToRun
+        images) for a failing assembly to the machine dump folder so that the lab
+        infrastructure uploads them to Azure where they can be downloaded and
+        analyzed for root causing crossgen comparison failures.
+    """
+    dump_folder = os.environ.get('HELIX_DUMP_FOLDER')
+    if not dump_folder:
+        return
+
+    ni_filename = add_ni_extension(assembly_name + '.dll')
+    try:
+        os.makedirs(dump_folder, exist_ok=True)
+        for label, source_dirname in [('base', base_dirname), ('diff', diff_dirname)]:
+            source_filename = os.path.join(source_dirname, ni_filename)
+            if os.path.isfile(source_filename):
+                destination_filename = os.path.join(dump_folder, '{0}_{1}'.format(label, ni_filename))
+                shutil.copy2(source_filename, destination_filename)
+                print('Copied crossgen output "{0}" to dump folder "{1}"'.format(source_filename, destination_filename))
+            else:
+                print('Crossgen output "{0}" was not found; cannot copy it to the dump folder'.format(source_filename))
+    except OSError as ex:
+        print('Failed to copy crossgen artifacts for "{0}" to dump folder "{1}": {2}'.format(assembly_name, dump_folder, ex))
+
 def compare_results(args):
     """
         Checks whether {base} and {diff} crossgens are "equal":
@@ -896,6 +921,8 @@ def compare_results(args):
 
         for assembly_name in sorted(omitted_from_base_dir):
             diff_result = diff_results_by_name[assembly_name]
+            if output_file_type == FileTypes.NativeOrReadyToRunImage:
+                copy_artifacts_to_dump_folder(assembly_name, args.base_dirname, args.diff_dirname)
             message = 'Expected nothing, got {0}'.format(json.dumps(diff_result, cls=CrossGenResultEncoder, indent=2))
             testresult = root.createElement('test')
             testresult.setAttribute('name', 'CrossgenCompile_{2}_Target_{0}_Omitted_vs_{1}'.format(args.target_arch_os, diff_result.compiler_arch_os, assembly_name))
@@ -918,6 +945,8 @@ def compare_results(args):
 
         for assembly_name in sorted(omitted_from_diff_dir):
             base_result = base_results_by_name[assembly_name]
+            if output_file_type == FileTypes.NativeOrReadyToRunImage:
+                copy_artifacts_to_dump_folder(assembly_name, args.base_dirname, args.diff_dirname)
             message = 'Expected {0} got nothing'.format(json.dumps(base_result, cls=CrossGenResultEncoder, indent=2))
             testresult = root.createElement('test')
             testresult.setAttribute('name', 'CrossgenCompile_{2}_Target_{0}_{1}_vs__Omitted'.format(args.target_arch_os, base_result.compiler_arch_os, assembly_name))
@@ -969,6 +998,8 @@ def compare_results(args):
             collection.appendChild(testresult)
 
             if not base_diff_are_equal:
+                if output_file_type == FileTypes.NativeOrReadyToRunImage:
+                    copy_artifacts_to_dump_folder(assembly_name, args.base_dirname, args.diff_dirname)
                 failureXml = root.createElement('failure')
                 failureXml.setAttribute('exception-type', 'MismatchOrReturnCodeFail')
                 testresult.appendChild(failureXml)
