@@ -71,12 +71,11 @@ static void DlOpen(const char* libraryName)
 // the library's RUNPATH.
 static void DlOpenEOpenSsl(const char* eopensslVersion)
 {
-    static const char libDir[] = "/usr/local/lib";
-    static const char dirPrefix[] = "eopenssl";
+    static const char libDirPrefix[] = "/usr/local/lib/eopenssl";
     static const char sslPrefix[] = "libssl.so.";
 
     char dirPath[PATH_MAX];
-    int written = snprintf(dirPath, sizeof(dirPath), "%s/%s%s", libDir, dirPrefix, eopensslVersion);
+    int written = snprintf(dirPath, sizeof(dirPath), "%s%s", libDirPrefix, eopensslVersion);
     if (written < 0 || (size_t)written >= sizeof(dirPath))
     {
         return;
@@ -113,6 +112,14 @@ static void DlOpenEOpenSsl(const char* eopensslVersion)
         {
             bestMajor = major;
             bestMinor = minor;
+            // Should a directory entry ever have a name longer than NAME_MAX,
+            // (such as NAME_MAX got raised after this module was compiled),
+            // we'll get a truncated version of the file name here, but the -1
+            // guarantees we're NUL-terminated.
+            //
+            // The expected result in such a case is that the DlOpen call fails,
+            // but if the truncation happens to land on another file in the same
+            // directory, well, things will happen.
             strncpy(libName, entry->d_name, sizeof(libName) - 1);
         }
     }
