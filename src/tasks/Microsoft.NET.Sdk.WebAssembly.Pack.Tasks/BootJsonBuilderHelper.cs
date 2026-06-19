@@ -206,7 +206,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             return intValue;
         }
 
-        public string TransformResourcesToAssets(BootJsonData config, bool bundlerFriendly = false)
+        public string TransformResourcesToAssets(BootJsonData config, bool bundlerFriendly = false, Dictionary<string, (int tableSize, int payloadSize)>? r2rSizes = null)
         {
             List<string> imports = [];
 
@@ -289,6 +289,13 @@ namespace Microsoft.NET.Sdk.WebAssembly
                     hash = a.Value,
                     cache = GetCacheControl(a.Key, resources)
                 };
+
+                if (r2rSizes != null && r2rSizes.TryGetValue(a.Key, out var sizes))
+                {
+                    asset.payloadSize = sizes.payloadSize;
+                    if (sizes.tableSize > 0)
+                        asset.tableSize = sizes.tableSize;
+                }
 
                 if (bundlerFriendly)
                 {

@@ -19,6 +19,23 @@
     <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120226 (CoreCLR on wasm defaults) -->
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
   </PropertyGroup>
+
+  <!-- ReadyToRun (R2R) for WebAssembly: tool/reference paths consumed by the SDK's
+       _WasmCrossgenReadyToRunAssemblies target when a project opts in via @(WasmReadyToRunAssembly).
+       These point at the in-tree build outputs; a shipping SDK would resolve crossgen2 from its pack. -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser'">
+    <!-- Architecture of the host crossgen2 tool (not the wasm target). -->
+    <_WasmCrossgen2HostArch Condition="'$(_WasmCrossgen2HostArch)' == ''">x64</_WasmCrossgen2HostArch>
+    <_WasmCrossgen2ToolsDir>$(ArtifactsBinDir)coreclr\browser.wasm.$(Configuration)\$(_WasmCrossgen2HostArch)\</_WasmCrossgen2ToolsDir>
+    <_WasmCrossgen2Path Condition="'$(_WasmCrossgen2Path)' == '' and '$(OS)' == 'Windows_NT'">$(_WasmCrossgen2ToolsDir)crossgen2\crossgen2.exe</_WasmCrossgen2Path>
+    <_WasmCrossgen2Path Condition="'$(_WasmCrossgen2Path)' == ''">$(_WasmCrossgen2ToolsDir)crossgen2\crossgen2</_WasmCrossgen2Path>
+    <_WasmCrossgen2JitPath Condition="'$(_WasmCrossgen2JitPath)' == ''">$(_WasmCrossgen2ToolsDir)clrjit_universal_wasm_$(_WasmCrossgen2HostArch).dll</_WasmCrossgen2JitPath>
+    <_WasmReadyToRunReferenceAssembliesPath Condition="'$(_WasmReadyToRunReferenceAssembliesPath)' == ''">$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</_WasmReadyToRunReferenceAssembliesPath>
+    <!-- -O works around the MinOpts wasm R2R JIT assert (https://github.com/dotnet/runtime/issues/129630).
+         JitWasmNyiToR2RUnsupported lets NYI methods fall back at runtime instead of failing crossgen. -->
+    <_WasmCrossgen2ExtraArgs Condition="'$(_WasmCrossgen2ExtraArgs)' == ''">--codegenopt:JitWasmNyiToR2RUnsupported=1 -O</_WasmCrossgen2ExtraArgs>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
     <UseMonoRuntime>true</UseMonoRuntime>
   </PropertyGroup>

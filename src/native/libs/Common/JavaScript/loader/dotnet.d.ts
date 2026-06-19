@@ -289,6 +289,13 @@ type AssemblyAsset = Asset & {
     virtualPath: string;
     name: string;
     hash?: string | null | "";
+    /**
+     * For ReadyToRun (R2R) webcil-in-wasm images: the number of table entries the module needs and
+     * the size in bytes of the Webcil payload. When present, the runtime can stream-instantiate the
+     * image without buffering its bytes or parsing the wasm data section.
+     */
+    tableSize?: number;
+    payloadSize?: number;
 };
 type PdbAsset = Asset & {
     virtualPath: string;

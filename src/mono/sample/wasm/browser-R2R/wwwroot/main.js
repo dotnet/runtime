@@ -1,0 +1,30 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import { dotnet, exit } from './_framework/dotnet.js'
+
+function displayMeaning(meaning) {
+    console.log(`Meaning of life is ${meaning}`);
+    document.getElementById("out").innerHTML = `${meaning}`;
+}
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+try {
+    const { setModuleImports, getAssemblyExports } = await dotnet
+        .withConfig({ appendElementOnExit: true, exitOnUnhandledError: true, forwardConsole: true, logExitCode: true })
+        .withDiagnosticTracing(true)
+        .withApplicationArguments("--meaning", "42")
+        .create();
+
+    const exitCode = await dotnet.run();
+    console.log(`Program has exited with code ${exitCode}.`);
+    exit(exitCode);
+}
+catch (err) {
+    if (!err || typeof err.status !== "number") {
+        exit(2, err);
+    }
+}

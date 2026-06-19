@@ -421,9 +421,16 @@ Copyright (c) .NET Foundation. All rights reserved.
     Inputs="@(_WasmDllBuildCandidates);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')">
 
-    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
+    <ConvertDllsToWebcil 
+          Candidates="@(_WasmDllBuildCandidates)" 
+          IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" 
+          OutputPath="$(_WasmBuildWebcilPath)" 
+          IsEnabled="$(_WasmEnableWebcil)" 
+          WebcilVersion="$(_WasmWebcilVersion)" 
+          R2RWebcilCandidates="@(WasmR2RWebcilCandidate)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FileWrites" ItemName="_WasmConvertedWebcilOutputs" />
+      <Output TaskParameter="WebcilSizes" ItemName="_WasmWebcilSizes" />
     </ConvertDllsToWebcil>
 
     <!-- Touch is needed for property-triggered full rebuilds: the task's content comparison
@@ -741,6 +748,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
+      WebcilSizes="@(_WasmWebcilSizes)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
@@ -911,6 +919,56 @@ Copyright (c) .NET Foundation. All rights reserved.
     DependsOnTargets="PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;ResolveAssemblyReferences"
     BeforeTargets="PrepareForPublish" />
 
+  <!-- ReadyToRun (R2R) cross-compilation for WebAssembly. A project opts in by listing assembly
+       names (without extension) in @(WasmReadyToRunAssembly). Each named assembly is crossgen'd to
+       an R2R webcil-in-wasm image and handed to ConvertDllsToWebcil as a prebuilt replacement (via
+       @(WasmR2RWebcilCandidate)), so the SDK computes fingerprint/integrity from the R2R bytes and
+       the runtime executes the precompiled code instead of falling back to the interpreter.
+
+       Requires CoreCLR + webcil. The crossgen2 tool, wasm JIT and reference assemblies are provided
+       via the _WasmCrossgen2Path / _WasmCrossgen2JitPath / _WasmReadyToRunReferenceAssembliesPath
+       properties (set by WasmApp.InTree.props in the runtime repo; a shipping SDK would resolve them
+       from the crossgen2 pack). The input is the trimmed assembly produced by ILLink. -->
+  <Target Name="_WasmCrossgenReadyToRunAssemblies"
+          BeforeTargets="ProcessPublishFilesForWasm"
+          Condition="'@(WasmReadyToRunAssembly)' != '' and '$(_WasmEnableWebcil)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmBuildingForNestedPublish)' != 'true'">
+
+    <Error Condition="'$(_WasmCrossgen2Path)' == '' or !Exists('$(_WasmCrossgen2Path)')"
+           Text="ReadyToRun for WebAssembly requires crossgen2, but it was not found at '$(_WasmCrossgen2Path)'. Set the %24(_WasmCrossgen2Path) property." />
+
+    <PropertyGroup>
+      <_WasmR2RLinkDir>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'linked'))</_WasmR2RLinkDir>
+      <_WasmR2ROutDir>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'r2r'))</_WasmR2ROutDir>
+      <_WasmR2RRspPath>$(_WasmR2ROutDir)crossgen2.rsp</_WasmR2RRspPath>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_WasmR2ROutDir)" />
+
+    <!-- Reference closure: the framework assemblies. Passed via a response file to avoid
+         command-line length limits. -->
+    <ItemGroup>
+      <_WasmR2RReference Include="$(_WasmReadyToRunReferenceAssembliesPath)lib\net*\*.dll" />
+      <_WasmR2RReference Include="$(_WasmReadyToRunReferenceAssembliesPath)native\System.Private.CoreLib.dll" />
+      <_WasmR2RRspLine Include="-r:&quot;%(_WasmR2RReference.FullPath)&quot;" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(_WasmR2RRspPath)" Lines="@(_WasmR2RRspLine)" Overwrite="true" />
+
+    <ItemGroup>
+      <_WasmR2RInput Include="@(WasmReadyToRunAssembly)">
+        <InputPath>$(_WasmR2RLinkDir)%(Identity).dll</InputPath>
+        <OutputPath>$(_WasmR2ROutDir)%(Identity).wasm</OutputPath>
+      </_WasmR2RInput>
+    </ItemGroup>
+    <Error Condition="'%(_WasmR2RInput.Identity)' != '' and !Exists('%(_WasmR2RInput.InputPath)')"
+           Text="ReadyToRun input assembly not found: '%(_WasmR2RInput.InputPath)'. R2R for WebAssembly currently requires the assembly to be trimmed (PublishTrimmed)." />
+
+    <Exec Command="&quot;$(_WasmCrossgen2Path)&quot; @&quot;$(_WasmR2RRspPath)&quot; --targetarch:wasm --targetos:browser --obj-format:wasm --jitpath:&quot;$(_WasmCrossgen2JitPath)&quot; $(_WasmCrossgen2ExtraArgs) --out:&quot;%(_WasmR2RInput.OutputPath)&quot; &quot;%(_WasmR2RInput.InputPath)&quot;" />
+
+    <ItemGroup>
+      <WasmR2RWebcilCandidate Include="@(_WasmR2RInput->'%(OutputPath)')" />
+    </ItemGroup>
+  </Target>
+
   <!-- Wasm's Nested publish is run just to build the native bits. We don't need to run blazor targets for that -->
   <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <!-- The list of static web assets already contains all the assets from the build. We want to correct certain assets that might
@@ -983,9 +1041,15 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" 
+        IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" 
+        OutputPath="$(_WasmPublishWebcilPath)" 
+        IsEnabled="$(_WasmEnableWebcil)" 
+        WebcilVersion="$(_WasmWebcilVersion)" 
+        R2RWebcilCandidates="@(WasmR2RWebcilCandidate)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+      <Output TaskParameter="WebcilSizes" ItemName="_WasmWebcilSizes" />
     </ConvertDllsToWebcil>
 
     <!-- _NewWebcilPublishStaticWebAssetsCandidates contain the `Fingerprint` and the `Integrity` from the old assets.
@@ -1213,6 +1277,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
+      WebcilSizes="@(_WasmWebcilSizes)"
       BundlerFriendly="$(_WasmBundlerFriendlyBootConfig)"
       ExitOnUnhandledError="$(WasmTestExitOnUnhandledError)"
       AppendElementOnExit="$(WasmTestAppendElementOnExit)"
