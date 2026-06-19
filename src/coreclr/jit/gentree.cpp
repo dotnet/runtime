@@ -9769,7 +9769,6 @@ GenTreeLclVar* Compiler::gtNewStoreLclVarNode(unsigned lclNum, GenTree* value)
     }
 
     gtInitializeStoreNode(store, value);
-    gtInitializeLclVarNode(store);
 
     return store;
 }
@@ -9804,7 +9803,6 @@ GenTreeLclFld* Compiler::gtNewStoreLclFldNode(
     }
 
     gtInitializeStoreNode(store, value);
-    gtInitializeLclVarNode(store);
 
     return store;
 }
@@ -9909,6 +9907,24 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
 
 GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs))
 {
+    assert(type != TYP_VOID);
+    // We need to ensure that all struct values are normalized.
+    // It might be nice to assert this in general, but we have stores of int to long.
+    if (varTypeIsStruct(type))
+    {
+        // Make an exception for implicit by-ref parameters during global morph, since
+        // their lvType has been updated to byref but their appearances have not yet all
+        // been rewritten and so may have struct type still.
+        LclVarDsc* varDsc = lvaGetDesc(lnum);
+
+        bool simd12ToSimd16Widening = false;
+#if defined(FEATURE_SIMD)
+        // We can additionally have a SIMD12 that was widened to a SIMD16, generally as part of lowering
+        simd12ToSimd16Widening = (type == TYP_SIMD16) && (varDsc->lvType == TYP_SIMD12);
+#endif // FEATURE_SIMD
+        assert((type == varDsc->lvType) || simd12ToSimd16Widening ||
+               (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (varDsc->lvType == TYP_BYREF)));
+    }
     GenTreeLclVar* node = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(offs));
 
     /* Cannot have this assert because the inliner uses this function
@@ -9916,7 +9932,6 @@ GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL
 
     // assert(lnum < lvaCount);
 
-    gtInitializeLclVarNode(node);
     return node;
 }
 
@@ -9939,11 +9954,20 @@ GenTreeLclVar* Compiler::gtNewLclVarNode(unsigned lclNum, var_types type)
 
 GenTreeLclVar* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs))
 {
+    // We need to ensure that all struct values are normalized.
+    // It might be nice to assert this in general, but we have stores of int to long.
+    if (varTypeIsStruct(type))
+    {
+        // Make an exception for implicit by-ref parameters during global morph, since
+        // their lvType has been updated to byref but their appearances have not yet all
+        // been rewritten and so may have struct type still.
+        assert(type == lvaTable[lnum].lvType ||
+               (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (lvaTable[lnum].lvType == TYP_BYREF)));
+    }
     // This local variable node may later get transformed into a large node
     assert(GenTree::s_gtNodeSizes[LargeOpOpcode()] > GenTree::s_gtNodeSizes[GT_LCL_VAR]);
     GenTreeLclVar* node =
         new (this, LargeOpOpcode()) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(offs) DEBUGARG(/*largeNode*/ true));
-    gtInitializeLclVarNode(node);
     return node;
 }
 
@@ -9956,7 +9980,6 @@ GenTreeLclFld* Compiler::gtNewLclVarAddrNode(unsigned lclNum, var_types type)
 GenTreeLclFld* Compiler::gtNewLclAddrNode(unsigned lclNum, unsigned lclOffs, var_types type)
 {
     GenTreeLclFld* node = new (this, GT_LCL_ADDR) GenTreeLclFld(GT_LCL_ADDR, type, lclNum, lclOffs);
-    gtInitializeLclVarNode(node);
     return node;
 }
 
@@ -9979,7 +10002,6 @@ GenTreeFieldList* Compiler::gtNewFieldList()
 GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout)
 {
     GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, type, lnum, offset, layout);
-    gtInitializeLclVarNode(node);
     return node;
 }
 
@@ -10040,59 +10062,6 @@ GenTreeFieldAddr* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HAN
 }
 
 //------------------------------------------------------------------------
-// gtInitializeLclVarNode: Initialize a lcl var node.
-//
-// Common initialization for all lcl var nodes. Marks SIMD locals as "used in
-// a HW intrinsic".
-//
-// Arguments:
-//    lclVar - The lcl var node
-//
-void Compiler::gtInitializeLclVarNode(GenTreeLclVarCommon* lclVar)
-{
-#ifdef DEBUG
-    if (lclVar->OperIs(GT_LCL_VAR))
-    {
-        assert(!lclVar->TypeIs(TYP_VOID));
-
-        // We need to ensure that all struct values are normalized.
-        // It might be nice to assert this in general, but we have stores of int to long.
-        if (varTypeIsStruct(lclVar))
-        {
-            // Make an exception for implicit by-ref parameters during global morph, since
-            // their lvType has been updated to byref but their appearances have not yet all
-            // been rewritten and so may have struct type still.
-            LclVarDsc* varDsc = lvaGetDesc(lclVar);
-
-            bool simd12ToSimd16Widening = false;
-
-#if defined(FEATURE_SIMD)
-            // We can additionally have a SIMD12 that was widened to a SIMD16, generally as part of lowering
-            simd12ToSimd16Widening = lclVar->TypeIs(TYP_SIMD16) && (varDsc->lvType == TYP_SIMD12);
-#endif // FEATURE_SIMD
-
-            assert(lclVar->TypeIs(varDsc->lvType) || simd12ToSimd16Widening ||
-                   (lvaIsImplicitByRefLocal(lclVar->GetLclNum()) && fgGlobalMorph && (varDsc->lvType == TYP_BYREF)));
-        }
-    }
-#endif // DEBUG
-
-#if defined(FEATURE_SIMD)
-    var_types type = lclVar->TypeGet();
-
-    if (lclVar->IsLclVarAddr())
-    {
-        type = lvaGetDesc(lclVar)->lvType;
-    }
-
-    if (varTypeIsSIMDOrMask(type))
-    {
-        SetOpLclRelatedToSIMDIntrinsic(lclVar);
-    }
-#endif // FEATURE_SIMD
-}
-
-//------------------------------------------------------------------------
 // gtInitializeStoreNode: Initialize a store node.
 //
 // Common initialization for all STORE nodes. Marks SIMD locals as "used in
@@ -10106,18 +10075,6 @@ void Compiler::gtInitializeStoreNode(GenTree* store, GenTree* value)
 {
     // TODO-ASG: add asserts that the types match here.
     assert(store->Data() == value);
-
-#if defined(FEATURE_SIMD)
-    if (varTypeIsSIMDOrMask(store))
-    {
-        // We don't want to mark the store if its an indir, since
-        // that pessimizes codegen "a lot". We do, however, still
-        // want to mark the value. For local stores, we will mark
-        // the store itself using gtInitializeLclVarNode
-
-        SetOpLclRelatedToSIMDIntrinsic(value);
-    }
-#endif // FEATURE_SIMD
 }
 
 //------------------------------------------------------------------------
@@ -10207,13 +10164,6 @@ GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags in
     GenTreeIndir* indir = new (this, GT_IND) GenTreeIndir(GT_IND, typ, addr, nullptr);
     gtInitializeIndirNode(indir, indirFlags);
 
-#if defined(FEATURE_SIMD)
-    if (varTypeIsSIMDOrMask(typ))
-    {
-        SetOpLclRelatedToSIMDIntrinsic(addr);
-    }
-#endif // FEATURE_SIMD
-
     return indir;
 }
 
@@ -10265,7 +10215,6 @@ GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenT
 
     GenTreeBlk* store = new (this, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, addr, value, layout);
     store->gtFlags |= GTF_ASG;
-
     gtInitializeIndirNode(store, indirFlags);
     gtInitializeStoreNode(store, value);
 
@@ -10290,7 +10239,6 @@ GenTreeStoreInd* Compiler::gtNewStoreIndNode(var_types type, GenTree* addr, GenT
 
     GenTreeStoreInd* store = new (this, GT_STOREIND) GenTreeStoreInd(type, addr, value);
     store->gtFlags |= GTF_ASG;
-
     gtInitializeIndirNode(store, indirFlags);
     gtInitializeStoreNode(store, value);
 
@@ -21921,56 +21869,6 @@ FieldSeq::FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fiel
 }
 
 #ifdef FEATURE_SIMD
-//-------------------------------------------------------------------
-// SetOpLclRelatedToSIMDIntrinsic: Determine if the tree has a local var that needs to be set
-// as used by a SIMD intrinsic, and if so, set that local var appropriately.
-//
-// Arguments:
-//     op - The tree, to be an operand of a new SIMD-related node, to check.
-//
-void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTree* op)
-{
-    // We want to track SIMD/Mask accesses as being intrinsics since they
-    // are functionally `mov` instructions and are more efficient when
-    // we don't promote, particularly when it occurs due to inlining.
-    //
-    // Noting, however, we need to ensure this is really only called for
-    // indirections or local variables that are actually used as part of
-    // SIMD intrinsics, because it's purpose is to block promotion and it
-    // will pessimize codegen a lot if used incorrectly.
-    //
-    // With that regard, we expect this to be called for all operands of
-    // actual hwintrinsic nodes, for loads where the source is one of the
-    // supported TYP_SIMD or TYP_MASK, and for stores where the destination
-    // is one of the supported TYP_SIMD or TYP_MASK. We do not want it called
-    // just because the value being stored is TYP_SIMD or TYP_MASK, however.
-
-    if (op == nullptr)
-    {
-        return;
-    }
-    op = op->gtEffectiveVal();
-
-    if (op->OperIsIndir())
-    {
-        op = op->AsIndir()->Addr()->gtEffectiveVal();
-    }
-
-    if (op->OperIsScalarLocal() || op->IsLclVarAddr())
-    {
-        // We don't currently mark LCL_FLD, STORE_LCL_FLD, or PHI_ARG
-
-        unsigned   lclNum    = op->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* lclVarDsc = lvaGetDesc(lclNum);
-
-        if (!lclVarDsc->lvUsedInSIMDIntrinsic)
-        {
-            lclVarDsc->lvUsedInSIMDIntrinsic = true;
-            JITDUMP("Marked V%02u as used in SIMD intrinsic\n", lclNum);
-        }
-    }
-}
-
 void GenTreeMultiOp::ResetOperandArray(size_t    newOperandCount,
                                        Compiler* compiler,
                                        GenTree** inlineOperands,
@@ -22751,8 +22649,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
     var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types simdBaseType, unsigned simdSize)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, simdBaseType, simdSize, op1);
 }
@@ -22760,9 +22656,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
     var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types simdBaseType, unsigned simdSize)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-    SetOpLclRelatedToSIMDIntrinsic(op2);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, simdBaseType, simdSize, op1, op2);
 }
@@ -22775,10 +22668,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
                                                        var_types      simdBaseType,
                                                        unsigned       simdSize)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-    SetOpLclRelatedToSIMDIntrinsic(op2);
-    SetOpLclRelatedToSIMDIntrinsic(op3);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, simdBaseType, simdSize, op1, op2, op3);
 }
@@ -22792,11 +22681,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
                                                        var_types      simdBaseType,
                                                        unsigned       simdSize)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-    SetOpLclRelatedToSIMDIntrinsic(op2);
-    SetOpLclRelatedToSIMDIntrinsic(op3);
-    SetOpLclRelatedToSIMDIntrinsic(op4);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, simdBaseType, simdSize, op1, op2, op3, op4);
 }
@@ -22812,7 +22696,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
     for (size_t i = 0; i < operandCount; i++)
     {
         nodeBuilder.AddOperand(i, operands[i]);
-        SetOpLclRelatedToSIMDIntrinsic(operands[i]);
     }
 
     return new (this, GT_HWINTRINSIC)
@@ -22825,11 +22708,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types              ty
                                                        var_types              simdBaseType,
                                                        unsigned               simdSize)
 {
-    for (size_t i = 0; i < nodeBuilder.GetOperandCount(); i++)
-    {
-        SetOpLclRelatedToSIMDIntrinsic(nodeBuilder.GetOperand(i));
-    }
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, std::move(nodeBuilder), hwIntrinsicID, simdBaseType, simdSize);
 }
@@ -29852,8 +29730,6 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, NamedIn
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, TYP_UNKNOWN, 0, op1);
 }
@@ -29863,9 +29739,6 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types      type,
                                                          GenTree*       op2,
                                                          NamedIntrinsic hwIntrinsicID)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-    SetOpLclRelatedToSIMDIntrinsic(op2);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, TYP_UNKNOWN, 0, op1, op2);
 }
@@ -29873,10 +29746,6 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types      type,
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
     var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-    SetOpLclRelatedToSIMDIntrinsic(op2);
-    SetOpLclRelatedToSIMDIntrinsic(op3);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, TYP_UNKNOWN, 0, op1, op2, op3);
 }

@@ -144,9 +144,8 @@ unsigned Compiler::getFFRegisterVarNum()
 {
     if (lvaFfrRegister == BAD_VAR_NUM)
     {
-        lvaFfrRegister                                 = lvaGrabTemp(false DEBUGARG("Save the FFR value."));
-        lvaTable[lvaFfrRegister].lvType                = TYP_MASK;
-        lvaTable[lvaFfrRegister].lvUsedInSIMDIntrinsic = true;
+        lvaFfrRegister                  = lvaGrabTemp(false DEBUGARG("Save the FFR value."));
+        lvaTable[lvaFfrRegister].lvType = TYP_MASK;
     }
     return lvaFfrRegister;
 }
@@ -188,25 +187,6 @@ var_types Compiler::getBaseTypeForPrimitiveNumericClass(CORINFO_CLASS_HANDLE cls
 //
 var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */)
 {
-    if (m_simdHandleCache == nullptr)
-    {
-        if (impInlineInfo == nullptr)
-        {
-            m_simdHandleCache = new (this, CMK_Generic) SIMDHandlesCache();
-        }
-        else
-        {
-            // Steal the inliner compiler's cache (create it if not available).
-
-            if (impInlineInfo->InlineRoot->m_simdHandleCache == nullptr)
-            {
-                impInlineInfo->InlineRoot->m_simdHandleCache = new (this, CMK_Generic) SIMDHandlesCache();
-            }
-
-            m_simdHandleCache = impInlineInfo->InlineRoot->m_simdHandleCache;
-        }
-    }
-
     if (sizeBytes != nullptr)
     {
         *sizeBytes = 0;
@@ -236,7 +216,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                 }
 
                 JITDUMP("  Known type Plane\n");
-                m_simdHandleCache->PlaneHandle = typeHnd;
 
                 simdBaseType = TYP_FLOAT;
                 size         = 4 * genTypeSize(TYP_FLOAT);
@@ -251,7 +230,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                 }
 
                 JITDUMP("  Known type Quaternion\n");
-                m_simdHandleCache->QuaternionHandle = typeHnd;
 
                 simdBaseType = TYP_FLOAT;
                 size         = 4 * genTypeSize(TYP_FLOAT);
@@ -270,7 +248,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                     case '\0':
                     {
                         JITDUMP(" Found type Vector\n");
-                        m_simdHandleCache->VectorHandle = typeHnd;
                         break;
                     }
 
@@ -282,7 +259,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         }
 
                         JITDUMP(" Found Vector2\n");
-                        m_simdHandleCache->Vector2Handle = typeHnd;
 
                         simdBaseType = TYP_FLOAT;
                         size         = 2 * genTypeSize(TYP_FLOAT);
@@ -297,7 +273,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         }
 
                         JITDUMP(" Found Vector3\n");
-                        m_simdHandleCache->Vector3Handle = typeHnd;
 
                         simdBaseType = TYP_FLOAT;
                         size         = 3 * genTypeSize(TYP_FLOAT);
@@ -312,7 +287,6 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
                         }
 
                         JITDUMP(" Found Vector4\n");
-                        m_simdHandleCache->Vector4Handle = typeHnd;
 
                         simdBaseType = TYP_FLOAT;
                         size         = 4 * genTypeSize(TYP_FLOAT);

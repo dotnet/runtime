@@ -5334,17 +5334,16 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 
         case NI_SRCS_UNSAFE_As:
         {
-            assert((sig->sigInst.methInstCount == 1) || (sig->sigInst.methInstCount == 2));
+            GenTree* op = impPopStack().val;
 
             if (sig->sigInst.methInstCount == 1)
             {
+                assert(op->TypeIs(TYP_REF));
+
                 CORINFO_SIG_INFO exactSig;
                 info.compCompHnd->getMethodSig(pResolvedToken->hMethod, &exactSig);
                 const CORINFO_CLASS_HANDLE inst = exactSig.sigInst.methInst[0];
                 assert(inst != nullptr);
-
-                GenTree* op = impPopStack().val;
-                assert(op->TypeIs(TYP_REF));
 
                 JITDUMP("Expanding Unsafe.As<%s>(...)\n", eeGetClassName(inst));
 
@@ -5367,10 +5366,34 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 return gtNewLclvNode(localNum, TYP_REF);
             }
 
+            assert(sig->sigInst.methInstCount == 2);
+
             // ldarg.0
             // ret
 
-            return impPopStack().val;
+#if defined(FEATURE_SIMD)
+            GenTree* addr = op->gtEffectiveVal();
+
+            if (addr->IsLclVarAddr())
+            {
+                CORINFO_CLASS_HANDLE toTypeHnd = sig->sigInst.methInst[1];
+                ClassLayout*         toLayout  = nullptr;
+                var_types            toType    = TypeHandleToVarType(toTypeHnd, &toLayout);
+
+                if (varTypeIsSIMD(toType))
+                {
+                    CORINFO_CLASS_HANDLE fromTypeHnd = sig->sigInst.methInst[0];
+                    ClassLayout*         fromLayout  = nullptr;
+                    var_types            fromType    = TypeHandleToVarType(fromTypeHnd, &fromLayout);
+
+                    if ((fromLayout != nullptr) && (fromLayout->GetSize() == genTypeSize(toType)))
+                    {
+                        lvaGetDesc(addr->AsLclFld())->lvIsBitcastToSimd = true;
+                    }
+                }
+            }
+#endif // FEATURE_SIMD
+            return op;
         }
 
         case NI_SRCS_UNSAFE_AsPointer:
@@ -5516,6 +5539,13 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             else
             {
                 addr = impGetNodeAddr(op1, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
+
+#if defined(FEATURE_SIMD)
+                if (varTypeIsSIMD(toType) && addr->IsLclVarAddr())
+                {
+                    lvaGetDesc(addr->AsLclFld())->lvIsBitcastToSimd = true;
+                }
+#endif // FEATURE_SIMD
             }
 
             if (info.compCompHnd->getClassAlignmentRequirement(fromTypeHnd) <

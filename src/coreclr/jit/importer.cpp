@@ -11004,6 +11004,28 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val;
                 assertImp((genActualType(op1) == TYP_I_IMPL) || op1->TypeIs(TYP_BYREF));
 
+#if defined(FEATURE_SIMD)
+                if (varTypeIsSIMD(lclTyp))
+                {
+                    // We want to handle the general pattern of *(VectorN<T>*)(&lcl)
+                    // so we can recognize it as a form of bitcasting and mark the
+                    // underlying value to prevent its promotion. This is generally
+                    // some form of `ldarga, conv.u, ldobj` in IL
+
+                    GenTree* addr = op1->gtEffectiveVal();
+
+                    if (addr->IsLclVarAddr())
+                    {
+                        LclVarDsc* lclVar = lvaGetDesc(addr->AsLclFld());
+
+                        if ((lclVar->lvType == TYP_STRUCT) && (lclVar->lvExactSize() == genTypeSize(lclTyp)))
+                        {
+                            lclVar->lvIsBitcastToSimd = true;
+                        }
+                    }
+                }
+#endif // FEATURE_SIMD
+
                 op1 = gtNewLoadValueNode(lclTyp, layout, op1, impPrefixFlagsToIndirFlags(prefixFlags));
                 impPushOnStack(op1, tiRetVal);
                 break;

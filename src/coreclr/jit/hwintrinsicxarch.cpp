@@ -1523,7 +1523,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
 
             retNode = impSIMDPopStack();
-            SetOpLclRelatedToSIMDIntrinsic(retNode);
             assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
             break;
         }
@@ -1613,7 +1612,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // and the signature return type are both the same TYP_SIMD.
 
                     retNode = impSIMDPopStack();
-                    SetOpLclRelatedToSIMDIntrinsic(retNode);
                     assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
 
                     break;
@@ -1673,7 +1671,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // and the signature return type are both the same TYP_SIMD.
 
                 retNode = impSIMDPopStack();
-                SetOpLclRelatedToSIMDIntrinsic(retNode);
                 assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
 
                 break;
@@ -5467,24 +5464,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             argType      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg5, &argClass)));
             GenTree* op5 = getArgForHWIntrinsic(argType, argClass);
-            SetOpLclRelatedToSIMDIntrinsic(op5);
 
             argType      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg4, &argClass)));
             GenTree* op4 = getArgForHWIntrinsic(argType, argClass);
-            SetOpLclRelatedToSIMDIntrinsic(op4);
 
             argType                 = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
             var_types indexBaseType = getBaseTypeOfSIMDType(argClass);
             GenTree*  op3           = getArgForHWIntrinsic(argType, argClass);
-            SetOpLclRelatedToSIMDIntrinsic(op3);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2     = getArgForHWIntrinsic(argType, argClass);
-            SetOpLclRelatedToSIMDIntrinsic(op2);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
-            SetOpLclRelatedToSIMDIntrinsic(op1);
 
             retNode = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic,
                                                                     simdBaseType, simdSize, op1, op2, op3, op4, op5);

@@ -631,8 +631,8 @@ public:
     unsigned char lvLRACandidate : 1; // Tracked for linear scan register allocation purposes
 
 #ifdef FEATURE_SIMD
-    unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
-#endif                                       // FEATURE_SIMD
+    unsigned char lvIsBitcastToSimd : 1; // This tracks whether the lclvar was bitcast to a simd type
+#endif                                   // FEATURE_SIMD
 
     unsigned char lvRegStruct : 1; // This is a reg-sized non-field-addressed struct.
 
@@ -833,13 +833,13 @@ public:
     /////////////////////
 
 #ifdef FEATURE_SIMD
-    // Is this is a SIMD struct which is used for SIMD intrinsic?
-    bool lvIsUsedInSIMDIntrinsic() const
+    // Is this is a TY_STRUCT which is bitcast to a TYP_SIMD
+    bool IsBitcastToSimd() const
     {
-        return lvUsedInSIMDIntrinsic;
+        return lvIsBitcastToSimd;
     }
 #else
-    bool lvIsUsedInSIMDIntrinsic() const
+    bool IsBitcastToSimd() const
     {
         return false;
     }
@@ -3363,10 +3363,6 @@ public:
 
     GenTreeFieldList* gtNewFieldList();
 
-#ifdef FEATURE_SIMD
-    void SetOpLclRelatedToSIMDIntrinsic(GenTree* op);
-#endif
-
 #ifdef FEATURE_HW_INTRINSICS
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
                                                  NamedIntrinsic hwIntrinsicID,
@@ -3758,7 +3754,6 @@ public:
 
     GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank);
 
-    void gtInitializeLclVarNode(GenTreeLclVarCommon* lclVar);
     void gtInitializeStoreNode(GenTree* store, GenTree* value);
 
     void gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFlags indirFlags);
@@ -10056,75 +10051,6 @@ private:
         }
     };
 
-    SIMDHandlesCache* m_simdHandleCache = nullptr;
-
-    // Returns true if this is a SIMD type that should be considered an opaque
-    // vector type (i.e. do not analyze or promote its fields).
-    // Note that all but the fixed vector types are opaque, even though they may
-    // actually be declared as having fields.
-    bool isOpaqueSIMDType(CORINFO_CLASS_HANDLE structHandle) const
-    {
-        // We order the checks roughly by expected hit count so early exits are possible
-
-        if (m_simdHandleCache == nullptr)
-        {
-            return false;
-        }
-
-        if (structHandle == m_simdHandleCache->Vector4Handle)
-        {
-            return false;
-        }
-
-        if (structHandle == m_simdHandleCache->Vector3Handle)
-        {
-            return false;
-        }
-
-        if (structHandle == m_simdHandleCache->Vector2Handle)
-        {
-            return false;
-        }
-
-        if (structHandle == m_simdHandleCache->QuaternionHandle)
-        {
-            return false;
-        }
-
-        if (structHandle == m_simdHandleCache->PlaneHandle)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    bool isOpaqueSIMDType(ClassLayout* layout) const
-    {
-        if (layout->IsCustomLayout())
-        {
-            return true;
-        }
-
-        return isOpaqueSIMDType(layout->GetClassHandle());
-    }
-
-    // Returns true if the lclVar is an opaque SIMD type.
-    bool isOpaqueSIMDLclVar(const LclVarDsc* varDsc) const
-    {
-        if (!varTypeIsSIMD(varDsc))
-        {
-            return false;
-        }
-
-        if (varDsc->GetLayout() == nullptr)
-        {
-            return true;
-        }
-
-        return isOpaqueSIMDType(varDsc->GetLayout());
-    }
-
     bool isSystemHalfClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
@@ -10435,10 +10361,6 @@ private:
     unsigned getSIMDInitTempVarNum(var_types simdType);
 
 #else  // !FEATURE_SIMD
-    bool isOpaqueSIMDLclVar(LclVarDsc* varDsc)
-    {
-        return false;
-    }
     unsigned int roundUpSIMDSize(unsigned size)
     {
         return 0;
