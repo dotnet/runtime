@@ -1673,7 +1673,13 @@ void RCW::CreateDuplicateWrapper(MethodTable *pNewMT, RCWHolder* pNewRCW)
         // Run the class constructor if it has not run yet.
         pNewMT->CheckRunClassInitThrowing();
 
-        CallDefaultConstructor(ObjectToOBJECTREF(NewWrapperObj));
+        {
+            OBJECTREF wrapperRef = ObjectToOBJECTREF(NewWrapperObj);
+            _ASSERTE(pNewMT->HasDefaultConstructor());
+            MethodDesc *pMD = pNewMT->GetDefaultConstructor();
+            UnmanagedCallersOnlyCaller defaultCtorInvoker{METHOD__RUNTIME_HELPERS__CALL_DEFAULT_CONSTRUCTOR};
+            defaultCtorInvoker.InvokeThrowing(&wrapperRef, pMD->GetSingleCallableAddrOfCode());
+        }
 
         pNewRCW->InitNoCheck(NewWrapperObj);
 

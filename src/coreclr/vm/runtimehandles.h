@@ -223,13 +223,6 @@ extern "C" BOOL QCALLTYPE RuntimeMethodHandle_IsCAVisibleFromDecoratedType(
 
 extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack retTypes, BOOL fAsRuntimeTypeArray);
 
-extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
-    QCall::ObjectHandleOnStack target,
-    PVOID* args,
-    QCall::ObjectHandleOnStack pSigUNSAFE,
-    BOOL fConstructor,
-    QCall::ObjectHandleOnStack result);
-
 extern "C" void QCALLTYPE RuntimeMethodHandle_ConstructInstantiation(MethodDesc * pMethod, DWORD format, QCall::StringHandleOnStack retString);
 extern "C" void* QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * pMethod);
 extern "C" BOOL QCALLTYPE RuntimeMethodHandle_GetIsCollectible(MethodDesc * pMethod);

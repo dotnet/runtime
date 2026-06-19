@@ -74,13 +74,6 @@ void CallDescrWorkerWithHandler(
                 CallDescrData *   pCallDescrData,
                 BOOL              fCriticalCall = FALSE);
 
-// Helper for VM->managed calls with simple signatures.
-void* DispatchCallSimple(
-    SIZE_T *pSrc,
-    DWORD numStackSlotsToCopy,
-    PCODE pTargetAddress,
-    BOOL fCriticalCall);
-
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 // Copy structs returned according to floating-point calling convention from 'returnRegs' containing struct fields
 // (each returned in one register) as they are filled by CallDescrWorkerInternal, to the final destination in memory
@@ -500,13 +493,7 @@ enum EEToManagedCallFlags
 #define END_CALL_TO_MANAGED()                                                   \
 }
 
-/***********************************************************************/
-/* Macros that provide abstraction to the usage of DispatchCallSimple    */
-/***********************************************************************/
-
 #define ARGHOLDER_TYPE LPVOID
-
-void CallDefaultConstructor(OBJECTREF ref);
 
 //
 // Helper types for calling managed methods marked with [UnmanagedCallersOnly]

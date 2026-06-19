@@ -49,7 +49,11 @@ namespace System.Reflection
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
             {
+#if MONO
                 DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
+#else
+                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method);
+#endif
             }
 
             try
@@ -83,7 +87,11 @@ namespace System.Reflection
             object? ret;
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
+#if MONO
                 DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
+#else
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
+#endif
             }
 
             CheckArguments(parametersSpan, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
@@ -124,7 +132,11 @@ namespace System.Reflection
             object? ret;
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
+#if MONO
                 DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
+#else
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
+#endif
             }
 
             CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
@@ -156,7 +168,11 @@ namespace System.Reflection
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
             {
+#if MONO
                 DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
+#else
+                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method);
+#endif
             }
 
             StackAllocatedByRefs byrefs = default;
@@ -195,7 +211,11 @@ namespace System.Reflection
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
+#if MONO
                 DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
+#else
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
+#endif
             }
 
             if (_invokeFunc_ObjSpanArgs is not null)
@@ -232,7 +252,11 @@ namespace System.Reflection
             {
                 if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
                 {
+#if MONO
                     DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
+#else
+                    DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method);
+#endif
                 }
 
                 IntPtr* pStorage = stackalloc IntPtr[3 * _argCount];
@@ -312,7 +336,11 @@ namespace System.Reflection
                 if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
                 {
                     // Initialize for next time.
+#if MONO
                     DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
+#else
+                    DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy);
+#endif
                 }
 
                 InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
