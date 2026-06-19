@@ -842,7 +842,7 @@ def copy_artifacts_to_dump_folder(assembly_name, base_dirname, diff_dirname):
             if os.path.isfile(source_filename):
                 destination_filename = os.path.join(dump_folder, '{0}_{1}'.format(label, ni_filename))
                 shutil.copy2(source_filename, destination_filename)
-                print('Copied crossgen output "{0}" to dump folder "{1}"'.format(source_filename, destination_filename))
+                print('Copied crossgen output "{0}" to dump file "{1}"'.format(source_filename, destination_filename))
             else:
                 print('Crossgen output "{0}" was not found; cannot copy it to the dump folder'.format(source_filename))
     except OSError as ex:
