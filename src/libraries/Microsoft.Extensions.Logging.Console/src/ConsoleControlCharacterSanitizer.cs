@@ -2,12 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Globalization;
 using System.Text;
+#if NET
+using System.Buffers;
+using System.Collections.Generic;
+#endif
 
 namespace Microsoft.Extensions.Logging.Console
 {
     internal static class ConsoleControlCharacterSanitizer
     {
+#if NET
+        // Built from ShouldEscape so the vectorized scan can never drift from the scalar predicate.
+        private static readonly SearchValues<char> s_charsToEscape = CreateSearchValues();
+#endif
+
         public static string? Sanitize(string? value)
         {
             if (string.IsNullOrEmpty(value))
@@ -15,43 +25,53 @@ namespace Microsoft.Extensions.Logging.Console
                 return value;
             }
 
-            int firstEscapedCharacterIndex = GetFirstEscapedCharacterIndex(value);
+            ReadOnlySpan<char> remaining = value.AsSpan();
+            int firstEscapedCharacterIndex = IndexOfFirstCharToEscape(remaining);
             if (firstEscapedCharacterIndex < 0)
             {
                 return value;
             }
 
             var sanitized = new ValueStringBuilder(stackalloc char[256]);
-            sanitized.Append(value.AsSpan(0, firstEscapedCharacterIndex));
+            sanitized.Append(remaining.Slice(0, firstEscapedCharacterIndex));
+            remaining = remaining.Slice(firstEscapedCharacterIndex);
 
-            for (int i = firstEscapedCharacterIndex; i < value.Length; i++)
+            while (true)
             {
-                char current = value[i];
-                if (ShouldEscape(current))
+                // remaining[0] is always a character that must be escaped.
+                AppendEscaped(ref sanitized, remaining[0]);
+                remaining = remaining.Slice(1);
+
+                int next = IndexOfFirstCharToEscape(remaining);
+                if (next < 0)
                 {
-                    sanitized.Append('\\');
-                    sanitized.Append('u');
-                    int codePoint = current;
-                    Span<char> hex = sanitized.AppendSpan(4);
-                    hex[0] = HexConverter.ToCharUpper(current >> 12);
-                    hex[1] = HexConverter.ToCharUpper(current >> 8);
-                    hex[2] = HexConverter.ToCharUpper(current >> 4);
-                    hex[3] = HexConverter.ToCharUpper(current);
+                    sanitized.Append(remaining);
+                    break;
                 }
-                else
-                {
-                    sanitized.Append(current);
-                }
+
+                sanitized.Append(remaining.Slice(0, next));
+                remaining = remaining.Slice(next);
             }
 
             return sanitized.ToString();
         }
 
-        private static char ToHexChar(int value) =>
-            (char)(value < 10 ? '0' + value : 'A' + value - 10);
-
-        private static int GetFirstEscapedCharacterIndex(string value)
+        private static void AppendEscaped(ref ValueStringBuilder builder, char c)
         {
+            builder.Append('\\');
+            builder.Append('u');
+            Span<char> hex = builder.AppendSpan(4);
+            hex[0] = HexConverter.ToCharUpper(c >> 12);
+            hex[1] = HexConverter.ToCharUpper(c >> 8);
+            hex[2] = HexConverter.ToCharUpper(c >> 4);
+            hex[3] = HexConverter.ToCharUpper(c);
+        }
+
+        private static int IndexOfFirstCharToEscape(ReadOnlySpan<char> value)
+        {
+#if NET
+            return value.IndexOfAny(s_charsToEscape);
+#else
             for (int i = 0; i < value.Length; i++)
             {
                 if (ShouldEscape(value[i]))
@@ -61,51 +81,34 @@ namespace Microsoft.Extensions.Logging.Console
             }
 
             return -1;
+#endif
         }
+
+#if NET
+        private static SearchValues<char> CreateSearchValues()
+        {
+            var chars = new List<char>();
+            for (int c = char.MinValue; c <= char.MaxValue; c++)
+            {
+                if (ShouldEscape((char)c))
+                {
+                    chars.Add((char)c);
+                }
+            }
+
+            return SearchValues.Create(chars.ToArray());
+        }
+#endif
 
         private static bool ShouldEscape(char c)
         {
-            return c switch
+            // \t, \n and \r are control characters but are preserved for log formatting.
+            if (c is '\t' or '\n' or '\r')
             {
-                '\u0000' => true, // NUL
-                '\u0001' => true, // SOH
-                '\u0002' => true, // STX
-                '\u0003' => true, // ETX
-                '\u0004' => true, // EOT
-                '\u0005' => true, // ENQ
-                '\u0006' => true, // ACK
-                '\u0007' => true, // BEL
-                '\u0008' => true, // BS
-                // '\u0009' HT (tab) - preserved for log formatting
-                // '\u000A' LF (newline) - preserved for log formatting
-                '\u000B' => true, // VT
-                '\u000C' => true, // FF
-                // '\u000D' CR (carriage return) - preserved for log formatting
-                '\u000E' => true, // SO
-                '\u000F' => true, // SI
-                '\u0010' => true, // DLE
-                '\u0011' => true, // DC1
-                '\u0012' => true, // DC2
-                '\u0013' => true, // DC3
-                '\u0014' => true, // DC4
-                '\u0015' => true, // NAK
-                '\u0016' => true, // SYN
-                '\u0017' => true, // ETB
-                '\u0018' => true, // CAN
-                '\u0019' => true, // EM
-                '\u001A' => true, // SUB
-                '\u001B' => true, // ESC
-                '\u001C' => true, // FS
-                '\u001D' => true, // GS
-                '\u001E' => true, // RS
-                '\u001F' => true, // US
-                '\u007F' => true, // DEL
-                >= '\u0080' and <= '\u009F' => true, // C1 control range
-                >= '\u200B' and <= '\u200F' => true, // zero-width and directional marks
-                >= '\u202A' and <= '\u202E' => true, // bidi embedding/override
-                >= '\u2066' and <= '\u2069' => true, // bidi isolates
-                _ => false,
-            };
+                return false;
+            }
+
+            return char.GetUnicodeCategory(c) is UnicodeCategory.Control or UnicodeCategory.Format;
         }
     }
 }
