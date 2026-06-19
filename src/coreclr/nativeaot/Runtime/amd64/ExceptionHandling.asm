@@ -636,17 +636,7 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
         mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
         mov     [rax]                            , r15
 
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 0*10h], xmm6
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 1*10h], xmm7
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 2*10h], xmm8
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 3*10h], xmm9
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 4*10h], xmm10
-
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 5*10h], xmm11
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 6*10h], xmm12
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 7*10h], xmm13
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 8*10h], xmm14
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 9*10h], xmm15
+        ;; XMM6-15 do not need copy-back into REGDISPLAY (no GC adjustment required).
 
         mov     rax, [rsp + rsp_offsetof_thread]                                    ;; rax <- Thread*
         lock or             dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
