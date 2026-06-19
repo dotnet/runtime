@@ -28,6 +28,7 @@ using std::nothrow;
 #include "volatile.h"
 #include <daccess.h>
 #include "clrhost.h"
+#include "dn_xxhash.h"
 #include "debugmacros.h"
 #include "corhlprpriv.h"
 #include "check.h"
@@ -1955,26 +1956,29 @@ inline COUNT_T HashPtr(COUNT_T currentHash, PTR_VOID ptr)
 inline ULONG HashBytes(BYTE const *pbData, size_t iSize)
 {
     LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
 
-#ifdef HOST_64BIT
-    // Process 8 bytes at a time using a multiply-xorshift mixing step.
-    while (iSize >= sizeof(uint64_t))
+    ULONG hash = XXHash32_MixEmptyState();
+    hash += (ULONG)iSize;
+
+    // Process 4 bytes at a time.
+    while (iSize >= sizeof(uint32_t))
     {
-        uint64_t val;
+        uint32_t val;
         memcpy(&val, pbData, sizeof(val));
-        hash = ((hash << 5) + hash) ^ (ULONG)(val ^ (val >> 32));
+        hash = XXHash32_QueueRound(hash, val);
         pbData += sizeof(val);
         iSize -= sizeof(val);
     }
-#endif
 
-    BYTE const *pbDataEnd = pbData + iSize;
-    for (/**/ ; pbData < pbDataEnd; pbData++)
+    // Process remaining bytes.
+    if (iSize > 0)
     {
-        hash = ((hash << 5) + hash) ^ *pbData;
+        uint32_t val = 0;
+        memcpy(&val, pbData, iSize);
+        hash = XXHash32_QueueRound(hash, val);
     }
-    return hash;
+
+    return XXHash32_MixFinal(hash);
 }
 
 // Helper function for hashing a string char by char.
