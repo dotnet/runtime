@@ -241,7 +241,16 @@ enum InterpInstFlags
     // Flag used internally by the var offset allocator
     INTERP_INST_FLAG_ACTIVE_CALL        = 0x02,
     // The IL stack is empty at this instruction
-    INTERP_INST_FLAG_EMPTY_IL_STACK    = 0x04
+    INTERP_INST_FLAG_EMPTY_IL_STACK    = 0x04,
+    // Marks a value-returning managed call site whose return value is reportable to the debugger
+    INTERP_INST_FLAG_DBG_CALL_INSTRUCTION = 0x08
+};
+
+struct InterpCallReturnInfo
+{
+    uint32_t ilOffset;
+    uint32_t postCallNativeOffset;
+    int32_t returnValueVarOffset;
 };
 
 struct InterpInst
@@ -627,6 +636,12 @@ private:
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
     CORJIT_FLAGS m_corJitFlags;
+#ifdef PERFTRACING_DISABLE_THREADS
+    bool m_emitSamplingProfiler;
+#ifdef TARGET_BROWSER
+    bool m_emitBrowserProfiler;
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
 
     void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
     {
@@ -860,6 +875,8 @@ private:
     int32_t* m_pNativeMapIndexToILOffset = NULL;
 #endif
     int32_t m_ILToNativeMapSize = 0;
+
+    TArray<InterpCallReturnInfo, MemPoolAllocator> m_callReturnInfos;
 
     InterpBasicBlock*   AllocBB(int32_t ilOffset);
     InterpBasicBlock*   GetBB(int32_t ilOffset);
@@ -1111,6 +1128,13 @@ public:
     InterpMethodDataBuilder& GetMethodDataBuilder() { return m_methodDataBuilder; }
 
     int32_t* GetCode(int32_t *pCodeSize);
+
+#ifdef PERFTRACING_DISABLE_THREADS
+    static bool s_samplingProfilerEnabled;
+#ifdef TARGET_BROWSER
+    static bool s_browserProfilerEnabled;
+#endif
+#endif // PERFTRACING_DISABLE_THREADS
 
 #if MEASURE_MEM_ALLOC
     // Memory statistics for profiling.

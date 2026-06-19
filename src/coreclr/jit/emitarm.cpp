@@ -3208,7 +3208,7 @@ void emitter::emitIns_R_R_R(instruction ins,
                 }
             }
 
-#if !defined(USE_HELPERS_FOR_INT_DIV)
+#if !USE_HELPERS_FOR_INT_DIV
             FALLTHROUGH;
         case INS_sdiv:
         case INS_udiv:
@@ -4713,12 +4713,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         printf("\n");
     }
 #endif
-
-    /* Managed RetVal: emit sequence point for the call */
-    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
-    }
 
     /*
         We need to allocate the appropriate instruction descriptor based

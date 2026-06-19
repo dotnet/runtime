@@ -12,6 +12,14 @@
 #include "gchelpers.inl"
 #include "arraynative.inl"
 
+#ifdef TARGET_WASM
+extern "C" void SamplingProfiler_OnSamplepoint();
+#endif
+
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+#include "wasm/browserprofiler.h"
+#endif
+
 // for numeric_limits
 #include <limits>
 #include <functional>
@@ -193,14 +201,6 @@ static size_t CreateDispatchTokenForMethod(MethodDesc* pMD)
         return DispatchToken::CreateDispatchToken(slotNumber).To_SIZE_T();
     }
 }
-
-#ifdef TARGET_WASM
-// Unused on WASM
-#define SAVE_THE_LOWEST_SP do {} while (0)
-#else
-// Save the lowest SP in the current method so that we can identify it by that during stackwalk
-#define SAVE_THE_LOWEST_SP pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP())
-#endif // !TARGET_WASM
 
 // Call invoker helpers provided by platform.
 void InvokeManagedMethod(ManagedMethodParam *pParam);
@@ -1332,6 +1332,9 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     }
     CONTRACTL_END;
 
+    TADDR resumeSP = 0;
+    TADDR resumeIP = 0;
+
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     pInterpreterFrame->SetInterpExecMethodSSP((TADDR)_rdsspq());
 #endif // HOST_AMD64 && HOST_WINDOWS
@@ -1380,8 +1383,6 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     bool frameNeedsTailcallUpdate = false;
     MethodDesc* targetMethod;
     uint32_t opcode;
-
-    SAVE_THE_LOWEST_SP;
 
 MAIN_LOOP:
     try
@@ -1941,6 +1942,25 @@ SWITCH_OPCODE:
                     }
                     ip++;
                     break;
+
+#ifdef PERFTRACING_DISABLE_THREADS
+                case INTOP_PROF_SAMPLEPOINT:
+                    SamplingProfiler_OnSamplepoint();
+                    ip++;
+                    break;
+#endif // PERFTRACING_DISABLE_THREADS
+
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+                case INTOP_PROF_ENTER:
+                    BrowserProfiler_OnMethodEnter(pMethod->pDataItems[ip[1]]);
+                    ip += 2;
+                    break;
+
+                case INTOP_PROF_LEAVE:
+                    BrowserProfiler_OnMethodLeave(pMethod->methodHnd);
+                    ip++;
+                    break;
+#endif // TARGET_BROWSER && PERFTRACING_DISABLE_THREADS
 
                 case INTOP_BR:
                     ip += ip[1];
@@ -3341,7 +3361,6 @@ SWITCH_OPCODE:
                                     pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                                     pChildFrame->pNext = NULL;
                                     pFrame->pNext = pChildFrame;
-                                    SAVE_THE_LOWEST_SP;
                                 }
                                 pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, LOCAL_VAR_ADDR(callArgsOffset, int8_t));
                                 pFrame = pChildFrame;
@@ -3425,6 +3444,9 @@ CALL_INTERP_METHOD:
 
                     if (frameNeedsTailcallUpdate)
                     {
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+                        BrowserProfiler_OnMethodLeave(pMethod->methodHnd);
+#endif
                         InterpMethod* pTargetMethod = targetIp->Method;
                         UpdateFrameForTailCall(pFrame, targetIp, callArgsAddress);
                         frameNeedsTailcallUpdate = false;
@@ -3442,7 +3464,6 @@ CALL_INTERP_METHOD:
                                 pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                                 pChildFrame->pNext = NULL;
                                 pFrame->pNext = pChildFrame;
-                                SAVE_THE_LOWEST_SP;
                             }
                             pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, callArgsAddress);
                             pFrame = pChildFrame;
@@ -4276,7 +4297,6 @@ do                                                                      \
                             pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                             pChildFrame->pNext = NULL;
                             pFrame->pNext = pChildFrame;
-                            SAVE_THE_LOWEST_SP;
                         }
                         // Set the frame to the same values as the caller frame.
                         pChildFrame->ReInit(pFrame, pFrame->startIp, pFrame->pRetVal, pFrame->pStack);
@@ -4636,8 +4656,7 @@ do                                                                      \
     }
     catch (const ResumeAfterCatchException& ex)
     {
-        TADDR resumeSP;
-        TADDR resumeIP;
+        GCX_COOP_NO_DTOR();
         ex.GetResumeContext(&resumeSP, &resumeIP);
         _ASSERTE(resumeSP != 0 && resumeIP != 0);
 
@@ -4651,8 +4670,13 @@ do                                                                      \
                 // sequences of interpreted frames without any AOTed/JITted frames in between. In such case, the topmost native frame
                 // the ResumeAfterCatchException is thrown from may not be the one that corresponds to the target interpreted frame.
                 // Thus, we need to rethrow it to let it propagate further.
-                throw;
+                // We don't rethrow the exception here to work around a Windows bug in shadow stack pointer updating,
+                // tracked by (internal) OS issue: https://microsoft.visualstudio.com/OS/_workitems/edit/62622295
+                goto RETHROW_RESUME_AFTER_CATCH;
             }
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+            BrowserProfiler_OnMethodLeave(pFrame->startIp->Method->methodHnd);
+#endif
             pThreadContext->frameDataAllocator.PopInfo(pFrame);
             pFrame->ip = 0;
             pFrame = pFrame->pParent;
@@ -4703,6 +4727,11 @@ EXIT_FRAME:
     }
 
     pThreadContext->pStackPointer = pFrame->pStack;
+    return;
+
+RETHROW_RESUME_AFTER_CATCH:
+    // Rethrow the exception to let it propagate to the correct resume frame
+    ThrowResumeAfterCatchException(resumeSP, resumeIP);
 }
 
 #endif // FEATURE_INTERPRETER

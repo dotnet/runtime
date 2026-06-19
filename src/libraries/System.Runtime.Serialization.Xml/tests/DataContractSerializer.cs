@@ -4216,10 +4216,12 @@ public static partial class DataContractSerializerTests
         for (int i = 0; i < myFamily.Members.Length; ++i)
         {
             Assert.Equal(myFamily.Members[i].Name, newFamily.Members[i].Name);
+            Assert.Equal(myFamily.Members[i].Age, newFamily.Members[i].Age);
         }
     }
 
     [Fact]
+    [SkipOnPlatform(TestPlatforms.Wasi, "/tmp is not preopened in the wasmtime '--dir .' sandbox, so temp files cannot be created.")]
     public static void DCS_FileStreamSurrogate()
     {
         using (var testFile = TempFile.Create())

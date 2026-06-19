@@ -224,7 +224,11 @@ ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((fl
     ValueNumFuncDef(MaxInt_UN, 2, true, false)
 
 #elif defined(TARGET_WASM)
-// No hardware intrinsics on WASM yet.
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for wasm
+#include "hwintrinsiclistwasm.h"
+#define VNF_HWI_FIRST VNF_HWI_Vector128_As
+#define VNF_HWI_LAST  VNF_HWI_Vector128_op_UnaryPlus
 
 #else
 #error Unsupported platform

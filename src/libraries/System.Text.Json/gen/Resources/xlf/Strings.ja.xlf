@@ -132,6 +132,41 @@
         <target state="translated">型には、'JsonExtensionDataAttribute' に注釈が付けられた複数のメンバーが含まれます。</target>
         <note />
       </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
+        <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
+        <target state="translated">オープン ジェネリック派生型 '{0}' をポリモーフィック基本型 '{1}':{2} に対して解決できませんでした。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
+        <source>the derived type matches the base type through multiple ancestors</source>
+        <target state="translated">派生型が複数の先祖を通して基本型に一致しています</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
+        <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
+        <target state="translated">型パラメーター '{0}' に対する制約が '{1}' によって満たされていません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
+        <source>the derived type is not assignable to the base type</source>
+        <target state="translated">派生型は基本型に割り当てることができません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
+        <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
+        <target state="translated">派生型の型パラメーター '{0}' が、基本型の引数によってバインドされていません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
+        <source>the base type's arguments do not match the derived type's base specification</source>
+        <target state="translated">基本型の引数が派生型の基本仕様と一致しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
+        <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
+        <target state="translated">オープン ジェネリック派生型をポリモーフィック基本型に対して解決できませんでした。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">
         <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
         <target state="translated">型 '{0}' には、プロパティ、フィールド、コンストラクター パラメーター '{1}' などの ref が含まれます。プロパティ、フィールド、またはコンストラクターのソース コードは生成されません。</target>

@@ -53,7 +53,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
         assert(size->isContained());
         srcCount = 0;
 
-        size_t sizeVal = size->AsIntCon()->gtIconVal;
+        size_t sizeVal = size->AsIntCon()->IconValue();
         if (sizeVal == 0)
         {
             internalIntCount = 0;

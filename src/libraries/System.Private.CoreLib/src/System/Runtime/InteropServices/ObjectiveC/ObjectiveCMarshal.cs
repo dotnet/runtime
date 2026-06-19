@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.ObjectiveC
 {
@@ -37,6 +38,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
             out IntPtr context);
 
         private static UnhandledExceptionPropagationHandler? s_unhandledExceptionPropagationHandler;
+        private static bool s_initialized;
+        private static readonly ConditionalWeakTable<object, ObjcTrackingInformation> s_objects = new();
 
         /// <summary>
         /// Initialize the Objective-C marshalling API.
@@ -70,10 +73,14 @@ namespace System.Runtime.InteropServices.ObjectiveC
             ArgumentNullException.ThrowIfNull(unhandledExceptionPropagationHandler);
 
             if (s_unhandledExceptionPropagationHandler != null
-                || !TryInitializeReferenceTracker(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization))
+                || !TryInitializeReferenceTracker(
+                    beginEndCallback,
+                    isReferencedCallback,
+                    trackedObjectEnteredFinalization))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_ReinitializeObjectiveCMarshal);
             }
+            s_initialized = true;
             s_unhandledExceptionPropagationHandler = unhandledExceptionPropagationHandler;
         }
 
@@ -109,23 +116,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
             object obj,
             out Span<IntPtr> taggedMemory)
         {
-            ArgumentNullException.ThrowIfNull(obj);
-
-            IntPtr refCountHandle = CreateReferenceTrackingHandleInternal(
-#if NATIVEAOT
-                obj,
-#else
-                ObjectHandleOnStack.Create(ref obj),
-#endif
-                out int memInSizeT,
-                out IntPtr mem);
-
-            unsafe
-            {
-                taggedMemory = new Span<IntPtr>(mem.ToPointer(), memInSizeT);
-            }
-
-            return GCHandle.FromIntPtr(refCountHandle);
+            // Defer to GetOrCreateReferenceTrackingMemory for argument/state validation.
+            taggedMemory = GetOrCreateReferenceTrackingMemory(obj);
+            return GCHandle.FromIntPtr(AllocateReferenceTrackingHandle(obj));
         }
 
         /// <summary>
@@ -157,14 +150,19 @@ namespace System.Runtime.InteropServices.ObjectiveC
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            GetOrCreateReferenceTrackingMemoryInternal(
-#if NATIVEAOT
-                obj,
-#else
-                ObjectHandleOnStack.Create(ref obj),
-#endif
-                out int memInSizeT,
-                out IntPtr mem);
+            if (!s_initialized)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCMarshalNotInitialized);
+            }
+
+            if (!IsTrackedReferenceWithFinalizer(obj))
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCTypeNoFinalizer);
+            }
+
+            ObjcTrackingInformation trackerInfo = s_objects.GetOrAdd(obj, static _ => new ObjcTrackingInformation());
+            trackerInfo.EnsureInitialized(obj);
+            trackerInfo.GetTaggedMemory(out int memInSizeT, out IntPtr mem);
 
             unsafe
             {
@@ -217,6 +215,77 @@ namespace System.Runtime.InteropServices.ObjectiveC
 
             if (!TrySetGlobalMessageSendCallback(msgSendFunction, func))
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalObjectiveCMsgSend);
+        }
+
+        internal sealed class ObjcTrackingInformation
+        {
+            private const int TAGGED_MEMORY_SIZE_IN_POINTERS = 2;
+
+            internal IntPtr _memory;
+            private IntPtr _longWeakHandle;
+
+            public ObjcTrackingInformation()
+            {
+                _memory = (IntPtr)NativeMemory.AllocZeroed(TAGGED_MEMORY_SIZE_IN_POINTERS * (nuint)IntPtr.Size);
+            }
+
+            public void GetTaggedMemory(out int memInSizeT, out IntPtr mem)
+            {
+                memInSizeT = TAGGED_MEMORY_SIZE_IN_POINTERS;
+                mem = _memory;
+            }
+
+            public void EnsureInitialized(object o)
+            {
+                if (_longWeakHandle != IntPtr.Zero)
+                {
+                    return;
+                }
+
+#if NATIVEAOT
+                IntPtr newHandle = RuntimeImports.RhHandleAlloc(o, GCHandleType.WeakTrackResurrection);
+#else
+                IntPtr newHandle = GCHandle.ToIntPtr(GCHandle.Alloc(o, GCHandleType.WeakTrackResurrection));
+#endif
+                if (Interlocked.CompareExchange(ref _longWeakHandle, newHandle, IntPtr.Zero) != IntPtr.Zero)
+                {
+#if NATIVEAOT
+                    RuntimeImports.RhHandleFree(newHandle);
+#else
+                    GCHandle.FromIntPtr(newHandle).Free();
+#endif
+                }
+            }
+
+            ~ObjcTrackingInformation()
+            {
+                IntPtr longWeakHandle = Volatile.Read(ref _longWeakHandle);
+#if NATIVEAOT
+                if (longWeakHandle != IntPtr.Zero && RuntimeImports.RhHandleGet(longWeakHandle) != null)
+#else
+                if (longWeakHandle != IntPtr.Zero && GCHandle.FromIntPtr(longWeakHandle).Target != null)
+#endif
+                {
+                    GC.ReRegisterForFinalize(this);
+                    return;
+                }
+
+                IntPtr memory = Interlocked.Exchange(ref _memory, IntPtr.Zero);
+                if (memory != IntPtr.Zero)
+                {
+                    NativeMemory.Free((void*)memory);
+                }
+
+                longWeakHandle = Interlocked.Exchange(ref _longWeakHandle, IntPtr.Zero);
+                if (longWeakHandle != IntPtr.Zero)
+                {
+#if NATIVEAOT
+                    RuntimeImports.RhHandleFree(longWeakHandle);
+#else
+                    GCHandle.FromIntPtr(longWeakHandle).Free();
+#endif
+                }
+            }
         }
     }
 }
