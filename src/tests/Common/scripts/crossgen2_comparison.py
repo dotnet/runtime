@@ -921,8 +921,6 @@ def compare_results(args):
 
         for assembly_name in sorted(omitted_from_base_dir):
             diff_result = diff_results_by_name[assembly_name]
-            if output_file_type == FileTypes.NativeOrReadyToRunImage:
-                copy_artifacts_to_dump_folder(assembly_name, args.base_dirname, args.diff_dirname)
             message = 'Expected nothing, got {0}'.format(json.dumps(diff_result, cls=CrossGenResultEncoder, indent=2))
             testresult = root.createElement('test')
             testresult.setAttribute('name', 'CrossgenCompile_{2}_Target_{0}_Omitted_vs_{1}'.format(args.target_arch_os, diff_result.compiler_arch_os, assembly_name))
@@ -945,8 +943,6 @@ def compare_results(args):
 
         for assembly_name in sorted(omitted_from_diff_dir):
             base_result = base_results_by_name[assembly_name]
-            if output_file_type == FileTypes.NativeOrReadyToRunImage:
-                copy_artifacts_to_dump_folder(assembly_name, args.base_dirname, args.diff_dirname)
             message = 'Expected {0} got nothing'.format(json.dumps(base_result, cls=CrossGenResultEncoder, indent=2))
             testresult = root.createElement('test')
             testresult.setAttribute('name', 'CrossgenCompile_{2}_Target_{0}_{1}_vs__Omitted'.format(args.target_arch_os, base_result.compiler_arch_os, assembly_name))
