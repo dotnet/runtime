@@ -140,7 +140,7 @@ char* GetCrashLogBuffer(size_t* pLength)
         : ARRAY_SIZE(s_crashLogBuffer) - 1;
     s_crashLogBuffer[nullTerminatorPos] = '\0';
 
-    *pLength = nullTerminatorPos - 1;
+    *pLength = nullTerminatorPos;
     return s_crashLogBuffer;
 }
 
