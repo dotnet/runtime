@@ -180,7 +180,7 @@ class StubLinker
         Stub *Link(LoaderHeap *heap, DWORD flags, const char *stubType);
 
     private:
-        CodeElement   *m_pCodeElements;     // stored in *reverse order
+        CodeElement   *m_pCodeElements;     // stored in *reverse* order
         CodeLabel     *m_pFirstCodeLabel;   // linked list of CodeLabels
         LabelRef      *m_pFirstLabelRef;    // linked list of references
         PTR_MethodDesc m_pTargetMethod;     // Used for instantiating stubs.
