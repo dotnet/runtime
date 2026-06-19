@@ -2709,11 +2709,11 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // 4        - CtorClosedStatic
     // 5        - Retbuf static closed form (not differentiated on this fast path; see TODO below)
     // 2, 6     - CtorOpened
-// 1        - CtorClosed (or CtorRTClosed for value-type instance targets needing runtime lookup)
-// 2, 6     - CtorOpened
-// 3        - CtorVirtualDispatch
-// 4        - CtorClosedStatic
-// 5        - Retbuf static closed form (not differentiated on this fast path; see TODO below)
+    // 1        - CtorClosed (or CtorRTClosed for value-type instance targets needing runtime lookup)
+    // 2, 6     - CtorOpened
+    // 3        - CtorVirtualDispatch
+    // 4        - CtorClosedStatic
+    // 5        - Retbuf static closed form (not differentiated on this fast path; see TODO below)
     // Collectible delegates use the corresponding CtorCollectible* variants.
     //
     // With collectible types, we need to fill the _helperObject field in with a value that represents the LoaderAllocator of the target method
