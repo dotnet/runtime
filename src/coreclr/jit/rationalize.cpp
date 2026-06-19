@@ -372,6 +372,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
         }
 #endif // TARGET_XARCH
 
+#if !defined(TARGET_WASM)
 #if defined(TARGET_ARM64)
         case NI_Vector64_CreateGeometricSequence:
 #endif // TARGET_ARM64
@@ -414,6 +415,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             }
             break;
         }
+#endif // !TARGET_WASM
 
         case NI_Vector128_Shuffle:
         case NI_Vector128_ShuffleNative:

@@ -27450,6 +27450,9 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
         return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(immediate), NI_X86Base_Shuffle, TYP_FLOAT,
                                         simdSize);
     }
+#elif defined(TARGET_WASM)
+    NYI_WASM_SIMD("gtNewSimdConcatNode");
+    return nullptr;
 #elif !defined(TARGET_ARM64)
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -27488,9 +27491,11 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
             : gtNewSimdHWIntrinsicNode(type, lower, NI_Vector256_ToVector512Unsafe, simdBaseType, simdSize / 2);
 #elif defined(TARGET_ARM64)
     GenTree* result = gtNewSimdHWIntrinsicNode(type, lower, NI_Vector64_ToVector128Unsafe, simdBaseType, simdSize / 2);
+#elif defined(TARGET_WASM)
+    GenTree* result = nullptr;
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
 
     return gtNewSimdWithUpperNode(type, result, upper, simdBaseType, simdSize);
 }
@@ -27592,9 +27597,12 @@ GenTree* Compiler::gtNewSimdZipNode(
 #elif defined(TARGET_ARM64)
     NamedIntrinsic intrinsic = upper ? NI_AdvSimd_Arm64_ZipHigh : NI_AdvSimd_Arm64_ZipLow;
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseType, simdSize);
+#elif defined(TARGET_WASM)
+    NYI_WASM_SIMD("gtNewSimdZipNode");
+    return nullptr;
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
 
 #if defined(TARGET_XARCH)
     // var lower = Zip(left, right, upper: false);
@@ -27782,9 +27790,12 @@ GenTree* Compiler::gtNewSimdUnzipNode(
             ? gtNewSimdHWIntrinsicNode(type, lower, NI_Vector128_ToVector256Unsafe, simdBaseType, simdSize / 2)
             : gtNewSimdHWIntrinsicNode(type, lower, NI_Vector256_ToVector512Unsafe, simdBaseType, simdSize / 2);
     return gtNewSimdWithUpperNode(type, result, higher, simdBaseType, simdSize);
+#elif defined(TARGET_WASM)
+    NYI_WASM_SIMD("gtNewSimdUnzipNode");
+    return nullptr;
 #else
 #error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
+#endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_WASM
 }
 
 //----------------------------------------------------------------------------------------------

@@ -11877,6 +11877,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
     switch (intrinsic)
     {
+#if !defined(TARGET_WASM)
 #if defined(TARGET_ARM64)
         case NI_Vector64_CreateGeometricSequence:
 #endif // TARGET_ARM64
@@ -11909,6 +11910,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
             }
             break;
         }
+#endif // !TARGET_WASM
 
         default:
         {
