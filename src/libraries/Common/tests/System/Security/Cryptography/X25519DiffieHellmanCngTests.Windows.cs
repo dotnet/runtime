@@ -9,12 +9,14 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class X25519DiffieHellmanExportableCngTests : X25519DiffieHellmanCngTests
     {
         protected override CngExportPolicies ExportPolicy => CngExportPolicies.AllowExport;
     }
 
     [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public sealed class X25519DiffieHellmanPlaintextExportableCngTests : X25519DiffieHellmanCngTests
     {
         protected override CngExportPolicies ExportPolicy =>
@@ -23,6 +25,7 @@ namespace System.Security.Cryptography.Tests
     }
 
     [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public static class X25519DiffieHellmanCngContractTests
     {
         [Fact]
@@ -75,6 +78,7 @@ namespace System.Security.Cryptography.Tests
     }
 
     [ConditionalClass(typeof(X25519DiffieHellman), nameof(X25519DiffieHellman.IsSupported))]
+    [PlatformSpecific(TestPlatforms.Windows)]
     public static class X25519DiffieHellmanCngNonExportableTests
     {
         [Fact]

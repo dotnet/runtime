@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
-using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -29,7 +28,6 @@ internal static partial class Interop
             int cbInput,
             CngPropertyOptions dwFlags);
 
-        [SupportedOSPlatform("windows")]
         internal static unsafe ErrorCode NCryptGetByteProperty(SafeNCryptHandle hObject, string pszProperty, ref byte result, CngPropertyOptions options = CngPropertyOptions.None)
         {
             fixed (byte* pResult = &result)
@@ -55,8 +53,6 @@ internal static partial class Interop
         {
             fixed (int* pResult = &result)
             {
-                Debug.Assert(Helpers.IsOSPlatformWindows);
-
                 ErrorCode errorCode = Interop.NCrypt.NCryptGetProperty(
                     hObject,
                     pszProperty,

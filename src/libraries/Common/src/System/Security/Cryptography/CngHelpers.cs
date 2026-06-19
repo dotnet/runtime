@@ -343,5 +343,19 @@ namespace System.Security.Cryptography
         {
             return CngKey.Open(keyHandle, isEphemeral ? CngKeyHandleOpenOptions.EphemeralKey : CngKeyHandleOpenOptions.None);
         }
+
+        internal static CngKey Duplicate(this CngKey key)
+        {
+#if SYSTEM_SECURITY_CRYPTOGRAPHY
+            return Duplicate(key.HandleNoDuplicate, key.IsEphemeral);
+#else
+#pragma warning disable CA1416 // only supported on: 'windows'
+            using (SafeNCryptKeyHandle handle = key.Handle)
+            {
+                return Duplicate(handle, key.IsEphemeral);
+            }
+#pragma warning restore CA1416 // only supported on: 'windows'
+#endif
+        }
     }
 }

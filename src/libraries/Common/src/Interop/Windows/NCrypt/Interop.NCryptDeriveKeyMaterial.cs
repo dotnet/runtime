@@ -252,7 +252,7 @@ internal static partial class Interop
             SafeNCryptSecretHandle secretAgreement,
             SecretAgreementFlags flags)
         {
-            if (!OperatingSystem.IsWindowsVersionAtLeast(10))
+            if (!IsWindows10OrGreater())
             {
                 throw new PlatformNotSupportedException();
             }
@@ -266,6 +266,19 @@ internal static partial class Interop
             // Win32 returns the result as little endian. So we need to flip it to big endian.
             Array.Reverse(result);
             return result;
+        }
+
+        private static bool IsWindows10OrGreater()
+        {
+#if NET
+            return OperatingSystem.IsWindowsVersionAtLeast(10);
+#elif NETSTANDARD
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major >= 10;
+#elif NETFRAMEWORK
+            return Environment.OSVersion.Version.Major >= 10;
+#else
+#error Unhandled platform target
+#endif
         }
 
         internal static bool TryDeriveKeyMaterialTruncate(
