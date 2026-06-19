@@ -45,6 +45,7 @@ public enum DataType
     AppDomain,
     Debugger,
     DebuggerRCThread,
+    MemoryRange,
     SystemDomain,
     Assembly,
     LoaderAllocator,
@@ -206,6 +207,10 @@ public enum DataType
 
     EnCEEClassData,
     EnCAddedFieldElement,
+    EnCFieldDesc,
+    EnCAddedField,
+    EnCAddedStaticField,
+    EnCSyncBlockInfo,
     UnorderedArrayBase,
 }
 

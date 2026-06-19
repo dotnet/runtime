@@ -3192,6 +3192,12 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
             case GT_CNS_INT:
 
+                // Do not narrow relocatable handle constants.
+                if (tree->AsIntCon()->ImmedValNeedsReloc(this))
+                {
+                    return false;
+                }
+
                 ssize_t ival;
                 ival = tree->AsIntCon()->IconValue();
                 ssize_t imask;
