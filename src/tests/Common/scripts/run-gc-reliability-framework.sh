@@ -1,34 +1,12 @@
 #!/usr/bin/env bash
 
-OSName=$(uname -s | tr '[:upper:]' '[:lower:]')
-case $OSName in
-    darwin)
-        OS=osx
-        ;;
+__ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"
+__RepoRootDir="$(cd "$__ProjectRoot"/../../../..; pwd -P)"
 
-    freeBSD)
-        OS=freebsd
-        ;;
+. "$__RepoRootDir/eng/common/native/init-os-and-arch.sh"
 
-    linux)
-        OS=linux
-        ;;
-
-    netbsd)
-        OS=netbsd
-        ;;
-
-    sunos)
-        OS=sunos
-        ;;
-    *)
-        echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        OS=linux
-        ;;
-esac
-
-export CORE_ROOT=`pwd`/artifacts/tests/$OSName.$1.$2/Tests/Core_Root
-FRAMEWORK_DIR=`pwd`/artifacts/tests/$OSName.$1.$2/GC/Stress/Framework/ReliabilityFramework
+export CORE_ROOT=`pwd`/artifacts/tests/$os.$1.$2/Tests/Core_Root
+FRAMEWORK_DIR=`pwd`/artifacts/tests/$os.$1.$2/GC/Stress/Framework/ReliabilityFramework
 $CORE_ROOT/corerun $FRAMEWORK_DIR/ReliabilityFramework.exe $FRAMEWORK_DIR/testmix_gc.config
 EXIT_CODE=$?
 if [ $EXIT_CODE -eq 100 ]

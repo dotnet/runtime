@@ -151,13 +151,13 @@ namespace Profiler.Tests
             {
                 profilerName = $"{ProfilerName}.dll";
             }
-            else if ((TestLibrary.Utilities.IsLinux) || (TestLibrary.Utilities.IsFreeBSD))
+            else if (TestLibrary.Utilities.IsMacOSX)
             {
-                profilerName = $"lib{ProfilerName}.so";
+                profilerName = $"lib{ProfilerName}.dylib";
             }
             else
             {
-                profilerName = $"lib{ProfilerName}.dylib";
+                profilerName = $"lib{ProfilerName}.so";
             }
 
             string profilerPath = Path.Combine(Environment.CurrentDirectory, profilerName);
