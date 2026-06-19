@@ -64,6 +64,10 @@ HARDWARE_INTRINSIC(Vector128,      op_Inequality,                               
 HARDWARE_INTRINSIC(Vector128,      op_UnaryPlus,                                                     16,      1,    {INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid,        INS_invalid},     HW_Category_Helper,                HW_Flag_InvalidNodeId)
 
 #define LAST_NI_Vector128         NI_Vector128_op_UnaryPlus
+
+#define FIRST_NI_PackedSimd NI_PackedSimd_Add
+HARDWARE_INTRINSIC(PackedSimd,    Add,                                                               16,      2,    {INS_i8x16_add,        INS_i8x16_add,        INS_i16x8_add,        INS_i16x8_add,        INS_i32x4_add,        INS_i32x4_add,        INS_i64x2_add,        INS_i64x2_add,        INS_f32x4_add,        INS_f64x2_add},     HW_Category_SIMD,        HW_Flag_BaseTypeFromFirstArg|HW_Flag_Commutative)
+#define LAST_NI_PackedSimd NI_PackedSimd_Add
 #endif // FEATURE_HW_INTRINSICS
 
 #undef HARDWARE_INTRINSIC

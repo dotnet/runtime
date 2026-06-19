@@ -1463,8 +1463,100 @@ private:
         }
     }
 };
+#else if defined(TARGET_WASM)
+struct HWIntrinsic final
+{
+    HWIntrinsic(const GenTreeHWIntrinsic* node)
+        : op1(nullptr)
+        , op2(nullptr)
+        , op3(nullptr)
+        , numOperands(0)
+        , baseType(TYP_UNDEF)
+    {
+        assert(node != nullptr);
 
-#endif // TARGET_ARM64
+        id       = node->GetHWIntrinsicId();
+        category = HWIntrinsicInfo::lookupCategory(id);
+
+        assert(HWIntrinsicInfo::RequiresCodegen(id));
+
+        InitializeOperands(node);
+        InitializeBaseType(node);
+    }
+
+    bool codeGenIsTableDriven() const
+    {
+        bool isTableDrivenCategory = category != HW_Category_Helper;
+        bool isTableDrivenFlag     = !HWIntrinsicInfo::HasSpecialCodegen(id);
+
+        return isTableDrivenCategory && isTableDrivenFlag;
+    }
+
+    NamedIntrinsic      id;
+    HWIntrinsicCategory category;
+    GenTree*            op1;
+    GenTree*            op2;
+    GenTree*            op3;
+    size_t              numOperands;
+    var_types           baseType;
+
+private:
+    void InitializeOperands(const GenTreeHWIntrinsic* node)
+    {
+        numOperands = node->GetOperandCount();
+
+        switch (numOperands)
+        {
+            case 3:
+                op3 = node->Op(3);
+                FALLTHROUGH;
+            case 2:
+                op2 = node->Op(2);
+                FALLTHROUGH;
+            case 1:
+                op1 = node->Op(1);
+                FALLTHROUGH;
+            case 0:
+                break;
+
+            default:
+                unreached();
+        }
+    }
+
+    void InitializeBaseType(const GenTreeHWIntrinsic* node)
+    {
+        baseType = node->GetSimdBaseType();
+
+        if (baseType == TYP_UNKNOWN)
+        {
+            assert((category == HW_Category_Scalar) || (category == HW_Category_Special));
+
+            if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
+            {
+                assert(op1 != nullptr);
+                baseType = op1->TypeGet();
+            }
+            else if (HWIntrinsicInfo::BaseTypeFromSecondArg(id))
+            {
+                // TODO-WASM: This case can likely be dropped
+                assert(op2 != nullptr);
+                baseType = op2->TypeGet();
+            }
+            else
+            {
+                baseType = node->TypeGet();
+            }
+
+            if (category == HW_Category_Scalar)
+            {
+                baseType = genActualType(baseType);
+            }
+        }
+    }
+};
+
+#endif // TARGET_WASM
 
 #endif // FEATURE_HW_INTRINSICS
 

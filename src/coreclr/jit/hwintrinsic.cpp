@@ -1048,8 +1048,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      SveSm4_Arm64
 #elif defined(TARGET_WASM)
     { NI_Illegal, NI_Illegal },                                 //      WasmBase
-    { NI_Illegal, NI_Illegal },                                 //      PackedSimd
-    { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
+    { FIRST_NI_PackedSimd, LAST_NI_PackedSimd },                //      PackedSimd
+    { FIRST_NI_Vector128,  LAST_NI_Vector128 },                 //      Vector128
     // TODO-WASM: Add PackedSimd intrinsic ranges
 #else
 #error Unsupported platform
@@ -2275,6 +2275,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             if ((simdSize != 8) && (simdSize != 16) && (simdSize != SIZE_UNKNOWN))
 #elif defined(TARGET_XARCH)
             if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
+#elif defined(TARGET_WASM)
+            if (simdSize != 16)
 #endif // TARGET_*
             {
                 assert(!"Unexpected SIMD size");

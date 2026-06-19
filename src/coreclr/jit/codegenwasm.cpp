@@ -746,6 +746,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         return;
     }
 
+    if (treeNode->OperIsHWIntrinsic())
+    {
+        genHWIntrinsic(treeNode->AsHWIntrinsic());
+        return;
+    }
+
     switch (treeNode->OperGet())
     {
         case GT_ADD:
@@ -2490,10 +2496,6 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     if (!varDsc->lvIsRegCandidate())
     {
         var_types type = varDsc->GetRegisterType(tree);
-        if (type == TYP_SIMD16)
-        {
-            NYI_WASM_SIMD("SIMD16 local load");
-        }
 
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
