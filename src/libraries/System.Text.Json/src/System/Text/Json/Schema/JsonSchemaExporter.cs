@@ -187,29 +187,24 @@ namespace System.Text.Json.Schema
                     // The element schema is an "anyOf" composition. For nullable value types,
                     // this typically originates from IEEE floating-point types using
                     // AllowNamedFloatingPointLiterals, though other internal wrappers may also use anyOf.
-                    bool foundNumberBranch = false;
-                    foreach (JsonSchema branch in anyOf)
+                    // Only fold null into the numeric branch for IEEE floating-point converters.
+                    if (elementConverter.IsIeeeFloatingPointConverter)
                     {
-                        if ((branch.Type & JsonSchemaType.Number) != 0)
+                        Debug.Assert(anyOf.Exists(b => (b.Type & JsonSchemaType.Number) != 0),
+                            "IEEE floating-point converters with AllowNamedFloatingPointLiterals should have a numeric branch.");
+
+                        foreach (JsonSchema branch in anyOf)
                         {
-                            branch.Type |= JsonSchemaType.Null;
-                            foundNumberBranch = true;
-                            break;
+                            if ((branch.Type & JsonSchemaType.Number) != 0)
+                            {
+                                branch.Type |= JsonSchemaType.Null;
+                                break;
+                            }
                         }
                     }
-
-                    if (!foundNumberBranch)
+                    else
                     {
-                        // If no numeric branch was found, append a standalone null type to ensure nullability.
-                        // For IEEE floating-point types, we expect a numeric branch to be present.
-                        Debug.Assert((effectiveNumberHandling & JsonNumberHandling.AllowNamedFloatingPointLiterals) == 0 ||
-                            (elementTypeInfo.Type != typeof(double) && elementTypeInfo.Type != typeof(float)
-#if NET
-                                && elementTypeInfo.Type != typeof(Half)
-#endif
-                            ),
-                            "Expected a numeric branch for IEEE floating-point types with AllowNamedFloatingPointLiterals.");
-
+                        // For other anyOf schemas (e.g., nullable struct unions), append a standalone null type.
                         anyOf.Add(new JsonSchema { Type = JsonSchemaType.Null });
                     }
                 }
