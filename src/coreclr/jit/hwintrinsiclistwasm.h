@@ -66,8 +66,10 @@ HARDWARE_INTRINSIC(Vector128,      op_UnaryPlus,                                
 #define LAST_NI_Vector128         NI_Vector128_op_UnaryPlus
 
 #define FIRST_NI_PackedSimd NI_PackedSimd_Add
-HARDWARE_INTRINSIC(PackedSimd,    Add,                                                               16,      2,    {INS_i8x16_add,        INS_i8x16_add,        INS_i16x8_add,        INS_i16x8_add,        INS_i32x4_add,        INS_i32x4_add,        INS_i64x2_add,        INS_i64x2_add,        INS_f32x4_add,        INS_f64x2_add},     HW_Category_SIMD,        HW_Flag_BaseTypeFromFirstArg|HW_Flag_Commutative)
-#define LAST_NI_PackedSimd NI_PackedSimd_Add
+HARDWARE_INTRINSIC(PackedSimd,    Add,                                                                    16,      2,    {INS_i8x16_add,        INS_i8x16_add,        INS_i16x8_add,        INS_i16x8_add,        INS_i32x4_add,        INS_i32x4_add,        INS_i64x2_add,        INS_i64x2_add,        INS_f32x4_add,        INS_f64x2_add},     HW_Category_SIMD,        HW_Flag_BaseTypeFromFirstArg|HW_Flag_Commutative)
+HARDWARE_INTRINSIC(PackedSimd,    Multiply,                                                               16,      2,    {INS_invalid,          INS_invalid,          INS_i16x8_mul,        INS_i16x8_mul,        INS_i32x4_mul,        INS_i32x4_mul,        INS_i64x2_mul,        INS_i64x2_mul,        INS_f32x4_mul,        INS_f64x2_mul},     HW_Category_SIMD,        HW_Flag_BaseTypeFromFirstArg|HW_Flag_Commutative)
+HARDWARE_INTRINSIC(PackedSimd,    Subtract,                                                               16,      2,    {INS_i8x16_sub,        INS_i8x16_sub,        INS_i16x8_sub,        INS_i16x8_sub,        INS_i32x4_sub,        INS_i32x4_sub,        INS_i64x2_sub,        INS_i64x2_sub,        INS_f32x4_sub,        INS_f64x2_sub},     HW_Category_SIMD,        HW_Flag_BaseTypeFromFirstArg)
+#define LAST_NI_PackedSimd NI_PackedSimd_Subtract
 #endif // FEATURE_HW_INTRINSICS
 
 #undef HARDWARE_INTRINSIC
