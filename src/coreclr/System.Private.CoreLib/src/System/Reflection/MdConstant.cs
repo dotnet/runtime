@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-
 namespace System.Reflection
 {
     internal static class MdConstant
@@ -76,27 +74,20 @@ namespace System.Reflection
 
                 if (fieldType.ContainsGenericParameters)
                 {
-                    byte* pDefaultValueData = (byte*)&defaultValue;
-                    if (!BitConverter.IsLittleEndian)
+                    // Open generic enum instances are not expected to exist. Return the underlying primitive value.
+                    return corElementType switch
                     {
-                        int size = corElementType switch
-                        {
-                            CorElementType.ELEMENT_TYPE_CHAR => sizeof(char),
-                            CorElementType.ELEMENT_TYPE_I1 => sizeof(sbyte),
-                            CorElementType.ELEMENT_TYPE_U1 => sizeof(byte),
-                            CorElementType.ELEMENT_TYPE_I2 => sizeof(short),
-                            CorElementType.ELEMENT_TYPE_U2 => sizeof(ushort),
-                            CorElementType.ELEMENT_TYPE_I4 => sizeof(int),
-                            CorElementType.ELEMENT_TYPE_U4 => sizeof(uint),
-                            CorElementType.ELEMENT_TYPE_I8 => sizeof(long),
-                            CorElementType.ELEMENT_TYPE_U8 => sizeof(ulong),
-                            _ => throw new FormatException(SR.Arg_BadLiteralFormat),
-                        };
-
-                        pDefaultValueData += sizeof(long) - size;
-                    }
-
-                    return RuntimeHelpers.Box(fieldType.GetNativeTypeHandle().AsMethodTable(), ref *pDefaultValueData);
+                        CorElementType.ELEMENT_TYPE_CHAR => (char)defaultValue,
+                        CorElementType.ELEMENT_TYPE_I1 => (sbyte)defaultValue,
+                        CorElementType.ELEMENT_TYPE_U1 => (byte)defaultValue,
+                        CorElementType.ELEMENT_TYPE_I2 => (short)defaultValue,
+                        CorElementType.ELEMENT_TYPE_U2 => (ushort)defaultValue,
+                        CorElementType.ELEMENT_TYPE_I4 => (int)defaultValue,
+                        CorElementType.ELEMENT_TYPE_U4 => (uint)defaultValue,
+                        CorElementType.ELEMENT_TYPE_I8 => defaultValue,
+                        CorElementType.ELEMENT_TYPE_U8 => (ulong)defaultValue,
+                        _ => throw new FormatException(SR.Arg_BadLiteralFormat),
+                    };
                 }
 
                 return Enum.ToObject(fieldType, defaultValue);

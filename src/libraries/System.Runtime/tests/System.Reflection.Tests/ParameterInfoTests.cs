@@ -327,7 +327,7 @@ namespace System.Reflection.Tests
             ParameterInfo parameterInfo = action.Method.GetGenericMethodDefinition().GetParameters()[0];
 
             object defaultValue = parameterInfo.DefaultValue;
-            Assert.Equal(parameterInfo.ParameterType, defaultValue.GetType());
+            Assert.Equal(parameterInfo.ParameterType.GetEnumUnderlyingType(), defaultValue.GetType());
             Assert.Equal((byte)0, Convert.ToByte(defaultValue));
         }
 
