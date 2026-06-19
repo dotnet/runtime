@@ -2708,7 +2708,6 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // 1        - CtorClosed (or CtorRTClosed for value-type instance targets needing runtime lookup)
     // 4        - CtorClosedStatic
     // 5        - Retbuf static closed form (not differentiated on this fast path; see TODO below)
-    // 2, 6     - CtorOpened
     // 1        - CtorClosed (or CtorRTClosed for value-type instance targets needing runtime lookup)
     // 2, 6     - CtorOpened
     // 3        - CtorVirtualDispatch
