@@ -3699,6 +3699,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             {
                 assert(sig->sigInst.methInstCount == 1);
 
+                GenTree* aotMt   = nullptr;
                 GenTree* aotInfo = nullptr;
                 if (IsNativeAot())
                 {
@@ -3733,15 +3734,46 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         info.compCompHnd->getArgType(&callSig, callSig.args, &closureType);
                     }
 
-                    bool throwIfClosed = closureType == NO_CLASS_HANDLE || eeIsValueClass(closureType);
-                    if (!throwIfClosed && callSig.hasThis())
+                    bool throwIfClosed = false;
+                    if (callSig.hasThis())
                     {
                         assert(closureType != NO_CLASS_HANDLE);
                         TypeCompareState state = info.compCompHnd->isGenericType(closureType);
                         // we should always see the declaring type enough to know if it's generic
                         assert(state != TypeCompareState::May);
 
-                        throwIfClosed = state == TypeCompareState::Must;
+                        if (state != TypeCompareState::MustNot || eeIsValueClass(closureType))
+                        {
+                            if (eeIsSharedInst(closureType))
+                            {
+                                assert(methodStack.seTypeInfo.IsMethod());
+                                assert(methodStack.seTypeInfo.GetMethodPointerInfo()->m_token.tokenType ==
+                                       CORINFO_TOKENKIND_Method);
+
+                                CORINFO_RESOLVED_TOKEN resolvedToken;
+                                resolvedToken.tokenContext = impTokenLookupContextHandle;
+                                resolvedToken.tokenScope   = info.compScopeHnd;
+                                mdToken ldftnToken      = methodStack.seTypeInfo.GetMethodPointerInfo()->m_token.token;
+                                resolvedToken.token     = ldftnToken;
+                                resolvedToken.tokenType = CORINFO_TOKENKIND_Method;
+
+                                CORINFO_GENERICHANDLE_RESULT embedInfo;
+                                info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken,
+                                                                           CORINFO_GENERICINTRINSIC_DECLARINGTYPE,
+                                                                           info.compMethodHnd, &embedInfo);
+
+                                aotMt = impLookupToTree(&embedInfo.lookup, gtTokenToIconFlags(ldftnToken),
+                                                        embedInfo.compileTimeHandle);
+                            }
+                            else
+                            {
+                                aotMt = gtNewIconEmbClsHndNode(closureType);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throwIfClosed = closureType == NO_CLASS_HANDLE || eeIsValueClass(closureType);
                     }
 
                     uint32_t infoBits = callSig.hasThis() ? 0 : 1;
@@ -3777,7 +3809,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
 
                     CORINFO_GENERICHANDLE_RESULT embedInfo;
-                    info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken, info.compMethodHnd, &embedInfo);
+                    info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken, CORINFO_GENERICINTRINSIC_FIRSTPARAMETER,
+                                                               info.compMethodHnd, &embedInfo);
 
                     delegateMT =
                         impLookupToTree(&embedInfo.lookup, gtTokenToIconFlags(memberRef), embedInfo.compileTimeHandle);
@@ -3799,8 +3832,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                 GenTreeOp* nullcheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewLclVarNode(delegateSlot), gtNewNull());
 
+                if (aotInfo != nullptr && aotMt == nullptr)
+                {
+                    assert(IsNativeAot());
+                    aotMt = gtNewIconNode(0, TYP_I_IMPL);
+                }
                 GenTreeCall* helper = gtNewHelperCallNode(CORINFO_HELP_CREATE_DELEGATE, TYP_REF, methodPtr,
-                                                          storageClone, delegateMT, aotInfo);
+                                                          storageClone, delegateMT, aotMt, aotInfo);
 
                 GenTree*      storeCold = gtNewTempStore(delegateSlot, helper);
                 GenTreeColon* colon     = gtNewColonNode(TYP_VOID, storeCold, gtNewNothingNode());
@@ -3918,8 +3956,24 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 resolvedToken.token        = memberRef;
                 resolvedToken.tokenType    = CORINFO_TOKENKIND_Method;
 
+                CorInfoLookupIntrinsicType type;
+                switch (ni)
+                {
+                    case NI_Internal_Runtime_MethodTable_Of:
+                        type = CORINFO_GENERICINTRINSIC_FIRSTPARAMETER;
+                        break;
+                    case NI_System_Activator_AllocatorOf:
+                        type = CORINFO_GENERICINTRINSIC_OBJECTALLOCATOR;
+                        break;
+                    case NI_System_Activator_DefaultConstructorOf:
+                        type = CORINFO_GENERICINTRINSIC_DEFAULTCONSTRUCTOR;
+                        break;
+                    default:
+                        UNREACHABLE();
+                }
+
                 CORINFO_GENERICHANDLE_RESULT embedInfo;
-                info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken, info.compMethodHnd, &embedInfo);
+                info.compCompHnd->expandRawHandleIntrinsic(&resolvedToken, type, info.compMethodHnd, &embedInfo);
 
                 GenTree* rawHandle =
                     impLookupToTree(&embedInfo.lookup, gtTokenToIconFlags(memberRef), embedInfo.compileTimeHandle);

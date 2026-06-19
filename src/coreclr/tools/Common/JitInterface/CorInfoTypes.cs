@@ -758,6 +758,14 @@ namespace Internal.JitInterface
     //----------------------------------------------------------------------------
     // Embedding type, method and field handles (for "ldtoken" or to pass back to helpers)
 
+    public enum CorInfoLookupIntrinsicType
+    {
+        CORINFO_GENERICINTRINSIC_FIRSTPARAMETER,
+        CORINFO_GENERICINTRINSIC_DEFAULTCONSTRUCTOR,
+        CORINFO_GENERICINTRINSIC_OBJECTALLOCATOR,
+        CORINFO_GENERICINTRINSIC_DECLARINGTYPE
+    }
+
     // Result of calling embedGenericHandle
     public unsafe struct CORINFO_GENERICHANDLE_RESULT
     {

@@ -299,33 +299,37 @@ namespace System.Runtime.CompilerServices
             int paramCount = parameters.Length;
             bool isStatic = methodBase.IsStatic;
 
-            Type? closureType;
+            MethodTable* pTargetMt = null;
+            bool throwIfClosed = false;
             if (isStatic)
             {
-                closureType = parameters.Length > 0 ? parameters[0].ParameterType : null;
+                throwIfClosed = parameters.Length == 0 || parameters[0].ParameterType.IsValueType;
             }
             else
             {
-                closureType = methodBase.DeclaringType;
                 paramCount++; // count 'this'
+                Type? closureType = methodBase.DeclaringType;
+                Debug.Assert(closureType is RuntimeType);
+                if (closureType.IsValueType || closureType.IsGenericType)
+                {
+                    pTargetMt = ((RuntimeType)closureType).TypeHandle.ToMethodTable();
+                }
             }
-            bool throwIfClosed = closureType is null || closureType.IsValueType ||
-                                 (!isStatic && closureType.IsGenericType);
 
             uint info = isStatic ? 1u : 0u;
             info |= throwIfClosed ? 2u : 0u;
             info |= (uint)paramCount << 2;
 
-            Delegate newDelegate = CreateSharedDelegateHelper(method, ref Unsafe.As<TDelegate?, Delegate?>(ref storage), MethodTable.Of<TDelegate>(), info);
+            Delegate newDelegate = CreateSharedDelegateHelper(method, ref Unsafe.As<TDelegate?, Delegate?>(ref storage), MethodTable.Of<TDelegate>(), pTargetMt, info);
             Debug.Assert(newDelegate is TDelegate);
             return Unsafe.As<TDelegate>(newDelegate);
         }
 
         // This method is used by the JIT as a helper
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe Delegate CreateSharedDelegateHelper(nint method, ref Delegate? storage, MethodTable* pMT, uint info)
+        private static unsafe Delegate CreateSharedDelegateHelper(nint method, ref Delegate? storage, MethodTable* pMt, MethodTable* pTargetMt, uint info)
         {
-            RuntimeType delegateType = Type.GetTypeFromMethodTable(pMT);
+            RuntimeType delegateType = Type.GetTypeFromMethodTable(pMt);
             Debug.Assert(delegateType.GetRuntimeTypeInfo().IsDelegate);
 
             bool isStatic = (info & 1) != 0;
@@ -345,10 +349,35 @@ namespace System.Runtime.CompilerServices
                 throw new NotSupportedException();
             }
 
-            Delegate? newDelegate = null;
-            lock (FrozenDelegateCache.CacheLock)
+            Delegate newDelegate;
+            lock (DelegateCache.CacheLock)
             {
-                ref Delegate? reference = ref CollectionsMarshal.GetValueRefOrAddDefault(FrozenDelegateCache.Cache, (method, delegateType), out bool exists);
+                object? target = null;
+                bool allowFrozen = true;
+                if (pTargetMt != null)
+                {
+                    ref (object target, bool frozen) targetReference = ref CollectionsMarshal.GetValueRefOrAddDefault(DelegateCache.Target, (nuint)pTargetMt, out bool targetExists);
+                    if (targetExists)
+                    {
+                        Debug.Assert(targetReference.target.GetMethodTable() == pTargetMt);
+                        target = targetReference.target;
+                        allowFrozen = targetReference.frozen;
+                    }
+                    else
+                    {
+                        target = FrozenObjectHeapManager.Instance.TryAllocateObject(pTargetMt);
+                        if (target is null)
+                        {
+                            target = RuntimeImports.RhNewObject(pTargetMt);
+                            allowFrozen = false;
+                        }
+                        Debug.Assert(target.GetMethodTable() == pTargetMt);
+
+                        targetReference = (target, allowFrozen);
+                    }
+                }
+
+                ref Delegate? reference = ref CollectionsMarshal.GetValueRefOrAddDefault(DelegateCache.Instance, (method, delegateType), out bool exists);
                 if (exists)
                 {
                     Debug.Assert(reference.GetType() == delegateType);
@@ -356,35 +385,25 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    object frozen = FrozenObjectHeapManager.Instance.TryAllocateObject(pMT);
-                    if (frozen is not null)
-                    {
-                        Debug.Assert(frozen.GetType() == delegateType);
-                        newDelegate = Unsafe.As<Delegate>(frozen);
-                        Delegate.FillDelegate(newDelegate, method, null, isStatic, isOpen);
+                    object? newInstance = allowFrozen ? FrozenObjectHeapManager.Instance.TryAllocateObject(pMt) : null;
+                    newInstance ??= RuntimeImports.RhNewObject(pMt);
+                    Debug.Assert(newInstance.GetType() == delegateType);
 
-                        reference = newDelegate;
-                    }
+                    newDelegate = Unsafe.As<Delegate>(newInstance);
+                    Delegate.FillDelegate(newDelegate, method, target, isStatic, isOpen);
+
+                    reference = newDelegate;
                 }
             }
 
-            if (newDelegate is null)
-            {
-                object nonPinned = RuntimeImports.RhNewObject(pMT);
-
-                Debug.Assert(nonPinned.GetType() == delegateType);
-                newDelegate = Unsafe.As<Delegate>(nonPinned);
-                Delegate.FillDelegate(newDelegate, method, null, isStatic, isOpen);
-            }
-
-            Debug.Assert(newDelegate is not null);
             return Interlocked.CompareExchange(ref storage, newDelegate, null) ?? newDelegate;
         }
 
-        private static class FrozenDelegateCache
+        private static class DelegateCache
         {
             public static readonly Lock CacheLock = new();
-            public static readonly Dictionary<(nint, Type), Delegate> Cache = [];
+            public static readonly Dictionary<(nint, RuntimeType), Delegate> Instance = [];
+            public static readonly Dictionary<nuint, (object target, bool frozen)> Target = [];
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",

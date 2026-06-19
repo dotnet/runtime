@@ -605,24 +605,26 @@ namespace Internal.IL
                         _dependencies.Add(_factory.ConstructedTypeSymbol(method.Instantiation[0]), reason);
                     }
 
-                    // Is this a verifiable delegate creation sequence?
-                    if (_currentOffset >= 11
-                        && _basicBlocks[_currentOffset] == null
-                        && _ilBytes[_currentOffset - 11] == (byte)ILOpcode.prefix1
-                        && (_ilBytes[_currentOffset - 10] == unchecked((byte)ILOpcode.ldftn) ||
-                            _ilBytes[_currentOffset - 10] == unchecked((byte)ILOpcode.ldvirtftn)))
+                    ReadOnlySpan<byte> previousBytes = new(_ilBytes, 0, _currentOffset);
+                    int lastLdftn = Math.Max(previousBytes.LastIndexOf([(byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.ldftn)]),
+                        previousBytes.LastIndexOf([(byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.ldvirtftn)]));
+
+                    // we don't need to worry if we get some random method here instead due to weird IL, it will just root the type for it
+                    if (lastLdftn >= 0 && lastLdftn < _currentOffset - 4)
                     {
-                        int targetToken = ReadILTokenAt(_currentOffset - 9);
-                        var delegateMethod = (MethodDesc)_methodIL.GetObject(targetToken);
-                        if (!delegateMethod.Signature.IsStatic)
+                        int targetToken = ReadILTokenAt(lastLdftn + 2);
+                        object targetObject = _methodIL.GetObject(targetToken, NotFoundBehavior.ReturnNull);
+                        if (targetObject is MethodDesc delegateMethod && !delegateMethod.Signature.IsStatic)
                         {
-                            var owningType = delegateMethod.OwningType;
+                            TypeDesc owningType = delegateMethod.OwningType;
                             if (owningType.IsRuntimeDeterminedSubtype)
                             {
+                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ObjectAllocator, owningType), reason);
                                 _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, owningType), reason);
                             }
                             else
                             {
+                                _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, owningType), reason);
                                 _dependencies.Add(_factory.ConstructedTypeSymbol(owningType), reason);
                             }
                         }

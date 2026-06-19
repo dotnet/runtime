@@ -775,6 +775,9 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
 static ShuffleThunkCache* s_pShuffleThunkCache = NULL;
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
+static MapSHash<MethodTable*, Object*> s_frozenTargetMap;
+static CrstStatic s_targetCrst;
+
 // One time init.
 void COMDelegate::Init()
 {
@@ -788,6 +791,8 @@ void COMDelegate::Init()
 #if defined(FEATURE_PORTABLE_SHUFFLE_THUNKS) || defined(TARGET_X86)
     s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
 #endif
+
+    s_targetCrst.Init(CrstFrozenDelegateTarget);
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -1821,15 +1826,17 @@ DELEGATEREF COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* pMT)
     assert(pTargetMD != NULL);
     assert(pMT != NULL);
 
-    if (TypeHandle(pMT).IsCanonicalSubtype())
-    {
-        // this should only be reachable from the JIT
-        return NULL;
-    }
+    // this should only be reachable from the JIT
+    assert(!TypeHandle(pMT).IsCanonicalSubtype());
 
     assert(pMT->IsDelegate());
 
+    printf("method %s\n", pTargetMD->GetName());
+    assert(!pTargetMD->IsSharedByGenericInstantiations());
+
     MethodTable* declaringType = pTargetMD->GetMethodTable();
+    assert(!TypeHandle(declaringType).IsCanonicalSubtype());
+
     MethodDesc* pDelegateInvoke = FindDelegateInvokeMethod(pMT);
 
     UINT invokeCount = MethodDescToNumFixedArgs(pDelegateInvoke);
@@ -1842,12 +1849,12 @@ DELEGATEREF COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* pMT)
 
     bool isOpen = invokeCount == methodCount;
 
-    // reject cases needing valid instances
+    MethodTable* closureType = NULL;
     if (!isOpen)
     {
-        // we block delegates closed over null valuetypes since we'd just always NRE in the unboxing stub
         if (isStatic)
         {
+            // reject invalid cases
             MetaSig sig(pTargetMD);
             if (sig.NextArgNormalized() == ELEMENT_TYPE_END || sig.GetLastTypeHandleThrowing().IsValueType())
             {
@@ -1856,24 +1863,60 @@ DELEGATEREF COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* pMT)
         }
         else
         {
-            // reject instance methods on generic types, those require proper targets
+            // get closure type for delegates needing it
             if (declaringType->IsValueType() || declaringType->GetNumGenericArgs() != 0)
             {
-                return NULL;
+                closureType = declaringType;
             }
         }
     }
 
-    // we create delegates without a target here
-    OBJECTREF target = NULL;
-    DELEGATEREF delegate = NULL;
+    // we create delegates without a target here unless needed
+    Object* target = NULL;
+    if (closureType != NULL) {
+        assert(!TypeHandle(closureType).IsCanonicalSubtype());
+        if (closureType->HasClassConstructor() || closureType->HasFinalizer()) {
+            return NULL;
+        }
 
-    GCPROTECT_BEGIN(delegate);
-    delegate = (DELEGATEREF)AllocateObject(pMT);
-    BindToMethod(&delegate, &target, pTargetMD, declaringType, isOpen);
+        if (!IsDynamicScope(GetScopeHandle(closureType->GetModule()))) {
+            // we need to lock to access the global map
+            CrstHolder crst(&s_targetCrst);
+
+            if (!s_frozenTargetMap.Lookup(closureType, &target))
+            {
+                target = OBJECTREFToObject(TryAllocateFrozenObject(closureType));
+                if (target != NULL) {
+                    s_frozenTargetMap.Add(closureType, target);
+                }
+            }
+        }
+    }
+
+    struct
+    {
+        DELEGATEREF delegate;
+        OBJECTREF target;
+    } gc;
+
+    gc.delegate = NULL;
+    gc.target   = ObjectToOBJECTREF(target);
+
+    GCPROTECT_BEGIN(gc);
+    if (closureType != NULL) {
+        if (gc.target == NULL) {
+            // we should mostly get here with collectible types
+            // TODO: pool non FOH targets too
+            gc.target = AllocateObject(closureType);
+        }
+        assert(gc.target != NULL);
+    }
+
+    gc.delegate = (DELEGATEREF)AllocateObject(pMT);
+    BindToMethod(&gc.delegate, &gc.target, pTargetMD, declaringType, isOpen);
     GCPROTECT_END();
 
-    return delegate;
+    return gc.delegate;
 }
 
 extern "C" void QCALLTYPE Delegate_CreateDelegate(PCODE method, MethodTable* pMT, QCall::ObjectHandleOnStack objHandle)

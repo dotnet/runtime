@@ -202,11 +202,12 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getSZArrayHelperEnumeratorClass(
 
 void interceptor_ICJI::expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CorInfoLookupIntrinsicType type,
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     mcs->AddCall("expandRawHandleIntrinsic");
-    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
+    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, type, callerHandle, pResult);
 }
 
 bool interceptor_ICJI::isIntrinsicType(

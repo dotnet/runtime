@@ -241,11 +241,12 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getSZArrayHelperEnumeratorClass(
 
 void WrapICorJitInfo::expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          CorInfoLookupIntrinsicType type,
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     API_ENTER(expandRawHandleIntrinsic);
-    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
+    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, type, callerHandle, pResult);
     API_LEAVE(expandRawHandleIntrinsic);
 }
 

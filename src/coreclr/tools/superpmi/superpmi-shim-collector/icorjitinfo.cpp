@@ -302,12 +302,13 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getSZArrayHelperEnumeratorClass(CORINFO_C
 }
 
 void interceptor_ICJI::expandRawHandleIntrinsic(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
+                                                CorInfoLookupIntrinsicType    type,
                                                 CORINFO_METHOD_HANDLE         callerHandle,
                                                 CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     mc->cr->AddCall("expandRawHandleIntrinsic");
-    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
-    mc->recExpandRawHandleIntrinsic(pResolvedToken, callerHandle, pResult);
+    original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, type, callerHandle, pResult);
+    mc->recExpandRawHandleIntrinsic(pResolvedToken, type, callerHandle, pResult);
 }
 
 // Is the given type in System.Private.Corelib and marked with IntrinsicAttribute?
