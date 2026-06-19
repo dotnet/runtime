@@ -855,6 +855,15 @@ eventpipe_protocol_helper_send_start_tracing_success (
 }
 
 static
+uint8_t *
+eventpipe_protocol_helper_stop_tracing_try_parse_payload(uint8_t *buffer, uint16_t buffer_len)
+{
+	uint64_t session_id = ep_rt_val_uint64_t(*(uint64_t*)buffer);
+	*(uint64_t*)buffer = session_id;
+	return buffer;
+}
+
+static
 bool
 eventpipe_protocol_helper_stop_tracing (
 	DiagnosticsIpcMessage *message,
@@ -864,14 +873,14 @@ eventpipe_protocol_helper_stop_tracing (
 
 	bool result = false;
 	EventPipeStopTracingCommandPayload *payload;
-	payload = (EventPipeStopTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, NULL);
+	payload = (EventPipeStopTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_protocol_helper_stop_tracing_try_parse_payload);
 
 	if (!payload) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_BAD_ENCODING);
 		ep_raise_error ();
 	}
 
-	ep_disable (ep_rt_val_uint64_t((uint64_t)payload->session_id));
+	ep_disable (payload->session_id);
 
 	eventpipe_protocol_helper_send_stop_tracing_success (stream, payload->session_id);
 	ds_ipc_stream_flush (stream);
