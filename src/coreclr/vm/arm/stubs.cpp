@@ -936,10 +936,12 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         // No real prolog for the simple case, we're a tail call so we shouldn't be on the stack for any walk
         // or unwind.
 
-        // On entry r0 holds the delegate instance. Look up the real target address stored in the MethodPtrAux
-        // field and stash it in r12.
-        //  ldr r12, [r0, #offsetof(DelegateObject, _methodPtrAux)]
-        ThumbEmitLoadRegIndirect(ThumbReg(12), ThumbReg(0), DelegateObject::GetOffsetOfMethodPtrAux());
+        // On entry r0 holds the delegate instance. Load r12 = address of _methodPtrAux (IndirectionCell
+        // for VSD) and load the real target address into lr.
+        //  add r12, r0, #offsetof(DelegateObject, _methodPtrAux)
+        ThumbEmitAdd(ThumbReg(12), ThumbReg(0), DelegateObject::GetOffsetOfMethodPtrAux());
+        //  ldr lr, [r12]
+        ThumbEmitLoadRegIndirect(thumbRegLr, ThumbReg(12), 0);
 
         // Emit the instructions to rewrite the argument registers. Most will be register-to-register (e.g.
         // move r1 to r0) but one or two of them might move values from the top of the incoming stack
@@ -970,16 +972,16 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         }
 
         // Tail call to real target.
-        //  bx r12
-        ThumbEmitJumpRegister(ThumbReg(12));
+        //  bx lr
+        ThumbEmitJumpRegister(thumbRegLr);
 
         return;
     }
 
     // In the more complex case we need to re-write at least some of the arguments on the stack as well as
-    // argument registers. We need some temporary registers to perform stack-to-stack copies and we've
-    // reserved our one remaining volatile register, r12, to store the eventual target method address. So
-    // we're going to generate a hybrid-tail call. Using a tail call has the advantage that we don't need to
+    // argument registers. We need some temporary registers to perform stack-to-stack copies. r12 will hold
+    // the IndirectionCell address (address of _methodPtrAux) throughout so that VSD stubs receive it intact.
+    // So we're going to generate a hybrid-tail call. Using a tail call has the advantage that we don't need to
     // erect and link an explicit CLR frame to enable crawling of this thunk. Additionally re-writing the
     // stack can be more performant in some scenarios than copying the stack (in the presence of floating point
     // or arguments requieing 64-bit alignment we might not have to move some or even most of the values).
@@ -994,10 +996,10 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
                     0,      // No additional space in the stack frame required
                     FALSE); // Don't push argument registers
 
-    // On entry r0 holds the delegate instance. Look up the real target address stored in the MethodPtrAux
-    // field and stash it in r12.
-    //  ldr r12, [r0, #offsetof(DelegateObject, _methodPtrAux)]
-    ThumbEmitLoadRegIndirect(ThumbReg(12), ThumbReg(0), DelegateObject::GetOffsetOfMethodPtrAux());
+    // On entry r0 holds the delegate instance. Load r12 = address of _methodPtrAux (IndirectionCell for
+    // VSD). Do this before the shuffle entries overwrite r0.
+    //  add r12, r0, #offsetof(DelegateObject, _methodPtrAux)
+    ThumbEmitAdd(ThumbReg(12), ThumbReg(0), DelegateObject::GetOffsetOfMethodPtrAux());
 
     // As we copy slots from lower in the argument stack to higher we need to keep track of source and
     // destination pointers into those arguments (if we just use offsets from SP we get into trouble with
@@ -1088,12 +1090,13 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
         pEntry++;
     }
 
-    // Arguments are copied. Now we modify the saved value of LR we created in our prolog (which will be
-    // popped back off into PC in our epilog) so that it points to the real target address in r12 rather than
-    // our return address. We haven't modified LR ourselves, so the net result is that executing our epilog
-    // will pop our frame and tail call to the real method.
-    //  str r12, [sp + #(cbSavedRegs-4)]
-    ThumbEmitStoreRegIndirect(ThumbReg(12), thumbRegSp, cbSavedRegs - 4);
+    // Arguments are copied. Load the real target address through the IndirectionCell in r12 into r6
+    // (which is free at this point), then store it to the saved LR slot so the epilog pops it into PC.
+    // r12 (IndirectionCell address) is preserved through the epilog since it is not saved/restored.
+    //  ldr r6, [r12]
+    ThumbEmitLoadRegIndirect(ThumbReg(6), ThumbReg(12), 0);
+    //  str r6, [sp + #(cbSavedRegs-4)]
+    ThumbEmitStoreRegIndirect(ThumbReg(6), thumbRegSp, cbSavedRegs - 4);
 
     // Epilog:
     ThumbEmitEpilog();
