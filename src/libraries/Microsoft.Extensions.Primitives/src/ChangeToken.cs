@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.Primitives
 {
@@ -15,8 +16,12 @@ namespace Microsoft.Extensions.Primitives
         /// Registers the <paramref name="changeTokenConsumer"/> action to be called whenever the token produced changes.
         /// </summary>
         /// <param name="changeTokenProducer">Produces the change token.</param>
-        /// <param name="changeTokenConsumer">Action called when the token changes.</param>
-        /// <returns></returns>
+        /// <param name="changeTokenConsumer">Action called when the token changes. The token is re-registered once the action returns.</param>
+        /// <returns>An <see cref="IDisposable"/> that, when disposed, unregisters the consumer.</returns>
+        /// <remarks>
+        /// Exceptions from <paramref name="changeTokenProducer"/> are propagated to the caller of this method or to the code that triggers the change token.
+        /// Exceptions from <paramref name="changeTokenConsumer"/> are propagated to the code that triggers the change token.
+        /// </remarks>
         public static IDisposable OnChange(Func<IChangeToken?> changeTokenProducer, Action changeTokenConsumer)
         {
             if (changeTokenProducer is null)
@@ -28,16 +33,20 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenConsumer);
             }
 
-            return new ChangeTokenRegistration<Action>(changeTokenProducer, callback => callback(), changeTokenConsumer);
+            return new SyncChangeTokenRegistration<Action>(changeTokenProducer, static callback => callback(), changeTokenConsumer);
         }
 
         /// <summary>
         /// Registers the <paramref name="changeTokenConsumer"/> action to be called whenever the token produced changes.
         /// </summary>
         /// <param name="changeTokenProducer">Produces the change token.</param>
-        /// <param name="changeTokenConsumer">Action called when the token changes.</param>
+        /// <param name="changeTokenConsumer">Action called when the token changes. The token is re-registered once the action returns.</param>
         /// <param name="state">state for the consumer.</param>
-        /// <returns></returns>
+        /// <returns>An <see cref="IDisposable"/> that, when disposed, unregisters the consumer.</returns>
+        /// <remarks>
+        /// Exceptions from <paramref name="changeTokenProducer"/> are propagated to the caller of this method or to the code that triggers the change token.
+        /// Exceptions from <paramref name="changeTokenConsumer"/> are propagated to the code that triggers the change token.
+        /// </remarks>
         public static IDisposable OnChange<TState>(Func<IChangeToken?> changeTokenProducer, Action<TState> changeTokenConsumer, TState state)
         {
             if (changeTokenProducer is null)
@@ -49,56 +58,81 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenConsumer);
             }
 
-            return new ChangeTokenRegistration<TState>(changeTokenProducer, changeTokenConsumer, state);
+            return new SyncChangeTokenRegistration<TState>(changeTokenProducer, changeTokenConsumer, state);
         }
 
-        private sealed class ChangeTokenRegistration<TState> : IDisposable
+        /// <summary>
+        /// Registers the <paramref name="changeTokenConsumer"/> function to be called whenever the token produced changes.
+        /// </summary>
+        /// <param name="changeTokenProducer">Produces the change token.</param>
+        /// <param name="changeTokenConsumer">Function called when the token changes. The token is only re-registered once the returned <see cref="Task"/> completes.</param>
+        /// <returns>An <see cref="IDisposable"/> that, when disposed, unregisters the consumer.</returns>
+        /// <remarks>
+        /// Exceptions from <paramref name="changeTokenProducer"/> are propagated to the caller of this method or to the code that triggers the change token.
+        /// Synchronous exceptions from <paramref name="changeTokenConsumer"/> are propagated to the code that triggers the change token.
+        /// Asynchronous exceptions from <paramref name="changeTokenConsumer"/> are left unobserved.
+        /// </remarks>
+        public static IDisposable OnChange(Func<IChangeToken?> changeTokenProducer, Func<Task> changeTokenConsumer)
         {
-            private readonly Func<IChangeToken?> _changeTokenProducer;
-            private readonly Action<TState> _changeTokenConsumer;
-            private readonly TState _state;
+            if (changeTokenProducer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenProducer);
+            }
+            if (changeTokenConsumer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenConsumer);
+            }
+
+            return new AsyncChangeTokenRegistration<Func<Task>>(changeTokenProducer, static callback => callback(), changeTokenConsumer);
+        }
+
+        /// <summary>
+        /// Registers the <paramref name="changeTokenConsumer"/> function to be called whenever the token produced changes.
+        /// </summary>
+        /// <param name="changeTokenProducer">Produces the change token.</param>
+        /// <param name="changeTokenConsumer">Function called when the token changes. The token is only re-registered once the returned <see cref="Task"/> completes.</param>
+        /// <param name="state">state for the consumer.</param>
+        /// <returns>An <see cref="IDisposable"/> that, when disposed, unregisters the consumer.</returns>
+        /// <remarks>
+        /// Exceptions from <paramref name="changeTokenProducer"/> are propagated to the caller of this method or to the code that triggers the change token.
+        /// Synchronous exceptions from <paramref name="changeTokenConsumer"/> are propagated to the code that triggers the change token.
+        /// Asynchronous exceptions from <paramref name="changeTokenConsumer"/> are left unobserved.
+        /// </remarks>
+        public static IDisposable OnChange<TState>(Func<IChangeToken?> changeTokenProducer, Func<TState, Task> changeTokenConsumer, TState state)
+        {
+            if (changeTokenProducer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenProducer);
+            }
+            if (changeTokenConsumer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenConsumer);
+            }
+
+            return new AsyncChangeTokenRegistration<TState>(changeTokenProducer, changeTokenConsumer, state);
+        }
+
+        private abstract class ChangeTokenRegistration<TState>(Func<IChangeToken?> changeTokenProducer, TState state) : IDisposable
+        {
             private IDisposable? _disposable;
 
             private static readonly NoopDisposable _disposedSentinel = new NoopDisposable();
 
-            public ChangeTokenRegistration(Func<IChangeToken?> changeTokenProducer, Action<TState> changeTokenConsumer, TState state)
-            {
-                _changeTokenProducer = changeTokenProducer;
-                _changeTokenConsumer = changeTokenConsumer;
-                _state = state;
+            protected TState State { get; } = state;
 
-                IChangeToken? token = changeTokenProducer();
+            protected void Start() => RegisterChangeTokenCallback(changeTokenProducer());
 
-                RegisterChangeTokenCallback(token);
-            }
+            protected IChangeToken? ProduceToken() => changeTokenProducer();
 
-            private void OnChangeTokenFired()
-            {
-                // The order here is important. We need to take the token and then apply our changes BEFORE
-                // registering. This prevents us from possible having two change updates to process concurrently.
-                //
-                // If the token changes after we take the token, then we'll process the update immediately upon
-                // registering the callback.
-                IChangeToken? token = _changeTokenProducer();
+            protected abstract void OnChangeTokenFired();
 
-                try
-                {
-                    _changeTokenConsumer(_state);
-                }
-                finally
-                {
-                    // We always want to ensure the callback is registered
-                    RegisterChangeTokenCallback(token);
-                }
-            }
-
-            private void RegisterChangeTokenCallback(IChangeToken? token)
+            protected void RegisterChangeTokenCallback(IChangeToken? token)
             {
                 if (token is null)
                 {
                     return;
                 }
-                IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
+                IDisposable registraton = token.RegisterChangeCallback(static s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
                 if (token.HasChanged && token.ActiveChangeCallbacks)
                 {
                     registraton?.Dispose();
@@ -151,6 +185,92 @@ namespace Microsoft.Extensions.Primitives
             {
                 public void Dispose()
                 {
+                }
+            }
+        }
+
+        private sealed class SyncChangeTokenRegistration<TState> : ChangeTokenRegistration<TState>
+        {
+            private readonly Action<TState> _changeTokenConsumer;
+
+            public SyncChangeTokenRegistration(Func<IChangeToken?> changeTokenProducer, Action<TState> changeTokenConsumer, TState state)
+                : base(changeTokenProducer, state)
+            {
+                _changeTokenConsumer = changeTokenConsumer;
+
+                Start();
+            }
+
+            protected override void OnChangeTokenFired()
+            {
+                // The order here is important. We need to take the token and then apply our changes BEFORE
+                // registering. This prevents us from possible having two change updates to process concurrently.
+                //
+                // If the token changes after we take the token, then we'll process the update immediately upon
+                // registering the callback.
+                IChangeToken? token = ProduceToken();
+
+                try
+                {
+                    _changeTokenConsumer(State);
+                }
+                finally
+                {
+                    // We always want to ensure the callback is registered
+                    RegisterChangeTokenCallback(token);
+                }
+            }
+        }
+
+        private sealed class AsyncChangeTokenRegistration<TState> : ChangeTokenRegistration<TState>
+        {
+            private readonly Func<TState, Task> _changeTokenConsumer;
+
+            public AsyncChangeTokenRegistration(Func<IChangeToken?> changeTokenProducer, Func<TState, Task> changeTokenConsumer, TState state)
+                : base(changeTokenProducer, state)
+            {
+                _changeTokenConsumer = changeTokenConsumer;
+
+                Start();
+            }
+
+            protected override void OnChangeTokenFired()
+            {
+                // The order here is important. We need to take the token and then apply our changes BEFORE
+                // registering. This prevents us from possible having two change updates to process concurrently.
+                //
+                // If the token changes after we take the token, then we'll process the update immediately upon
+                // registering the callback once the consumer's task completes.
+                IChangeToken? token = ProduceToken();
+
+                try
+                {
+                    // The consumer is invoked synchronously here, so that synchronous exceptions from it are propagated
+                    // to the code that triggers the change token, just like the sync overload does.
+                    Task consumerTask = _changeTokenConsumer(State);
+
+                    // Asynchronous exceptions can't be propagated without blocking, so they are left unobserved
+                    // (meaning they can be observed only through TaskScheduler.UnobservedTaskException).
+                    _ = AwaitConsumerAndRegisterCallback(consumerTask, token);
+                }
+                catch
+                {
+                    // We always want to ensure the callback is registered, even when the consumer throws synchronously.
+                    RegisterChangeTokenCallback(token);
+                    throw;
+                }
+            }
+
+            private async Task AwaitConsumerAndRegisterCallback(Task consumerTask, IChangeToken? token)
+            {
+                try
+                {
+                    await consumerTask.ConfigureAwait(false);
+                }
+                finally
+                {
+                    // We always want to ensure the callback is registered
+                    RegisterChangeTokenCallback(token);
                 }
             }
         }

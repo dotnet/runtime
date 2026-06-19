@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Microsoft.Extensions.Primitives
@@ -45,11 +46,12 @@ namespace Microsoft.Extensions.Primitives
         {
             TestChangeToken token = null;
             var count = 0;
-            ChangeToken.OnChange(() => token = new TestChangeToken(), () =>
+            // The lambda is explicitly typed as Action so it binds to the synchronous overload rather than the Func<Task> one.
+            ChangeToken.OnChange(() => token = new TestChangeToken(), (Action)(() =>
             {
                 count++;
                 throw new Exception();
-            });
+            }));
             Assert.Throws<Exception>(() => token.Changed());
             Assert.Equal(1, count);
             Assert.Throws<Exception>(() => token.Changed());
@@ -75,12 +77,13 @@ namespace Microsoft.Extensions.Primitives
             var count = 0;
             object state = new object();
             object callbackState = null;
-            ChangeToken.OnChange(() => token = new TestChangeToken(), s =>
+            // The lambda is explicitly typed as Action<object> so it binds to the synchronous overload rather than the Func<TState, Task> one.
+            ChangeToken.OnChange(() => token = new TestChangeToken(), (Action<object>)(s =>
             {
                 callbackState = s;
                 count++;
                 throw new Exception();
-            }, state);
+            }), state);
             Assert.Throws<Exception>(() => token.Changed());
             Assert.Equal(1, count);
             Assert.NotNull(callbackState);
@@ -259,6 +262,273 @@ namespace Microsoft.Extensions.Primitives
         public void NullTokenDisposeShouldNotThrow()
         {
             ChangeToken.OnChange(() => null, () => Assert.Fail()).Dispose();
+        }
+
+        [Fact]
+        public void AsyncOnChangeThrowsForNullArguments()
+        {
+            Assert.Throws<ArgumentNullException>(() => ChangeToken.OnChange(null, () => Task.CompletedTask));
+            Assert.Throws<ArgumentNullException>(() => ChangeToken.OnChange(() => new TestChangeToken(), (Func<Task>)null));
+            Assert.Throws<ArgumentNullException>(() => ChangeToken.OnChange<object>(null, _ => Task.CompletedTask, null));
+            Assert.Throws<ArgumentNullException>(() => ChangeToken.OnChange<object>(() => new TestChangeToken(), (Func<object, Task>)null, null));
+        }
+
+        [Fact]
+        public void AsyncHasChangeFiresChange()
+        {
+            var provider = new ResettableChangeTokenProvider();
+            int count = 0;
+            ChangeToken.OnChange(provider.GetChangeToken, () =>
+            {
+                count++;
+                return Task.CompletedTask;
+            });
+
+            Assert.Equal(0, count);
+            provider.Changed();
+            Assert.Equal(1, count);
+            provider.Changed();
+            Assert.Equal(2, count);
+        }
+
+        [Fact]
+        public void AsyncHasChangeFiresChangeWithState()
+        {
+            var provider = new ResettableChangeTokenProvider();
+            object state = new object();
+            object callbackState = null;
+            ChangeToken.OnChange(provider.GetChangeToken, s =>
+            {
+                callbackState = s;
+                return Task.CompletedTask;
+            }, state);
+
+            Assert.Null(callbackState);
+            provider.Changed();
+            Assert.Same(state, callbackState);
+        }
+
+        [Fact]
+        public void AsyncDisposingChangeTokenRegistrationDoesNotRaiseConsumerCallback()
+        {
+            var provider = new ResettableChangeTokenProvider();
+            int count = 0;
+            IDisposable reg = ChangeToken.OnChange(provider.GetChangeToken, () =>
+            {
+                count++;
+                return Task.CompletedTask;
+            });
+
+            for (int i = 0; i < 5; i++)
+            {
+                provider.Changed();
+            }
+
+            Assert.Equal(5, count);
+
+            reg.Dispose();
+
+            for (int i = 0; i < 5; i++)
+            {
+                provider.Changed();
+            }
+
+            Assert.Equal(5, count);
+        }
+
+        [Fact]
+        public async Task AsyncDoesNotReregisterUntilConsumerTaskCompletes()
+        {
+            var provider = new ResettableChangeTokenProvider();
+            int invocations = 0;
+            TaskCompletionSource<bool> started = NewTcs();
+            TaskCompletionSource<bool> gate = NewTcs();
+
+            // Plain Task-returning consumer (no async lambda) so no continuation is captured on
+            // xunit's SynchronizationContext, keeping the test isolated from other tests.
+            IDisposable reg = ChangeToken.OnChange(provider.GetChangeToken, () =>
+            {
+                Interlocked.Increment(ref invocations);
+                Volatile.Read(ref started).SetResult(true);
+                return Volatile.Read(ref gate).Task;
+            });
+
+            // First change starts the consumer synchronously; it then blocks awaiting its gate.
+            TaskCompletionSource<bool> firstGate = gate;
+            provider.Changed();
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(1, invocations);
+
+            // Arm gates for the next invocation before triggering another change. The consumer re-runs on a
+            // different thread (the awaited gate's continuation), so publish these with Volatile.Write.
+            Volatile.Write(ref started, NewTcs());
+            TaskCompletionSource<bool> secondGate = NewTcs();
+            Volatile.Write(ref gate, secondGate);
+
+            // A change while the consumer is running must not start another invocation, because the
+            // token is only re-registered once the consumer's task completes.
+            provider.Changed();
+            Assert.Equal(1, invocations);
+
+            // Completing the first consumer re-registers and coalesces the pending change into a single invocation.
+            firstGate.SetResult(true);
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(2, invocations);
+
+            // Drain the second invocation and unsubscribe.
+            secondGate.SetResult(true);
+            reg.Dispose();
+        }
+
+        private static TaskCompletionSource<bool> NewTcs() =>
+            new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void AsyncConsumerSynchronousExceptionPropagatesToProducerAndSubscriptionSurvives(bool useStateOverload)
+        {
+            var provider = new ResettableChangeTokenProvider();
+            int count = 0;
+            object expectedState = new object();
+            object observedState = null;
+
+            Func<Task> faulting = () =>
+            {
+                count++;
+                throw new InvalidTimeZoneException();
+            };
+
+            if (useStateOverload)
+            {
+                ChangeToken.OnChange(provider.GetChangeToken, s =>
+                {
+                    observedState = s;
+                    return faulting();
+                }, expectedState);
+            }
+            else
+            {
+                ChangeToken.OnChange(provider.GetChangeToken, faulting);
+            }
+
+            // A synchronous exception from the consumer is propagated to the code that triggers the change token,
+            // just like the synchronous overload. CancellationTokenSource.Cancel wraps it in an AggregateException.
+            AggregateException ex = Assert.Throws<AggregateException>(provider.Changed);
+            Assert.IsType<InvalidTimeZoneException>(ex.InnerException);
+            Assert.Equal(1, count);
+
+            // The subscription survives a throwing consumer, so a later change invokes (and throws from) it again.
+            Assert.Throws<AggregateException>(provider.Changed);
+            Assert.Equal(2, count);
+
+            if (useStateOverload)
+            {
+                Assert.Same(expectedState, observedState);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void AsyncConsumerAsynchronousFaultIsNotPropagatedToProducerAndSubscriptionSurvives(bool useStateOverload)
+        {
+            var provider = new ResettableChangeTokenProvider();
+            int count = 0;
+            object expectedState = new object();
+            object observedState = null;
+
+            Func<Task> faulting = () =>
+            {
+                count++;
+                return Task.FromException(new InvalidTimeZoneException());
+            };
+
+            if (useStateOverload)
+            {
+                ChangeToken.OnChange(provider.GetChangeToken, s =>
+                {
+                    observedState = s;
+                    return faulting();
+                }, expectedState);
+            }
+            else
+            {
+                ChangeToken.OnChange(provider.GetChangeToken, faulting);
+            }
+
+            // An asynchronous fault from the consumer's task cannot be propagated without blocking, so it is left
+            // unobserved (observable only through TaskScheduler.UnobservedTaskException) and is not surfaced to the
+            // code that triggers the change token.
+            provider.Changed();
+            Assert.Equal(1, count);
+
+            // The subscription survives a faulted consumer, so later changes still invoke it.
+            provider.Changed();
+            Assert.Equal(2, count);
+
+            if (useStateOverload)
+            {
+                Assert.Same(expectedState, observedState);
+            }
+        }
+
+        // Subscribes a no-op consumer using each of the four OnChange overloads, selected by index.
+        private static void Subscribe(int overload, Func<IChangeToken> producer)
+        {
+            switch (overload)
+            {
+                case 0:
+                    ChangeToken.OnChange(producer, () => { });
+                    break;
+                case 1:
+                    ChangeToken.OnChange(producer, _ => { }, new object());
+                    break;
+                case 2:
+                    ChangeToken.OnChange(producer, () => Task.CompletedTask);
+                    break;
+                case 3:
+                    ChangeToken.OnChange(producer, _ => Task.CompletedTask, new object());
+                    break;
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void ProducerExceptionDuringInitialRegistrationPropagatesToCaller(int overload)
+        {
+            Func<IChangeToken> producer = () => throw new InvalidTimeZoneException();
+
+            // The producer is invoked while registering, so its exception is propagated to the caller of OnChange.
+            Assert.Throws<InvalidTimeZoneException>(() => Subscribe(overload, producer));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void ProducerExceptionWhenTokenFiresPropagatesToTrigger(int overload)
+        {
+            TestChangeToken token = null;
+            int calls = 0;
+            Func<IChangeToken> producer = () =>
+            {
+                if (calls++ == 0)
+                {
+                    return token = new TestChangeToken();
+                }
+                throw new InvalidTimeZoneException();
+            };
+
+            Subscribe(overload, producer);
+
+            // When the token fires, the producer is invoked again to obtain the next token; its exception is
+            // propagated to the code that triggers the change token.
+            Assert.Throws<InvalidTimeZoneException>(() => token.Changed());
         }
 
         public class TrackableChangeTokenProvider
