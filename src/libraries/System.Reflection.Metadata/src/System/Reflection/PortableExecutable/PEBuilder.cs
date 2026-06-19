@@ -522,7 +522,10 @@ namespace System.Reflection.PortableExecutable
         private static void AddToChecksum(ArraySegment<byte> bytes, ref uint checksum, ref int pendingByte)
         {
             ReadOnlySpan<byte> segment = bytes.AsSpan();
-            Debug.Assert(segment.Length > 0);
+            if (segment.IsEmpty)
+            {
+                return;
+            }
 
             if (pendingByte >= 0)
             {
