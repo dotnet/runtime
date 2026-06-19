@@ -1262,6 +1262,7 @@ void COMDelegate::BindToMethod(MethodTable* pDelegateMT,
 
     LoaderAllocator *pLoaderAllocator = pTargetMethod->GetLoaderAllocator();
 
+    // If the loader allocator is not collectible, this will be NULL
     pBindToMethodDetails->loaderAllocatorGCHandle = pLoaderAllocator->GetLoaderAllocatorObjectHandle();
 }
 
@@ -1622,7 +1623,7 @@ uint32_t MethodDescToNumFixedArgs(MethodDesc *pMD)
 // This is the single constructor for all Delegates. The compiler
 // doesn't provide an implementation of the Delegate constructor. We
 // provide that implementation through a QCall call to this method.
-extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, QCall::ObjectHandleOnStack target, PCODE method)
+extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, PCODE method, BindToMethodDetails *pBindToMethodDetails)
 {
     QCALL_CONTRACT;
 
@@ -1631,23 +1632,15 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     _ASSERTE(method != (PCODE)NULL);
     BEGIN_QCALL;
 
-    GCX_COOP();
-
-    DELEGATEREF refThis = (DELEGATEREF) ObjectToOBJECTREF(_this.Get());
-    _ASSERTE(refThis != NULL);
-
-    GCPROTECT_BEGIN(refThis);
+    _ASSERTE(pDelegateMT != NULL);
 
     // Programmers could feed garbage data to DelegateConstruct().
     // It's difficult to validate a method code pointer, but at least we'll
     // try to catch the easy garbage.
     _ASSERTE(isMemoryReadable(method, 1));
 
-    MethodTable* pMTTarg = NULL;
-    if (target.Get() != NULL)
-        pMTTarg = target.Get()->GetMethodTable();
-
-    MethodTable* pDelMT = refThis->GetMethodTable();
+    MethodTable* pMTTarg = pTargetMT;
+    MethodTable* pDelMT = pDelegateMT;
     MethodDesc* pMethOrig = NonVirtualEntry2MethodDesc(method);
     MethodDesc* pMeth = pMethOrig;
     _ASSERTE(pMeth != NULL);
@@ -1676,42 +1669,41 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     if (!isStatic)
         methodArgCount++; // count 'this'
 
-    if (pMeth->GetLoaderAllocator()->IsCollectible())
-        refThis->SetMethodBase(pMeth->GetLoaderAllocator()->GetExposedObject());
+    // If the loader allocator is not collectible, this will be NULL
+    pBindToMethodDetails->loaderAllocatorGCHandle = pMeth->GetLoaderAllocator()->GetLoaderAllocatorObjectHandle();
 
     // Open delegates.
     if (invokeArgCount == methodArgCount)
     {
-        // set the target
-        refThis->SetTarget(refThis);
+        pBindToMethodDetails->selfReferentialTarget = TRUE;
 
         // set the shuffle thunk
         PCODE pEntryPoint = SetupShuffleThunk(pDelMT, pMeth);
-        refThis->SetMethodPtr(pEntryPoint);
+        pBindToMethodDetails->methodPtr = pEntryPoint;
 
         // set the ptr aux according to what is needed, if virtual need to call make virtual stub dispatch
         if (!pMeth->IsStatic() && pMeth->IsVirtual() && !pMeth->GetMethodTable()->IsValueType())
         {
             PCODE pTargetCall;
             {
-                GCX_PREEMP();
                 pTargetCall = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
             }
-            refThis->SetMethodPtrAux(pTargetCall);
-            refThis->SetInvocationCount((INT_PTR)(void *)pMeth);
+            pBindToMethodDetails->methodPtrAux = pTargetCall;
+            pBindToMethodDetails->invocationCount = (INT_PTR)(void *)pMeth;
         }
         else
         {
-            refThis->SetMethodPtrAux(method);
+            pBindToMethodDetails->methodPtrAux = method;
         }
     }
     else
     {
+        pBindToMethodDetails->selfReferentialTarget = FALSE;
         MethodTable* pMTMeth = pMeth->GetMethodTable();
 
         if (!pMeth->IsStatic())
         {
-            if (target.Get() == NULL)
+            if (pTargetMT == NULL)
                 COMPlusThrow(kArgumentException, W("Arg_DlgtNullInst"));
 
             if (pMTTarg != NULL)
@@ -1731,7 +1723,6 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
                         && (pMTMeth != g_pObjectClass))
                     {
                         pMeth->CheckRestore();
-                        GCX_PREEMP();
                         pMeth = pMTTarg->GetBoxedEntryPointMD(pMeth);
                         _ASSERTE(pMeth != NULL);
                     }
@@ -1741,7 +1732,6 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
                 // so we don't have to do all this mucking about. </NICE>
                 if (pMeth != pMethOrig)
                 {
-                    GCX_PREEMP();
                     method = pMeth->GetMultiCallableAddrOfCode();
                 }
             }
@@ -1753,11 +1743,9 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
         }
 #endif // HAS_THISPTR_RETBUF_PRECODE
 
-        refThis->SetTarget(target.Get());
-        refThis->SetMethodPtr((PCODE)(void *)method);
+        pBindToMethodDetails->methodPtr = (PCODE)(void *)method;
     }
 
-    GCPROTECT_END();
     END_QCALL;
 }
 

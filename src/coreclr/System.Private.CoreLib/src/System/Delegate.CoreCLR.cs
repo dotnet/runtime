@@ -518,12 +518,26 @@ namespace System
                 throw new ArgumentNullException(nameof(method));
             }
 
-            Delegate _this = this;
-            Construct(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref target), method);
+            Construct(RuntimeHelpers.GetMethodTable(this), (target != null) ? RuntimeHelpers.GetMethodTable(target) : null,
+                method, out BindToMethodDetails bindToMethodDetails);
+
+            // Apply the results of the QCall to the delegate instance.
+            _methodPtr = bindToMethodDetails.methodPtr;
+            _methodPtrAux = bindToMethodDetails.methodPtrAux;
+            Unsafe.As<MulticastDelegate>(this)._invocationCount = bindToMethodDetails.invocationCount;
+            if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
+            {
+                _methodBase = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+            }
+
+            if (bindToMethodDetails.selfReferentialTarget != 0)
+                _target = this;
+            else
+                _target = target;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_Construct")]
-        private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
+        private static partial void Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, IntPtr method, out BindToMethodDetails bindToMethodDetails);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);
