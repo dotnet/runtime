@@ -61,10 +61,16 @@ namespace Microsoft.Extensions.Logging.Console
             Span<char> escaped = builder.AppendSpan(6);
             escaped[0] = '\\';
             escaped[1] = 'u';
-            escaped[2] = HexConverter.ToCharUpper(c >> 12);
-            escaped[3] = HexConverter.ToCharUpper(c >> 8);
-            escaped[4] = HexConverter.ToCharUpper(c >> 4);
-            escaped[5] = HexConverter.ToCharUpper(c);
+            escaped[2] = ToHexChar(c >> 12);
+            escaped[3] = ToHexChar(c >> 8);
+            escaped[4] = ToHexChar(c >> 4);
+            escaped[5] = ToHexChar(c);
+        }
+
+        private static char ToHexChar(int nibble)
+        {
+            nibble &= 0xF;
+            return (char)(nibble < 10 ? '0' + nibble : 'A' + nibble - 10);
         }
 
         private static int IndexOfFirstCharToEscape(ReadOnlySpan<char> value)
