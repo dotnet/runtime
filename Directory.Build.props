@@ -178,8 +178,7 @@
 
   <PropertyGroup Condition="'$(DotNetBuildMonoCrossAOT)' == 'true'">
     <BuildMonoAOTCrossCompilerOnly>true</BuildMonoAOTCrossCompilerOnly>
-    <MonoCrossAOTTargetOS>android+browser+wasi</MonoCrossAOTTargetOS>
-    <MonoCrossAOTTargetOS Condition="'$(TargetOS)' == 'osx'">$(MonoCrossAOTTargetOS)+tvos+ios+maccatalyst</MonoCrossAOTTargetOS>
+    <MonoCrossAOTTargetOS>browser+wasi</MonoCrossAOTTargetOS>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)RuntimeIdentifier.props" />
