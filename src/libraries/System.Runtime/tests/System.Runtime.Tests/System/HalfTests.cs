@@ -556,6 +556,7 @@ namespace System.Tests
         [MemberData(nameof(ExplicitConversion_FromSingle_TestData))]
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/103347", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void ExplicitConversion_FromSingle(float f, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)f;
@@ -654,6 +655,7 @@ namespace System.Tests
 
         [MemberData(nameof(ExplicitConversion_FromDouble_TestData))]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void ExplicitConversion_FromDouble(double d, Half expected) // Check the underlying bits for verifying NaNs
         {
             Half h = (Half)d;
@@ -1491,6 +1493,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ExpM1_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void ExpM1Test(Half value, Half expectedResult, Half allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, Half.ExpM1(value), allowedVariance);
@@ -1579,6 +1582,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Exp2M1_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void Exp2M1Test(Half value, Half expectedResult, Half allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, Half.Exp2M1(value), allowedVariance);
@@ -1667,6 +1671,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Exp10M1_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void Exp10M1Test(Half value, Half expectedResult, Half allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, Half.Exp10M1(value), allowedVariance);
@@ -2009,6 +2014,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(AcosPi_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void AcosPiTest(Half value, Half expectedResult, Half allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, Half.AcosPi(value), allowedVariance);
@@ -2036,6 +2042,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(AsinPi_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void AsinPiTest(Half value, Half expectedResult, Half allowedVariance)
         {
             AssertExtensions.Equal(-expectedResult, Half.AsinPi(-value), allowedVariance);
@@ -2074,6 +2081,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Atan2Pi_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void Atan2PiTest(Half y, Half x, Half expectedResult, Half allowedVariance)
         {
             AssertExtensions.Equal(-expectedResult, Half.Atan2Pi(-y, +x), allowedVariance);
@@ -2102,6 +2110,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(AtanPi_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void AtanPiTest(Half value, Half expectedResult, Half allowedVariance)
         {
             AssertExtensions.Equal(-expectedResult, Half.AtanPi(-value), allowedVariance);
@@ -2338,6 +2347,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Lerp_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void LerpTest(Half value1, Half value2, Half amount, Half expectedResult)
         {
             AssertExtensions.Equal(+expectedResult, Half.Lerp(+value1, +value2, amount), Half.Zero);
@@ -2373,6 +2383,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(DegreesToRadians_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void DegreesToRadiansTest(Half value, Half expectedResult, Half allowedVariance)
         {
             AssertExtensions.Equal(-expectedResult, Half.DegreesToRadians(-value), allowedVariance);
@@ -2408,6 +2419,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(RadiansToDegrees_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129507", TestPlatforms.iOS)]
         public static void RadiansToDegreesTest(Half value, Half expectedResult, Half allowedVariance)
         {
             AssertExtensions.Equal(-expectedResult, Half.RadiansToDegrees(-value), allowedVariance);
