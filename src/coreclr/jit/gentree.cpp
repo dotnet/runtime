@@ -261,9 +261,11 @@ void GenTree::InitNodeSize()
 #if USE_HELPERS_FOR_INT_DIV
     GenTree::s_gtNodeSizes[GT_DIV]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_UDIV]          = TREE_NODE_SZ_LARGE;
+#endif // USE_HELPERS_FOR_INT_DIV
+#ifdef TARGET_ARM
     GenTree::s_gtNodeSizes[GT_MOD]           = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_UMOD]          = TREE_NODE_SZ_LARGE;
-#endif
+#endif // TARGET_ARM
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     GenTree::s_gtNodeSizes[GT_PUTARG_STK]    = TREE_NODE_SZ_LARGE;

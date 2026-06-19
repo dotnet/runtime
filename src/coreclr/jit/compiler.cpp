@@ -4561,6 +4561,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
+    // Unpin pinned locals whose value is provably non-movable.
+    //
+    DoPhase(this, PHASE_UNPIN_LOCALS, &Compiler::fgUnpinNonMovableLocals);
+
     // Expose candidates for implicit byref last-use copy elision.
     DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, &Compiler::fgMarkImplicitByRefCopyOmissionCandidates);
 

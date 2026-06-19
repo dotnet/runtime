@@ -23,26 +23,27 @@ PhaseStatus Compiler::rangeCheckPhase()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
+// Max stack depth (path length) in walking the UD chain.
+static const int MAX_SEARCH_DEPTH = 100;
+
+// Max nodes to visit in the UD chain for the current method being compiled.
+static const int MAX_VISIT_BUDGET = 8192;
+
 //------------------------------------------------------------------------
 // GetRangeCheck: get the RangeCheck instance
 //
 // Returns:
 //    The range check object
 //
-RangeCheck* Compiler::GetRangeCheck()
+RangeCheck* Compiler::GetRangeCheck(int customBudget)
 {
     if (optRangeCheck == nullptr)
     {
         optRangeCheck = new (this, CMK_Generic) RangeCheck(this);
     }
+    optRangeCheck->SetBudget(customBudget > 0 ? customBudget : MAX_VISIT_BUDGET);
     return optRangeCheck;
 }
-
-// Max stack depth (path length) in walking the UD chain.
-static const int MAX_SEARCH_DEPTH = 100;
-
-// Max nodes to visit in the UD chain for the current method being compiled.
-static const int MAX_VISIT_BUDGET = 8192;
 
 // RangeCheck constructor.
 RangeCheck::RangeCheck(Compiler* pCompiler)
@@ -259,11 +260,9 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 
     ValueNum arrLenVn = m_compiler->optConservativeNormalVN(bndsChk->GetArrayLength());
 
-    m_preferredBound = arrLenVn;
-
     // Get the range for this index.
     Range range = Range(Limit(Limit::keUndef));
-    if (!TryGetRange(block, treeIndex, &range))
+    if (!TryGetRange(block, treeIndex, &range, arrLenVn))
     {
         JITDUMP("Failed to get range\n");
         return;
@@ -437,6 +436,14 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
 // Given a lclvar use, try to find the lclvar's defining store and its containing block.
 LclSsaVarDsc* RangeCheck::GetSsaDefStore(GenTreeLclVarCommon* lclUse)
 {
+    // RangeCheck does not understand reads through LCL_FLD nodes: a LCL_FLD use reads a
+    // sub-range of the local (a different offset and/or a narrower type), so the value
+    // produced by the (full-width) definition does not describe the value being read.
+    if (lclUse->OperIs(GT_LCL_FLD))
+    {
+        return nullptr;
+    }
+
     unsigned ssaNum = lclUse->GetSsaNum();
 
     if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
@@ -626,7 +633,25 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 
                 var_types castFromType = srcIsUnsigned ? varTypeToUnsigned(arg0Typ) : arg0Typ;
 
-                if (genTypeSize(castFromType) < genTypeSize(castToType))
+                // A zero-extending cast (srcIsUnsigned) of a signed sub-int source is unsound to bound by the
+                // small unsigned type: small signed types are held sign-extended in their int-width stack slot,
+                // so the zero-extension applies to that wider value. E.g. (uint)(sbyte)(-1) == 0xFFFFFFFF, which
+                // is far outside the [0..255] range of the unsigned small type. Use the unsigned form of the
+                // actual (int) source width so we fall back to an unknown range instead of an unsound one.
+                if (srcIsUnsigned && varTypeIsSigned(arg0Typ) && (genTypeSize(arg0Typ) < genTypeSize(TYP_INT)))
+                {
+                    castFromType = varTypeToUnsigned(genActualType(arg0Typ));
+                }
+
+                // Widening preserves the source value (so we can reuse the source range) UNLESS we widen a
+                // signed source into a smaller-than-int unsigned type (e.g. (ushort)(sbyte)). There, negative
+                // source values are zero-extended into large positive values (e.g. (ushort)(-1) == 65535), so
+                // the source range no longer bounds the result.
+                bool widensToSmallUnsigned = varTypeIsUnsigned(castToType) &&
+                                             (genTypeSize(castToType) < genTypeSize(TYP_INT)) &&
+                                             varTypeIsSigned(castFromType);
+
+                if ((genTypeSize(castFromType) < genTypeSize(castToType)) && !widensToSmallUnsigned)
                 {
                     // We're going from a small type to a large type
                     // and so regardless of whether we zero or sign-extend
@@ -2333,15 +2358,25 @@ void Indent(int indent)
 // TryGetRange: Try to obtain the range of an expression.
 //
 // Arguments:
-//    block  - the block that contains `expr`;
-//    expr   - expression to compute the range for;
-//    pRange - [Out] range of the expression;
+//    block            - the block that contains `expr`;
+//    expr             - expression to compute the range for;
+//    pRange           - [Out] range of the expression;
+//    preferredBoundVN - a value number of the preferred bound.
 //
 // Return Value:
 //    false if the range is unknown or determined to overflow.
 //
-bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange)
+bool RangeCheck::TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, ValueNum preferredBoundVN)
 {
+    // Fast path for constants
+    if (expr->IsIntCnsFitsInI32())
+    {
+        *pRange = Limit(Limit::keConstant, (int)expr->AsIntCon()->IconValue());
+        return true;
+    }
+
+    m_preferredBound = preferredBoundVN;
+
     // Reset the maps.
     ClearRangeMap();
     ClearSearchPath();
