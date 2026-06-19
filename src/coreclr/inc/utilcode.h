@@ -1957,8 +1957,19 @@ inline ULONG HashBytes(BYTE const *pbData, size_t iSize)
     LIMITED_METHOD_CONTRACT;
     ULONG   hash = 5381;
 
-    BYTE const *pbDataEnd = pbData + iSize;
+#ifdef HOST_64BIT
+    // Process 8 bytes at a time using a multiply-xorshift mixing step.
+    while (iSize >= sizeof(uint64_t))
+    {
+        uint64_t val;
+        memcpy(&val, pbData, sizeof(val));
+        hash = ((hash << 5) + hash) ^ (ULONG)(val ^ (val >> 32));
+        pbData += sizeof(val);
+        iSize -= sizeof(val);
+    }
+#endif
 
+    BYTE const *pbDataEnd = pbData + iSize;
     for (/**/ ; pbData < pbDataEnd; pbData++)
     {
         hash = ((hash << 5) + hash) ^ *pbData;
@@ -1995,58 +2006,12 @@ inline ULONG HashString(LPCWSTR szStr)
     return hash;
 }
 
-inline ULONG HashStringN(LPCWSTR szStr, SIZE_T cchStr)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
-
-    // hash the string two characters at a time
-    ULONG *ptr = (ULONG *)szStr;
-
-    // we assume that szStr is null-terminated
-    _ASSERTE(cchStr <= u16_strlen(szStr));
-    SIZE_T cDwordCount = (cchStr + 1) / 2;
-
-    for (SIZE_T i = 0; i < cDwordCount; i++)
-    {
-        hash = ((hash << 5) + hash) ^ ptr[i];
-    }
-
-    return hash;
-}
-
-// Case-insensitive string hash function.
-inline ULONG HashiStringA(LPCSTR szStr)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
-    while (*szStr != 0)
-    {
-        hash = ((hash << 5) + hash) ^ toupper(*szStr);
-        szStr++;
-    }
-    return hash;
-}
-
 // Case-insensitive string hash function.
 inline ULONG HashiString(LPCWSTR szStr)
 {
     LIMITED_METHOD_CONTRACT;
     ULONG   hash = 5381;
     while (*szStr != 0)
-    {
-        hash = ((hash << 5) + hash) ^ towupper(*szStr);
-        szStr++;
-    }
-    return hash;
-}
-
-// Case-insensitive string hash function.
-inline ULONG HashiStringN(LPCWSTR szStr, DWORD count)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
-    while (*szStr != 0 && count--)
     {
         hash = ((hash << 5) + hash) ^ towupper(*szStr);
         szStr++;

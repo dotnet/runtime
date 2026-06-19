@@ -438,19 +438,6 @@ public:
     }
 };
 
-class EEUnicodeHashTableHelper
-{
-public:
-    static EEHashEntry_t * AllocateEntry(EEStringData *pKey, BOOL bDeepCopy, AllocationHeap Heap);
-    static void            DeleteEntry(EEHashEntry_t *pEntry, AllocationHeap Heap);
-    static BOOL            CompareKeys(EEHashEntry_t *pEntry, EEStringData *pKey);
-    static DWORD           Hash(EEStringData *pKey);
-    static EEStringData *  GetKey(EEHashEntry_t *pEntry);
-};
-
-typedef EEHashTable<EEStringData *, EEUnicodeHashTableHelper, TRUE> EEUnicodeStringHashTable;
-
-
 class EEUnicodeStringLiteralHashTableHelper
 {
 public:
