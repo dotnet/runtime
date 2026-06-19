@@ -22,7 +22,7 @@ namespace System
         // 2. Unmanaged function pointer
         // 3. Open virtual delegate
         private object? _invocationList; // Initialized by VM as needed
-        private nint _invocationCount;
+        internal nint _invocationCount;
 
         internal bool IsUnmanagedFunctionPtr()
         {
