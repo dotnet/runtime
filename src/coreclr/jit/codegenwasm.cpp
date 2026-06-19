@@ -2704,11 +2704,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 
-    if ((typeStack.Height() - 1) > MaxWasmFunctionParameters)
-    {
-        WASM_IMPL_LIMITATION("Too many arguments for a wasm call");
-    }
-
     // Report managed call signatures to the R2R compiler for thunk generation.
     if (!call->IsHelperCall() && !call->IsUnmanaged())
     {
