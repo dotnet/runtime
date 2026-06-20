@@ -5772,6 +5772,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         pThread->PulseGCMode();
 
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -5779,6 +5780,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
         frame.Pop(pThread);
     }

@@ -1,8 +1,8 @@
 # Contract GCInfo
 
-This contract is for fetching information related to GCInfo associated with native code. Currently, this contract does not support x86 architecture.
+This contract is for fetching information related to GCInfo associated with native code.
 
-The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is not currently supported by this contract.
+The GCInfo contract has platform specific implementations as GCInfo differs per architecture. With the exception of x86, all platforms have a common encoding scheme with different encoding lengths and normalization functions for data. x86 uses an entirely different scheme which is partially supported by this contract.
 
 ## APIs of contract
 
@@ -25,10 +25,27 @@ uint GetCodeLength(IGCInfoHandle handle);
 // Returns the stack base register number decoded from GCInfo
 uint GetStackBaseRegister(IGCInfoHandle handle);
 
+// Returns the size in bytes of the outgoing-argument scratch area in the current
+// frame, decoded from `_fixedStackParameterScratchArea` (`SizeOfStackOutgoingAndScratchArea`,
+// encoded via `SIZE_OF_STACK_AREA_ENCBASE`). Platform-specific and can be non-zero on
+// AMD64/ARM64/ARM/RISCV64/LoongArch64. Not supported on x86 (the x86 GC info scheme has
+// no separate scratch-area concept; the x86 GC walker uses per-offset transitions).
+uint GetSizeOfStackParameterArea(IGCInfoHandle handle);
+
+// Returns the size in bytes of stack-passed arguments that the callee pops on return,
+// mirroring native `EECodeManager::GetStackParameterSize` (eetwain.cpp). Non-zero only
+// on x86 (where managed code uses `__stdcall` calling convention with callee-popped args):
+// returns 0 for varargs (caller-popped) and otherwise the argument size from the GC info
+// header. Returns 0 on every other architecture.
+uint GetCalleePoppedArgumentsSize(IGCInfoHandle handle);
+
 // Returns the list of interruptible code offset ranges from the GCInfo
+// (not implemented for x86 — x86 encodes per-offset transitions rather than explicit ranges).
 IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle);
 
 // Returns all live GC slots at the given instruction offset
+// (not implemented for x86 — see X86GCInfo for the underlying transition data; the cDAC
+// adapter is future work).
 IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options);
 ```
 

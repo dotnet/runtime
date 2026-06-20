@@ -981,7 +981,7 @@ namespace System.Net.WebSockets
                         if (header.Opcode == MessageOpcode.Text &&
                             !TryValidateUtf8(payloadBuffer.Span.Slice(0, totalBytesReceived), header.EndOfMessage, _utf8TextState))
                         {
-                            await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.InvalidPayloadData, WebSocketError.Faulted).ConfigureAwait(false);
+                            await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.InvalidPayloadData, WebSocketError.Faulted, SR.net_Websockets_InvalidTextPayload).ConfigureAwait(false);
                         }
 
                         if (header.Processed)
@@ -1086,7 +1086,7 @@ namespace System.Net.WebSockets
             if (header.PayloadLength == 1)
             {
                 // The close payload length can be 0 or >= 2, but not 1.
-                await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted).ConfigureAwait(false);
+                await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, SR.net_Websockets_ProtocolViolation).ConfigureAwait(false);
             }
             else if (header.PayloadLength >= 2)
             {
@@ -1103,7 +1103,7 @@ namespace System.Net.WebSockets
                 closeStatus = (WebSocketCloseStatus)BinaryPrimitives.ReadUInt16BigEndian(_receiveBuffer.Span.Slice(_receiveBufferOffset));
                 if (!IsValidCloseStatus(closeStatus))
                 {
-                    await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted).ConfigureAwait(false);
+                    await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, SR.net_Websockets_InvalidCloseStatusCodeReceived).ConfigureAwait(false);
                 }
 
                 if (header.PayloadLength > 2)
@@ -1114,7 +1114,7 @@ namespace System.Net.WebSockets
                     }
                     catch (DecoderFallbackException exc)
                     {
-                        await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, innerException: exc).ConfigureAwait(false);
+                        await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, SR.net_Websockets_InvalidCloseDescriptionPayload, exc).ConfigureAwait(false);
                     }
                 }
                 ConsumeFromBuffer((int)header.PayloadLength);
@@ -1920,13 +1920,13 @@ namespace System.Net.WebSockets
         {
             if (messageType is not (WebSocketMessageType.Text or WebSocketMessageType.Binary))
             {
-                ThrowInvalidMessageType(paramName);
+                ThrowInvalidMessageType(messageType, paramName);
             }
 
-            static void ThrowInvalidMessageType(string? paramName) =>
+            static void ThrowInvalidMessageType(WebSocketMessageType messageType, string? paramName) =>
                 throw new ArgumentException(SR.Format(
                     SR.net_WebSockets_Argument_InvalidMessageType,
-                    nameof(WebSocketMessageType.Close), nameof(SendAsync), nameof(WebSocketMessageType.Binary), nameof(WebSocketMessageType.Text), nameof(CloseOutputAsync)),
+                    messageType, nameof(SendAsync), nameof(WebSocketMessageType.Binary), nameof(WebSocketMessageType.Text), nameof(CloseOutputAsync)),
                     paramName);
         }
 

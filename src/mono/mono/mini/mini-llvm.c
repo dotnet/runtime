@@ -7531,11 +7531,7 @@ MONO_RESTORE_WARNING
 		case OP_IMIN_UN:
 		case OP_LMIN_UN:
 		case OP_IMAX_UN:
-		case OP_LMAX_UN:
-		case OP_FMIN:
-		case OP_FMAX:
-		case OP_RMIN:
-		case OP_RMAX: {
+		case OP_LMAX_UN: {
 			LLVMValueRef v;
 
 			lhs = convert (ctx, lhs, regtype_to_llvm_type (spec [MONO_INST_DEST]));
@@ -7558,19 +7554,38 @@ MONO_RESTORE_WARNING
 			case OP_LMAX_UN:
 				v = LLVMBuildICmp (builder, LLVMIntUGE, lhs, rhs, "");
 				break;
-			case OP_FMAX:
-			case OP_RMAX:
-				v = LLVMBuildFCmp (builder, LLVMRealUGE, lhs, rhs, "");
-				break;
-			case OP_FMIN:
-			case OP_RMIN:
-				v = LLVMBuildFCmp (builder, LLVMRealULE, lhs, rhs, "");
-				break;
 			default:
 				g_assert_not_reached ();
 				break;
 			}
 			values [ins->dreg] = LLVMBuildSelect (builder, v, lhs, rhs, dname);
+			break;
+		}
+
+		case OP_FMIN:
+		case OP_FMAX:
+		case OP_RMIN:
+		case OP_RMAX: {
+			/*
+			 * Use llvm.minimum/maximum (IEEE 754-2019, NaN-propagating) so the
+			 * Math.Min/Math.Max semantics ("if either argument is NaN, NaN is
+			 * returned"), as forwarded by MathF.Min/MathF.Max, are honored
+			 * symmetrically. The old fcmp+select lowering was both asymmetric for
+			 * NaN and got folded into AArch64 fminnm/fmaxnm by the backend, which
+			 * discards NaN entirely. See llvm-intrinsics.h.
+			 */
+			gboolean is_r4 = ins->opcode == OP_RMIN || ins->opcode == OP_RMAX;
+			LLVMTypeRef t = is_r4 ? LLVMFloatType () : LLVMDoubleType ();
+			LLVMValueRef args [2] = { convert (ctx, lhs, t), convert (ctx, rhs, t) };
+			IntrinsicId iid;
+			switch (ins->opcode) {
+			case OP_FMAX: iid = INTRINS_MAXIMUM; break;
+			case OP_FMIN: iid = INTRINS_MINIMUM; break;
+			case OP_RMAX: iid = INTRINS_MAXIMUMF; break;
+			case OP_RMIN: iid = INTRINS_MINIMUMF; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, iid, args, dname);
 			break;
 		}
 
