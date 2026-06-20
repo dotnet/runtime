@@ -1476,8 +1476,11 @@ namespace Internal.JitInterface
 
             bool isArray = decl.OwningType.IsInterface && objType.IsArray;
             bool isGenericVirtual = !isArray && decl.HasInstantiation;
+            MethodDesc instArgTarget = unboxingStub ? nonUnboxingImpl : impl;
+            bool requiresInstMethodDescArg = instArgTarget.RequiresInstMethodDescArg();
+            bool requiresInstMethodTableArg = instArgTarget.RequiresInstMethodTableArg();
 
-            if (!impl.AcquiresInstMethodTableFromThis())
+            if (requiresInstMethodDescArg || (requiresInstMethodTableArg && !unboxingStub))
             {
                 if (originalImpl.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
@@ -1487,7 +1490,7 @@ namespace Internal.JitInterface
                     return false;
                 }
 
-                if (originalImpl.IsSharedByGenericInstantiations)
+                if (originalImpl.IsRuntimeDeterminedExactMethod || originalImpl.IsSharedByGenericInstantiations)
                 {
                     // TODO: Support for runtime lookup
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
@@ -1506,7 +1509,7 @@ namespace Internal.JitInterface
 #endif
             }
 
-            if (impl.RequiresInstMethodDescArg())
+            if (requiresInstMethodDescArg)
             {
                 if (unboxingStub)
                 {
@@ -1522,14 +1525,17 @@ namespace Internal.JitInterface
                 info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(originalImpl));
 #endif
             }
-            else if (impl.RequiresInstMethodTableArg())
+            else if (requiresInstMethodTableArg)
             {
+                if (!unboxingStub)
+                {
 #if READYTORUN
-                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
+                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
 
 #else
-                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
+                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
 #endif
+                }
             }
 
 #if READYTORUN

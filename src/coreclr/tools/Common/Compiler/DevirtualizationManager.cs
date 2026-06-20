@@ -157,6 +157,10 @@ namespace ILCompiler
                                 else
                                 {
                                     impl = dimMethod;
+                                    if (originalDeclMethod.HasInstantiation)
+                                    {
+                                        impl = impl.GetMethodDefinition().MakeInstantiatedMethod(originalDeclMethod.Instantiation);
+                                    }
                                 }
                                 break;
                         }

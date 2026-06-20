@@ -8812,7 +8812,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     MethodTable* pExactMT = pApproxMT;
     bool isArray = false;
     bool isGenericVirtual = false;
-    
+
     if (pBaseMT->IsInterface() && pObjMT->IsArray())
     {
         isArray = true;
@@ -8827,20 +8827,40 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     // This is generic virtual method devirtualization.
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
-        MethodDesc* pPrimaryMD = pDevirtMD;
+        MethodDesc* pPrimaryMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
 
         pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
-        
+
         pInstantiatedMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
 
         isGenericVirtual = true;
     }
 
-    MethodDesc* pUnboxedDevirtMD = pDevirtMD->IsUnboxingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
+    MethodDesc* pInstArgMD = pDevirtMD;
+    bool isUnboxingStub = pDevirtMD->IsUnboxingStub();
+    bool instArgIsInstantiatingStub = pDevirtMD->IsInstantiatingStub();
 
-    if (!pUnboxedDevirtMD->AcquiresInstMethodTableFromThis())
+    if (isUnboxingStub || instArgIsInstantiatingStub)
+    {
+        pInstArgMD = pDevirtMD->GetWrappedMethodDesc();
+        if (pInstArgMD->IsInstantiatingStub())
+        {
+            instArgIsInstantiatingStub = true;
+        }
+    }
+
+    if (instArgIsInstantiatingStub &&
+        (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()) ||
+         TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation())))
+    {
+        // TODO: Support for runtime lookup
+        info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+        return false;
+    }
+
+    if (pInstArgMD->RequiresInstMethodDescArg())
     {
         if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()))
         {
@@ -8856,15 +8876,20 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
             return false;
         }
-    }
 
-    if (pUnboxedDevirtMD->RequiresInstMethodDescArg())
-    {
         info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstantiatedMD;
         info->instParamLookup.constLookup.accessType = IAT_VALUE;
     }
-    else if (pUnboxedDevirtMD->RequiresInstMethodTableArg())
+    else if (pInstArgMD->RequiresInstMethodTableArg())
     {
+        if (!isUnboxingStub && TypeHandle::IsCanonicalSubtypeInstantiation(pExactMT->GetInstantiation()))
+        {
+            // If we end up with a shared MethodTable that is not exact,
+            // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
         info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pExactMT;
         info->instParamLookup.constLookup.accessType = IAT_VALUE;
     }
