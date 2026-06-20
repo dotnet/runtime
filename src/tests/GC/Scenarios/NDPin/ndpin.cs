@@ -13,6 +13,8 @@ namespace DefaultNamespace {
         internal static NDPin m_n;
         internal static Object m_o;
 
+        public NDPin () { }
+
         internal NDPin (Object p)
         {
             this.p = p;

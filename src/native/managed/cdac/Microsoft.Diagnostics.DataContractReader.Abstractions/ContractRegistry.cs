@@ -128,6 +128,15 @@ public abstract class ContractRegistry
     /// Gets an instance of the Debugger contract for the target.
     /// </summary>
     public virtual IDebugger Debugger => GetContract<IDebugger>();
+    /// <summary>
+    /// Gets an instance of the StressLog contract for the target.
+    /// </summary>
+    public virtual IStressLog StressLog => GetContract<IStressLog>();
+
+    /// <summary>
+    /// Gets an instance of the RuntimeMutableTypeSystem contract for the target.
+    /// </summary>
+    public virtual IRuntimeMutableTypeSystem RuntimeMutableTypeSystem => GetContract<IRuntimeMutableTypeSystem>();
 
     /// <summary>
     /// Attempts to get an instance of the requested contract for the target.
@@ -166,8 +175,9 @@ public abstract class ContractRegistry
         where TContract : IContract;
 
     /// <summary>
-    /// Flush all cached data held by contracts in this registry.
-    /// Called when the target process state may have changed (e.g. on resume).
+    /// Flush all cached data held by contracts in this registry for the given
+    /// <paramref name="scope"/>. Called when the target process state may have changed
+    /// (e.g. on resume) or as part of a stress-harness re-read of live target state.
     /// </summary>
-    public abstract void Flush();
+    public abstract void Flush(FlushScope scope);
 }

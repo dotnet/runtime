@@ -52,7 +52,7 @@ namespace Internal.IL
         {
             if (method.Instantiation.Length == 1
                 && method.Signature.Length == 0
-                && method.Name.SequenceEqual("CreateInstance"u8))
+                && method.Name == "CreateInstance"u8)
             {
                 TypeDesc type = method.Instantiation[0];
                 if (type.IsValueType && type.GetParameterlessConstructor() == null)
@@ -77,17 +77,17 @@ namespace Internal.IL
             if (mdType == null)
                 return null;
 
-            if (mdType.Name.SequenceEqual("RuntimeHelpers"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+            if (mdType.Name == "RuntimeHelpers"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8)
             {
                 return RuntimeHelpersIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name.SequenceEqual("Unsafe"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+            if (mdType.Name == "Unsafe"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8)
             {
                 return UnsafeIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name.SequenceEqual("InstanceCalliHelper"u8) && mdType.Namespace.SequenceEqual("System.Reflection"u8))
+            if (mdType.Name == "InstanceCalliHelper"u8 && mdType.Namespace == "System.Reflection"u8)
             {
                 return InstanceCalliHelperIntrinsics.EmitIL(method);
             }
@@ -106,31 +106,31 @@ namespace Internal.IL
             if (mdType == null)
                 return null;
 
-            if (mdType.Name.SequenceEqual("RuntimeHelpers"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+            if (mdType.Name == "RuntimeHelpers"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8)
             {
                 return RuntimeHelpersIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name.SequenceEqual("Activator"u8) && mdType.Namespace.SequenceEqual("System"u8))
+            if (mdType.Name == "Activator"u8 && mdType.Namespace == "System"u8)
             {
                 return TryGetIntrinsicMethodILForActivator(method);
             }
 
-            if (mdType.Name.SequenceEqual("Interlocked"u8) && mdType.Namespace.SequenceEqual("System.Threading"u8))
+            if (mdType.Name == "Interlocked"u8 && mdType.Namespace == "System.Threading"u8)
             {
                 return InterlockedIntrinsics.EmitIL(_compilationModuleGroup, method);
             }
 
-            if (mdType.Namespace.SequenceEqual("System.Collections.Generic"u8))
+            if (mdType.Namespace == "System.Collections.Generic"u8)
             {
-                if (mdType.Name.SequenceEqual("Comparer`1"u8))
+                if (mdType.Name == "Comparer`1"u8)
                 {
-                    if (method.Name.SequenceEqual("Create"u8))
+                    if (method.Name == "Create"u8)
                         return ComparerIntrinsics.EmitComparerCreate(method);
                 }
-                else if (mdType.Name.SequenceEqual("EqualityComparer`1"u8))
+                else if (mdType.Name == "EqualityComparer`1"u8)
                 {
-                    if (method.Name.SequenceEqual("Create"u8))
+                    if (method.Name == "Create"u8)
                         return ComparerIntrinsics.EmitEqualityComparerCreate(method);
                 }
             }
