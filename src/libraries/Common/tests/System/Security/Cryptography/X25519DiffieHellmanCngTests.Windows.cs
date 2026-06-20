@@ -113,13 +113,13 @@ namespace System.Security.Cryptography.Tests
 
         protected abstract CngExportPolicies ExportPolicy { get; }
 
-        public override X25519DiffieHellmanCng GenerateKey()
+        public override X25519DiffieHellman GenerateKey()
         {
             using CngKey key = GenerateCngKey(exportPolicy: ExportPolicy);
             return new X25519DiffieHellmanCng(key);
         }
 
-        public override X25519DiffieHellmanCng ImportPrivateKey(ReadOnlySpan<byte> source)
+        public override X25519DiffieHellman ImportPrivateKey(ReadOnlySpan<byte> source)
         {
             using CryptoPoolLease lease = X25519WindowsHelpers.CreateCngBlob(source, true, out _);
             using SafeNCryptKeyHandle keyHandle = ECCng.ImportKeyBlob(
@@ -140,7 +140,7 @@ namespace System.Security.Cryptography.Tests
             return new X25519DiffieHellmanCng(cngKey);
         }
 
-        public override X25519DiffieHellmanCng ImportPublicKey(ReadOnlySpan<byte> source)
+        public override X25519DiffieHellman ImportPublicKey(ReadOnlySpan<byte> source)
         {
             Span<byte> reducedPublicKey = stackalloc byte[X25519DiffieHellman.PublicKeySizeInBytes];
             X25519WindowsHelpers.ReducePublicKey(source, reducedPublicKey);
