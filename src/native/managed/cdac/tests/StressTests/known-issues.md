@@ -68,6 +68,49 @@ need to be handled — that case currently isn't reachable because
   more structured mechanism (e.g., ETW events or StressLog) for better
   tooling integration and reduced I/O overhead during stress runs.
 
+## Known intermittent failure: GC hole during EventSource cctor on x86
+
+Pattern (~20% of full x86 suite runs trigger this on at least one
+debuggee):
+
+```
+[FAIL] Thread=0x... IP=0x... cDAC=7 RT=45 frames=12 (match=5 mismatch=7 known_nie=0)
+  Frame #4 System.RuntimeType.SplitName(...) [MISMATCH] cDAC=0 RT=1 SP_cDAC=0x0 SP_RT=0x0
+      [ONLY(RT)] Addr=0x0 Obj=0x... Flags=0x0 Reg=6 Off=0
+  Frame #5 System.RuntimeType.GetNestedType(...) [MISMATCH] cDAC=0 RT=3 ...
+      [ONLY(RT)] Addr=0x0 Obj=0x... Flags=0x0 Reg=6 Off=0
+      ...
+  ... continues up through System.Diagnostics.Tracing.EventSource frames
+```
+
+Signature: the RT-only refs are concentrated in callee-saved registers
+(`Reg=6` ESI, `Reg=7` EDI) on frames whose stack trace runs through
+`NativeRuntimeEventSource..cctor()` -> `EventSource.Initialize` ->
+`RuntimeType.GetNestedType` -> `RuntimeType.SplitName`. The frames
+otherwise unwind cleanly and surrounding frames match.
+
+This is **not** a cDAC bug introduced by x86 stack-walk enablement: it
+is the pre-existing GC-hole reported in
+[#129545](https://github.com/dotnet/runtime/issues/129545) /
+[#129546](https://github.com/dotnet/runtime/issues/129546). A GC-ref
+live in a callee-saved register across a call that throws
+`TypeLoadException` from the callee's prestub is mis-recovered during a
+GC stackwalk in exception dispatch -- the `PrestubMethodFrame` (holding
+it in its `TransitionBlock`) is popped and the caller is scanned as
+'active' with a stale context. The runtime's *runtime-side* GC scanner
+sees the refs (via the original liveness reporting at the call site);
+the runtime's *DAC-side* GC scanner (which cDAC mirrors) does not.
+
+Repro flakiness is timing-dependent: whether the first cdacstress
+ALLOC trigger fires inside the affected window during the
+`EventSource` first-use cctor cascade. Once `EventSource` is
+initialized the issue disappears for the rest of the run.
+
+Tracking: this should be resolved together with #129545/#129546 once
+the runtime stops popping `PrestubMethodFrame` before the GC stackwalk
+completes. No cDAC-side workaround is appropriate -- cDAC is correctly
+mirroring the DAC-side scanner.
+
 ## Log Format
 
 Each verification emits a single header line followed by, on `[FAIL]` or
