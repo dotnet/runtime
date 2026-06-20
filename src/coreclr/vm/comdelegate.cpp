@@ -1815,6 +1815,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     MethodDesc *pMethodHandle = NULL;
 
     DELEGATEREF thisDel = (DELEGATEREF) orDelegate;
+    DELEGATEREF innerDel = NULL;
 
     INT_PTR count = thisDel->GetInvocationCount();
     if (count != 0)
@@ -1824,12 +1825,15 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         // - unamanaged ftn ptr - _invocationList == NULL && _invocationCount == -1
         // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
         //                    or _invocationList points to a LoaderAllocator/DynamicResolver
-        OBJECTREF innerDel = thisDel->GetInvocationList();
+        innerDel = (DELEGATEREF) thisDel->GetInvocationList();
         bool fOpenVirtualDelegate = false;
 
         if (innerDel != NULL)
         {
-            if (!innerDel->GetMethodTable()->IsArray())
+            MethodTable *pMT = innerDel->GetMethodTable();
+            if (pMT->IsDelegate())
+                return GetMethodDesc(innerDel);
+            if (!pMT->IsArray())
             {
                 // must be a virtual one
                 fOpenVirtualDelegate = true;

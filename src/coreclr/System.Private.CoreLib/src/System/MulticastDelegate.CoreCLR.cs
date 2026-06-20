@@ -144,8 +144,8 @@ namespace System
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
             if (thisIsMultiCastAlready)
             {
-                result._methodPtr = this._methodPtr;
-                result._methodPtrAux = this._methodPtrAux;
+                result._methodPtr = _methodPtr;
+                result._methodPtrAux = _methodPtrAux;
             }
             else
             {
@@ -304,7 +304,7 @@ namespace System
                 if (_invocationList is not object[] invocationList)
                 {
                     // they are both not real Multicast
-                    if (this.Equals(value))
+                    if (Equals(value))
                         return null;
                 }
                 else
@@ -466,7 +466,7 @@ namespace System
                 // need a proper declaring type instance method on a generic type
                 if (declaringType.IsGenericType)
                 {
-                    // we are returning the 'Invoke' method of this delegate so use this.GetType() for the exact type
+                    // we are returning the 'Invoke' method of this delegate so use GetType() for the exact type
                     RuntimeType reflectedType = (RuntimeType)GetType();
                     declaringType = reflectedType;
                 }
@@ -491,16 +491,16 @@ namespace System
         {
             if (target == null)
                 ThrowNullThisInDelegateToInstance();
-            this._target = target;
-            this._methodPtr = methodPtr;
+            _target = target;
+            _methodPtr = methodPtr;
         }
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
         private void CtorClosedStatic(object target, IntPtr methodPtr)
         {
-            this._target = target;
-            this._methodPtr = methodPtr;
+            _target = target;
+            _methodPtr = methodPtr;
         }
 
         [DebuggerNonUserCode]
@@ -509,55 +509,55 @@ namespace System
         {
             if (target == null)
                 ThrowNullThisInDelegateToInstance();
-            this._target = target;
-            this._methodPtr = AdjustTarget(target, methodPtr);
+            _target = target;
+            _methodPtr = AdjustTarget(target, methodPtr);
         }
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
         private void CtorOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
-            this._target = this;
-            this._methodPtr = shuffleThunk;
-            this._methodPtrAux = methodPtr;
+            _target = this;
+            _methodPtr = shuffleThunk;
+            _methodPtrAux = methodPtr;
         }
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
         private void CtorVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
-            this._target = this;
-            this._methodPtr = shuffleThunk;
-            this.InitializeVirtualCallStub(methodPtr);
+            _target = this;
+            _methodPtr = shuffleThunk;
+            InitializeVirtualCallStub(methodPtr);
         }
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
         private void CtorCollectibleClosedStatic(object target, IntPtr methodPtr, IntPtr gchandle)
         {
-            this._target = target;
-            this._methodPtr = methodPtr;
-            this._helperObject = GCHandle.InternalGet(gchandle);
+            _target = target;
+            _methodPtr = methodPtr;
+            _helperObject = GCHandle.InternalGet(gchandle);
         }
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
         private void CtorCollectibleOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
-            this._target = this;
-            this._methodPtr = shuffleThunk;
-            this._methodPtrAux = methodPtr;
-            this._helperObject = GCHandle.InternalGet(gchandle);
+            _target = this;
+            _methodPtr = shuffleThunk;
+            _methodPtrAux = methodPtr;
+            _helperObject = GCHandle.InternalGet(gchandle);
         }
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
         private void CtorCollectibleVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
-            this._target = this;
-            this._methodPtr = shuffleThunk;
-            this._helperObject = GCHandle.InternalGet(gchandle);
-            this.InitializeVirtualCallStub(methodPtr);
+            _target = this;
+            _methodPtr = shuffleThunk;
+            _helperObject = GCHandle.InternalGet(gchandle);
+            InitializeVirtualCallStub(methodPtr);
         }
 #pragma warning restore IDE0060
     }
