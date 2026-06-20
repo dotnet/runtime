@@ -231,19 +231,14 @@ public class GCArgTable
                         }
                         else
                         {
-                            RegMask reg;
-                            if ((val & 0x10) != 0)
-                                reg = RegMask.EDI;
-                            else if ((val & 0x20) != 0)
-                                reg = RegMask.ESI;
-                            else if ((val & 0x40) != 0)
-                                reg = RegMask.EBX;
-                            else
-                                throw new BadImageFormatException("Invalid register");
-                            transition = new GcTransitionCall((int)curOffs);
-                            transition.CallRegisters.Add(new GcTransitionCall.CallRegister(reg, false));
-                            AddNewTransition(transition);
-
+                            // "This pointer liveness encoding" (val & 0x80 == 0 && val & 0x0F == 0):
+                            // metadata for which callee-saved register holds the 'this' pointer
+                            // at the next call site. Native (gc_unwind_x86.inl ~line 970) does NOT
+                            // record a call entry here -- it only sets thisPtrReg. Adding a spurious
+                            // GcTransitionCall at the current curOffs would overwrite the real
+                            // call site's CallRegisters during EnumerateLiveSlots (since the
+                            // partial-EBP decoder may emit the this-ptr tag at the same curOffs
+                            // as a real call site), so we just consume the byte and continue.
                             continue;
                         }
                     }
