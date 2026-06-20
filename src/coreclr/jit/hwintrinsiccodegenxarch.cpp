@@ -2260,41 +2260,35 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_Vector256_ToScalar:
         case NI_Vector512_ToScalar:
         {
-            if (varTypeIsIntegral(baseType))
+            // genOperandDesc looks through a contained CreateScalar/CreateScalarUnsafe to the operand it
+            // wraps, which may itself live in a register (e.g. Vector128.CreateScalarUnsafe(x).ToScalar()).
+            // We therefore use the descriptor's containment - not op1 directly - to decide instruction
+            // selection: only a true memory operand can be read with a plain integer load.
+            OperandDesc op1Desc = genOperandDesc(ins, op1);
+
+            if (op1Desc.IsContained())
+            {
+                if (varTypeIsIntegral(baseType))
+                {
+                    // We just want to emit a standard read from memory
+                    ins  = ins_Move_Extend(baseType, false);
+                    attr = emitTypeSize(baseType);
+                }
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1Desc, op1, instOptions);
+            }
+            else if (varTypeIsIntegral(baseType))
             {
                 assert(!varTypeIsLong(baseType) || TargetArchitecture::Is64Bit);
                 assert(HWIntrinsicInfo::IsVectorToScalar(intrinsicId));
 
-                // genOperandDesc looks through a contained CreateScalar/CreateScalarUnsafe to the operand
-                // it wraps, which may itself live in a register (e.g. Vector128.CreateScalarUnsafe(x).ToScalar()).
-                // We therefore use the descriptor - not op1 directly - to decide containment: only a true
-                // memory operand can be read with a plain integer load, while a register source (looked
-                // through or not) must use the movd/movq selected above.
-                OperandDesc op1Desc = genOperandDesc(ins, op1);
+                attr = emitActualTypeSize(baseType);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1Desc, op1, instOptions);
 
-                if (op1Desc.IsContained())
+                if (varTypeIsSmall(baseType))
                 {
-                    // We just want to emit a standard read from memory.
-                    ins  = ins_Move_Extend(baseType, false);
-                    attr = emitTypeSize(baseType);
-                    genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1Desc, op1, instOptions);
+                    emit->emitIns_Mov(ins_Move_Extend(baseType, /* srcInReg */ true), emitTypeSize(baseType), targetReg,
+                                      targetReg, /* canSkip */ false);
                 }
-                else
-                {
-                    attr = emitActualTypeSize(baseType);
-                    emit->emitIns_Mov(ins, attr, targetReg, op1Desc.GetReg(), /* canSkip */ false);
-
-                    if (varTypeIsSmall(baseType))
-                    {
-                        emit->emitIns_Mov(ins_Move_Extend(baseType, /* srcInReg */ true), emitTypeSize(baseType),
-                                          targetReg, targetReg, /* canSkip */ false);
-                    }
-                }
-            }
-            else if (op1->isContained() || op1->isUsedFromSpillTemp())
-            {
-                assert(varTypeIsFloating(baseType));
-                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
             }
             else
             {
