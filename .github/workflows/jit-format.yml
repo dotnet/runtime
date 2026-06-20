@@ -33,7 +33,7 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Checkout runtime
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: runtime
       - name: Install Python
