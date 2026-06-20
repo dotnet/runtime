@@ -166,8 +166,10 @@
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.7</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- emscripten workload package when testing workloads -->
-    <!-- we're using MicrosoftDotNetApiCompatTaskPackageVersion since the emscripten workload package ID contains a changing version. This one uses sdk-style feature band version numbers. -->
-    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftDotNetApiCompatTaskPackageVersion)</MicrosoftNETRuntimeEmscriptenVersion>
+    <!-- TEMPORARY: pinned to the staged emsdk 5.0.6 transport in the general-testing feed (only 11.0.0-preview.6.26314.102 exists there).
+         Repin to the production .NET 11 emsdk 5.0.6 transport (and drop the general-testing feed) before merge. See dotnet/runtime#113786.
+         Do NOT revert to $(MicrosoftDotNetApiCompatTaskPackageVersion): merges from main bump that past the staged build and break restore (NU1102). -->
+    <MicrosoftNETRuntimeEmscriptenVersion>11.0.0-preview.6.26314.102</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- we're using MicrosoftNETCoreAppRefPackageVersion since the emsdk package ID contains a changing version. This one uses runtime version numbers.  -->
     <EmsdkPackageVersion>$(MicrosoftNETCoreAppRefPackageVersion)</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
