@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.IO.Pipelines;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -841,7 +842,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128766", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsMonoRuntime))]
         public async Task SerializeAsyncEnumerable_TopLevelValues_PartialItemFailure_PriorItemsAreFullyWritten()
         {
             // When element serialization throws mid-item, items written prior to the failure
@@ -851,12 +851,16 @@ namespace System.Text.Json.Serialization.Tests
 
             using MemoryStream stream = new();
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Exception ex = await Assert.ThrowsAnyAsync<Exception>(() =>
                 JsonSerializer.SerializeAsyncEnumerable(
                     stream,
                     Items(),
                     ResolveJsonTypeInfo<ThrowingValue>(),
                     topLevelValues: true));
+
+            if (ex is TargetInvocationException { InnerException: { } inner })
+                ex = inner;
+            Assert.IsType<InvalidOperationException>(ex);
 
             string actual = Encoding.UTF8.GetString(stream.ToArray());
             Assert.Equal("{\"V\":1}\n{\"V\":2}\n", actual);
@@ -871,7 +875,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128766", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsMonoRuntime))]
         public async Task SerializeAsyncEnumerable_PipeWriter_TopLevelValues_PartialItemFailure_PriorItemsAreFullyWritten()
         {
             // When element serialization throws mid-item, items written prior to the failure
@@ -916,7 +919,11 @@ namespace System.Text.Json.Serialization.Tests
                 }
             });
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() => writeTask);
+            Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => writeTask);
+            if (ex is TargetInvocationException { InnerException: { } inner })
+                ex = inner;
+            Assert.IsType<InvalidOperationException>(ex);
+
             await pipe.Writer.CompleteAsync();
             byte[] bytes = await readerTask;
 
