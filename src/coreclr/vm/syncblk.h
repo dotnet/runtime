@@ -555,7 +555,9 @@ struct cdac_data<SyncBlock>
     static constexpr size_t ThinLock = offsetof(SyncBlock, m_thinLock);
     static constexpr size_t LinkNext = offsetof(SyncBlock, m_pNext);
     static constexpr size_t HashCode = offsetof(SyncBlock, m_dwHashCode);
-
+#ifdef FEATURE_METADATA_UPDATER
+    static constexpr size_t EnCInfo = offsetof(SyncBlock, m_pEnCInfo);
+#endif // FEATURE_METADATA_UPDATER
 };
 
 class SyncTableEntry

@@ -1752,8 +1752,6 @@ class DelegateObject : public Object
     friend struct ::cdac_data<DelegateObject>;
 
 public:
-    BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == 0; }
-
     OBJECTREF GetTarget() { LIMITED_METHOD_CONTRACT; return _target; }
     void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
     static int GetOffsetOfTarget() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _target); }
@@ -1781,8 +1779,8 @@ public:
     // BCL for this object.
 private:
     // System.Delegate
-    OBJECTREF   _target;
     OBJECTREF   _methodBase;
+    OBJECTREF   _target;
     PCODE       _methodPtr;
     PCODE       _methodPtrAux;
     // System.MulticastDelegate
@@ -1790,8 +1788,8 @@ private:
     INT_PTR     _invocationCount;
 };
 
-#define OFFSETOF__DelegateObject__target          OBJECT_SIZE /* m_pMethTab */
-#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */ + TARGET_POINTER_SIZE /* _methodBase */)
+#define OFFSETOF__DelegateObject__target          (OBJECT_SIZE /* m_pMethTab */ + TARGET_POINTER_SIZE /* _methodBase */)
+#define OFFSETOF__DelegateObject__methodPtr       (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
 #define OFFSETOF__DelegateObject__methodPtrAux    (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
 
 template<>

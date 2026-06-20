@@ -398,7 +398,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
     // check that HelperCallProperties are initialized
     assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
 
-    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo();
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //
@@ -4567,6 +4567,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
+    // Unpin pinned locals whose value is provably non-movable.
+    //
+    DoPhase(this, PHASE_UNPIN_LOCALS, &Compiler::fgUnpinNonMovableLocals);
+
     // Expose candidates for implicit byref last-use copy elision.
     DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, &Compiler::fgMarkImplicitByRefCopyOmissionCandidates);
 
@@ -5055,6 +5059,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // keep the Virtual IP updated.
     //
     DoPhase(this, PHASE_WASM_VIRTUAL_IP, &Compiler::fgWasmVirtualIP);
+
+    // Ensure that any refs or byrefs live at call sites are spilled
+    // to pinned stack slots so the objects aren't moved.
+    //
+    DoPhase(this, PHASE_WASM_SPILL_REFS, &Compiler::fgWasmSpillRefs);
 #endif
 
     FinalizeEH();

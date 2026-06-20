@@ -1099,6 +1099,15 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
                 m_pILToNativeMap[m_ILToNativeMapSize].source = ICorDebugInfo::STACK_EMPTY;
                 m_ILToNativeMapSize++;
             }
+
+            if (ins->flags & INTERP_INST_FLAG_DBG_CALL_INSTRUCTION)
+            {
+                InterpCallReturnInfo info;
+                info.ilOffset             = ilOffset;
+                info.postCallNativeOffset = ConvertOffset(ins->nativeOffset + GetInsLength(ins));
+                info.returnValueVarOffset = m_pVars[ins->dVar].offset;
+                m_callReturnInfos.Add(info);
+            }
         }
     }
 
@@ -1265,10 +1274,12 @@ void InterpCompiler::EmitCode()
 
     PatchRelocations(&relocs);
 
-    if (m_numILVars > 0)
+    int32_t callReturnCount = m_callReturnInfos.GetSize();
+    int32_t totalVarCount = m_numILVars + callReturnCount;
+    if (totalVarCount > 0)
     {
         // This will eventually be freed by the VM, using freeArray.
-        ICorDebugInfo::NativeVarInfo* eeVars = (ICorDebugInfo::NativeVarInfo*)m_compHnd->allocateArray(m_numILVars * sizeof(ICorDebugInfo::NativeVarInfo));
+        ICorDebugInfo::NativeVarInfo* eeVars = (ICorDebugInfo::NativeVarInfo*)m_compHnd->allocateArray(totalVarCount * sizeof(ICorDebugInfo::NativeVarInfo));
 
         int j = 0;
         for (int i = 0; i < m_numILVars; i++)
@@ -1283,7 +1294,22 @@ void InterpCompiler::EmitCode()
             j++;
         }
 
-        m_compHnd->setVars(m_methodInfo->ftn, m_numILVars, eeVars);
+        // Append a CALL_RETURN_ILNUM entry per managed call site so the debugger can read the
+        // return value when stepping out of the callee.
+        for (int i = 0; i < callReturnCount; i++)
+        {
+            const InterpCallReturnInfo& callReturn = m_callReturnInfos.Get(i);
+            eeVars[j].startOffset             = callReturn.postCallNativeOffset;
+            eeVars[j].endOffset               = callReturn.postCallNativeOffset + 1; // implicit, recomputed on decode
+            eeVars[j].varNumber               = (uint32_t)ICorDebugInfo::CALL_RETURN_ILNUM;
+            eeVars[j].callReturnValueILOffset = callReturn.ilOffset;
+            eeVars[j].loc.vlType              = ICorDebugInfo::VLT_STK;
+            eeVars[j].loc.vlStk.vlsBaseReg    = ICorDebugInfo::REGNUM_FP;
+            eeVars[j].loc.vlStk.vlsOffset     = callReturn.returnValueVarOffset;
+            j++;
+        }
+
+        m_compHnd->setVars(m_methodInfo->ftn, totalVarCount, eeVars);
     }
 
     if (m_ILToNativeMapSize == 0 && m_pILToNativeMap != NULL)
@@ -2194,6 +2220,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     , m_initLocals(false)
     , m_unmanagedCallersOnly(false)
     , m_publishSecretStubParam(false)
+    , m_callReturnInfos(GetMemPoolAllocator(IMK_NativeToILMapping))
     , m_globalVarsWithRefsStackTop(0)
     , m_varIntervalMaps(GetMemPoolAllocator(IMK_IntervalMap))
 #ifdef DEBUG
@@ -5672,6 +5699,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
 
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
+    if (!tailcall && !newObj && !isCalli && callInfo.sig.retType != CORINFO_TYPE_VOID)
+        m_pLastNewIns->flags |= INTERP_INST_FLAG_DBG_CALL_INSTRUCTION;
     m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 

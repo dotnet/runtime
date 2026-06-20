@@ -3149,7 +3149,8 @@ PhaseStatus Compiler::fgCreateFunclets()
         funcInfo[i].funFramePointerReg = REG_NA;
 #endif
 #ifdef TARGET_WASM
-        funcInfo[i].funWasmLocalDecls = nullptr;
+        funcInfo[i].funWasmLocalDecls       = nullptr;
+        funcInfo[i].funWasmExnRefLocalIndex = UINT_MAX;
 #endif
     }
 #endif
@@ -7903,7 +7904,15 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
 
                         region->AddEntryEdge(edge);
                         region->SetHasSideEntry();
-                        regions->SetHasMultipleEntryTryRegions();
+
+                        // Only try/catch regions need to be reshaped into single-entry form for
+                        // Wasm codegen (they will be lowered to a wasm try_table). Try/fault and
+                        // try/finally are emitted differently and tolerate multi-entry.
+                        //
+                        if (dsc->HasCatchHandler())
+                        {
+                            regions->SetHasMultipleEntryTryRegions();
+                        }
                         continue;
                     }
 
@@ -7973,6 +7982,27 @@ void FlowGraphTryRegions::AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edg
                 // And an edge from method entry to dest.
                 FlowEdge* const entryDestEdge = m_compiler->fgAddRefPred(destBlock, m_compiler->fgFirstBB);
                 edges.Push(entryDestEdge);
+
+                // If the dest is not reachable within the try, then we need to also add
+                // a temporary edge from the try header to the dest to create the SCC.
+                // Since we've pruned away dead blocks, any other pred edge suffices to
+                // establish reachability.
+                //
+                bool isReachableInTry = false;
+                for (FlowEdge* const predEdge : destBlock->PredEdges())
+                {
+                    if (predEdge != edge)
+                    {
+                        isReachableInTry = true;
+                        break;
+                    }
+                }
+
+                if (!isReachableInTry)
+                {
+                    FlowEdge* const headerDestEdge = m_compiler->fgAddRefPred(destBlock, headerBlock);
+                    edges.Push(headerDestEdge);
+                }
             }
         }
     }
