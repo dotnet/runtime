@@ -276,7 +276,7 @@ namespace System
         }
 
         // Used by delegate invocation list enumerator
-        internal MulticastDelegate? TryGetAt(int index)
+        internal Delegate? TryGetAt(int index)
         {
             if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
             {

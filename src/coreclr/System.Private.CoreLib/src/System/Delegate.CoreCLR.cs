@@ -39,33 +39,31 @@ namespace System
 
         internal nint _invocationCount;
 
-        // VM handle to wrapped method, null when not initialized
-        private nuint _methodDesc;
-
         private nuint MethodDesc
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return _methodDesc != 0 ? _methodDesc : GetMethodDesc();
+                Debug.Assert(HasSingleTarget);
+                Debug.Assert(!IsUnmanagedFunctionPtr);
+                return _invocationCount != 0 ? (nuint)_invocationCount : GetMethodDesc();
             }
         }
 
-        internal bool IsMulticastOrUnmanagedOrOpenVirtual => _invocationCount != 0;
-
         internal bool IsUnmanagedFunctionPtr => _invocationCount == -1;
 
-        public partial bool HasSingleTarget => _invocationList is not object[];
+        public partial bool HasSingleTarget => _invocationList is null || _invocationList.GetType() != typeof(object[]);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations)
         {
-            if (_invocationList is not object[] invocationList)
+            if (HasSingleTarget)
             {
                 invocations = default;
                 return false;
             }
 
+            object[] invocationList = (object[])_invocationList!;
             Debug.Assert(invocationList.Length > 1);
             Debug.Assert(invocationList[0] is MulticastDelegate);
             Debug.Assert((uint)invocationList.Length >= (nuint)_invocationCount);
@@ -144,25 +142,17 @@ namespace System
             Debug.Assert(obj is Delegate, "Shouldn't have failed here since we already checked the types are the same!");
             Delegate other = Unsafe.As<Delegate>(obj);
 
-            if (IsMulticastOrUnmanagedOrOpenVirtual)
+            if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
             {
-                // there are 3 kind of delegate kinds that fall into this bucket
-                // 1- Multicast (_invocationList is Object[])
-                // 2- Unmanaged FntPtr (_invocationList == null)
-                // 3- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
-                if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
-                {
-                    return other.TryGetInvocations(out ReadOnlySpan<MulticastDelegate> otherInvocations) && invocations.SequenceEqual(otherInvocations);
-                }
-
-                if (IsUnmanagedFunctionPtr)
-                {
-                    return other.IsUnmanagedFunctionPtr &&
-                           _methodPtr == other._methodPtr &&
-                           _methodPtrAux == other._methodPtrAux;
-                }
+                return other.TryGetInvocations(out ReadOnlySpan<MulticastDelegate> otherInvocations) && invocations.SequenceEqual(otherInvocations);
             }
-            Debug.Assert(HasSingleTarget);
+
+            if (IsUnmanagedFunctionPtr)
+            {
+                return other.IsUnmanagedFunctionPtr &&
+                       _methodPtr == other._methodPtr &&
+                       _methodPtrAux == other._methodPtrAux;
+            }
 
             // do an optimistic check first. This is hopefully cheap enough to be worth
             if (_target == other._target &&
@@ -205,22 +195,19 @@ namespace System
 
         public override int GetHashCode()
         {
-            if (IsMulticastOrUnmanagedOrOpenVirtual)
+            if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
             {
-                if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
+                int hash = 0;
+                foreach (MulticastDelegate multicastDelegate in invocations)
                 {
-                    int hash = 0;
-                    foreach (MulticastDelegate multicastDelegate in invocations)
-                    {
-                        hash = hash * 33 + multicastDelegate.GetHashCode();
-                    }
-                    return hash;
+                    hash = hash * 33 + multicastDelegate.GetHashCode();
                 }
+                return hash;
+            }
 
-                if (IsUnmanagedFunctionPtr)
-                {
-                    return HashCode.Combine(_methodPtr, _methodPtr);
-                }
+            if (IsUnmanagedFunctionPtr)
+            {
+                return HashCode.Combine(_methodPtr, _methodPtr);
             }
 
             int hashCode = MethodDesc.GetHashCode();
@@ -233,16 +220,9 @@ namespace System
 
         private object? GetTarget()
         {
-            if (IsMulticastOrUnmanagedOrOpenVirtual)
-            {
-                // IsMulticastOrUnmanagedOrOpenVirtual we are in one of these cases:
-                // - Multicast -> return the target of the last delegate in the list
-                // - unmanaged function pointer - return null
-                // - virtual open delegate - return null
-                return TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations) ? invocations[^1].Target : null;
-            }
-
-            return _methodPtrAux == 0 ? _target : null;
+            return TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations)
+                ? invocations[^1].Target
+                : !IsUnmanagedFunctionPtr && _methodPtrAux == 0 ? _target : null;
         }
 
         protected virtual MethodInfo GetMethodImpl()
@@ -269,27 +249,23 @@ namespace System
             // should be handled by GetMethodImpl
             Debug.Assert(HasSingleTarget);
 
-            IRuntimeMethodInfo method = CreateMethodInfo(MethodDesc);
+            IRuntimeMethodInfo method = CreateMethodInfo(IsUnmanagedFunctionPtr ? GetMethodDesc() : MethodDesc);
             RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);
 
-            if (IsUnmanagedFunctionPtr)
+            // need a proper declaring type instance method on a generic type
+            if (declaringType.IsGenericType)
             {
-                // we handle unmanaged function pointers here because the generic ones (used for WinRT) would otherwise
-                // be treated as open delegates, resulting in failure to get the MethodInfo
-
-                // need a proper declaring type instance method on a generic type
-                if (declaringType.IsGenericType)
+                bool isStatic = (RuntimeMethodHandle.GetAttributes(method) & MethodAttributes.Static) != 0;
+                if (IsUnmanagedFunctionPtr)
                 {
+                    // we handle unmanaged function pointers here because the generic ones (used for WinRT) would otherwise
+                    // be treated as open delegates, resulting in failure to get the MethodInfo
+
                     // we are returning the 'Invoke' method of this delegate so use this.GetType() for the exact type
                     RuntimeType reflectedType = (RuntimeType)GetType();
                     declaringType = reflectedType;
                 }
-            }
-            // need a proper declaring type instance method on a generic type
-            else if (declaringType.IsGenericType)
-            {
-                bool isStatic = (RuntimeMethodHandle.GetAttributes(method) & MethodAttributes.Static) != 0;
-                if (!isStatic)
+                else if (!isStatic)
                 {
                     if (_methodPtrAux == 0)
                     {
@@ -634,7 +610,10 @@ namespace System
         {
             Delegate d = this;
             nuint desc = GetMethodDesc(ObjectHandleOnStack.Create(ref d));
-            _methodDesc = desc;
+            if (!IsUnmanagedFunctionPtr)
+            {
+                _invocationCount = (nint)desc;
+            }
             return desc;
         }
 

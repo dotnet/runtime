@@ -1743,6 +1743,7 @@ typedef BStrWrapper*     BSTRWRAPPEROBJECTREF;
 
 #endif // FEATURE_COMINTEROP
 
+#define DELEGATE_MARKER_UNMANAGEDFPTR (-1)
 
 // This class corresponds to System.Delegate on the managed side.
 class DelegateObject : public Object
@@ -1772,10 +1773,6 @@ public:
     void SetInvocationCount(INT_PTR invocationCount) { LIMITED_METHOD_CONTRACT; _invocationCount = invocationCount; }
     static int GetOffsetOfInvocationCount() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationCount); }
 
-    MethodDesc* GetMethodDesc() { LIMITED_METHOD_CONTRACT; return _methodDesc; }
-    void SetMethodDesc(MethodDesc* methodDesc) { LIMITED_METHOD_CONTRACT; _methodDesc = methodDesc; }
-    static int GetOffsetOfMethodDesc() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodDesc); }
-
     // README:
     // If you modify the order of these fields, make sure to update the definition in
     // BCL for this object.
@@ -1785,13 +1782,11 @@ private:
     PCODE       _methodPtr;
     PCODE       _methodPtrAux;
     INT_PTR     _invocationCount;
-    MethodDesc* _methodDesc;
 };
 
 #define OFFSETOF__DelegateObject__target       (OBJECT_SIZE /* m_pMethTab */ + TARGET_POINTER_SIZE /* _invocationList */)
 #define OFFSETOF__DelegateObject__methodPtr    (OFFSETOF__DelegateObject__target + TARGET_POINTER_SIZE /* _target */)
 #define OFFSETOF__DelegateObject__methodPtrAux (OFFSETOF__DelegateObject__methodPtr + TARGET_POINTER_SIZE /* _methodPtr */)
-#define OFFSETOF__DelegateObject__methodDesc   (OFFSETOF__DelegateObject__methodPtrAux + TARGET_POINTER_SIZE /* _methodPtrAux */ + TARGET_POINTER_SIZE /* _invocationCount */)
 
 template<>
 struct cdac_data<DelegateObject>

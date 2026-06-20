@@ -3262,9 +3262,10 @@ DacDbiInterfaceImpl::DelegateType DacDbiInterfaceImpl::GetDelegateType(VMPTR_Obj
 
     DelegateType delegateType = DelegateType::kUnknownDelegateType;
     PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
-    INT_PTR invocationCount = pDelObj->GetInvocationCount();
 
-    if (invocationCount == 0)
+    INT_PTR invocationCount = pDelObj->GetInvocationCount();
+    OBJECTREF invocationList = pDelObj->GetInvocationList();
+    if (((invocationList == NULL) || !invocationList->GetMethodTable()->IsArray()) && (invocationCount != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
         // If this delegate points to a static function or this is a open virtual delegate, this should be non-null
         // Special case: This might fail in a VSD delegate (instance open virtual)...

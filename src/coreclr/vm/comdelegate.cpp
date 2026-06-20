@@ -26,8 +26,6 @@
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 
-#define DELEGATE_MARKER_UNMANAGEDFPTR (-1)
-
 #ifndef DACCESS_COMPILE
 
 #if defined(TARGET_X86)
@@ -1230,7 +1228,6 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
             // runtime.
             PCODE pTargetCall = GetVirtualCallStub(pTargetMethod, TypeHandle(pExactMethodType));
             (*pRefThis)->SetMethodPtrAux(pTargetCall);
-            (*pRefThis)->SetInvocationCount((INT_PTR)(void *)pTargetMethod);
         }
         else
         {
@@ -1260,7 +1257,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     }
     else
     {
-        PCODE pTargetCode = (PCODE)NULL;
+        PCODE pTargetCode = NULL;
 
         // For virtual methods we can (and should) virtualize the call now (so we don't have to insert a thunk to do so at runtime).
         // <TODO>
@@ -1289,6 +1286,8 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
         (*pRefThis)->SetTarget(*pRefFirstArg);
         (*pRefThis)->SetMethodPtr(pTargetCode);
     }
+
+    (*pRefThis)->SetInvocationCount((INT_PTR)pTargetMethod);
 
     LoaderAllocator *pLoaderAllocator = pTargetMethod->GetLoaderAllocator();
 
@@ -1727,7 +1726,6 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
         {
             PCODE pTargetCall = GetVirtualCallStub(pMeth, TypeHandle(pMeth->GetMethodTable()));
             refThis->SetMethodPtrAux(pTargetCall);
-            refThis->SetInvocationCount((INT_PTR)(void *)pMeth);
         }
         else
         {
@@ -1784,21 +1782,10 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
         refThis->SetMethodPtr((PCODE)(void *)method);
     }
 
+    refThis->SetInvocationCount((INT_PTR)pMeth);
+
     GCPROTECT_END();
     END_QCALL;
-}
-
-MethodDesc *COMDelegate::GetMethodDescForOpenVirtualDelegate(OBJECTREF orDelegate)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    return (MethodDesc*)((DELEGATEREF)orDelegate)->GetInvocationCount();
 }
 
 MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
@@ -1815,46 +1802,34 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
 
     DELEGATEREF thisDel = (DELEGATEREF) orDelegate;
 
-    MethodDesc *pMethodHandle = thisDel->GetMethodDesc();
-
-    if (pMethodHandle != NULL)
-    {
-        return pMethodHandle;
-    }
-
     INT_PTR count = thisDel->GetInvocationCount();
     if (count != 0)
     {
         // this is one of the following:
         // - multicast - _invocationList is Array && _invocationCount != 0
         // - unmanaged ftn ptr - _invocationList == NULL && _invocationCount == -1
-        // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
-        //                    or _invocationList points to a LoaderAllocator/DynamicResolver
+        // - MethodDesc already cached
+
         // we return the method desc for the invoke
         OBJECTREF innerDel = thisDel->GetInvocationList();
         if ((innerDel != NULL && innerDel->GetMethodTable()->IsArray()) || count == DELEGATE_MARKER_UNMANAGEDFPTR)
-            pMethodHandle = FindDelegateInvokeMethod(thisDel->GetMethodTable());
-        else
-            pMethodHandle = GetMethodDescForOpenVirtualDelegate(thisDel);
+            return FindDelegateInvokeMethod(thisDel->GetMethodTable());
+
+        return (MethodDesc*)count;
     }
-    else
+
+    // Next, check for an open delegate
+    PCODE code = thisDel->GetMethodPtrAux();
+    if (code == NULL)
     {
-        // Next, check for an open delegate
-        PCODE code = thisDel->GetMethodPtrAux();
-
-        if (code == (PCODE)NULL)
-        {
-            // Must be a normal delegate
-            code = thisDel->GetMethodPtr();
-        }
-
-        pMethodHandle = NonVirtualEntry2MethodDesc(code);
+        // Must be a normal delegate
+        code = thisDel->GetMethodPtr();
     }
 
+    MethodDesc* pMethodHandle = NonVirtualEntry2MethodDesc(code);
     _ASSERTE(pMethodHandle);
 
-    thisDel->SetMethodDesc(pMethodHandle);
-
+    thisDel->SetInvocationCount((INT_PTR)pMethodHandle);
     return pMethodHandle;
 }
 
@@ -1870,15 +1845,11 @@ BOOL COMDelegate::IsTrueMulticastDelegate(OBJECTREF delegate)
 
     BOOL isMulticast = FALSE;
 
-    size_t invocationCount = ((DELEGATEREF)delegate)->GetInvocationCount();
-    if (invocationCount)
+    OBJECTREF invocationList = ((DELEGATEREF)delegate)->GetInvocationList();
+    if (invocationList != NULL)
     {
-        OBJECTREF invocationList = ((DELEGATEREF)delegate)->GetInvocationList();
-        if (invocationList != NULL)
-        {
-            MethodTable *pMT = invocationList->GetMethodTable();
-            isMulticast = pMT->IsArray();
-        }
+        MethodTable *pMT = invocationList->GetMethodTable();
+        isMulticast = pMT->IsArray();
     }
 
     return isMulticast;
@@ -2634,14 +2605,14 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
 
     // DELEGATE KINDS TABLE
     //
-    //                                  _invocationList _target        _methodPtr            _methodPtrAux     _invocationCount
+    //                                  _invocationList _target        _methodPtr            _methodPtrAux
     //
-    // 1- Instance closed               null            'this' ptr     target method         null               0
-    // 2- Instance open non-virt        null            delegate       shuffle thunk         target method      0
-    // 3- Instance open virtual         null            delegate       Virtual-stub dispatch method id          0
-    // 4- Static closed                 null            first arg      target method         null               0
-    // 5- Static closed (special sig)   null            first arg      ThisPtrRetBuf precode null               0
-    // 6- Static opened                 null            delegate       shuffle thunk         target method      0
+    // 1- Instance closed               null            'this' ptr     target method         null
+    // 2- Instance open non-virt        null            delegate       shuffle thunk         target method
+    // 3- Instance open virtual         null            delegate       Virtual-stub dispatch method id
+    // 4- Static closed                 null            first arg      target method         null
+    // 5- Static closed (special sig)   null            first arg      ThisPtrRetBuf precode null
+    // 6- Static opened                 null            delegate       shuffle thunk         target method
     //
     // Delegate invoke arg count == target method arg count - 2, 3, 6
     // Delegate invoke arg count == 1 + target method arg count - 1, 4, 5
