@@ -43,11 +43,12 @@
 
 #pragma once
 #include <stdlib.h>
+#include "clrtypes.h"
 
 inline static UINT32 XXHash32_MixEmptyState()
 {
     // Unlike System.HashCode, these hash values are required to be stable, so don't
-    // mixin a random process specific value
+    // mix in a random process specific value
     return 374761393U; // Prime5
 }
 
@@ -108,7 +109,7 @@ inline static UINT32 CombineTwoValuesIntoHash(UINT32 value1, UINT32 value2)
 inline static UINT32 MixPointerIntoHash(void* ptr)
 {
 #ifdef HOST_64BIT
-    return CombineTwoValuesIntoHash((UINT32)(UINT_PTR)ptr, (UINT32)(((UINT64)ptr) >> 32));
+    return CombineTwoValuesIntoHash((UINT32)(UINT_PTR)ptr, (UINT32)(((UINT64)(UINT_PTR)ptr) >> 32));
 #else
     return MixOneValueIntoHash((UINT32)ptr);
 #endif
