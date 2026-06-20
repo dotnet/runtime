@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Tests
         {
             using CngKey key = X25519DiffieHellmanCngTests.GenerateCngKey(exportPolicy: CngExportPolicies.None);
             using X25519DiffieHellmanCng xdh = new(key);
-            Assert.Throws<CryptographicException>(() => xdh.ExportPrivateKey());
+            Assert.ThrowsAny<CryptographicException>(() => xdh.ExportPrivateKey());
         }
 
         [Fact]

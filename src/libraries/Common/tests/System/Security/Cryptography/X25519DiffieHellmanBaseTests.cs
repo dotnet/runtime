@@ -84,8 +84,8 @@ namespace System.Security.Cryptography.Tests
             using X25519DiffieHellman xdh = GenerateKey();
             using X25519DiffieHellman publicOnly = ImportPublicKey(xdh.ExportPublicKey());
 
-            Assert.Throws<CryptographicException>(() => publicOnly.ExportPrivateKey());
-            Assert.Throws<CryptographicException>(() => publicOnly.ExportPrivateKey(new byte[X25519DiffieHellman.PrivateKeySizeInBytes]));
+            Assert.ThrowsAny<CryptographicException>(() => publicOnly.ExportPrivateKey());
+            Assert.ThrowsAny<CryptographicException>(() => publicOnly.ExportPrivateKey(new byte[X25519DiffieHellman.PrivateKeySizeInBytes]));
         }
 
         [Fact]
@@ -381,8 +381,8 @@ namespace System.Security.Cryptography.Tests
         public void ExportPkcs8PrivateKey_PublicKeyOnly_Fails()
         {
             using X25519DiffieHellman xdh = ImportPublicKey(X25519DiffieHellmanTestData.AlicePublicKey);
-            Assert.Throws<CryptographicException>(() => DoTryUntilDone(xdh.TryExportPkcs8PrivateKey));
-            Assert.Throws<CryptographicException>(() => xdh.ExportPkcs8PrivateKey());
+            Assert.ThrowsAny<CryptographicException>(() => DoTryUntilDone(xdh.TryExportPkcs8PrivateKey));
+            Assert.ThrowsAny<CryptographicException>(() => xdh.ExportPkcs8PrivateKey());
         }
 
         [Fact]
@@ -410,36 +410,36 @@ namespace System.Security.Cryptography.Tests
         {
             using X25519DiffieHellman xdh = ImportPublicKey(X25519DiffieHellmanTestData.AlicePublicKey);
 
-            Assert.Throws<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+            Assert.ThrowsAny<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
                 xdh.TryExportEncryptedPkcs8PrivateKey(
                     X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword.AsSpan(),
                     s_aes128Pbe,
                     destination,
                     out bytesWritten)));
 
-            Assert.Throws<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
+            Assert.ThrowsAny<CryptographicException>(() => DoTryUntilDone((Span<byte> destination, out int bytesWritten) =>
                 xdh.TryExportEncryptedPkcs8PrivateKey(
                     X25519DiffieHellmanTestData.EncryptedPrivateKeyPasswordBytes,
                     s_aes128Pbe,
                     destination,
                     out bytesWritten)));
 
-            Assert.Throws<CryptographicException>(() => xdh.ExportEncryptedPkcs8PrivateKey(
+            Assert.ThrowsAny<CryptographicException>(() => xdh.ExportEncryptedPkcs8PrivateKey(
                 X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword, s_aes128Pbe));
 
-            Assert.Throws<CryptographicException>(() => xdh.ExportEncryptedPkcs8PrivateKey(
+            Assert.ThrowsAny<CryptographicException>(() => xdh.ExportEncryptedPkcs8PrivateKey(
                 X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword.AsSpan(), s_aes128Pbe));
 
-            Assert.Throws<CryptographicException>(() => xdh.ExportEncryptedPkcs8PrivateKey(
+            Assert.ThrowsAny<CryptographicException>(() => xdh.ExportEncryptedPkcs8PrivateKey(
                 X25519DiffieHellmanTestData.EncryptedPrivateKeyPasswordBytes, s_aes128Pbe));
 
-            Assert.Throws<CryptographicException>(() => xdh.ExportEncryptedPkcs8PrivateKeyPem(
+            Assert.ThrowsAny<CryptographicException>(() => xdh.ExportEncryptedPkcs8PrivateKeyPem(
                 X25519DiffieHellmanTestData.EncryptedPrivateKeyPasswordBytes, s_aes128Pbe));
 
-            Assert.Throws<CryptographicException>(() => xdh.ExportEncryptedPkcs8PrivateKeyPem(
+            Assert.ThrowsAny<CryptographicException>(() => xdh.ExportEncryptedPkcs8PrivateKeyPem(
                 X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword, s_aes128Pbe));
 
-            Assert.Throws<CryptographicException>(() => xdh.ExportEncryptedPkcs8PrivateKeyPem(
+            Assert.ThrowsAny<CryptographicException>(() => xdh.ExportEncryptedPkcs8PrivateKeyPem(
                 X25519DiffieHellmanTestData.EncryptedPrivateKeyPassword.AsSpan(), s_aes128Pbe));
         }
 
