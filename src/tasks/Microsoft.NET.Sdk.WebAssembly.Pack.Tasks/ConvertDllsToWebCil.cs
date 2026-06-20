@@ -38,12 +38,12 @@ public class ConvertDllsToWebcil : Task
     public ITaskItem[] WebcilCandidates { get; set; }
 
     /// <summary>
-    /// Payload/table sizes for each produced webcil, keyed by the logical assembly name as it
-    /// appears in the boot config: the file name (e.g. "System.Console.dll"), or
-    /// "{culture}/{name}.dll" for satellite assemblies so that same-named satellites in different
-    /// cultures don't collide. Lets the boot config carry the sizes so the runtime loader doesn't
-    /// buffer/parse the wasm. PayloadSize is set for every webcil; TableSize is non-zero only for
-    /// R2R images.
+    /// Payload/table sizes for each produced webcil, keyed by the produced webcil-in-wasm module
+    /// file name (e.g. "System.Console.wasm"), or "{culture}/{name}.wasm" for satellite assemblies
+    /// so that same-named satellites in different cultures don't collide. This matches the lookup
+    /// key GenerateWasmBootJson builds from each asset's OriginalItemSpec (the produced ".wasm"
+    /// path). Lets the boot config carry the sizes so the runtime loader doesn't buffer/parse the
+    /// wasm. PayloadSize is set for every webcil; TableSize is non-zero only for R2R images.
     /// </summary>
     [Output]
     public ITaskItem[] WebcilSizes { get; set; }
@@ -243,7 +243,7 @@ public class ConvertDllsToWebcil : Task
     }
 
     // Parses the produced webcil's data segment 0 and records payloadSize/tableSize keyed by the
-    // logical assembly name (".dll" file name, or "{culture}/{name}.dll" for satellites) so that
+    // produced webcil-in-wasm file name (".wasm", or "{culture}/{name}.wasm" for satellites) so that
     // GenerateWasmBootJson can emit them into the boot config without re-parsing. The runtime loader
     // requires payloadSize for every webcil-in-wasm assembly, so failing to read it is a build error
     // rather than a silent skip.
@@ -255,12 +255,11 @@ public class ConvertDllsToWebcil : Task
             return;
         }
 
-        // Key by the logical assembly name (".dll"), not the produced ".wasm" file name: the boot
-        // config lists webcil assemblies under their logical ".dll" name, and GenerateWasmBootJson
-        // looks these sizes up by that name (resourceName). Using ".wasm" here would never match.
-        // Keying by ".dll" also avoids colliding with same-stem assets (e.g. a "X.pdb" never matches
-        // "X.dll").
-        string fileName = Path.ChangeExtension(Path.GetFileName(webcilPath), ".dll");
+        // Key by the produced webcil-in-wasm file name (".wasm"): GenerateWasmBootJson derives its
+        // lookup key from each asset's OriginalItemSpec, which is the produced ".wasm" path, so
+        // keying by ".dll" here would never match and payloadSize/tableSize would never be emitted.
+        // Satellites share a file name across cultures, so qualify by culture to avoid collisions.
+        string fileName = Path.GetFileName(webcilPath);
         string key = string.IsNullOrEmpty(culture) ? fileName : culture + "/" + fileName;
         var item = new TaskItem(key);
         item.SetMetadata("PayloadSize", payloadSize.ToString(CultureInfo.InvariantCulture));
@@ -274,7 +273,7 @@ public class ConvertDllsToWebcil : Task
     // KB; this streams through the section headers, seeking past each body, instead of reading a
     // fixed prefix. All multi-byte integers in the wasm binary format are little-endian and are read
     // as such regardless of host endianness. See docs/design/mono/webcil.md.
-    private static bool TryReadWebcilSizes(string path, out int payloadSize, out int tableSize, out string failureReason)
+    internal static bool TryReadWebcilSizes(string path, out int payloadSize, out int tableSize, out string failureReason)
     {
         payloadSize = 0;
         tableSize = 0;

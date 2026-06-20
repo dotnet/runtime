@@ -87,9 +87,9 @@ public class GenerateWasmBootJson : Task
     public bool FingerprintAssets { get; set; }
 
     /// <summary>
-    /// Payload/table sizes for each webcil (keyed by the logical assembly name, e.g. "App.dll"),
-    /// produced by ConvertDllsToWebcil. Emitted into the boot config so the runtime loader doesn't
-    /// parse the wasm or call getWebcilSize.
+    /// Payload/table sizes for each webcil (keyed by the produced webcil-in-wasm file name, e.g.
+    /// "App.wasm"), produced by ConvertDllsToWebcil. Emitted into the boot config so the runtime
+    /// loader doesn't parse the wasm or call getWebcilSize.
     /// </summary>
     public ITaskItem[] WebcilSizes { get; set; }
 
@@ -134,8 +134,8 @@ public class GenerateWasmBootJson : Task
         // boot config, letting the loader stream-instantiate instead of buffering and parsing.
         var r2rSizes = new Dictionary<string, (int tableSize, int payloadSize)>();
 
-        // Webcil sizes computed by ConvertDllsToWebcil, keyed by the logical assembly name (file
-        // name, or "{culture}/{name}.dll" for satellites so cultures don't collide).
+        // Webcil sizes computed by ConvertDllsToWebcil, keyed by the produced webcil-in-wasm file
+        // name ("{name}.wasm", or "{culture}/{name}.wasm" for satellites so cultures don't collide).
         var webcilSizeByName = new Dictionary<string, (int tableSize, int payloadSize)>(StringComparer.OrdinalIgnoreCase);
         if (WebcilSizes != null)
         {
@@ -261,8 +261,8 @@ public class GenerateWasmBootJson : Task
 
                 // Keys for looking up the webcil payload/table sizes (see below). Satellites share a
                 // file name across cultures, so qualify by culture to avoid collisions: the lookup key
-                // matches ConvertDllsToWebcil's WebcilSizes ItemSpec (the logical assembly name), and
-                // the store key matches how BootJsonBuilderHelper resolves r2rSizes per (culture
+                // matches ConvertDllsToWebcil's WebcilSizes ItemSpec (the produced ".wasm" file name),
+                // and the store key matches how BootJsonBuilderHelper resolves r2rSizes per (culture
                 // subfolder, route).
                 string webcilCulture = string.Equals("Culture", assetTraitName, StringComparison.OrdinalIgnoreCase) ? assetTraitValue : null;
                 string webcilSizeLookupKey = webcilCulture != null ? webcilCulture + "/" + resourceName : resourceName;
@@ -428,12 +428,38 @@ public class GenerateWasmBootJson : Task
                     AddResourceToList(resource, resourceList, resourceRoute);
 
                     // Webcil-in-wasm assemblies (startup, lazy, satellite) carry payload/table sizes
-                    // computed by ConvertDllsToWebcil so the runtime loader can instantiate without
-                    // parsing the wasm. payloadSize is emitted for every webcil; tableSize only for R2R.
-                    // webcilSizeByName only contains converted assemblies, so non-webcil resources
-                    // (pdb, icu, native) simply won't match.
-                    if (IsTargeting100OrLater() && webcilSizeByName.TryGetValue(webcilSizeLookupKey, out var webcilSizes))
+                    // so the runtime loader can instantiate without parsing the wasm. payloadSize is
+                    // emitted for every webcil; tableSize only for R2R. Identify them by the produced
+                    // ".wasm" extension, excluding native wasm (dotnet.native.wasm) which is handled
+                    // separately and is not a webcil module.
+                    bool isWebcilInWasmAssembly = IsTargeting100OrLater()
+                        && string.Equals(fileExtension, ".wasm", StringComparison.OrdinalIgnoreCase)
+                        && !(string.Equals(assetTraitName, "WasmResource", StringComparison.OrdinalIgnoreCase)
+                             && string.Equals(assetTraitValue, "native", StringComparison.OrdinalIgnoreCase));
+
+                    if (isWebcilInWasmAssembly)
                     {
+                        // Fast path: ConvertDllsToWebcil already computed the sizes. Fall back to
+                        // reading them straight from the produced webcil when it didn't: that task is
+                        // incremental and can be skipped while this boot config is regenerated (e.g. a
+                        // boot-config property changed but no assembly did), which would otherwise drop
+                        // payloadSize/tableSize and break the loader. R2R images especially need
+                        // tableSize before instantiation.
+                        if (!webcilSizeByName.TryGetValue(webcilSizeLookupKey, out var webcilSizes))
+                        {
+                            string webcilFile = resource.GetMetadata("OriginalItemSpec");
+                            if (string.IsNullOrEmpty(webcilFile) || !File.Exists(webcilFile))
+                                webcilFile = resource.ItemSpec;
+
+                            if (!ConvertDllsToWebcil.TryReadWebcilSizes(webcilFile, out int ps, out int ts, out string failureReason) || ps <= 0)
+                            {
+                                Log.LogError($"Could not read the Webcil payload/table sizes for '{resourceName}' from '{webcilFile}' ({failureReason}). The runtime loader requires payloadSize for every webcil-in-wasm assembly.");
+                                continue;
+                            }
+
+                            webcilSizes = (ts, ps);
+                        }
+
                         r2rSizes[r2rSizeStoreKey] = webcilSizes;
                     }
                 }
