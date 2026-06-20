@@ -1871,47 +1871,6 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     return pMethodHandle;
 }
 
-OBJECTREF COMDelegate::GetTargetObject(OBJECTREF obj)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF targetObject = NULL;
-
-    DELEGATEREF thisDel = (DELEGATEREF) obj;
-    OBJECTREF innerDel = NULL;
-
-    if (thisDel->GetInvocationCount() != 0)
-    {
-        // this is one of the following:
-        // - multicast
-        // - unmanaged ftn ptr
-        // - wrapper delegate
-        // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
-        //                    or _invocationList points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Wrapper Delegate)
-        // in the wrapper delegate case we want to unwrap and return the object of the inner delegate
-        innerDel = (DELEGATEREF) thisDel->GetInvocationList();
-        if (innerDel != NULL)
-        {
-            MethodTable *pMT = innerDel->GetMethodTable();
-            if (pMT->IsDelegate())
-            {
-                targetObject = GetTargetObject(innerDel);
-            }
-        }
-    }
-
-    if (targetObject == NULL)
-        targetObject = thisDel->GetTarget();
-
-    return targetObject;
-}
-
 BOOL COMDelegate::IsTrueMulticastDelegate(OBJECTREF delegate)
 {
     CONTRACTL
