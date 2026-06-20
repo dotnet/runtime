@@ -17,6 +17,8 @@ namespace System
     [NonVersionable]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
+        private const nint UnmanagedMarker = -1;
+
         // This is set under 3 circumstances
         // 1. Multicast delegate
         // 2. Method cache
@@ -37,7 +39,12 @@ namespace System
         // to _methodPtrAux.
         internal nint _methodPtrAux;
 
+        // this stores the multicast count, UnmanagedMarker for unmanaged or target MethodDesc
         internal nint _invocationCount;
+
+        internal bool IsUnmanagedFunctionPtr => _invocationCount == UnmanagedMarker;
+
+        public partial bool HasSingleTarget => _invocationList is null || _invocationList.GetType() != typeof(object[]);
 
         private nuint MethodDesc
         {
@@ -49,10 +56,6 @@ namespace System
                 return _invocationCount != 0 ? (nuint)_invocationCount : GetMethodDesc();
             }
         }
-
-        internal bool IsUnmanagedFunctionPtr => _invocationCount == -1;
-
-        public partial bool HasSingleTarget => _invocationList is null || _invocationList.GetType() != typeof(object[]);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations)
