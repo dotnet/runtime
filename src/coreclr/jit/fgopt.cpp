@@ -5219,8 +5219,8 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                     fgUnlinkStmt(predBlock, stmt);
 
-                    bool canRemove =
-                        predBlock->isEmpty() && !predBlock->HasFlag(BBF_DONT_REMOVE) && predBlock != fgFirstBB;
+                    bool canRemove = predBlock->isEmpty() && !predBlock->HasFlag(BBF_DONT_REMOVE) &&
+                                     predBlock != fgFirstBB && predBlock != fgOSREntryBB;
                     if (canRemove)
                     {
                         for (BasicBlock* const pred : predBlock->PredBlocksEditing())
@@ -5368,7 +5368,8 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // Fix up the flow.
                 //
-                bool canRemove = predBlock->isEmpty() && !predBlock->HasFlag(BBF_DONT_REMOVE) && predBlock != fgFirstBB;
+                bool canRemove = predBlock->isEmpty() && !predBlock->HasFlag(BBF_DONT_REMOVE) &&
+                                 predBlock != fgFirstBB && predBlock != fgOSREntryBB;
                 if (canRemove)
                 {
                     for (BasicBlock* const pred : predBlock->PredBlocksEditing())
