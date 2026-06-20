@@ -80,7 +80,7 @@ namespace System
         protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
             RuntimeMethodHandleInternal method = new RuntimeMethodHandleInternal(GetInvokeMethod());
-            RuntimeMethodInfo invoke = (RuntimeMethodInfo)RuntimeType.GetMethodBase((RuntimeType)this.GetType(), method)!;
+            RuntimeMethodInfo invoke = (RuntimeMethodInfo)RuntimeType.GetMethodBase((RuntimeType)GetType(), method)!;
 
             return invoke.Invoke(this, BindingFlags.Default, null, args, null);
         }
@@ -146,9 +146,9 @@ namespace System
             // different hashcode which is not true.
             /*
             if (_methodPtrAux == IntPtr.Zero)
-                return unchecked((int)((long)this._methodPtr));
+                return unchecked((int)((long)_methodPtr));
             else
-                return unchecked((int)((long)this._methodPtrAux));
+                return unchecked((int)((long)_methodPtrAux));
             */
             if (_methodPtrAux == IntPtr.Zero)
                 return (_target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + GetType().GetHashCode();
@@ -208,7 +208,7 @@ namespace System
                     else
                     {
                         // it's an open one, need to fetch the first arg of the instantiation
-                        MethodInfo invoke = this.GetType().GetMethod("Invoke")!;
+                        MethodInfo invoke = GetType().GetMethod("Invoke")!;
                         declaringType = (RuntimeType)invoke.GetParametersAsSpan()[0].ParameterType;
                     }
                 }
