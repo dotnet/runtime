@@ -7,6 +7,17 @@ internal static class Placeholder
 {
 }
 
+public static class ContractBridge
+{
+    public static T FromPointer<T>(nint pointer)
+        where T : class
+        => default!;
+}
+
+public sealed class MissingReference
+{
+}
+
 public sealed class MissingFieldOwner
 {
 }
