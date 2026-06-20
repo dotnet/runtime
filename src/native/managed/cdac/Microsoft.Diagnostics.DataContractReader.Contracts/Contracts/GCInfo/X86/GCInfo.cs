@@ -268,6 +268,9 @@ public record X86GCInfo : IGCInfoDecoder
                         break;
                     case IPtrMask:
                     case GcTransitionCall:
+                    case CalleeSavedRegister:
+                        // Callee-saved register tags (e.g. partial-interrupt ESP-frame
+                        // "Reg is saved" markers) don't affect outgoing-argument depth.
                         break;
                     default:
                         throw new InvalidOperationException("Unsupported gc transition type");

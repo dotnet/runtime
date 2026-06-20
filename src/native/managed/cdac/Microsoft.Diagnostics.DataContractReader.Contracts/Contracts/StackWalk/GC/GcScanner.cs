@@ -352,6 +352,20 @@ internal class GcScanner
 
     private TargetPointer AddressFromGCRefMapPos(Data.TransitionBlock tb, int pos)
     {
+        // x86's TransitionBlock lays its two argument registers (EDX/ECX) out in
+        // ENUM_ARGUMENT_REGISTERS_BACKWARD order, so GCRefMap pos 0/1 map to
+        // ARGUMENTREGISTERS_SIZE - (pos+1) * PointerSize within the arg-regs area.
+        // Stack args (pos >= NUM_ARGUMENT_REGISTERS) follow forward immediately after.
+        // Mirrors native OffsetFromGCRefMapPos (frames.cpp).
+        if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
+        {
+            const int x86NumArgRegs = 2;
+            int x86ArgRegsSize = x86NumArgRegs * _target.PointerSize;
+            int offset = pos < x86NumArgRegs
+                ? x86ArgRegsSize - (pos + 1) * _target.PointerSize
+                : pos * _target.PointerSize;
+            return new TargetPointer(tb.FirstGCRefMapSlot.Value + (ulong)offset);
+        }
         return new TargetPointer(tb.FirstGCRefMapSlot.Value + (ulong)(pos * _target.PointerSize));
     }
 

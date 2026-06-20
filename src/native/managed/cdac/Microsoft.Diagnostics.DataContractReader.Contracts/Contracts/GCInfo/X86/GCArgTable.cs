@@ -345,7 +345,7 @@ public class GCArgTable
     /// <summary>
     /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
     /// </summary>
-    private void SaveCallTransition(ref TargetPointer offset, uint val, uint curOffs, uint callRegMask, bool callPndTab, uint callPndTabCnt, uint callPndMask, uint lastSkip, ref uint imask)
+    private void SaveCallTransition(ref TargetPointer offset, uint curOffs, uint callRegMask, bool callPndTab, uint callPndTabCnt, uint callPndMask, ref uint imask)
     {
         uint iregMask, iargMask;
         iregMask = imask & 0xF;
@@ -359,11 +359,6 @@ public class GCArgTable
             for (int i = 0; i < callPndTabCnt; i++)
             {
                 uint pndOffs = _target.GCDecodeUnsigned(ref offset);
-
-                uint stkOffs = val & ~byref_OFFSET_FLAG;
-                uint lowBit = val & byref_OFFSET_FLAG;
-                Console.WriteLine($"stkOffs: {stkOffs}, lowBit: {lowBit}");
-
                 transition.PtrArgs.Add(new GcTransitionCall.PtrArg(pndOffs, 0));
             }
         }
@@ -375,15 +370,14 @@ public class GCArgTable
                 transition.IArgs = iargMask;
         }
 
-        Console.WriteLine($"lastSkip: {lastSkip}");
         imask /* = lastSkip  */ = 0;
     }
 
     private void GetTransitionsNoEbp(ref TargetPointer offset)
     {
         uint curOffs = 0;
-        uint lastSkip = 0;
         uint imask = 0;
+        uint lastSkip;
 
         for (; ; )
         {
@@ -418,7 +412,6 @@ public class GCArgTable
                         //
                         skip = _target.GCDecodeUnsigned(ref offset);
                         curOffs += skip;
-                        lastSkip = skip;
                     }
                     else
                     {
@@ -431,18 +424,16 @@ public class GCArgTable
                         {
                             AddNewTransition(new GcTransitionRegister((int)curOffs, RegMask.ESP, Action.POP, false, false, (int)popSize));
                         }
-                        else
-                            lastSkip = skip;
                     }
                 }
             }
             else
             {
-                uint callArgCnt = 0;
+                uint callArgCnt;
                 uint callRegMask;
                 bool callPndTab = false;
                 uint callPndMask = 0;
-                uint callPndTabCnt = 0, callPndTabSize = 0;
+                uint callPndTabCnt = 0;
 
                 switch ((val & 0x70) >> 4)
                 {
@@ -452,7 +443,7 @@ public class GCArgTable
                         //
                         CallPattern.DecodeCallPattern((val & 0x7f), out callArgCnt, out callRegMask, out callPndMask, out lastSkip);
                         curOffs += lastSkip;
-                        SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
+                        SaveCallTransition(ref offset, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, ref imask);
                         AddNewTransition(new StackDepthTransition((int)curOffs, -(int)callArgCnt));
                         break;
 
@@ -467,7 +458,7 @@ public class GCArgTable
                         callArgCnt = (val >> 3) & 0x7;
                         lastSkip = CallPattern.CallCommonDelta[(int)(val >> 6)];
                         curOffs += lastSkip;
-                        SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
+                        SaveCallTransition(ref offset, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, ref imask);
                         AddNewTransition(new StackDepthTransition((int)curOffs, -(int)callArgCnt));
                         break;
                     case 6:
@@ -478,7 +469,7 @@ public class GCArgTable
                         callRegMask = val & 0xf;    // EBP,EBX,ESI,EDI
                         callArgCnt = _target.GCDecodeUnsigned(ref offset);
                         callPndMask = _target.GCDecodeUnsigned(ref offset);
-                        SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
+                        SaveCallTransition(ref offset, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, ref imask);
                         AddNewTransition(new StackDepthTransition((int)curOffs, -(int)callArgCnt));
                         break;
                     case 7:
@@ -505,10 +496,10 @@ public class GCArgTable
                                 offset += 4;
                                 callPndTabCnt = _target.Read<uint>(offset);
                                 offset += 4;
-                                callPndTabSize = _target.Read<uint>(offset);
+                                // Skip callPndTabSize - present in encoding but unused by the decoder.
                                 offset += 4;
                                 callPndTab = true;
-                                SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
+                                SaveCallTransition(ref offset, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, ref imask);
                                 AddNewTransition(new StackDepthTransition((int)curOffs, -(int)callArgCnt));
                                 break;
                             case 0x0C:
@@ -518,8 +509,6 @@ public class GCArgTable
                         }
                         break;
                 }
-                Console.WriteLine($"CallArgCount: {callArgCnt}");
-                Console.WriteLine($"CallPndTabCnt: {callPndTabSize}");
             }
         }
     }
