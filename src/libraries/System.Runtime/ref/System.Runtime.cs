@@ -2370,7 +2370,7 @@ namespace System
         public static bool operator !=(System.Delegate? d1, System.Delegate? d2) { throw null; }
         public static System.Delegate? Remove(System.Delegate? source, System.Delegate? value) { throw null; }
         public static System.Delegate? RemoveAll(System.Delegate? source, System.Delegate? value) { throw null; }
-        protected virtual System.Delegate? RemoveImpl(System.Delegate d) { throw null; }
+        protected virtual System.Delegate? RemoveImpl(System.Delegate? d) { throw null; }
         public partial struct InvocationListEnumerator<TDelegate> where TDelegate : System.Delegate
         {
             public TDelegate Current { get { throw null; } }

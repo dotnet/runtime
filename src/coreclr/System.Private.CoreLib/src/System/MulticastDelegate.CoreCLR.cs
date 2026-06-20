@@ -290,7 +290,7 @@ namespace System
         //    look at the invocation list.)  If this is found we remove it from
         //    this list and return a new delegate.  If its not found a copy of the
         //    current list is returned.
-        protected sealed override Delegate? RemoveImpl(Delegate value)
+        protected sealed override Delegate? RemoveImpl(Delegate? value)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
