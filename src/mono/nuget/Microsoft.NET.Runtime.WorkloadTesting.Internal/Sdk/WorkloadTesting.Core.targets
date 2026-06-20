@@ -84,19 +84,6 @@
                   Retries="3"
                   Condition="!Exists($(_DotNetInstallScriptPath))"/>
 
-    <!-- Replace ci.dot.net/public with ci.dot.net/dev in the script using the platform's native tools.
-         This avoids MSBuild's string/item-list parsing pitfalls (e.g. ';' splitting in WriteLinesToFile,
-         line-ending and escaping issues) when round-tripping an entire shell/PowerShell script through
-         MSBuild properties. We're already invoking these shells right after, so leverage them directly. -->
-    <Message Text="** Replacing ci.dot.net/public with ci.dot.net/dev in $(_DotNetInstallScriptPath)" Importance="High" />
-
-    <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-          IgnoreStandardErrorWarningFormat="true"
-          Command="sed -i.bak 's|ci\.dot\.net/public|ci.dot.net/dev|g' &quot;$(_DotNetInstallScriptPath)&quot; &amp;&amp; rm -f &quot;$(_DotNetInstallScriptPath).bak&quot;" />
-    <Exec Condition="$([MSBuild]::IsOSPlatform('windows'))"
-          IgnoreStandardErrorWarningFormat="true"
-          Command='powershell -ExecutionPolicy ByPass -NoProfile -Command "(Get-Content -Raw -LiteralPath &apos;$(_DotNetInstallScriptPath)&apos;).Replace(&apos;ci.dot.net/public&apos;, &apos;ci.dot.net/dev&apos;) | Set-Content -NoNewline -LiteralPath &apos;$(_DotNetInstallScriptPath)&apos;"' />
-
     <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))"
           IgnoreStandardErrorWarningFormat="true"
           Command="chmod +x $(_DotNetInstallScriptPath); $(_DotNetInstallCommand)" />
