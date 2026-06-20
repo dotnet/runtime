@@ -2235,13 +2235,42 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         {
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
-                if (varTypeIsIntegral(baseType))
+                // A contained operand is usually a memory operand that we can read directly with
+                // an integer mov. However, a contained CreateScalar/CreateScalarUnsafe is "looked
+                // through" by genOperandDesc to its own operand, which may itself live in a SIMD
+                // register (e.g. Vector128.CreateScalarUnsafe(x).ToScalar()). In that case the
+                // operand is really a register, so we must keep movd/movq rather than emitting a
+                // plain integer mov, which cannot read from an XMM register.
+                GenTree* effectiveOp1 = op1;
+                while (effectiveOp1->isContained() && effectiveOp1->OperIsHWIntrinsic() &&
+                       (HWIntrinsicInfo::IsVectorCreateScalar(effectiveOp1->AsHWIntrinsic()->GetHWIntrinsicId()) ||
+                        HWIntrinsicInfo::IsVectorCreateScalarUnsafe(effectiveOp1->AsHWIntrinsic()->GetHWIntrinsicId())))
+                {
+                    effectiveOp1 = effectiveOp1->AsHWIntrinsic()->Op(1);
+                }
+
+                bool op1IsInRegister = varTypeIsIntegral(baseType) && effectiveOp1->isUsedFromReg();
+
+                if (op1IsInRegister)
+                {
+                    // The operand lives in a SIMD register; use movd/movq (already selected) with
+                    // the scalar size, matching the non-contained integral path below.
+                    attr = emitActualTypeSize(baseType);
+                }
+                else if (varTypeIsIntegral(baseType))
                 {
                     // We just want to emit a standard read from memory
                     ins  = ins_Move_Extend(baseType, false);
                     attr = emitTypeSize(baseType);
                 }
+
                 genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
+
+                if (op1IsInRegister && varTypeIsSmall(baseType))
+                {
+                    emit->emitIns_Mov(ins_Move_Extend(baseType, /* srcInReg */ true), emitTypeSize(baseType), targetReg,
+                                      targetReg, /* canSkip */ false);
+                }
             }
             else if (varTypeIsIntegral(baseType))
             {
