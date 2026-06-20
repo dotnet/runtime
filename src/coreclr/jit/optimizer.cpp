@@ -1999,39 +1999,60 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     const int invertSizeLimit         = JitConfig.JitLoopInversionSizeLimit();
     if (invertSizeLimit >= 0)
     {
-        const int cloneSizeLimit = JitConfig.JitCloneLoopsSizeLimit();
-        unsigned  loopSize       = 0;
+        const int      cloneSizeLimit       = JitConfig.JitCloneLoopsSizeLimit();
+        const unsigned sizeLimit            = (unsigned)max(invertSizeLimit, cloneSizeLimit);
+        unsigned       loopSize             = 0;
+        bool           loopHasBoundsCheck   = false;
+        bool           nestedHasBoundsCheck = false;
 
-        // Loops with bounds checks can benefit from cloning, which depends on inversion running.
-        // Thus, we will try to proceed with inversion for slightly oversize loops if they show potential for cloning.
-        auto countNode = [&mightBenefitFromCloning, &loopSize](GenTree* tree) -> unsigned {
-            mightBenefitFromCloning |= tree->OperIs(GT_BOUNDS_CHECK);
-            loopSize++;
-            return 1;
-        };
+        // If we see bounds checks in this loop's blocks, relax the size cap.
+        // If the only bounds checks are in nested loops, do not
+        // relax the size cap (those nested loops will be inverted+cloned independently).
+        //
+        loop->VisitLoopBlocks([&, this](BasicBlock* block) -> BasicBlockVisit {
+            bool inNestedLoop = false;
+            for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
+            {
+                if (child->ContainsBlock(block))
+                {
+                    inNestedLoop = true;
+                    break;
+                }
+            }
+            bool* const boundsCheckFlag = inNestedLoop ? &nestedHasBoundsCheck : &loopHasBoundsCheck;
 
-        optLoopComplexityExceeds(loop, (unsigned)max(invertSizeLimit, cloneSizeLimit), countNode);
+            const unsigned slack    = sizeLimit > loopSize ? (sizeLimit - loopSize) : 0;
+            const bool     exceeded = block->ComplexityExceeds(this, slack, [&](GenTree* tree) -> unsigned {
+                if (tree->OperIs(GT_BOUNDS_CHECK))
+                {
+                    *boundsCheckFlag = true;
+                }
+                loopSize++;
+                return 1;
+            });
+            return exceeded ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
+        });
+
+        mightBenefitFromCloning = loopHasBoundsCheck || nestedHasBoundsCheck;
+
         if (loopSize > (unsigned)invertSizeLimit)
         {
-            // Don't try to invert oversize loops if they don't show cloning potential,
-            // or if they're too big to be cloned anyway.
             JITDUMP(FMT_LP " exceeds inversion size limit of %d\n", loop->GetIndex(), invertSizeLimit);
-            const bool tooBigToClone = (cloneSizeLimit >= 0) && (loopSize > (unsigned)cloneSizeLimit);
-            if (!mightBenefitFromCloning || tooBigToClone)
+            if (!mightBenefitFromCloning)
             {
-                JITDUMP("No inversion for " FMT_LP ": %s\n", loop->GetIndex(),
-                        tooBigToClone ? "too big to clone" : "unlikely to benefit from cloning");
+                JITDUMP("No inversion for " FMT_LP ": unlikely to benefit from cloning\n", loop->GetIndex());
+                return false;
+            }
+            if (nestedHasBoundsCheck)
+            {
+                JITDUMP("No inversion for " FMT_LP
+                        ": nested loops have their own bounds checks; they will be inverted independently\n",
+                        loop->GetIndex());
                 return false;
             }
 
-            // If the loop shows cloning potential, tolerate some excess size.
-            const unsigned liberalInvertSizeLimit = (unsigned)(invertSizeLimit * 1.25);
-            if (loopSize > liberalInvertSizeLimit)
-            {
-                JITDUMP(FMT_LP " might benefit from cloning, but is too large to invert.\n", loop->GetIndex());
-                return false;
-            }
-
+            // Defer further size-based rejection to estDupCostSz below and to the cloning
+            // phase's own size budget.
             JITDUMP(FMT_LP " might benefit from cloning. Continuing.\n", loop->GetIndex());
         }
     }
