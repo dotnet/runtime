@@ -4936,6 +4936,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_3, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
 
+    // Remove unreachable try regions
+    //
+    DoPhase(this, PHASE_REMOVE_UNREACHABLE_TRY, &Compiler::fgRemoveUnreachableTry);
+
     // Create funclets from the EH handlers.
     //
     DoPhase(this, PHASE_CREATE_FUNCLETS, &Compiler::fgCreateFunclets);
