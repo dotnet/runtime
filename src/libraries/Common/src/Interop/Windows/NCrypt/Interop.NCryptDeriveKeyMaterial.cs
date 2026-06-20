@@ -30,7 +30,7 @@ internal static partial class Interop
             SafeNCryptSecretHandle hSharedSecret,
             string pwszKDF,
             IntPtr pParameterList,
-            Span<byte> pbDerivedKey,
+            byte* pbDerivedKey,
             int cbDerivedKey,
             out int pcbResult,
             SecretAgreementFlags dwFlags);
@@ -287,14 +287,23 @@ internal static partial class Interop
             Span<byte> destination,
             out int bytesWritten)
         {
-            ErrorCode error = NCryptDeriveKey(
-                secretAgreement,
-                BCryptNative.KeyDerivationFunction.Raw,
-                IntPtr.Zero,
-                destination,
-                destination.Length,
-                out int localWritten,
-                flags);
+            ErrorCode error;
+            int localWritten;
+
+            unsafe
+            {
+                fixed (byte* pDestination = destination)
+                {
+                    error = NCryptDeriveKey(
+                        secretAgreement,
+                        BCryptNative.KeyDerivationFunction.Raw,
+                        IntPtr.Zero,
+                        pDestination,
+                        destination.Length,
+                        out localWritten,
+                        flags);
+                }
+            }
 
             switch (error)
             {

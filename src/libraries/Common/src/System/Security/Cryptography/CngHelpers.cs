@@ -340,7 +340,9 @@ namespace System.Security.Cryptography
 
         internal static CngKey Duplicate(this SafeNCryptKeyHandle keyHandle, bool isEphemeral)
         {
+#pragma warning disable CA1416 // only supported on: 'windows'
             return CngKey.Open(keyHandle, isEphemeral ? CngKeyHandleOpenOptions.EphemeralKey : CngKeyHandleOpenOptions.None);
+#pragma warning restore CA1416 // only supported on: 'windows'
         }
 
         internal static CngKey Duplicate(this CngKey key)
