@@ -10169,12 +10169,12 @@ calli_end:
 
 						/*
 						 * Reached only in AOT. After lowering the field resolution failure into a runtime
-						 * throw, consume any pending metadata error as well. Memberref field resolution can
-						 * report MissingField/BadImage directly through cfg->error without setting
-						 * cfg->exception_type, and leaving it live lets an accepted inline trip the
-						 * inline_method () cfg->error assert later on.
+						 * throw, consume the expected recoverable metadata errors as well. Memberref field
+						 * resolution can report MissingField/BadImage directly through cfg->error without
+						 * setting cfg->exception_type, and leaving one of those live lets an accepted inline
+						 * trip the inline_method () cfg->error assert later on.
 						 */
-						if (!is_ok (cfg->error))
+						if (cfg->error->error_code == MONO_ERROR_BAD_IMAGE || cfg->error->error_code == MONO_ERROR_MISSING_FIELD)
 							clear_cfg_error (cfg);
 
 						// We need to push a dummy value onto the stack, respecting the intended type.
