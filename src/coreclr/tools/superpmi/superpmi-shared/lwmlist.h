@@ -138,8 +138,6 @@ LWM(GetTokenTypeAsHandle, GetTokenTypeAsHandleValue, DWORDLONG)
 LWM(GetTypeForBox, DWORDLONG, DWORDLONG)
 LWM(GetTypeForPrimitiveValueClass, DWORDLONG, DWORD)
 LWM(GetTypeForPrimitiveNumericClass, DWORDLONG, DWORD)
-LWM(GetUnboxedEntry, DWORDLONG, DLD);
-LWM(GetInstantiatedEntry, DWORDLONG, Agnostic_GetInstantiatedEntryResult);
 LWM(GetAsyncOtherVariant, DWORDLONG, DLD);
 LWM(GetUnBoxHelper, DWORDLONG, DWORD)
 LWM(GetRuntimeTypePointer, DWORDLONG, DWORDLONG)
