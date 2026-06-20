@@ -519,9 +519,8 @@ namespace System.Reflection.PortableExecutable
             return checksum + (uint)peImage.Count;
         }
 
-        private static void AddToChecksum(ArraySegment<byte> bytes, ref uint checksum, ref int pendingByte)
+        private static void AddToChecksum(ReadOnlySpan<byte> segment, ref uint checksum, ref int pendingByte)
         {
-            ReadOnlySpan<byte> segment = bytes.AsSpan();
             if (segment.IsEmpty)
             {
                 return;
