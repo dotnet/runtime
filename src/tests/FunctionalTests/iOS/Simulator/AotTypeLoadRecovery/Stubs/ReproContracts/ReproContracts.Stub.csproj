@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AssemblyName>ReproContracts</AssemblyName>
+    <RootNamespace>ReproContracts</RootNamespace>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsTestProject>false</IsTestProject>
+    <IsFunctionalTest>false</IsFunctionalTest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Placeholder.cs" />
+  </ItemGroup>
+</Project>

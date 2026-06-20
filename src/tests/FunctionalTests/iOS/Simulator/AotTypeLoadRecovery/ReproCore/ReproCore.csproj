@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <AssemblyName>ReproCore</AssemblyName>
+    <RootNamespace>ReproCore</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsTestProject>false</IsTestProject>
+    <IsFunctionalTest>false</IsFunctionalTest>
+    <OutputPath>$([MSBuild]::NormalizeDirectory('$(BaseOutputPath)', '$(Configuration)', '$(TargetFramework)'))</OutputPath>
+    <IntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(BaseIntermediateOutputPath)', '$(Configuration)', '$(TargetFramework)'))</IntermediateOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AotTypeLoadRecoveryHarness.cs" />
+    <Compile Include="StorePathVariant.cs" />
+    <Compile Include="InitObjTypeLoadVariant.cs" />
+    <Compile Include="LoadSideInlineVariant.cs" />
+    <ProjectReference Include="..\Contracts\ReproContracts\ReproContracts.Contract.csproj" />
+  </ItemGroup>
+</Project>

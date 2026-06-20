@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="MonoForceInterpreter">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <StartupObject>Program</StartupObject>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <MonoForceInterpreter>false</MonoForceInterpreter>
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <TestRuntime>true</TestRuntime>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
+    <MainLibraryFileName>iOS.Simulator.AotTypeLoadRecovery.Test.dll</MainLibraryFileName>
+    <IncludesTestRunner>false</IncludesTestRunner>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <iOSLikeDedup Condition="'$(iOSLikeDedup)' == ''">true</iOSLikeDedup>
+    <_AotTypeLoadRecoveryContractOutputDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ReproContracts.Contract', '$(Configuration)', '$(TargetFramework)'))</_AotTypeLoadRecoveryContractOutputDir>
+    <_AotTypeLoadRecoveryReproCoreOutputDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ReproCore', '$(Configuration)', '$(TargetFramework)'))</_AotTypeLoadRecoveryReproCoreOutputDir>
+    <_AotTypeLoadRecoveryStubOutputDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ReproContracts.Stub', '$(Configuration)', '$(TargetFramework)'))</_AotTypeLoadRecoveryStubOutputDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="AotTypeLoadRecoveryProbe.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Contracts\ReproContracts\ReproContracts.Contract.csproj" ReferenceOutputAssembly="false" Private="false" />
+    <ProjectReference Include="ReproCore\ReproCore.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="Stubs\ReproContracts\ReproContracts.Stub.csproj" ReferenceOutputAssembly="false" Private="false" />
+    <Reference Include="ReproContracts" HintPath="$(_AotTypeLoadRecoveryContractOutputDir)ReproContracts.dll" />
+    <Reference Include="ReproCore" HintPath="$(_AotTypeLoadRecoveryReproCoreOutputDir)ReproCore.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AotTypeLoadRecoveryStubProject Include="Stubs\ReproContracts\ReproContracts.Stub.csproj" />
+  </ItemGroup>
+
+  <Target Name="AotTypeLoadRecoveryBuildAndSwapSourceStubs" BeforeTargets="_AppleAotCompile;_AOTCompile;_CreateR2RImages;_XamarinComputeIlcCompileInputs">
+    <MSBuild Projects="@(AotTypeLoadRecoveryStubProject)"
+             Targets="Build"
+             BuildInParallel="true"
+             RemoveProperties="RuntimeIdentifier;SelfContained;UseMonoRuntime;PublishAot;PublishReadyToRun;TargetOS;TargetArchitecture;TestRuntime;IsTestProject;IsFunctionalTest"
+             Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);RuntimeIdentifier=;SelfContained=false;PublishAot=false;PublishReadyToRun=false;TestRuntime=false;IsTestProject=false;IsFunctionalTest=false" />
+
+    <ItemGroup>
+      <_AotTypeLoadRecoveryStubArtifacts Include="$(_AotTypeLoadRecoveryStubOutputDir)ReproContracts.dll" />
+      <_AotTypeLoadRecoveryStubArtifacts Include="$(_AotTypeLoadRecoveryStubOutputDir)ReproContracts.pdb" Condition="Exists('$(_AotTypeLoadRecoveryStubOutputDir)ReproContracts.pdb')" />
+      <_AotTypeLoadRecoveryStubDestinations Include="$(IntermediateLinkDir)" Condition="'$(IntermediateLinkDir)' != '' and Exists('$(IntermediateLinkDir)ReproContracts.dll')" />
+      <_AotTypeLoadRecoveryStubDestinations Include="$(IntermediateOutputPath)linked\" Condition="'$(IntermediateLinkDir)' == '' and '$(IntermediateOutputPath)' != '' and Exists('$(IntermediateOutputPath)linked\ReproContracts.dll')" />
+      <_AotTypeLoadRecoveryStubDestinations Include="$(AppleBuildDir)" Condition="'$(AppleBuildDir)' != '' and Exists('$(AppleBuildDir)ReproContracts.dll')" />
+      <_AotTypeLoadRecoveryStubDestinations Include="$(PublishDir)" Condition="'$(PublishDir)' != '' and Exists('$(PublishDir)ReproContracts.dll')" />
+    </ItemGroup>
+
+    <Error Condition="!Exists('$(_AotTypeLoadRecoveryStubOutputDir)ReproContracts.dll')" Text="AotTypeLoadRecovery stub assembly was not produced at $(_AotTypeLoadRecoveryStubOutputDir)ReproContracts.dll." />
+    <Error Condition="'@(_AotTypeLoadRecoveryStubDestinations)' == ''" Text="AotTypeLoadRecovery could not find a published or linked ReproContracts.dll to swap before ahead-of-time compilation." />
+
+    <Copy SourceFiles="@(_AotTypeLoadRecoveryStubArtifacts)"
+          DestinationFolder="%(_AotTypeLoadRecoveryStubDestinations.Identity)"
+          SkipUnchangedFiles="false"
+          OverwriteReadOnlyFiles="true" />
+  </Target>
+</Project>
