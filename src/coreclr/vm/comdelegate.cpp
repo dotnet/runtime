@@ -1832,7 +1832,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         //                    or _invocationList points to a LoaderAllocator/DynamicResolver
         // we return the method desc for the invoke
         OBJECTREF innerDel = thisDel->GetInvocationList();
-        if (innerDel != NULL && innerDel->GetMethodTable()->IsArray() || count == DELEGATE_MARKER_UNMANAGEDFPTR)
+        if ((innerDel != NULL && innerDel->GetMethodTable()->IsArray()) || count == DELEGATE_MARKER_UNMANAGEDFPTR)
             pMethodHandle = FindDelegateInvokeMethod(thisDel->GetMethodTable());
         else
             pMethodHandle = GetMethodDescForOpenVirtualDelegate(thisDel);
