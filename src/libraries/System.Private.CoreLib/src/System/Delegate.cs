@@ -70,7 +70,7 @@ namespace System
 #if !NATIVEAOT
         protected virtual Delegate CombineImpl(Delegate? d) => throw new MulticastNotSupportedException(SR.Multicast_Combine);
 
-        protected virtual Delegate? RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
+        protected virtual Delegate? RemoveImpl(Delegate? d) => Equals(d) ? null : this;
 
         public virtual Delegate[] GetInvocationList() => [this];
 
