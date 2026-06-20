@@ -205,19 +205,22 @@ namespace System
 
         public sealed override int GetHashCode()
         {
-            if (IsUnmanagedFunctionPtr)
-                return HashCode.Combine(_methodPtr, _methodPtr);
-
-            if (IsMulticastOrUnmanagedOrOpenVirtual &&
-                TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
+            if (IsMulticastOrUnmanagedOrOpenVirtual)
             {
-                int hash = 0;
-                foreach (MulticastDelegate multicastDelegate in invocations)
+                if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
                 {
-                    hash = hash * 33 + multicastDelegate.GetHashCode();
+                    int hash = 0;
+                    foreach (MulticastDelegate multicastDelegate in invocations)
+                    {
+                        hash = hash * 33 + multicastDelegate.GetHashCode();
+                    }
+                    return hash;
                 }
 
-                return hash;
+                if (IsUnmanagedFunctionPtr)
+                {
+                    return HashCode.Combine(_methodPtr, _methodPtr);
+                }
             }
 
             int hashCode = MethodDesc.GetHashCode();
