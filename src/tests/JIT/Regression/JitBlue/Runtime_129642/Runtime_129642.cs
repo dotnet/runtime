@@ -13,6 +13,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using Xunit;
 
+namespace Runtime_129642;
+
 public static class Runtime_129642
 {
     private static readonly ulong[] s_table = CreateTable();
