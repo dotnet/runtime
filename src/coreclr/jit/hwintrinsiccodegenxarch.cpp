@@ -2296,7 +2296,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 assert(instOptions == INS_OPTS_NONE);
 
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
-                emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
+                emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Desc.GetReg(), /* canSkip */ true);
             }
             break;
         }
