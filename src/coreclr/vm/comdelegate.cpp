@@ -1827,36 +1827,15 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     {
         // this is one of the following:
         // - multicast - _invocationList is Array && _invocationCount != 0
-        // - unamanaged ftn ptr - _invocationList == NULL && _invocationCount == -1
+        // - unmanaged ftn ptr - _invocationList == NULL && _invocationCount == -1
         // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
         //                    or _invocationList points to a LoaderAllocator/DynamicResolver
         // we return the method desc for the invoke
-        bool fOpenVirtualDelegate = false;
         OBJECTREF innerDel = thisDel->GetInvocationList();
-        if (innerDel != NULL)
-        {
-            MethodTable *pMT = innerDel->GetMethodTable();
-            if (pMT->IsDelegate())
-                return GetMethodDesc(innerDel);
-            if (!pMT->IsArray())
-            {
-                // must be a virtual one
-                fOpenVirtualDelegate = true;
-            }
-        }
-        else
-        {
-            if (count != DELEGATE_MARKER_UNMANAGEDFPTR)
-            {
-                // must be a virtual one
-                fOpenVirtualDelegate = true;
-            }
-        }
-
-        if (fOpenVirtualDelegate)
-            pMethodHandle = GetMethodDescForOpenVirtualDelegate(thisDel);
-        else
+        if (innerDel != NULL && innerDel->GetMethodTable()->IsArray() || count == DELEGATE_MARKER_UNMANAGEDFPTR)
             pMethodHandle = FindDelegateInvokeMethod(thisDel->GetMethodTable());
+        else
+            pMethodHandle = GetMethodDescForOpenVirtualDelegate(thisDel);
     }
     else
     {
@@ -1877,44 +1856,6 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     thisDel->SetMethodDesc(pMethodHandle);
 
     return pMethodHandle;
-}
-
-OBJECTREF COMDelegate::GetTargetObject(OBJECTREF obj)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF targetObject = NULL;
-
-    DELEGATEREF thisDel = (DELEGATEREF) obj;
-
-    if (thisDel->GetInvocationCount() != 0)
-    {
-        // this is one of the following:
-        // - multicast
-        // - unmanaged ftn ptr
-        // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
-        //                    or _invocationList points to a LoaderAllocator/DynamicResolver
-        OBJECTREF innerDel = thisDel->GetInvocationList();
-        if (innerDel != NULL)
-        {
-            MethodTable *pMT = innerDel->GetMethodTable();
-            if (pMT->IsDelegate())
-            {
-                targetObject = GetTargetObject(innerDel);
-            }
-        }
-    }
-
-    if (targetObject == NULL)
-        targetObject = thisDel->GetTarget();
-
-    return targetObject;
 }
 
 BOOL COMDelegate::IsTrueMulticastDelegate(OBJECTREF delegate)
