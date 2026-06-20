@@ -1818,15 +1818,17 @@ void Compiler::fgDebugCheckTryFinallyExits()
 //
 // Notes:
 //    Walks the EH table; for each entry whose try entry is not in the DFS
-//    reachable set, clears the artificial bbRefs and BBF_DONT_REMOVE on the
-//    try/filter/handler entry blocks so they become candidates for the normal
-//    dead-block removal pass (fgRemoveBlocksOutsideDfsTree). After that runs,
-//    drops the EH table entries whose blocks have been removed.
+//    reachable set: retargets any callfinally pairs that target the handler
+//    to its continuation, unprotects every block in the try/filter/handler,
+//    clears stale tryIndex/hndIndex on those blocks, and drops the EH table
+//    entry. After all dead entries are dropped, recomputes the DFS and runs
+//    fgRemoveBlocksOutsideDfsTree to delete the now-unreachable blocks.
 //
-//    The standard DFS is already EH-aware (AllSuccessorEnumerator visits
-//    EH successors), so try-reachability implies filter/handler/finally
-//    reachability and a simple m_dfsTree->Contains(ebdTryBeg) check is
-//    sufficient.
+//    The standard DFS is EH-aware (AllSuccessorEnumerator visits EH
+//    successors), so try-reachability normally implies handler/filter
+//    reachability; the callfinally retargeting handles the case where
+//    finally-cloning has left live callfinally pairs into an otherwise-dead
+//    handler.
 //
 PhaseStatus Compiler::fgRemoveUnreachableTry()
 {
