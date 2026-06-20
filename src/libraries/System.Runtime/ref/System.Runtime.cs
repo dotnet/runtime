@@ -4803,7 +4803,7 @@ namespace System
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.MulticastDelegate? d1, System.MulticastDelegate? d2) { throw null; }
         public static bool operator !=(System.MulticastDelegate? d1, System.MulticastDelegate? d2) { throw null; }
-        protected sealed override System.Delegate? RemoveImpl(System.Delegate value) { throw null; }
+        protected sealed override System.Delegate? RemoveImpl(System.Delegate? value) { throw null; }
     }
     public sealed partial class MulticastNotSupportedException : System.SystemException
     {
