@@ -107,6 +107,7 @@ namespace System.Security.Cryptography
 
         protected override void ExportPrivateKeyCore(Span<byte> destination)
         {
+            ThrowIfPrivateNeeded();
             ExportKey(true, destination);
             X25519WindowsHelpers.RefixPrivateScalar(destination, _privatePreservation);
         }
