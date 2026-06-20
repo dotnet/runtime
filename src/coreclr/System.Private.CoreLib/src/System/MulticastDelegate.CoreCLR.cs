@@ -291,6 +291,9 @@ namespace System
             return null;
         }
 
+        public sealed override bool Equals([NotNullWhen(true)] object? obj) => base.Equals(obj);
+        public sealed override int GetHashCode() => base.GetHashCode();
+
         // this should help inlining
         [DoesNotReturn]
         [DebuggerNonUserCode]
