@@ -296,9 +296,9 @@ namespace System
             //    the value we need to check for this case
             //
             MulticastDelegate? v = value as MulticastDelegate;
-
             if (v == null)
                 return this;
+
             if (v._invocationList is not object[])
             {
                 if (_invocationList is not object[] invocationList)
@@ -312,7 +312,7 @@ namespace System
                     int invocationCount = (int)_invocationCount;
                     for (int i = invocationCount; --i >= 0;)
                     {
-                        if (value.Equals(invocationList[i]))
+                        if (value!.Equals(invocationList[i]))
                         {
                             if (invocationCount == 2)
                             {
