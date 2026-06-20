@@ -166,12 +166,14 @@
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.7</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- emscripten workload package when testing workloads -->
-    <!-- TEMPORARY: pinned to the staged emsdk 5.0.6 transport in the general-testing feed (only 11.0.0-preview.6.26314.102 exists there).
-         Repin to the production .NET 11 emsdk 5.0.6 transport (and drop the general-testing feed) before merge. See dotnet/runtime#113786.
-         Do NOT revert to $(MicrosoftDotNetApiCompatTaskPackageVersion): merges from main bump that past the staged build and break restore (NU1102). -->
+    <!-- TEMPORARY: pinned to the staged emsdk 5.0.6 workload manifest value in the general-testing feed (only 11.0.0-preview.6.26314.102 exists there).
+         Repin to the production .NET 11 emsdk 5.0.6 version (and drop the general-testing feed) before merge. See dotnet/runtime#113786. -->
     <MicrosoftNETRuntimeEmscriptenVersion>11.0.0-preview.6.26314.102</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- we're using MicrosoftNETCoreAppRefPackageVersion since the emsdk package ID contains a changing version. This one uses runtime version numbers.  -->
-    <EmsdkPackageVersion>$(MicrosoftNETCoreAppRefPackageVersion)</EmsdkPackageVersion>
+    <!-- TEMPORARY: pinned to the staged emsdk 5.0.6 packages (Microsoft.NET.Runtime.Emscripten.5.0.6.Cache/Sdk.*) in the general-testing feed, which only
+         exist at 11.0.0-preview.6.26314.102. Do NOT restore to $(MicrosoftNETCoreAppRefPackageVersion): merges from main bump it past the staged build
+         and break native build restore (NU1102). Repin to the production .NET 11 emsdk 5.0.6 transport (and drop the general-testing feed) before merge. -->
+    <EmsdkPackageVersion>11.0.0-preview.6.26314.102</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
     <EmsdkVersion>5.0.6</EmsdkVersion>
