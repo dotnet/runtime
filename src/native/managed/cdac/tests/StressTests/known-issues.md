@@ -68,7 +68,7 @@ need to be handled — that case currently isn't reachable because
   more structured mechanism (e.g., ETW events or StressLog) for better
   tooling integration and reduced I/O overhead during stress runs.
 
-## Known intermittent failure: GC hole during EventSource cctor on x86
+## Known intermittent failure: x86 stress flake (cDAC EnumGcRefs misses callee-saved register refs during EH-rich startup)
 
 Pattern (~20% of full x86 suite runs trigger this on at least one
 debuggee):
@@ -89,27 +89,42 @@ Signature: the RT-only refs are concentrated in callee-saved registers
 `RuntimeType.GetNestedType` -> `RuntimeType.SplitName`. The frames
 otherwise unwind cleanly and surrounding frames match.
 
-This is **not** a cDAC bug introduced by x86 stack-walk enablement: it
-is the pre-existing GC-hole reported in
-[#129545](https://github.com/dotnet/runtime/issues/129545) /
-[#129546](https://github.com/dotnet/runtime/issues/129546). A GC-ref
-live in a callee-saved register across a call that throws
-`TypeLoadException` from the callee's prestub is mis-recovered during a
-GC stackwalk in exception dispatch -- the `PrestubMethodFrame` (holding
-it in its `TransitionBlock`) is popped and the caller is scanned as
-'active' with a stale context. The runtime's *runtime-side* GC scanner
-sees the refs (via the original liveness reporting at the call site);
-the runtime's *DAC-side* GC scanner (which cDAC mirrors) does not.
+x86-only -- x64 and arm64 stress runs are consistently clean. This is
+not the previously-tracked x64 GC-stress crashes #129545/#129546
+(those are completely different crashes in `MethodTable::Validate`
+during managed exception unwind).
 
-Repro flakiness is timing-dependent: whether the first cdacstress
-ALLOC trigger fires inside the affected window during the
-`EventSource` first-use cctor cascade. Once `EventSource` is
-initialized the issue disappears for the rest of the run.
+Investigation so far:
+- `HasFrameBeenUnwoundByAnyActiveException` is NOT the cause: across
+  ~77k invocations during a reproduced flake it returned `false` every
+  time, matching the runtime's behavior.
+- `EnumerateLiveSlots` returns 0 slots for the affected frames at the
+  cDAC-computed `relativeOffset` (small values like 0x2d / 0x1f / 0x14).
+  The runtime sees ESI/EDI live at those frames -- so either cDAC's IP
+  differs from the runtime's view of the frame, or our partially-
+  interruptible call-site matching has an off-by-one when the trigger
+  fires between (rather than exactly at) call sites.
 
-Tracking: this should be resolved together with #129545/#129546 once
-the runtime stops popping `PrestubMethodFrame` before the GC stackwalk
-completes. No cDAC-side workaround is appropriate -- cDAC is correctly
-mirroring the DAC-side scanner.
+Most likely root cause is one of:
+1. For partially-interruptible methods, our `activeCallSite` match
+   requires `transition.Offset == instructionOffset` exactly. If the
+   IP cDAC reads for a frame mid-EH-dispatch is not the call-site
+   return-address offset (e.g., it's the call-instruction offset or
+   somewhere mid-instruction), the match fails and no register refs
+   are emitted.
+2. The runtime tracks callee-saved register values across unwinds via
+   REGDISPLAY's `pCallerContext`; cDAC re-unwinds via
+   `Context.Clone().Unwind()` each call. A divergent context state
+   would produce a divergent IP and thus a divergent live-mask.
+3. Some x86-specific frame-type handling difference between cDAC's
+   `StackWalk_1` iteration and the runtime's `StackWalk` during the
+   EH-dispatch-of-managed-exceptions path.
+
+Resolving this requires a follow-up investigation that compares the
+IPs cDAC and the runtime see for these specific frames during a
+reproduced flake (e.g., by adding per-frame instruction-pointer logging
+to both sides of the stress harness and diffing them). It is x86-only,
+flaky, and not gated on this PR.
 
 ## Log Format
 
