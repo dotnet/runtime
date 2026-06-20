@@ -352,19 +352,27 @@ internal class GcScanner
 
     private TargetPointer AddressFromGCRefMapPos(Data.TransitionBlock tb, int pos)
     {
-        // x86's TransitionBlock lays its two argument registers (EDX/ECX) out in
-        // ENUM_ARGUMENT_REGISTERS_BACKWARD order, so GCRefMap pos 0/1 map to
-        // ARGUMENTREGISTERS_SIZE - (pos+1) * PointerSize within the arg-regs area.
-        // Stack args (pos >= NUM_ARGUMENT_REGISTERS) follow forward immediately after.
+        // x86 needs special handling because:
+        //  - m_argumentRegisters is the FIRST field of TransitionBlock (offset 0)
+        //    and is laid out in ENUM_ARGUMENT_REGISTERS_BACKWARD order, so the
+        //    first two GCRefMap positions map to reverse offsets within ArgRegs.
+        //  - Stack args begin at sizeof(TransitionBlock) (= OffsetOfArgs), after
+        //    CalleeSavedRegisters + ReturnAddress. There is a 20-byte gap between
+        //    the arg-regs area and OffsetOfArgs that is NOT walked by GCRefMap
+        //    positions, so `FirstGCRefMapSlot + pos * PointerSize` (the default
+        //    on other arches) is wrong for pos >= NUM_ARGUMENT_REGISTERS.
         // Mirrors native OffsetFromGCRefMapPos (frames.cpp).
         if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X86)
         {
             const int x86NumArgRegs = 2;
             int x86ArgRegsSize = x86NumArgRegs * _target.PointerSize;
-            int offset = pos < x86NumArgRegs
-                ? x86ArgRegsSize - (pos + 1) * _target.PointerSize
-                : pos * _target.PointerSize;
-            return new TargetPointer(tb.FirstGCRefMapSlot.Value + (ulong)offset);
+            if (pos < x86NumArgRegs)
+            {
+                int offset = x86ArgRegsSize - (pos + 1) * _target.PointerSize;
+                return new TargetPointer(tb.ArgumentRegisters.Value + (ulong)offset);
+            }
+            int stackOffset = (pos - x86NumArgRegs) * _target.PointerSize;
+            return new TargetPointer(tb.OffsetOfArgs.Value + (ulong)stackOffset);
         }
         return new TargetPointer(tb.FirstGCRefMapSlot.Value + (ulong)(pos * _target.PointerSize));
     }
