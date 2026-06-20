@@ -87,8 +87,9 @@ public class GenerateWasmBootJson : Task
     public bool FingerprintAssets { get; set; }
 
     /// <summary>
-    /// Payload/table sizes for each webcil (keyed by file name), produced by ConvertDllsToWebcil.
-    /// Emitted into the boot config so the runtime loader doesn't parse the wasm or call getWebcilSize.
+    /// Payload/table sizes for each webcil (keyed by the logical assembly name, e.g. "App.dll"),
+    /// produced by ConvertDllsToWebcil. Emitted into the boot config so the runtime loader doesn't
+    /// parse the wasm or call getWebcilSize.
     /// </summary>
     public ITaskItem[] WebcilSizes { get; set; }
 
@@ -133,8 +134,8 @@ public class GenerateWasmBootJson : Task
         // boot config, letting the loader stream-instantiate instead of buffering and parsing.
         var r2rSizes = new Dictionary<string, (int tableSize, int payloadSize)>();
 
-        // Webcil sizes computed by ConvertDllsToWebcil, keyed by webcil route (file name, or
-        // "{culture}/{name}.wasm" for satellites so cultures don't collide).
+        // Webcil sizes computed by ConvertDllsToWebcil, keyed by the logical assembly name (file
+        // name, or "{culture}/{name}.dll" for satellites so cultures don't collide).
         var webcilSizeByName = new Dictionary<string, (int tableSize, int payloadSize)>(StringComparer.OrdinalIgnoreCase);
         if (WebcilSizes != null)
         {
@@ -260,8 +261,9 @@ public class GenerateWasmBootJson : Task
 
                 // Keys for looking up the webcil payload/table sizes (see below). Satellites share a
                 // file name across cultures, so qualify by culture to avoid collisions: the lookup key
-                // matches ConvertDllsToWebcil's WebcilSizes ItemSpec, and the store key matches how
-                // BootJsonBuilderHelper resolves r2rSizes per (culture subfolder, route).
+                // matches ConvertDllsToWebcil's WebcilSizes ItemSpec (the logical assembly name), and
+                // the store key matches how BootJsonBuilderHelper resolves r2rSizes per (culture
+                // subfolder, route).
                 string webcilCulture = string.Equals("Culture", assetTraitName, StringComparison.OrdinalIgnoreCase) ? assetTraitValue : null;
                 string webcilSizeLookupKey = webcilCulture != null ? webcilCulture + "/" + resourceName : resourceName;
                 string r2rSizeStoreKey = webcilCulture != null ? webcilCulture + "/" + resourceRoute : resourceRoute;
