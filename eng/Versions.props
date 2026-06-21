@@ -171,9 +171,13 @@
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.7</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- emscripten workload package when testing workloads -->
-    <!-- TEMPORARY: pinned to the staged emsdk 5.0.6 workload manifest value in the general-testing feed (only 11.0.0-preview.6.26314.102 exists there).
+    <!-- TEMPORARY: pinned to the staged emsdk 5.0.6 workload manifest in the general-testing feed.
+         NOTE: this is the emscripten workload MANIFEST version and uses the sdk feature-band format (11.0.100-preview.6.*),
+         NOT the runtime format (11.0.0-preview.6.*) used by EmsdkPackageVersion below; both share the 26314.102 build stamp.
+         Do NOT restore to $(MicrosoftDotNetApiCompatTaskPackageVersion): merges from main bump it past the staged manifest
+         and break the workload install (NU1102 on Microsoft.NET.Workload.Emscripten.Current.Manifest-11.0.100-preview.6).
          Repin to the production .NET 11 emsdk 5.0.6 version (and drop the general-testing feed) before merge. See dotnet/runtime#113786. -->
-    <MicrosoftNETRuntimeEmscriptenVersion>11.0.0-preview.6.26314.102</MicrosoftNETRuntimeEmscriptenVersion>
+    <MicrosoftNETRuntimeEmscriptenVersion>11.0.100-preview.6.26314.102</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- we're using MicrosoftNETCoreAppRefPackageVersion since the emsdk package ID contains a changing version. This one uses runtime version numbers.  -->
     <!-- TEMPORARY: pinned to the staged emsdk 5.0.6 packages (Microsoft.NET.Runtime.Emscripten.5.0.6.Cache/Sdk.*) in the general-testing feed, which only
          exist at 11.0.0-preview.6.26314.102. Do NOT restore to $(MicrosoftNETCoreAppRefPackageVersion): merges from main bump it past the staged build
