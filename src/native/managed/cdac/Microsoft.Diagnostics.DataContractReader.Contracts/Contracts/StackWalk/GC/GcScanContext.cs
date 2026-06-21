@@ -10,6 +10,7 @@ internal class GcScanContext
 {
 
     private readonly Target _target;
+    private readonly bool _isArm32;
     public bool ResolveInteriorPointers { get; }
     public List<StackRefData> StackRefs { get; } = [];
     public TargetPointer StackPointer { get; private set; }
@@ -24,13 +25,19 @@ internal class GcScanContext
     public GcScanContext(Target target, bool resolveInteriorPointers)
     {
         _target = target;
+        _isArm32 = target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Arm;
         ResolveInteriorPointers = resolveInteriorPointers;
     }
 
     public void UpdateScanContext(TargetPointer sp, TargetPointer ip, TargetPointer frame, StackRefData.SourceTypes? sourceTypeOverride = null)
     {
         StackPointer = sp;
-        InstructionPointer = ip;
+        // On ARM32 the control PC carries the Thumb bit (LSB) to indicate execution mode.
+        // The native runtime applies PCODEToPINSTR (utilcode.h) before reporting the IP as
+        // a StackRefData.Source so consumers compare data addresses, not PCODE values. Mirror
+        // that here: without this mask, every cDAC ref on arm32 would be keyed at IP|1 while
+        // the runtime reports at IP, producing universal mismatches in GC root verification.
+        InstructionPointer = _isArm32 ? new TargetPointer(ip.Value & ~1ul) : ip;
         Frame = frame;
         _sourceTypeOverride = sourceTypeOverride;
     }
