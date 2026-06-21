@@ -9,16 +9,23 @@ using System.Threading;
 
 namespace System.Runtime.InteropServices
 {
-    internal static class ReferenceTrackerHost
+    internal readonly unsafe struct ReferenceTrackerHost
     {
         [FixedAddressValueType]
-        private static readonly unsafe ReferenceTrackerHostObject s_globalHostServices =
+        private static readonly ReferenceTrackerHost s_instance =
             new((IReferenceTrackerHostVftbl*)Unsafe.AsPointer(in HostServices.Vftbl));
 
-        // Called when an IReferenceTracker instance is found.
-        public static unsafe void SetReferenceTrackerHost(IntPtr trackerManager)
+        private readonly IReferenceTrackerHostVftbl* _vftbl;
+
+        private ReferenceTrackerHost(IReferenceTrackerHostVftbl* vftbl)
         {
-            IReferenceTrackerManager.SetReferenceTrackerHost(trackerManager, (IntPtr)Unsafe.AsPointer(in s_globalHostServices));
+            _vftbl = vftbl;
+        }
+
+        // Called when an IReferenceTracker instance is found.
+        public static void SetReferenceTrackerHost(IntPtr trackerManager)
+        {
+            IReferenceTrackerManager.SetReferenceTrackerHost(trackerManager, (IntPtr)Unsafe.AsPointer(in s_instance));
         }
 
 #pragma warning disable IDE0060, CS3016
@@ -161,16 +168,6 @@ namespace System.Runtime.InteropServices
             public delegate* unmanaged[MemberFunction]<IntPtr, IntPtr, IntPtr*, int> GetTrackerTarget;
             public delegate* unmanaged[MemberFunction]<IntPtr, long, int> AddMemoryPressure;
             public delegate* unmanaged[MemberFunction]<IntPtr, long, int> RemoveMemoryPressure;
-        }
-
-        private readonly unsafe struct ReferenceTrackerHostObject
-        {
-            public readonly IReferenceTrackerHostVftbl* Vftbl;
-
-            public ReferenceTrackerHostObject(IReferenceTrackerHostVftbl* vftbl)
-            {
-                Vftbl = vftbl;
-            }
         }
 
         private static class HostServices
