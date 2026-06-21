@@ -1719,6 +1719,14 @@ bool interceptor_ICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buff
     return result;
 }
 
+CORINFO_OBJECT_HANDLE interceptor_ICJI::tryCreateStringObject(uint16_t* str, int length)
+{
+    mc->cr->AddCall("tryCreateStringObject");
+    CORINFO_OBJECT_HANDLE result = original_ICorJitInfo->tryCreateStringObject(str, length);
+    mc->recTryCreateStringObject(str, length, result);
+    return result;
+}
+
 // return the class handle for the current value of a static field
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {

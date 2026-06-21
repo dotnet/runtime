@@ -169,6 +169,7 @@ namespace Internal.JitInterface
                 s_callbacks.getCallInfo = &_getCallInfo;
                 s_callbacks.getStaticFieldContent = &_getStaticFieldContent;
                 s_callbacks.getObjectContent = &_getObjectContent;
+                s_callbacks.tryCreateStringObject = &_tryCreateStringObject;
                 s_callbacks.getStaticFieldCurrentClass = &_getStaticFieldCurrentClass;
                 s_callbacks.getVarArgsHandle = &_getVarArgsHandle;
                 s_callbacks.constructStringLiteral = &_constructStringLiteral;
@@ -352,6 +353,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_RESOLVED_TOKEN*, CORINFO_METHOD_STRUCT_*, CORINFO_CALLINFO_FLAGS, CORINFO_CALL_INFO*, void> getCallInfo;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte*, int, int, byte, byte> getStaticFieldContent;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, byte*, int, int, byte> getObjectContent;
+            public delegate* unmanaged<IntPtr, IntPtr*, ushort*, int, CORINFO_OBJECT_STRUCT_*> tryCreateStringObject;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte*, CORINFO_CLASS_STRUCT_*> getStaticFieldCurrentClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, CORINFO_METHOD_STRUCT_*, void**, IntPtr> getVarArgsHandle;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_MODULE_STRUCT_*, mdToken, void**, InfoAccessType> constructStringLiteral;
@@ -2578,6 +2580,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.getObjectContent(obj, buffer, bufferSize, valueOffset) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static CORINFO_OBJECT_STRUCT_* _tryCreateStringObject(IntPtr thisHandle, IntPtr* ppException, ushort* str, int length)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.tryCreateStringObject(str, length);
             }
             catch (Exception ex)
             {

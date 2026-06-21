@@ -4068,6 +4068,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             }
 
             case NI_System_ArgumentNullException_ThrowIfNull:
+            case NI_System_String_Concat:
             case NI_System_String_FastAllocateString:
                 isSpecial = true;
                 break;
@@ -8303,6 +8304,14 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 
     GenTreeCall* call = callNode->AsCall();
 
+    // String.Concat is marked [Intrinsic] only so that it can be constant-folded during assertion
+    // propagation (NI_System_String_Concat). Keep it as a call rather than inlining its body so the
+    // fold has something to recognize, and to avoid the size bloat of inlining Concat everywhere.
+    if (call->IsSpecialIntrinsic(this, NI_System_String_Concat))
+    {
+        return;
+    }
+
     // Call might not have an inline candidate info yet (will be set by impMarkInlineCandidateHelper)
     // so we assume there is always a least one candidate:
     //
@@ -10809,6 +10818,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         if (strcmp(methodName, "Equals") == 0)
                         {
                             result = NI_System_String_Equals;
+                        }
+                        else if (strcmp(methodName, "Concat") == 0)
+                        {
+                            result = NI_System_String_Concat;
                         }
                         else if (strcmp(methodName, "FastAllocateString") == 0)
                         {

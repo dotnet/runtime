@@ -12608,6 +12608,57 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
 }
 
 /*********************************************************************/
+CORINFO_OBJECT_HANDLE CEEInfo::tryCreateStringObject(uint16_t* str, int length)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_OBJECT_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    // We can only hand the JIT a raw pointer to the string if it lives on the frozen object heap,
+    // where it is never moved or collected. Since frozen objects live for the lifetime of the
+    // process, we must not create them on behalf of a collectible (unloadable) context - otherwise
+    // the string would leak when that context is unloaded. This mirrors how string literals are only
+    // frozen for non-collectible loader allocators (see StringLiteralMap::GetStringLiteral).
+    if ((length >= 0) && ((DWORD)length <= CORINFO_String_MaxLength) && ((length == 0) || (str != nullptr)) &&
+        (m_pMethodBeingCompiled != NULL) && !m_pMethodBeingCompiled->IsCollectible())
+    {
+        GCX_COOP();
+
+        bool      isFrozen = false;
+        STRINGREF strObj   = AllocateString((DWORD)length, /* preferFrozenHeap */ true, &isFrozen);
+
+        // Only hand back the object if it actually landed on the frozen heap; never return a movable
+        // or collectible string instance to the JIT.
+        if (isFrozen && (strObj != NULL))
+        {
+            _ASSERTE(GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(OBJECTREFToObject(strObj)));
+
+            // The string is freshly allocated and not yet visible to anyone else, so it is safe
+            // to initialize its character buffer here. Frozen heap memory is zero-initialized,
+            // so the trailing null terminator is already in place. Use memcpyNoGCRefs (not plain
+            // memcpy) because the destination lives in a GC-registered (frozen) segment, which the
+            // checked GCSafeMemCpy guard would otherwise flag.
+            if (length > 0)
+            {
+                memcpyNoGCRefs(strObj->GetBuffer(), str, (size_t)length * sizeof(uint16_t));
+            }
+
+            result = (CORINFO_OBJECT_HANDLE)OBJECTREFToObject(strObj);
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
 CORINFO_CLASS_HANDLE CEECodeGenInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
                                                                 bool* pIsSpeculative)
 {

@@ -2227,6 +2227,42 @@ CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(CORINFO_OBJECT_HANDLE objPt
     return (CORINFO_CLASS_HANDLE)value;
 }
 
+// The input is a transient JIT-side buffer, so we key the record on a content hash of the
+// requested string (length + characters) rather than on the pointer value.
+static DWORDLONG HashStringObjectRequest(uint16_t* str, int length)
+{
+    DWORDLONG hash = 0xCBF29CE484222325ULL ^ (DWORDLONG)(DWORD)length; // FNV-1a offset basis
+    if (str != nullptr)
+    {
+        for (int i = 0; i < length; i++)
+        {
+            hash = (hash ^ (DWORDLONG)str[i]) * 0x100000001B3ULL;
+        }
+    }
+    return hash;
+}
+void MethodContext::recTryCreateStringObject(uint16_t* str, int length, CORINFO_OBJECT_HANDLE result)
+{
+    if (TryCreateStringObject == nullptr)
+        TryCreateStringObject = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key   = HashStringObjectRequest(str, length);
+    DWORDLONG value = CastHandle(result);
+    TryCreateStringObject->Add(key, value);
+    DEBUG_REC(dmpTryCreateStringObject(key, value));
+}
+void MethodContext::dmpTryCreateStringObject(DWORDLONG key, DWORDLONG value)
+{
+    printf("TryCreateStringObject key hash-%016" PRIX64 ", value res-%016" PRIX64 "", key, value);
+}
+CORINFO_OBJECT_HANDLE MethodContext::repTryCreateStringObject(uint16_t* str, int length)
+{
+    DWORDLONG key   = HashStringObjectRequest(str, length);
+    DWORDLONG value = LookupByKeyOrMiss(TryCreateStringObject, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpTryCreateStringObject(key, value));
+    return (CORINFO_OBJECT_HANDLE)value;
+}
+
 void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CorInfoHelpFunc         id,
                                            CORINFO_METHOD_HANDLE   callerHandle,

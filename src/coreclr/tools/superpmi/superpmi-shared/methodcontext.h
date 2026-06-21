@@ -302,6 +302,10 @@ public:
     void dmpGetObjectType(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetObjectType(CORINFO_OBJECT_HANDLE objPtr);
 
+    void recTryCreateStringObject(uint16_t* str, int length, CORINFO_OBJECT_HANDLE result);
+    void dmpTryCreateStringObject(DWORDLONG key, DWORDLONG value);
+    CORINFO_OBJECT_HANDLE repTryCreateStringObject(uint16_t* str, int length);
+
     void recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 CorInfoHelpFunc         id,
                                 CORINFO_METHOD_HANDLE   callerHandle,
@@ -1222,6 +1226,7 @@ enum mcPackets
     Packet_GetWasmTypeSymbol = 235,
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
+    Packet_TryCreateStringObject = 238,
 };
 
 void SetDebugDumpVariables();

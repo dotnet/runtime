@@ -1473,6 +1473,16 @@ bool WrapICorJitInfo::getObjectContent(
     return temp;
 }
 
+CORINFO_OBJECT_HANDLE WrapICorJitInfo::tryCreateStringObject(
+          uint16_t* str,
+          int length)
+{
+    API_ENTER(tryCreateStringObject);
+    CORINFO_OBJECT_HANDLE temp = wrapHnd->tryCreateStringObject(str, length);
+    API_LEAVE(tryCreateStringObject);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
           bool* pIsSpeculative)

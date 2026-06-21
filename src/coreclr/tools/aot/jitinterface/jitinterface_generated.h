@@ -160,6 +160,7 @@ struct JitInterfaceCallbacks
     void (* getCallInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult);
     bool (* getStaticFieldContent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
     bool (* getObjectContent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset);
+    CORINFO_OBJECT_HANDLE (* tryCreateStringObject)(void * thisHandle, CorInfoExceptionClass** ppException, uint16_t* str, int length);
     CORINFO_CLASS_HANDLE (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
     CORINFO_VARARGS_HANDLE (* getVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection);
     InfoAccessType (* constructStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned int metaTok, void** ppValue);
@@ -1652,6 +1653,16 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->getObjectContent(_thisHandle, &pException, obj, buffer, bufferSize, valueOffset);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CORINFO_OBJECT_HANDLE tryCreateStringObject(
+          uint16_t* str,
+          int length)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CORINFO_OBJECT_HANDLE temp = _callbacks->tryCreateStringObject(_thisHandle, &pException, str, length);
     if (pException != nullptr) throw pException;
     return temp;
 }

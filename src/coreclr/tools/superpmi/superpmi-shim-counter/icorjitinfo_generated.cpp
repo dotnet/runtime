@@ -1215,6 +1215,14 @@ bool interceptor_ICJI::getObjectContent(
     return original_ICorJitInfo->getObjectContent(obj, buffer, bufferSize, valueOffset);
 }
 
+CORINFO_OBJECT_HANDLE interceptor_ICJI::tryCreateStringObject(
+          uint16_t* str,
+          int length)
+{
+    mcs->AddCall("tryCreateStringObject");
+    return original_ICorJitInfo->tryCreateStringObject(str, length);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
           bool* pIsSpeculative)

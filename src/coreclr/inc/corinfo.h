@@ -3387,6 +3387,14 @@ public:
             int                     valueOffset
             ) = 0;
 
+    // Try to create a frozen string object with the given UTF-16 contents. Returns a handle
+    // to the newly created object, or nullptr if it cannot be created (e.g. too big, frozen
+    // heap unavailable, or not supported by the current runtime, such as crossgen/NativeAOT).
+    virtual CORINFO_OBJECT_HANDLE tryCreateStringObject(
+            uint16_t*               str,
+            int                     length
+            ) = 0;
+
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed
     // static readonly fields, if there is a unique location for the static and the class
     // is already initialized.

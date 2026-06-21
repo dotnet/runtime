@@ -4752,5 +4752,11 @@ namespace Internal.JitInterface
         {
             throw new NotImplementedException("getSpecialCopyHelper");
         }
+
+        private CORINFO_OBJECT_STRUCT_* tryCreateStringObject(ushort* str, int length)
+        {
+            // Creating frozen string objects on the fly is not supported for crossgen/NativeAOT.
+            return null;
+        }
     }
 }

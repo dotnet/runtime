@@ -9112,11 +9112,20 @@ public:
     fgWalkResult optVNBasedFoldCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
     GenTree*     optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test);
     GenTree*     optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
-    GenTree*     optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
-    GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
+    GenTree*     optVNBasedFoldExpr(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
+    GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, Statement* stmt, GenTree* parent, GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call);
+    GenTree*     optVNBasedFoldExpr_Call_FastAllocateString(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+    GenTree*     optVNBasedFoldExpr_Call_StringConcat(GenTreeCall* call);
+    GenTree*     optCreateConstStringNode(uint16_t* buffer, int length, GenTreeCall* call);
+    bool         optExtractStringInitStore(GenTree*  tree,
+                                           ValueNum  resultVN,
+                                           ssize_t   byteLength,
+                                           ssize_t*  pByteOffset,
+                                           ssize_t*  pByteSize,
+                                           uint8_t** pData);
 
     AssertionIndex GetAssertionCount()
     {

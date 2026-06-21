@@ -628,6 +628,10 @@ bool getObjectContent(
           int bufferSize,
           int valueOffset) override;
 
+CORINFO_OBJECT_HANDLE tryCreateStringObject(
+          uint16_t* str,
+          int length) override;
+
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
           bool* pIsSpeculative) override;
