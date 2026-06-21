@@ -398,7 +398,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
     // check that HelperCallProperties are initialized
     assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
 
-    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo();
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //
@@ -2980,6 +2980,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // CONFIGURABLE_ARM_ABI
 
     opts.compScopeInfo = opts.compDbgInfo;
+
+#ifdef TARGET_WASM
+    // Wasm uses virtual registers that cannot be encoded in the
+    // ICorDebugInfo register scheme, and there is no native debugger
+    // to consume scope info, so disable it entirely.
+    opts.compScopeInfo = false;
+#endif
 
 #ifdef LATE_DISASM
     codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName,

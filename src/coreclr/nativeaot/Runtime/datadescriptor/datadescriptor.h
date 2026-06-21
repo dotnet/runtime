@@ -16,6 +16,8 @@
 #include "thread.h"
 #include "threadstore.h"
 
+#include "configure.h"
+
 #include <stdint.h>
 #include <stddef.h>
 

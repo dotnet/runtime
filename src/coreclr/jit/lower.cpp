@@ -8098,16 +8098,14 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
 {
     assert(divMod->OperIs(GT_UDIV, GT_UMOD));
 
-#if defined(USE_HELPERS_FOR_INT_DIV)
-    if (!varTypeIsIntegral(divMod->TypeGet()))
-    {
-        assert(!"unreachable: integral GT_UDIV/GT_UMOD should get morphed into helper calls");
-    }
-    assert(varTypeIsFloating(divMod->TypeGet()));
+#if USE_HELPERS_FOR_INT_DIV
+    assert(varTypeIsFloating(divMod->TypeGet()) &&
+           "unreachable: integral GT_UDIV/GT_UMOD should get morphed into helper calls");
 #endif // USE_HELPERS_FOR_INT_DIV
-#if defined(TARGET_ARM64)
+
+#if defined(TARGET_ARMARCH)
     assert(!divMod->OperIs(GT_UMOD));
-#endif // TARGET_ARM64
+#endif // TARGET_ARMARCH
 
     GenTree* dividend = divMod->gtGetOp1();
     GenTree* divisor  = divMod->gtGetOp2();
@@ -8415,9 +8413,10 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
     const var_types type = divMod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
 
-#if defined(USE_HELPERS_FOR_INT_DIV)
+#if USE_HELPERS_FOR_INT_DIV
     assert(!"unreachable: integral GT_DIV/GT_MOD should get morphed into helper calls");
 #endif // USE_HELPERS_FOR_INT_DIV
+
 #if defined(TARGET_ARM64)
     if (divMod->OperIs(GT_MOD) && divisor->IsIntegralConstPow2())
     {
@@ -8425,8 +8424,11 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         *nextNode = node->gtNext;
         return true;
     }
-    assert(!node->OperIs(GT_MOD));
 #endif // TARGET_ARM64
+
+#if defined(TARGET_ARMARCH)
+    assert(!node->OperIs(GT_MOD));
+#endif // TARGET_ARMARCH
 
 #if defined(TARGET_WASM)
     // TODO-Wasm: evaluate if this is worth doing for Wasm, since some cases will increase
