@@ -877,12 +877,13 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         goto DO_RETURN;
     }
 
-    if (state->returnKind != header.returnKind)
+    if ((state->returnKind != header.returnKind) || (state->isAsync != header.isAsync))
     {
         state->returnKind = header.returnKind;
+        state->isAsync    = header.isAsync;
         codeSet           = 2; // Two byte encoding
-        encoding          = header.returnKind;
-        _ASSERTE(encoding <= SET_RET_KIND_MAX);
+        encoding          = header.returnKind | (header.isAsync ? 4 : 0);
+        _ASSERTE(encoding <= SET_RET_KIND_MAX_V5);
         goto DO_RETURN;
     }
 
@@ -955,14 +956,14 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         {
             state->noGCRegionCnt = header.noGCRegionCnt;
             codeSet              = 2;
-            encoding             = (BYTE)(SET_NOGCREGIONS_CNT + header.noGCRegionCnt);
+            encoding             = (BYTE)(SET_NOGCREGIONS_CNT_V5 + header.noGCRegionCnt);
             goto DO_RETURN;
         }
         else if (state->noGCRegionCnt != HAS_NOGCREGIONS)
         {
             state->noGCRegionCnt = HAS_NOGCREGIONS;
             codeSet              = 2;
-            encoding             = FFFF_NOGCREGION_CNT;
+            encoding             = FFFF_NOGCREGION_CNT_V5;
             goto DO_RETURN;
         }
     }
@@ -1187,9 +1188,9 @@ static int measureDistance(const InfoHdr& header, const InfoHdrSmall* p, int clo
             return distance;
     }
 
-    if (p->returnKind != header.returnKind)
+    if ((p->returnKind != header.returnKind) || (p->isAsync != header.isAsync))
     {
-        // Setting the ReturnKind requires two bytes of encoding.
+        // Setting the ReturnKind/isAsync requires two bytes of encoding.
         distance += 2;
         if (distance >= closeness)
             return distance;
@@ -1570,8 +1571,9 @@ size_t GCInfo::gcInfoBlockHdrSave(
     ReturnKind returnKind = getReturnKind();
     _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
     _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
-    _ASSERTE(((int)returnKind <= (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
+    _ASSERTE(((int)returnKind <= (int)SET_RET_KIND_MAX_V5) && "ReturnKind has no legal encoding");
     header->returnKind = returnKind;
+    header->isAsync    = m_compiler->compIsAsync();
 
     header->gsCookieOffset = INVALID_GS_COOKIE_OFFSET;
     if (m_compiler->getNeedsGSSecurityCookie())
@@ -2124,21 +2126,35 @@ unsigned PendingArgsStack::pasEnumGCoffs(unsigned iter, unsigned* offs)
 // when reporting interruptible ranges.
 class NoGCRegionEncoder
 {
-    BYTE* dest;
+    BYTE*    dest;
+    unsigned lastSize    = 0;
+    unsigned lastEndOffs = -1;
 public:
-    size_t totalSize;
+    size_t totalSize = 0;
 
     NoGCRegionEncoder(BYTE* dest)
         : dest(dest)
-        , totalSize(0)
     {
     }
 
     // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
     bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
     {
-        totalSize += encodeUnsigned(dest == NULL ? NULL : dest + totalSize, igOffs);
-        totalSize += encodeUnsigned(dest == NULL ? NULL : dest + totalSize, igSize);
+        unsigned size;
+        if (igOffs == lastEndOffs) // Coalesce adjacent intervals by re-encoding the enlarged size.
+        {
+            totalSize -= encodeUnsigned(nullptr, lastSize);
+            size = lastSize + igSize;
+        }
+        else
+        {
+            totalSize += encodeUnsigned(dest == nullptr ? nullptr : dest + totalSize, igOffs);
+            size = igSize;
+        }
+        totalSize += encodeUnsigned(dest == nullptr ? nullptr : dest + totalSize, size);
+
+        lastSize    = size;
+        lastEndOffs = igOffs + igSize;
         return true;
     }
 };
@@ -4077,7 +4093,12 @@ void GCInfo::gcMakeRegPtrTable(
 {
     GCENCODER_WITH_LOGGING(gcInfoEncoderWithLog, gcInfoEncoder);
 
+    // TODO-WASM: Enable tracked GC slots for precise GC
+#ifdef TARGET_WASM
+    const bool noTrackedGCSlots = true;
+#else
     const bool noTrackedGCSlots = m_compiler->opts.MinOpts();
+#endif
 
     if (mode == MAKE_REG_PTR_MODE_ASSIGN_SLOTS)
     {
@@ -4113,7 +4134,9 @@ void GCInfo::gcMakeRegPtrTable(
                 // If it is pinned, it must be an untracked local.
                 assert(!varDsc->lvPinned || !varDsc->lvTracked);
 
-                if (varDsc->lvTracked || !varDsc->lvOnFrame)
+                // When noTrackedGCSlots is true (e.g. on wasm) tracked on-frame GC vars
+                // must be reported here as untracked, since gcVarPtrList is not populated.
+                if ((varDsc->lvTracked && !noTrackedGCSlots) || !varDsc->lvOnFrame)
                 {
                     continue;
                 }
@@ -4140,7 +4163,9 @@ void GCInfo::gcMakeRegPtrTable(
                 }
                 else
                 {
-                    if (varDsc->lvIsRegArg && varDsc->lvTracked)
+                    // When noTrackedGCSlots is true (e.g. on wasm) tracked register args
+                    // must fall through and be reported as untracked.
+                    if (varDsc->lvIsRegArg && varDsc->lvTracked && !noTrackedGCSlots)
                     {
                         // If this register-passed arg is tracked, then
                         // it has been allocated space near the other
@@ -4632,6 +4657,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
                                           regMaskSmall   byRefMask,
                                           regMaskSmall*  pPtrRegs)
 {
+#if HAS_FIXED_REGISTER_SET
     // Precondition: byRefMask is a subset of regMask.
     assert((byRefMask & ~regMask) == 0);
 
@@ -4689,6 +4715,7 @@ void GCInfo::gcInfoRecordGCRegStateChange(GcInfoEncoder* gcInfoEncoder,
         // Turn the bit we've just generated off and continue.
         regMask ^= tmpMask; // EAX,ECX,EDX,EBX,---,EBP,ESI,EDI
     }
+#endif // HAS_FIXED_REGISTER_SET
 }
 
 /**************************************************************************

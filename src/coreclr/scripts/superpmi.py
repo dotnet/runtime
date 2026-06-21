@@ -1095,6 +1095,19 @@ class SuperPMICollect:
                         rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
                         rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
+                        # If we are cross-compiling (target != host), tell crossgen2 explicitly which
+                        # OS/architecture to generate code for. For wasm targets, also pass the wasm
+                        # object format and the crossgen2 codegen option that's required by the wasm
+                        # cross-compiling JIT (mirroring src/coreclr/crossgen-corelib.proj).
+                        if self.coreclr_args.target_arch != self.coreclr_args.arch or self.coreclr_args.target_os != self.coreclr_args.host_os:
+                            rsp_write_handle.write("--targetarch:" + self.coreclr_args.target_arch + "\n")
+                            rsp_write_handle.write("--targetos:" + self.coreclr_args.target_os + "\n")
+                        if self.coreclr_args.target_arch == "wasm":
+                            rsp_write_handle.write("--obj-format:wasm" + "\n")
+                            # FIXME: Remove JitWasmNyiToR2RUnsupported once wasm codegen covers all cases
+                            rsp_write_handle.write("--codegenopt:JitWasmNyiToR2RUnsupported=1" + "\n")
+                            # FIXME: Remove JitWasmSimdNyiToR2RUnsupported once wasm codegen covers all SIMD cases
+                            rsp_write_handle.write("--codegenopt:JitWasmSimdNyiToR2RUnsupported=1" + "\n")
                         for var, value in dotnet_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
@@ -1719,6 +1732,13 @@ class SuperPMIReplay:
             if self.coreclr_args.arch != self.coreclr_args.target_arch:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
+            if self.coreclr_args.target_arch == "wasm":
+                # FIXME: Remove JitWasmSimdNyiToR2RUnsupported as soon as we have collections which include the option
+                repro_flags += [
+                    "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1",
+                    "-jit2option", "force", "JitWasmSimdNyiToR2RUnsupported=1"
+                ]
+
             if not self.coreclr_args.sequential and not self.coreclr_args.compile:
                 if not self.coreclr_args.parallelism:
                     common_flags += [ "-p" ]
@@ -2196,6 +2216,12 @@ class SuperPMIReplayAsmDiffs:
                 "-jitoption", "force", "AltJitNgen=*"
             ]
 
+        if self.coreclr_args.target_arch == "wasm":
+            # FIXME: Remove JitWasmSimdNyiToR2RUnsupported as soon as we have collections which include the option
+            altjit_replay_flags += [
+                "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1"
+            ]
+
         # Keep track if any MCH file replay had asm diffs
         files_with_asm_diffs = []
         files_with_replay_failures = []
@@ -2268,6 +2294,25 @@ class SuperPMIReplayAsmDiffs:
                     # that both Release compilers can interpret). However, we rarely or never compare
                     # two Release compilers, so this is safest.
                     flags += [ "-ignoreStoredConfig" ]
+
+                    # `-ignoreStoredConfig` drops any codegenopt the collection recorded into the
+                    # MCH stored config. For wasm we need to re-supply
+                    # `JitWasmNyiToR2RUnsupported=1` (set by crossgen-corelib.proj during collection)
+                    # so that unimplemented opcodes turn into R2R-unsupported skips rather than
+                    # asserts. FIXME: remove once wasm codegen covers all cases.
+                    if self.coreclr_args.target_arch == "wasm":
+                        flags += [
+                            "-jitoption", "force", "JitWasmNyiToR2RUnsupported=1",
+                            "-jit2option", "force", "JitWasmNyiToR2RUnsupported=1"
+                        ]
+
+                # TODO: Remove this (and add under the above ignoreStoredConfig option)
+                # once we have collections which include JitWasmSimdNyiToR2RUnsupported
+                if self.coreclr_args.target_arch == "wasm":
+                    flags += [
+                            "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1",
+                            "-jit2option", "force", "JitWasmSimdNyiToR2RUnsupported=1"
+                    ]
 
                 # Change the working directory to the Core_Root we will call SuperPMI from.
                 # This is done to allow libcoredistools to be loaded correctly on unix
@@ -2947,15 +2992,15 @@ def write_asmdiffs_markdown_summary(write_fh, base_jit_options, diff_jit_options
                         for (mch_file, base_metrics, diff_metrics, _, _, _) in asm_diffs]
 
             def write_row(name, diffed_contexts, num_minopts, num_fullopts, num_missed_base, num_missed_diff, total_num_contexts):
-                write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({:1.2f}%)|{:,d} ({:1.2f}%)|\n".format(
+                write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d} ({}%)|{:,d} ({}%)|\n".format(
                     name,
                     diffed_contexts,
                     num_minopts,
                     num_fullopts,
                     num_missed_base,
-                    num_missed_base / total_num_contexts * 100,
+                    "{:1.2f}".format(num_missed_base / total_num_contexts * 100) if total_num_contexts != 0 else "N/A",
                     num_missed_diff,
-                    num_missed_diff / total_num_contexts * 100))
+                    "{:1.2f}".format(num_missed_diff / total_num_contexts * 100) if total_num_contexts != 0 else "N/A"))
 
             for t in rows:
                 write_row(*t)
@@ -4118,9 +4163,12 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
                 if os.path.isfile(mct_file):
                     urls.append(mct_file)
             else:
-                urls += get_files_from_path(mch_file, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mct", ".zip"]))
+                urls += get_files_from_path(mch_file, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mc", ".mct", ".zip"]))
         elif item.lower().startswith("http:") or item.lower().startswith("https:"):  # probably could use urllib.parse to be more precise
             urls.append(item)
+        elif os.path.isdir(item):
+            # If it's a directory, we'll search recursively for .mch and .mc files in it
+            local_mch_files.extend(get_files_from_path(item, match_func=lambda path: any(path.lower().endswith(extension) for extension in [".mch", ".mc"])))
         else:
             # Doesn't appear to be a UNC path (on Windows) or a URL, so just use it as-is.
             local_mch_files.append(item)
@@ -4148,8 +4196,8 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     if len(mct_urls) != 0:
         local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False, is_azure_storage=True, display_progress=not skip_progress)
 
-    # Even though we might have downloaded MCT files, only return the set of MCH files.
-    local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch"])]
+    # Even though we might have downloaded MCT files, only return the set of MCH/MC files.
+    local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch", ".mc"])]
 
     return local_mch_files
 
@@ -4695,7 +4743,7 @@ def get_mch_files_for_replay(local_mch_paths, filters):
         # If there are specified filters, only run those matching files.
         mch_files += get_files_from_path(item,
                                          match_func=lambda path:
-                                             any(path.endswith(extension) for extension in [".mch"])
+                                             any(path.lower().endswith(extension) for extension in [".mch", ".mc"])
                                              and ((filters is None) or any(filter_item.lower() in path for filter_item in filters)))
 
     if len(mch_files) == 0:
@@ -5061,11 +5109,16 @@ def setup_args(args):
                 logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
                 coreclr_args.mch_arch = coreclr_args.arch
 
-        # For wasm assume we are doing altjit cross-compilation and set mch_arch to 'arch'
+        # For wasm assume we are doing altjit cross-compilation and set mch_arch to 'arch'.
+        # Also force --altjit on, since the wasm JIT is always a cross-target altjit and replay
+        # requires AltJit=* to avoid CORJIT_SKIPPED.
         if coreclr_args.target_arch == "wasm":
             if coreclr_args.mch_arch == coreclr_args.target_arch and coreclr_args.mch_arch != coreclr_args.arch:
                 logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
                 coreclr_args.mch_arch = coreclr_args.arch
+            if not getattr(args, 'altjit', False):
+                logging.warning("Overriding 'altjit' to True for wasm cross-target JIT")
+                args.altjit = True
 
     def verify_superpmi_common_args():
 

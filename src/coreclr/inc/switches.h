@@ -12,9 +12,6 @@
 
 #define GC_CONFIG_DRIVEN
 
-// define this to test data safety for the DAC. See code:DataTest::TestDataSafety.
-#define TEST_DATA_CONSISTENCY
-
 #if !defined(STRESS_LOG) && !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 #define STRESS_LOG
 #endif
@@ -85,6 +82,10 @@
 
 #if defined(STRESS_HEAP) && defined(_DEBUG) && defined(FEATURE_HIJACK)
 #define HAVE_GCCOVER
+#endif
+
+#if defined(_DEBUG)
+#define CDAC_STRESS
 #endif
 
 // Some platforms may see spurious AVs when GcCoverage is enabled because of races.
@@ -172,7 +173,7 @@
 
 // Dispatch interface calls via resolve helper followed by an indirect call.
 // Slow functional implementation, only used for stress-testing of DOTNET_JitForceControlFlowGuard=1.
-#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if defined(FEATURE_VIRTUAL_STUB_DISPATCH) && defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
 #define FEATURE_RESOLVE_HELPER_DISPATCH
 #endif
 

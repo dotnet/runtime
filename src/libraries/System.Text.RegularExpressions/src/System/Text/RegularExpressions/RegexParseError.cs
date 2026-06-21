@@ -126,7 +126,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         InsufficientClosingParentheses,
         /// <summary>
-        /// A quantifier range in a regular expression is inverse, like <code>{10,1}</code> instead of <code>(1,10}</code>.
+        /// A quantifier range in a regular expression is inverse, like <c>{10,1}</c> instead of <c>{1,10}</c>.
         /// </summary>
         ReversedQuantifierRange,
         /// <summary>

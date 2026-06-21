@@ -3,17 +3,9 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class CtxEntry : IData<CtxEntry>
+[CdacType(nameof(DataType.CtxEntry))]
+internal sealed partial class CtxEntry : IData<CtxEntry>
 {
-    static CtxEntry IData<CtxEntry>.Create(Target target, TargetPointer address) => new CtxEntry(target, address);
-    public CtxEntry(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.CtxEntry);
-
-        STAThread = target.ReadPointer(address + (ulong)type.Fields[nameof(STAThread)].Offset);
-        CtxCookie = target.ReadPointer(address + (ulong)type.Fields[nameof(CtxCookie)].Offset);
-    }
-
-    public TargetPointer STAThread { get; init; }
-    public TargetPointer CtxCookie { get; init; }
+    [Field] public TargetPointer STAThread { get; }
+    [Field] public TargetPointer CtxCookie { get; }
 }

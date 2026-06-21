@@ -24,6 +24,10 @@
 
 #include "configure.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 #include "virtualcallstub.h"
 #include "../debug/ee/debugger.h"
 #include "patchpointinfo.h"

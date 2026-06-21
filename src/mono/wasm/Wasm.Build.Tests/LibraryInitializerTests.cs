@@ -63,4 +63,15 @@ public partial class LibraryInitializerTests : WasmTemplateTestsBase
             result.ConsoleOutput.Any(m => expectedRegex.IsMatch(m)),
             $"The library initializer test didn't emit expected error message.\nConsole output:\n{string.Join("\n", result.ConsoleOutput)}");
     }
+
+    [Fact, TestCategory("bundler-friendly")]
+    public async Task InvokeLibraryInitializersApi()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "LibraryInitializerTests_InvokeLibraryInitializersApi");
+        PublishProject(info, config);
+        RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "InvokeLibraryInitializersTest"));
+        Assert.Contains("customHookCalled=true", result.TestOutput);
+        Assert.Contains("resources.libraryInitializers.length=1", result.TestOutput);
+    }
 }

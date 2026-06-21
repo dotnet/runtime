@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public class Directory_Move_Tests : FileSystemWatcherTest
     {
         [Fact]
@@ -54,7 +53,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [SkipOnPlatform(TestPlatforms.FreeBSD, "Not supported on FreeBSD.")]
+        [SkipOnPlatform(TestPlatforms.FreeBSD | TestPlatforms.OpenBSD, "Not supported on FreeBSD and OpenBSD.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
@@ -117,6 +116,20 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows directory handles follow the directory on move; no error is raised.
+        public void FileSystemWatcher_WatchedDirectory_Move()
+        {
+            string dir = CreateTestDirectory(TestDirectory, "watched");
+            string targetDir = Path.Combine(TestDirectory, "moved");
+            using var watcher = new FileSystemWatcher(dir);
+
+            Action action = () => Directory.Move(dir, targetDir);
+            Action cleanup = () => Directory.Move(targetDir, dir);
+
+            ExpectError(watcher, action, cleanup);
+        }
+
         #region Test Helpers
 
         private void DirectoryMove_SameDirectory(WatcherChangeTypes eventType)
@@ -173,7 +186,10 @@ namespace System.IO.Tests
             Action action = () => Array.ForEach(dirs, dir => Directory.Move(dir.DirectoryInWatchedDir, dir.DirectoryInUnwatchedDir));
 
             // Filter out Created events as there is a race-condition when moving a directory and then observing a parent folder. It receives Create event although Watcher is not registered yet.
-            Func<FiredEvent, bool>? isFilteredOut = skipOldEvents ? x => x.EventType == WatcherChangeTypes.Created : null;
+            // Also filter out duplicate events as Mac FSEvents can deliver the same Deleted event multiple times.
+            Func<FiredEvent, bool>? isFilteredOut = skipOldEvents
+                ? CreateDeduplicatingFilter(WatcherChangeTypes.Created)
+                : null;
 
             IEnumerable<FiredEvent> events = ExpectEvents(watcher, filesCount, action, isFilteredOut);
 

@@ -122,6 +122,11 @@ namespace R2RTest
                 yield return $"--targetarch={_options.TargetArch}";
             }
 
+            if (_options.TargetOs != null)
+            {
+                yield return $"--targetos={_options.TargetOs}";
+            }
+
             if (_options.VerifyTypeAndFieldLayout)
             {
                 yield return "--verify-type-and-field-layout";

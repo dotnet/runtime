@@ -109,7 +109,7 @@ public:
     // is required for an operation.  Note that deadlocks are tolerated so the level may be one
     void EnsureLoadLevel(FileLoadLevel targetLevel) DAC_EMPTY();
 
-    // RequireLoadLevel throws an exception if the domain file isn't loaded enough.  Note
+    // RequireLoadLevel throws an exception if the assembly isn't loaded enough.  Note
     // that this is intolerant of deadlock related failures so is only really appropriate for
     // checks inside the main loading loop.
     void RequireLoadLevel(FileLoadLevel targetLevel) DAC_EMPTY();
@@ -322,12 +322,12 @@ public:
         m_debuggerFlags = flags;
     }
 
-    DomainAssembly* GetNextAssemblyInSameALC()
+    Assembly* GetNextAssemblyInSameALC()
     {
         return m_NextAssemblyInSameALC;
     }
 
-    void SetNextAssemblyInSameALC(DomainAssembly* assembly)
+    void SetNextAssemblyInSameALC(Assembly* assembly)
     {
         _ASSERTE(m_NextAssemblyInSameALC == NULL);
         m_NextAssemblyInSameALC = assembly;
@@ -355,7 +355,7 @@ public:
 
     //****************************************************************************************
     //
-    INT32 ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThreads);
+    INT32 ExecuteMainMethod(PTRARRAYREF *stringArgs, bool captureException);
 
     //****************************************************************************************
 
@@ -383,9 +383,6 @@ public:
     mdAssemblyRef AddAssemblyRef(Assembly *refedAssembly, IMetaDataAssemblyEmit *pAssemEmitter);
 
     //****************************************************************************************
-
-    DomainAssembly *GetDomainAssembly();
-    void SetDomainAssembly(DomainAssembly *pAssembly);
 
 #if defined(FEATURE_COLLECTIBLE_TYPES) && !defined(DACCESS_COMPILE)
     OBJECTHANDLE GetLoaderAllocatorObjectHandle() { WRAPPER_NO_CONTRACT; return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle(); }
@@ -544,7 +541,7 @@ private:
 
     LOADERHANDLE          m_hExposedObject;
 
-    DomainAssembly*             m_NextAssemblyInSameALC;
+    Assembly*                   m_NextAssemblyInSameALC;
 
     friend struct ::cdac_data<Assembly>;
 };

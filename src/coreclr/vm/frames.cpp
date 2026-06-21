@@ -213,6 +213,20 @@ Frame::Interception Frame::GetInterception()
     }
 }
 
+#ifdef DACCESS_COMPILE
+Frame::StubFrameType Frame::GetStubFrameType()
+{
+    switch (GetFrameIdentifier())
+    {
+#define FRAME_TYPE_NAME(frameType) case FrameIdentifier::frameType: { return dac_cast<PTR_##frameType>(this)->GetStubFrameType_Impl(); }
+#include "FrameTypes.h"
+    default:
+        FRAME_POLYMORPHIC_DISPATCH_UNREACHABLE();
+        return STUB_FRAME_NONE;
+    }
+}
+#endif // DACCESS_COMPILE
+
 void Frame::GetUnmanagedCallSite(TADDR* ip, TADDR* returnIP, TADDR* returnSP)
 {
     switch (GetFrameIdentifier())
@@ -554,14 +568,14 @@ VOID Frame::Push(Thread *pThread)
 
     m_Next = pThread->GetFrame();
 
-    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // minipal_getpagesize() is used to relax the assert for cases where two Frames are
     // declared in the same source function. We cannot predict the order
     // in which the C compiler will lay them out in the stack frame.
-    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // So minipal_getpagesize() is a guess of the maximum stack frame size of any method
     // with multiple Frames in coreclr.dll
     _ASSERTE((pThread->IsExecutingOnAltStack() ||
              (m_Next == FRAME_TOP) ||
-             (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
+             (PBYTE(m_Next) + (2 * minipal_getpagesize())) > PBYTE(this)) &&
              "Pushing a frame out of order ?");
 
     _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun
@@ -673,7 +687,7 @@ void InlinedCallFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, 
     if (IsInInterpreter())
     {
         InterpreterFrame *pInterpreterFrame = (InterpreterFrame *)m_Next;
-        pInterpreterFrame->UpdateFloatingPointRegisters(pRD, pInterpreterFrame->GetInterpExecMethodSP());
+        pInterpreterFrame->UpdateFloatingPointRegisters(pRD, 0 /* unused for interpreter frame*/);
         pInterpreterFrame->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
         return;
     }
@@ -699,7 +713,7 @@ void InlinedCallFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, 
 BOOL InlinedCallFrame::IsInInterpreter()
 {
     PTR_InterpreterFrame pInterpreterFrame = NULL;
-    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    if ((m_Next != FRAME_TOP) && (m_Next != NULL) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
     {
         PTR_InterpreterFrame pInterpreterFrame = (PTR_InterpreterFrame)m_Next;
         // The interpreter frame is in the interpreter when its top method context frame matches the m_pCallSiteSP
@@ -1106,20 +1120,6 @@ void DynamicHelperFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 
 #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_COMINTEROP
-//-----------------------------------------------------------------------
-// A rather specialized routine for the exclusive use of the COM PreStub.
-//-----------------------------------------------------------------------
-VOID
-ComPrestubMethodFrame::Init()
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Initializes the frame's identifier.
-    Frame::Init(FrameIdentifier::ComPrestubMethodFrame);
-}
-#endif // FEATURE_COMINTEROP
-
 //-----------------------------------------------------------------------
 // GCFrames
 //-----------------------------------------------------------------------
@@ -1128,7 +1128,7 @@ ComPrestubMethodFrame::Init()
 //--------------------------------------------------------------------
 // This constructor pushes a new GCFrame on the frame chain.
 //--------------------------------------------------------------------
-GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior)
+GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, UINT gcFlags)
 {
     CONTRACTL
     {
@@ -1144,7 +1144,7 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
 #endif
 
 #ifdef USE_CHECKED_OBJECTREFS
-    if (!maybeInterior) {
+    if (!gcFlags) {
         UINT i;
         for(i = 0; i < numObjRefs; i++)
             Thread::ObjectRefProtected(&pObjRefs[i]);
@@ -1173,7 +1173,7 @@ GCFrame::GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL may
 
     m_pObjRefs      = pObjRefs;
     m_numObjRefs    = numObjRefs;
-    m_MaybeInterior = maybeInterior;
+    m_gcFlags       = gcFlags;
 
     Push(pThread);
 }
@@ -1185,28 +1185,29 @@ GCFrame::~GCFrame()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(m_pCurThread != NULL);
     }
     CONTRACTL_END;
 
-    // m_pNext is NULL when the frame was already popped from the stack.
-    if (m_Next != NULL)
+    // Normally the destructor performs the pop for a GCPROTECT_BEGIN/END scope, so the frame is
+    // still linked when we get here. If it was already popped explicitly - by PopExplicitFrames
+    // during EH unwind, or by the interpreter's GCReporting::Unregister - then m_pCurThread is
+    // NULL and there is nothing left to do.
+    if (m_pCurThread != NULL)
     {
-        // This is a GCFrame that was not popped.  This is a problem.
-        // We should have popped it before we destruct
         // Do a manual switch to the GC cooperative mode instead of using the GCX_COOP_THREAD_EXISTS
         // macro so that this function isn't slowed down by having to deal with FS:0 chain on x86 Windows.
-        BOOL wasCoop = m_pCurThread->PreemptiveGCDisabled();
+        Thread *pThread = m_pCurThread;
+        BOOL wasCoop = pThread->PreemptiveGCDisabled();
         if (!wasCoop)
         {
-            m_pCurThread->DisablePreemptiveGC();
+            pThread->DisablePreemptiveGC();
         }
 
         Pop();
 
         if (!wasCoop)
         {
-            m_pCurThread->EnablePreemptiveGC();
+            pThread->EnablePreemptiveGC();
         }
     }
 }
@@ -1228,13 +1229,13 @@ void GCFrame::Push(Thread* pThread)
     m_Next = pThread->GetGCFrame();
     m_pCurThread = pThread;
 
-    // GetOsPageSize() is used to relax the assert for cases where two Frames are
+    // minipal_getpagesize() is used to relax the assert for cases where two Frames are
     // declared in the same source function. We cannot predict the order
     // in which the compiler will lay them out in the stack frame.
-    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
+    // So minipal_getpagesize() is a guess of the maximum stack frame size of any method
     // with multiple GCFrames in coreclr.dll
-    _ASSERTE(((m_Next == GCFRAME_TOP) ||
-              (PBYTE(m_Next->GetOSStackLocation()) + (2 * GetOsPageSize())) > PBYTE(this->GetOSStackLocation())) &&
+    _ASSERTE(((m_Next == NULL) ||
+              (PBYTE(m_Next->GetOSStackLocation()) + (2 * minipal_getpagesize())) > PBYTE(this->GetOSStackLocation())) &&
              "Pushing a GCFrame out of order ?");
 
     pThread->SetGCFrame(this);
@@ -1258,13 +1259,15 @@ void GCFrame::Pop()
     _ASSERTE(m_pCurThread->GetGCFrame() == this && "Popping a GCFrame out of order ?");
 
     m_pCurThread->SetGCFrame(m_Next);
-    m_Next = NULL;
 
 #ifdef _DEBUG
     m_pCurThread->EnableStressHeap();
     for(UINT i = 0; i < m_numObjRefs; i++)
         Thread::ObjectRefNew(&m_pObjRefs[i]);       // Unprotect them
 #endif
+
+    // The frame is no longer linked on the thread's GCFrame chain.
+    m_pCurThread = NULL;
 }
 
 void GCFrame::Remove()
@@ -1280,7 +1283,7 @@ void GCFrame::Remove()
 
     GCFrame *pPrevFrame = NULL;
     GCFrame *pFrame = m_pCurThread->GetGCFrame();
-    while (pFrame != GCFRAME_TOP)
+    while (pFrame != NULL)
     {
         if (pFrame == this)
         {
@@ -1292,8 +1295,6 @@ void GCFrame::Remove()
             {
                 m_pCurThread->SetGCFrame(m_Next);
             }
-
-            m_Next = NULL;
 
 #ifdef _DEBUG
             m_pCurThread->EnableStressHeap();
@@ -1308,6 +1309,9 @@ void GCFrame::Remove()
     }
 
     _ASSERTE_MSG(pFrame != NULL, "GCFrame not found in the current thread's stack");
+
+    // The frame is no longer linked on the thread's GCFrame chain.
+    m_pCurThread = NULL;
 }
 
 #endif // !DACCESS_COMPILE
@@ -1328,9 +1332,10 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
     for (UINT i = 0; i < m_numObjRefs; i++)
     {
         auto fromAddress = OBJECTREF_TO_UNCHECKED_OBJECTREF(m_pObjRefs[i]);
-        if (m_MaybeInterior)
+        if (m_gcFlags != 0)
         {
-            PromoteCarefully(fn, pRefs + i, sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
+            _ASSERTE(m_gcFlags & GC_CALL_INTERIOR);
+            PromoteCarefully(fn, pRefs + i, sc, m_gcFlags | CHECK_APP_DOMAIN);
         }
         else
         {
@@ -1392,7 +1397,7 @@ BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef)
     GetThread()->StackWalkFrames(IsProtectedByGCFrameStackWalkFramesCallback, &d);
 
     GCFrame* pGCFrame = GetThread()->GetGCFrame();
-    while (pGCFrame != GCFRAME_TOP)
+    while (pGCFrame != NULL)
     {
         if (pGCFrame->Protects(ppObjectRef)) {
             d.count++;
@@ -1732,59 +1737,9 @@ PInvokeCalliFrame::PInvokeCalliFrame(TransitionBlock * pTransitionBlock, VASigCo
 }
 #endif // #ifndef DACCESS_COMPILE
 
-#ifdef FEATURE_COMINTEROP
-
-#ifndef DACCESS_COMPILE
-CLRToCOMMethodFrame::CLRToCOMMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
-    : FramedMethodFrame(FrameIdentifier::CLRToCOMMethodFrame, pTransitionBlock, pMD)
-{
-    LIMITED_METHOD_CONTRACT;
-}
-#endif // #ifndef DACCESS_COMPILE
-
-void CLRToCOMMethodFrame::GcScanRoots_Impl(promote_func* fn, ScanContext* sc)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // CLRToCOMMethodFrame is only used in the event call / late bound call code path where we do not have IL stub
-    // so we need to promote the arguments and return value manually.
-
-    FramedMethodFrame::GcScanRoots_Impl(fn, sc);
-    PromoteCallerStack(fn, sc);
-
-    //
-    // Promote the returned object
-    //
-
-    MetaSig sig(GetFunction());
-
-    TypeHandle thValueType;
-    CorElementType et = sig.GetReturnTypeNormalized(&thValueType);
-    if (CorTypeInfo::IsObjRef_NoThrow(et))
-    {
-        (*fn)(GetReturnObjectPtr(), sc, CHECK_APP_DOMAIN);
-    }
-    else if (CorTypeInfo::IsByRef_NoThrow(et))
-    {
-        PromoteCarefully(fn, GetReturnObjectPtr(), sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
-    }
-    else if (et == ELEMENT_TYPE_VALUETYPE)
-    {
-        ArgIterator argit(&sig);
-        if (!argit.HasRetBuffArg())
-        {
-#ifdef TARGET_UNIX
-#error Non-Windows ABIs must be special cased
-#endif
-            ReportPointersFromValueType(fn, sc, thValueType.AsMethodTable(), GetReturnObjectPtr());
-        }
-    }
-}
-#endif // FEATURE_COMINTEROP
-
 #if defined (_DEBUG) && !defined (DACCESS_COMPILE)
 // For IsProtectedByGCFrame, we need to know whether a given object ref is protected
-// by a CLRToCOMMethodFrame or a ComMethodFrame. Since GCScanRoots for those frames are
+// by a TransitionFrame. Since GCScanRoots for those frames are
 // quite complicated, we don't want to duplicate their logic so we call GCScanRoots with
 // IsObjRefProtected (a fake promote function) and an extended ScanContext to do the checking.
 
@@ -1820,61 +1775,6 @@ BOOL TransitionFrame::Protects_Impl(OBJECTREF * ppORef)
 }
 #endif //defined (_DEBUG) && !defined (DACCESS_COMPILE)
 
-#ifdef FEATURE_COMINTEROP
-
-#ifdef TARGET_X86
-// Return the # of stack bytes pushed by the unmanaged caller.
-UINT ComMethodFrame::GetNumCallerStackBytes()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    ComCallMethodDesc* pCMD = PTR_ComCallMethodDesc((TADDR)GetDatum());
-    _ASSERTE(pCMD != NULL);
-    // assumes __stdcall
-    // compute the callee pop stack bytes
-    return pCMD->GetNumStackBytes();
-}
-#endif // TARGET_X86
-
-#ifndef DACCESS_COMPILE
-void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Find ComMethodFrame
-
-    while ((pCurFrame != FRAME_TOP) &&
-           (pCurFrame->GetFrameIdentifier() != FrameIdentifier::ComMethodFrame))
-    {
-        pCurFrame = pCurFrame->PtrNextFrame();
-    }
-
-    if (pCurFrame == FRAME_TOP)
-        return;
-
-    ComMethodFrame * pComMethodFrame = (ComMethodFrame *)pCurFrame;
-
-    _ASSERTE(pComMethodFrame != NULL);
-    Thread * pThread = GetThread();
-    GCX_COOP_THREAD_EXISTS(pThread);
-    // Unwind the frames till the entry frame (which was ComMethodFrame)
-    pCurFrame = pThread->GetFrame();
-    while ((pCurFrame != NULL) && (pCurFrame <= pComMethodFrame))
-    {
-        pCurFrame->ExceptionUnwind();
-        pCurFrame = pCurFrame->PtrNextFrame();
-    }
-
-    // At this point, pCurFrame would be the ComMethodFrame's predecessor frame
-    // that we need to reset to.
-    _ASSERTE((pCurFrame != NULL) && (pComMethodFrame->PtrNextFrame() == pCurFrame));
-    pThread->SetFrame(pCurFrame);
-}
-#endif // !DACCESS_COMPILE
-
-#endif // FEATURE_COMINTEROP
-
 #ifndef DACCESS_COMPILE
 VOID InlinedCallFrame::Init()
 {
@@ -1887,27 +1787,6 @@ VOID InlinedCallFrame::Init()
     m_pCallerReturnAddress = (TADDR)NULL;
 }
 #endif // !DACCESS_COMPILE
-
-#ifdef FEATURE_COMINTEROP
-PCODE UnmanagedToManagedFrame::GetReturnAddress_Impl()
-{
-    WRAPPER_NO_CONTRACT;
-
-    PCODE pRetAddr = Frame::GetReturnAddress_Impl();
-
-    if (InlinedCallFrame::FrameHasActiveCall(m_Next) &&
-        pRetAddr == m_Next->GetReturnAddress())
-    {
-        // there's actually no unmanaged code involved - we were called directly
-        // from managed code using an InlinedCallFrame
-        return NULL;
-    }
-    else
-    {
-        return pRetAddr;
-    }
-}
-#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_INTERPRETER
 

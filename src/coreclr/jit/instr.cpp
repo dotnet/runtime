@@ -487,19 +487,6 @@ void CodeGen::instGen(instruction ins)
 {
 
     GetEmitter()->emitIns(ins);
-
-#ifdef TARGET_XARCH
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    // A workaround necessitated by limitations of emitter
-    // if we are scheduled to insert a nop here, we have to delay it
-    // hopefully we have not missed any other prefix instructions or places
-    // they could be inserted
-    if (ins == INS_lock && GetEmitter()->emitNextNop == 0)
-    {
-        GetEmitter()->emitNextNop = 1;
-    }
-#endif // PSEUDORANDOM_NOP_INSERTION
-#endif
 }
 
 /*****************************************************************************
@@ -610,6 +597,14 @@ bool CodeGenInterface::instHasPseudoName(instruction ins)
     return (instInfo[ins] & INS_FLAGS_HasPseudoName) != 0;
 }
 #endif // TARGET_XARCH
+
+#if defined(TARGET_WASM)
+uint8_t CodeGenInterface::instSimdElemSize(instruction ins)
+{
+    assert((unsigned)ins < ArrLen(instInfo));
+    return static_cast<uint8_t>((instInfo[ins] >> InstInfoElemSizeShift));
+}
+#endif
 
 /*****************************************************************************
  *

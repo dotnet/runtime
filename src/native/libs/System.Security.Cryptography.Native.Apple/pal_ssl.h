@@ -30,6 +30,40 @@ enum
 };
 typedef int32_t PAL_TlsIo;
 
+enum
+{
+    PAL_TlsAlertMessage_UnexpectedMessage = 10,
+    PAL_TlsAlertMessage_BadRecordMac = 20,
+    PAL_TlsAlertMessage_DecryptionFailed = 21,
+    PAL_TlsAlertMessage_RecordOverflow = 22,
+    PAL_TlsAlertMessage_DecompressionFail = 30,
+    PAL_TlsAlertMessage_HandshakeFailure = 40,
+    PAL_TlsAlertMessage_BadCertificate = 42,
+    PAL_TlsAlertMessage_UnsupportedCert = 43,
+    PAL_TlsAlertMessage_CertificateRevoked = 44,
+    PAL_TlsAlertMessage_CertificateExpired = 45,
+    PAL_TlsAlertMessage_CertificateUnknown = 46,
+    PAL_TlsAlertMessage_IllegalParameter = 47,
+    PAL_TlsAlertMessage_UnknownCA = 48,
+    PAL_TlsAlertMessage_AccessDenied = 49,
+    PAL_TlsAlertMessage_DecodeError = 50,
+    PAL_TlsAlertMessage_DecryptError = 51,
+    PAL_TlsAlertMessage_ExportRestriction = 60,
+    PAL_TlsAlertMessage_ProtocolVersion = 70,
+    PAL_TlsAlertMessage_InsufficientSecurity = 71,
+    PAL_TlsAlertMessage_InternalError = 80,
+    PAL_TlsAlertMessage_InappropriateFallback = 86,
+    PAL_TlsAlertMessage_UserCanceled = 90,
+    PAL_TlsAlertMessage_NoRenegotiation = 100,
+    PAL_TlsAlertMessage_MissingExtension = 109,
+    PAL_TlsAlertMessage_UnsupportedExtension = 110,
+    PAL_TlsAlertMessage_UnrecognizedName = 112,
+    PAL_TlsAlertMessage_BadCertificateStatusResponse = 113,
+    PAL_TlsAlertMessage_UnknownPskIdentity = 115,
+    PAL_TlsAlertMessage_CertificateRequired = 116,
+};
+typedef int32_t PAL_TlsAlertMessage;
+
 /*
 Create an SSL context, for the Server or Client role as determined by isServer.
 
@@ -198,6 +232,17 @@ Pump the TLS handshake.
 Returns an indication of what state the error is in. Any negative number means an error occurred.
 */
 PALEXPORT PAL_TlsHandshakeState AppleCryptoNative_SslHandshake(SSLContextRef sslContext);
+
+/*
+Set the TLS alert to send when the handshake is aborted.
+
+Returns 1 on success, 0 on failure, other values for invalid state.
+
+Output:
+pOSStatus: Receives the value returned by SSLSetError.
+*/
+PALEXPORT int32_t
+AppleCryptoNative_SslSetError(SSLContextRef sslContext, PAL_TlsAlertMessage alertMessage, int32_t* pOSStatus);
 
 /*
 Take bufLen bytes of cleartext data from buf and encrypt/frame the data.

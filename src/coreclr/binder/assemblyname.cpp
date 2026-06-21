@@ -113,12 +113,8 @@ namespace BINDER_SPACE
             SetIsRetargetable(TRUE);
         }
 
-        // Set ContentType
-        if (IsAfContentType_Default(dwRefOrDefFlags))
-        {
-            SetContentType(AssemblyContentType_Default);
-        }
-        else
+        // Validate ContentType. Only the default content type is supported.
+        if (!IsAfContentType_Default(dwRefOrDefFlags))
         {
             IF_FAIL_GO(FUSION_E_INVALID_NAME);
         }
@@ -179,7 +175,6 @@ namespace BINDER_SPACE
         }
 
         m_kProcessorArchitecture = data.ProcessorArchitecture;
-        m_kContentType = data.ContentType;
 
         SetHave(flags);
 
@@ -230,10 +225,6 @@ namespace BINDER_SPACE
         if ((dwIncludeFlags & INCLUDE_RETARGETABLE) == 0)
         {
             dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE;
-        }
-        if ((dwIncludeFlags & INCLUDE_CONTENT_TYPE) == 0)
-        {
-            dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE;
         }
         if ((dwIncludeFlags & INCLUDE_PUBLIC_KEY_TOKEN) == 0)
         {
@@ -296,13 +287,6 @@ namespace BINDER_SPACE
             dwHash = _rotl(dwHash, 4);
         }
 
-        if (AssemblyIdentity::Have(dwUseIdentityFlags,
-                                   AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE))
-        {
-            dwHash ^= static_cast<DWORD>(GetContentType());
-            dwHash = _rotl(dwHash, 4);
-        }
-
         return static_cast<ULONG>(dwHash);
     }
 
@@ -311,13 +295,7 @@ namespace BINDER_SPACE
     {
         BOOL fEquals = FALSE;
 
-        if (GetContentType() == AssemblyContentType_WindowsRuntime)
-        {   // Assembly is meaningless for WinRT, all assemblies form one joint type namespace
-            return (GetContentType() == pAssemblyName->GetContentType());
-        }
-
-        if (GetSimpleName().EqualsCaseInsensitive(pAssemblyName->GetSimpleName()) &&
-            (GetContentType() == pAssemblyName->GetContentType()))
+        if (GetSimpleName().EqualsCaseInsensitive(pAssemblyName->GetSimpleName()))
         {
             fEquals = TRUE;
 
@@ -367,10 +345,6 @@ namespace BINDER_SPACE
         if ((dwIncludeFlags & INCLUDE_RETARGETABLE) == 0)
         {
             dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE;
-        }
-        if ((dwIncludeFlags & INCLUDE_CONTENT_TYPE) == 0)
-        {
-            dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE;
         }
 
         TextualIdentityParser::ToString(this, dwUseIdentityFlags, displayName);

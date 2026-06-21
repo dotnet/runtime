@@ -117,7 +117,6 @@ typedef DPTR(class ComCallMethodDesc)   PTR_ComCallMethodDesc;
 typedef DPTR(class CLRToCOMCallMethodDesc) PTR_CLRToCOMCallMethodDesc;
 typedef VPTR(class DebugInterface)      PTR_DebugInterface;
 typedef DPTR(class Dictionary)          PTR_Dictionary;
-typedef DPTR(class DomainAssembly)      PTR_DomainAssembly;
 typedef DPTR(struct FailedAssembly)     PTR_FailedAssembly;
 typedef VPTR(class EditAndContinueModule) PTR_EditAndContinueModule;
 typedef DPTR(class EEClass)             PTR_EEClass;
@@ -125,6 +124,7 @@ typedef DPTR(class DelegateEEClass)     PTR_DelegateEEClass;
 typedef VPTR(class EECodeManager)       PTR_EECodeManager;
 #ifdef FEATURE_INTERPRETER
 typedef VPTR(class InterpreterCodeManager) PTR_InterpreterCodeManager;
+typedef DPTR(struct InterpThreadContext) PTR_InterpThreadContext;
 #endif
 typedef DPTR(class RangeSectionMap)     PTR_RangeSectionMap;
 typedef DPTR(class EEConfig)            PTR_EEConfig;
@@ -295,6 +295,7 @@ namespace Loader
 #include "threads.h"
 #include "clrex.inl"
 #include "loaderallocator.hpp"
+#include "callcounting.h"
 #include "appdomain.hpp"
 #include "appdomain.inl"
 #include "assembly.hpp"
@@ -314,6 +315,7 @@ namespace Loader
 #include "dynamicmethod.h"
 
 #include "gcstress.h"
+#include "cdacstress.h"
 
 HRESULT EnsureRtlFunctions();
 
