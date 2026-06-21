@@ -618,17 +618,28 @@ Mirrors `EnumGcRefsX86` (gc_unwind_x86.inl), `scanArgRegTableI` (fully-interrupt
 
 Early-return gates (no slots reported):
 - `IsParentOfFuncletStackFrame` — the funclet sharing this parent's locals will report them itself.
-- Code offset is in the prolog or any epilog.
+- Code offset is in the prolog or any epilog (only reachable via `IsExecutionAborted`; GC info does not describe these regions).
 - `IsExecutionAborted` and the method is not fully interruptible.
-- Filter funclets (`SuppressUntrackedSlots`) skip the untracked table to avoid double-reporting with the parent.
+
+Filter-funclet `SuppressUntrackedSlots` is honored within the untracked-locals step (the parent frame already reported them) but does not gate the rest of the walk.
 
 Sources of live slots:
-- **Untracked frame locals** — always live for the entire method body. Encoded as signed delta-from-previous offsets in the untracked table; on EBP frames the encoded value is naturally signed and resolves to `EBP + stkOffs`.
-- **VarPtr-tracked locals** — live when the lifetime-check offset is within `[BeginOffset, EndOffset)`. EBP-frame offsets are stored as their negated form (mirrors `if (info.ebpFrame) stkOffs = -stkOffs`). Non-active frames evaluate the lifetime at `instructionOffset - 1` because a variable can be dead at the return address (e.g. when the call is the last instruction of a try and the return is the catch-block jump target).
+- **Untracked frame locals** — always live for the entire method body. Encoded as signed delta-from-previous offsets in the untracked table. On EBP frames the encoded value resolves directly to `EBP + stkOffs` (`FRAMEREG_REL`). On ESP frames the encoded value is `argBase`-relative where `argBase = ESP + pushedSize` (mirrors `EnumGcRefsX86`); the decoder rebases to a true `SP_REL` offset by adding the pushed-arg size computed at the queried instruction offset.
+- **VarPtr-tracked locals** — live when the lifetime-check offset is within `[BeginOffset, EndOffset)`. EBP-frame offsets are stored as their negated form (mirrors `if (info.ebpFrame) stkOffs = -stkOffs`); ESP-frame offsets receive the same `pushedSize` bias as untracked locals. Non-active frames evaluate the lifetime at `instructionOffset - 1` because a variable can be dead at the return address (e.g. when the call is the last instruction of a try and the return is the catch-block jump target).
 - **Live registers** — accumulated from the LIVE/DEAD transition stream up to the queried offset. Callee-saved registers (EBX/EBP/ESI/EDI) are reported when execution will continue; callee-trashed scratch (EAX/ECX/EDX) is reported only on the active leaf frame. On non-leaf frames register liveness is evaluated at the instruction *before* the call (`regOffset = instructionOffset - 1`) since liveness can change across calls.
-- **Pushed pointer args** — for fully-interruptible code, accumulated from the PUSH/POP transition stream and emitted as positive SP-relative offsets at emit time once final depth is known (`addr = ESP_call + (finalDepth - 1 - pushIndex) * 4`, mirroring `pPendingArgFirst - i * sizeof(DWORD)`). For partially-interruptible call sites, taken directly from the matching `GcTransitionCall`: explicit per-pointer offsets in the huge (0xFB) encoding, or a uint32 bitmap (`ArgMask` / `IArgs`) walked low-to-high with `addr = ESP + i * sizeof(DWORD)` for the tiny / small / medium / large encodings.
+- **Pushed pointer args** — for fully-interruptible code, accumulated from the PUSH/POP transition stream. Non-pointer pushes (`IsPtr = false`) still bump the stack depth (so subsequent pushed-ptr indices stay aligned) but do not contribute a slot. At emit time, once `finalDepth` is known, each tracked push is reported as a positive SP-relative offset: `addr = ESP_call + (finalDepth - 1 - pushIndex) * sizeof(DWORD)` (mirrors `pPendingArgFirst - i * sizeof(DWORD)` in `EnumGcRefsX86`). The translation must be deferred because subsequent pushes/pops change `finalDepth`. For partially-interruptible call sites, slots come from the matching `GcTransitionCall` instead: explicit per-pointer offsets in the huge (0xFB) encoding, or a uint32 `ArgMask` / `IArgs` bitmap walked low-to-high with `addr = ESP + i * sizeof(DWORD)` for the tiny / small / medium / large encodings.
+- **`IsParentOfFuncletStackFrame`** suppresses all reporting from the parent: the funclet itself reports the shared locals via `EnumerateLiveSlots` on the funclet frame.
 
 When `ReportFPBasedSlotsOnly` is set, the result list is filtered to drop register slots and any stack slot whose base is not the frame register (matching `GCInfoDecoder.ReportSlot`).
+
+### Encoding correctness notes (x86)
+
+A few subtleties of the legacy byte-stream encoding caught during stress validation, mirrored from native and worth remembering when modifying the decoder:
+
+- **Huge call-site (`0xFB`) code-delta is cumulative.** The uint32 code delta is `curOffs += delta`, not `curOffs = delta`. Assigning loses all preceding offset accumulation and corrupts every subsequent call site.
+- **Partial-EBP this-pointer tag (`val & 0x80 == 0 && val & 0x0F == 0`).** This encodes the callee-saved register holding `this` at the next call site; native (`gc_unwind_x86.inl` ~line 970) sets `thisPtrReg` only and does *not* record a call entry. Emitting a `GcTransitionCall` at the current offset would overwrite the real call site's `CallRegisters` when both fall at the same `curOffs`.
+- **Partial-interrupt EBP-less call sites emit a negative stack-depth delta** (callee-popped args reverse the prior pushes); the transition stream is generated accordingly.
+- **`0xC0..0xCF` partial-interruptible byte range** in the huge encoding is a call entry that names only callee-saved registers (no pointer args), distinct from `0xFD..0xFF`.
 
 ### Deferred edges
 
@@ -636,4 +647,4 @@ These do not affect the GC root scan / `WalkStackReferences` path validated by t
 
 - `info.thisPtrResult` reporting for synchronized methods on the `!willContinueExecution` path (the regular live-register report covers `willContinueExecution`, which is what stress exercises).
 - VarPtr `0x2` legacy-encoder "this" bit (the modern x86 JIT uses `0x2` only for pinned, which we already pass through; the legacy "this" interpretation never appears in code from the current JIT).
-- `IPtrMask` (`0xF0`) interior-pointer bitmaps for pushed args — only used in the partial-interruptible ESP-frame walker, not exercised by current x86 codegen because all post-funclet x86 methods are EBP frames.
+- `IPtrMask` (`0xF0`) interior-pointer bitmaps for pushed args — accepted by the decoder as informational, but the bitmap is not yet applied to pushed-arg slots. Only relevant on the partial-interruptible ESP-frame path; in practice the current x86 JIT rarely emits these.
