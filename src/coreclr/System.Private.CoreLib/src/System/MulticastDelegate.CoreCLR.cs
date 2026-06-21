@@ -304,7 +304,7 @@ namespace System
                 if (_invocationList is not object[] invocationList)
                 {
                     // they are both not real Multicast
-                    if (this.Equals(value))
+                    if (this.Equals(v))
                         return null;
                 }
                 else
@@ -312,7 +312,7 @@ namespace System
                     int invocationCount = (int)_invocationCount;
                     for (int i = invocationCount; --i >= 0;)
                     {
-                        if (value!.Equals(invocationList[i]))
+                        if (v.Equals(invocationList[i]))
                         {
                             if (invocationCount == 2)
                             {
