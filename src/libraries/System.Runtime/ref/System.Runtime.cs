@@ -14259,7 +14259,7 @@ namespace System.Runtime.CompilerServices
         public static void PrepareContractedDelegate(System.Delegate d) { }
         public static void PrepareDelegate(System.Delegate d) { }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("AOT must recognize usages of the method to preserve reflection info and generate stubs")]
-        public static TDelegate GetDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate { throw null; }
+        public static Delegate GetDelegate(nint method, ref Delegate? storage) { throw null; }
         public static void PrepareMethod(System.RuntimeMethodHandle method) { }
         public static void PrepareMethod(System.RuntimeMethodHandle method, System.RuntimeTypeHandle[]? instantiation) { }
         [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId="SYSLIB0004", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]

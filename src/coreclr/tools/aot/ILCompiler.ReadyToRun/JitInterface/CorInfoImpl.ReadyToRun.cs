@@ -3154,7 +3154,9 @@ namespace Internal.JitInterface
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
         { throw new NotImplementedException("getMethodVTableOffset"); }
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CorInfoLookupIntrinsicType type, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
-        { throw new NotImplementedException("expandRawHandleIntrinsic"); }
+        {
+            throw new RequiresRuntimeJitException("expandRawHandleIntrinsic not implemented yet in crossegen2");
+        }
 
         private byte[] _bbCounts;
 

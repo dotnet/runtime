@@ -1792,7 +1792,7 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
     END_QCALL;
 }
 
-DELEGATEREF COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* pMT)
+DELEGATEREF COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* delegateMt, MethodTable* targetMt)
 {
     CONTRACTL
     {
@@ -1803,20 +1803,15 @@ DELEGATEREF COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* pMT)
     CONTRACTL_END;
 
     assert(pTargetMD != NULL);
-    assert(pMT != NULL);
+    assert(delegateMt != NULL);
 
     // this should only be reachable from the JIT
-    assert(!TypeHandle(pMT).IsCanonicalSubtype());
+    assert(!TypeHandle(delegateMt).IsCanonicalSubtype());
+    assert(delegateMt->IsDelegate());
 
-    assert(pMT->IsDelegate());
+    assert(targetMt == NULL || !TypeHandle(targetMt).IsCanonicalSubtype());
 
-    printf("method %s\n", pTargetMD->GetName());
-    assert(!pTargetMD->IsSharedByGenericInstantiations());
-
-    MethodTable* declaringType = pTargetMD->GetMethodTable();
-    assert(!TypeHandle(declaringType).IsCanonicalSubtype());
-
-    MethodDesc* pDelegateInvoke = FindDelegateInvokeMethod(pMT);
+    MethodDesc* pDelegateInvoke = FindDelegateInvokeMethod(delegateMt);
 
     UINT invokeCount = MethodDescToNumFixedArgs(pDelegateInvoke);
     UINT methodCount = MethodDescToNumFixedArgs(pTargetMD);
@@ -1827,46 +1822,36 @@ DELEGATEREF COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* pMT)
     }
 
     bool isOpen = invokeCount == methodCount;
-
-    MethodTable* closureType = NULL;
-    if (!isOpen)
+        // reject invalid closed delegates
+    if (!isOpen && isStatic)
     {
-        if (isStatic)
+        MetaSig sig(pTargetMD);
+        if (sig.NextArgNormalized() == ELEMENT_TYPE_END || sig.GetLastTypeHandleThrowing().IsValueType())
         {
-            // reject invalid cases
-            MetaSig sig(pTargetMD);
-            if (sig.NextArgNormalized() == ELEMENT_TYPE_END || sig.GetLastTypeHandleThrowing().IsValueType())
-            {
-                return NULL;
-            }
-        }
-        else
-        {
-            // get closure type for delegates needing it
-            if (declaringType->IsValueType() || declaringType->GetNumGenericArgs() != 0)
-            {
-                closureType = declaringType;
-            }
+            return NULL;
         }
     }
 
     // we create delegates without a target here unless needed
     Object* target = NULL;
-    if (closureType != NULL) {
-        assert(!TypeHandle(closureType).IsCanonicalSubtype());
-        if (closureType->HasClassConstructor() || closureType->HasFinalizer()) {
+    if (targetMt != NULL)
+    {
+        if (targetMt->HasFinalizer() || targetMt->HasClassConstructor())
+        {
             return NULL;
         }
 
-        if (!IsDynamicScope(GetScopeHandle(closureType->GetModule()))) {
+        if (!IsDynamicScope(GetScopeHandle(targetMt->GetModule())))
+        {
             // we need to lock to access the global map
             CrstHolder crst(&s_targetCrst);
 
-            if (!s_frozenTargetMap.Lookup(closureType, &target))
+            if (!s_frozenTargetMap.Lookup(targetMt, &target))
             {
-                target = OBJECTREFToObject(TryAllocateFrozenObject(closureType));
-                if (target != NULL) {
-                    s_frozenTargetMap.Add(closureType, target);
+                target = OBJECTREFToObject(TryAllocateFrozenObject(targetMt));
+                if (target != NULL)
+                {
+                    s_frozenTargetMap.Add(targetMt, target);
                 }
             }
         }
@@ -1882,34 +1867,39 @@ DELEGATEREF COMDelegate::CreateShared(MethodDesc* pTargetMD, MethodTable* pMT)
     gc.target   = ObjectToOBJECTREF(target);
 
     GCPROTECT_BEGIN(gc);
-    if (closureType != NULL) {
-        if (gc.target == NULL) {
+    if (targetMt != NULL)
+    {
+        if (gc.target == NULL)
+        {
             // we should mostly get here with collectible types
             // TODO: pool non FOH targets too
-            gc.target = AllocateObject(closureType);
+            gc.target = AllocateObject(targetMt);
         }
         assert(gc.target != NULL);
     }
 
-    gc.delegate = (DELEGATEREF)AllocateObject(pMT);
+    gc.delegate = (DELEGATEREF)AllocateObject(delegateMt);
+
+    MethodTable* declaringType = targetMt == nullptr ? pTargetMD->GetMethodTable() : targetMt;
     BindToMethod(&gc.delegate, &gc.target, pTargetMD, declaringType, isOpen);
     GCPROTECT_END();
 
     return gc.delegate;
 }
 
-extern "C" void QCALLTYPE Delegate_CreateDelegate(PCODE method, MethodTable* pMT, QCall::ObjectHandleOnStack objHandle)
+extern "C" void QCALLTYPE Delegate_CreateDelegate(PCODE method, MethodTable* delegateMt, MethodTable* targetMt, QCall::ObjectHandleOnStack objHandle)
 {
     QCALL_CONTRACT;
 
     _ASSERTE(method != (PCODE)NULL);
+    _ASSERTE(delegateMt != (PCODE)NULL);
     BEGIN_QCALL;
 
     MethodDesc* methodDesc = NonVirtualEntry2MethodDesc(method);
 
     {
         GCX_COOP();
-        DELEGATEREF delegate = COMDelegate::CreateShared(methodDesc, pMT);
+        DELEGATEREF delegate = COMDelegate::CreateShared(methodDesc, delegateMt, targetMt);
         objHandle.Set(delegate);
     }
 

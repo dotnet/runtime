@@ -232,40 +232,28 @@ namespace System.Runtime.CompilerServices
             PrepareDelegate(ObjectHandleOnStack.Create(ref d));
         }
 
+        [LibraryImport(QCall, EntryPoint = "Delegate_CreateDelegate")]
+        private static unsafe partial void CreateDelegate(nint method, MethodTable* delegateMt, MethodTable* targetMt, ObjectHandleOnStack objHandle);
+
+        // This method is used by the JIT as a helper
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe TDelegate CreateSharedDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
-        {
-            Debug.Assert(typeof(TDelegate) is RuntimeType);
-            Debug.Assert(typeof(TDelegate).IsAssignableTo(typeof(Delegate)));
-
-            MethodTable* methodTable = ((RuntimeType)typeof(TDelegate)).GetNativeTypeHandle().AsMethodTable();
-
-            Delegate newDelegate = CreateSharedDelegateHelper(method, ref Unsafe.As<TDelegate?, Delegate?>(ref storage), methodTable);
-            Debug.Assert(newDelegate is TDelegate);
-            return Unsafe.As<TDelegate>(newDelegate);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe Delegate CreateSharedDelegateHelper(nint method, ref Delegate? storage, MethodTable* pMT)
+        private static unsafe Delegate CreateSharedDelegateHelper(nint method, ref Delegate? storage, MethodTable* delegateMt, MethodTable* targetMt)
         {
             ArgumentNullException.ThrowIfNull(method);
 
-            Debug.Assert(RuntimeTypeHandle.GetRuntimeType(pMT).IsDelegate());
+            Debug.Assert(RuntimeTypeHandle.GetRuntimeType(delegateMt).IsDelegate());
 
             Delegate? newDelegate = null;
-            CreateDelegate(method, pMT, ObjectHandleOnStack.Create(ref newDelegate));
+            CreateDelegate(method, delegateMt, targetMt, ObjectHandleOnStack.Create(ref newDelegate));
 
             if (newDelegate is null)
             {
                 throw new NotSupportedException();
             }
 
-            Debug.Assert(newDelegate.GetType() == RuntimeTypeHandle.GetRuntimeType(pMT));
+            Debug.Assert(newDelegate.GetType() == RuntimeTypeHandle.GetRuntimeType(delegateMt));
             return Interlocked.CompareExchange(ref storage, newDelegate, null) ?? newDelegate;
         }
-
-        [LibraryImport(QCall, EntryPoint = "Delegate_CreateDelegate")]
-        private static unsafe partial void CreateDelegate(nint method, MethodTable* pMT, ObjectHandleOnStack objHandle);
 
         /// <summary>
         /// If a hash code has been assigned to the object, it is returned. Otherwise zero is

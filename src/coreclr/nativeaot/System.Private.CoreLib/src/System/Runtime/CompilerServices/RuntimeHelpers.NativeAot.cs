@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
-using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.MethodInfos;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
@@ -280,56 +278,18 @@ namespace System.Runtime.CompilerServices
         {
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe TDelegate CreateSharedDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
+        private static class DelegateCache
         {
-            ArgumentNullException.ThrowIfNull(method);
-
-            Debug.Assert(typeof(TDelegate).IsAssignableTo(typeof(Delegate)));
-
-            MethodBase? methodBase = ReflectionAugments.GetMethodBaseFromStartAddressIfAvailable(method);
-
-            if (methodBase == null)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
-            ReadOnlySpan<ParameterInfo> parameters = methodBase.GetParametersAsSpan();
-
-            int paramCount = parameters.Length;
-            bool isStatic = methodBase.IsStatic;
-
-            MethodTable* pTargetMt = null;
-            bool throwIfClosed = false;
-            if (isStatic)
-            {
-                throwIfClosed = parameters.Length == 0 || parameters[0].ParameterType.IsValueType;
-            }
-            else
-            {
-                paramCount++; // count 'this'
-                Type? closureType = methodBase.DeclaringType;
-                Debug.Assert(closureType is RuntimeType);
-                if (closureType.IsValueType || closureType.IsGenericType)
-                {
-                    pTargetMt = ((RuntimeType)closureType).TypeHandle.ToMethodTable();
-                }
-            }
-
-            uint info = isStatic ? 1u : 0u;
-            info |= throwIfClosed ? 2u : 0u;
-            info |= (uint)paramCount << 2;
-
-            Delegate newDelegate = CreateSharedDelegateHelper(method, ref Unsafe.As<TDelegate?, Delegate?>(ref storage), MethodTable.Of<TDelegate>(), pTargetMt, info);
-            Debug.Assert(newDelegate is TDelegate);
-            return Unsafe.As<TDelegate>(newDelegate);
+            public static readonly Lock CacheLock = new();
+            public static readonly Dictionary<(nint, RuntimeType), Delegate> Instance = [];
+            public static readonly Dictionary<nuint, (object target, bool frozen)> Target = [];
         }
 
         // This method is used by the JIT as a helper
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe Delegate CreateSharedDelegateHelper(nint method, ref Delegate? storage, MethodTable* pMt, MethodTable* pTargetMt, uint info)
+        private static unsafe Delegate CreateSharedDelegateHelper(nint method, ref Delegate? storage, MethodTable* delegateMt, MethodTable* targetMt, uint info)
         {
-            RuntimeType delegateType = Type.GetTypeFromMethodTable(pMt);
+            RuntimeType delegateType = Type.GetTypeFromMethodTable(delegateMt);
             Debug.Assert(delegateType.GetRuntimeTypeInfo().IsDelegate);
 
             bool isStatic = (info & 1) != 0;
@@ -340,10 +300,7 @@ namespace System.Runtime.CompilerServices
             int invokeCount = invokeMethod.GetParametersAsSpan().Length;
 
             bool isOpen = invokeCount == paramCount;
-
-            // reject cases needing valid instances
-            // we block delegates closed over null valuetypes since we'd just always NRE in the unboxing stub
-            // reject instance methods on generic types, those require proper targets
+            // reject invalid closed delegates
             if (!isOpen && throwIfClosed)
             {
                 throw new NotSupportedException();
@@ -354,24 +311,27 @@ namespace System.Runtime.CompilerServices
             {
                 object? target = null;
                 bool allowFrozen = true;
-                if (pTargetMt != null)
+                if (targetMt != null)
                 {
-                    ref (object target, bool frozen) targetReference = ref CollectionsMarshal.GetValueRefOrAddDefault(DelegateCache.Target, (nuint)pTargetMt, out bool targetExists);
+                    if (targetMt->IsFinalizable || ReflectionAugments.HasClassConstructor(Type.GetTypeFromMethodTable(targetMt).TypeHandle))
+                        throw new NotSupportedException();
+
+                    ref (object target, bool frozen) targetReference = ref CollectionsMarshal.GetValueRefOrAddDefault(DelegateCache.Target, (nuint)targetMt, out bool targetExists);
                     if (targetExists)
                     {
-                        Debug.Assert(targetReference.target.GetMethodTable() == pTargetMt);
+                        Debug.Assert(targetReference.target.GetMethodTable() == targetMt);
                         target = targetReference.target;
                         allowFrozen = targetReference.frozen;
                     }
                     else
                     {
-                        target = FrozenObjectHeapManager.Instance.TryAllocateObject(pTargetMt);
+                        target = FrozenObjectHeapManager.Instance.TryAllocateObject(targetMt);
                         if (target is null)
                         {
-                            target = RuntimeImports.RhNewObject(pTargetMt);
+                            target = RuntimeImports.RhNewObject(targetMt);
                             allowFrozen = false;
                         }
-                        Debug.Assert(target.GetMethodTable() == pTargetMt);
+                        Debug.Assert(target.GetMethodTable() == targetMt);
 
                         targetReference = (target, allowFrozen);
                     }
@@ -385,8 +345,8 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    object? newInstance = allowFrozen ? FrozenObjectHeapManager.Instance.TryAllocateObject(pMt) : null;
-                    newInstance ??= RuntimeImports.RhNewObject(pMt);
+                    object? newInstance = allowFrozen ? FrozenObjectHeapManager.Instance.TryAllocateObject(delegateMt) : null;
+                    newInstance ??= RuntimeImports.RhNewObject(delegateMt);
                     Debug.Assert(newInstance.GetType() == delegateType);
 
                     newDelegate = Unsafe.As<Delegate>(newInstance);
@@ -397,13 +357,6 @@ namespace System.Runtime.CompilerServices
             }
 
             return Interlocked.CompareExchange(ref storage, newDelegate, null) ?? newDelegate;
-        }
-
-        private static class DelegateCache
-        {
-            public static readonly Lock CacheLock = new();
-            public static readonly Dictionary<(nint, RuntimeType), Delegate> Instance = [];
-            public static readonly Dictionary<nuint, (object target, bool frozen)> Target = [];
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",

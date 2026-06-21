@@ -592,50 +592,57 @@ namespace Internal.IL
                     return;
                 }
 
-                if (IsRuntimeHelpersGetDelegate(method))
-                {
-                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
-                    {
-                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ObjectAllocator, runtimeDeterminedMethod.Instantiation[0]), reason);
-                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.Instantiation[0]), reason);
-                    }
-                    else
-                    {
-                        _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, method.Instantiation[0]), reason);
-                        _dependencies.Add(_factory.ConstructedTypeSymbol(method.Instantiation[0]), reason);
-                    }
-
-                    ReadOnlySpan<byte> previousBytes = new(_ilBytes, 0, _currentOffset);
-                    int lastLdftn = Math.Max(previousBytes.LastIndexOf([(byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.ldftn)]),
-                        previousBytes.LastIndexOf([(byte)ILOpcode.prefix1, unchecked((byte)ILOpcode.ldvirtftn)]));
-
-                    // we don't need to worry if we get some random method here instead due to weird IL, it will just root the type for it
-                    if (lastLdftn >= 0 && lastLdftn < _currentOffset - 4)
-                    {
-                        int targetToken = ReadILTokenAt(lastLdftn + 2);
-                        object targetObject = _methodIL.GetObject(targetToken, NotFoundBehavior.ReturnNull);
-                        if (targetObject is MethodDesc delegateMethod && !delegateMethod.Signature.IsStatic)
-                        {
-                            TypeDesc owningType = delegateMethod.OwningType;
-                            if (owningType.IsRuntimeDeterminedSubtype)
-                            {
-                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ObjectAllocator, owningType), reason);
-                                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, owningType), reason);
-                            }
-                            else
-                            {
-                                _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, owningType), reason);
-                                _dependencies.Add(_factory.ConstructedTypeSymbol(owningType), reason);
-                            }
-                        }
-                    }
-
-                    _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.CreateSharedDelegate), reason);
-                    // do not return here, we want the method itself rooted too
-                }
-
                 if (opcode != ILOpcode.ldftn)
                 {
+                    if (IsRuntimeHelpersGetDelegate(method))
+                    {
+                        int argumentsOffset = _currentOffset - 16;
+                        // expected IL: prefix1 ldftn 4B-token ldfldsa 4B-token
+                        // this will be negative if there's not enough data
+                        if (argumentsOffset >= 0 &&
+                            (IsOpCodeAt(argumentsOffset, ILOpcode.ldftn) ||
+                             IsOpCodeAt(argumentsOffset, ILOpcode.ldvirtftn)) &&
+                            IsOpCodeAt(argumentsOffset + 6, ILOpcode.ldsflda))
+                        {
+                            int methodToken = ReadILTokenAt(argumentsOffset + 2);
+                            object methodObject = _methodIL.GetObject(methodToken, NotFoundBehavior.ReturnNull);
+                            if (methodObject is MethodDesc delegateMethod && !delegateMethod.Signature.IsStatic)
+                            {
+                                TypeDesc owningType = delegateMethod.OwningType;
+                                if (owningType.IsRuntimeDeterminedSubtype)
+                                {
+                                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ObjectAllocator, owningType), reason);
+                                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, owningType), reason);
+                                }
+                                else
+                                {
+                                    _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, owningType), reason);
+                                    _dependencies.Add(_factory.ConstructedTypeSymbol(owningType), reason);
+                                }
+                            }
+
+                            int fieldToken = ReadILTokenAt(argumentsOffset + 7);
+                            object fieldObject = _methodIL.GetObject(fieldToken, NotFoundBehavior.ReturnNull);
+                            if (fieldObject is FieldDesc storageField)
+                            {
+                                TypeDesc delegateType = storageField.FieldType;
+                                if (delegateType.IsRuntimeDeterminedSubtype)
+                                {
+                                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ObjectAllocator, delegateType), reason);
+                                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, delegateType), reason);
+                                }
+                                else
+                                {
+                                    _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, delegateType), reason);
+                                    _dependencies.Add(_factory.ConstructedTypeSymbol(delegateType), reason);
+                                }
+                            }
+                        }
+
+                        _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.CreateSharedDelegate), reason);
+                        // do not return here, we want the method itself rooted too
+                    }
+
                     if (IsRuntimeHelpersIsReferenceOrContainsReferences(method))
                     {
                         return;
@@ -972,7 +979,7 @@ namespace Internal.IL
             if ((opcode == ILOpcode.ldftn || opcode == ILOpcode.ldvirtftn)
                 && _currentOffset + 5 < _ilBytes.Length
                 && _basicBlocks[_currentOffset] == null
-                && _ilBytes[_currentOffset] == (byte)ILOpcode.newobj)
+                && IsOpCodeAt(_currentOffset, ILOpcode.newobj))
             {
                 // TODO: for ldvirtftn we need to also check for the `dup` instruction
                 int ctorToken = ReadILTokenAt(_currentOffset + 1);
@@ -994,6 +1001,13 @@ namespace Internal.IL
                         _dependencies.Add(_factory.ReadyToRunHelper(ReadyToRunHelperId.DelegateCtor, info), reason);
                 }
             }
+        }
+
+        private bool IsOpCodeAt(int offset, ILOpcode opcode)
+        {
+            return opcode <= ILOpcode.prefix1
+                ? _ilBytes[offset] == (byte)opcode
+                : _ilBytes[offset] == (byte)ILOpcode.prefix1 && _ilBytes[offset + 1] == (byte)opcode;
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)

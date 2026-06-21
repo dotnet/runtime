@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 
 namespace System.Runtime.CompilerServices
 {
@@ -165,12 +163,10 @@ namespace System.Runtime.CompilerServices
 #endif
 
         [Intrinsic]
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [RequiresDynamicCode("AOT must recognize usages of the method to preserve reflection info and generate stubs")]
-        public static TDelegate GetDelegate<TDelegate>(nint method, ref TDelegate? storage) where TDelegate : Delegate
+        public static Delegate GetDelegate(nint method, ref Delegate? storage)
         {
-            return storage ?? CreateSharedDelegate(method, ref storage);
+            throw new NotSupportedException("GetDelegate must be used in runtime recognized patterns");
         }
 
         // The following intrinsics return true if input is a compile-time constant

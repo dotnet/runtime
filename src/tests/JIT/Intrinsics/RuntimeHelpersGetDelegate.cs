@@ -13,6 +13,7 @@ public static class Program
 {
     private static int _errors;
 
+    [ActiveIssue("Mono does not implement the intrinsic", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {
