@@ -559,13 +559,32 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 {
     const unsigned cursor = getBlockIndex(block);
 
-    // Pop control flow intervals that end here (at most two, block and/or loop)
-    // and emit wasm END instructions for them.
+    // Pop control flow intervals that end here and emit wasm END instructions for them.
     //
     while (!wasmControlFlowStack->Empty() && (wasmControlFlowStack->Top()->End() == cursor))
     {
         instGen(INS_end);
         WasmInterval* interval = wasmControlFlowStack->Pop();
+
+        // After a TRY's `end`, emit `unreachable` so the rest of its
+        // [exnref]-wrapper body is polymorphic — try_table itself uses void
+        // result sig, so without this the wrapper's `end` would not validate
+        // against its [exnref] sig.
+        //
+        if (interval->IsTry())
+        {
+            instGen(INS_unreachable);
+        }
+
+        // Stash the [exnref] that catch_ref pushed onto the wrapper's `end`
+        // into the per-funclet local so any later throw_ref can reload it.
+        //
+        if (interval->IsExnRefWrapper())
+        {
+            unsigned const exnRefIdx = m_compiler->funCurrentFunc()->funWasmExnRefLocalIndex;
+            assert(exnRefIdx != UINT_MAX);
+            GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, exnRefIdx);
+        }
     }
 
     // Push control flow for intervals that start here or earlier, and emit
@@ -591,52 +610,22 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
                 GenTree* const jTrue      = blockRange.LastNode();
                 assert(jTrue->OperIs(GT_WASM_JEXCEPT));
 
-                // Empty stack sig, one catch clause
+                // try_table uses void result sig; the paired [exnref]-wrapper
+                // just outside it provides the depth-0 target for catch_ref.
                 //
                 GetEmitter()->emitIns_Ty_I(INS_try_table, WasmValueType::Invalid, 1);
 
-                // Post-catch continuation dispatch block is the true target.
-                // False target should be the next block.
+                // One catch clause targeting the wrapper at depth 0. The true
+                // target of GT_WASM_JEXCEPT is passed only for disasm readability.
                 //
                 assert(block->GetFalseTarget() == block->Next());
                 BasicBlock* const target = block->GetTrueTarget();
-                unsigned          depth  = findTargetDepth(target);
-                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, depth, target);
+                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, 0, target);
             }
             else
             {
                 assert(interval->IsBlock());
-
-                bool isTryWrapper = false;
-
-#if FALSE
-                // TODO-WASM: block sig when we emit catch_ref
-
-                // If this interval exactly wraps a try, it represents the branch to the
-                // catch handlers. We need to emit an exnref block sig
-                //
-                // (TODO, perhaps ... detect this earlier and make it an interval property)
-                if ((wasmCursor + 1) < m_compiler->fgWasmIntervals->size())
-                {
-                    WasmInterval* nextInterval = m_compiler->fgWasmIntervals->at(wasmCursor + 1);
-                    if (nextInterval->IsTry())
-                    {
-                        // we should always see a wrapping block because of the
-                        // control flow added by fgWasmEhFlow
-                        //
-                        if ((nextInterval->Start() == interval->Start()) && (nextInterval->End() == interval->End()))
-                        {
-                            isTryWrapper = true;
-                        }
-                        else
-                        {
-                            assert(!"Expected block to wrap the try");
-                        }
-                    }
-                }
-#endif
-
-                if (isTryWrapper)
+                if (interval->IsExnRefWrapper())
                 {
                     GetEmitter()->emitIns_BlockTy(INS_block, WasmValueType::ExnRef);
                 }
@@ -916,9 +905,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_WASM_THROW_REF:
-            // TODO-WASM: enable when we emit catch_ref instead of catch_all
-            // GetEmitter()->emitIns(INS_throw_ref);
-            GetEmitter()->emitIns(INS_unreachable);
+            // Reload and rethrow the exnref stashed at the catch_ref landing.
+            {
+                unsigned const exnRefIdx = m_compiler->funCurrentFunc()->funWasmExnRefLocalIndex;
+                assert(exnRefIdx != UINT_MAX);
+                GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, exnRefIdx);
+                GetEmitter()->emitIns(INS_throw_ref);
+            }
             break;
 
         case GT_CATCH_ARG:
@@ -2448,9 +2441,15 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
 {
     assert(tree->OperIs(GT_LCL_FLD));
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree);
+    var_types  type   = tree->TypeGet();
+
+    if (type == TYP_SIMD16)
+    {
+        NYI_WASM_SIMD("SIMD16 local field load");
+    }
 
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-    GetEmitter()->emitIns_S(ins_Load(tree->TypeGet()), emitTypeSize(tree), tree->GetLclNum(), tree->GetLclOffs());
+    GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(tree), tree->GetLclNum(), tree->GetLclOffs());
     WasmProduceReg(tree);
 }
 
@@ -2472,6 +2471,11 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     if (!varDsc->lvIsRegCandidate())
     {
         var_types type = varDsc->GetRegisterType(tree);
+        if (type == TYP_SIMD16)
+        {
+            NYI_WASM_SIMD("SIMD16 local load");
+        }
+
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
         WasmProduceReg(tree);
@@ -2556,8 +2560,13 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_IND));
 
-    var_types   type = tree->TypeGet();
-    instruction ins  = ins_Load(type);
+    var_types type = tree->TypeGet();
+    if (type == TYP_SIMD16)
+    {
+        NYI_WASM_SIMD("SIMD16 indirect load");
+    }
+
+    instruction ins = ins_Load(type);
 
     genConsumeAddress(tree->Addr());
 
@@ -3490,6 +3499,14 @@ void CodeGen::genCallFinally(BasicBlock* block)
     if (block->HasFlag(BBF_RETLESS_CALL))
     {
         GetEmitter()->emitIns(INS_unreachable);
+
+        // A retless BBJ_CALLFINALLY can be the last block of a wasm function/funclet;
+        // every wasm function body must end with `end`.
+        //
+        if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+        {
+            GetEmitter()->emitIns(INS_end);
+        }
     }
 }
 
@@ -3570,6 +3587,11 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 {
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
     var_types  type   = varDsc->GetRegisterType();
+    if (type == TYP_SIMD16)
+    {
+        NYI_WASM_SIMD("SIMD16 local load");
+    }
+
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
     GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), lclNum, 0);
     GetEmitter()->emitIns_I(INS_local_set, emitTypeSize(type), WasmRegToIndex(targetReg));

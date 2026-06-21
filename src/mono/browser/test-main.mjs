@@ -263,6 +263,7 @@ function configureRuntime(dotnet, runArgs) {
             dumpThreadsOnNonZeroExit: true,
             loadAllSatelliteResources: true,
             jsThreadBlockingMode: "ThrowWhenBlockingWait",
+            pthreadPoolInitialSize: 15,
         });
 
     if (ENVIRONMENT_IS_NODE) {

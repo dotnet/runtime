@@ -116,6 +116,7 @@ public class Program
     
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/129508", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
     public static void TestEntryPoint()
     {
         try

@@ -1714,8 +1714,6 @@ namespace Internal.JitInterface
             {
                 pResult->sig.flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
             }
-
-            pResult->_wrapperDelegateInvoke = 0;
         }
 
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)

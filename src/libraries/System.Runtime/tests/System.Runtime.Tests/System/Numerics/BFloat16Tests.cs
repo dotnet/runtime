@@ -538,6 +538,7 @@ namespace System.Numerics.Tests
 
         [MemberData(nameof(ExplicitConversion_FromSingle_TestData))]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103347", TestPlatforms.Browser)]
         public static void ExplicitConversion_FromSingle(float f, BFloat16 expected) // Check the underlying bits for verifying NaNs
         {
             BFloat16 b16 = (BFloat16)f;
@@ -623,6 +624,7 @@ namespace System.Numerics.Tests
 
         [MemberData(nameof(ExplicitConversion_FromDouble_TestData))]
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103347", TestPlatforms.Browser)]
         public static void ExplicitConversion_FromDouble(double d, BFloat16 expected) // Check the underlying bits for verifying NaNs
         {
             BFloat16 b16 = (BFloat16)d;

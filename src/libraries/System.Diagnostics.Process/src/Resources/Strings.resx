@@ -231,6 +231,12 @@
   <data name="StartDetachedNotCompatible" xml:space="preserve">
     <value>The StartDetached property cannot be used with UseShellExecute set to true.</value>
   </data>
+  <data name="StartSuspendedNotCompatible" xml:space="preserve">
+    <value>The StartSuspended property cannot be used with UseShellExecute set to true.</value>
+  </data>
+  <data name="ProcessNotStartedSuspended" xml:space="preserve">
+    <value>Resume can only be called on a process that was started with StartSuspended set to true and has not been resumed yet.</value>
+  </data>
   <data name="DirectoryNotValidAsInput" xml:space="preserve">
     <value>The FileName property should not be a directory unless UseShellExecute is set.</value>
   </data>

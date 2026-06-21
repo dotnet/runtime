@@ -79,7 +79,8 @@ public record struct ModuleLookupTables(
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
     TargetPointer TypeRefToMethodTable,
-    TargetPointer MethodDefToILCodeVersioningState);
+    TargetPointer MethodDefToILCodeVersioningState,
+    uint TableDataOffset);
 
 public readonly struct LoaderHeapBlockData
 {
@@ -97,6 +98,7 @@ public interface ILoader : IContract
     IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
     string GetAppDomainFriendlyName() => throw new NotImplementedException();
+    TargetPointer GetAppDomain() => throw new NotImplementedException();
     TargetPointer GetModule(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
