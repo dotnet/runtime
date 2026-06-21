@@ -485,44 +485,17 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule, OUT BOOL * pIsModuleLoaded) = 0;
 
-    //.........................................................................
-    // These methods were the methods that DBI was calling from IXClrData in V2.
-    // We imported them over to this V3 interface so that we can sever all ties between DBI and the
-    // old IXClrData.
     //
-    // The exact semantics of these are whatever their V2 IXClrData counterpart did.
-    // We may eventually migrate these to their real V3 replacements.
-    //.........................................................................
-
-    // "types" of addresses. This is taken exactly from the definition, but renamed to match
-    // CLR coding conventions.
-    typedef enum
-    {
-        kAddressUnrecognized,
-        kAddressManagedMethod,
-        kAddressRuntimeManagedCode,
-        kAddressRuntimeUnmanagedCode,
-        kAddressGcData,
-        kAddressRuntimeManagedStub,
-        kAddressRuntimeUnmanagedStub,
-    } AddressType;
-
-    //
-    // Get the "type" of address.
+    // Get whether the address is managed.
     //
     // Arguments:
-    //    address      - address to query type.
-    //    pRetVal - [out] Type of address.
+    //    address      - address to query.
+    //    pIsManaged - [out] TRUE if the address is managed, FALSE otherwise.
     //
     // Return Value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
-    // Notes:
-    //    This is taken exactly from the IXClrData definition.
-    //    This is provided for V3 compatibility to support Interop-debugging.
-    //    This should eventually be deprecated.
-    //
-    virtual HRESULT STDMETHODCALLTYPE GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal) = 0;
+    virtual HRESULT STDMETHODCALLTYPE IsManagedCode(CORDB_ADDRESS address, OUT BOOL * pIsManaged) = 0;
 
 
     //.........................................................................
@@ -1673,8 +1646,7 @@ public:
     //                              the assembly
     //                              an indication of the type: whether it's a class or value type
     //     output:  pFieldData    - information about the EnC added field
-    //              pfStatic      - flag to indicate whether the field is static
-    virtual HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData, OUT BOOL * pfStatic) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData) = 0;
 
 
     // EnumerateTypeHandleParams gets the necessary data for a type handle, i.e. its
