@@ -580,8 +580,7 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
 
     // Allocate the DT_CONTEXT buffer on the dbi stack and
     // hand the address to the DAC via Debugger_STRData. The DAC writes the
-    // populated context through these pointers. See the comment on
-    // Debugger_STRData in dbgipcevents.h for the protocol.
+    // populated context through this pointer.
     DT_CONTEXT          frameCtx;
     ZeroMemory(&frameCtx, sizeof(frameCtx));
     frameData.ctx = &frameCtx;

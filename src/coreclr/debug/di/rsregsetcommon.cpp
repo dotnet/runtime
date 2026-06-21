@@ -24,6 +24,7 @@ CordbRegisterSet::CordbRegisterSet(
     bool fQuickUnwind)
   : CordbBase(pThread->GetProcess(), 0, enumCordbRegisterSet)
 {
+    _ASSERTE( pContext != NULL );
     _ASSERTE( pThread != NULL );
     m_thread      = pThread;
     m_context     = *pContext;
