@@ -166,7 +166,7 @@ namespace System
 
         internal void StoreDynamicMethod(MethodInfo dynamicMethod)
         {
-            Debug.Assert(_invocationCount == 0);
+            Debug.Assert(HasSingleTarget);
             _methodBase = dynamicMethod;
         }
 

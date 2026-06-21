@@ -1812,10 +1812,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
 
     // If you modify this logic, please update cDAC IObject.GetDelegateInfo.
 
-    MethodDesc *pMethodHandle = NULL;
-
     DELEGATEREF thisDel = (DELEGATEREF) orDelegate;
-    DELEGATEREF innerDel = NULL;
 
     INT_PTR count = thisDel->GetInvocationCount();
     if (count != 0)
@@ -1823,96 +1820,28 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         // this is one of the following:
         // - multicast - _invocationList is Array && _invocationCount != 0
         // - unamanaged ftn ptr - _invocationList == NULL && _invocationCount == -1
-        // - wrapper delegate - _invocationList is Delegate && _invocationCount != NULL
         // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
-        //                    or _invocationList points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Wrapper Delegate)
-        // in the wrapper delegate case we want to unwrap and return the method desc of the inner delegate
-        // in the other cases we return the method desc for the invoke
-        innerDel = (DELEGATEREF) thisDel->GetInvocationList();
-        bool fOpenVirtualDelegate = false;
+        //                    or _invocationList points to a LoaderAllocator/DynamicResolver
 
-        if (innerDel != NULL)
-        {
-            MethodTable *pMT = innerDel->GetMethodTable();
-            if (pMT->IsDelegate())
-                return GetMethodDesc(innerDel);
-            if (!pMT->IsArray())
-            {
-                // must be a virtual one
-                fOpenVirtualDelegate = true;
-            }
-        }
-        else
-        {
-            if (count != DELEGATE_MARKER_UNMANAGEDFPTR)
-            {
-                // must be a virtual one
-                fOpenVirtualDelegate = true;
-            }
-        }
+        // we return the method desc for the invoke
+        OBJECTREF invocationList = thisDel->GetInvocationList();
+        if ((invocationList != NULL && invocationList->GetMethodTable()->IsArray()) || count == DELEGATE_MARKER_UNMANAGEDFPTR)
+            return FindDelegateInvokeMethod(thisDel->GetMethodTable());
 
-        if (fOpenVirtualDelegate)
-            pMethodHandle = GetMethodDescForOpenVirtualDelegate(thisDel);
-        else
-            pMethodHandle = FindDelegateInvokeMethod(thisDel->GetMethodTable());
+        return GetMethodDescForOpenVirtualDelegate(thisDel);
     }
-    else
+
+    // Next, check for an open delegate
+    PCODE code = thisDel->GetMethodPtrAux();
+    if (code == (PCODE)NULL)
     {
-        // Next, check for an open delegate
-        PCODE code = thisDel->GetMethodPtrAux();
-
-        if (code == (PCODE)NULL)
-        {
-            // Must be a normal delegate
-            code = thisDel->GetMethodPtr();
-        }
-
-        pMethodHandle = NonVirtualEntry2MethodDesc(code);
+        // Must be a normal delegate
+        code = thisDel->GetMethodPtr();
     }
 
+    MethodDesc *pMethodHandle = NonVirtualEntry2MethodDesc(code);
     _ASSERTE(pMethodHandle);
     return pMethodHandle;
-}
-
-OBJECTREF COMDelegate::GetTargetObject(OBJECTREF obj)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF targetObject = NULL;
-
-    DELEGATEREF thisDel = (DELEGATEREF) obj;
-    OBJECTREF innerDel = NULL;
-
-    if (thisDel->GetInvocationCount() != 0)
-    {
-        // this is one of the following:
-        // - multicast
-        // - unmanaged ftn ptr
-        // - wrapper delegate
-        // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
-        //                    or _invocationList points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Wrapper Delegate)
-        // in the wrapper delegate case we want to unwrap and return the object of the inner delegate
-        innerDel = (DELEGATEREF) thisDel->GetInvocationList();
-        if (innerDel != NULL)
-        {
-            MethodTable *pMT = innerDel->GetMethodTable();
-            if (pMT->IsDelegate())
-            {
-                targetObject = GetTargetObject(innerDel);
-            }
-        }
-    }
-
-    if (targetObject == NULL)
-        targetObject = thisDel->GetTarget();
-
-    return targetObject;
 }
 
 BOOL COMDelegate::IsTrueMulticastDelegate(OBJECTREF delegate)

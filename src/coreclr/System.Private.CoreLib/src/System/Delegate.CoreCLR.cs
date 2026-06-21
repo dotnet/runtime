@@ -379,8 +379,7 @@ namespace System
 
             // Initialize the method...
             Delegate d = InternalAlloc(rtType);
-            // This is a new internal API added in Whidbey. Currently it's only
-            // used by the dynamic method code to generate a wrapper delegate.
+            // This is a new internal API added in Whidbey.
             // Allow flexible binding options since the target method is
             // unambiguously provided to us.
 

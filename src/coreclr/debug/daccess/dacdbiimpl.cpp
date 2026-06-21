@@ -3268,7 +3268,6 @@ DacDbiInterfaceImpl::DelegateType DacDbiInterfaceImpl::GetDelegateType(VMPTR_Obj
     {
         // If this delegate points to a static function or this is a open virtual delegate, this should be non-null
         // Special case: This might fail in a VSD delegate (instance open virtual)...
-        // TODO: There is the special signatures cases missing.
         TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
         if (targetMethodPtr == (TADDR)NULL)
         {
