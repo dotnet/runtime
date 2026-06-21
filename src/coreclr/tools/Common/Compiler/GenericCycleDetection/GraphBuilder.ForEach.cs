@@ -59,7 +59,11 @@ namespace ILCompiler
                         TypeDesc genericTypeDefinition = type.GetTypeDefinition();
                         Instantiation genericTypeParameters = genericTypeDefinition.Instantiation;
                         Instantiation genericTypeArguments = type.Instantiation;
-                        for (int i = 0; i < genericTypeArguments.Length; i++)
+
+                        // We have some negative IL tests that reference a generic type with more type arguments
+                        // than the type definition has type parameters.
+                        // Tolerate them as such a type can never load and therefore cannot form a cycle.
+                        for (int i = 0; i < genericTypeArguments.Length && i < genericTypeParameters.Length; i++)
                         {
                             var genericTypeParameter = (EcmaGenericParameter)genericTypeParameters[i];
                             TypeDesc genericTypeArgument = genericTypeArguments[i];
