@@ -572,11 +572,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         /* Set the delegate flag */
         call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DELEGATE_INV;
 
-        if (callInfo->wrapperDelegateInvoke)
-        {
-            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_WRAPPER_DELEGATE_INV;
-        }
-
         if (opcode == CEE_CALLVIRT)
         {
             assert(mflags & CORINFO_FLG_FINAL);
@@ -3319,6 +3314,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // handled by the AltJit, so limit only the platform specific intrinsics
             assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
 
+            if (ni < LAST_NI_Vector128)
+#elif defined(TARGET_WASM)
+            NYI_WASM_SIMD("impHWIntrinsic");
             if (ni < LAST_NI_Vector128)
 #else
 #error Unsupported platform
@@ -6231,7 +6229,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 #endif // !TARGET_64BIT
-#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_WASM)
             impPopStack();
 
             GenTree* op1Dup = nullptr;
@@ -11388,6 +11386,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         platformNamespaceName = ".X86";
 #elif defined(TARGET_ARM64)
                         platformNamespaceName = ".Arm";
+#elif defined(TARGET_WASM)
+                        platformNamespaceName = ".Wasm";
 #else
 #error Unsupported platform
 #endif

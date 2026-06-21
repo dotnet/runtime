@@ -14149,6 +14149,7 @@ namespace System.Runtime.CompilerServices
     public sealed partial class IsClosedTypeAttribute : System.Attribute
     {
         public IsClosedTypeAttribute() { }
+        public System.Type[] DerivedTypes { get { throw null; } set { } }
     }
     public static partial class IsConst
     {
