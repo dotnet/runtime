@@ -15,7 +15,7 @@ public interface IPlatformAgnosticContext
     public int StackPointerRegister { get; }
 
     public TargetPointer StackPointer { get; set; }
-    public TargetPointer InstructionPointer { get; set; }
+    public TargetCodePointer InstructionPointer { get; set; }
     public TargetPointer FramePointer { get; set; }
 
     public uint RawContextFlags { get; set; }

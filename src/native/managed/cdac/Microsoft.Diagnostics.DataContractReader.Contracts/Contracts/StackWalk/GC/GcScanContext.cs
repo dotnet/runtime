@@ -10,11 +10,10 @@ internal class GcScanContext
 {
 
     private readonly Target _target;
-    private readonly bool _isArm32;
     public bool ResolveInteriorPointers { get; }
     public List<StackRefData> StackRefs { get; } = [];
     public TargetPointer StackPointer { get; private set; }
-    public TargetPointer InstructionPointer { get; private set; }
+    public TargetCodePointer InstructionPointer { get; private set; }
     public TargetPointer Frame { get; private set; }
 
     // When set, overrides the default IP/Frame source-type classification for reported roots.
@@ -25,19 +24,13 @@ internal class GcScanContext
     public GcScanContext(Target target, bool resolveInteriorPointers)
     {
         _target = target;
-        _isArm32 = target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Arm;
         ResolveInteriorPointers = resolveInteriorPointers;
     }
 
-    public void UpdateScanContext(TargetPointer sp, TargetPointer ip, TargetPointer frame, StackRefData.SourceTypes? sourceTypeOverride = null)
+    public void UpdateScanContext(TargetPointer sp, TargetCodePointer ip, TargetPointer frame, StackRefData.SourceTypes? sourceTypeOverride = null)
     {
         StackPointer = sp;
-        // On ARM32 the control PC carries the Thumb bit (LSB) to indicate execution mode.
-        // The native runtime applies PCODEToPINSTR (utilcode.h) before reporting the IP as
-        // a StackRefData.Source so consumers compare data addresses, not PCODE values. Mirror
-        // that here: without this mask, every cDAC ref on arm32 would be keyed at IP|1 while
-        // the runtime reports at IP, producing universal mismatches in GC root verification.
-        InstructionPointer = _isArm32 ? new TargetPointer(ip.Value & ~1ul) : ip;
+        InstructionPointer = ip;
         Frame = frame;
         _sourceTypeOverride = sourceTypeOverride;
     }
@@ -56,8 +49,12 @@ internal class GcScanContext
         }
         else
         {
+            // StackRefData.Source is a data address (TargetPointer). Convert the code
+            // pointer through the platform's PCODE -> PINSTR transform so consumers
+            // comparing this against runtime-reported sources see matching bits on
+            // ARM32 (Thumb-bit-bearing PCs) and ARM64 (PtrAuth-bearing PCs).
             data.SourceType = StackRefData.SourceTypes.StackSourceIP;
-            data.Source = InstructionPointer;
+            data.Source = CodePointerUtils.AddressFromCodePointer(InstructionPointer, _target);
         }
     }
 
