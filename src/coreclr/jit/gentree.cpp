@@ -4315,6 +4315,9 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_Vector512_Shuffle:
                     case NI_Vector512_ShuffleNative:
                     case NI_Vector512_ShuffleNativeFallback:
+                    case NI_Vector128_CreateGeometricSequence:
+                    case NI_Vector256_CreateGeometricSequence:
+                    case NI_Vector512_CreateGeometricSequence:
                     {
                         // These are likely becoming calls
                         costEx = 5 + (3 * IND_COST_EX);
