@@ -105,6 +105,7 @@ CDAC_TYPE_FIELD(StressLog, T_INT32, TotalChunks, offsetof(StressLog, totalChunk)
 CDAC_TYPE_FIELD(StressLog, T_POINTER, Logs, offsetof(StressLog, logs))
 CDAC_TYPE_FIELD(StressLog, T_UINT64, TickFrequency, offsetof(StressLog, tickFrequency))
 CDAC_TYPE_FIELD(StressLog, T_UINT64, StartTimestamp, offsetof(StressLog, startTimeStamp))
+CDAC_TYPE_FIELD(StressLog, T_UINT64, StartTime, offsetof(StressLog, startTime))
 CDAC_TYPE_END(StressLog)
 
 CDAC_TYPE_BEGIN(ThreadStressLog)

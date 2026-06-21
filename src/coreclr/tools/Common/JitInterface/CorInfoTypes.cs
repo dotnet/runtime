@@ -938,9 +938,6 @@ namespace Internal.JitInterface
         public uint offsetOfDelegateInstance;
         public uint offsetOfDelegateFirstTarget;
 
-        // Wrapper delegate offsets
-        public uint offsetOfWrapperDelegateIndirectCell;
-
         // Reverse PInvoke offsets
         public uint sizeOfReversePInvokeFrame;
 
@@ -1143,9 +1140,6 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP instParamLookup;
-
-        public byte _wrapperDelegateInvoke;
-        public bool wrapperDelegateInvoke { get { return _wrapperDelegateInvoke != 0; } set { _wrapperDelegateInvoke = value ? (byte)1 : (byte)0; } }
     }
 
     public enum CORINFO_DEVIRTUALIZATION_DETAIL

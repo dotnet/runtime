@@ -957,13 +957,18 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
             ${ARCH_SOURCES_DIR}/browserprofiler.cpp
         )
     endif(CLR_CMAKE_TARGET_BROWSER)
+    if(CLR_CMAKE_TARGET_WASI)
+        set(WASM_THUNK_SUBDIR wasi)
+    else()
+        set(WASM_THUNK_SUBDIR browser)
+    endif()
     set(VM_SOURCES_WKS_GEN
-        ${ARCH_SOURCES_DIR}/callhelpers-interp-to-managed.cpp
-        ${ARCH_SOURCES_DIR}/callhelpers-reverse.cpp
+        ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-interp-to-managed.cpp
+        ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-reverse.cpp
     )
     if (GEN_PINVOKE)
         list(APPEND VM_SOURCES_WKS_GEN
-            ${ARCH_SOURCES_DIR}/callhelpers-pinvoke.cpp
+            ${ARCH_SOURCES_DIR}/${WASM_THUNK_SUBDIR}/callhelpers-pinvoke.cpp
         )
     endif(GEN_PINVOKE)
 endif()

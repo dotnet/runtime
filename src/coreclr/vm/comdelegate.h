@@ -36,11 +36,7 @@ public:
     // Get the invoke method for the delegate. Used to transition delegates to multicast delegates.
     FCDECL1(static PCODE, GetMulticastInvoke, MethodTable* pDelegateMT);
     FCDECL1(static MethodDesc*, GetInvokeMethod, MethodTable* pDelegateMT);
-    static PCODE GetWrapperInvoke(MethodDesc* pMD);
-    // determines where the delegate needs to be wrapped for non-security reason
-    static BOOL NeedsWrapperDelegate(MethodDesc* pTargetMD);
-    // on entry delegate points to the delegate to wrap
-    static DELEGATEREF CreateWrapperDelegate(DELEGATEREF delegate, MethodDesc* pTargetMD);
+
     static DELEGATEREF CreateShared(MethodDesc* pTargetMD, MethodTable* pMT);
 
     // Marshals a delegate to a unmanaged callback.
@@ -60,9 +56,6 @@ public:
 
     // Decides if pcls derives from Delegate.
     static BOOL IsDelegate(MethodTable *pMT);
-
-    // Decides if this is a wrapper delegate
-    static BOOL IsWrapperDelegate(DELEGATEREF dRef);
 
     // Get the cpu stub for a delegate invoke.
     static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
