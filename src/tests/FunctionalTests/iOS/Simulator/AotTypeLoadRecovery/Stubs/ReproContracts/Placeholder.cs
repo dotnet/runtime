@@ -14,10 +14,6 @@ public static class ContractBridge
         => default!;
 }
 
-public sealed class MissingReference
-{
-}
-
 public sealed class MissingFieldOwner
 {
 }

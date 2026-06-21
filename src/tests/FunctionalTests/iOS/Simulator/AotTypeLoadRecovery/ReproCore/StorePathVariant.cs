@@ -12,6 +12,8 @@ public static class StorePathHarness
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Run()
     {
+        // Keep the swapped-contract typeload reachable while the generic Target setter
+        // still drives the store-path field import we want AOT to compile.
         StorePathContractProbe.Touch();
         new StorePathTargetNode().Queue();
     }
