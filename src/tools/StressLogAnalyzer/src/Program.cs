@@ -585,7 +585,7 @@ public static class Program
                     "StressLogModuleTable": [[ 1 ], "pointer" ],
                 },
                 "contracts": {
-                    "StressLog": 2,
+                    "StressLog": "c2",
                 }
             }
             """"u8)!;

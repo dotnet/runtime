@@ -7,7 +7,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class StressLogChunk : IData<StressLogChunk>
 {
     [Field] public TargetPointer Next { get; }
-    [Field] public TargetPointer Prev { get; }
 
     [FieldAddress]
     public TargetPointer Buf { get; }
