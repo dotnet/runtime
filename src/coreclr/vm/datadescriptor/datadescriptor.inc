@@ -1195,6 +1195,11 @@ CDAC_TYPE_SIZE(sizeof(ExternalMethodFrame))
 CDAC_TYPE_FIELD(ExternalMethodFrame, T_POINTER, Indirection, cdac_data<ExternalMethodFrame>::Indirection)
 CDAC_TYPE_END(ExternalMethodFrame)
 
+CDAC_TYPE_BEGIN(PInvokeCalliFrame)
+CDAC_TYPE_SIZE(sizeof(PInvokeCalliFrame))
+CDAC_TYPE_FIELD(PInvokeCalliFrame, T_POINTER, VASigCookiePtr, cdac_data<PInvokeCalliFrame>::VASigCookiePtr)
+CDAC_TYPE_END(PInvokeCalliFrame)
+
 CDAC_TYPE_BEGIN(DynamicHelperFrame)
 CDAC_TYPE_SIZE(sizeof(DynamicHelperFrame))
 CDAC_TYPE_FIELD(DynamicHelperFrame, T_INT32, DynamicHelperFrameFlags, cdac_data<DynamicHelperFrame>::DynamicHelperFrameFlags)

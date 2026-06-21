@@ -22,6 +22,40 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
         UpdateFromRegisterDict(args.Registers);
     }
 
+    public override void HandleTransitionFrame(FramedMethodFrame framedMethodFrame)
+    {
+        // Set IP, SP and callee-saved registers from the transition block (shared logic).
+        base.HandleTransitionFrame(framedMethodFrame);
+
+        // x86: the base implementation skips the callee-popped argument byte count
+        // (cbStackPop) that the runtime's TransitionFrame::UpdateRegDisplay_Impl adds
+        // to CallerSP. Without it the missing offset propagates through subsequent
+        // EBP-chain unwinds. x64/arm64 use RtlVirtualUnwind which resyncs from PE
+        // unwind data, so they are unaffected.
+        //
+        // PInvokeCalliFrame has no MethodDesc -- pull cbStackPop from the VASigCookie.
+        // Every other transition Frame has a MethodDesc that X86ArgIterator can walk.
+        FrameHelpers frameHelpers = new(_target);
+        FrameType frameType = frameHelpers.GetFrameType(
+            _target.ProcessedData.GetOrAdd<Frame>(framedMethodFrame.Address).Identifier);
+
+        if (frameType == FrameType.PInvokeCalliFrame)
+        {
+            PInvokeCalliFrame frame = _target.ProcessedData.GetOrAdd<PInvokeCalliFrame>(framedMethodFrame.Address);
+            if (frame.VASigCookiePtr != TargetPointer.Null)
+            {
+                VASigCookie cookie = _target.ProcessedData.GetOrAdd<VASigCookie>(frame.VASigCookiePtr);
+                _context.Context.Esp += cookie.SizeOfArgs;
+            }
+            return;
+        }
+
+        if (framedMethodFrame.MethodDescPtr != TargetPointer.Null)
+        {
+            _context.Context.Esp += X86ArgIterator.Compute(_target, framedMethodFrame.MethodDescPtr);
+        }
+    }
+
     public override void HandleTailCallFrame(TailCallFrame frame)
     {
         _context.Context.Eip = (uint)frame.ReturnAddress;
