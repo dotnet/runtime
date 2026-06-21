@@ -1399,7 +1399,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     vmMethodDesc = methodDescPtr;
                 }
 
-                // ctx and rd are intentionally left as 0 (consumer does not read for cStubFrame).
+                // ctx is intentionally left as 0 (consumer does not read for cStubFrame).
                 Debugger_STRData data = default;
                 data.fp = frame.FrameAddress.Value;
                 data.vmCurrentAppDomainToken = currentAppDomain.Value;
@@ -1606,9 +1606,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #endif
         return hr;
     }
-
-    public int ConvertContextToDebuggerRegDisplay(nint pInContext, nint pOutDRD, Interop.BOOL fActive)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ConvertContextToDebuggerRegDisplay(pInContext, pOutDRD, fActive) : HResults.E_NOTIMPL;
 
     public int IsDiagnosticsHiddenOrLCGMethod(ulong vmMethodDesc, int* pRetVal)
     {

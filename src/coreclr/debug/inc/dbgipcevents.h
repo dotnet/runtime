@@ -960,214 +960,46 @@ struct MSLAYOUT IPCENames // We use a class/struct so that the function can rema
 
 //
 // NOTE:  CPU-specific values below!
-//
-// DebuggerREGDISPLAY is very similar to the EE REGDISPLAY structure. It holds
-// register values that can be saved over calls for each frame in a stack
-// trace.
-//
 // DebuggerIPCE_FloatCount is the number of doubles in the processor's
 // floating point stack.
-//
-// <TODO>Note: We used to just pass the values of the registers for each frame to the Right Side, but I had to add in the
-// address of each register, too, to support using enregistered variables on non-leaf frames as args to a func eval. Its
-// very, very possible that we would rework the entire code base to just use the register's address instead of passing
-// both, but its way, way too late in V1 to undertake that, so I'm just using these addresses to suppport our one func
-// eval case. Clearly, this needs to be cleaned up post V1.
-//
-// -- Fri Feb 09 11:21:24 2001</TODO>
-//
 
-struct MSLAYOUT DebuggerREGDISPLAY
+#if defined(TARGET_X86)
+#define DebuggerIPCE_FloatCount 8
+#elif defined(TARGET_AMD64)
+#define DebuggerIPCE_FloatCount 16
+#elif defined(TARGET_ARM)
+#define DebuggerIPCE_FloatCount 32
+#elif defined(TARGET_ARM64)
+#define DebuggerIPCE_FloatCount 32
+#elif defined(TARGET_LOONGARCH64)
+#define DebuggerIPCE_FloatCount 32
+#elif defined(TARGET_RISCV64)
+#define DebuggerIPCE_FloatCount 32
+#else
+#define DebuggerIPCE_FloatCount 1
+#endif
+
+inline LPVOID GetSPAddress(const DT_CONTEXT * context)
 {
 #if defined(TARGET_X86)
-    #define DebuggerIPCE_FloatCount 8
-
-    SIZE_T  Edi;
-    void   *pEdi;
-    SIZE_T  Esi;
-    void   *pEsi;
-    SIZE_T  Ebx;
-    void   *pEbx;
-    SIZE_T  Edx;
-    void   *pEdx;
-    SIZE_T  Ecx;
-    void   *pEcx;
-    SIZE_T  Eax;
-    void   *pEax;
-    SIZE_T  FP;
-    void   *pFP;
-    SIZE_T  SP;
-    SIZE_T  PC;
-
+    return (LPVOID)&context->Esp;
 #elif defined(TARGET_AMD64)
-    #define DebuggerIPCE_FloatCount 16
-
-    SIZE_T  Rax;
-    void   *pRax;
-    SIZE_T  Rcx;
-    void   *pRcx;
-    SIZE_T  Rdx;
-    void   *pRdx;
-    SIZE_T  Rbx;
-    void   *pRbx;
-    SIZE_T  Rbp;
-    void   *pRbp;
-    SIZE_T  Rsi;
-    void   *pRsi;
-    SIZE_T  Rdi;
-    void   *pRdi;
-
-    SIZE_T  R8;
-    void   *pR8;
-    SIZE_T  R9;
-    void   *pR9;
-    SIZE_T  R10;
-    void   *pR10;
-    SIZE_T  R11;
-    void   *pR11;
-    SIZE_T  R12;
-    void   *pR12;
-    SIZE_T  R13;
-    void   *pR13;
-    SIZE_T  R14;
-    void   *pR14;
-    SIZE_T  R15;
-    void   *pR15;
-
-    SIZE_T  SP;
-    SIZE_T  PC;
-#elif defined(TARGET_ARM)
-    #define DebuggerIPCE_FloatCount 32
-
-    SIZE_T  R0;
-    void   *pR0;
-    SIZE_T  R1;
-    void   *pR1;
-    SIZE_T  R2;
-    void   *pR2;
-    SIZE_T  R3;
-    void   *pR3;
-    SIZE_T  R4;
-    void   *pR4;
-    SIZE_T  R5;
-    void   *pR5;
-    SIZE_T  R6;
-    void   *pR6;
-    SIZE_T  R7;
-    void   *pR7;
-    SIZE_T  R8;
-    void   *pR8;
-    SIZE_T  R9;
-    void   *pR9;
-    SIZE_T  R10;
-    void   *pR10;
-    SIZE_T  R11;
-    void   *pR11;
-    SIZE_T  R12;
-    void   *pR12;
-    SIZE_T  SP;
-    void   *pSP;
-    SIZE_T  LR;
-    void   *pLR;
-    SIZE_T  PC;
-    void   *pPC;
-#elif defined(TARGET_ARM64)
-    #define DebuggerIPCE_FloatCount 32
-
-    SIZE_T  X[29];
-    SIZE_T  FP;
-    SIZE_T  LR;
-    SIZE_T  SP;
-    SIZE_T  PC;
-#elif defined(TARGET_LOONGARCH64)
-    #define DebuggerIPCE_FloatCount 32
-    SIZE_T  RA;
-    SIZE_T  TP;
-    SIZE_T  SP;
-    SIZE_T  A0;
-    SIZE_T  A1;
-    SIZE_T  A2;
-    SIZE_T  A3;
-    SIZE_T  A4;
-    SIZE_T  A5;
-    SIZE_T  A6;
-    SIZE_T  A7;
-    SIZE_T  T0;
-    SIZE_T  T1;
-    SIZE_T  T2;
-    SIZE_T  T3;
-    SIZE_T  T4;
-    SIZE_T  T5;
-    SIZE_T  T6;
-    SIZE_T  T7;
-    SIZE_T  T8;
-    SIZE_T  X0;
-    SIZE_T  FP;
-    SIZE_T  S0;
-    SIZE_T  S1;
-    SIZE_T  S2;
-    SIZE_T  S3;
-    SIZE_T  S4;
-    SIZE_T  S5;
-    SIZE_T  S6;
-    SIZE_T  S7;
-    SIZE_T  S8;
-    SIZE_T  PC;
-#elif defined(TARGET_RISCV64)
-    #define DebuggerIPCE_FloatCount 32
-    SIZE_T  RA;
-    SIZE_T  SP;
-    SIZE_T  GP;
-    SIZE_T  TP;
-    SIZE_T  T0;
-    SIZE_T  T1;
-    SIZE_T  T2;
-    SIZE_T  FP;
-    SIZE_T  S1;
-    SIZE_T  A0;
-    SIZE_T  A1;
-    SIZE_T  A2;
-    SIZE_T  A3;
-    SIZE_T  A4;
-    SIZE_T  A5;
-    SIZE_T  A6;
-    SIZE_T  A7;
-    SIZE_T  S2;
-    SIZE_T  S3;
-    SIZE_T  S4;
-    SIZE_T  S5;
-    SIZE_T  S6;
-    SIZE_T  S7;
-    SIZE_T  S8;
-    SIZE_T  S9;
-    SIZE_T  S10;
-    SIZE_T  S11;
-    SIZE_T  T3;
-    SIZE_T  T4;
-    SIZE_T  T5;
-    SIZE_T  T6;
-    SIZE_T  PC;
+    return (LPVOID)&context->Rsp;
 #else
-    #define DebuggerIPCE_FloatCount 1
-
-    SIZE_T PC;
-    SIZE_T FP;
-    SIZE_T SP;
-    void   *pFP;
+    return (LPVOID)&context->Sp;
 #endif
-};
-
-inline LPVOID GetSPAddress(const DebuggerREGDISPLAY * display)
-{
-    return (LPVOID)&display->SP;
 }
 
 #if !defined(TARGET_AMD64) && !defined(TARGET_ARM)
-inline LPVOID GetFPAddress(const DebuggerREGDISPLAY * display)
+inline LPVOID GetFPAddress(const DT_CONTEXT * context)
 {
-    return (LPVOID)&display->FP;
+#if defined(TARGET_X86)
+    return (LPVOID)&context->Ebp;
+#else
+    return (LPVOID)&context->Fp;
+#endif
 }
-#endif // !TARGET_AMD64
+#endif // !TARGET_AMD64 && !TARGET_ARM
 
 
 class MSLAYOUT FramePointer

@@ -18,21 +18,17 @@
 
 
 CordbRegisterSet::CordbRegisterSet(
-    DebuggerREGDISPLAY * pRegDisplay,
     CordbThread *        pThread,
+    DT_CONTEXT *         pContext,
     bool fActive,
-    bool fQuickUnwind,
-    bool fTakeOwnershipOfDRD /*= false*/)
+    bool fQuickUnwind)
   : CordbBase(pThread->GetProcess(), 0, enumCordbRegisterSet)
 {
-    _ASSERTE( pRegDisplay != NULL );
     _ASSERTE( pThread != NULL );
-    m_rd          = pRegDisplay;
     m_thread      = pThread;
+    m_context     = *pContext;
     m_active      = fActive;
     m_quickUnwind = fQuickUnwind;
-
-    m_fTakeOwnershipOfDRD = fTakeOwnershipOfDRD;
 
     // Add to our parent thread's neuter list.
 
@@ -48,12 +44,6 @@ CordbRegisterSet::CordbRegisterSet(
 void CordbRegisterSet::Neuter()
 {
     m_thread = NULL;
-    if (m_fTakeOwnershipOfDRD)
-    {
-        delete m_rd;
-    }
-    m_rd = NULL;
-
     CordbBase::Neuter();
 }
 
@@ -153,11 +143,7 @@ HRESULT CordbRegisterSet::GetThreadContext(ULONG32 contextSize, BYTE context[])
                 memmove( pInputContext, pLeafContext, sizeof( DT_CONTEXT) );
             }
         }
-
-
-        // Now update the registers based on the current frame.
-        // This is a very platform specific action.
-        InternalCopyRDToContext(pInputContext);
+        CORDbgCopyThreadContext(pInputContext, &m_context);
     }
     EX_CATCH_HRESULT(hr);
     return hr;

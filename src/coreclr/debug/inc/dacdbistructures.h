@@ -539,9 +539,7 @@ struct MSLAYOUT Debugger_JITFuncData
 struct MSLAYOUT Debugger_STRData
 {
     FramePointer            fp;
-    // @dbgtodo  stackwalker/shim- Ideally we should be able to get rid of the DebuggerREGDISPLAY and just use the CONTEXT.
     DT_CONTEXT *            ctx;
-    DebuggerREGDISPLAY *    rd;
     VMPTR_AppDomain         vmCurrentAppDomainToken;
 
 

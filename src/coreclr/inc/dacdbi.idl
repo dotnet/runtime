@@ -19,7 +19,6 @@ struct DacThreadAllocInfo;
 struct NativeVarData;
 struct SequencePoints;
 struct Debugger_STRData;
-struct DebuggerREGDISPLAY;
 struct NativeCodeFunctionData;
 struct FieldData;
 struct DebuggerIPCE_ExpandedTypeData;
@@ -283,7 +282,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetFramePointer([in] StackWalkHandle pSFIHandle, [out] FramePointer * pRetVal);
     HRESULT IsLeafFrame([in] VMPTR_Thread vmThread, [in] const DT_CONTEXT * pContext, [out] BOOL * pResult);
     HRESULT GetContext([in] VMPTR_Thread vmThread, [out] DT_CONTEXT * pContextBuffer);
-    HRESULT ConvertContextToDebuggerRegDisplay([in] const DT_CONTEXT * pInContext, [out] struct DebuggerREGDISPLAY * pOutDRD, [in] BOOL fActive);
 
     // Method
     HRESULT IsDiagnosticsHiddenOrLCGMethod([in] VMPTR_MethodDesc vmMethodDesc, [out] DynamicMethodType * pRetVal);

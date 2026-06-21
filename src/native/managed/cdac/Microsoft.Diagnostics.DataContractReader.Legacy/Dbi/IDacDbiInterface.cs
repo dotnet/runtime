@@ -236,11 +236,10 @@ public struct Debugger_STRData
 
     [FieldOffset(0)] public ulong fp;                           // FramePointer
     [FieldOffset(8)] public ulong ctx;                          // DT_CONTEXT*
-    [FieldOffset(16)] public ulong rd;                          // DebuggerREGDISPLAY*
-    [FieldOffset(24)] public ulong vmCurrentAppDomainToken;     // VMPTR_AppDomain
-    [FieldOffset(32)] public EType eType;
-    [FieldOffset(40)] public DebuggerIPCE_STRData_MethodFrame v;
-    [FieldOffset(40)] public DebuggerIPCE_STRData_StubFrame stubFrame;
+    [FieldOffset(16)] public ulong vmCurrentAppDomainToken;     // VMPTR_AppDomain
+    [FieldOffset(24)] public EType eType;
+    [FieldOffset(32)] public DebuggerIPCE_STRData_MethodFrame v;
+    [FieldOffset(32)] public DebuggerIPCE_STRData_StubFrame stubFrame;
 }
 
 #pragma warning restore CS0649
@@ -533,9 +532,6 @@ public unsafe partial interface IDacDbiInterface
 
     [PreserveSig]
     int GetContext(ulong vmThread, byte* pContextBuffer);
-
-    [PreserveSig]
-    int ConvertContextToDebuggerRegDisplay(nint pInContext, nint pOutDRD, Interop.BOOL fActive);
 
     [PreserveSig]
     int IsDiagnosticsHiddenOrLCGMethod(ulong vmMethodDesc, int* pRetVal);
