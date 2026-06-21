@@ -12,7 +12,8 @@ namespace System.Runtime.InteropServices
     internal static class ReferenceTrackerHost
     {
         [FixedAddressValueType]
-        private static readonly unsafe IntPtr s_globalHostServices = (IntPtr)Unsafe.AsPointer(in HostServices.Vftbl);
+        private static readonly unsafe ReferenceTrackerHostObject s_globalHostServices =
+            new((IReferenceTrackerHostVftbl*)Unsafe.AsPointer(in HostServices.Vftbl));
 
         // Called when an IReferenceTracker instance is found.
         public static unsafe void SetReferenceTrackerHost(IntPtr trackerManager)
@@ -160,6 +161,16 @@ namespace System.Runtime.InteropServices
             public delegate* unmanaged[MemberFunction]<IntPtr, IntPtr, IntPtr*, int> GetTrackerTarget;
             public delegate* unmanaged[MemberFunction]<IntPtr, long, int> AddMemoryPressure;
             public delegate* unmanaged[MemberFunction]<IntPtr, long, int> RemoveMemoryPressure;
+        }
+
+        private readonly unsafe struct ReferenceTrackerHostObject
+        {
+            public readonly IReferenceTrackerHostVftbl* Vftbl;
+
+            public ReferenceTrackerHostObject(IReferenceTrackerHostVftbl* vftbl)
+            {
+                Vftbl = vftbl;
+            }
         }
 
         private static class HostServices
