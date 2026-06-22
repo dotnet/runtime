@@ -897,7 +897,7 @@ typedef InlineSString<2 * 260> LongPathString;
 template<>
 struct cdac_data<SString>
 {
-    static constexpr size_t Buffer = offsetof(SBuffer, m_buffer);
+    static constexpr size_t Buffer = offsetof(SString, m_buffer);
 };
 
 // ================================================================================
