@@ -13,7 +13,7 @@
 #include "ep-getter-setter.h"
 
 // OR'd into EventPipeThread.session_use_in_progress alongside the session index to mean "actively
-// writing into the buffer". The reader steals a buffer only while the bit is set; the index alone
+// writing into the buffer". The reader steals a buffer only while the bit is clear; the index alone
 // (bit clear) means the session is still pinned but the buffer is idle - the state a Block-mode
 // producer parked for capacity holds, letting the reader drain its full buffer while teardown
 // (which masks the bit) waits the producer out. Session indices are <= 63 and the cleared sentinel

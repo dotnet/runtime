@@ -36,10 +36,10 @@ struct _EventPipeSession_Internal {
 	// Before: enable() built these on a stack-local queue and invoked them inline, so each provider's
 	// EventSource enable notification fired during enable(), unconditionally, before streaming began.
 	//
-	// Why deferred: a blocking GCHeapSnapshot enable callback forces a stop-the-world heap walk that parks
-	// the cooperative producer on a full buffer, and only the session's drain thread frees that capacity;
-	// invoking it before that thread is live self-deadlocks. So enable() parks the callbacks here and a
-	// later site dispatches them once the drain thread runs.
+	// Why deferred: An EventPipeSession using the blocking buffer mode will block producers when buffers are full,
+	// and given that enable callbacks are allowed to generate an unbounded number of events, we need a concurrent
+	// drain, otherwise threads will block indefinitely. So enable() parks the callbacks here and a later site
+	// dispatches them once the drain thread runs.
 	//
 	// Ownership: exactly one site invokes (or frees) this queue. Once enable() publishes the session it is
 	// reachable by both ep_start_streaming and a concurrent disable in the enable()->dispatch window, so

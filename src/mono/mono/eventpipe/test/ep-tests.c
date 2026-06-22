@@ -770,7 +770,7 @@ test_session_write_event (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_DROPPED;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -823,7 +823,7 @@ test_session_write_event_seq_point (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_DROPPED;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -880,7 +880,7 @@ test_session_write_wait_get_next_event (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_DROPPED;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -945,7 +945,7 @@ test_session_write_get_next_event (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_DROPPED;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);
@@ -1022,7 +1022,7 @@ test_session_write_suspend_event (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_DROPPED;
+	EventPipeWriteEventResult write_result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
 	ep_raise_error_if_nok (current_provider_config != NULL);

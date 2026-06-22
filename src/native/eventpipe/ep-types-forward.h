@@ -168,7 +168,7 @@ typedef enum {
 	// The event was written to a buffer.
 	EP_WRITE_EVENT_RESULT_WRITTEN,
 	// The event was not written (buffers full and dropping, oversized, suspended, or not enabled).
-	EP_WRITE_EVENT_RESULT_DROPPED,
+	EP_WRITE_EVENT_RESULT_NOT_WRITTEN,
 	// The buffers are full in Block mode; the caller should park until the reader frees capacity, then retry.
 	EP_WRITE_EVENT_RESULT_BLOCKED
 } EventPipeWriteEventResult;

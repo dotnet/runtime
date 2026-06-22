@@ -83,9 +83,6 @@ buffer_manager_release_buffer (
 	EventPipeBufferManager *buffer_manager,
 	uint32_t size);
 
-// Free a buffer's memory and then release its reserved budget. The order matters: the Block-mode
-// capacity signal raised by buffer_manager_release_buffer must only be observed once the buffer is
-// fully reclaimed, so callers never signal capacity while the memory is still outstanding.
 static
 void
 buffer_manager_free_buffer_and_release_budget (
@@ -315,6 +312,9 @@ buffer_manager_release_buffer (
 		ep_rt_wait_event_set (&buffer_manager->buffer_available_event);
 }
 
+// Free a buffer's memory and then release its reserved budget. The order matters: the Block-mode
+// capacity signal raised by buffer_manager_release_buffer must only be observed once the buffer is
+// fully reclaimed, so callers never signal capacity while the memory is still outstanding.
 static
 void
 buffer_manager_free_buffer_and_release_budget (
@@ -1043,7 +1043,7 @@ ep_buffer_manager_write_event (
 	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack)
 {
-	EventPipeWriteEventResult result = EP_WRITE_EVENT_RESULT_DROPPED;
+	EventPipeWriteEventResult result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 	bool alloc_new_buffer = false;
 	EventPipeBuffer *buffer = NULL;
 	EventPipeThreadSessionState *session_state = NULL;
@@ -1058,7 +1058,7 @@ ep_buffer_manager_write_event (
 
 	// Before we pick a buffer, make sure the event is enabled.
 	if (!ep_event_is_enabled (ep_event))
-		return EP_WRITE_EVENT_RESULT_DROPPED;
+		return EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	// Check to see if an event thread was specified. If not, then use the current thread.
 	if (event_thread == NULL)
@@ -1087,7 +1087,7 @@ ep_buffer_manager_write_event (
 	{
 		ep_rt_atomic_inc_int64_t (&buffer_manager->num_oversized_events_dropped);
 		ep_thread_session_state_increment_sequence_number (session_state);
-		return EP_WRITE_EVENT_RESULT_DROPPED;
+		return EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 	}
 
 	current_stack_contents = ep_stack_contents_init (&stack_contents);
@@ -1156,7 +1156,7 @@ ep_buffer_manager_write_event (
 #ifdef EP_CHECKED_BUILD
 	if (result == EP_WRITE_EVENT_RESULT_WRITTEN)
 		ep_rt_atomic_inc_int64_t (&buffer_manager->num_events_stored);
-	else if (result == EP_WRITE_EVENT_RESULT_DROPPED)
+	else if (result == EP_WRITE_EVENT_RESULT_NOT_WRITTEN)
 		ep_rt_atomic_inc_int64_t (&buffer_manager->num_events_dropped);
 #endif
 

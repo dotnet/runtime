@@ -946,7 +946,7 @@ ep_session_write_event (
 	if (session->paused)
 		return EP_WRITE_EVENT_RESULT_WRITTEN;
 
-	EventPipeWriteEventResult result = EP_WRITE_EVENT_RESULT_DROPPED;
+	EventPipeWriteEventResult result = EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 
 	// Filter events specific to "this" session based on precomputed flag on provider/events.
 	if (ep_event_is_enabled_by_mask (ep_event, ep_session_get_mask (session))) {
@@ -995,7 +995,7 @@ ep_session_write_event (
 				activity_id,
 				related_activity_id,
 				event_thread,
-				stack) ? EP_WRITE_EVENT_RESULT_WRITTEN : EP_WRITE_EVENT_RESULT_DROPPED;
+				stack) ? EP_WRITE_EVENT_RESULT_WRITTEN : EP_WRITE_EVENT_RESULT_NOT_WRITTEN;
 			break;
 		default:
 			EP_UNREACHABLE ("Unknown session type.");
