@@ -132,7 +132,6 @@ void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const pal_char_t* app_r
         {
             // Allocation failed - treat as hard error to preserve search semantics
             resolver->status_code = CoreHostLibMissingFailure;
-            free((void*)app_root);
             return;
         }
         pal_str_printf(app_relative_dotnet_path, total, _X("%s"), app_root);
