@@ -208,14 +208,11 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
 {
     Data.Delegate del = new Data.Delegate(target, address);
 
-    // Classify the delegate from its invocation count and auxiliary pointer.
-    DelegateType delegateType = target.ReadNInt(address + /* Delegate::InvocationCount offset */) switch
+    DelegateType delegateType = DelegateType.Unknown;
+    if (target.ReadPointer(address + /* Delegate::InvocationList offset */) == TargetPointer.Null && target.ReadNInt(address + /* Delegate::InvocationCount offset */) != -1)
     {
-        0  => del.MethodPtrAux == TargetCodePointer.Null
-                ? DelegateType.Closed
-                : DelegateType.Open,
-        _  => DelegateType.Unknown,
-    };
+        delegateType = del.MethodPtrAux == TargetCodePointer.Null ? DelegateType.Closed : DelegateType.Open;
+    }
 
     // Pick the bound object and primary entry point based on the classification.
     // For Closed delegates the target is the bound `this` and MethodPtr is invoked on it.

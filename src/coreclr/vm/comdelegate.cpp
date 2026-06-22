@@ -26,9 +26,6 @@
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 
-#define DELEGATE_MARKER_UNMANAGEDFPTR -1
-
-
 #ifndef DACCESS_COMPILE
 
 #if defined(TARGET_X86)
@@ -1821,11 +1818,10 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         // - multicast - _invocationList is Array && _invocationCount != 0
         // - unamanaged ftn ptr - _invocationList == NULL && _invocationCount == -1
         // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
-        //                    or _invocationList points to a LoaderAllocator/DynamicResolver
 
-        // we return the method desc for the invoke
+        // we return the method desc for the invoke for the first two cases
         OBJECTREF invocationList = thisDel->GetInvocationList();
-        if ((invocationList != NULL && invocationList->GetMethodTable()->IsArray()) || count == DELEGATE_MARKER_UNMANAGEDFPTR)
+        if (invocationList != NULL || count == DELEGATE_MARKER_UNMANAGEDFPTR)
             return FindDelegateInvokeMethod(thisDel->GetMethodTable());
 
         return GetMethodDescForOpenVirtualDelegate(thisDel);
@@ -1862,8 +1858,7 @@ BOOL COMDelegate::IsTrueMulticastDelegate(OBJECTREF delegate)
         OBJECTREF invocationList = ((DELEGATEREF)delegate)->GetInvocationList();
         if (invocationList != NULL)
         {
-            MethodTable *pMT = invocationList->GetMethodTable();
-            isMulticast = pMT->IsArray();
+            isMulticast = TRUE;
         }
     }
 

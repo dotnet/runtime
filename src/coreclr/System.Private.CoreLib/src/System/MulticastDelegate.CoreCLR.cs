@@ -164,12 +164,6 @@ namespace System
             return NewMulticastDelegate(invocationList, invocationCount, false);
         }
 
-        internal void StoreDynamicMethod(MethodInfo dynamicMethod)
-        {
-            Debug.Assert(HasSingleTarget);
-            _helperObject = dynamicMethod;
-        }
-
         // This method will combine this delegate with the passed delegate
         //    to form a new delegate.
         protected sealed override Delegate CombineImpl(Delegate? follow)

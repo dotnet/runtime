@@ -55,9 +55,7 @@ namespace System.Reflection.Emit
                 GC.KeepAlive(methodHandle);
             }
 
-            MulticastDelegate d = (MulticastDelegate)Delegate.CreateDelegateNoSecurityCheck(delegateType, target, GetMethodDescriptor());
-            // stash this MethodInfo by brute force.
-            d.StoreDynamicMethod(this);
+            MulticastDelegate d = (MulticastDelegate)Delegate.CreateDelegateForDynamicMethod(delegateType, target, GetMethodDescriptor(), this);
             return d;
         }
 

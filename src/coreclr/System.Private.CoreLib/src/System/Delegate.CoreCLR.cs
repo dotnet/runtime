@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -363,8 +364,8 @@ namespace System
         // internal implementation details (FCALLS and utilities)
         //
 
-        // V2 internal API.
-        internal static Delegate CreateDelegateNoSecurityCheck(Type type, object? target, RuntimeMethodHandle method)
+        internal static Delegate CreateDelegateForDynamicMethod(Type type, object? target, RuntimeMethodHandle method,
+            DynamicMethod dynamicMethod)
         {
             ArgumentNullException.ThrowIfNull(type);
 
@@ -377,9 +378,7 @@ namespace System
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
 
-            // Initialize the method...
             Delegate d = InternalAlloc(rtType);
-            // This is a new internal API added in Whidbey.
             // Allow flexible binding options since the target method is
             // unambiguously provided to us.
 
@@ -388,6 +387,8 @@ namespace System
                                     RuntimeMethodHandle.GetDeclaringType(method.GetMethodInfo()),
                                     DelegateBindingFlags.RelaxedSignature))
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);
+
+            d._helperObject = dynamicMethod;
             return d;
         }
 
