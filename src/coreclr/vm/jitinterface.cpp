@@ -8908,6 +8908,15 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         info->resolvedTokenDevirtualizedUnboxedMethod.hMethod = (CORINFO_METHOD_HANDLE) pUnboxedMD;
     }
 
+    // If we devirtualized into an unboxing stub, also hand back the unboxed entry
+    // so the jit can perform the unboxing transformation.
+    //
+    if (pDevirtMD->IsUnboxingStub())
+    {
+        MethodDesc* pUnboxedMD = pDevirtMD->GetMethodTable()->GetUnboxedEntryPointMD(pDevirtMD);
+        info->resolvedTokenDevirtualizedUnboxedMethod.hMethod = (CORINFO_METHOD_HANDLE) pUnboxedMD;
+    }
+
     // Success! Pass back the results.
     //
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;

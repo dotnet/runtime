@@ -6001,6 +6001,8 @@ public:
 
     PhaseStatus fgRemoveEmptyFinally();
 
+    PhaseStatus fgRemoveUnreachableTry();
+
     PhaseStatus fgMergeFinallyChains();
 
     PhaseStatus fgCloneFinally();
