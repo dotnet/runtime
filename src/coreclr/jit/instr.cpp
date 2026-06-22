@@ -2529,8 +2529,10 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
             return INS_f32_store;
         case TYP_DOUBLE:
             return INS_f64_store;
+#if FEATURE_SIMD
         case TYP_SIMD16:
             return INS_v128_store;
+#endif
         default:
             NYI_WASM("ins_Store");
             return INS_none;
