@@ -31,7 +31,7 @@ namespace
         transitionBlock.block.m_ReturnAddress = 0;
         transitionBlock.block.m_StackPointer = callersStackPointer;
         void * result = NULL;
-        
+
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, 0, (int8_t*)&result);
         return;
     }
@@ -817,12 +817,12 @@ void _DacGlobals::Initialize()
 // Incorrectly typed temporary symbol to satisfy the linker.
 int g_pDebugger;
 
-void InvokeCalliStub(CalliStubParam* pParam)
+void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet, Object** pContinuationRet)
 {
-    _ASSERTE(pParam->ftn != (PCODE)NULL);
-    _ASSERTE(pParam->cookie != NULL);
+    _ASSERTE(ftn != (PCODE)NULL);
+    _ASSERTE(cookie != NULL);
 
-    (pParam->cookie)(pParam->ftn, pParam->pArgs, pParam->pRet);
+    (cookie)(ftn, pArgs, pRet);
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet)
@@ -832,7 +832,7 @@ void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArg
     (cookie)(ftn, pArgs, pRet);
 }
 
-void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam)
+void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
 {
     PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
 }
@@ -1378,20 +1378,19 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
     return value->EntryPoint;
 }
 
-void InvokeManagedMethod(ManagedMethodParam *pParam)
+void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
 {
-    InterpreterCalliCookie cookie = pParam->pMD->GetCalliCookie();
+    InterpreterCalliCookie cookie = pMD->GetCalliCookie();
     if (cookie == NULL)
     {
-        MetaSig sig(pParam->pMD);
-        cookie = GetCookieForCalliSig(sig, pParam->pMD);
+        MetaSig sig(pMD);
+        cookie = GetCookieForCalliSig(sig, pMD);
         _ASSERTE(cookie != NULL);
-        pParam->pMD->SetCalliCookie(cookie);
-        cookie = pParam->pMD->GetCalliCookie();
+        pMD->SetCalliCookie(cookie);
+        cookie = pMD->GetCalliCookie();
     }
 
-    CalliStubParam param = { pParam->target == NULL ? pParam->pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : pParam->target, cookie, pParam->pArgs, pParam->pRet, pParam->pContinuationRet };
-    InvokeCalliStub(&param);
+    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pContinuationRet);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
