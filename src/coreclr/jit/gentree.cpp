@@ -35256,6 +35256,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     simd16_t op1SimdVal = {};
                     EvaluateSimdCvtMaskToVector<simd16_t>(simdBaseType, &op1SimdVal, op1->AsMskCon()->gtSimdMaskVal);
 
+                    // EvaluateBinarySimd operates on vectors with elements in {0, AllBitsSet}, but SVE mask elements
+                    // are in {0, 1}. This call converts 1 -> AllBitsSet so the following optimization holds.
+                    op1SimdVal = ConvertToBitWiseMask<simd16_t>(genTypeSize(simdBaseType), op1SimdVal);
+
                     // op2 = op2 & op1
                     simd16_t result = {};
                     EvaluateBinarySimd<simd16_t>(GT_AND, false, simdBaseType, &result, op2->AsVecCon()->gtSimd16Val,

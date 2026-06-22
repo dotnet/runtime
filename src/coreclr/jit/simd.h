@@ -2121,6 +2121,35 @@ SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
     }
 }
 
+template <typename TSimd>
+TSimd ConvertToBitWiseMask(uint32_t baseTypeSize, const TSimd& elementWiseMask)
+{
+    TSimd    bitWiseMask = {};
+    uint32_t count       = sizeof(TSimd) / baseTypeSize;
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        uint32_t    index           = i * baseTypeSize;
+        const void* elementWiseAddr = &elementWiseMask.u8[index];
+        void*       bitWiseAddr     = &bitWiseMask.u8[index];
+
+        uint64_t maskBit = 0;
+        memcpy(&maskBit, elementWiseAddr, baseTypeSize);
+
+        if (maskBit == 1)
+        {
+            memset(bitWiseAddr, 0xff, baseTypeSize);
+        }
+        else
+        {
+            assert(maskBit == 0);
+            memset(bitWiseAddr, 0x0, baseTypeSize);
+        }
+    }
+
+    return bitWiseMask;
+}
+
 //------------------------------------------------------------------------
 // NarrowAndDuplicateSimdLong: Narrow each ULONG element in arg0 to size
 //    TSimd. Each element is then duplicated to the number of TSimd values

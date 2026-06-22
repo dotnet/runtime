@@ -19,6 +19,13 @@ public class ConditionalSelectConstants
 
         if (Sve.IsSupported)
         {
+            var smoke = Smoke();
+            Console.WriteLine(smoke);
+            if (smoke != Vector.Create<int>(1))
+            {
+                fail = true;
+            }
+
             var r1 = Sve.AddAcross(ConditionalSelect1CC());
             Console.WriteLine(r1[0]);
             if (r1[0] != 15)
@@ -28,21 +35,21 @@ public class ConditionalSelectConstants
 
             var r2 = Sve.AddAcross(ConditionalSelect1FT());
             Console.WriteLine(r2[0]);
-            if (r2[0] != -3)
+            if (r2[0] != 3)
             {
                 fail = true;
             }
 
             var r3 = Sve.AddAcross(ConditionalSelect16TF());
             Console.WriteLine(r3[0]);
-            if (r3[0] != 4080)
+            if (r3[0] != 16)
             {
                 fail = true;
             }
 
             var r4 = Sve.AddAcross(ConditionalSelect2CT());
             Console.WriteLine(r4[0]);
-            if (r4[0] != 16)
+            if (r4[0] != 20)
             {
                 fail = true;
             }
@@ -74,6 +81,12 @@ public class ConditionalSelectConstants
             return 101;
         }
         return 100;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> Smoke()
+    {
+        return Sve.CreateTrueMaskInt32();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
