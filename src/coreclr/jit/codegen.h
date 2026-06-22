@@ -1597,6 +1597,16 @@ public:
 
     OperandDesc genOperandDesc(instruction ins, GenTree* op);
 
+#if defined(TARGET_XARCH)
+    void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node,
+                             instruction         ins,
+                             emitAttr            attr,
+                             regNumber           reg,
+                             OperandDesc&        rmOpDesc,
+                             GenTree*            rmOp,
+                             insOpts             instOptions);
+#endif // TARGET_XARCH
+
     void inst_TT(instruction ins, emitAttr size, GenTree* op1);
     void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2);
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);

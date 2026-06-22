@@ -900,10 +900,12 @@ void LoopCloneContext::SetLoopIterInfo(unsigned loopNum, NaturalLoopIterInfo* in
 BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                          comp,
                                                 JitExpandArrayStack<LC_Condition>& conds,
                                                 BasicBlock*                        slowPreheader,
-                                                BasicBlock*                        insertAfter)
+                                                BasicBlock*                        insertAfter,
+                                                unsigned                           totalCondsInChain)
 {
     noway_assert(conds.Size() > 0);
     assert(slowPreheader != nullptr);
+    assert(totalCondsInChain >= conds.Size());
 
     // For now assume high likelihood for the fast path,
     // uniformly spread across the gating branches.
@@ -911,12 +913,15 @@ BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                       
     // For "normal" cloning this is probably ok. For GDV cloning this
     // may be inaccurate. We should key off the type test likelihood(s).
     //
+    // `totalCondsInChain` counts cond blocks across all calls for one cloning op,
+    // so the chain's cumulative fast-path probability is fastPathWeightScaleFactor.
+    //
     const weight_t fastLikelihood = fastPathWeightScaleFactor;
 
-    // N = conds.Size() branches must all be true to execute the fast loop.
-    // Use the N'th root....
+    // totalCondsInChain branches must all be true to execute the fast loop.
+    // Use the N'th root.
     //
-    const weight_t fastLikelihoodPerBlock = exp(log(fastLikelihood) / (weight_t)conds.Size());
+    const weight_t fastLikelihoodPerBlock = exp(log(fastLikelihood) / (weight_t)totalCondsInChain);
 
     for (unsigned i = 0; i < conds.Size(); ++i)
     {
@@ -2207,6 +2212,22 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext*     contex
     JITDUMP("Inserting loop " FMT_LP " loop choice conditions\n", loop->GetIndex());
     assert(slowPreheader != nullptr);
 
+    // Count all cond blocks the chain will install (block conditions + cloning conditions),
+    // so CondToStmtInBlock can size per-block likelihoods against the full chain length.
+    //
+    unsigned totalCondsInChain = 0;
+    if (context->HasBlockConditions(loop->GetIndex()))
+    {
+        JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* const levelCond =
+            context->GetBlockConditions(loop->GetIndex());
+        for (unsigned i = 0; i < levelCond->Size(); ++i)
+        {
+            totalCondsInChain += (*levelCond)[i]->Size();
+        }
+    }
+    totalCondsInChain += context->GetConditions(loop->GetIndex())->Size();
+    assert(totalCondsInChain > 0);
+
     if (context->HasBlockConditions(loop->GetIndex()))
     {
         JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond =
@@ -2215,7 +2236,8 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext*     contex
         {
             JITDUMP("Adding loop " FMT_LP " level %u block conditions\n    ", loop->GetIndex(), i);
             DBEXEC(verbose, context->PrintBlockLevelConditions(i, (*levelCond)[i]));
-            insertAfter = context->CondToStmtInBlock(this, *((*levelCond)[i]), slowPreheader, insertAfter);
+            insertAfter =
+                context->CondToStmtInBlock(this, *((*levelCond)[i]), slowPreheader, insertAfter, totalCondsInChain);
         }
     }
 
@@ -2223,8 +2245,8 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext*     contex
     JITDUMP("Adding loop " FMT_LP " cloning conditions\n    ", loop->GetIndex());
     DBEXEC(verbose, context->PrintConditions(loop->GetIndex()));
     JITDUMP("\n");
-    insertAfter =
-        context->CondToStmtInBlock(this, *(context->GetConditions(loop->GetIndex())), slowPreheader, insertAfter);
+    insertAfter = context->CondToStmtInBlock(this, *(context->GetConditions(loop->GetIndex())), slowPreheader,
+                                             insertAfter, totalCondsInChain);
 
     return insertAfter;
 }
