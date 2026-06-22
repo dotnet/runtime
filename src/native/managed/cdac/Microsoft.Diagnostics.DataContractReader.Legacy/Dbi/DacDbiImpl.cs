@@ -1344,10 +1344,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null && LegacyFallbackHelper.CanFallback())
         {
             uint contextSize = IPlatformAgnosticContext.GetContextForPlatform(_target).Size;
-            byte[] localContextBuf = new byte[contextSize];
             nuint legacyHandle = 0;
-            fixed (byte* pLocal = localContextBuf)
+            byte* pLocal = (byte*)NativeMemory.AlignedAlloc(contextSize, 16);
+            try
             {
+                new Span<byte>(pLocal, (int)contextSize).Clear();
                 int hrLocal = _legacy.CreateStackWalk(vmThread, pLocal, &legacyHandle);
                 Debug.ValidateHResult(hr, hrLocal);
 
@@ -1366,6 +1367,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 {
                     _legacy.DeleteStackWalk(legacyHandle);
                 }
+            }
+            finally
+            {
+                NativeMemory.AlignedFree(pLocal);
             }
         }
         return hr;
@@ -1448,9 +1453,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 #if DEBUG
         if (_legacy is not null && legacyHandle != 0)
         {
-            byte[] localContextBuf = new byte[contextSize];
-            fixed (byte* pLocal = localContextBuf)
+            byte* pLocal = (byte*)NativeMemory.AlignedAlloc(contextSize, 16);
+            try
             {
+                new Span<byte>(pLocal, (int)contextSize).Clear();
                 int hrLocal = _legacy.GetStackWalkCurrentContext(legacyHandle, pLocal);
                 Debug.ValidateHResult(hr, hrLocal);
                 if (hr == HResults.S_OK)
@@ -1460,6 +1466,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                     if (!cdacBytes.SequenceEqual(legacyBytes))
                         Debug.Fail(DescribeContextDiff(cdacBytes, legacyBytes));
                 }
+            }
+            finally
+            {
+                NativeMemory.AlignedFree(pLocal);
             }
         }
 #endif
