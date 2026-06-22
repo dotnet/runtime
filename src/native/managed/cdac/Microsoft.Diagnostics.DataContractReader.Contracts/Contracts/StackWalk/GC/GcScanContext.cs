@@ -49,12 +49,6 @@ internal class GcScanContext
         }
         else
         {
-            // StackRefData.Source is a data address (TargetPointer). Convert the code
-            // pointer through the platform's PCODE -> PINSTR transform so consumers
-            // comparing this against runtime-reported sources see matching bits on
-            // ARM32 (where IP carries the Thumb bit). ARM64 pointer authentication is
-            // not yet handled by CodePointerUtils -- when it is, those targets will
-            // benefit from this same routing without further changes here.
             data.SourceType = StackRefData.SourceTypes.StackSourceIP;
             data.Source = CodePointerUtils.AddressFromCodePointer(InstructionPointer, _target);
         }
