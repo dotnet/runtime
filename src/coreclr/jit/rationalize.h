@@ -64,6 +64,12 @@ private:
     bool ShouldRewriteToNonMaskHWIntrinsic(GenTree* node);
 #endif // TARGET_XARCH
 
+#if defined(TARGET_ARM64)
+    bool RewriteHWIntrinsicCmpMaskExtractMsb(GenTree** use, Compiler::GenTreeStack& parents);
+    bool RewriteHWIntrinsicCmpMaskExtractMsbPopCount(GenTree** use, Compiler::GenTreeStack& parents);
+    bool RewriteHWIntrinsicCmpMaskExtractMsbTrailingZeroCount(GenTree** use, Compiler::GenTreeStack& parents);
+#endif // TARGET_ARM64
+
     void RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTreeStack& parents);
 #endif // FEATURE_HW_INTRINSICS
 

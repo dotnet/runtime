@@ -1366,6 +1366,543 @@ bool Rationalizer::ShouldRewriteToNonMaskHWIntrinsic(GenTree* node)
 }
 #endif // TARGET_XARCH
 
+#if defined(TARGET_ARM64)
+//----------------------------------------------------------------------------------------------
+// IsHWIntrinsicCmpMask: Checks if the hwintrinsic produces a SIMD comparison mask
+//
+// Arguments:
+//    intrinsic - The hwintrinsic id
+//
+// Return Value:
+//    True if the hwintrinsic produces a mask where each SIMD element is either all-bits-set or zero.
+//
+static bool IsHWIntrinsicCmpMask(NamedIntrinsic intrinsic)
+{
+    switch (intrinsic)
+    {
+        case NI_AdvSimd_CompareEqual:
+        case NI_AdvSimd_CompareGreaterThan:
+        case NI_AdvSimd_CompareGreaterThanOrEqual:
+        case NI_AdvSimd_CompareLessThan:
+        case NI_AdvSimd_CompareLessThanOrEqual:
+        case NI_AdvSimd_Arm64_CompareEqual:
+        case NI_AdvSimd_Arm64_CompareGreaterThan:
+        case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+        case NI_AdvSimd_Arm64_CompareLessThan:
+        case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
+        {
+            return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// NormalizeCmpMaskSimdBaseType: Normalize a SIMD comparison mask's base type to unsigned.
+//
+// Arguments:
+//    simdBaseType - The SIMD base type.
+//
+// Return Value:
+//    The normalized SIMD base type, or TYP_UNDEF if it is unsupported.
+//
+static var_types NormalizeCmpMaskSimdBaseType(var_types simdBaseType)
+{
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return TYP_UBYTE;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return TYP_USHORT;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            return TYP_UINT;
+        }
+
+        default:
+        {
+            return TYP_UNDEF;
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// IsHWIntrinsicCmpMaskExtractMsb: Checks if an ExtractMostSignificantBits node consumes a SIMD
+// comparison mask.
+//
+// Arguments:
+//    node - The hwintrinsic node.
+//
+// Return Value:
+//    True if the node is an ExtractMostSignificantBits over a SIMD comparison mask.
+//
+static bool IsHWIntrinsicCmpMaskExtractMsb(GenTreeHWIntrinsic* node)
+{
+    if ((node->GetHWIntrinsicId() != NI_Vector64_ExtractMostSignificantBits) &&
+        (node->GetHWIntrinsicId() != NI_Vector128_ExtractMostSignificantBits))
+    {
+        return false;
+    }
+
+    GenTree* op1 = node->Op(1);
+
+    return op1->OperIsHWIntrinsic() && IsHWIntrinsicCmpMask(op1->AsHWIntrinsic()->GetHWIntrinsicId());
+}
+
+//----------------------------------------------------------------------------------------------
+// IsPrimitivePopCount: Checks if a node is a primitive PopCount intrinsic.
+//
+// Arguments:
+//    node - The node to check.
+//
+// Return Value:
+//    True if the node is a primitive PopCount intrinsic.
+//
+static bool IsPrimitivePopCount(GenTree* node)
+{
+    return node->OperIs(GT_INTRINSIC) && (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_PopCount);
+}
+
+//----------------------------------------------------------------------------------------------
+// IsPrimitiveTrailingZeroCount: Checks if a node is a primitive TrailingZeroCount intrinsic.
+//
+// Arguments:
+//    node - The node to check.
+//
+// Return Value:
+//    True if the node is a primitive TrailingZeroCount intrinsic.
+//
+static bool IsPrimitiveTrailingZeroCount(GenTree* node)
+{
+    return node->OperIs(GT_INTRINSIC) && (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_TrailingZeroCount);
+}
+
+//----------------------------------------------------------------------------------------------
+// ReplaceHWIntrinsicCmpMaskExtractMsbUse: Replace a scalarized comparison mask extraction with
+// the specified replacement node.
+//
+// Arguments:
+//    use         - A pointer to the node being replaced
+//    parents     - A reference to tree walk data providing the context
+//    oldNode     - The node being replaced
+//    replacement - The node that replaces *use
+//
+static void ReplaceHWIntrinsicCmpMaskExtractMsbUse(GenTree**               use,
+                                                   Compiler::GenTreeStack& parents,
+                                                   GenTree*                oldNode,
+                                                   GenTree*                replacement)
+{
+    if (parents.Height() > 1)
+    {
+        parents.Top(1)->ReplaceOperand(use, replacement);
+    }
+    else
+    {
+        *use = replacement;
+    }
+
+    // Adjust the parent stack
+    assert(parents.Top() == oldNode);
+    (void)parents.Pop();
+    parents.Push(replacement);
+}
+
+//----------------------------------------------------------------------------------------------
+// ScalarizeHWIntrinsicCmpMaskReduction: Update an ExtractMostSignificantBits node so it scalarizes
+// a vector reduction result.
+//
+// Arguments:
+//    node         - The ExtractMostSignificantBits node to update
+//    reduction    - The vector reduction node
+//    simdBaseType - The SIMD base type of the reduction
+//    simdSize     - The SIMD size of the original input
+//
+static void ScalarizeHWIntrinsicCmpMaskReduction(GenTreeHWIntrinsic* node,
+                                                 GenTree*            reduction,
+                                                 var_types           simdBaseType,
+                                                 unsigned            simdSize)
+{
+    NamedIntrinsic intrinsic = (simdSize == 8) ? NI_Vector64_ToScalar : NI_Vector128_ToScalar;
+
+    node->gtType = genActualType(simdBaseType);
+    node->ChangeHWIntrinsicId(intrinsic);
+    node->SetSimdSize(8);
+    node->SetSimdBaseType(simdBaseType);
+    node->Op(1) = reduction;
+}
+
+//----------------------------------------------------------------------------------------------
+// RewriteHWIntrinsicCmpMaskExtractMsb:
+// Rewrites an ExtractMostSignificantBits operation when the input is known to be a SIMD comparison
+// mask and the result is only checked for zero.
+//
+// Matches:
+//    ExtractMostSignificantBits(cmpMask) == 0
+//    ExtractMostSignificantBits(cmpMask) != 0
+//
+// Replaces the ExtractMostSignificantBits with:
+//    MaxAcross(cmpMask)
+//
+// This computes whether any all-bits-set comparison element exists without materializing the full
+// bitmask. For Vector64<uint>, the reduction is implemented with MaxPairwise.
+//
+// Arguments:
+//    use     - A pointer to the hwintrinsic node
+//    parents - A reference to tree walk data providing the context
+//
+// Return Value:
+//    True if the node was rewritten; otherwise false.
+//
+bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsb(GenTree** use, Compiler::GenTreeStack& parents)
+{
+    GenTreeHWIntrinsic* node = (*use)->AsHWIntrinsic();
+
+    var_types simdBaseType = node->GetSimdBaseType();
+    unsigned  simdSize     = node->GetSimdSize();
+
+    simdBaseType = NormalizeCmpMaskSimdBaseType(simdBaseType);
+
+    if (simdBaseType == TYP_UNDEF)
+    {
+        return false;
+    }
+
+    if (parents.Height() <= 1)
+    {
+        return false;
+    }
+
+    GenTree* parent = parents.Top(1);
+
+    if (!parent->OperIs(GT_EQ, GT_NE))
+    {
+        return false;
+    }
+
+    GenTree* parentOp1 = parent->gtGetOp1();
+    GenTree* parentOp2 = parent->gtGetOp2();
+
+    if (!(((parentOp1 == node) && parentOp2->IsIntegralConst(0)) ||
+          ((parentOp2 == node) && parentOp1->IsIntegralConst(0))))
+    {
+        return false;
+    }
+
+    GenTree* op1 = node->Op(1);
+
+    if (!IsHWIntrinsicCmpMaskExtractMsb(node))
+    {
+        return false;
+    }
+
+    // A comparison produces elements whose value is either all-bits-set or zero. When the
+    // ExtractMostSignificantBits result is only being compared against zero, use a horizontal max
+    // reduction to determine if any element was all-bits-set without materializing the full mask.
+
+    GenTree* tmp;
+
+    if ((simdSize == 8) && (simdBaseType == TYP_UINT))
+    {
+        // Vector64<uint> has only two lanes and AdvSimd does not provide a 2S MaxAcross form.
+        // Use a pairwise reduction with the same vector as both operands instead.
+
+        LIR::Use op1Use;
+        LIR::Use::MakeDummyUse(BlockRange(), op1, &op1Use);
+
+        // The pairwise form consumes op1 twice, so spill it to a temp before cloning the use.
+        op1Use.ReplaceWithLclVar(m_compiler);
+        op1 = op1Use.Def();
+
+        GenTree* op2 = m_compiler->gtClone(op1);
+        BlockRange().InsertAfter(op1, op2);
+
+        tmp = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_MaxPairwise, simdBaseType, simdSize);
+        BlockRange().InsertAfter(op2, tmp);
+    }
+    else
+    {
+        tmp = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_MaxAcross, simdBaseType, simdSize);
+        BlockRange().InsertAfter(op1, tmp);
+    }
+
+    op1 = tmp;
+
+    ScalarizeHWIntrinsicCmpMaskReduction(node, op1, simdBaseType, simdSize);
+
+    GenTree* castNode = m_compiler->gtNewCastNode(TYP_INT, node, /* isUnsigned */ true, TYP_INT);
+    BlockRange().InsertAfter(node, castNode);
+
+    ReplaceHWIntrinsicCmpMaskExtractMsbUse(use, parents, node, castNode);
+
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------
+// RewriteHWIntrinsicCmpMaskExtractMsbPopCount:
+// Rewrites PopCount(ExtractMostSignificantBits(...)) when the input is known to be a SIMD
+// comparison mask.
+//
+// Matches:
+//    PopCount(ExtractMostSignificantBits(cmpMask))
+//
+// Replaces it with:
+//    AddAcross(ShiftRightLogical(cmpMask, elementBits - 1))
+//
+// This converts each all-bits-set comparison element to 1, each zero element to 0, then horizontally
+// sums those per-element counts. For Vector64<uint>, the reduction is implemented with AddPairwise.
+//
+// Arguments:
+//    use     - A pointer to the intrinsic node
+//    parents - A reference to tree walk data providing the context
+//
+// Return Value:
+//    True if the node was rewritten; otherwise false.
+//
+bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbPopCount(GenTree** use, Compiler::GenTreeStack& parents)
+{
+    GenTreeIntrinsic* popCount = (*use)->AsIntrinsic();
+    assert(popCount->gtIntrinsicName == NI_PRIMITIVE_PopCount);
+
+    GenTree* extract = popCount->gtGetOp1();
+
+    if (!extract->OperIsHWIntrinsic())
+    {
+        return false;
+    }
+
+    GenTreeHWIntrinsic* extractNode  = extract->AsHWIntrinsic();
+    var_types           simdBaseType = NormalizeCmpMaskSimdBaseType(extractNode->GetSimdBaseType());
+
+    if (simdBaseType == TYP_UNDEF)
+    {
+        return false;
+    }
+
+    if (!IsHWIntrinsicCmpMaskExtractMsb(extractNode))
+    {
+        return false;
+    }
+
+    unsigned simdSize       = extractNode->GetSimdSize();
+    unsigned elementBitSize = genTypeSize(simdBaseType) * BITS_PER_BYTE;
+
+    // A comparison produces elements whose value is either all-bits-set or zero. For a Count-style
+    // consumer, normalize each element to one or zero and then horizontally sum the elements.
+
+    GenTree* op1 = extractNode->Op(1);
+
+    GenTree* shiftAmount = m_compiler->gtNewIconNode(elementBitSize - 1);
+    BlockRange().InsertAfter(op1, shiftAmount);
+
+    GenTree* shift = m_compiler->gtNewSimdHWIntrinsicNode(Compiler::getSIMDTypeForSize(simdSize), op1, shiftAmount,
+                                                          NI_AdvSimd_ShiftRightLogical, simdBaseType, simdSize);
+    BlockRange().InsertAfter(shiftAmount, shift);
+    op1 = shift;
+
+    GenTree* add;
+
+    if ((simdSize == 8) && (simdBaseType == TYP_UINT))
+    {
+        // Vector64<uint> has only two lanes and AdvSimd does not provide a 2S AddAcross form.
+        // Use a pairwise reduction with the same vector as both operands instead.
+
+        LIR::Use op1Use;
+        LIR::Use::MakeDummyUse(BlockRange(), op1, &op1Use);
+
+        // The pairwise form consumes op1 twice, so spill it to a temp before cloning the use.
+        op1Use.ReplaceWithLclVar(m_compiler);
+        op1 = op1Use.Def();
+
+        GenTree* op2 = m_compiler->gtClone(op1);
+        BlockRange().InsertAfter(op1, op2);
+
+        add = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_AddPairwise, simdBaseType, simdSize);
+        BlockRange().InsertAfter(op2, add);
+    }
+    else
+    {
+        add = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseType, simdSize);
+        BlockRange().InsertAfter(op1, add);
+    }
+
+    op1 = add;
+
+    ScalarizeHWIntrinsicCmpMaskReduction(extractNode, op1, simdBaseType, simdSize);
+
+    GenTree* castNode = m_compiler->gtNewCastNode(TYP_INT, extractNode, /* isUnsigned */ true, TYP_INT);
+    BlockRange().InsertAfter(extractNode, castNode);
+
+    BlockRange().Remove(popCount);
+
+    ReplaceHWIntrinsicCmpMaskExtractMsbUse(use, parents, popCount, castNode);
+
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------
+// RewriteHWIntrinsicCmpMaskExtractMsbTrailingZeroCount:
+// Rewrites TrailingZeroCount(ExtractMostSignificantBits(...)) when the input is known to be a
+// SIMD comparison mask.
+//
+// Matches:
+//    TrailingZeroCount(ExtractMostSignificantBits(cmpMask))
+//
+// Replaces it with:
+//    MinAcross(BitwiseSelect(cmpMask, IndexVector, SentinelVector)) - 1
+//
+// IndexVector holds one-based element indexes and SentinelVector holds 33. The selected minimum is
+// therefore the first matching element index plus one, or 33 if no element matched. Subtracting one
+// preserves the zero-mask TrailingZeroCount result of 32. For Vector64<uint>, the reduction is
+// implemented with MinPairwise.
+//
+// Arguments:
+//    use     - A pointer to the intrinsic node
+//    parents - A reference to tree walk data providing the context
+//
+// Return Value:
+//    True if the node was rewritten; otherwise false.
+//
+bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbTrailingZeroCount(GenTree** use, Compiler::GenTreeStack& parents)
+{
+    GenTreeIntrinsic* tzcnt = (*use)->AsIntrinsic();
+    assert(tzcnt->gtIntrinsicName == NI_PRIMITIVE_TrailingZeroCount);
+
+    GenTree* extract = tzcnt->gtGetOp1();
+
+    if (!extract->OperIsHWIntrinsic())
+    {
+        return false;
+    }
+
+    GenTreeHWIntrinsic* extractNode  = extract->AsHWIntrinsic();
+    var_types           simdBaseType = NormalizeCmpMaskSimdBaseType(extractNode->GetSimdBaseType());
+
+    if (simdBaseType == TYP_UNDEF)
+    {
+        return false;
+    }
+
+    if (!IsHWIntrinsicCmpMaskExtractMsb(extractNode))
+    {
+        return false;
+    }
+
+    unsigned  simdSize = extractNode->GetSimdSize();
+    var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+
+    // A comparison produces elements whose value is either all-bits-set or zero. For an
+    // IndexOf-style consumer, select a 1-based element index when the comparison is true and a
+    // sentinel value of 33 when false. The horizontal min reduction then finds either the first
+    // matching index plus one or the sentinel. Subtracting one produces the trailing-zero-count
+    // result, including 32 for the zero mask case.
+
+    GenTree* op1 = extractNode->Op(1);
+
+    GenTreeVecCon* indexVec = m_compiler->gtNewVconNode(simdType);
+    GenTreeVecCon* otherVec = m_compiler->gtNewVconNode(simdType);
+
+    const unsigned elementSize  = genTypeSize(simdBaseType);
+    const unsigned elementCount = simdSize / elementSize;
+
+    for (unsigned index = 0; index < elementCount; index++)
+    {
+        switch (simdBaseType)
+        {
+            case TYP_UBYTE:
+            {
+                indexVec->gtSimdVal.u8[index] = static_cast<uint8_t>(index + 1);
+                otherVec->gtSimdVal.u8[index] = 33;
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                indexVec->gtSimdVal.u16[index] = static_cast<uint16_t>(index + 1);
+                otherVec->gtSimdVal.u16[index] = 33;
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                indexVec->gtSimdVal.u32[index] = static_cast<uint32_t>(index + 1);
+                otherVec->gtSimdVal.u32[index] = 33;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    BlockRange().InsertAfter(op1, indexVec);
+    BlockRange().InsertAfter(indexVec, otherVec);
+
+    GenTree* select = m_compiler->gtNewSimdCndSelNode(simdType, op1, indexVec, otherVec, simdBaseType, simdSize);
+    BlockRange().InsertAfter(otherVec, select);
+    op1 = select;
+
+    GenTree* min;
+
+    if ((simdSize == 8) && (simdBaseType == TYP_UINT))
+    {
+        // Vector64<uint> has only two lanes and AdvSimd does not provide a 2S MinAcross form.
+        // Use a pairwise reduction with the same vector as both operands instead.
+
+        LIR::Use op1Use;
+        LIR::Use::MakeDummyUse(BlockRange(), op1, &op1Use);
+
+        // The pairwise form consumes op1 twice, so spill it to a temp before cloning the use.
+        op1Use.ReplaceWithLclVar(m_compiler);
+        op1 = op1Use.Def();
+
+        GenTree* op2 = m_compiler->gtClone(op1);
+        BlockRange().InsertAfter(op1, op2);
+
+        min = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_MinPairwise, simdBaseType, simdSize);
+        BlockRange().InsertAfter(op2, min);
+    }
+    else
+    {
+        min = m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_MinAcross, simdBaseType, simdSize);
+        BlockRange().InsertAfter(op1, min);
+    }
+
+    op1 = min;
+
+    ScalarizeHWIntrinsicCmpMaskReduction(extractNode, op1, simdBaseType, simdSize);
+
+    GenTree* castNode = m_compiler->gtNewCastNode(TYP_INT, extractNode, /* isUnsigned */ true, TYP_INT);
+    BlockRange().InsertAfter(extractNode, castNode);
+
+    GenTree* one = m_compiler->gtNewIconNode(1);
+    BlockRange().InsertAfter(castNode, one);
+
+    GenTree* result = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, castNode, one);
+    BlockRange().InsertAfter(one, result);
+
+    BlockRange().Remove(tzcnt);
+
+    ReplaceHWIntrinsicCmpMaskExtractMsbUse(use, parents, tzcnt, result);
+
+    return true;
+}
+#endif // TARGET_ARM64
+
 //----------------------------------------------------------------------------------------------
 // RewriteHWIntrinsicExtractMsb: Rewrites a hwintrinsic ExtractMostSignificantBytes operation
 //
@@ -1385,6 +1922,18 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
     GenTree* op1 = node->Op(1);
 
 #if defined(TARGET_ARM64)
+    if (RewriteHWIntrinsicCmpMaskExtractMsb(use, parents))
+    {
+        return;
+    }
+
+    if ((parents.Height() > 1) &&
+        (IsPrimitivePopCount(parents.Top(1)) || IsPrimitiveTrailingZeroCount(parents.Top(1))) &&
+        IsHWIntrinsicCmpMaskExtractMsb(node))
+    {
+        return;
+    }
+
     // ARM64 doesn't have a single instruction that performs the behavior so we'll emulate it instead.
     // To do this, we effectively perform the following steps:
     // 1. tmp = input & 0x80         ; and the input to clear all but the most significant bit
@@ -1874,6 +2423,22 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         case GT_INTRINSIC:
             // Non-target intrinsics should have already been rewritten back into user calls.
             assert(m_compiler->IsTargetIntrinsic(node->AsIntrinsic()->gtIntrinsicName));
+#if defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
+            if (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_PopCount)
+            {
+                if (RewriteHWIntrinsicCmpMaskExtractMsbPopCount(useEdge, parentStack))
+                {
+                    node = *useEdge;
+                }
+            }
+            else if (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_TrailingZeroCount)
+            {
+                if (RewriteHWIntrinsicCmpMaskExtractMsbTrailingZeroCount(useEdge, parentStack))
+                {
+                    node = *useEdge;
+                }
+            }
+#endif // TARGET_ARM64 && FEATURE_HW_INTRINSICS
             break;
 
 #if defined(FEATURE_HW_INTRINSICS)
