@@ -9366,7 +9366,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (isLoadAddress)
                 {
-                    tiRetVal = typeInfo(TYP_BYREF);
+                    tiRetVal = typeInfo(resolvedToken.token);
                 }
                 else
                 {

@@ -3444,7 +3444,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
     // this must be expanded as it relies on JIT expansion
     if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_GetDelegate)
     {
-        mustExpand = true;
+        mustExpand     = true;
         betterToExpand = true;
     }
 
@@ -3707,7 +3707,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 GenTree*  baseAddr = nullptr;
                 FieldSeq* fldSeq   = nullptr;
                 ssize_t   offset   = 0;
-                if (fieldStack.val->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
+                if (fieldStack.seTypeInfo.HasFieldToken() &&
+                    fieldStack.val->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
                 {
                     assert(fldSeq != nullptr);
                     targetField = fldSeq->GetFieldHandle();
@@ -3803,16 +3804,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 bool     isShared = eeIsSharedInst(delegateType);
                 if (isShared)
                 {
-                    // TODO: figure out how to get the field token
-                    return nullptr;
-
-                    /*if (!IsNativeAot())
+                    if (!IsNativeAot())
                     {
                         // TODO: impl expandRawHandleIntrinsic in CoreCLR and R2R
                         return nullptr;
                     }
 
-                    mdToken fieldToken = methodStack.seTypeInfo.GetMethodPointerInfo()->m_token.token;
+                    mdToken fieldToken = fieldStack.seTypeInfo.GetFieldToken();
 
                     CORINFO_RESOLVED_TOKEN resolvedToken;
                     resolvedToken.tokenContext = impTokenLookupContextHandle;
@@ -3825,7 +3823,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                                                info.compMethodHnd, &embedInfo);
 
                     delegateMT =
-                        impLookupToTree(&embedInfo.lookup, gtTokenToIconFlags(fieldToken), embedInfo.compileTimeHandle);*/
+                        impLookupToTree(&embedInfo.lookup, gtTokenToIconFlags(fieldToken), embedInfo.compileTimeHandle);
                 }
                 else
                 {
