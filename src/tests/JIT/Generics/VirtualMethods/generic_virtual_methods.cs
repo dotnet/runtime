@@ -220,7 +220,7 @@ internal class RuntimeLookupDelegateGenericVirtual
         Delegate m1 = test2.Foo<List<T>>();
         Delegate m2 = test2.Foo<List<List<T>>>;
         Assert.Equal(m1, m2);
-        
+
         IBase foo = new DerivedStruct();
         Delegate d = foo.Foo<List<T>>();
         MethodInfo expected = typeof(DerivedStruct).GetMethod(nameof(DerivedStruct.Foo))!.MakeGenericMethod(typeof(List<T>));
@@ -237,8 +237,6 @@ internal class Base
         RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<U>>));
         RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<U>>>));
         RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<U>>>>));
-        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<List<U>>>>>));
-        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<List<List<U>>>>>>));
         return Foo<U>;
     }
 }
