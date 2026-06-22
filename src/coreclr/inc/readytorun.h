@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 21
+#define READYTORUN_MAJOR_VERSION 24
 #define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 21
+#define MINIMUM_READYTORUN_MAJOR_VERSION 24
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -61,6 +61,9 @@
 // R2R Version 19 removes the READYTORUN_HELPER_ByRefWriteBarrier helper
 // R2R Version 20 changes NativeVarInfo encoding to include ASYNC_CONTINUATION_ILNUM
 // R2R Version 21 updates GC info version to 5 which adds isAsync to x86 GC info
+// R2R Version 22 changes NativeVarInfo encoding to include CALL_RETURN_VALUE
+// R2R Version 23 changes delegate layout to have target before methodPtr
+// R2R Version 24 changes ARM32 virtual stub dispatch hidden parameter register to R12
 
 struct READYTORUN_CORE_HEADER
 {

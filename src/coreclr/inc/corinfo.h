@@ -913,6 +913,7 @@ enum class CorInfoReloc
     WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
     WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                            // e.g. in R2R scenarios as an offset from __image_base
+    WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
 };
 
 enum CorInfoGCType
@@ -1542,8 +1543,6 @@ struct CORINFO_CALL_INFO
     };
 
     CORINFO_CONST_LOOKUP    instParamLookup;
-
-    bool                    wrapperDelegateInvoke;
 };
 
 enum CORINFO_DEVIRTUALIZATION_DETAIL
@@ -1583,12 +1582,15 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // [Out] results of resolveVirtualMethod.
     // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
     //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-    // - tokenLookupContext is set to the wrapped context handle to use for token lookups after devirtualization.
+    // - tokenLookupContext is set to the wrapped context handle to use for token lookups and the instantiation
+    //   parameter after devirtualization.
     // - details on the computation done by the jit host
-    // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
-    //   use it as the parameter to getCallInfo
+    // - resolvedTokenDevirtualizedMethod is used as the parameter to getCallInfo when targeting an R2R image.
+    // - resolvedTokenDevirtualizedUnboxedMethod is set when devirtualizedMethod is an unboxing stub. Its hMethod
+    //   is the unboxed entry point, and the resolved token is used as the parameter to getCallInfo when targeting
+    //   an R2R image.
     // - instParamLookup contains all the information necessary to pass the instantiation parameter for
-    //   the devirtualized method.
+    //   the devirtualized method or its unboxed entry point.
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
     CORINFO_CONTEXT_HANDLE          tokenLookupContext;
@@ -1753,9 +1755,6 @@ struct CORINFO_EE_INFO
     // Delegate offsets
     unsigned    offsetOfDelegateInstance;
     unsigned    offsetOfDelegateFirstTarget;
-
-    // Wrapper delegate offsets
-    unsigned    offsetOfWrapperDelegateIndirectCell;
 
     // Reverse PInvoke offsets
     unsigned    sizeOfReversePInvokeFrame;
@@ -2264,20 +2263,6 @@ public:
     //
     // Returns false if devirtualization is not possible.
     virtual bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info) = 0;
-
-    // Get the unboxed entry point for a method, if possible.
-    virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
-        CORINFO_METHOD_HANDLE ftn,
-        bool*                 requiresInstMethodTableArg
-        ) = 0;
-
-    // Get the wrapped entry point for an instantiating stub, if possible.
-    // Sets methodArg for method instantiations, classArg for class instantiations.
-    virtual CORINFO_METHOD_HANDLE getInstantiatedEntry(
-        CORINFO_METHOD_HANDLE ftn,
-        CORINFO_METHOD_HANDLE* methodArg,
-        CORINFO_CLASS_HANDLE* classArg
-        ) = 0;
 
     // Get the other variant of an async method, if possible.
     // If this is a method with async calling convention: returns the corresponding task-returning method.

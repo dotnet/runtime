@@ -27,11 +27,6 @@ namespace System.Linq.Parallel.Tests
             foreach (object[] parms in Ranges(OuterLoopCounts)) yield return parms;
         }
 
-        public static IEnumerable<object[]> Ranges(int[] counts)
-        {
-            foreach (object[] parms in Ranges(counts.Cast<int>())) yield return parms;
-        }
-
         public static IEnumerable<object[]> Ranges(IEnumerable<int> counts)
         {
             foreach (object[] parms in Ranges(0, counts)) yield return parms;

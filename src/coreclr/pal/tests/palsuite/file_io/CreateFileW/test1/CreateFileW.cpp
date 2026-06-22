@@ -19,7 +19,7 @@ BOOL Cleanup_CreateFileW_test1(void)
     BOOL bRet = TRUE; // assume success
 
     // loop through all accesses, modes, dispositions and flags
-    for (i=0; i<4*8*4*5; ++i) {
+    for (i=0; i<4*8*4*4; ++i) {
         sprintf_s(FileName, ARRAY_SIZE(FileName), "test%03d.txt", i);
 	if (DeleteFileA(FileName) == FALSE) {
 	    if (GetLastError() != ERROR_FILE_NOT_FOUND) {
@@ -59,11 +59,10 @@ PALTEST(file_io_CreateFileW_test1_paltest_createfilew_test1, "file_io/CreateFile
                                 CREATE_ALWAYS,      // 1
                                 OPEN_EXISTING,      // 2
                                 OPEN_ALWAYS};       // 3
-    DWORD dwFlagsAttrib[5] = {FILE_ATTRIBUTE_NORMAL,			// 0
+    DWORD dwFlagsAttrib[4] = {FILE_ATTRIBUTE_NORMAL,			// 0
                                 FILE_FLAG_SEQUENTIAL_SCAN,	    // 1
                                 FILE_FLAG_WRITE_THROUGH,		// 2
-                                FILE_FLAG_NO_BUFFERING,			// 3
-                                FILE_FLAG_RANDOM_ACCESS};		// 4
+                                FILE_FLAG_RANDOM_ACCESS};		// 3
     HANDLE hTemplate = NULL;
 
 
@@ -96,7 +95,7 @@ PALTEST(file_io_CreateFileW_test1_paltest_createfilew_test1, "file_io/CreateFile
             for (k = 0; k < 4; k++)
             {
                 // creation disp loop
-                for (l = 0; l < 5; l++)
+                for (l = 0; l < 4; l++)
                 {
                     sprintf_s(string, ARRAY_SIZE(string), "test%03d.txt", nCounter);
                     lpFileName = convert(string);

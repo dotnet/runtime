@@ -572,11 +572,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         /* Set the delegate flag */
         call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DELEGATE_INV;
 
-        if (callInfo->wrapperDelegateInvoke)
-        {
-            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_WRAPPER_DELEGATE_INV;
-        }
-
         if (opcode == CEE_CALLVIRT)
         {
             assert(mflags & CORINFO_FLG_FINAL);
@@ -1639,6 +1634,35 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
         return gtNewNothingNode();
     }
 
+    // Case 1b: value-type (non-nullable) boxed via CORINFO_HELP_BOX helper.
+    // In Tier0 (and other size-constrained modes) struct boxes are emitted as a
+    // direct helper call rather than GT_BOX. The helper always returns non-null,
+    // so the ThrowIfNull is a no-op aside from the side effects of computing the
+    // helper's address argument and the valueName.
+    //
+    //  ArgumentNullException_ThrowIfNull(CORINFO_HELP_BOX(clsHnd, addr), valueName)
+    //    ->
+    //  NOP (with side-effects of addr and valueName preserved)
+    //
+    if (value->IsHelperCall(CORINFO_HELP_BOX))
+    {
+        GenTree* boxHelperClsArg  = value->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
+        GenTree* boxHelperAddrArg = value->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+        if ((boxHelperClsArg->gtFlags & GTF_SIDE_EFFECT) != 0)
+        {
+            // The class handle is normally a constant; bail if not.
+            return call;
+        }
+
+        // Spill addr then valueName to preserve evaluation order of any side effects.
+        unsigned boxedAddrTmp    = lvaGrabTemp(true DEBUGARG("boxedAddr spilled"));
+        unsigned boxedArgNameTmp = lvaGrabTemp(true DEBUGARG("boxedArg spilled"));
+        impStoreToTemp(boxedAddrTmp, boxHelperAddrArg, CHECK_SPILL_ALL);
+        impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
+        return gtNewNothingNode();
+    }
+
     // Case 2: nullable:
     //
     //  ArgumentNullException.ThrowIfNull(CORINFO_HELP_BOX_NULLABLE(classHandle, addr), valueName);
@@ -2617,7 +2641,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         return nullptr;
     }
 
-    CORINFO_FIELD_HANDLE fieldToken = (CORINFO_FIELD_HANDLE)fieldTokenNode->AsIntCon()->gtCompileTimeHandle;
+    CORINFO_FIELD_HANDLE fieldToken = (CORINFO_FIELD_HANDLE)fieldTokenNode->AsIntCon()->GetCompileTimeHandle();
     if (!fieldTokenNode->IsIconHandle(GTF_ICON_FIELD_HDL) || (fieldToken == nullptr))
     {
         return nullptr;
@@ -2872,7 +2896,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
             return nullptr;
         }
 
-        numElements = S_SIZE_T(arrayLengthNode->AsIntCon()->gtIconVal);
+        numElements = S_SIZE_T(arrayLengthNode->AsIntCon()->IconValue());
 
         if (!info.compCompHnd->isSDArray(arrayClsHnd))
         {
@@ -2940,7 +2964,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree*     store     = gtNewStoreBlkNode(blkLayout, dstAddr, src);
 
 #ifdef DEBUG
-    src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_InitializeArrayIntrinsics;
+    src->gtGetOp1()->AsIntCon()->SetTargetHandle(THT_InitializeArrayIntrinsics);
 #endif
 
     return store;
@@ -2980,7 +3004,7 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
         return nullptr;
     }
 
-    CORINFO_FIELD_HANDLE fieldToken = (CORINFO_FIELD_HANDLE)fieldTokenNode->AsIntCon()->gtCompileTimeHandle;
+    CORINFO_FIELD_HANDLE fieldToken = (CORINFO_FIELD_HANDLE)fieldTokenNode->AsIntCon()->GetCompileTimeHandle();
     if (!fieldTokenNode->IsIconHandle(GTF_ICON_FIELD_HDL) || (fieldToken == nullptr))
     {
         return nullptr;
@@ -3247,7 +3271,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                         default:
                         {
-                            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig,
+                            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig,
                                                                 mustExpand);
                         }
                     }
@@ -3290,6 +3314,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // handled by the AltJit, so limit only the platform specific intrinsics
             assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
 
+            if (ni < LAST_NI_Vector128)
+#elif defined(TARGET_WASM)
+            NYI_WASM_SIMD("impHWIntrinsic");
             if (ni < LAST_NI_Vector128)
 #else
 #error Unsupported platform
@@ -5206,9 +5233,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #ifdef TARGET_WASM
         NYI_WASM("Unhandled must expand intrinsic");
 #else
-        assert(!"Unhandled must expand intrinsic, throwing PlatformNotSupportedException");
+        assert(!"Unhandled must expand intrinsic, throwing NotImplementedException");
 #endif
-        return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+        return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
     }
 
     // Optionally report if this intrinsic is special
@@ -6202,7 +6229,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 #endif // !TARGET_64BIT
-#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_WASM)
             impPopStack();
 
             GenTree* op1Dup = nullptr;
@@ -8161,7 +8188,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     InlineCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo;
 
     pInfo->guardedMethodHandle               = methodHandle;
-    pInfo->guardedMethodUnboxedEntryHandle   = nullptr;
     pInfo->guardedMethodInstParamLookup      = {};
     pInfo->guardedMethodResolvedToken        = {};
     pInfo->guardedMethodUnboxedResolvedToken = {};
@@ -8179,22 +8205,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     {
         pInfo->guardedMethodResolvedToken        = *pResolvedToken;
         pInfo->guardedMethodUnboxedResolvedToken = *pUnboxedResolvedToken;
-    }
-
-    // If the guarded class is a value class, look for an unboxed entry point.
-    //
-    if ((classAttr & CORINFO_FLG_VALUECLASS) != 0)
-    {
-        JITDUMP("    ... class is a value class, looking for unboxed entry\n");
-        bool                  requiresInstMethodTableArg = false;
-        CORINFO_METHOD_HANDLE unboxedEntryMethodHandle =
-            info.compCompHnd->getUnboxedEntry(methodHandle, &requiresInstMethodTableArg);
-
-        if (unboxedEntryMethodHandle != nullptr)
-        {
-            JITDUMP("    ... updating GDV candidate with unboxed entry info\n");
-            pInfo->guardedMethodUnboxedEntryHandle = unboxedEntryMethodHandle;
-        }
     }
 
     call->AddGDVCandidateInfo(this, pInfo);
@@ -8472,9 +8482,9 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (call->IsGuardedDevirtualizationCandidate())
     {
         InlineCandidateInfo* gdvCandidate = call->GetGDVCandidateInfo(candidateIndex);
-        if (gdvCandidate->guardedMethodUnboxedEntryHandle != nullptr)
+        if (gdvCandidate->guardedMethodUnboxedResolvedToken.hMethod != nullptr)
         {
-            fncHandle = gdvCandidate->guardedMethodUnboxedEntryHandle;
+            fncHandle = gdvCandidate->guardedMethodUnboxedResolvedToken.hMethod;
         }
         else
         {
@@ -9411,61 +9421,62 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
         {
             JITDUMP("Have a direct call to boxed entry point. Trying to optimize to call an unboxed entry point\n");
 
-            // Note for some shared methods the unboxed entry point requires an extra parameter.
-            bool                  requiresInstMethodTableArg = false;
-            CORINFO_METHOD_HANDLE unboxedEntryMethod =
-                info.compCompHnd->getUnboxedEntry(derivedMethod, &requiresInstMethodTableArg);
+            CORINFO_METHOD_HANDLE const unboxedEntryMethod =
+                (dcInfo->pUnboxedResolvedToken == nullptr) ? nullptr : dcInfo->pUnboxedResolvedToken->hMethod;
 
             if (unboxedEntryMethod != nullptr)
             {
-                // Rewrite the call to target the unboxed entry on the box payload. Keep the heap box,
-                // since the callee may return an interior managed pointer into it; object stack allocation
-                // can later promote the box to the stack when escape analysis proves the receiver does not
-                // escape.
-                //
-                if (requiresInstMethodTableArg)
-                {
-                    // Get the method table from the boxed object.
-                    //
-                    // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
-                    GenTree* const clonedThisArg = gtClone(thisArg->GetEarlyNode());
+                CORINFO_SIG_INFO unboxedEntrySig;
+                info.compCompHnd->getMethodSig(unboxedEntryMethod, &unboxedEntrySig);
 
-                    if (clonedThisArg == nullptr)
+                bool canUseUnboxedEntry = true;
+
+                if (unboxedEntrySig.hasTypeArg())
+                {
+                    if (((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
                     {
-                        JITDUMP("unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
+                        CORINFO_METHOD_HANDLE exactMethodHandle =
+                            (CORINFO_METHOD_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
+
+                        instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+                        JITDUMP("revising call to invoke unboxed entry with additional method desc arg\n");
                     }
                     else
                     {
-                        JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
+                        assert(((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) ==
+                               CORINFO_CONTEXTFLAGS_CLASS);
 
-                        instParam = gtNewMethodTableLookup(clonedThisArg);
-
-                        // Update the 'this' pointer to refer to the box payload
+                        // Get the method table from the boxed object.
                         //
-                        GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                        GenTree* const boxPayload =
-                            gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
+                        // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
+                        GenTree* const clonedThisArg = gtClone(thisArg->GetEarlyNode());
 
-                        assert(thisObj == thisArg->GetEarlyNode());
-                        thisArg->SetEarlyNode(boxPayload);
-                        call->gtCallMethHnd = unboxedEntryMethod;
-                        INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
-
-                        // Method attributes will differ because unboxed entry point is shared
-                        //
-                        const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
-                        JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
-                                unboxedMethodAttribs);
-                        derivedMethod         = unboxedEntryMethod;
-                        pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
-                        derivedMethodAttribs  = unboxedMethodAttribs;
-                        Metrics.DevirtualizedCallUnboxedEntry++;
+                        if (clonedThisArg == nullptr)
+                        {
+                            JITDUMP(
+                                "unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
+                            canUseUnboxedEntry = false;
+                        }
+                        else
+                        {
+                            instParam = gtNewMethodTableLookup(clonedThisArg);
+                            assert(thisObj == thisArg->GetEarlyNode());
+                            JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
+                        }
                     }
                 }
                 else
                 {
                     JITDUMP("revising call to invoke unboxed entry\n");
+                }
 
+                if (canUseUnboxedEntry)
+                {
+                    // Rewrite the call to target the unboxed entry on the box payload. Keep the heap box,
+                    // since the callee may return an interior managed pointer into it; object stack allocation
+                    // can later promote the box to the stack when escape analysis proves the receiver does not
+                    // escape.
+                    //
                     GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                     GenTree* const boxPayload =
                         gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
@@ -9473,6 +9484,17 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                     thisArg->SetEarlyNode(boxPayload);
                     call->gtCallMethHnd = unboxedEntryMethod;
                     INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
+
+                    if (unboxedEntrySig.hasTypeArg())
+                    {
+                        // Method attributes will differ because unboxed entry point is shared.
+                        //
+                        const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
+                        JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
+                                unboxedMethodAttribs);
+                        derivedMethodAttribs = unboxedMethodAttribs;
+                    }
+
                     derivedMethod         = unboxedEntryMethod;
                     pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
                     Metrics.DevirtualizedCallUnboxedEntry++;
@@ -10068,7 +10090,6 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             //
             pInfo->guardedClassHandle                = nullptr;
             pInfo->guardedMethodHandle               = nullptr;
-            pInfo->guardedMethodUnboxedEntryHandle   = nullptr;
             pInfo->guardedMethodInstParamLookup      = {};
             pInfo->guardedMethodResolvedToken        = {};
             pInfo->guardedMethodUnboxedResolvedToken = {};
@@ -11091,8 +11112,12 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                                 CORINFO_SIG_INFO sig;
                                 info.compCompHnd->getMethodSig(method, &sig);
 
+                                // System.Numerics.Vector<T> and System.Numerics.Vector are cross-platform
+                                // APIs with managed fallbacks; they must not throw PNSE when the ISA isn't
+                                // available.
                                 result = HWIntrinsicInfo::lookupId(this, &sig, lookupClassName, lookupMethodName,
-                                                                   enclosingClassNames[0], enclosingClassNames[1]);
+                                                                   enclosingClassNames[0], enclosingClassNames[1],
+                                                                   /* isXplatIntrinsic */ true);
                             }
                         }
 #endif // FEATURE_HW_INTRINSICS
@@ -11355,6 +11380,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         platformNamespaceName = ".X86";
 #elif defined(TARGET_ARM64)
                         platformNamespaceName = ".Arm";
+#elif defined(TARGET_WASM)
+                        platformNamespaceName = ".Wasm";
 #else
 #error Unsupported platform
 #endif
@@ -11378,13 +11405,18 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             }
                         }
 
-                        if ((namespaceName[0] == '\0') || (strcmp(namespaceName, platformNamespaceName) == 0))
+                        bool isXplatIntrinsic              = (namespaceName[0] == '\0');
+                        bool isPlatformMatchedIntrinsic    = (strcmp(namespaceName, platformNamespaceName) == 0);
+                        bool isPlatformMismatchedIntrinsic = !isXplatIntrinsic && !isPlatformMatchedIntrinsic;
+
+                        if (isXplatIntrinsic || isPlatformMatchedIntrinsic)
                         {
                             CORINFO_SIG_INFO sig;
                             info.compCompHnd->getMethodSig(method, &sig);
 
-                            result = HWIntrinsicInfo::lookupId(this, &sig, className, methodName,
-                                                               enclosingClassNames[0], enclosingClassNames[1]);
+                            result =
+                                HWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassNames[0],
+                                                          enclosingClassNames[1], isXplatIntrinsic);
                         }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -11429,6 +11461,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                                 result = NI_Throw_PlatformNotSupportedException;
                             }
+#ifdef FEATURE_HW_INTRINSICS
+                            else if (isPlatformMismatchedIntrinsic)
+                            {
+                                // The API lives in a platform-specific sub-namespace under
+                                // System.Runtime.Intrinsics (e.g., .X86 on ARM64, .Wasm on xarch) that
+                                // does not match the target architecture. Such APIs are platform-specific
+                                // with no managed fallback, so they must throw PlatformNotSupportedException.
+                                result = NI_Throw_PlatformNotSupportedException;
+                            }
+#endif // FEATURE_HW_INTRINSICS
                             else
                             {
                                 // Otherwise mark this as a general intrinsic in the namespace
@@ -11554,6 +11596,12 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     if (result == NI_Illegal)
     {
         JITDUMP("Not recognized\n");
+    }
+    else if ((result == NI_System_Numerics_Intrinsic) || (result == NI_System_Runtime_Intrinsics_Intrinsic))
+    {
+        // These are special markers used just to ensure we still get the inlining profitability
+        // boost. We actually have the implementation in managed, however, to keep the JIT simpler.
+        JITDUMP("Not recognized - inlining boost\n");
     }
     else if (result == NI_IsSupported_False)
     {
@@ -11980,7 +12028,7 @@ NamedIntrinsic Compiler::lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE 
 //    mustExpand - true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Return Value:
-//    a gtNewMustThrowException if mustExpand is true; otherwise, nullptr
+//    a gtNewMustThrowException if mustExpand is true or optimizations are enabled; otherwise, nullptr
 //
 GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
                                                 CORINFO_METHOD_HANDLE method,
@@ -11989,18 +12037,36 @@ GenTree* Compiler::impUnsupportedNamedIntrinsic(unsigned              helper,
 {
     // We've hit some error case and may need to return a node for the given error.
     //
-    // When `mustExpand=false`, we are attempting to inline the intrinsic directly into another method. In this
-    // scenario, we need to return `nullptr` so that a GT_CALL to the intrinsic is emitted instead. This is to
-    // ensure that everything continues to behave correctly when optimizations are enabled (e.g. things like the
-    // inliner may expect the node we return to have a certain signature, and the `MustThrowException` node won't
-    // match that).
-    //
     // When `mustExpand=true`, we are in a GT_CALL to the intrinsic and are attempting to JIT it. This will generally
     // be in response to an indirect call (e.g. done via reflection) or in response to an earlier attempt returning
     // `nullptr` (under `mustExpand=false`). In that scenario, we are safe to return the `MustThrowException` node.
+    //
+    // When `mustExpand=false`, we are attempting to expand the intrinsic directly at the call site (either at the
+    // root method or while importing an inlinee body). When optimizations are enabled it is preferable to surface
+    // a hard throw at the unsupported call site rather than fall back to a managed call into the (unsupported)
+    // intrinsic body, since the body itself will only end up throwing as well. We therefore try to also return the
+    // `MustThrowException` node when `opts.OptimizationEnabled()` is true. When optimizations are disabled (Tier0
+    // / MinOpts / debug code) we keep the legacy behavior of returning `nullptr` and emitting a GT_CALL so as not
+    // to perturb debugging or tier-up scenarios.
 
-    if (mustExpand)
+    if ((helper == CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED) && IsAot())
     {
+        // However, if we're AOT and must expand, we need to throw a PlatformNotSupportedException since there is
+        // no NAOT/R2R helper for the regular NotSupportedException with the relevant type message. PNSE derives
+        // from NSE and so it is still accurate for most considerations. We can fix this the next time we bump
+        // MINIMUM_READYTORUN_MAJOR_VERSION
+
+        if (!mustExpand)
+        {
+            return nullptr;
+        }
+        helper = CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED;
+    }
+
+    if (mustExpand || opts.OptimizationEnabled())
+    {
+        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("impUnsupportedNamedIntrinsic"));
+
         for (unsigned i = 0; i < sig->numArgs; i++)
         {
             impPopStack();

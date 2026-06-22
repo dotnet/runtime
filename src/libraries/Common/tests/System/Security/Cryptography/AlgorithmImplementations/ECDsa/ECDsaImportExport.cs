@@ -354,6 +354,90 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
+        [ConditionalFact(typeof(ECDsaImportExportTests), nameof(CanDeriveNewPublicKey))]
+        public static void DerivePublicKey_Named_P256()
+        {
+            VerifyPrivateKeyDerivesPublicKey(EccTestData.GetNistP256ReferenceKey(), explicitCurve: false);
+        }
+
+        [ConditionalFact(typeof(ECDsaImportExportTests), nameof(CanDeriveNewPublicKey))]
+        public static void DerivePublicKey_Named_P521_DiminishedCoords()
+        {
+            VerifyPrivateKeyDerivesPublicKey(EccTestData.GetNistP521DiminishedCoordsParameters(), explicitCurve: false);
+        }
+
+        [ConditionalFact(typeof(ECDsaImportExportTests), nameof(CanDeriveNewPublicKey))]
+        public static void DerivePublicKey_Named_Sect163k1()
+        {
+            if (!ECDsaFactory.IsCurveValid(EccTestData.Sect163k1Key1.Curve.Oid))
+                return;
+
+            VerifyPrivateKeyDerivesPublicKey(EccTestData.Sect163k1Key1, explicitCurve: false);
+        }
+
+        [ConditionalFact(typeof(ECDsaImportExportTests), nameof(CanDeriveNewPublicKey))]
+        public static void DerivePublicKey_Named_C2pnb163v1()
+        {
+            if (!ECDsaFactory.IsCurveValid(EccTestData.C2pnb163v1Key1.Curve.Oid))
+                return;
+
+            VerifyPrivateKeyDerivesPublicKey(EccTestData.C2pnb163v1Key1, explicitCurve: false);
+        }
+
+        [ConditionalFact(typeof(ECDsaImportExportTests), nameof(ECExplicitCurvesSupported), nameof(CanDeriveNewPublicKey))]
+        public static void DerivePublicKey_Explicit_P256()
+        {
+            VerifyPrivateKeyDerivesPublicKey(EccTestData.GetNistP256ReferenceKeyExplicit(), explicitCurve: true);
+        }
+
+        [ConditionalFact(typeof(ECDsaImportExportTests), nameof(ECExplicitCurvesSupported), nameof(CanDeriveNewPublicKey))]
+        public static void DerivePublicKey_Explicit_P521_DiminishedCoords()
+        {
+            ECParameters p521 = EccTestData.GetNistP521DiminishedCoordsParameters();
+            p521.Curve = EccTestData.GetNistP521ExplicitCurve();
+            VerifyPrivateKeyDerivesPublicKey(p521, explicitCurve: true);
+        }
+
+        [ConditionalFact(typeof(ECDsaImportExportTests), nameof(ECExplicitCurvesSupported), nameof(CanDeriveNewPublicKey))]
+        public static void DerivePublicKey_Explicit_Sect163k1()
+        {
+            if (!ECDsaFactory.IsCurveValid(EccTestData.Sect163k1Key1.Curve.Oid))
+                return;
+
+            VerifyPrivateKeyDerivesPublicKey(EccTestData.Sect163k1Key1Explicit, explicitCurve: true);
+        }
+
+        [ConditionalFact(typeof(ECDsaImportExportTests), nameof(ECExplicitCurvesSupported), nameof(CanDeriveNewPublicKey))]
+        public static void DerivePublicKey_Explicit_C2pnb163v1()
+        {
+            if (!ECDsaFactory.IsCurveValid(EccTestData.C2pnb163v1Key1.Curve.Oid))
+                return;
+
+            VerifyPrivateKeyDerivesPublicKey(EccTestData.C2pnb163v1Key1Explicit, explicitCurve: true);
+        }
+
+        private static void VerifyPrivateKeyDerivesPublicKey(ECParameters knownKey, bool explicitCurve)
+        {
+            ECParameters importParams = new ECParameters
+            {
+                Curve = knownKey.Curve,
+                D = knownKey.D,
+                Q = default,
+            };
+
+            using (ECDsa ecdsa = ECDsaFactory.Create())
+            {
+                ecdsa.ImportParameters(importParams);
+
+                ECParameters exported = explicitCurve
+                    ? ecdsa.ExportExplicitParameters(true)
+                    : ecdsa.ExportParameters(true);
+
+                Assert.Equal(knownKey.Q.X, exported.Q.X);
+                Assert.Equal(knownKey.Q.Y, exported.Q.Y);
+            }
+        }
+
         [Theory]
         [MemberData(nameof(NamedCurves))]
         public static void OidPresentOnCurveMiscased(ECCurve curve)

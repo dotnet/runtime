@@ -71,9 +71,28 @@ internal static class Entrypoints
                 },
                 (threadId, contextFlags, buffer) =>
                 {
+                    const nuint RequiredAlignment = 16;
                     fixed (byte* bufferPtr = buffer)
                     {
-                        return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
+                        if (((nuint)bufferPtr & (RequiredAlignment - 1)) == 0)
+                        {
+                            return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
+                        }
+
+                        byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)buffer.Length, RequiredAlignment);
+                        try
+                        {
+                            int hr = readThreadContext(threadId, contextFlags, (uint)buffer.Length, alignedBuffer, delegateContext);
+                            if (hr >= 0)
+                            {
+                                new ReadOnlySpan<byte>(alignedBuffer, buffer.Length).CopyTo(buffer);
+                            }
+                            return hr;
+                        }
+                        finally
+                        {
+                            NativeMemory.AlignedFree(alignedBuffer);
+                        }
                     }
                 },
                 allocDelegate,

@@ -5591,17 +5591,6 @@ void CEEInfo::getCallInfo(
         }
     }
 
-    pResult->wrapperDelegateInvoke = FALSE;
-
-    if (m_pMethodBeingCompiled->IsDynamicMethod())
-    {
-        auto pMD = m_pMethodBeingCompiled->AsDynamicMethodDesc();
-        if (pMD->IsILStub() && pMD->IsWrapperDelegateStub())
-        {
-            pResult->wrapperDelegateInvoke = TRUE;
-        }
-    }
-
     EE_TO_JIT_TRANSITION();
 }
 
@@ -8880,6 +8869,15 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         info->tokenLookupContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
     }
 
+    // If we devirtualized into an unboxing stub, also hand back the unboxed entry
+    // so the jit can perform the unboxing transformation.
+    //
+    if (pDevirtMD->IsUnboxingStub())
+    {
+        MethodDesc* pUnboxedMD = pDevirtMD->GetMethodTable()->GetUnboxedEntryPointMD(pDevirtMD);
+        info->resolvedTokenDevirtualizedUnboxedMethod.hMethod = (CORINFO_METHOD_HANDLE) pUnboxedMD;
+    }
+
     // Success! Pass back the results.
     //
     info->devirtualizedMethod = (CORINFO_METHOD_HANDLE) pDevirtMD;
@@ -8901,81 +8899,6 @@ bool CEEInfo::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
     JIT_TO_EE_TRANSITION();
 
     result = resolveVirtualMethodHelper(info);
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-/*********************************************************************/
-CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
-    CORINFO_METHOD_HANDLE ftn,
-    bool* requiresInstMethodTableArg)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_METHOD_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    MethodDesc* pMD = GetMethod(ftn);
-    bool requiresInstMTArg = false;
-
-    if (pMD->IsUnboxingStub())
-    {
-        MethodTable* pMT = pMD->GetMethodTable();
-        MethodDesc* pUnboxedMD = pMT->GetUnboxedEntryPointMD(pMD);
-
-        result = (CORINFO_METHOD_HANDLE)pUnboxedMD;
-        requiresInstMTArg = !!pUnboxedMD->RequiresInstMethodTableArg();
-    }
-
-    *requiresInstMethodTableArg = requiresInstMTArg;
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-/*********************************************************************/
-CORINFO_METHOD_HANDLE CEEInfo::getInstantiatedEntry(
-    CORINFO_METHOD_HANDLE ftn,
-    CORINFO_METHOD_HANDLE* methodArg,
-    CORINFO_CLASS_HANDLE* classArg)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_METHOD_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    *methodArg = NULL;
-    *classArg = NULL;
-
-    MethodDesc* pMD = GetMethod(ftn);
-    bool requiresInstMTArg = false;
-
-    if (pMD->IsInstantiatingStub())
-    {
-        result = (CORINFO_METHOD_HANDLE) pMD->GetWrappedMethodDesc();
-
-        if (pMD->HasMethodInstantiation())
-        {
-            *methodArg = ftn;
-        }
-        else
-        {
-            *classArg = (CORINFO_CLASS_HANDLE)pMD->GetMethodTable();
-        }
-    }
 
     EE_TO_JIT_TRANSITION();
 
@@ -10333,9 +10256,6 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     // Delegate offsets
     pEEInfoOut->offsetOfDelegateInstance    = OFFSETOF__DelegateObject__target;
     pEEInfoOut->offsetOfDelegateFirstTarget = OFFSETOF__DelegateObject__methodPtr;
-
-    // Wrapper delegate offsets
-    pEEInfoOut->offsetOfWrapperDelegateIndirectCell = OFFSETOF__DelegateObject__methodPtrAux;
 
     pEEInfoOut->sizeOfReversePInvokeFrame = TARGET_POINTER_SIZE * READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits;
 
