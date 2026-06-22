@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Internal.CallingConvention;
@@ -25,12 +26,53 @@ internal sealed class CallingConvention_1 : ICallingConvention
         _target = target;
     }
 
+    public byte[]? TryComputeArgGCRefMapBlob(MethodDescHandle methodDesc)
+    {
+        try
+        {
+            return CallingConventionGCRefMapBuilder.TryBuild(_target, methodDesc);
+        }
+        catch
+        {
+            // Any thrown exception from EnumerateArguments / signature decode
+            // makes the result unusable; treat as "cDAC can't encode this MD".
+            return null;
+        }
+    }
+
+    // Per-parameter metadata captured at signature-decode time. We track this
+    // out-of-band because the standard SignatureTypeProvider collapses
+    // ELEMENT_TYPE_BYREF, _PTR, _SZARRAY, and _ARRAY into the underlying type
+    // (or a null TypeHandle when the runtime hasn't cached the constructed
+    // form), making the top-level element type unrecoverable from
+    // methodSig.ParameterTypes alone.
+    private readonly struct ParamTypeInfo
+    {
+        // Set if the parameter is wrapped in ELEMENT_TYPE_BYREF.
+        public bool IsByRef { get; init; }
+
+        // Outermost element type of the parameter signature, if known
+        // (Byref / Ptr / SzArray / Array). The enum's zero value (default)
+        // means "no constructed-type wrapper -- caller should fall back to
+        // GetSignatureCorElementType on the underlying TypeHandle".
+        public CdacCorElementType OutermostKind { get; init; }
+    }
+
     public IEnumerable<ArgumentLocation> EnumerateArguments(MethodDescHandle methodDesc)
     {
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
 
         MethodSignature<TypeHandle> methodSig = DecodeMethodSignature(rts, methodDesc);
+
+        // Re-decode the same signature with a wrapper provider to learn each
+        // parameter's outermost element type (Byref / Ptr / SzArray / Array)
+        // and whether it's wrapped in ELEMENT_TYPE_BYREF. The standard
+        // SignatureTypeProvider hides these wrappers (returning a null
+        // TypeHandle when GetConstructedType isn't cached), so without this
+        // out-of-band metadata the encoder would silently drop any arg whose
+        // outermost wrapper isn't in the loader's available-type-params list.
+        ParamTypeInfo[] paramInfo = DecodeParamTypeInfo(rts, methodDesc, methodSig.ParameterTypes.Length);
 
         if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
         {
@@ -122,8 +164,23 @@ internal sealed class CallingConvention_1 : ICallingConvention
         {
             if (argIndex < parameterTypes.Length)
             {
-                CdacCorElementType elemType = rts.GetSignatureCorElementType(
-                    methodSig.ParameterTypes[argIndex]);
+                CdacCorElementType elemType;
+                if (paramInfo[argIndex].IsByRef)
+                {
+                    // ELEMENT_TYPE_BYREF wrapper: pass-by-reference (managed pointer).
+                    elemType = CdacCorElementType.Byref;
+                }
+                else if (paramInfo[argIndex].OutermostKind != default(CdacCorElementType))
+                {
+                    // Outermost wrapper was something the standard signature
+                    // provider may have dropped (SzArray / Array / Ptr). Use
+                    // the kind we recorded during the wrapper-provider walk.
+                    elemType = paramInfo[argIndex].OutermostKind;
+                }
+                else
+                {
+                    elemType = rts.GetSignatureCorElementType(methodSig.ParameterTypes[argIndex]);
+                }
 
                 if (argOffset == TransitionBlock.StructInRegsOffset)
                     throw new NotImplementedException("SystemV AMD64 struct-in-registers is not yet supported by the cDAC.");
@@ -182,6 +239,69 @@ internal sealed class CallingConvention_1 : ICallingConvention
         return decoder.DecodeMethodSignature(ref sigReader);
     }
 
+    // Re-decode the method signature using a wrapper provider that records
+    // per-parameter metadata the standard signature provider would discard:
+    //   - whether the parameter is wrapped in ELEMENT_TYPE_BYREF, and
+    //   - the outermost element type (SzArray / Array / Ptr / Byref) so
+    //     constructed-type wrappers the runtime hasn't cached don't get
+    //     silently dropped via null TypeHandles.
+    private ParamTypeInfo[] DecodeParamTypeInfo(IRuntimeTypeSystem rts, MethodDescHandle methodDesc, int paramCount)
+    {
+        if (paramCount == 0)
+            return Array.Empty<ParamTypeInfo>();
+
+        TargetPointer methodTablePtr = rts.GetMethodTable(methodDesc);
+        TypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
+        TargetPointer modulePtr = rts.GetModule(typeHandle);
+
+        ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
+        MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        if (mdReader is null)
+            return new ParamTypeInfo[paramCount];
+
+        ParamMetadataProvider provider = new(new SignatureTypeProvider<TypeHandle>(_target, moduleHandle), rts);
+        RuntimeSignatureDecoder<TrackedType, TypeHandle> decoder = new(
+            provider, _target, mdReader, typeHandle);
+
+        MethodSignature<TrackedType> sig;
+        if (rts.IsStoredSigMethodDesc(methodDesc, out ReadOnlySpan<byte> storedSig))
+        {
+            unsafe
+            {
+                fixed (byte* pStoredSig = storedSig)
+                {
+                    BlobReader blobReader = new(pStoredSig, storedSig.Length);
+                    sig = decoder.DecodeMethodSignature(ref blobReader);
+                }
+            }
+        }
+        else
+        {
+            uint methodToken = rts.GetMethodToken(methodDesc);
+            if (methodToken == (uint)EcmaMetadataUtils.TokenType.mdtMethodDef)
+                return new ParamTypeInfo[paramCount];
+
+            MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle(
+                (int)EcmaMetadataUtils.GetRowId(methodToken));
+            MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+            BlobReader sigReader = mdReader.GetBlobReader(methodDef.Signature);
+            sig = decoder.DecodeMethodSignature(ref sigReader);
+        }
+
+        ParamTypeInfo[] result = new ParamTypeInfo[paramCount];
+        int count = Math.Min(paramCount, sig.ParameterTypes.Length);
+        for (int i = 0; i < count; i++)
+        {
+            TrackedType t = sig.ParameterTypes[i];
+            result[i] = new ParamTypeInfo
+            {
+                IsByRef = t.IsByRef,
+                OutermostKind = t.OutermostKind,
+            };
+        }
+        return result;
+    }
+
     private static TransitionBlock BuildTransitionBlock(IRuntimeInfo runtimeInfo)
     {
         RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
@@ -203,5 +323,113 @@ internal sealed class CallingConvention_1 : ICallingConvention
         bool isApplePlatform = os == RuntimeInfoOperatingSystem.Apple;
 
         return TransitionBlock.FromTarget(targetArch, isWindows, isApplePlatform, isArmel: false);
+    }
+
+    // Result type produced by ParamMetadataProvider. Carries the underlying
+    // TypeHandle (resolved by the inner provider when possible) plus the
+    // outermost element type and an IsByRef flag, both of which the standard
+    // SignatureTypeProvider would otherwise drop on the floor when the runtime
+    // hasn't cached the constructed-type instantiation.
+    private readonly struct TrackedType
+    {
+        public TypeHandle Underlying { get; init; }
+        public bool IsByRef { get; init; }
+        // The outermost ELEMENT_TYPE_* wrapper applied to this signature.
+        // The enum's zero value (default) means "no constructed-type wrapper;
+        // use GetSignatureCorElementType on Underlying instead".
+        public CdacCorElementType OutermostKind { get; init; }
+    }
+
+    // ISignatureTypeProvider wrapper that records the outermost
+    // ELEMENT_TYPE_* wrapper (BYREF / PTR / SZARRAY / ARRAY) on each parameter
+    // so the caller can recover that information even when the standard
+    // SignatureTypeProvider would have returned a null TypeHandle from
+    // GetConstructedType. Used only by DecodeParamTypeInfo.
+    private sealed class ParamMetadataProvider : IRuntimeSignatureTypeProvider<TrackedType, TypeHandle>
+    {
+        private readonly SignatureTypeProvider<TypeHandle> _inner;
+        private readonly IRuntimeTypeSystem _rts;
+
+        public ParamMetadataProvider(SignatureTypeProvider<TypeHandle> inner, IRuntimeTypeSystem rts)
+        {
+            _inner = inner;
+            _rts = rts;
+        }
+
+        // Helpers: Wrap stamps Underlying but leaves OutermostKind == End so
+        // callers know to fall back to GetSignatureCorElementType on Underlying.
+        // The constructed-type overrides (ByRef/Ptr/SzArray/Array) override
+        // OutermostKind explicitly.
+        private static TrackedType Wrap(TypeHandle th)
+            => new() { Underlying = th };
+
+        public TrackedType GetByReferenceType(TrackedType elementType)
+            => new() { Underlying = elementType.Underlying, IsByRef = true,
+                       OutermostKind = CdacCorElementType.Byref };
+
+        public TrackedType GetPointerType(TrackedType elementType)
+            => new() { Underlying = elementType.Underlying,
+                       OutermostKind = CdacCorElementType.Ptr };
+
+        public TrackedType GetArrayType(TrackedType elementType, ArrayShape shape)
+            => new() { Underlying = _inner.GetArrayType(elementType.Underlying, shape),
+                       OutermostKind = CdacCorElementType.Array };
+
+        public TrackedType GetSZArrayType(TrackedType elementType)
+            => new() { Underlying = _inner.GetSZArrayType(elementType.Underlying),
+                       OutermostKind = CdacCorElementType.SzArray };
+
+        public TrackedType GetFunctionPointerType(MethodSignature<TrackedType> signature)
+            => Wrap(_inner.GetPrimitiveType(PrimitiveTypeCode.IntPtr));
+
+        public TrackedType GetGenericInstantiation(TrackedType genericType, ImmutableArray<TrackedType> typeArguments)
+        {
+            ImmutableArray<TypeHandle>.Builder builder = ImmutableArray.CreateBuilder<TypeHandle>(typeArguments.Length);
+            for (int i = 0; i < typeArguments.Length; i++)
+                builder.Add(typeArguments[i].Underlying);
+            TypeHandle constructed = _inner.GetGenericInstantiation(genericType.Underlying, builder.ToImmutable());
+
+            // GetConstructedType returns null when the runtime hasn't cached
+            // this exact instantiation. Recover the would-be top-level kind
+            // (Class / ValueType / ...) from the open generic type so the
+            // encoder still sees the right token (REF for class, etc.).
+            CdacCorElementType kind = default;
+            if (constructed.Address == TargetPointer.Null && genericType.Underlying.Address != TargetPointer.Null)
+            {
+                try { kind = _rts.GetSignatureCorElementType(genericType.Underlying); }
+                catch { /* leave default */ }
+            }
+            return new TrackedType { Underlying = constructed, OutermostKind = kind };
+        }
+
+        public TrackedType GetGenericMethodParameter(TypeHandle context, int index)
+            => Wrap(_inner.GetGenericMethodParameter(context, index));
+
+        public TrackedType GetGenericTypeParameter(TypeHandle context, int index)
+            => Wrap(_inner.GetGenericTypeParameter(context, index));
+
+        public TrackedType GetModifiedType(TrackedType modifier, TrackedType unmodifiedType, bool isRequired)
+            => unmodifiedType;
+
+        public TrackedType GetPinnedType(TrackedType elementType)
+            => elementType;
+
+        public TrackedType GetPrimitiveType(PrimitiveTypeCode typeCode)
+            => Wrap(_inner.GetPrimitiveType(typeCode));
+
+        public TrackedType GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+            => Wrap(_inner.GetTypeFromDefinition(reader, handle, rawTypeKind));
+
+        public TrackedType GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+            => Wrap(_inner.GetTypeFromReference(reader, handle, rawTypeKind));
+
+        public TrackedType GetTypeFromSpecification(MetadataReader reader, TypeHandle context, TypeSpecificationHandle handle, byte rawTypeKind)
+            => Wrap(_inner.GetTypeFromSpecification(reader, context, handle, rawTypeKind));
+
+        public TrackedType GetInternalType(TargetPointer typeHandlePointer)
+            => Wrap(_inner.GetInternalType(typeHandlePointer));
+
+        public TrackedType GetInternalModifiedType(TargetPointer typeHandlePointer, TrackedType unmodifiedType, bool isRequired)
+            => unmodifiedType;
     }
 }

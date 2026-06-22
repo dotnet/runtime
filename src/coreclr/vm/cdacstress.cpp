@@ -212,6 +212,10 @@ static bool IsDeferredFrame(CLRDATA_ADDRESS source, const CLRDATA_ADDRESS* defer
 static void ResolveMethodName(CLRDATA_ADDRESS source, int sourceType, char* buf, int bufLen);
 static void VerifyGcRefsAtStressPoint(Thread* pThread, PCONTEXT regs, DWORD osThreadId);
 static void VerifyArgIteratorOnStack(Thread* pThread);
+static void LogArgIteratorMismatch(MethodDesc* pMD, CLRDATA_ADDRESS mdAddr,
+                                   LPCSTR frameName, const char* methodName,
+                                   const BYTE* rtBlob, int rtLen,
+                                   const BYTE* cdacBlob, int cdacLen);
 
 //-----------------------------------------------------------------------------
 // Static state — cDAC reader
@@ -1359,6 +1363,17 @@ static int ComputeRuntimeArgGCRefMap(MethodDesc* pMD, BYTE* pBufOut, int bufSize
 {
     GCRefMapBuilder builder;
     bool threw = false;
+
+    // ComputeCallRefMap chains down to FakeGcScanRoots which declares
+    // STANDARD_VM_CONTRACT (MODE_PREEMPTIVE, GC_TRIGGERS, THROWS). The cdacstress
+    // hook fires from inside the allocator while the thread is in cooperative
+    // GC mode, so the strict mode/GC contract would assert. The work is
+    // signature-walking + metadata loads, both of which are safe to perform
+    // here (the runtime itself loads metadata in cooperative mode during JIT,
+    // and we hold s_cdacLock around the whole call). Acknowledge the contract
+    // violation explicitly so Checked builds don't false-fire.
+    CONTRACT_VIOLATION(ModeViolation | GCViolation);
+
     EX_TRY
     {
         ComputeCallRefMap(pMD, &builder, /*isDispatchCell*/ false);
@@ -1401,6 +1416,173 @@ static void FormatBlobHex(const BYTE* blob, int len, char* buf, size_t bufLen)
         int n = snprintf(buf + used, bufLen - used, "%02x ", blob[i]);
         if (n <= 0) break;
         used += (size_t)n;
+    }
+}
+
+// Token name for log output. Matches CORCOMPILE_GCREFMAP_TOKENS in corcompile.h.
+static const char* GCRefMapTokenName(int token)
+{
+    switch (token)
+    {
+        case GCREFMAP_SKIP:          return "SKIP";
+        case GCREFMAP_REF:           return "REF";
+        case GCREFMAP_INTERIOR:      return "INTERIOR";
+        case GCREFMAP_METHOD_PARAM:  return "METHOD_PARAM";
+        case GCREFMAP_TYPE_PARAM:    return "TYPE_PARAM";
+        case GCREFMAP_VASIG_COOKIE:  return "VASIG_COOKIE";
+        default:                     return "?";
+    }
+}
+
+// Per-slot location label for the ARG_FAIL table. On the architectures the
+// runtime supports, the first NUM_ARGUMENT_REGISTERS positions cover the
+// integer-arg registers and the rest are caller-stack slots. Naming the
+// registers (vs printing raw offsets) is the difference between "I can read
+// this" and "let me go grep the ABI doc".
+static void FormatSlotLocation(int pos, int byteOffset, char* buf, size_t bufLen)
+{
+#if defined(TARGET_AMD64)
+#  if defined(UNIX_AMD64_ABI)
+    static const char* regNames[] = { "RDI", "RSI", "RDX", "RCX", "R8", "R9" };
+    const int numRegs = 6;
+#  else
+    static const char* regNames[] = { "RCX", "RDX", "R8", "R9" };
+    const int numRegs = 4;
+#  endif
+#elif defined(TARGET_ARM64)
+    static const char* regNames[] = { "X0", "X1", "X2", "X3", "X4", "X5", "X6", "X7" };
+    const int numRegs = 8;
+#elif defined(TARGET_ARM)
+    static const char* regNames[] = { "R0", "R1", "R2", "R3" };
+    const int numRegs = 4;
+#elif defined(TARGET_X86)
+    // x86 has 2 arg regs (ECX, EDX) and a non-monotonic pos->offset mapping;
+    // print pos+offset rather than guess the wrong register name.
+    static const char* regNames[] = { "ECX", "EDX" };
+    const int numRegs = 2;
+#else
+    static const char* const* regNames = nullptr;
+    const int numRegs = 0;
+#endif
+
+    if (regNames != nullptr && pos < numRegs)
+    {
+        snprintf(buf, bufLen, "%-6s", regNames[pos]);
+    }
+    else
+    {
+        int stackByteOffset = byteOffset - (int)sizeof(TransitionBlock);
+        snprintf(buf, bufLen, "[sp+%d]", stackByteOffset);
+    }
+}
+
+// Decode a GCRefMap blob into an offset->token map (sparse) plus the
+// max pos seen. Skips x86's stack-pop prefix entirely -- the cDAC encoder
+// currently bails on x86, so blobs we compare here never carry one.
+struct DecodedBlob
+{
+    static const int MaxSlots = 64;
+    int Pos[MaxSlots];
+    int Tok[MaxSlots];
+    int Count;
+    int MaxPos;
+};
+
+static void DecodeBlob(const BYTE* blob, int len, DecodedBlob& out)
+{
+    out.Count = 0;
+    out.MaxPos = -1;
+    if (blob == nullptr || len == 0)
+        return;
+
+    GCRefMapDecoder decoder(const_cast<BYTE*>(blob));
+    while (!decoder.AtEnd() && out.Count < DecodedBlob::MaxSlots)
+    {
+        int beforePos = decoder.CurrentPos();
+        int token = decoder.ReadToken();
+        int afterPos = decoder.CurrentPos();
+
+        if (token == GCREFMAP_SKIP)
+        {
+            // A skip token bumps pos but emits no entry.
+            if (afterPos - 1 > out.MaxPos)
+                out.MaxPos = afterPos - 1;
+            continue;
+        }
+
+        // ReadToken stores the result at the position BEFORE the increment.
+        int slotPos = afterPos - 1;
+        out.Pos[out.Count] = slotPos;
+        out.Tok[out.Count] = token;
+        out.Count++;
+        if (slotPos > out.MaxPos)
+            out.MaxPos = slotPos;
+    }
+}
+
+static int LookupTokenAtPos(const DecodedBlob& blob, int pos)
+{
+    for (int i = 0; i < blob.Count; i++)
+    {
+        if (blob.Pos[i] == pos)
+            return blob.Tok[i];
+    }
+    return GCREFMAP_SKIP;
+}
+
+// Compute the byte offset within the TransitionBlock for a given GCRefMap pos,
+// mirroring ComputeCallRefMap (frames.cpp:2155-2163).
+static int OffsetFromGCRefMapPos(int pos)
+{
+#ifdef TARGET_X86
+    if (pos < NUM_ARGUMENT_REGISTERS)
+        return TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR);
+    return TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR);
+#else
+    return TransitionBlock::GetOffsetOfFirstGCRefMapSlot() + pos * TARGET_POINTER_SIZE;
+#endif
+}
+
+// Emit a per-slot comparison table when the runtime and cDAC GCRefMap blobs
+// differ. Each row is one position; only positions with a non-skip token on
+// at least one side are shown, and rows where the two tokens differ are
+// flagged. Reads enormously better than two hex-strings when triaging a port
+// bug ("oh, the cDAC missed the byref at stack[+0]" vs squinting at "85 04").
+static void LogArgIteratorMismatch(MethodDesc* pMD, CLRDATA_ADDRESS mdAddr,
+                                   LPCSTR frameName, const char* methodName,
+                                   const BYTE* rtBlob, int rtLen,
+                                   const BYTE* cdacBlob, int cdacLen)
+{
+    DecodedBlob rt, cdac;
+    DecodeBlob(rtBlob, rtLen, rt);
+    DecodeBlob(cdacBlob, cdacLen, cdac);
+
+    int maxPos = rt.MaxPos > cdac.MaxPos ? rt.MaxPos : cdac.MaxPos;
+    if (maxPos < 0) maxPos = 0;
+
+    char rtHex[256], cdacHex[256];
+    FormatBlobHex(rtBlob, rtLen, rtHex, sizeof(rtHex));
+    FormatBlobHex(cdacBlob, cdacLen, cdacHex, sizeof(cdacHex));
+
+    CDAC_LOG("[ARG_FAIL] MD=0x%llx frame=%s rtSize=%d cdacSize=%d %s\n",
+        (unsigned long long)mdAddr, frameName, rtLen, cdacLen, methodName);
+    CDAC_LOG("    RT:   %s\n", rtHex);
+    CDAC_LOG("    cDAC: %s\n", cdacHex);
+    CDAC_LOG("    pos  location  RT token       cDAC token       diff\n");
+
+    for (int pos = 0; pos <= maxPos; pos++)
+    {
+        int rtTok = LookupTokenAtPos(rt, pos);
+        int cdacTok = LookupTokenAtPos(cdac, pos);
+        if (rtTok == GCREFMAP_SKIP && cdacTok == GCREFMAP_SKIP)
+            continue;
+
+        char loc[16];
+        FormatSlotLocation(pos, OffsetFromGCRefMapPos(pos), loc, sizeof(loc));
+
+        const char* diff = (rtTok != cdacTok) ? " <-- DIFF" : "";
+        CDAC_LOG("    %3d  %-8s  %-13s  %-15s%s\n",
+            pos, loc, GCRefMapTokenName(rtTok), GCRefMapTokenName(cdacTok), diff);
     }
 }
 
@@ -1470,15 +1652,8 @@ static void VerifyArgIteratorForMD(MethodDesc* pMD, FrameIdentifier frameId)
     }
 
     InterlockedIncrement(&s_argIterFail);
-    char rtHex[512], cdacHex[512];
-    FormatBlobHex(rtBlob, rtLen, rtHex, sizeof(rtHex));
-    FormatBlobHex(resp.Blob, (int)resp.BlobSize, cdacHex, sizeof(cdacHex));
-    CDAC_LOG("[ARG_FAIL] MD=0x%llx frame=%s rtSize=%d cdacSize=%u %s\n"
-             "    RT:   %s\n"
-             "    cDAC: %s\n",
-        (unsigned long long)req.MethodDesc, frameName,
-        rtLen, (unsigned int)resp.BlobSize, methodName,
-        rtHex, cdacHex);
+    LogArgIteratorMismatch(pMD, req.MethodDesc, frameName, methodName,
+                           rtBlob, rtLen, resp.Blob, (int)resp.BlobSize);
 }
 
 static void VerifyArgIteratorOnStack(Thread* pThread)
@@ -1494,19 +1669,39 @@ static void VerifyArgIteratorOnStack(Thread* pThread)
             return;  // OOM: skip ArgIter verification entirely this run.
     }
 
-    // Walk every frame on the chain. The ArgIterator port produces a result
-    // for any MD regardless of which Frame surfaced it, so the only filter
-    // is "does this frame have an MD". Per-MD dedup keeps cost flat.
-    for (Frame* pFrame = pThread->GetFrame();
-         pFrame != FRAME_TOP;
-         pFrame = pFrame->PtrNextFrame())
+    // Walk every stack frame (both frameless JIT frames and explicit "F" Frames).
+    // For each frame that resolves to a MethodDesc, verify it. The ArgIterator
+    // port produces a result for any MD regardless of which kind of frame surfaced
+    // it, so the only filter is "does this frame have an MD". Per-MD dedup keeps
+    // cost flat across long stress runs.
+    struct WalkCtx
     {
-        MethodDesc* pMD = pFrame->GetFunction();
+        FrameIdentifier lastFrameId;
+    };
+    WalkCtx ctx;
+    ctx.lastFrameId = FrameIdentifier::None;
+
+    auto callback = [](CrawlFrame* pCF, VOID* pData) -> StackWalkAction
+    {
+        WalkCtx* c = (WalkCtx*)pData;
+
+        MethodDesc* pMD = pCF->GetFunction();
         if (pMD == nullptr)
-            continue;
+            return SWA_CONTINUE;
+
+        // Frame identifier for logging context: explicit Frames carry their
+        // class id; frameless JIT frames have no Frame*, so report "None"
+        // (the cDAC walker treats it as just another managed frame).
+        FrameIdentifier id = FrameIdentifier::None;
+        if (!pCF->IsFrameless())
+        {
+            Frame* pFrame = pCF->GetFrame();
+            if (pFrame != nullptr)
+                id = pFrame->GetFrameIdentifier();
+        }
 
         if (s_argIterVerifiedMDs->Lookup(pMD) != nullptr)
-            continue;
+            return SWA_CONTINUE;
 
         EX_TRY
         {
@@ -1514,13 +1709,19 @@ static void VerifyArgIteratorOnStack(Thread* pThread)
         }
         EX_CATCH
         {
-            // Out of memory adding to the dedup set: skip this MD and try again later.
-            continue;
+            // OOM adding to the dedup set: skip this MD and try again later.
+            return SWA_CONTINUE;
         }
         EX_END_CATCH
 
-        VerifyArgIteratorForMD(pMD, pFrame->GetFrameIdentifier());
-    }
+        VerifyArgIteratorForMD(pMD, id);
+        c->lastFrameId = id;
+        return SWA_CONTINUE;
+    };
+
+    GCForbidLoaderUseHolder forbidLoaderUse;
+    unsigned flags = ALLOW_ASYNC_STACK_WALK | ALLOW_INVALID_OBJECTS | GC_FUNCLET_REFERENCE_REPORTING;
+    pThread->StackWalkFrames(callback, &ctx, flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -1551,6 +1752,13 @@ static void VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     {
         s_currentContext = regs;
         s_currentThreadId = osThreadId;
+
+        // Flush target-state caches before walking. The GCREFS sub-check
+        // does this implicitly via its A.1 phase; if ARGITER runs without
+        // GCREFS, the cDAC's ProcessedData cache can be stale (or empty),
+        // which causes ValidateMethodDescPointer to fail for live MDs.
+        s_cdacProcess->Request(DACSTRESSPRIV_REQUEST_FLUSH_TARGET_STATE, 0, NULL, 0, NULL);
+
         VerifyArgIteratorOnStack(pThread);
         s_currentContext = nullptr;
         s_currentThreadId = 0;

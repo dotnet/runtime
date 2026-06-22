@@ -44,6 +44,15 @@ public interface ICallingConvention : IContract
     /// The caller is responsible for interpreting these locations for GC or other purposes.
     /// </summary>
     IEnumerable<ArgumentLocation> EnumerateArguments(MethodDescHandle methodDesc) => throw new System.NotImplementedException();
+
+    /// <summary>
+    /// Compute the argument GCRefMap blob for the given method in the same wire
+    /// format as the runtime's <c>ComputeCallRefMap</c> (frames.cpp). Returns
+    /// <c>null</c> for any method this contract cannot yet encode (e.g. x86 layout,
+    /// by-value structs containing GC pointers); the caller treats <c>null</c> as
+    /// <c>E_NOTIMPL</c> for the cdacstress ArgIterator sub-check.
+    /// </summary>
+    byte[]? TryComputeArgGCRefMapBlob(MethodDescHandle methodDesc) => null;
 }
 
 public readonly struct CallingConvention : ICallingConvention

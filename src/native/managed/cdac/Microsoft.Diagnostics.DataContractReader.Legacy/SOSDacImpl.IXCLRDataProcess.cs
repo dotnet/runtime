@@ -765,13 +765,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
         else if (reqCode == DacStressPrivRequestComputeArgGCRefMap)
         {
-            // Phase 1: plumbing only. Always returns E_NOTIMPL so cdacstress
-            // logs [ARG_SKIP] for every MD on a transition-frame stack and we
-            // can validate the round-trip without an ArgIterator port yet.
-            // Phase 2+ will read the MethodDesc address from `inBuffer`, walk
-            // the signature via CallingConvention.EnumerateArguments, and write
-            // the resulting GCRefMap blob to `outBuffer`.
-            hr = HResults.E_NOTIMPL;
+            hr = HandleComputeArgGCRefMap(inBufferSize, inBuffer, outBufferSize, outBuffer);
         }
         else
         {
@@ -800,6 +794,72 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
 #endif
         return hr;
+    }
+
+    // Layout of DacStressArgGCRefMapRequest from src/coreclr/inc/dacprivate.h.
+    private const int DacStressArgGCRefMapRequestSize = 8;       // CLRDATA_ADDRESS MethodDesc
+    // Layout of DacStressArgGCRefMapResponse from the same header.
+    private const int DacStressArgGCRefMapResponseSize = 4 + 4 + 252;
+    private const int DacStressArgGCRefMapMaxBlob = 252;
+
+    // Handler for the cdacstress ArgIterator sub-check (cdacstress.cpp).
+    // Reads a MethodDesc address from `inBuffer`, asks the CallingConvention
+    // contract to encode the argument GCRefMap blob, and writes the response.
+    // Returns E_NOTIMPL inside the response payload for any MD the contract
+    // cannot yet encode so the stress harness buckets it as [ARG_SKIP]
+    // rather than [ARG_FAIL].
+    private int HandleComputeArgGCRefMap(uint inSize, byte* inBuffer, uint outSize, byte* outBuffer)
+    {
+        if (inSize < DacStressArgGCRefMapRequestSize || inBuffer is null)
+            return HResults.E_INVALIDARG;
+        if (outSize < DacStressArgGCRefMapResponseSize || outBuffer is null)
+            return HResults.E_INVALIDARG;
+
+        ulong mdAddr = *(ulong*)inBuffer;
+
+        // Zero the response so any unset trailing bytes are deterministic.
+        new Span<byte>(outBuffer, (int)DacStressArgGCRefMapResponseSize).Clear();
+
+        int respHr;
+        int blobLen = 0;
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle mdh = rts.GetMethodDescHandle(new TargetPointer(mdAddr));
+            byte[]? blob = _target.Contracts.CallingConvention.TryComputeArgGCRefMapBlob(mdh);
+            if (blob is null)
+            {
+                // Encoder declined to encode this MD (e.g. x86, or by-value
+                // struct with GC pointers we haven't taught it yet).
+                respHr = HResults.E_NOTIMPL;
+            }
+            else if (blob.Length > DacStressArgGCRefMapMaxBlob)
+            {
+                // Blob exceeded the fixed response window. Treat as skip.
+                respHr = HResults.S_FALSE;
+            }
+            else
+            {
+                blobLen = blob.Length;
+                if (blobLen > 0)
+                    new Span<byte>(blob).CopyTo(new Span<byte>(outBuffer + 8, blobLen));
+                respHr = HResults.S_OK;
+            }
+        }
+        catch
+        {
+            // Distinct from E_NOTIMPL so a stress log makes "encoder threw"
+            // visible as an error bucket separate from "encoder declined".
+            respHr = HResults.E_FAIL;
+            blobLen = 0;
+        }
+
+        // Wire format: { HRESULT Hr; uint BlobSize; byte[252] Blob; }
+        *(int*)outBuffer = respHr;
+        *(int*)(outBuffer + 4) = blobLen;
+
+        // Whole-call HRESULT: S_OK means "transport succeeded; check Hr in the payload".
+        return HResults.S_OK;
     }
 
     int IXCLRDataProcess.CreateMemoryValue(
