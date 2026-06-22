@@ -1957,7 +1957,7 @@ inline ULONG HashBytes(BYTE const *pbData, size_t iSize)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ULONG hash = XXHash32_MixEmptyState();
+    ULONG hash = 5381;
     hash += (ULONG)iSize;
 
     // Process 4 bytes at a time.
@@ -1965,7 +1965,7 @@ inline ULONG HashBytes(BYTE const *pbData, size_t iSize)
     {
         uint32_t val;
         memcpy(&val, pbData, sizeof(val));
-        hash = XXHash32_QueueRound(hash, val);
+        hash = xxHash<xxHashDefaultTraits>::QueueRound(hash, val);
         pbData += sizeof(val);
         iSize -= sizeof(val);
     }
@@ -1975,10 +1975,10 @@ inline ULONG HashBytes(BYTE const *pbData, size_t iSize)
     {
         uint32_t val = 0;
         memcpy(&val, pbData, iSize);
-        hash = XXHash32_QueueRound(hash, val);
+        hash = xxHash<xxHashDefaultTraits>::QueueRound(hash, val);
     }
 
-    return XXHash32_MixFinal(hash);
+    return xxHash<xxHashDefaultTraits>::MixFinal(hash);
 }
 
 // Helper function for hashing a string char by char.

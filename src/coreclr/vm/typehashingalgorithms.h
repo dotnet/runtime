@@ -139,3 +139,13 @@ inline static UINT32 HashMDToken(mdToken token)
     a ^= (a>>15);
     return a;
 }
+
+struct xxHashVersionResilientTraits
+{
+    // Unlike System.HashCode, these hash values are required to be stable, so don't
+    // mix in a random process specific value.
+    // See src/libraries/Common/src/Internal/VersionResilientHashCode.cs for the managed version.
+    static uint32_t GenerateGlobalSeed() { return 0; }
+};
+
+using xxHashVersionResilient = xxHash<xxHashVersionResilientTraits>;

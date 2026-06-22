@@ -43,111 +43,91 @@
 
 #pragma once
 #include <stdlib.h>
+#include <type_traits>
+#include <minipal/random.h>
 #include "clrtypes.h"
 
-inline static UINT32 XXHash32_MixEmptyState()
+struct xxHashDefaultTraits
 {
-    // Unlike System.HashCode, these hash values are required to be stable, so don't
-    // mix in a random process specific value
-    return 374761393U; // Prime5
-}
-
-inline static UINT32 XXHash32_MixState(UINT32 v1, UINT32 v2, UINT32 v3, UINT32 v4)
-{
-    return (UINT32)_rotl(v1, 1) + (UINT32)_rotl(v2, 7) + (UINT32)_rotl(v3, 12) + (UINT32)_rotl(v4, 18);
-}
-
-inline static UINT32 XXHash32_QueueRound(UINT32 hash, UINT32 queuedValue)
-{
-    return ((UINT32)_rotl((int)(hash + queuedValue * 3266489917U/*Prime3*/), 17)) * 668265263U/*Prime4*/;
-}
-
-inline static UINT32 XXHash32_Round(UINT32 hash, UINT32 input)
-{
-    return ((UINT32)_rotl((int)(hash + input * 2246822519U/*Prime2*/), 13)) * 2654435761U/*Prime1*/;
-}
-
-inline static UINT32 XXHash32_MixFinal(UINT32 hash)
-{
-    hash ^= hash >> 15;
-    hash *= 2246822519U/*Prime2*/;
-    hash ^= hash >> 13;
-    hash *= 3266489917U/*Prime3*/;
-    hash ^= hash >> 16;
-    return hash;
-}
-
-inline static UINT32 MixOneValueIntoHash(UINT32 value1)
-{
-    // This matches the behavior of System.HashCode.Combine(value1) as of the time of authoring
-
-    // Provide a way of diffusing bits from something with a limited
-    // input hash space. For example, many enums only have a few
-    // possible hashes, only using the bottom few bits of the code. Some
-    // collections are built on the assumption that hashes are spread
-    // over a larger space, so diffusing the bits may help the
-    // collection work more efficiently.
-
-    DWORD hash = XXHash32_MixEmptyState();
-    hash += 4;
-    hash = XXHash32_QueueRound(hash, value1);
-    hash = XXHash32_MixFinal(hash);
-    return hash;
-}
-
-inline static UINT32 CombineTwoValuesIntoHash(UINT32 value1, UINT32 value2)
-{
-    // This matches the behavior of System.HashCode.Combine(value1, value2) as of the time of authoring
-    DWORD hash = XXHash32_MixEmptyState();
-    hash += 8;
-    hash = XXHash32_QueueRound(hash, value1);
-    hash = XXHash32_QueueRound(hash, value2);
-    hash = XXHash32_MixFinal(hash);
-    return hash;
-}
-
-inline static UINT32 MixPointerIntoHash(void* ptr)
-{
-#ifdef HOST_64BIT
-    return CombineTwoValuesIntoHash((UINT32)(UINT_PTR)ptr, (UINT32)(((UINT64)(UINT_PTR)ptr) >> 32));
-#else
-    return MixOneValueIntoHash((UINT32)ptr);
-#endif
-}
-
-inline static UINT32 CombineThreeValuesIntoHash(UINT32 value1, UINT32 value2, UINT32 value3)
-{
-    // This matches the behavior of System.HashCode.Combine(value1, value2, value3) as of the time of authoring
-    DWORD hash = XXHash32_MixEmptyState();
-    hash += 12;
-    hash = XXHash32_QueueRound(hash, value1);
-    hash = XXHash32_QueueRound(hash, value2);
-    hash = XXHash32_QueueRound(hash, value3);
-    hash = XXHash32_MixFinal(hash);
-    return hash;
-}
+    static uint32_t GenerateGlobalSeed()
+    {
+        uint32_t seed;
+        minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&seed, sizeof(seed));
+        return seed;
+    }
+};
 
 // This is a port of the System.HashCode logic for computing a hashcode using the xxHash algorithm.
-// However, as this is intended to provide a stable hash, the seed value is always 0.
+// The traits type T must provide a static GenerateGlobalSeed() method that returns the seed value.
+template <typename T>
 class xxHash
 {
-    const uint32_t seed =   0;
-    const uint32_t Prime1 = 2654435761U;
-    const uint32_t Prime2 = 2246822519U;
-    const uint32_t Prime3 = 3266489917U;
-    const uint32_t Prime4 = 668265263U;
-    const uint32_t Prime5 = 374761393U;
+    static_assert(std::is_same<decltype(T::GenerateGlobalSeed()), uint32_t>::value,
+        "T must provide a static uint32_t GenerateGlobalSeed() method");
 
-    uint32_t _v1 = seed + Prime1 + Prime2;
-    uint32_t _v2 = seed + Prime2;
-    uint32_t _v3 = seed;
-    uint32_t _v4 = seed - Prime1;
+    static constexpr uint32_t Prime1 = 2654435761U;
+    static constexpr uint32_t Prime2 = 2246822519U;
+    static constexpr uint32_t Prime3 = 3266489917U;
+    static constexpr uint32_t Prime4 = 668265263U;
+    static constexpr uint32_t Prime5 = 374761393U;
+
+public: // static
+    static uint32_t MixEmptyState()
+    {
+        return T::GenerateGlobalSeed() + Prime5;
+    }
+
+    static uint32_t MixState(uint32_t v1, uint32_t v2, uint32_t v3, uint32_t v4)
+    {
+        return (uint32_t)_rotl(v1, 1) + (uint32_t)_rotl(v2, 7) + (uint32_t)_rotl(v3, 12) + (uint32_t)_rotl(v4, 18);
+    }
+
+    static uint32_t QueueRound(uint32_t hash, uint32_t queuedValue)
+    {
+        return ((uint32_t)_rotl((int)(hash + queuedValue * Prime3), 17)) * Prime4;
+    }
+
+    static uint32_t Round(uint32_t hash, uint32_t input)
+    {
+        return ((uint32_t)_rotl((int)(hash + input * Prime2), 13)) * Prime1;
+    }
+
+    static uint32_t MixFinal(uint32_t hash)
+    {
+        hash ^= hash >> 15;
+        hash *= Prime2;
+        hash ^= hash >> 13;
+        hash *= Prime3;
+        hash ^= hash >> 16;
+        return hash;
+    }
+
+private:
+    static constexpr uint32_t MixEmptyState(uint32_t seed)
+    {
+        return seed + Prime5;
+    }
+
+    const uint32_t seed;
+    uint32_t _v1;
+    uint32_t _v2;
+    uint32_t _v3;
+    uint32_t _v4;
     uint32_t _queue1 = 0;
     uint32_t _queue2 = 0;
     uint32_t _queue3 = 0;
     uint32_t _length = 0;
 
 public:
+    xxHash()
+        : seed(T::GenerateGlobalSeed())
+        , _v1{seed + Prime1 + Prime2}
+        , _v2{seed + Prime2}
+        , _v3{seed}
+        , _v4{seed - Prime1}
+    {
+    }
+
     void Add(uint32_t val)
     {
         // The original xxHash works as follows:
@@ -177,10 +157,10 @@ public:
             _queue3 = val;
         else // position == 3
         {
-            _v1 = XXHash32_Round(_v1, _queue1);
-            _v2 = XXHash32_Round(_v2, _queue2);
-            _v3 = XXHash32_Round(_v3, _queue3);
-            _v4 = XXHash32_Round(_v4, val);
+            _v1 = Round(_v1, _queue1);
+            _v2 = Round(_v2, _queue2);
+            _v3 = Round(_v3, _queue3);
+            _v4 = Round(_v4, val);
         }
     }
 
@@ -208,7 +188,7 @@ public:
         // If the length is less than 4, _v1 to _v4 don't contain anything
         // yet. xxHash32 treats this differently.
 
-        uint32_t hash = length < 4 ? XXHash32_MixEmptyState() : XXHash32_MixState(_v1, _v2, _v3, _v4);
+        uint32_t hash = length < 4 ? MixEmptyState(seed) : MixState(_v1, _v2, _v3, _v4);
 
         // _length is incremented once per Add(Int32) and is therefore 4
         // times too small (xxHash length is in bytes, not ints).
@@ -222,16 +202,58 @@ public:
         // is always false if position is not > 0).
         if (position > 0)
         {
-            hash = XXHash32_QueueRound(hash, _queue1);
+            hash = QueueRound(hash, _queue1);
             if (position > 1)
             {
-                hash = XXHash32_QueueRound(hash, _queue2);
+                hash = QueueRound(hash, _queue2);
                 if (position > 2)
-                    hash = XXHash32_QueueRound(hash, _queue3);
+                    hash = QueueRound(hash, _queue3);
             }
         }
 
-        hash = XXHash32_MixFinal(hash);
-        return (int)hash;
+        hash = MixFinal(hash);
+        return hash;
     }
 };
+
+template <typename T = xxHashDefaultTraits>
+inline static uint32_t MixOneValueIntoHash(uint32_t value1)
+{
+    // This matches the behavior of System.HashCode.Combine(value1) as of the time of authoring
+
+    // Provide a way of diffusing bits from something with a limited
+    // input hash space. For example, many enums only have a few
+    // possible hashes, only using the bottom few bits of the code. Some
+    // collections are built on the assumption that hashes are spread
+    // over a larger space, so diffusing the bits may help the
+    // collection work more efficiently.
+
+    uint32_t hash = xxHash<T>::MixEmptyState();
+    hash += 4;
+    hash = xxHash<T>::QueueRound(hash, value1);
+    hash = xxHash<T>::MixFinal(hash);
+    return hash;
+}
+
+template <typename T = xxHashDefaultTraits>
+inline static uint32_t CombineTwoValuesIntoHash(uint32_t value1, uint32_t value2)
+{
+    // This matches the behavior of System.HashCode.Combine(value1, value2) as of the time of authoring
+    uint32_t hash = xxHash<T>::MixEmptyState();
+    hash += 8;
+    hash = xxHash<T>::QueueRound(hash, value1);
+    hash = xxHash<T>::QueueRound(hash, value2);
+    hash = xxHash<T>::MixFinal(hash);
+    return hash;
+}
+
+template <typename T = xxHashDefaultTraits>
+inline static uint32_t MixPointerIntoHash(void* ptr)
+{
+    // This matches the behavior of System.HashCode.Combine(ptr) as of the time of authoring
+#ifdef HOST_64BIT
+    return CombineTwoValuesIntoHash<T>((uint32_t)(UINT_PTR)ptr, (uint32_t)(((UINT64)(UINT_PTR)ptr) >> 32));
+#else
+    return MixOneValueIntoHash<T>((uint32_t)ptr);
+#endif
+}
