@@ -258,6 +258,8 @@ ContinuationInfo GetContinuationInfo(TargetPointer address)
         Next: next,
         DiagnosticIP: diagnosticIP,
         State: state);
+}
+
 ulong GetSize(TargetPointer address)
 {
     TargetPointer mt = GetMethodTableAddress(address);
