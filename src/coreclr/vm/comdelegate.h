@@ -62,8 +62,6 @@ public:
 
     static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
     static MethodDesc* GetMethodDescForOpenVirtualDelegate(OBJECTREF orDelegate);
-    static OBJECTREF GetTargetObject(OBJECTREF obj);
-
     static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);
 
     // Throw if the method violates any usage restrictions
