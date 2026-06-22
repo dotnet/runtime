@@ -375,7 +375,7 @@ internal sealed class FrameHelpers
 
     private static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
     {
-        return frame.CallerReturnAddress != TargetPointer.Null;
+        return frame.CallerReturnAddress != TargetCodePointer.Null;
     }
 
     private bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame)
