@@ -4584,6 +4584,16 @@ can_marshal_struct (MonoClass *klass)
 			if (!m_class_is_enumtype (mono_class_from_mono_type_internal (field->type)) && !can_marshal_struct (mono_class_from_mono_type_internal (field->type)))
 				can_marshal = FALSE;
 			break;
+		case MONO_TYPE_CLASS:
+			/*
+			 * A field whose type is a non-auto-layout (sequential/explicit) class is marshalled
+			 * as an embedded struct, the same way the runtime marshalling code handles it. Allow it
+			 * if the nested class is itself marshallable; otherwise the StructureToPtr/PtrToStructure
+			 * wrappers are not AOT compiled and full-AOT fails with a JIT-in-aot-only error.
+			 */
+			if (!can_marshal_struct (mono_class_from_mono_type_internal (field->type)))
+				can_marshal = FALSE;
+			break;
 		case MONO_TYPE_SZARRAY: {
 			gboolean has_mspec = FALSE;
 
