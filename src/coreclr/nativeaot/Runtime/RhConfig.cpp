@@ -48,7 +48,7 @@ bool RhConfig::Environment::TryGetIntegerValue(const char* name, uint64_t* value
     TCHAR variableName[64];
     GetEnvironmentConfigName(name, variableName, ARRAY_SIZE(variableName));
 
-    TCHAR buffer[CONFIG_VAL_MAXLEN + 1]; // hex digits plus a nul terminator.
+    TCHAR buffer[CONFIG_VAL_MAXLEN + 1]; // Max textual integer value plus a nul terminator.
     const uint32_t cchBuffer = ARRAY_SIZE(buffer);
     uint32_t cchResult = PalGetEnvironmentVariable(variableName, buffer, cchBuffer);
     if (cchResult == 0 || cchResult >= cchBuffer)
@@ -56,7 +56,14 @@ bool RhConfig::Environment::TryGetIntegerValue(const char* name, uint64_t* value
 
     // Environment variable was set. Convert it to an integer.
     uint64_t uiResult = 0;
-    for (uint32_t i = 0; i < cchResult; i++)
+    uint32_t startIndex = 0;
+    if (!decimal && cchResult >= 2 && buffer[0] == '0' && (buffer[1] == 'x' || buffer[1] == 'X'))
+    {
+        startIndex = 2;
+        if (startIndex == cchResult)
+            return false; // parse error - hex prefix without any digits
+    }
+    for (uint32_t i = startIndex; i < cchResult; i++)
     {
         TCHAR ch = buffer[i];
 
@@ -99,29 +106,73 @@ bool RhConfig::Environment::TryGetStringValue(const char* name, char** value)
     if (actualLen == 0)
         return false;
 
+    char* strValue = nullptr;
+
     if (actualLen < bufferLen)
     {
-        *value = PalCopyTCharAsChar(buffer);
+        strValue = PalCopyTCharAsChar(buffer);
+        if (strValue == nullptr)
+            return false;
+
+        *value = strValue;
         return true;
     }
 
     // Expand the buffer to get the value
     bufferLen = actualLen + 1;
     NewArrayHolder<TCHAR> newBuffer {new (nothrow) TCHAR[bufferLen]};
+
+    if (newBuffer.IsNull())
+        return false;
+
     actualLen = PalGetEnvironmentVariable(variableName, newBuffer, bufferLen);
     if (actualLen >= bufferLen)
         return false;
 
 #ifdef TARGET_WINDOWS
-    *value = PalCopyTCharAsChar(newBuffer);
+    strValue = PalCopyTCharAsChar(newBuffer);
+    if (strValue == nullptr)
+        return false;
 #else
-    *value = newBuffer.Extract();
+    strValue = newBuffer.Extract();
 #endif
+
+    *value = strValue;
     return true;
 }
 
 extern "C" RhConfig::Config g_compilerEmbeddedSettingsBlob;
 extern "C" RhConfig::Config g_compilerEmbeddedKnobsBlob;
+
+bool RhConfig::ReadStringConfigValue(_In_z_ const char* name, const char** pValue)
+{
+    char *envValue = nullptr;
+    if (Environment::TryGetStringValue(name, &envValue))
+    {
+        *pValue = envValue;
+        return true;
+    }
+
+    const char *embeddedValue = nullptr;
+    if (GetEmbeddedVariable(&g_compilerEmbeddedSettingsBlob, name, true, &embeddedValue))
+    {
+        char* strCopy = new (nothrow) char[strlen(embeddedValue) + 1];
+        if (strCopy != nullptr)
+        {
+            strcpy(strCopy, embeddedValue);
+            *pValue = strCopy;
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void RhConfig::FreeStringConfigValue(const char* value)
+{
+    delete[] value;
+}
 
 bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool decimal)
 {
@@ -134,6 +185,24 @@ bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool d
     {
         *pValue = strtoull(embeddedValue, NULL, decimal ? 10 : 16);
         return true;
+    }
+
+    return false;
+}
+
+bool RhConfig::ReadKnobStringValue(_In_z_ const char *name, const char** pValue)
+{
+    const char *embeddedValue = nullptr;
+    if (GetEmbeddedVariable(&g_compilerEmbeddedKnobsBlob, name, false, &embeddedValue))
+    {
+        char* strCopy = new (nothrow) char[strlen(embeddedValue) + 1];
+        if (strCopy != nullptr)
+        {
+            strcpy(strCopy, embeddedValue);
+            *pValue = strCopy;
+
+            return true;
+        }
     }
 
     return false;

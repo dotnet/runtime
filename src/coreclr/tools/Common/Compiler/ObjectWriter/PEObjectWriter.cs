@@ -11,7 +11,6 @@ using System.Numerics;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
-using System.Text;
 
 using ILCompiler.DependencyAnalysis;
 
@@ -868,17 +867,25 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitChecksumsForObject(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations, ReadOnlySpan<byte> originalOutput)
+        private protected override List<(long Offset, byte[] Value)> ComputeChecksums(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations)
         {
-            base.EmitChecksumsForObject(outputFileStream, checksumRelocations, originalOutput);
+            List<(long Offset, byte[] Value)> pendingWrites = base.ComputeChecksums(outputFileStream, checksumRelocations);
 
             if (_coffTimestamp is null)
             {
                 // If we were not provided a deterministic timestamp, generate one from a hash of the content.
-                outputFileStream.Seek(_coffHeaderOffset + CoffHeader.TimeDateStampOffset(bigObj: false), SeekOrigin.Begin);
-                using BinaryWriter writer = new(outputFileStream, Encoding.UTF8, leaveOpen: true);
-                writer.Write(BlobContentId.FromHash(SHA256.HashData(originalOutput)).Stamp);
+                outputFileStream.Seek(0, SeekOrigin.Begin);
+                Span<byte> hash = stackalloc byte[SHA256.HashSizeInBytes];
+                SHA256.HashData(outputFileStream, hash);
+
+                byte[] timestamp = new byte[sizeof(uint)];
+                BinaryPrimitives.WriteUInt32LittleEndian(timestamp, BlobContentId.FromHash(hash.ToArray()).Stamp);
+
+                long timestampOffset = _coffHeaderOffset + CoffHeader.TimeDateStampOffset(bigObj: false);
+                pendingWrites.Add((timestampOffset, timestamp));
             }
+
+            return pendingWrites;
         }
 
         private unsafe void ResolveRelocations(int sectionIndex, List<SymbolicRelocation> symbolicRelocations, long imageBase, MemoryStream stream)
@@ -904,13 +911,19 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.IMAGE_REL_BASED_HIGHLOW:
                             // Write the ImageBase-relative value to be relocated at load time.
                             Relocation.WriteValue(reloc.Type, pData, symbolImageOffset + imageBase + addend);
-                        break;
+                            break;
                         case RelocType.IMAGE_REL_BASED_ADDR32NB:
                             Relocation.WriteValue(reloc.Type, pData, symbolImageOffset + addend);
                             break;
                         case RelocType.IMAGE_REL_BASED_REL32:
                         case RelocType.IMAGE_REL_BASED_RELPTR32:
                             Relocation.WriteValue(reloc.Type, pData, symbolImageOffset - (relocOffset + relocLength) + addend);
+                            break;
+                        case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
+                            Relocation.WriteValue(reloc.Type, pData, (long)(symbolImageOffset & ~1u) - (long)(relocOffset + relocLength) + addend);
+                            break;
+                        case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
+                            Relocation.WriteValue(reloc.Type, pData, (long)symbolImageOffset - (long)relocOffset + addend);
                             break;
                         case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                             long fileOffset = _sections[definedSymbol.SectionIndex].Header.PointerToRawData + definedSymbol.Value;
@@ -934,11 +947,8 @@ namespace ILCompiler.ObjectWriter
                             break;
                         case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                         {
-                            if (addend != 0)
-                            {
-                                throw new NotSupportedException();
-                            }
-                            long delta = ((long)symbolImageOffset - (long)(relocOffset & ~0xfff) + ((long)(symbolImageOffset & 0x800) << 1));
+                            long targetAddress = symbolImageOffset + addend;
+                            long delta = (targetAddress - (long)(relocOffset & ~0xfff) + ((targetAddress & 0x800) << 1));
                             Relocation.WriteValue(reloc.Type, pData, delta);
                             break;
                         }
@@ -947,11 +957,8 @@ namespace ILCompiler.ObjectWriter
                         case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I:
                         case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S:
                         {
-                            if (addend != 0)
-                            {
-                                throw new NotSupportedException();
-                            }
-                            long delta = (long)symbolImageOffset - (long)relocOffset;
+                            long targetAddress = symbolImageOffset + addend;
+                            long delta = targetAddress - (long)relocOffset;
                             Relocation.WriteValue(reloc.Type, pData, delta);
                             break;
                         }

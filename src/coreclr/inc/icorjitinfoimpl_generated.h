@@ -95,15 +95,6 @@ void getMethodVTableOffset(
 bool resolveVirtualMethod(
           CORINFO_DEVIRTUALIZATION_INFO* info) override;
 
-CORINFO_METHOD_HANDLE getUnboxedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg) override;
-
-CORINFO_METHOD_HANDLE getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg) override;
-
 CORINFO_METHOD_HANDLE getAsyncOtherVariant(
           CORINFO_METHOD_HANDLE ftn,
           bool* variantIsThunk) override;
@@ -741,6 +732,9 @@ void recordCallSite(
           uint32_t instrOffset,
           CORINFO_SIG_INFO* callSig,
           CORINFO_METHOD_HANDLE methodHandle) override;
+
+void recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig) override;
 
 void recordRelocation(
           void* location,

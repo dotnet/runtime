@@ -13,40 +13,49 @@
 extern "C" {
 #endif
 
-// Simplified SemVer 2.0 version structure for C
+// Simplified SemVer 2.0 version structure for C consumers. The pre and build
+// fields, when non-NULL, point to heap-allocated strings owned by the struct
+// (allocated via malloc, freed with free). Use c_fx_ver_init / c_fx_ver_cleanup
+// for lifetime management.
 typedef struct c_fx_ver
 {
-    int major;
-    int minor;
-    int patch;
+    int32_t major;
+    int32_t minor;
+    int32_t patch;
     pal_char_t* pre;   // prerelease label with leading '-', or NULL/empty
     pal_char_t* build; // build label with leading '+', or NULL/empty
 } c_fx_ver_t;
 
-// Initialize a version to empty (-1.-1.-1)
+// Initialize a version to empty (-1.-1.-1) with NULL pre/build.
 void c_fx_ver_init(c_fx_ver_t* ver);
 
-// Free dynamically allocated fields
+// Free dynamically allocated fields and reset pre/build to NULL.
 void c_fx_ver_cleanup(c_fx_ver_t* ver);
 
-// Initialize a version with major.minor.patch
+// Set major/minor/patch and clear pre/build (freeing any owned strings).
 void c_fx_ver_set(c_fx_ver_t* ver, int major, int minor, int patch);
 
-// Check if version is empty (uninitialized)
+// Returns true if the version is uninitialized (major == -1).
 bool c_fx_ver_is_empty(const c_fx_ver_t* ver);
 
-// Parse a version string. Returns true on success.
+// Parse a version string. On success out_ver is populated and the caller is
+// responsible for calling c_fx_ver_cleanup on it. Returns false on failure;
+// out_ver is left in a freshly initialized state (no allocations) in that case.
 bool c_fx_ver_parse(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool parse_only_production);
 
-// Compare two versions. Returns <0, 0, >0.
+// Compare two versions. Returns <0, 0, >0 (semver semantics).
 int c_fx_ver_compare(const c_fx_ver_t* a, const c_fx_ver_t* b);
 
-// Convert version to string representation. Returns pointer to out_str.
+// Format the version into the caller-provided buffer. Returns out_str.
 pal_char_t* c_fx_ver_as_str(const c_fx_ver_t* ver, pal_char_t* out_str, size_t out_str_len);
 
 #ifdef __cplusplus
 }
 #endif
+
+// ============================================================================
+// C++ API: source-compat wrapper preserving the existing fx_ver_t class.
+// ============================================================================
 
 #ifdef __cplusplus
 
@@ -89,6 +98,7 @@ private:
 
     static int compare(const fx_ver_t& a, const fx_ver_t& b);
 };
+
 #endif // __cplusplus
 
 #endif // FX_VER_H

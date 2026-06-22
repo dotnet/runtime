@@ -67,17 +67,17 @@ public:
     MethodContext();
 
 private:
-    void MethodInitHelper(unsigned char* buff, unsigned int totalLen);
-    void MethodInitHelperFile(HANDLE hFile);
+    void MethodInitHelper(unsigned char* buff, unsigned int totalLen, bool readCompileResults);
+    void MethodInitHelperFile(HANDLE hFile, bool readCompileResults);
 
-    bool Initialize(int mcIndex, unsigned char* buff, DWORD size);
-    bool Initialize(int mcIndex, HANDLE hFile);
+    bool Initialize(int mcIndex, unsigned char* buff, DWORD size, bool readCompileResults);
+    bool Initialize(int mcIndex, HANDLE hFile, bool readCompileResults);
 
     int dumpHashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
 
 public:
-    static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc);
-    static bool Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, bool readCompileResults, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, HANDLE hFile, bool readCompileResults, /* OUT */ MethodContext** ppmc);
     ~MethodContext();
     void Destroy();
 
@@ -445,19 +445,6 @@ public:
     void recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info, bool returnValue);
     void dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& value);
     bool repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info);
-
-    void recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg, CORINFO_METHOD_HANDLE result);
-    void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
-    CORINFO_METHOD_HANDLE repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
-
-    void recGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn,
-                                 CORINFO_METHOD_HANDLE methodHandle,
-                                 CORINFO_CLASS_HANDLE classHandle,
-                                 CORINFO_METHOD_HANDLE result);
-    void dmpGetInstantiatedEntry(DWORDLONG key, const Agnostic_GetInstantiatedEntryResult& value);
-    CORINFO_METHOD_HANDLE repGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn,
-                                                  CORINFO_METHOD_HANDLE* methodHandle,
-                                                  CORINFO_CLASS_HANDLE* classHandle);
 
     void recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn, bool variantIsThunk, CORINFO_METHOD_HANDLE result);
     void dmpGetAsyncOtherVariant(DWORDLONG key, DLD value);
@@ -1149,7 +1136,7 @@ enum mcPackets
     Packet_GetDefaultEqualityComparerClass = 162,
     Packet_CompareTypesForCast = 163,
     Packet_CompareTypesForEquality = 164,
-    Packet_GetUnboxedEntry = 165,
+    //Packet_GetUnboxedEntry = 165,
     Packet_GetClassNameFromMetadata = 166,
     Packet_GetTypeInstantiationArgument = 167,
     Packet_GetTypeForPrimitiveNumericClass = 168,
@@ -1212,7 +1199,7 @@ enum mcPackets
     Packet_GetClassAssemblyName = 225,
     Packet_GetSZArrayHelperEnumeratorClass = 226,
     Packet_GetMethodInstantiationArgument = 227,
-    Packet_GetInstantiatedEntry = 228,
+    //Packet_GetInstantiatedEntry = 228,
     Packet_NotifyInstructionSetUsage = 229,
     Packet_GetAsyncInfo = 230,
     Packet_GetAsyncResumptionStub = 231,

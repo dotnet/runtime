@@ -28,8 +28,6 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getMethodClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method);
     void (* getMethodVTableOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative);
     bool (* resolveVirtualMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_DEVIRTUALIZATION_INFO* info);
-    CORINFO_METHOD_HANDLE (* getUnboxedEntry)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
-    CORINFO_METHOD_HANDLE (* getInstantiatedEntry)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg);
     CORINFO_METHOD_HANDLE (* getAsyncOtherVariant)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk);
     CORINFO_CLASS_HANDLE (* getDefaultComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
     CORINFO_CLASS_HANDLE (* getDefaultEqualityComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
@@ -185,6 +183,7 @@ struct JitInterfaceCallbacks
     JITINTERFACE_HRESULT (* getPgoInstrumentationResults)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t** pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource, bool* pDynamicPgo);
     JITINTERFACE_HRESULT (* allocPgoInstrumentationBySchema)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData);
     void (* recordCallSite)(void * thisHandle, CorInfoExceptionClass** ppException, uint32_t instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
+    void (* recordWasmManagedCallSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* callSig);
     void (* recordRelocation)(void * thisHandle, CorInfoExceptionClass** ppException, void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int32_t addlDelta);
     CorInfoReloc (* getRelocTypeHint)(void * thisHandle, CorInfoExceptionClass** ppException, void* target);
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
@@ -371,27 +370,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->resolveVirtualMethod(_thisHandle, &pException, info);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CORINFO_METHOD_HANDLE temp = _callbacks->getUnboxedEntry(_thisHandle, &pException, ftn, requiresInstMethodTableArg);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CORINFO_METHOD_HANDLE getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CORINFO_METHOD_HANDLE temp = _callbacks->getInstantiatedEntry(_thisHandle, &pException, ftn, methodArg, classArg);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1907,6 +1885,14 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->recordCallSite(_thisHandle, &pException, instrOffset, callSig, methodHandle);
+    if (pException != nullptr) throw pException;
+}
+
+    virtual void recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->recordWasmManagedCallSig(_thisHandle, &pException, callSig);
     if (pException != nullptr) throw pException;
 }
 

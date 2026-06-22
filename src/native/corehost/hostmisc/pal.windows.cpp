@@ -391,7 +391,13 @@ namespace
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
-    return get_default_installation_dir_for_arch(get_current_arch(), recv);
+    pal::char_t* dir = pal_get_default_installation_dir();
+    if (dir == nullptr)
+        return false;
+
+    recv->assign(dir);
+    free(dir);
+    return true;
 }
 
 bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
@@ -504,16 +510,14 @@ pal::string_t pal::get_dotnet_self_registered_config_location(pal::architecture 
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
-    //  ***Used only for testing***
-    pal::string_t environmentOverride;
-    if (test_only_getenv(_X("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH"), &environmentOverride))
-    {
-        recv->assign(environmentOverride);
-        return true;
-    }
-    //  ***************************
+    recv->clear();
+    pal::char_t* dir = pal_get_dotnet_self_registered_dir();
+    if (dir == nullptr)
+        return false;
 
-    return get_dotnet_self_registered_dir_for_arch(get_current_arch(), recv);
+    recv->assign(dir);
+    free(dir);
+    return true;
 }
 
 bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::string_t* recv)
@@ -696,29 +700,12 @@ bool pal::is_path_fully_qualified(const string_t& path)
 bool pal::getenv(const char_t* name, string_t* recv)
 {
     recv->clear();
-
-    auto length = ::GetEnvironmentVariableW(name, nullptr, 0);
-    if (length == 0)
-    {
-        auto err = GetLastError();
-        if (err != ERROR_ENVVAR_NOT_FOUND)
-        {
-            trace::warning(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(err));
-        }
+    pal_char_t* value = ::pal_getenv(name);
+    if (value == nullptr)
         return false;
-    }
-    std::vector<pal::char_t> buffer(length);
-    if (::GetEnvironmentVariableW(name, &buffer[0], length) == 0)
-    {
-        auto err = GetLastError();
-        if (err != ERROR_ENVVAR_NOT_FOUND)
-        {
-            trace::warning(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(err));
-        }
-        return false;
-    }
 
-    recv->assign(buffer.data());
+    recv->assign(value);
+    free(value);
     return true;
 }
 
@@ -751,7 +738,13 @@ int pal::xtoi(const char_t* input)
 
 bool pal::get_own_executable_path(string_t* recv)
 {
-    return GetModuleFileNameWrapper(NULL, recv);
+    pal_char_t* path = ::pal_get_own_executable_path();
+    if (path == nullptr)
+        return false;
+
+    recv->assign(path);
+    free(path);
+    return true;
 }
 
 bool pal::get_current_module(dll_t *mod)
@@ -973,85 +966,25 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 bool pal::fullpath(string_t* path, bool skip_error_logging)
 {
     if (path->empty())
-    {
         return false;
-    }
 
-    if (LongFile::IsNormalized(*path))
-    {
-        WIN32_FILE_ATTRIBUTE_DATA data;
-        if (GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
-        {
-            return true;
-        }
-    }
-
-    char_t buf[MAX_PATH];
-    size_t size = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
-    if (size == 0)
-    {
-        if (!skip_error_logging)
-        {
-            trace::error(_X("Error resolving full path [%s]"), path->c_str());
-        }
+    pal_char_t* resolved = ::pal_fullpath(path->c_str(), skip_error_logging);
+    if (resolved == nullptr)
         return false;
-    }
 
-    string_t str;
-    if (size < MAX_PATH)
-    {
-        str.assign(buf);
-    }
-    else
-    {
-        str.resize(size + LongFile::UNCExtendedPathPrefix.length(), 0);
-
-        size = ::GetFullPathNameW(path->c_str(), static_cast<uint32_t>(size), (LPWSTR)str.data(), nullptr);
-        assert(size <= str.size());
-
-        if (size == 0)
-        {
-            if (!skip_error_logging)
-            {
-                trace::error(_X("Error resolving full path [%s]"), path->c_str());
-            }
-            return false;
-        }
-
-        const string_t* prefix = &LongFile::ExtendedPrefix;
-        //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk
-        if (str.compare(0, LongFile::UNCPathPrefix.length(), LongFile::UNCPathPrefix) == 0)
-        {
-            prefix = &LongFile::UNCExtendedPathPrefix;
-            str.erase(0, LongFile::UNCPathPrefix.length());
-            size = size - LongFile::UNCPathPrefix.length();
-        }
-
-        str.insert(0, *prefix);
-        str.resize(size + prefix->length());
-        str.shrink_to_fit();
-    }
-
-    WIN32_FILE_ATTRIBUTE_DATA data;
-    if (GetFileAttributesExW(str.c_str(), GetFileExInfoStandard, &data) != 0)
-    {
-        *path = str;
-        return true;
-    }
-
-    return false;
+    path->assign(resolved);
+    free(resolved);
+    return true;
 }
 
 bool pal::file_exists(const string_t& path)
 {
-    string_t tmp(path);
-    return pal::fullpath(&tmp, true);
+    return ::pal_file_exists(path.c_str());
 }
 
 bool pal::is_directory(const pal::string_t& path)
 {
-    DWORD attributes = ::GetFileAttributesW(path.c_str());
-    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
+    return ::pal_directory_exists(path.c_str());
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)
@@ -1110,57 +1043,24 @@ void pal::readdir_onlydirectories(const pal::string_t& path, const string_t& pat
 
 void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::string_t>* list)
 {
-    ::readdir(path, _X("*"), true, list);
+    assert(list != nullptr);
+    ::pal_readdir_onlydirectories(path.c_str(),
+        [](const pal_char_t* name, void* ctx) -> bool
+        {
+            static_cast<std::vector<pal::string_t>*>(ctx)->emplace_back(name);
+            return true;
+        },
+        list);
 }
 
 bool pal::is_running_in_wow64()
 {
-    BOOL fWow64Process = FALSE;
-    if (!IsWow64Process(GetCurrentProcess(), &fWow64Process))
-    {
-        return false;
-    }
-    return (fWow64Process != FALSE);
+    return ::pal_get_process_emulation() == pal_process_emulation_wow64;
 }
-
-typedef BOOL (WINAPI* is_wow64_process2)(
-    HANDLE hProcess,
-    USHORT *pProcessMachine,
-    USHORT *pNativeMachine
-);
 
 bool pal::is_emulating_x64()
 {
-#if defined(TARGET_AMD64)
-    auto kernel32 = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if (kernel32 == nullptr)
-    {
-        // Loading kernel32.dll failed, log the error and continue.
-        trace::info(_X("Could not load 'kernel32.dll': %u"), GetLastError());
-        return false;
-    }
-
-    is_wow64_process2 is_wow64_process2_func = (is_wow64_process2)::GetProcAddress(kernel32, "IsWow64Process2");
-    if (is_wow64_process2_func == nullptr)
-    {
-        // Could not find IsWow64Process2.
-        return false;
-    }
-
-    USHORT process_machine;
-    USHORT native_machine;
-    if (!is_wow64_process2_func(GetCurrentProcess(), &process_machine, &native_machine))
-    {
-        // IsWow64Process2 failed. Log the error and continue.
-        trace::info(_X("Call to IsWow64Process2 failed: %u"), GetLastError());
-        return false;
-    }
-
-    // If we are running targeting x64 on a non-x64 machine, we are emulating
-    return native_machine != IMAGE_FILE_MACHINE_AMD64;
-#else
-    return false;
-#endif
+    return ::pal_get_process_emulation() == pal_process_emulation_x64;
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)
@@ -1188,4 +1088,37 @@ void pal::mutex_t::lock()
 void pal::mutex_t::unlock()
 {
     ::LeaveCriticalSection(&_impl);
+}
+
+// C-callable wrappers over the C++ pal:: API, for use by C entrypoints (apphost.c).
+extern "C" bool pal_is_path_fully_qualified(const pal_char_t* path)
+{
+    return pal::is_path_fully_qualified(pal::string_t(path));
+}
+
+extern "C" bool pal_load_library(const pal_char_t* path, void** dll)
+{
+    pal::string_t str(path);
+    return pal::load_library(&str, reinterpret_cast<pal::dll_t*>(dll));
+}
+
+extern "C" void pal_unload_library(void* library)
+{
+    pal::unload_library(reinterpret_cast<pal::dll_t>(library));
+}
+
+extern "C" void* pal_get_symbol(void* library, const char* name)
+{
+    return reinterpret_cast<void*>(pal::get_symbol(reinterpret_cast<pal::dll_t>(library), name));
+}
+
+extern "C" bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len)
+{
+    pal::string_t str;
+    if (!pal::clr_palstring(utf8, &str))
+        return false;
+    if (str.length() >= out_len)
+        return false;
+    memcpy(out, str.c_str(), (str.length() + 1) * sizeof(pal_char_t));
+    return true;
 }

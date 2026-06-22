@@ -324,6 +324,7 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "ios" OR TARGET_SYSTEM_NAME STREQUAL "tvos")
   endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "android")
   set(TARGET_UNIX 1)
+  set(TARGET_LINUX 1)
   set(TARGET_LINUX_BIONIC 1)
   set(TARGET_ANDROID 1)
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -856,7 +857,13 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   endif()
 else()
   if(NOT EXISTS "${VERSION_FILE_PATH}")
-    file(WRITE "${VERSION_FILE_PATH}" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+    file(WRITE "${VERSION_FILE_PATH}"
+      "#if defined(__GNUC__) && !defined(__clang__) && defined(TARGET_SUNOS) && defined(TARGET_AMD64)\n"
+      "char sccsid[] __attribute__((used, weak)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n"
+      "__asm__(\".pushsection .init_array; .reloc ., R_X86_64_NONE, sccsid; .popsection\");\n"
+      "#else\n"
+      "static char sccsid[] __attribute__((used, retain)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n"
+      "#endif\n")
   endif()
 endif()
 if (NOT EXISTS "${RUNTIME_VERSION_HEADER_PATH}")

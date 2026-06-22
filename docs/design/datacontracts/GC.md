@@ -96,8 +96,8 @@ public readonly struct GCOomData
     // Returns pointers to all GC heaps
     IEnumerable<TargetPointer> GetGCHeaps();
 
-    // The following APIs have both a workstation and serer variant.
-    // The workstation variant implitly operates on the global heap.
+    // The following APIs have both a workstation and server variant.
+    // The workstation variant implicitly operates on the global heap.
     // The server variants allow passing in a heap pointer.
 
     // Gets data about a GC heap
@@ -118,6 +118,69 @@ public readonly struct GCOomData
     TargetNUInt GetHandleExtraInfo(TargetPointer handle);
     // Gets the global allocation context pointer and limit
     void GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointer allocLimit);
+
+    // Gets handle table memory regions (segments)
+    IReadOnlyList<GCMemoryRegionData> GetHandleTableMemoryRegions();
+    // Gets GC bookkeeping memory regions (card table info linked list)
+    IReadOnlyList<GCMemoryRegionData> GetGCBookkeepingMemoryRegions();
+    // Gets GC free regions (free region lists and freeable segments)
+    IReadOnlyList<GCMemoryRegionData> GetGCFreeRegions();
+
+    // Enumerates every GC heap segment for the supplied heap data. Each yielded GCHeapSegmentInfo
+    // describes a single segment with the inclusive start and exclusive end of its memory range
+    // and its generation tag (or Ephemeral).
+    IEnumerable<GCHeapSegmentInfo> EnumerateHeapSegments(GCHeapData heapData);
+
+    // Given the current probe address within a heap segment and the (aligned) size of the
+    // object that lives at that address, returns the next candidate object address.
+    // Implementations may consult cached per-target allocation-context state.
+    TargetPointer GetPotentialNextObjectAddress(
+        TargetPointer currentAddress,
+        ulong currentObjectSize,
+        GCHeapSegmentInfo segment);
+
+    // Aligns an object's raw size (base size + component bytes) to the alignment required by its containing segment
+    ulong AlignObjectSize(ulong size, GCSegmentClassification generation);
+```
+
+```csharp
+public enum FreeRegionKind
+{
+    FreeUnknownRegion = 0,
+    FreeGlobalHugeRegion = 1,
+    FreeGlobalRegion = 2,
+    FreeRegion = 3,
+    FreeSohSegment = 4,
+    FreeUohSegment = 5,
+}
+
+public readonly struct GCMemoryRegionData
+{
+    public TargetPointer Start { get; init; }
+    public ulong Size { get; init; }
+    public ulong ExtraData { get; init; }
+    public int Heap { get; init; }
+}
+
+public enum GCSegmentClassification
+{
+    Unknown,
+    Gen0,
+    Gen1,
+    Gen2,
+    LOH,
+    POH,
+    NonGC,
+    // Segments-GC only: marker used by IGC.EnumerateHeapSegments to denote the ephemeral
+    // segment on the gen2 list. The caller is responsible for splitting it into the Gen1
+    // piece and an optional Gen2 prefix.
+    Ephemeral,
+}
+
+public readonly record struct GCHeapSegmentInfo(
+    TargetPointer Start,
+    TargetPointer End,
+    GCSegmentClassification Generation);
 ```
 
 ## Version 1
@@ -125,17 +188,17 @@ public readonly struct GCOomData
 Data descriptors used:
 | Data Descriptor Name | Field | Source | Meaning |
 | --- | --- | --- | --- |
-| `GCHeap` | MarkArray | GC | Pointer to the heap's MarkArray (in sever builds) |
-| `GCHeap` | NextSweepObj | GC | Pointer to the heap's NextSweepObj (in sever builds) |
-| `GCHeap` | BackgroundMinSavedAddr | GC | Heap's background saved lowest address (in sever builds) |
-| `GCHeap` | BackgroundMaxSavedAddr | GC | Heap's background saved highest address (in sever builds) |
+| `GCHeap` | MarkArray | GC | Pointer to the heap's MarkArray (only in server builds with background GC) |
+| `GCHeap` | NextSweepObj | GC | Pointer to the heap's NextSweepObj (only in server builds with background GC) |
+| `GCHeap` | BackgroundMinSavedAddr | GC | Heap's background saved lowest address (only in server builds with background GC) |
+| `GCHeap` | BackgroundMaxSavedAddr | GC | Heap's background saved highest address (only in server builds with background GC) |
 | `GCHeap` | AllocAllocated | GC | Heap's highest address allocated by Alloc (in sever builds) |
 | `GCHeap` | EphemeralHeapSegment | GC | Pointer to the heap's ephemeral heap segment (in sever builds) |
 | `GCHeap` | CardTable | GC | Pointer to the heap's bookkeeping GC data structure (in sever builds) |
 | `GCHeap` | FinalizeQueue | GC | Pointer to the heap's CFinalize data structure (in sever builds) |
 | `GCHeap` | GenerationTable | GC | Pointer to the start of an array containing `"TotalGenerationCount"` `Generation` structures (in sever builds) |
-| `GCHeap` | SavedSweepEphemeralSeg | GC | Pointer to the heap's saved sweep ephemeral segment (only in server builds with segment) |
-| `GCHeap` | SavedSweepEphemeralStart | GC | Start of the heap's sweep ephemeral segment (only in server builds with segment) |
+| `GCHeap` | SavedSweepEphemeralSeg | GC | Pointer to the heap's saved sweep ephemeral segment (only in server builds with segment and background GC) |
+| `GCHeap` | SavedSweepEphemeralStart | GC | Start of the heap's sweep ephemeral segment (only in server builds with segment and background GC) |
 | `GCHeap` | OomData | GC | OOM related data in a struct (in sever builds) |
 | `GCHeap` | InternalRootArray | GC | Data array stored per heap (in sever builds) |
 | `GCHeap` | InternalRootArrayIndex | GC | Index into InternalRootArray (in sever builds) |
@@ -177,6 +240,13 @@ Data descriptors used:
 | `TableSegment` | RgAllocation | GC | Circular block-list links per block |
 | `TableSegment` | RgValue | GC | Start of handle value storage |
 | `TableSegment` | RgUserData | GC | Auxiliary per-block metadata (e.g. secondary handle blocks) |
+| `CardTableInfo` | Recount | GC | Reference count for the card table |
+| `CardTableInfo` | Size | GC | Total size of the bookkeeping allocation |
+| `CardTableInfo` | NextCardTable | GC | Pointer to the next card table in the linked list |
+| `RegionFreeList` | HeadFreeRegion | GC | Head of the free region segment list |
+| `GCHeap` | FreeableSohSegment | GC | Head of the freeable SOH segment linked list (server builds, background GC) |
+| `GCHeap` | FreeableUohSegment | GC | Head of the freeable UOH segment linked list (server builds, background GC) |
+| `GCHeap` | FreeRegions | GC | Start of the per-heap free region list array (server builds, region GC) |
 | `GCAllocContext` | AllocBytes | VM | Number of bytes allocated on SOH by this context |
 | `GCAllocContext` | AllocBytesLoh | VM | Number of bytes allocated not on SOH by this context |
 | `EEAllocContext` | GCAllocationContext | VM | The `GCAllocContext` struct within an `EEAllocContext` |
@@ -195,17 +265,17 @@ Global variables used:
 | `CompactReasonsLength` | uint | GC | The number of elements in the `CompactReasons` array |
 | `ExpandMechanismsLength` | uint | GC | The number of elements in the `ExpandMechanisms` array |
 | `InterestingMechanismBitsLength` | uint | GC | The number of elements in the `InterestingMechanismBits` array |
-| `GCHeapMarkArray` | TargetPointer | GC | Pointer to the static heap's MarkArray (in workstation builds) |
-| `GCHeapNextSweepObj` | TargetPointer | GC | Pointer to the static heap's NextSweepObj (in workstation builds) |
-| `GCHeapBackgroundMinSavedAddr` | TargetPointer | GC | Background saved lowest address (in workstation builds) |
-| `GCHeapBackgroundMaxSavedAddr` | TargetPointer | GC | Background saved highest address (in workstation builds) |
+| `GCHeapMarkArray` | TargetPointer | GC | Pointer to the static heap's MarkArray (in workstation builds with background GC) |
+| `GCHeapNextSweepObj` | TargetPointer | GC | Pointer to the static heap's NextSweepObj (in workstation builds with background GC) |
+| `GCHeapBackgroundMinSavedAddr` | TargetPointer | GC | Background saved lowest address (in workstation builds with background GC) |
+| `GCHeapBackgroundMaxSavedAddr` | TargetPointer | GC | Background saved highest address (in workstation builds with background GC) |
 | `GCHeapAllocAllocated` | TargetPointer | GC | Highest address allocated by Alloc (in workstation builds) |
 | `GCHeapEphemeralHeapSegment` | TargetPointer | GC | Pointer to an ephemeral heap segment (in workstation builds) |
 | `GCHeapCardTable` | TargetPointer | GC | Pointer to the static heap's bookkeeping GC data structure (in workstation builds) |
 | `GCHeapFinalizeQueue` | TargetPointer | GC | Pointer to the static heap's CFinalize data structure (in workstation builds) |
 | `GCHeapGenerationTable` | TargetPointer | GC | Pointer to the start of an array containing `"TotalGenerationCount"` `Generation` structures (in workstation builds) |
-| `GCHeapSavedSweepEphemeralSeg` | TargetPointer | GC | Pointer to the static heap's saved sweep ephemeral segment (in workstation builds with segment) |
-| `GCHeapSavedSweepEphemeralStart` | TargetPointer | GC | Start of the static heap's sweep ephemeral segment (in workstation builds with segment) |
+| `GCHeapSavedSweepEphemeralSeg` | TargetPointer | GC | Pointer to the static heap's saved sweep ephemeral segment (in workstation builds with segment and background GC) |
+| `GCHeapSavedSweepEphemeralStart` | TargetPointer | GC | Start of the static heap's sweep ephemeral segment (in workstation builds with segment and background GC) |
 | `GCHeapOomData` | TargetPointer | GC | OOM related data in a struct (in workstation builds) |
 | `GCHeapInternalRootArray` | TargetPointer | GC | Data array stored per heap (in workstation builds) |
 | `GCHeapInternalRootArrayIndex` | TargetPointer | GC | Index into InternalRootArray (in workstation builds) |
@@ -232,17 +302,30 @@ Global variables used:
 | `FeatureJavaMarshal` | byte | VM | Non-zero when Java marshal support is enabled |
 | `GlobalAllocContext` | TargetPointer | VM | Pointer to the global `EEAllocContext` |
 | `TotalCpuCount` | uint | GC | Number of available processors |
+| `HandleSegmentSize` | uint | GC | Size of each handle table segment allocation |
+| `CardTableInfoSize` | uint | GC | Size of the `dac_card_table_info` structure |
+| `CountFreeRegionKinds` | uint | GC | Number of free region kinds (basic, large, huge) |
+| `GlobalFreeHugeRegions` | TargetPointer | GC | Pointer to the global free huge region list |
+| `GlobalRegionsToDecommit` | TargetPointer | GC | Pointer to the global regions-to-decommit array |
+| `BookkeepingStart` | TargetPointer | GC | Pointer to the bookkeeping start address |
+| `GCHeapFreeableSohSegment` | TargetPointer | GC | Pointer to the freeable SOH segment head (workstation builds) |
+| `GCHeapFreeableUohSegment` | TargetPointer | GC | Pointer to the freeable UOH segment head (workstation builds) |
+| `GCHeapFreeRegions` | TargetPointer | GC | Pointer to the free regions array (workstation builds) |
 
 Contracts used:
 | Contract Name |
 | --- |
 | BuiltInCOM |
 | Object |
+| Thread |
 
 Constants used:
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `WRK_HEAP_COUNT` | uint | The number of heaps in the `workstation` GC type | `1` |
+| `HEAP_SEGMENT_FLAGS_READONLY` | ulong | `HeapSegment.Flags` bit identifying a readonly (e.g. frozen, non-GC) segment. | `1` |
+| `ALIGNCONST` | uint | Alignment mask for small object heaps | Target pointer size - 1 |
+| `ALIGNCONST_LARGE` | uint | Alignment mask for large/pinned object heaps | `7` |
 
 ```csharp
 GCHeapType IGC.GetGCIdentifiers()
@@ -411,11 +494,39 @@ GCHeapData IGC.GetHeapData()
 
     GCHeapData data;
 
-    // Read fields directly from globals
-    data.MarkArray = target.ReadPointer(target.ReadGlobalPointer("GCHeapMarkArray"));
-    data.NextSweepObj = target.ReadPointer(target.ReadGlobalPointer("GCHeapNextSweepObj"));
-    data.BackgroundMinSavedAddr = target.ReadPointer(target.ReadGlobalPointer("GCHeapBackgroundMinSavedAddr"));
-    data.BackgroundMaxSavedAddr = target.ReadPointer(target.ReadGlobalPointer("GCHeapBackgroundMaxSavedAddr"));
+    // Read background GC globals - these are absent when background GC is disabled (e.g., on WebAssembly).
+    if (target.TryReadGlobalPointer("GCHeapMarkArray", out TargetPointer? markArrayPtr))
+    {
+        data.MarkArray = target.ReadPointer(markArrayPtr.Value);
+    }
+    else
+    {
+        data.MarkArray = 0;
+    }
+    if (target.TryReadGlobalPointer("GCHeapNextSweepObj", out TargetPointer? nextSweepObjPtr))
+    {
+        data.NextSweepObj = target.ReadPointer(nextSweepObjPtr.Value);
+    }
+    else
+    {
+        data.NextSweepObj = 0;
+    }
+    if (target.TryReadGlobalPointer("GCHeapBackgroundMinSavedAddr", out TargetPointer? bgMinPtr))
+    {
+        data.BackgroundMinSavedAddr = target.ReadPointer(bgMinPtr.Value);
+    }
+    else
+    {
+        data.BackgroundMinSavedAddr = 0;
+    }
+    if (target.TryReadGlobalPointer("GCHeapBackgroundMaxSavedAddr", out TargetPointer? bgMaxPtr))
+    {
+        data.BackgroundMaxSavedAddr = target.ReadPointer(bgMaxPtr.Value);
+    }
+    else
+    {
+        data.BackgroundMaxSavedAddr = 0;
+    }
     data.AllocAllocated = target.ReadPointer(target.ReadGlobalPointer("GCHeapAllocAllocated"));
     data.EphemeralHeapSegment = target.ReadPointer(target.ReadGlobalPointer("GCHeapEphemeralHeapSegment"));
     data.CardTable = target.ReadPointer(target.ReadGlobalPointer("GCHeapCardTable"));
@@ -478,11 +589,41 @@ GCHeapData IGC.GetHeapData(TargetPointer heapAddress)
 
     GCHeapData data;
 
-    // Read fields directly from heap
-    data.MarkArray = target.ReadPointer(heapAddress + /* GCHeap::MarkArray offset */);
-    data.NextSweepObj = target.ReadPointer(heapAddress + /* GCHeap::NextSweepObj offset */);
-    data.BackgroundMinSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMinSavedAddr offset */);
-    data.BackgroundMaxSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMaxSavedAddr offset */);
+    // Read background GC heap fields - these fields are absent when background GC is disabled (e.g., on WebAssembly).
+    // Check whether the field exists in the type layout before reading; default to 0 if not present.
+    Target.TypeInfo gcHeapType = target.GetTypeInfo(DataType.GCHeap);
+    if (gcHeapType.Fields.ContainsKey("MarkArray"))
+    {
+        data.MarkArray = target.ReadPointer(heapAddress + /* GCHeap::MarkArray offset */);
+    }
+    else
+    {
+        data.MarkArray = 0;
+    }
+    if (gcHeapType.Fields.ContainsKey("NextSweepObj"))
+    {
+        data.NextSweepObj = target.ReadPointer(heapAddress + /* GCHeap::NextSweepObj offset */);
+    }
+    else
+    {
+        data.NextSweepObj = 0;
+    }
+    if (gcHeapType.Fields.ContainsKey("BackgroundMinSavedAddr"))
+    {
+        data.BackgroundMinSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMinSavedAddr offset */);
+    }
+    else
+    {
+        data.BackgroundMinSavedAddr = 0;
+    }
+    if (gcHeapType.Fields.ContainsKey("BackgroundMaxSavedAddr"))
+    {
+        data.BackgroundMaxSavedAddr = target.ReadPointer(heapAddress + /* GCHeap::BackgroundMaxSavedAddr offset */);
+    }
+    else
+    {
+        data.BackgroundMaxSavedAddr = 0;
+    }
     data.AllocAllocated = target.ReadPointer(heapAddress + /* GCHeap::AllocAllocated offset */);
     data.EphemeralHeapSegment = target.ReadPointer(heapAddress + /* GCHeap::EphemeralHeapSegment offset */);
     data.CardTable = target.ReadPointer(heapAddress + /* GCHeap::CardTable offset */);
@@ -744,6 +885,159 @@ void IGC.GetGlobalAllocationContext(out TargetPointer allocPtr, out TargetPointe
 }
 ```
 
+GetHandleTableMemoryRegions
+```csharp
+IReadOnlyList<GCMemoryRegionData> IGC.GetHandleTableMemoryRegions()
+{
+    List<GCMemoryRegionData> regions = new();
+    uint handleSegmentSize = /* global value "HandleSegmentSize" */;
+    uint tableCount = isServerGC
+        ? /* global value "TotalCpuCount" */
+        : 1;
+
+    // Safety caps matching native DAC
+    const int MaxHandleTableRegions = 8192;
+    const int MaxBookkeepingRegions = 32;
+    const int MaxSegmentListIterations = 65536;
+
+    int maxRegions = MaxHandleTableRegions;
+    TargetPointer handleTableMap = target.ReadGlobalPointer("HandleTableMap");
+    while (handleTableMap != TargetPointer.Null && maxRegions >= 0)
+    {
+        TargetPointer bucketsPtr = target.ReadPointer(handleTableMap + /* HandleTableMap::BucketsPtr offset */);
+        foreach (/* read global variable "InitialHandleTableArraySize" bucketPtrs starting at bucketsPtr */)
+        {
+            if (bucketPtr == TargetPointer.Null) continue;
+            TargetPointer table = target.ReadPointer(bucketPtr + /* HandleTableBucket::Table offset */);
+            for (uint j = 0; j < tableCount; j++)
+            {
+                TargetPointer htPtr = target.ReadPointer(table + j * target.PointerSize);
+                if (htPtr == TargetPointer.Null) continue;
+                TargetPointer segList = target.ReadPointer(htPtr + /* HandleTable::SegmentList offset */);
+                if (segList == TargetPointer.Null) continue;
+                TargetPointer seg = segList;
+                TargetPointer first = seg;
+                do
+                {
+                    regions.Add(new GCMemoryRegionData { Start = seg, Size = handleSegmentSize, Heap = (int)j });
+                    seg = target.ReadPointer(seg + /* TableSegment::NextSegment offset */);
+                } while (seg != TargetPointer.Null && seg != first);
+            }
+        }
+        handleTableMap = target.ReadPointer(handleTableMap + /* HandleTableMap::Next offset */);
+        maxRegions--;
+    }
+    return regions;
+}
+```
+
+GetGCBookkeepingMemoryRegions
+```csharp
+IReadOnlyList<GCMemoryRegionData> IGC.GetGCBookkeepingMemoryRegions()
+{
+    List<GCMemoryRegionData> regions = new();
+    TargetPointer bkGlobal = target.ReadGlobalPointer("BookkeepingStart");
+    if (bkGlobal == TargetPointer.Null) throw E_FAIL;
+    TargetPointer bookkeepingStart = target.ReadPointer(bkGlobal);
+    if (bookkeepingStart == TargetPointer.Null) throw E_FAIL;
+
+    uint cardTableInfoSize = /* global value "CardTableInfoSize" */;
+    uint recount = target.ReadNUInt(bookkeepingStart + /* CardTableInfo::Recount offset */);
+    ulong size = target.ReadNUInt(bookkeepingStart + /* CardTableInfo::Size offset */);
+    if (recount != 0 && size != 0)
+        regions.Add(new GCMemoryRegionData { Start = bookkeepingStart, Size = size });
+
+    TargetPointer next = target.ReadPointer(bookkeepingStart + /* CardTableInfo::NextCardTable offset */);
+    TargetPointer firstNext = next;
+    int maxRegions = MaxBookkeepingRegions;
+    // Compare next > cardTableInfoSize to guard against underflow when subtracting
+    // cardTableInfoSize. Matches native DAC: `while (next > card_table_info_size)`.
+    while (next != TargetPointer.Null && next > cardTableInfoSize && maxRegions > 0)
+    {
+        TargetPointer ctAddr = next - cardTableInfoSize;
+        recount = target.ReadNUInt(ctAddr + /* CardTableInfo::Recount offset */);
+        size = target.ReadNUInt(ctAddr + /* CardTableInfo::Size offset */);
+        if (recount != 0 && size != 0)
+            regions.Add(new GCMemoryRegionData { Start = ctAddr, Size = size });
+        next = target.ReadPointer(ctAddr + /* CardTableInfo::NextCardTable offset */);
+        if (next == firstNext) break;
+        maxRegions--;
+    }
+    return regions;
+}
+```
+
+GetGCFreeRegions
+```csharp
+IReadOnlyList<GCMemoryRegionData> IGC.GetGCFreeRegions()
+{
+    List<GCMemoryRegionData> regions = new();
+    uint countFreeRegionKinds = min(/* global value "CountFreeRegionKinds" */, 16);
+    uint regionFreeListSize = /* size of RegionFreeList data descriptor */;
+
+    // Global free huge regions
+    if (target.TryReadGlobalPointer("GlobalFreeHugeRegions", out TargetPointer? globalHuge))
+        AddFreeList(globalHuge, FreeGlobalHugeRegion, regions);
+
+    // Global regions to decommit
+    if (target.TryReadGlobalPointer("GlobalRegionsToDecommit", out TargetPointer? globalDecommit))
+        for (int i = 0; i < countFreeRegionKinds; i++)
+            AddFreeList(globalDecommit + i * regionFreeListSize, FreeGlobalRegion, regions);
+
+    if (isServerGC)
+    {
+        // For each server heap: enumerate per-heap free regions + freeable segments
+        for each heap in server heaps:
+            TargetPointer freeRegionsBase = heapAddress + /* GCHeap::FreeRegions offset */;
+            if (freeRegionsBase != TargetPointer.Null)
+                for (int j = 0; j < countFreeRegionKinds; j++)
+                    AddFreeList(freeRegionsBase + j * regionFreeListSize, FreeRegion, regions, heapIndex);
+            TargetPointer sohSeg = target.ReadPointer(heapAddress + /* GCHeap::FreeableSohSegment offset */);
+            AddSegmentList(sohSeg, FreeSohSegment, regions, heapIndex);
+            TargetPointer uohSeg = target.ReadPointer(heapAddress + /* GCHeap::FreeableUohSegment offset */);
+            AddSegmentList(uohSeg, FreeUohSegment, regions, heapIndex);
+    }
+    else
+    {
+        // Workstation: use globals for free regions and freeable segments
+        if (target.TryReadGlobalPointer("GCHeapFreeRegions", out TargetPointer? freeRegions))
+            for (int i = 0; i < countFreeRegionKinds; i++)
+                AddFreeList(freeRegions + i * regionFreeListSize, FreeRegion, regions);
+        if (target.TryReadGlobalPointer("GCHeapFreeableSohSegment", out TargetPointer? soh))
+            AddSegmentList(target.ReadPointer(soh), FreeSohSegment, regions);
+        if (target.TryReadGlobalPointer("GCHeapFreeableUohSegment", out TargetPointer? uoh))
+            AddSegmentList(target.ReadPointer(uoh), FreeUohSegment, regions);
+    }
+    return regions;
+}
+
+void AddFreeList(TargetPointer freeListAddr, FreeRegionKind kind, List<GCMemoryRegionData> regions, int heap = 0)
+{
+    TargetPointer headFreeRegion = target.ReadPointer(freeListAddr + /* RegionFreeList::HeadFreeRegion offset */);
+    if (headFreeRegion != TargetPointer.Null)
+        AddSegmentList(headFreeRegion, kind, regions, heap);
+}
+
+void AddSegmentList(TargetPointer start, FreeRegionKind kind, List<GCMemoryRegionData> regions, int heap = 0)
+{
+    int iterationMax = MaxSegmentListIterations;
+    TargetPointer curr = start;
+    while (curr != TargetPointer.Null)
+    {
+        TargetPointer mem = target.ReadPointer(curr + /* HeapSegment::Mem offset */);
+        if (mem != TargetPointer.Null)
+        {
+            TargetPointer committed = target.ReadPointer(curr + /* HeapSegment::Committed offset */);
+            ulong size = (mem < committed) ? committed - mem : 0;
+            regions.Add(new GCMemoryRegionData { Start = mem, Size = size, ExtraData = kind, Heap = heap });
+        }
+        curr = target.ReadPointer(curr + /* HeapSegment::Next offset */);
+        if (curr == start) break;
+        if (iterationMax-- <= 0) break;
+    }
+}
+```
+
 GetHandleExtraInfo
 ```csharp
 TargetNUInt IGC.GetHandleExtraInfo(TargetPointer handle)
@@ -771,5 +1065,127 @@ TargetNUInt IGC.GetHandleExtraInfo(TargetPointer handle)
     TargetPointer extraInfoAddr = segment + headerSize + offset * (uint)target.PointerSize;
 
     return target.ReadNUInt(extraInfoAddr);
+}
+```
+
+EnumerateHeapSegments
+
+Returns the raw GC heap segments for a single heap by walking the per-generation segment
+lists.
+```csharp
+IEnumerable<GCHeapSegmentInfo> IGC.EnumerateHeapSegments(GCHeapData heapData)
+{
+    // The generation table is laid out as gen0, gen1, gen2, LOH, POH (plus optional extras).
+    var gens = heapData.GenerationTable;
+    bool regions = GetGCIdentifiers().Contains("regions");
+
+    TargetPointer ephemeralSegment = heapData.EphemeralHeapSegment;
+    TargetPointer allocAllocated   = heapData.AllocAllocated;
+
+    if (regions)
+    {
+        // In regions mode each generation has its own segment list. Readonly entries on
+        // the gen2 list represent non-GC (e.g. frozen) regions and are reported as NonGC.
+        foreach (var (seg, _) in WalkSegmentList(gens[2].StartSegment))
+        {
+            var type = (seg.Flags & HEAP_SEGMENT_FLAGS_READONLY) != 0
+                ? GCSegmentClassification.NonGC
+                : GCSegmentClassification.Gen2;
+            yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, type);
+        }
+        foreach (var (seg, _) in WalkSegmentList(gens[1].StartSegment))
+            yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentClassification.Gen1);
+        foreach (var (seg, segAddr) in WalkSegmentList(gens[0].StartSegment))
+        {
+            // For the gen0 segment that matches the ephemeral_heap_segment, end is alloc_allocated.
+            TargetPointer end = segAddr == ephemeralSegment ? allocAllocated : seg.Allocated;
+            yield return new GCHeapSegmentInfo(seg.Mem, end, GCSegmentClassification.Gen0);
+        }
+    }
+    else
+    {
+        // In segments mode the gen2 list contains every SOH segment. The ephemeral
+        // segment is tagged Ephemeral as the layer-2 split marker; non-ephemeral entries
+        // are reported with their true generation (Gen2 or NonGC for readonly).
+        foreach (var (seg, segAddr) in WalkSegmentList(gens[2].StartSegment))
+        {
+            GCSegmentClassification type;
+            if (segAddr == ephemeralSegment)
+                type = GCSegmentClassification.Ephemeral;
+            else if ((seg.Flags & HEAP_SEGMENT_FLAGS_READONLY) != 0)
+                type = GCSegmentClassification.NonGC;
+            else
+                type = GCSegmentClassification.Gen2;
+            TargetPointer end = segAddr == ephemeralSegment ? allocAllocated : seg.Allocated;
+            yield return new GCHeapSegmentInfo(seg.Mem, end, type);
+        }
+    }
+
+    // LOH and POH segments are always reported as-is regardless of GC mode.
+    foreach (var (seg, _) in WalkSegmentList(gens[3].StartSegment))
+        yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentClassification.LOH);
+    foreach (var (seg, _) in WalkSegmentList(gens[4].StartSegment))
+        yield return new GCHeapSegmentInfo(seg.Mem, seg.Allocated, GCSegmentClassification.POH);
+}
+
+IEnumerable<(HeapSegment Segment, TargetPointer Address)> WalkSegmentList(TargetPointer startSegment)
+{
+    // Bounded traversal of the singly-linked HeapSegment list, guarding against cycles or
+    // corrupt links via a fixed iteration cap (MaxSegmentListIterations = 65536).
+    int iterationMax = MaxSegmentListIterations;
+    TargetPointer current = startSegment;
+    while (current != TargetPointer.Null)
+    {
+        HeapSegment seg = /* read HeapSegment at current */;
+        yield return (seg, current);
+        current = seg.Next;
+        if (iterationMax-- <= 0) throw /* cycle detected */;
+    }
+}
+```
+
+GetPotentialNextObjectAddress
+
+Computes the next candidate object address when walking a Gen0/Ephemeral segment.
+Active allocation contexts (per-thread, the global non-thread-local context, and
+the per-heap Gen0 context) carve out reserved-but-not-yet-allocated ranges inside
+such segments; when the naive `current + size` lands on one of those ranges the
+walk must skip past it. The contexts are collected via `IThread.GetThreadStoreData`
+and `IThread.GetThreadData` (per-thread contexts), `IGC.GetGlobalAllocationContext`
+(global context), and `IGC.GetGCIdentifiers` + `IGC.GetGCHeaps` + `IGC.GetHeapData`
+(per-heap Gen0 contexts).
+
+```csharp
+TargetPointer IGC.GetPotentialNextObjectAddress(
+    TargetPointer currentAddress,
+    ulong currentObjectSize,
+    GCHeapSegmentInfo segment)
+{
+    TargetPointer next = new TargetPointer(currentAddress.Value + currentObjectSize);
+
+    if (segment.Generation is not (GCSegmentClassification.Gen0 or GCSegmentClassification.Ephemeral))
+        return next;
+
+    ulong minObjSize = AlignForSmallObject((ulong)_target.PointerSize * 3);
+    foreach (/* context in allocation contexts */ )
+    {
+        if (next == /* context pointer */)
+            return new TargetPointer(/* context limit */ + minObjSize);
+    }
+    return next;
+}
+```
+
+AlignObjectSize
+
+Aligns a raw object size to the alignment required by its containing segment. SOH segments
+use pointer-sized alignment; LOH/POH use 8-byte alignment.
+
+```csharp
+ulong IGC.AlignObjectSize(ulong size, GCSegmentClassification generation)
+{
+    return generation is GCSegmentClassification.LOH or GCSegmentClassification.POH
+        ? AlignForLargeObject(size)     // (size + ALIGNCONST_LARGE) & ~ALIGNCONST_LARGE
+        : AlignForSmallObject(size);    // (size + ALIGNCONST) & ~ALIGNCONST
 }
 ```

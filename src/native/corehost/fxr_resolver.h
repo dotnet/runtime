@@ -4,51 +4,42 @@
 #ifndef _COREHOST_CLI_FXR_RESOLVER_H_
 #define _COREHOST_CLI_FXR_RESOLVER_H_
 
-#include <stdbool.h>
+#include <pal.h>
 #include <stdint.h>
-#include <stddef.h>
-
-#include "pal.h" // for pal_char_t
-
-// ============================================================================
-// C-compatible section (usable from both C and C++ source files)
-// ============================================================================
-
-// Keep in sync with DotNetRootOptions.SearchLocation in HostWriter.cs
-typedef enum
-{
-    search_location_default = 0,
-    search_location_app_local = 1 << 0,             // Next to the app
-    search_location_app_relative = 1 << 1,          // Path relative to the app read from the app binary
-    search_location_environment_variable = 1 << 2,  // DOTNET_ROOT[_<arch>] environment variables
-    search_location_global = 1 << 3,                // Registered and default global locations
-} fxr_search_location;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Try to find the path to hostfxr.
-// root_path: directory of the app
-// search: search location flags
-// app_relative_dotnet_root: optional app-relative .NET root path (may be NULL or empty)
-// out_dotnet_root: receives a newly allocated string with the dotnet root directory (caller must free)
-// out_fxr_path: receives a newly allocated string with the full path to the hostfxr library (caller must free)
-// On failure, *out_dotnet_root and *out_fxr_path are set to NULL.
+// Keep in sync with fxr_resolver::search_location below and with
+// DotNetRootOptions.SearchLocation in HostWriter.cs.
+typedef enum
+{
+    fxr_search_location_default = 0,
+    fxr_search_location_app_local = 1 << 0,             // Next to the app
+    fxr_search_location_app_relative = 1 << 1,          // Path relative to the app read from the app binary
+    fxr_search_location_environment_variable = 1 << 2,  // DOTNET_ROOT[_<arch>] environment variables
+    fxr_search_location_global = 1 << 3,                // Registered and default global locations
+} fxr_search_location;
+
+// Try to locate hostfxr using the specified search options.
+// Caller should free() out_dotnet_root and out_fxr_path.
 bool fxr_resolver_try_get_path(
     const pal_char_t* root_path,
     fxr_search_location search,
-    const pal_char_t* app_relative_dotnet_root,
-    pal_char_t** out_dotnet_root,
-    pal_char_t** out_fxr_path);
+    /*opt*/ const pal_char_t* app_relative_dotnet_root,
+    /*out*/ pal_char_t** out_dotnet_root,
+    /*out*/ pal_char_t** out_fxr_path);
+
+// Try to locate hostfxr at <dotnet_root>/host/fxr/<latest>/hostfxr.<ext>.
+// Caller should free() out_fxr_path.
+bool fxr_resolver_try_get_path_from_dotnet_root(
+    const pal_char_t* dotnet_root,
+    /*out*/ pal_char_t** out_fxr_path);
 
 #ifdef __cplusplus
 }
 #endif
-
-// ============================================================================
-// C++ section
-// ============================================================================
 
 #ifdef __cplusplus
 
@@ -62,11 +53,11 @@ namespace fxr_resolver
     // Keep in sync with DotNetRootOptions.SearchLocation in HostWriter.cs
     enum search_location : uint8_t
     {
-        search_location_default = 0,
-        search_location_app_local = 1 << 0,             // Next to the app
-        search_location_app_relative = 1 << 1,          // Path relative to the app read from the app binary
-        search_location_environment_variable = 1 << 2,  // DOTNET_ROOT[_<arch>] environment variables
-        search_location_global = 1 << 3,                // Registered and default global locations
+        search_location_default = fxr_search_location_default,
+        search_location_app_local = fxr_search_location_app_local,
+        search_location_app_relative = fxr_search_location_app_relative,
+        search_location_environment_variable = fxr_search_location_environment_variable,
+        search_location_global = fxr_search_location_global,
     };
 
     bool try_get_path(const pal::string_t& root_path, pal::string_t* out_dotnet_root, pal::string_t* out_fxr_path);

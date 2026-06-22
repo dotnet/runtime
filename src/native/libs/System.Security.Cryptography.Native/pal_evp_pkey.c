@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <assert.h>
+#include <stdlib.h>
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_slh_dsa.h"
 #include "pal_utilities.h"
@@ -9,27 +10,6 @@
 #ifdef NEED_OPENSSL_3_0
 c_static_assert(OSSL_STORE_INFO_PKEY == 4);
 c_static_assert(OSSL_STORE_INFO_PUBKEY == 3);
-
-#pragma clang diagnostic push
-// There's no way to specify explicit memory ordering for increment/decrement with C atomics.
-#pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
-static void CryptoNative_EvpPkeyExtraHandleDestroy(EvpPKeyExtraHandle* handle)
-{
-    int count = --handle->refCount;
-    assert(count >= 0);
-
-    if (count == 0)
-    {
-        assert(handle->prov != NULL);
-        assert(handle->libCtx != NULL);
-
-        OSSL_PROVIDER_unload(handle->prov);
-        OSSL_LIB_CTX_free(handle->libCtx);
-        free(handle);
-    }
-}
-#pragma clang diagnostic pop
-
 #endif
 
 EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
@@ -38,23 +18,12 @@ EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
     return EVP_PKEY_new();
 }
 
-void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey, void* extraHandle)
+void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey)
 {
     if (pkey != NULL)
     {
         EVP_PKEY_free(pkey);
     }
-
-#ifdef NEED_OPENSSL_3_0
-    if (extraHandle != NULL)
-    {
-        EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
-        CryptoNative_EvpPkeyExtraHandleDestroy(extra);
-    }
-#else
-    (void)extraHandle;
-    assert(extraHandle == NULL);
-#endif
 }
 
 int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey)
@@ -67,32 +36,16 @@ int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey)
     return EVP_PKEY_get_bits(pkey);
 }
 
-#pragma clang diagnostic push
-// There's no way to specify explicit memory ordering for increment/decrement with C atomics.
-#pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
-int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle)
+int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)
 {
     if (!pkey)
     {
         return 0;
     }
 
-#ifdef NEED_OPENSSL_3_0
-    EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
-
-    if (extra != NULL)
-    {
-        extra->refCount++;
-    }
-#else
-    (void)extraHandle;
-    assert(extraHandle == NULL);
-#endif
-
     // No error queue impact.
     return EVP_PKEY_up_ref(pkey);
 }
-#pragma clang diagnostic pop
 
 int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key)
 {
@@ -176,20 +129,33 @@ done:
     return ret;
 }
 
-static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
+// Accessor callbacks for extracting RSA key components.
+// All accessors return owned BIGNUM copies that must be freed by the caller.
+typedef bool (*RsaGetKeyFn)(const void* key, BIGNUM** n, BIGNUM** e, BIGNUM** d);
+typedef bool (*RsaGetFactorsFn)(const void* key, BIGNUM** p, BIGNUM** q);
+typedef bool (*RsaGetCrtParamsFn)(const void* key, BIGNUM** dp, BIGNUM** dq, BIGNUM** inverseQ);
+// Returns true if the key has more than 2 prime factors (multi-prime RSA).
+typedef bool (*RsaIsMultiPrimeFn)(const void* key);
+
+static int32_t QuickRsaCheckCore(const void* key,
+                                 bool isPublic,
+                                 RsaGetKeyFn getKey,
+                                 RsaGetFactorsFn getFactors,
+                                 RsaGetCrtParamsFn getCrtParams,
+                                 RsaIsMultiPrimeFn isMultiPrime)
 {
     // This method does some lightweight key consistency checks on an RSA key to make sure all supplied values are
     // sensible. This is not intended to be a strict key check that verifies a key conforms to any particular set
     // of criteria or standards.
 
-    const BIGNUM* n = NULL;
-    const BIGNUM* e = NULL;
-    const BIGNUM* d = NULL;
-    const BIGNUM* p = NULL;
-    const BIGNUM* q = NULL;
-    const BIGNUM* dp = NULL;
-    const BIGNUM* dq = NULL;
-    const BIGNUM* inverseQ = NULL;
+    BIGNUM* n = NULL;
+    BIGNUM* e = NULL;
+    BIGNUM* d = NULL;
+    BIGNUM* p = NULL;
+    BIGNUM* q = NULL;
+    BIGNUM* dp = NULL;
+    BIGNUM* dq = NULL;
+    BIGNUM* inverseQ = NULL;
     BN_CTX* ctx = NULL;
 
     // x and y are scratch integers that receive the result of some operations.
@@ -202,7 +168,15 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
     BIGNUM* qM1 = NULL;
     int ret = 0;
 
-    RSA_get0_key(rsa, &n, &e, &d);
+    if (!getKey(key, &n, &e, &d))
+    {
+        if (ERR_peek_error() == 0)
+        {
+            ERR_PUT_error(ERR_LIB_RSA, 0, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+        }
+
+        goto done;
+    }
 
     // Always need public parameters.
     if (!n || !e)
@@ -242,19 +216,24 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
 
     // We do not support validating multi-prime RSA. Multi-prime RSA is not common. For these, we fall back to the
     // OpenSSL key check.
-    if (RSA_get_multi_prime_extra_count(rsa) != 0)
+    if (isMultiPrime(key))
+    {
+        ret = -1;
+        goto done;
+    }
+
+    // Need all the private parameters now. If we cannot get them, fall back to the OpenSSL key check so the provider
+    // or engine routine can be used.
+    if (!d)
     {
         ret = -1;
         goto done;
     }
 
     // Get the private components now that we've moved on to checking the private parameters.
-    RSA_get0_factors(rsa, &p, &q);
-
-    // Need all the private parameters now. If we cannot get them, fall back to the OpenSSL key check so the provider
-    // or engine routine can be used.
-    if (!d || !p || !q)
+    if (!getFactors(key, &p, &q) || !p || !q)
     {
+        ERR_clear_error();
         ret = -1;
         goto done;
     }
@@ -320,9 +299,7 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
 
     // Move on to checking the CRT parameters. In compatibility with what OpenSSL does,
     // these are optional and only check them if all are present.
-    RSA_get0_crt_params(rsa, &dp, &dq, &inverseQ);
-
-    if (dp && dq && inverseQ)
+    if (getCrtParams(key, &dp, &dq, &inverseQ) && dp && dq && inverseQ)
     {
         // Check dp = d % (p-1)
         // compute d % (p-1) and put in x
@@ -363,10 +340,23 @@ static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
             goto done;
         }
     }
+    else
+    {
+        // If we couldn't get all CRT params, clear errors from the attempts and skip CRT checks.
+        ERR_clear_error();
+    }
 
     // If we made it to the end, everything looks good.
     ret = 1;
 done:
+    if (n) BN_clear_free(n);
+    if (e) BN_clear_free(e);
+    if (d) BN_clear_free(d);
+    if (p) BN_clear_free(p);
+    if (q) BN_clear_free(q);
+    if (dp) BN_clear_free(dp);
+    if (dq) BN_clear_free(dq);
+    if (inverseQ) BN_clear_free(inverseQ);
     if (x) BN_clear_free(x);
     if (y) BN_clear_free(y);
     if (pM1) BN_clear_free(pM1);
@@ -374,6 +364,180 @@ done:
     if (ctx) BN_CTX_free(ctx);
     return ret;
 }
+
+#if defined(NEED_OPENSSL_1_0) || defined(NEED_OPENSSL_1_1)
+// Legacy RSA accessors: duplicate shared pointers into owned copies.
+static bool RsaLegacyGetKey(const void* key, BIGNUM** n, BIGNUM** e, BIGNUM** d)
+{
+    // This function is only called when EVP_PKEY_get0_RSA is available, so RSA_get0_key
+    // should always exist. Guard defensively to avoid a NULL function pointer call.
+    if (!API_EXISTS(RSA_get0_key))
+        return false;
+
+    const RSA* rsa = (const RSA*)key;
+    const BIGNUM* sharedN = NULL;
+    const BIGNUM* sharedE = NULL;
+    const BIGNUM* sharedD = NULL;
+    RSA_get0_key(rsa, &sharedN, &sharedE, &sharedD);
+
+    if (!sharedN || !sharedE)
+        return false;
+
+    *n = BN_dup(sharedN);
+    *e = BN_dup(sharedE);
+    *d = sharedD ? BN_dup(sharedD) : NULL;
+
+    if (!*n || !*e || (sharedD && !*d))
+    {
+        if (*n) BN_clear_free(*n);
+        if (*e) BN_clear_free(*e);
+        if (*d) BN_clear_free(*d);
+        *n = *e = *d = NULL;
+        return false;
+    }
+
+    return true;
+}
+
+static bool RsaLegacyGetFactors(const void* key, BIGNUM** p, BIGNUM** q)
+{
+    // This function is only called when EVP_PKEY_get0_RSA is available, so RSA_get0_factors
+    // should always exist. Guard defensively to avoid a NULL function pointer call.
+    if (!API_EXISTS(RSA_get0_factors))
+        return false;
+
+    const RSA* rsa = (const RSA*)key;
+    const BIGNUM* sharedP = NULL;
+    const BIGNUM* sharedQ = NULL;
+    RSA_get0_factors(rsa, &sharedP, &sharedQ);
+
+    if (!sharedP || !sharedQ)
+        return false;
+
+    *p = BN_dup(sharedP);
+    *q = BN_dup(sharedQ);
+
+    if (!*p || !*q)
+    {
+        if (*p) BN_clear_free(*p);
+        if (*q) BN_clear_free(*q);
+        *p = *q = NULL;
+        return false;
+    }
+
+    return true;
+}
+
+static bool RsaLegacyGetCrtParams(const void* key, BIGNUM** dp, BIGNUM** dq, BIGNUM** inverseQ)
+{
+    // This function is only called when EVP_PKEY_get0_RSA is available, so RSA_get0_crt_params
+    // should always exist. Guard defensively to avoid a NULL function pointer call.
+    if (!API_EXISTS(RSA_get0_crt_params))
+        return false;
+
+    const RSA* rsa = (const RSA*)key;
+    const BIGNUM* sharedDp = NULL;
+    const BIGNUM* sharedDq = NULL;
+    const BIGNUM* sharedInverseQ = NULL;
+    RSA_get0_crt_params(rsa, &sharedDp, &sharedDq, &sharedInverseQ);
+
+    if (!sharedDp || !sharedDq || !sharedInverseQ)
+        return false;
+
+    *dp = BN_dup(sharedDp);
+    *dq = BN_dup(sharedDq);
+    *inverseQ = BN_dup(sharedInverseQ);
+
+    if (!*dp || !*dq || !*inverseQ)
+    {
+        if (*dp) BN_clear_free(*dp);
+        if (*dq) BN_clear_free(*dq);
+        if (*inverseQ) BN_clear_free(*inverseQ);
+        *dp = *dq = *inverseQ = NULL;
+        return false;
+    }
+
+    return true;
+}
+
+static bool RsaLegacyIsMultiPrime(const void* key)
+{
+    // This function is only called when EVP_PKEY_get0_RSA is available, so RSA_get_multi_prime_extra_count
+    // should always exist. Guard defensively to avoid a NULL function pointer call.
+    if (!API_EXISTS(RSA_get_multi_prime_extra_count))
+        return false;
+
+    const RSA* rsa = (const RSA*)key;
+    return RSA_get_multi_prime_extra_count(rsa) != 0;
+}
+
+static int32_t QuickRsaCheck(const RSA* rsa, bool isPublic)
+{
+    return QuickRsaCheckCore(rsa, isPublic, RsaLegacyGetKey, RsaLegacyGetFactors, RsaLegacyGetCrtParams, RsaLegacyIsMultiPrime);
+}
+#endif // NEED_OPENSSL_1_0 || NEED_OPENSSL_1_1
+
+#ifdef NEED_OPENSSL_3_0
+// EVP accessors for OpenSSL 3.0+: return owned copies (must be freed).
+static bool RsaEvpGetKey(const void* key, BIGNUM** n, BIGNUM** e, BIGNUM** d)
+{
+    const EVP_PKEY* pkey = (const EVP_PKEY*)key;
+
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_N, n) ||
+        !EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_E, e))
+    {
+        return false;
+    }
+
+    // d is optional; not available for public keys.
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_D, d))
+    {
+        ERR_clear_error();
+        *d = NULL;
+    }
+
+    return true;
+}
+
+static bool RsaEvpGetFactors(const void* key, BIGNUM** p, BIGNUM** q)
+{
+    const EVP_PKEY* pkey = (const EVP_PKEY*)key;
+
+    return EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR1, p) &&
+           EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR2, q);
+}
+
+static bool RsaEvpGetCrtParams(const void* key, BIGNUM** dp, BIGNUM** dq, BIGNUM** inverseQ)
+{
+    const EVP_PKEY* pkey = (const EVP_PKEY*)key;
+
+    return EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_EXPONENT1, dp) &&
+           EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_EXPONENT2, dq) &&
+           EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_COEFFICIENT1, inverseQ);
+}
+
+static bool RsaEvpIsMultiPrime(const void* key)
+{
+    const EVP_PKEY* pkey = (const EVP_PKEY*)key;
+    BIGNUM* factor3 = NULL;
+
+    if (EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_FACTOR3, &factor3))
+    {
+        BN_clear_free(factor3);
+        return true;
+    }
+
+    BN_clear_free(factor3);
+    ERR_clear_error();
+    return false;
+}
+
+// EVP-based version of QuickRsaCheck for OpenSSL 3.0+ where legacy RSA APIs may not be available.
+static int32_t QuickRsaCheckEvp(const EVP_PKEY* pkey, bool isPublic)
+{
+    return QuickRsaCheckCore(pkey, isPublic, RsaEvpGetKey, RsaEvpGetFactors, RsaEvpGetCrtParams, RsaEvpIsMultiPrime);
+}
+#endif // NEED_OPENSSL_3_0
 
 static bool CheckKey(EVP_PKEY* key, int32_t algId, bool isPublic, int32_t (*check_func)(EVP_PKEY_CTX*))
 {
@@ -388,30 +552,52 @@ static bool CheckKey(EVP_PKEY* key, int32_t algId, bool isPublic, int32_t (*chec
     // OpenSSL 3 correctly fails with with an invalid modulus error.
     if (algId == NID_rsaEncryption)
     {
-        const RSA* rsa = EVP_PKEY_get0_RSA(key);
+        int32_t result;
 
-        // If we can get the RSA object, use that for a faster path to validating the key that skips primality tests.
-        if (rsa != NULL)
+#ifdef NEED_OPENSSL_3_0
+        if (API_EXISTS(EVP_PKEY_get_bn_param))
         {
-            //  0 = key check failed
-            //  1 = key check passed
-            // -1 = could not assess private key.
-            int32_t result = QuickRsaCheck(rsa, isPublic);
-
-            if (result == 0)
-            {
-                return false;
-            }
-            if (result == 1)
-            {
-                return true;
-            }
-
-            // -1 falls though.
-            // If the fast check was indeterminate, fall though and use the OpenSSL routine.
-            // Clear out any errors we may have accumulated in our check.
-            ERR_clear_error();
+            // OpenSSL 3.0+: use EVP_PKEY_get_bn_param to extract RSA components directly.
+            result = QuickRsaCheckEvp(key, isPublic);
         }
+        else
+#endif
+#if defined(NEED_OPENSSL_1_0) || defined(NEED_OPENSSL_1_1)
+        if (API_EXISTS(EVP_PKEY_get0_RSA))
+        {
+            const RSA* rsa = EVP_PKEY_get0_RSA(key);
+
+            if (rsa != NULL)
+            {
+                result = QuickRsaCheck(rsa, isPublic);
+            }
+            else
+            {
+                // Could not get RSA object, fall through to EVP_PKEY_check.
+                result = -1;
+            }
+        }
+        else
+#endif
+        {
+            // Neither API available, fall through to EVP_PKEY_check.
+            result = -1;
+        }
+
+        if (result == 0)
+        {
+            return false;
+        }
+
+        if (result == 1)
+        {
+            return true;
+        }
+
+        // -1 falls though.
+        // If the fast check was indeterminate, fall though and use the OpenSSL routine.
+        // Clear out any errors we may have accumulated in our check.
+        ERR_clear_error();
     }
 
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(key, NULL);
@@ -662,13 +848,22 @@ EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const cha
     return NULL;
 }
 
-EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider)
+EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char** providerNames,
+                                           int32_t providerNameCount,
+                                           const char* keyUri,
+                                           const char* propertyQuery,
+                                           void** extraHandle,
+                                           int32_t* haveProvider)
 {
     ERR_clear_error();
 
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (!API_EXISTS(OSSL_PROVIDER_load))
+    if (!API_EXISTS(OSSL_LIB_CTX_new) ||
+        !API_EXISTS(OSSL_PROVIDER_load) ||
+        !API_EXISTS(OSSL_PROVIDER_unload) ||
+        !API_EXISTS(OSSL_STORE_open_ex))
     {
+        *extraHandle = NULL;
         *haveProvider = 0;
         return NULL;
     }
@@ -676,25 +871,50 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char*
 
 #ifdef NEED_OPENSSL_3_0
     *haveProvider = 1;
+    OSSL_LIB_CTX* libCtx = (OSSL_LIB_CTX*)*extraHandle;
     EVP_PKEY* ret = NULL;
-    OSSL_LIB_CTX* libCtx = OSSL_LIB_CTX_new();
-    OSSL_PROVIDER* prov = NULL;
     OSSL_STORE_CTX* store = NULL;
     OSSL_STORE_INFO* firstPubKey = NULL;
+    OSSL_PROVIDER** loadedProviders = NULL;
+    int32_t loadedProviderCount = 0;
 
     if (libCtx == NULL)
     {
-        goto end;
+        libCtx = OSSL_LIB_CTX_new();
+
+        if (libCtx == NULL)
+        {
+            goto end;
+        }
+
+        loadedProviders = (OSSL_PROVIDER**)calloc(Int32ToSizeT(providerNameCount), sizeof(OSSL_PROVIDER*));
+
+        if (loadedProviders == NULL)
+        {
+            OSSL_LIB_CTX_free(libCtx);
+            ERR_put_error(ERR_LIB_EVP, 0, ERR_R_MALLOC_FAILURE, __FILE__, __LINE__);
+            libCtx = NULL;
+            goto end;
+        }
+
+        for (int32_t i = 0; i < providerNameCount; i++)
+        {
+            // If all providers load successfully, these providers are cached in the OSSL_LIB_CTX and never unloaded.
+            OSSL_PROVIDER* loadedProvider = OSSL_PROVIDER_load(libCtx, providerNames[i]);
+
+            if (loadedProvider == NULL)
+            {
+                goto end;
+            }
+
+            loadedProviders[loadedProviderCount++] = loadedProvider;
+        }
+
+        // Only set the extraHandle value after all providers are loaded to indicate that the full set of providers loaded.
+        *extraHandle = libCtx;
     }
 
-    prov = OSSL_PROVIDER_load(libCtx, providerName);
-
-    if (prov == NULL)
-    {
-        goto end;
-    }
-
-    store = OSSL_STORE_open_ex(keyUri, libCtx, NULL, NULL, NULL, NULL, NULL, NULL);
+    store = OSSL_STORE_open_ex(keyUri, libCtx, propertyQuery, NULL, NULL, NULL, NULL, NULL);
     if (store == NULL)
     {
         goto end;
@@ -717,6 +937,7 @@ EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char*
         if (type == OSSL_STORE_INFO_PKEY)
         {
             ret = OSSL_STORE_INFO_get1_PKEY(info);
+            OSSL_STORE_INFO_free(info);
             break;
         }
         else if (type == OSSL_STORE_INFO_PUBKEY && firstPubKey == NULL)
@@ -751,38 +972,31 @@ end:
         OSSL_STORE_close(store);
     }
 
-    if (ret == NULL)
+    if (loadedProviders != NULL)
     {
-        if (prov != NULL)
+        // We didn't get all of the providers loaded, unload them.
+        if (*extraHandle == NULL)
         {
-            assert(libCtx != NULL);
-            // we still want a separate check for libCtx as only prov could be NULL
-            OSSL_PROVIDER_unload(prov);
-        }
+            for (int32_t i = loadedProviderCount - 1; i >= 0; i--)
+            {
+                OSSL_PROVIDER_unload(loadedProviders[i]);
+            }
 
-        if (libCtx != NULL)
-        {
             OSSL_LIB_CTX_free(libCtx);
         }
 
-        *extraHandle = NULL;
-    }
-    else
-    {
-        EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)malloc(sizeof(EvpPKeyExtraHandle));
-        extra->prov = prov;
-        extra->libCtx = libCtx;
-        atomic_init(&extra->refCount, 1);
-        *extraHandle = extra;
+        free(loadedProviders);
     }
 
     return ret;
 #else
-    (void)providerName;
+    (void)providerNames;
+    (void)providerNameCount;
     (void)keyUri;
-    ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
+    (void)propertyQuery;
     *extraHandle = NULL;
     *haveProvider = 0;
+    ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
     return NULL;
 #endif
 }
@@ -794,8 +1008,7 @@ EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle)
 #ifdef NEED_OPENSSL_3_0
     if (API_EXISTS(EVP_PKEY_CTX_new_from_pkey))
     {
-        EvpPKeyExtraHandle* handle = (EvpPKeyExtraHandle*)extraHandle;
-        OSSL_LIB_CTX* libCtx = (handle != NULL) ? handle->libCtx : NULL;
+        OSSL_LIB_CTX* libCtx = (OSSL_LIB_CTX*)extraHandle;
         return EVP_PKEY_CTX_new_from_pkey(libCtx, pkey, NULL);
     }
     else

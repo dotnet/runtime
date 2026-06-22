@@ -1,6 +1,45 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
+inline
+uint8_t* align_on_segment (uint8_t* add)
+{
+    return (uint8_t*)((size_t)(add + (((size_t)1 << gc_heap::min_segment_size_shr) - 1)) & ~(((size_t)1 << gc_heap::min_segment_size_shr) - 1));
+}
+
+#ifdef FEATURE_BASICFREEZE
+inline
+size_t ro_seg_begin_index (heap_segment* seg)
+{
+#ifdef USE_REGIONS
+    size_t begin_index = (size_t)heap_segment_mem (seg) >> gc_heap::min_segment_size_shr;
+#else
+    size_t begin_index = (size_t)seg >> gc_heap::min_segment_size_shr;
+#endif //USE_REGIONS
+    begin_index = max (begin_index, (size_t)g_gc_lowest_address >> gc_heap::min_segment_size_shr);
+    return begin_index;
+}
+
+inline
+size_t ro_seg_end_index (heap_segment* seg)
+{
+    size_t end_index = (size_t)(heap_segment_reserved (seg) - 1) >> gc_heap::min_segment_size_shr;
+    end_index = min (end_index, (size_t)g_gc_highest_address >> gc_heap::min_segment_size_shr);
+    return end_index;
+}
+
+#endif //FEATURE_BASICFREEZE
+
 size_t size_seg_mapping_table_of (uint8_t* from, uint8_t* end)
 {
     from = align_lower_segment (from);
@@ -15,12 +54,6 @@ size_t size_region_to_generation_table_of (uint8_t* from, uint8_t* end)
     dprintf (1, ("from: %p, end: %p, size: %zx", from, end,
         sizeof (uint8_t)*(((size_t)(end - from) >> gc_heap::min_segment_size_shr))));
     return sizeof (uint8_t)*((size_t)(end - from) >> gc_heap::min_segment_size_shr);
-}
-
-inline
-size_t seg_mapping_word_of (uint8_t* add)
-{
-    return (size_t)add >> gc_heap::min_segment_size_shr;
 }
 
 #ifdef FEATURE_BASICFREEZE
@@ -219,7 +252,7 @@ BOOL gc_heap::reserve_initial_memory (size_t normal_size, size_t large_size, siz
             highest_numa_node = max (highest_numa_node, heap_numa_node);
         }
 
-        assert (highest_numa_node < MAX_SUPPORTED_CPUS);
+        assert (highest_numa_node < MAX_SUPPORTED_HEAPS);
 
         numa_node_count = highest_numa_node + 1;
         memory_details.numa_reserved_block_count = numa_node_count * (1 + separated_poh_p);
@@ -1087,143 +1120,9 @@ bool gc_heap::is_region_demoted (uint8_t* obj)
     return demoted_p;
 }
 
-inline
-void gc_heap::set_region_gen_num (heap_segment* region, int gen_num)
-{
-    assert (gen_num < (1 << (sizeof (uint8_t) * 8)));
-    assert (gen_num >= 0);
-    heap_segment_gen_num (region) = (uint8_t)gen_num;
-
-    uint8_t* region_start = get_region_start (region);
-    uint8_t* region_end = heap_segment_reserved (region);
-
-    size_t region_index_start = get_basic_region_index_for_address (region_start);
-    size_t region_index_end = get_basic_region_index_for_address (region_end);
-    region_info entry = (region_info)((gen_num << RI_PLAN_GEN_SHR) | gen_num);
-    for (size_t region_index = region_index_start; region_index < region_index_end; region_index++)
-    {
-        assert (gen_num <= max_generation);
-        map_region_to_generation[region_index] = entry;
-    }
-    if (gen_num <= soh_gen1)
-    {
-        if ((region_start < ephemeral_low) || (ephemeral_high < region_end))
-        {
-            while (true)
-            {
-                if (Interlocked::CompareExchange(&write_barrier_spin_lock.lock, 0, -1) < 0)
-                    break;
-
-                if ((ephemeral_low <= region_start) && (region_end <= ephemeral_high))
-                    return;
-
-                while (write_barrier_spin_lock.lock >= 0)
-                {
-                    YieldProcessor();           // indicate to the processor that we are spinning
-                }
-            }
-#ifdef _DEBUG
-            write_barrier_spin_lock.holding_thread = GCToEEInterface::GetThread();
-#endif //_DEBUG
-
-            if ((region_start < ephemeral_low) || (ephemeral_high < region_end))
-            {
-                uint8_t* new_ephemeral_low = min (region_start, (uint8_t*)ephemeral_low);
-                uint8_t* new_ephemeral_high = max (region_end, (uint8_t*)ephemeral_high);
-
-                dprintf (REGIONS_LOG, ("about to set ephemeral_low = %p ephemeral_high = %p", new_ephemeral_low, new_ephemeral_high));
-
-                stomp_write_barrier_ephemeral (new_ephemeral_low, new_ephemeral_high,
-                                               map_region_to_generation_skewed, (uint8_t)min_segment_size_shr);
-
-                // we should only *decrease* ephemeral_low and only *increase* ephemeral_high
-                if (ephemeral_low < new_ephemeral_low)
-                    GCToOSInterface::DebugBreak ();
-                if (new_ephemeral_high < ephemeral_high)
-                    GCToOSInterface::DebugBreak ();
-
-                // only set the globals *after* we have updated the write barrier
-                ephemeral_low = new_ephemeral_low;
-                ephemeral_high = new_ephemeral_high;
-
-                dprintf (REGIONS_LOG, ("set ephemeral_low = %p ephemeral_high = %p", new_ephemeral_low, new_ephemeral_high));
-            }
-            else
-            {
-                dprintf (REGIONS_LOG, ("leaving lock - no need to update ephemeral range [%p,%p[ for region [%p,%p]", (uint8_t*)ephemeral_low, (uint8_t*)ephemeral_high, region_start, region_end));
-            }
-#ifdef _DEBUG
-            write_barrier_spin_lock.holding_thread = (Thread*)-1;
-#endif //_DEBUG
-            write_barrier_spin_lock.lock = -1;
-        }
-        else
-        {
-            dprintf (REGIONS_LOG, ("no need to update ephemeral range [%p,%p[ for region [%p,%p]", (uint8_t*)ephemeral_low, (uint8_t*)ephemeral_high, region_start, region_end));
-        }
-    }
-}
-
-inline
-void gc_heap::set_region_plan_gen_num (heap_segment* region, int plan_gen_num, bool replace_p)
-{
-    int gen_num = heap_segment_gen_num (region);
-    int supposed_plan_gen_num = get_plan_gen_num (gen_num);
-    dprintf (REGIONS_LOG, ("h%d setting plan gen on %p->%p(was gen%d) to %d(should be: %d) %s",
-        heap_number, region,
-        heap_segment_mem (region),
-        gen_num, plan_gen_num,
-        supposed_plan_gen_num,
-        ((plan_gen_num < supposed_plan_gen_num) ? "DEMOTED" : "ND")));
-    region_info region_info_bits_to_set = (region_info)(plan_gen_num << RI_PLAN_GEN_SHR);
-    if ((plan_gen_num < supposed_plan_gen_num) && (heap_segment_pinned_survived (region) != 0))
-    {
-        if (!settings.demotion)
-        {
-            settings.demotion = TRUE;
-        }
-        get_gc_data_per_heap()->set_mechanism_bit (gc_demotion_bit);
-        region->flags |= heap_segment_flags_demoted;
-        region_info_bits_to_set = (region_info)(region_info_bits_to_set | RI_DEMOTED);
-    }
-    else
-    {
-        region->flags &= ~heap_segment_flags_demoted;
-    }
-
-    // If replace_p is true, it means we need to move a region from its original planned gen to this new gen.
-    if (replace_p)
-    {
-        int original_plan_gen_num = heap_segment_plan_gen_num (region);
-        planned_regions_per_gen[original_plan_gen_num]--;
-    }
-
-    planned_regions_per_gen[plan_gen_num]++;
-    dprintf (REGIONS_LOG, ("h%d g%d %zx(%zx) -> g%d (total %d region planned in g%d)",
-        heap_number, heap_segment_gen_num (region), (size_t)region, heap_segment_mem (region), plan_gen_num, planned_regions_per_gen[plan_gen_num], plan_gen_num));
-
-    heap_segment_plan_gen_num (region) = plan_gen_num;
-
-    uint8_t* region_start = get_region_start (region);
-    uint8_t* region_end = heap_segment_reserved (region);
-
-    size_t region_index_start = get_basic_region_index_for_address (region_start);
-    size_t region_index_end = get_basic_region_index_for_address (region_end);
-    for (size_t region_index = region_index_start; region_index < region_index_end; region_index++)
-    {
-        assert (plan_gen_num <= max_generation);
-        map_region_to_generation[region_index] = (region_info)(region_info_bits_to_set | (map_region_to_generation[region_index] & ~(RI_PLAN_GEN_MASK|RI_DEMOTED)));
-    }
-}
-
-inline
-void gc_heap::set_region_plan_gen_num_sip (heap_segment* region, int plan_gen_num)
-{
-    if (!heap_segment_swept_in_plan (region))
-    {
-        set_region_plan_gen_num (region, plan_gen_num);
-    }
-}
+#ifdef USE_REGIONS
+GCSpinLock write_barrier_spin_lock;
+#endif //USE_REGIONS
 
 void gc_heap::set_region_sweep_in_plan (heap_segment*region)
 {
@@ -1305,7 +1204,7 @@ size_t gc_heap::get_soh_start_obj_len (uint8_t* start_obj)
 heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, gc_heap* hp, int gen_num)
 {
     gc_oh_num oh = gen_to_oh (gen_num);
-    size_t initial_commit = use_large_pages_p ? size : SEGMENT_INITIAL_COMMIT;
+    size_t initial_commit = never_decommit_p ? size : SEGMENT_INITIAL_COMMIT;
     int h_number =
 #ifdef MULTIPLE_HEAPS
         hp->heap_number;
@@ -1475,7 +1374,7 @@ void gc_heap::reset_heap_segment_pages (heap_segment* seg)
 void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
                                            size_t extra_space)
 {
-    if (use_large_pages_p)
+    if (never_decommit_p)
         return;
 
     uint8_t*  page_start = align_on_page (heap_segment_allocated(seg));
@@ -1493,7 +1392,7 @@ void gc_heap::decommit_heap_segment_pages (heap_segment* seg,
 size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
                                                     uint8_t* new_committed)
 {
-    assert (!use_large_pages_p);
+    assert (!never_decommit_p);
     uint8_t* page_start = align_on_page (new_committed);
     ptrdiff_t size = heap_segment_committed (seg) - page_start;
     if (size > 0)
@@ -1522,6 +1421,13 @@ size_t gc_heap::decommit_heap_segment_pages_worker (heap_segment* seg,
 //decommit all pages except one or 2
 void gc_heap::decommit_heap_segment (heap_segment* seg)
 {
+    // For never-decommit (implied by large pages), VirtualDecommit is a no-op so
+    // skip the decommit entirely to avoid lowering committed/used bookkeeping while
+    // memory retains stale data.
+    if (never_decommit_p)
+    {
+        return;
+    }
 #ifdef USE_REGIONS
     if (!dt_high_memory_load_p())
     {
@@ -1814,32 +1720,39 @@ void gc_heap::distribute_free_regions()
         while (decommit_step(DECOMMIT_TIME_STEP_MILLISECONDS))
         {
         }
+        // For never-decommit (implied by large pages), VirtualDecommit on in-use
+        // regions is a no-op so the memory is never actually returned to the OS.
+        // Skip the tail decommit entirely to avoid misleading bookkeeping and
+        // unnecessary memclr overhead.
+        if (!never_decommit_p)
+        {
 #ifdef MULTIPLE_HEAPS
-        for (int i = 0; i < n_heaps; i++)
-        {
-            gc_heap* hp = g_heaps[i];
-            int hn = i;
-#else //MULTIPLE_HEAPS
-        {
-            gc_heap* hp = pGenGCHeap;
-            int hn  = 0;
-#endif //MULTIPLE_HEAPS
-            for (int i = 0; i < total_generation_count; i++)
+            for (int i = 0; i < n_heaps; i++)
             {
-                generation* generation = hp->generation_of (i);
-                heap_segment* region = heap_segment_rw (generation_start_segment (generation));
-                while (region != nullptr)
+                gc_heap* hp = g_heaps[i];
+                int hn = i;
+#else //MULTIPLE_HEAPS
+            {
+                gc_heap* hp = pGenGCHeap;
+                int hn  = 0;
+#endif //MULTIPLE_HEAPS
+                for (int i = 0; i < total_generation_count; i++)
                 {
-                    uint8_t* aligned_allocated = align_on_page (heap_segment_allocated (region));
-                    size_t end_space = heap_segment_committed (region) - aligned_allocated;
-                    if (end_space > 0)
+                    generation* generation = hp->generation_of (i);
+                    heap_segment* region = heap_segment_rw (generation_start_segment (generation));
+                    while (region != nullptr)
                     {
-                        virtual_decommit (aligned_allocated, end_space, gen_to_oh (i), hn);
-                        heap_segment_committed (region) = aligned_allocated;
-                        heap_segment_used (region) = min (heap_segment_used (region), heap_segment_committed (region));
-                        assert (heap_segment_committed (region) > heap_segment_mem (region));
+                        uint8_t* aligned_allocated = align_on_page (heap_segment_allocated (region));
+                        size_t end_space = heap_segment_committed (region) - aligned_allocated;
+                        if (end_space > 0)
+                        {
+                            virtual_decommit (aligned_allocated, end_space, gen_to_oh (i), hn);
+                            heap_segment_committed (region) = aligned_allocated;
+                            heap_segment_used (region) = min (heap_segment_used (region), heap_segment_committed (region));
+                            assert (heap_segment_committed (region) > heap_segment_mem (region));
+                        }
+                        region = heap_segment_next_rw (region);
                     }
-                    region = heap_segment_next_rw (region);
                 }
             }
         }
@@ -1855,8 +1768,8 @@ void gc_heap::distribute_free_regions()
     size_t total_num_free_regions[count_distributed_free_region_kinds] = { 0, 0 };
     size_t total_budget_in_region_units[count_distributed_free_region_kinds] = { 0, 0 };
 
-    size_t heap_budget_in_region_units[count_distributed_free_region_kinds][MAX_SUPPORTED_CPUS] = {};
-    size_t min_heap_budget_in_region_units[count_distributed_free_region_kinds][MAX_SUPPORTED_CPUS] = {};
+    size_t heap_budget_in_region_units[count_distributed_free_region_kinds][MAX_SUPPORTED_HEAPS] = {};
+    size_t min_heap_budget_in_region_units[count_distributed_free_region_kinds][MAX_SUPPORTED_HEAPS] = {};
     region_free_list aged_regions[count_free_region_kinds];
     region_free_list surplus_regions[count_distributed_free_region_kinds];
 
@@ -2152,8 +2065,8 @@ void gc_heap::move_regions_to_decommit(region_free_list regions[count_free_regio
 }
 
 size_t gc_heap::compute_basic_region_budgets(
-    size_t heap_basic_budget_in_region_units[MAX_SUPPORTED_CPUS],
-    size_t min_heap_basic_budget_in_region_units[MAX_SUPPORTED_CPUS],
+    size_t heap_basic_budget_in_region_units[MAX_SUPPORTED_HEAPS],
+    size_t min_heap_basic_budget_in_region_units[MAX_SUPPORTED_HEAPS],
     size_t total_basic_free_regions)
 {
     const size_t region_size = global_region_allocator.get_region_alignment();
@@ -2385,3 +2298,5 @@ void gc_heap::generation_delete_heap_segment (generation* gen,
 }
 
 #endif //BACKGROUND_GC
+
+} // namespace SVR/WKS

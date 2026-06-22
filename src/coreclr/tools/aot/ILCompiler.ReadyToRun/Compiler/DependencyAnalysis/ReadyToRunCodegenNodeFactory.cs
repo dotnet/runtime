@@ -45,6 +45,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _cache.GetOrAdd(key, _creator);
         }
+
+        public ICollection<TValue> Values => _cache.Values;
     }
 
     public enum TypeValidationRule
@@ -65,6 +67,8 @@ namespace ILCompiler.DependencyAnalysis
         public bool IsComponentModule;
         public bool StripInliningInfo;
         public bool StripDebugInfo;
+        public bool StripILBodies;
+        public HashSet<MethodDesc> CompiledMethodDefs;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -86,6 +90,8 @@ namespace ILCompiler.DependencyAnalysis
         public NameMangler NameMangler { get; }
 
         public MetadataManager MetadataManager { get; }
+
+        public ObjectDataInterner ObjectInterner { get; }
 
         public CompositeImageSettings CompositeImageSettings { get; set; }
 
@@ -133,6 +139,23 @@ namespace ILCompiler.DependencyAnalysis
         public AllMethodsOnTypeNode AllMethodsOnType(TypeDesc type)
         {
             return _allMethodsOnType.GetOrAdd(type.ConvertToCanonForm(CanonicalFormKind.Specific));
+        }
+
+        private NodeCache<TypeDesc, InheritedVirtualMethodsNode> _inheritedVirtualMethods;
+
+        public InheritedVirtualMethodsNode InheritedVirtualMethods(TypeDesc type)
+        {
+            return _inheritedVirtualMethods.GetOrAdd(type.ConvertToCanonForm(CanonicalFormKind.Specific));
+        }
+
+        private NodeCache<MethodDesc, GVMDependenciesNode> _gvmDependenciesNode;
+
+        public GVMDependenciesNode GVMDependencies(MethodDesc method)
+        {
+            Debug.Assert(method.IsVirtual);
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            canonMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(canonMethod);
+            return _gvmDependenciesNode.GetOrAdd(canonMethod);
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
@@ -185,7 +208,7 @@ namespace ILCompiler.DependencyAnalysis
                 Module = module;
             }
 
-            public bool Equals(ModuleAndIntValueKey other) => IntValue == other.IntValue && ((Module == null && other.Module == null) || Module.Equals(other.Module));
+            public bool Equals(ModuleAndIntValueKey other) => IntValue == other.IntValue && Module == other.Module;
             public override bool Equals(object obj) => obj is ModuleAndIntValueKey && Equals((ModuleAndIntValueKey)obj);
             public override int GetHashCode()
             {
@@ -240,6 +263,8 @@ namespace ILCompiler.DependencyAnalysis
 
             CreateNodeCaches();
 
+            ObjectInterner = new ObjectDataInterner(new CopiedMethodILDeduplicator(() => _copiedMethodIL.Values));
+
             if (genericCycleBreadthCutoff >= 0 || genericCycleDepthCutoff >= 0)
             {
                 _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(
@@ -253,6 +278,16 @@ namespace ILCompiler.DependencyAnalysis
             _allMethodsOnType = new NodeCache<TypeDesc, AllMethodsOnTypeNode>(type =>
             {
                 return new AllMethodsOnTypeNode(type);
+            });
+
+            _inheritedVirtualMethods = new NodeCache<TypeDesc, InheritedVirtualMethodsNode>(type =>
+            {
+                return new InheritedVirtualMethodsNode(type);
+            });
+
+            _gvmDependenciesNode = new NodeCache<MethodDesc, GVMDependenciesNode>(method =>
+            {
+                return new GVMDependenciesNode(method);
             });
 
             _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(helperKey =>
@@ -289,12 +324,22 @@ namespace ILCompiler.DependencyAnalysis
 
             _wasmImportThunks = new NodeCache<WasmImportThunkKey, ISymbolDefinitionNode>(key =>
             {
-                return new WasmImportThunk(this, key.TypeNode, key.Helper, key.ContainingImportSection, key.UseVirtualCall, key.UseJumpableStub);
+                return new WasmImportThunk(this, key.Signature, key.Helper, key.ContainingImportSection, key.UseVirtualCall, key.UseJumpableStub);
             });
 
             _wasmImportThunkPortableEntrypoints = new NodeCache<WasmImportThunkPortableEntrypointKey, ISymbolDefinitionNode>(key =>
             {
                 return new WasmImportThunkPortableEntrypoint(this, key.Import);
+            });
+
+            _wasmR2RToInterpreterThunks = new NodeCache<WasmSignature, WasmR2RToInterpreterThunkNode>(key =>
+            {
+                return new WasmR2RToInterpreterThunkNode(this, key);
+            });
+
+            _wasmInterpreterToR2RThunks = new NodeCache<WasmSignature, WasmInterpreterToR2RThunkNode>(key =>
+            {
+                return new WasmInterpreterToR2RThunkNode(this, key);
             });
 
             _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
@@ -433,6 +478,31 @@ namespace ILCompiler.DependencyAnalysis
 
         public ImportSectionNode ILBodyPrecodeImports;
 
+        private readonly ConcurrentBag<StringDiscoverableAssemblyStubNode> _stringDiscoverableStubs = new ConcurrentBag<StringDiscoverableAssemblyStubNode>();
+
+        /// <summary>
+        /// The eager import for the InjectStringThunks fixup. Created lazily when the first
+        /// StringDiscoverableAssemblyStubNode is registered. Each such stub depends on this import.
+        /// </summary>
+        public Import InjectStringThunksImport;
+
+        /// <summary>
+        /// Register a StringDiscoverableAssemblyStubNode for inclusion in the InjectStringThunks fixup.
+        /// Called by StringDiscoverableAssemblyStubNode.OnMarked.
+        /// </summary>
+        public void RegisterStringDiscoverableStub(StringDiscoverableAssemblyStubNode stub)
+        {
+            _stringDiscoverableStubs.Add(stub);
+        }
+
+        /// <summary>
+        /// Get all registered string-discoverable stubs. Should only be called after marking is complete.
+        /// </summary>
+        public List<StringDiscoverableAssemblyStubNode> GetStringDiscoverableStubs()
+        {
+            return new List<StringDiscoverableAssemblyStubNode>(_stringDiscoverableStubs);
+        }
+
         private NodeCache<ReadyToRunHelper, Import> _constructedHelpers;
 
         private LazyGenericsSupport.GenericCycleDetector _genericCycleDetector;
@@ -503,7 +573,7 @@ namespace ILCompiler.DependencyAnalysis
                     EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
                     ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
 
-                    IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null), false, false, false);
+                    IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, genericContextObject: null), false, false, false);
                     MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
                     if (methodCodeNodeDebug == null && methodNodeDebug is DelayLoadMethodImport DelayLoadMethodImport)
                     {
@@ -522,6 +592,19 @@ namespace ILCompiler.DependencyAnalysis
                     yield return methodCodeNode;
                 }
             }
+        }
+
+        public HashSet<MethodDesc> BuildCompiledMethodDefsSet()
+        {
+            Debug.Assert(MarkingComplete);
+
+            var set = new HashSet<MethodDesc>();
+            foreach (MethodWithGCInfo compiled in EnumerateCompiledMethods())
+            {
+                set.Add(compiled.Method.GetTypicalMethodDefinition());
+            }
+
+            return set;
         }
 
         private struct MethodFixupKey : IEquatable<MethodFixupKey>
@@ -644,11 +727,12 @@ namespace ILCompiler.DependencyAnalysis
         private struct ILBodyFixupSignatureFixupKey : IEquatable<ILBodyFixupSignatureFixupKey>
         {
             public readonly ReadyToRunFixupKind FixupKind;
-            public readonly EcmaMethod Method;
+            public readonly MethodDesc Method;
 
-            public ILBodyFixupSignatureFixupKey(ReadyToRunFixupKind fixupKind, EcmaMethod method)
+            public ILBodyFixupSignatureFixupKey(ReadyToRunFixupKind fixupKind, MethodDesc method)
             {
                 FixupKind = fixupKind;
+                Debug.Assert(method.IsTypicalMethodDefinition);
                 Method = method;
             }
             public bool Equals(ILBodyFixupSignatureFixupKey other) => FixupKind == other.FixupKind && Method.Equals(other.Method);
@@ -660,7 +744,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<ILBodyFixupSignatureFixupKey, ILBodyFixupSignature> _ilBodySignatures =
             new NodeCache<ILBodyFixupSignatureFixupKey, ILBodyFixupSignature>((key) => new ILBodyFixupSignature(key.FixupKind, key.Method));
 
-        public ILBodyFixupSignature ILBodyFixupSignature(ReadyToRunFixupKind fixupKind, EcmaMethod method)
+        public ILBodyFixupSignature ILBodyFixupSignature(ReadyToRunFixupKind fixupKind, MethodDesc method)
         {
             return _ilBodySignatures.GetOrAdd(new ILBodyFixupSignatureFixupKey(fixupKind, method));
         }
@@ -708,15 +792,15 @@ namespace ILCompiler.DependencyAnalysis
         }
         private struct WasmImportThunkKey : IEquatable<WasmImportThunkKey>
         {
-            public readonly WasmTypeNode TypeNode;
+            public readonly WasmSignature Signature;
             public readonly ReadyToRunHelper Helper;
             public readonly ImportSectionNode ContainingImportSection;
             public readonly bool UseVirtualCall;
             public readonly bool UseJumpableStub;
 
-            public WasmImportThunkKey(WasmTypeNode typeNode, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+            public WasmImportThunkKey(WasmSignature signature, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
             {
-                TypeNode = typeNode;
+                Signature = signature;
                 Helper = helper;
                 ContainingImportSection = containingImportSection;
                 UseVirtualCall = useVirtualCall;
@@ -725,7 +809,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public bool Equals(WasmImportThunkKey other)
             {
-                return TypeNode == other.TypeNode &&
+                return Signature.Equals(other.Signature) &&
                     Helper == other.Helper &&
                     ContainingImportSection == other.ContainingImportSection &&
                     UseVirtualCall == other.UseVirtualCall &&
@@ -740,7 +824,7 @@ namespace ILCompiler.DependencyAnalysis
             public override int GetHashCode()
             {
                 return HashCode.Combine(Helper.GetHashCode(),
-                    TypeNode.GetHashCode(),
+                    Signature.GetHashCode(),
                     ContainingImportSection.GetHashCode(),
                     UseVirtualCall.GetHashCode(),
                     UseJumpableStub.GetHashCode());
@@ -749,9 +833,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<WasmImportThunkKey, ISymbolDefinitionNode> _wasmImportThunks;
 
-        public ISymbolDefinitionNode WasmImportThunk(WasmTypeNode typeNode, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+        public ISymbolDefinitionNode WasmImportThunk(WasmSignature signature, ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
         {
-            WasmImportThunkKey thunkKey = new WasmImportThunkKey(typeNode, helper, containingImportSection, useVirtualCall, useJumpableStub);
+            WasmImportThunkKey thunkKey = new WasmImportThunkKey(signature, helper, containingImportSection, useVirtualCall, useJumpableStub);
             return _wasmImportThunks.GetOrAdd(thunkKey);
         }
 
@@ -788,6 +872,18 @@ namespace ILCompiler.DependencyAnalysis
             return _wasmImportThunkPortableEntrypoints.GetOrAdd(thunkKey);
         }
 
+        private NodeCache<WasmSignature, WasmR2RToInterpreterThunkNode> _wasmR2RToInterpreterThunks;
+        public WasmR2RToInterpreterThunkNode WasmR2RToInterpreterThunk(WasmSignature wasmSignature)
+        {
+            return _wasmR2RToInterpreterThunks.GetOrAdd(wasmSignature);
+        }
+
+        private NodeCache<WasmSignature, WasmInterpreterToR2RThunkNode> _wasmInterpreterToR2RThunks;
+        public WasmInterpreterToR2RThunkNode WasmInterpreterToR2RThunk(WasmSignature wasmSignature)
+        {
+            return _wasmInterpreterToR2RThunks.GetOrAdd(wasmSignature);
+        }
+
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph, ILProvider ilProvider)
         {
             graph.ComputingDependencyPhaseChange += Graph_ComputingDependencyPhaseChange;
@@ -801,9 +897,12 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
-            DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
-            graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
+            if (!Target.IsWasm)
+            {
+                DelayLoadMethodCallThunks = new SymbolNodeRange("DelayLoadMethodCallThunkNodeRange");
+                graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
+            }
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode);
@@ -920,6 +1019,10 @@ namespace ILCompiler.DependencyAnalysis
             ModuleImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                 ReadyToRunHelper.Module));
             graph.AddRoot(ModuleImport, "Module import is required by the R2R format spec");
+
+            // Create the InjectStringThunks import but don't root it. It gets pulled in
+            // as a dependency of any StringDiscoverableAssemblyStubNode that gets marked.
+            InjectStringThunksImport = new Import(EagerImports, new InjectStringThunksSignature());
 
             if ((Target.Architecture != TargetArchitecture.X86) && (Target.Architecture != TargetArchitecture.Wasm32))
             {
@@ -1174,12 +1277,22 @@ namespace ILCompiler.DependencyAnalysis
             _genericCycleDetector?.DetectCycle(caller, callee);
         }
 
+        public bool CanBeInGenericCycle(MethodDesc method)
+        {
+            if (_genericCycleDetector is null)
+                return false;
+
+            MethodDesc methodDefinition = method.GetTypicalMethodDefinition();
+            return _genericCycleDetector.CanBeInCycle(methodDefinition);
+        }
+
         public Utf8String GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
         {
             isHidden = false;
             if (node == Header)
             {
-                return new Utf8String("RTR_HEADER"u8);
+                string symbolName = CompositeImageSettings?.ReadyToRunHeaderSymbolName;
+                return new Utf8String(string.IsNullOrEmpty(symbolName) ? "RTR_HEADER" : symbolName);
             }
             return default;
         }
@@ -1192,11 +1305,16 @@ namespace ILCompiler.DependencyAnalysis
             return _wasmTypeNodes.GetOrAdd(funcType);
         }
 
+        public WasmTypeNode WasmTypeNode(WasmSignature signature)
+        {
+            return _wasmTypeNodes.GetOrAdd(signature.FuncType);
+        }
+
         // TODO-Wasm: Do not use WasmFuncType directly as the key for better
         // memory efficiency on lookup
         public WasmTypeNode WasmTypeNode(MethodDesc method)
         {
-            WasmFuncType funcType = WasmLowering.GetSignature(method);
+            WasmFuncType funcType = WasmLowering.GetSignature(method).FuncType;
             return _wasmTypeNodes.GetOrAdd(funcType);
         }
     }

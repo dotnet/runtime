@@ -12,15 +12,13 @@
 
 bool file_exists_in_dir(const pal::string_t& dir, const pal::char_t* file_name, pal::string_t* out_file_path)
 {
-    pal::string_t file_path = dir;
-    append_path(&file_path, file_name);
-
-    if (!pal::file_exists(file_path))
+    pal_char_t* file_path = utils_find_file_in_dir(dir.c_str(), file_name);
+    if (file_path == nullptr)
         return false;
 
-    if (out_file_path)
-        *out_file_path = file_path;
-
+    if (out_file_path != nullptr)
+        out_file_path->assign(file_path);
+    free(file_path);
     return true;
 }
 
@@ -137,25 +135,13 @@ pal::string_t get_filename(const pal::string_t& path)
 
 pal::string_t get_directory(const pal::string_t& path)
 {
-    pal::string_t ret = path;
-    while (!ret.empty() && ret.back() == DIR_SEPARATOR)
-    {
-        ret.pop_back();
-    }
+    pal_char_t* result = utils_get_directory(path.c_str());
+    if (result == nullptr)
+        return pal::string_t();
 
-    // Find the last dir separator
-    auto path_sep = ret.find_last_of(DIR_SEPARATOR);
-    if (path_sep == pal::string_t::npos)
-    {
-        return ret + DIR_SEPARATOR;
-    }
-
-    int pos = static_cast<int>(path_sep);
-    while (pos >= 0 && ret[pos] == DIR_SEPARATOR)
-    {
-        pos--;
-    }
-    return ret.substr(0, static_cast<size_t>(pos) + 1) + DIR_SEPARATOR;
+    pal::string_t ret(result);
+    free(result);
+    return ret;
 }
 
 void remove_trailing_dir_separator(pal::string_t* dir)
@@ -247,14 +233,18 @@ const pal::char_t* get_arch_name(pal::architecture arch)
 const pal::char_t* get_current_arch_name()
 {
     assert(pal::strcmp(get_arch_name(get_current_arch()), _STRINGIFY(CURRENT_ARCH_NAME)) == 0);
-    return utils_get_current_arch_name();
+    return _STRINGIFY(CURRENT_ARCH_NAME);
 }
 
 pal::string_t get_runtime_id()
 {
-    pal_char_t rid[256];
-    utils_get_runtime_id(rid, ARRAY_SIZE(rid));
-    return pal::string_t(rid);
+    pal_char_t* rid = utils_get_runtime_id();
+    if (rid == nullptr)
+        return pal::string_t(_STRINGIFY(HOST_RID_PLATFORM) _X("-") _STRINGIFY(CURRENT_ARCH_NAME));
+
+    pal::string_t result = rid;
+    free(rid);
+    return result;
 }
 
 bool try_get_runtime_id_from_env(pal::string_t& out_rid)
@@ -321,18 +311,13 @@ void get_framework_locations(const pal::string_t& dotnet_dir, const bool disable
 bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
 {
     recv->clear();
-    pal::string_t file_path;
-    if (pal::getenv(env_key, &file_path))
-    {
-        if (pal::fullpath(&file_path))
-        {
-            recv->assign(file_path);
-            return true;
-        }
-        trace::verbose(_X("Did not find [%s] directory [%s]"), env_key, file_path.c_str());
-    }
+    pal_char_t* file_path = utils_get_file_path_from_env(env_key);
+    if (file_path == nullptr)
+        return false;
 
-    return false;
+    recv->assign(file_path);
+    free(file_path);
+    return true;
 }
 
 size_t index_of_non_numeric(const pal::string_t& str, size_t i)
@@ -361,33 +346,18 @@ pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch)
 
 bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)
 {
-    pal::string_t env_var_name = get_dotnet_root_env_var_for_arch(get_current_arch());
-    if (get_file_path_from_env(env_var_name.c_str(), recv))
+    const pal_char_t* env_var_name = nullptr;
+    pal_char_t* dotnet_root = nullptr;
+    if (!utils_get_dotnet_root_from_env(&env_var_name, &dotnet_root))
     {
-        *dotnet_root_env_var_name = env_var_name;
-        return true;
+        recv->clear();
+        return false;
     }
 
-#if defined(WIN32)
-    if (pal::is_running_in_wow64())
-    {
-        if (get_file_path_from_env(_X("DOTNET_ROOT(x86)"), recv))
-        {
-            *dotnet_root_env_var_name = _X("DOTNET_ROOT(x86)");
-            return true;
-        }
-    }
-#endif
-
-    // If no architecture-specific environment variable was set
-    // fallback to the default DOTNET_ROOT.
-    if (get_file_path_from_env(DOTNET_ROOT_ENV_VAR, recv))
-    {
-        *dotnet_root_env_var_name = DOTNET_ROOT_ENV_VAR;
-        return true;
-    }
-
-    return false;
+    dotnet_root_env_var_name->assign(env_var_name);
+    recv->assign(dotnet_root);
+    free(dotnet_root);
+    return true;
 }
 
 /**
@@ -448,43 +418,29 @@ pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t& fxr_path)
 
 pal::string_t get_download_url(const pal::char_t* framework_name, const pal::char_t* framework_version)
 {
-    pal::string_t url = DOTNET_CORE_APPLAUNCH_URL _X("?");
-    if (framework_name != nullptr && pal::strlen(framework_name) > 0)
-    {
-        url.append(_X("framework="));
-        url.append(framework_name);
-        if (framework_version != nullptr && pal::strlen(framework_version) > 0)
-        {
-            url.append(_X("&framework_version="));
-            url.append(framework_version);
-        }
-    }
-    else
-    {
-        url.append(_X("missing_runtime=true"));
-    }
-
-    const pal::char_t* arch = get_current_arch_name();
-    url.append(_X("&arch="));
-    url.append(arch);
-    url.append(_X("&rid="));
-    url.append(get_runtime_id());
-
-    pal::string_t os = pal::get_current_os_rid_platform();
-    if (os.empty())
-        os = pal::get_current_os_fallback_rid();
-
-    url.append(_X("&os="));
-    url.append(os);
-
+    pal_char_t url[MAX_DOWNLOAD_URL_LEN];
+    utils_get_download_url(url, ARRAY_SIZE(url), framework_name, framework_version);
     return url;
 }
 
 pal::string_t get_host_version_description()
 {
-    pal_char_t desc[512];
-    utils_get_host_version_description(desc, ARRAY_SIZE(desc));
-    return pal::string_t(desc);
+#if defined(TARGET_WINDOWS)
+    return _STRINGIFY(VER_PRODUCTVERSION_STR);
+#else
+    pal::string_t info {_STRINGIFY(HOST_VERSION)};
+
+    // sccsid is @(#)Version <file_version> [@Commit: <commit_hash>]
+    // Get the commit portion if available
+    char* commit_maybe = ::strchr(&sccsid[STRING_LENGTH("@(#)Version ")], '@');
+    if (commit_maybe != nullptr)
+    {
+        info.append(" ");
+        info.append(commit_maybe);
+    }
+
+    return info;
+#endif
 }
 
 pal::string_t to_lower(const pal::char_t* in) {
@@ -503,14 +459,21 @@ pal::string_t to_upper(const pal::char_t* in) {
 
 // Retrieves environment variable which is only used for testing.
 // This will return the value of the variable only if the product binary is stamped
-// with test-only marker. The marker itself lives in `is_test_only_enabled` (utils.c)
-// to ensure there is only a single embedded copy in the binary.
+// with test-only marker.
 bool test_only_getenv(const pal::char_t* name, pal::string_t* recv)
 {
-    if (!is_test_only_enabled())
-    {
+    pal_char_t* value = utils_test_only_getenv(name);
+    if (value == nullptr)
         return false;
-    }
 
-    return pal::getenv(name, recv);
+    recv->assign(value);
+    free(value);
+    return true;
+}
+
+// C-callable wrapper over get_host_version_description(), for use by C entrypoints (apphost.c).
+extern "C" void utils_get_host_version_description(pal_char_t* out_desc, size_t out_desc_len)
+{
+    pal::string_t desc = get_host_version_description();
+    pal_str_printf(out_desc, out_desc_len, _X("%s"), desc.c_str());
 }

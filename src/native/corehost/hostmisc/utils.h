@@ -4,53 +4,30 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <stdbool.h>
-#include <stddef.h>
+#include "pal.h"
+#include "trace.h"
 #include <runtime_version.h>
 #include <minipal/utils.h>
 
-#include "pal.h" // for pal_char_t, _X, _STRINGIFY
-
-// ============================================================================
-// C-compatible section (usable from both C and C++ source files)
-// ============================================================================
-
 #ifdef __cplusplus
-extern "C" {
+#include <type_traits>
 #endif
 
-#ifndef DOTNET_CORE_DOWNLOAD_URL
 #define DOTNET_CORE_DOWNLOAD_URL _X("https://aka.ms/dotnet/download")
-#endif
-#ifndef DOTNET_CORE_APPLAUNCH_URL
 #define DOTNET_CORE_APPLAUNCH_URL _X("https://aka.ms/dotnet-core-applaunch")
-#endif
 
-#ifndef DOTNET_INFO_URL
 #define DOTNET_INFO_URL _X("https://aka.ms/dotnet/info")
-#endif
-#ifndef DOTNET_APP_LAUNCH_FAILED_URL
 #define DOTNET_APP_LAUNCH_FAILED_URL _X("https://aka.ms/dotnet/app-launch-failed")
-#endif
-#ifndef DOTNET_SDK_NOT_FOUND_URL
 #define DOTNET_SDK_NOT_FOUND_URL _X("https://aka.ms/dotnet/sdk-not-found")
-#endif
 
-#ifndef INSTALL_OR_UPDATE_NET_ERROR_MESSAGE
+// This message is defined here for consistency between errors on the command line and GUI (Windows apphost).
 #define INSTALL_OR_UPDATE_NET_ERROR_MESSAGE _X("You must install or update .NET to run this application.")
-#endif
-#ifndef INSTALL_NET_ERROR_MESSAGE
+
 #define INSTALL_NET_ERROR_MESSAGE _X("You must install .NET to run this application.")
-#endif
-#ifndef INSTALL_NET_DESKTOP_ERROR_MESSAGE
 #define INSTALL_NET_DESKTOP_ERROR_MESSAGE _X("You must install .NET Desktop Runtime to run this application.")
-#endif
 
-#ifndef DOC_LINK_INTRO
 #define DOC_LINK_INTRO _X("Learn more:")
-#endif
 
-#ifndef MISSING_RUNTIME_ERROR_FORMAT
 #define MISSING_RUNTIME_ERROR_FORMAT \
     _X("%s\n\n")                                \
     _X("App: %s\n")                             \
@@ -63,92 +40,18 @@ extern "C" {
     _X("\n\n")                                  \
     _X("Download the .NET runtime:\n")          \
     _X("%s&apphost_version=%s")
-#endif
 
-#ifndef DOTNET_ROOT_ENV_VAR
 #define DOTNET_ROOT_ENV_VAR _X("DOTNET_ROOT")
-#endif
-
-#ifndef _TEXT
-#define _TEXT(x) #x
-#endif
-#ifndef _QUOTE
-#define _QUOTE(x) _TEXT(x)
-#endif
-
-#ifndef HOST_VERSION
-#define HOST_VERSION _QUOTE(RuntimeProductVersion)
-#endif
-
-// Get the directory portion of a path. Result written to out_dir (must be at least APPHOST_PATH_MAX).
-void utils_get_directory(const pal_char_t* path, pal_char_t* out_dir, size_t out_dir_len);
-
-// Get the filename portion of a path.
-void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
-
-// Append a path component with directory separator.
-void utils_append_path(pal_char_t* path, size_t path_len, const pal_char_t* component);
-
-// Replace all occurrences of match with repl in path (in-place).
-void utils_replace_char(pal_char_t* path, pal_char_t match, pal_char_t repl);
-
-// Check if a file exists in a directory. If found, writes full path to out_file_path.
-bool utils_file_exists_in_dir(const pal_char_t* dir, const pal_char_t* file_name, pal_char_t* out_file_path, size_t out_path_len);
-
-// Check if a file exists in a directory. If found, returns a dynamically allocated full path (caller must free).
-bool utils_file_exists_in_dir_alloc(const pal_char_t* dir, const pal_char_t* file_name, pal_char_t** out_file_path);
-
-// Get the directory portion of a path. Returns a dynamically allocated string (caller must free).
-pal_char_t* utils_get_directory_alloc(const pal_char_t* path);
-
-// Get architecture name string.
-const pal_char_t* utils_get_current_arch_name(void);
-
-// Get a download URL for the runtime.
-void utils_get_download_url(pal_char_t* out_url, size_t out_url_len);
-
-// Get host version description.
-void utils_get_host_version_description(pal_char_t* out_desc, size_t out_desc_len);
-
-// Check if value starts with prefix.
-bool utils_starts_with(const pal_char_t* value, const pal_char_t* prefix);
-
-// Check if value ends with suffix.
-bool utils_ends_with(const pal_char_t* value, const pal_char_t* suffix);
-
-// Get dotnet root from environment variables (DOTNET_ROOT_<ARCH> or DOTNET_ROOT).
-// Returns true if found. out_env_var_name gets the name of the env var used.
-bool utils_get_dotnet_root_from_env(pal_char_t* out_env_var_name, size_t env_var_name_len, pal_char_t* recv, size_t recv_len);
-
-// Convert string to uppercase in-place.
-void utils_to_upper(pal_char_t* str);
-
-// Get runtime ID string.
-void utils_get_runtime_id(pal_char_t* out_rid, size_t out_rid_len);
-
-// Get the dotnet root env var name for the current architecture.
-void utils_get_dotnet_root_env_var_for_arch(pal_char_t* out_name, size_t out_name_len);
-
-// Returns true if this product binary has been stamped to enable test-only behaviors.
-// The marker that controls this is embedded by `is_test_only_enabled` itself; there
-// must be exactly one definition of this function in the binary so that the test
-// infrastructure (`TestOnlyProductBehavior`) only has to flip a single byte.
-bool is_test_only_enabled(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-// ============================================================================
-// C++ section
-// ============================================================================
-
-#ifdef __cplusplus
-
-#include "trace.h"
-#include <type_traits>
+#define DOTNET_ROOT_ARCH_ENV_VAR DOTNET_ROOT_ENV_VAR _X("_") _STRINGIFY(CURRENT_ARCH_NAME_UPPER)
 
 #define SDK_DOTNET_DLL _X("dotnet.dll")
+
+#define _TEXT(x) #x
+#define _QUOTE(x) _TEXT(x)
+
+#define HOST_VERSION _QUOTE(RuntimeProductVersion)
+
+#ifdef __cplusplus
 
 namespace utils
 {
@@ -302,5 +205,59 @@ size_t to_size_t_dbgchecked(T value)
 }
 
 #endif // __cplusplus
+
+// ============================================================================
+// C-compatible declarations
+// ============================================================================
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
+
+void utils_append_path(pal_char_t* path_buffer, size_t path_buffer_len, const pal_char_t* component);
+
+// Caller should free() the returned pointer.
+pal_char_t* utils_append_path_alloc(const pal_char_t* path, const pal_char_t* component);
+
+// Return <dir>/<file_name> if the file exists, otherwise NULL.
+// Caller should free() the returned pointer.
+pal_char_t* utils_find_file_in_dir(const pal_char_t* dir, const pal_char_t* file_name);
+
+// Return the directory portion of `path`, always ending with DIR_SEPARATOR.
+// Caller should free() the returned pointer.
+pal_char_t* utils_get_directory(const pal_char_t* path);
+
+// Caller should free() the returned pointer.
+pal_char_t* utils_get_file_path_from_env(const pal_char_t* env_key);
+
+// Caller should free() the returned pointer.
+pal_char_t* utils_test_only_getenv(const pal_char_t* name);
+
+// Find the .NET install root from environment variables in priority order:
+//  - DOTNET_ROOT_<ARCH>
+//  - If running Windows WOW64 only, DOTNET_ROOT(x86)
+//  - DOTNET_ROOT
+// Caller should free() out_dotnet_root.
+bool utils_get_dotnet_root_from_env(const pal_char_t** out_env_var_name, pal_char_t** out_dotnet_root);
+
+// Caller should free() the returned pointer.
+pal_char_t* utils_get_runtime_id(void);
+
+#define MAX_DOWNLOAD_URL_LEN 512
+void utils_get_download_url(pal_char_t* out_url, size_t out_url_len, const pal_char_t* framework_name, const pal_char_t* framework_version);
+
+// Returns the architecture name for the current process (e.g. "x64", "arm64").
+// The returned pointer refers to a static string and must not be freed.
+const pal_char_t* utils_get_current_arch_name(void);
+
+// Writes a human-readable host version description (including the commit hash
+// when available) into the caller-provided buffer of out_desc_len characters.
+void utils_get_host_version_description(pal_char_t* out_desc, size_t out_desc_len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

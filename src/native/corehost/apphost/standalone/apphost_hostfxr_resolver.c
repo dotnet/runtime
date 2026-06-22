@@ -29,7 +29,7 @@ static bool try_get_dotnet_search_options(fxr_search_location* out_search_locati
 
     *out_search_location = (fxr_search_location)embed[0];
     assert(embed[1] == 0); // NUL separates the search location and embedded .NET root value
-    if ((*out_search_location & search_location_app_relative) == 0)
+    if ((*out_search_location & fxr_search_location_app_relative) == 0)
         return true;
 
     // Get the embedded app-relative .NET path (always narrow UTF-8)
@@ -109,7 +109,7 @@ void hostfxr_resolver_init(hostfxr_resolver_t* resolver, const pal_char_t* app_r
     resolver->fxr_path = NULL;
     resolver->status_code = Success;
 
-    fxr_search_location search_loc = search_location_default;
+    fxr_search_location search_loc = fxr_search_location_default;
     pal_char_t app_relative_dotnet[512];
     app_relative_dotnet[0] = _X('\0');
 

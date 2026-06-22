@@ -378,7 +378,6 @@ namespace System.Diagnostics.Tracing
             /// sufficient space for this ID.   By doing this, we preserve the fact that this activity
             /// is a child (of unknown depth) from that ancestor.
             /// </summary>
-            [RequiresUnsafe]
             private unsafe void CreateOverflowGuid(Guid* outPtr)
             {
                 // Search backwards for an ancestor that has sufficient space to put the ID.
@@ -427,7 +426,6 @@ namespace System.Diagnostics.Tracing
             /// is the maximum number of bytes that fit in a GUID) if the path did not fit.
             /// If 'overflow' is true, then the number is encoded as an 'overflow number (which has a
             /// special (longer prefix) that indicates that this ID is allocated differently
-            [RequiresUnsafe]
             private static unsafe int AddIdToGuid(Guid* outPtr, int whereToAddId, uint id, bool overflow = false)
             {
                 byte* ptr = (byte*)outPtr;
@@ -503,7 +501,6 @@ namespace System.Diagnostics.Tracing
             /// Thus if it is non-zero it adds to the current byte, otherwise it advances and writes
             /// the new byte (in the high bits) of the next byte.
             /// </summary>
-            [RequiresUnsafe]
             private static unsafe void WriteNibble(ref byte* ptr, byte* endPtr, uint value)
             {
                 Debug.Assert(value < 16);

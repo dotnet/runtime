@@ -1,72 +1,36 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// C implementations of the pal_* APIs needed by trace.c on non-Windows.
+
+#if defined(TARGET_FREEBSD)
+#define _WITH_GETLINE
+#endif
+
 #include "pal.h"
 #include "trace.h"
 #include "utils.h"
 
-#include <ctype.h>
-#include <dlfcn.h>
+#include <assert.h>
 #include <dirent.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <fnmatch.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
-#include <minipal/getexepath.h>
-#include "config.h"
+#include <sys/types.h>
+#include <unistd.h>
 
-#if !HAVE_DIRENT_D_TYPE
-#define DT_UNKNOWN 0
-#define DT_DIR 4
-#define DT_REG 8
-#define DT_LNK 10
+#if defined(TARGET_OSX) || defined(TARGET_FREEBSD)
+#include <sys/sysctl.h>
 #endif
 
-bool pal_get_own_executable_path(pal_char_t* recv, size_t recv_len)
+#include "config.h"
+#include <minipal/getexepath.h>
+#include <minipal/utils.h>
+
+pal_char_t* pal_get_own_executable_path(void)
 {
-    char* path = minipal_getexepath();
-    if (!path)
-        return false;
-
-    size_t len = strlen(path);
-    if (len >= recv_len)
-    {
-        free(path);
-        return false;
-    }
-
-    memcpy(recv, path, len + 1);
-    free(path);
-    return true;
-}
-
-bool pal_fullpath(pal_char_t* path, size_t path_len)
-{
-    char* resolved = realpath(path, NULL);
-    if (resolved == NULL)
-    {
-        if (errno == ENOENT)
-            return false;
-
-        trace_error(_X("realpath(%s) failed: %s"), path, strerror(errno));
-        return false;
-    }
-
-    size_t len = strlen(resolved);
-    if (len >= path_len)
-    {
-        free(resolved);
-        return false;
-    }
-
-    memcpy(path, resolved, len + 1);
-    free(resolved);
-    return true;
-}
-
-bool pal_file_exists(const pal_char_t* path)
-{
-    return (access(path, F_OK) == 0);
+    return minipal_getexepath();
 }
 
 bool pal_directory_exists(const pal_char_t* path)
@@ -78,102 +42,77 @@ bool pal_directory_exists(const pal_char_t* path)
     return S_ISDIR(sb.st_mode);
 }
 
-bool pal_is_path_fully_qualified(const pal_char_t* path)
+pal_char_t* pal_strdup(const pal_char_t* str)
 {
-    return path != NULL && path[0] == '/';
+    return strdup(str);
 }
 
-bool pal_getenv(const pal_char_t* name, pal_char_t* recv, size_t recv_len)
+pal_char_t* pal_getenv(const pal_char_t* name)
 {
-    if (recv_len > 0)
-        recv[0] = '\0';
-
     const char* result = getenv(name);
-    if (result != NULL && result[0] != '\0')
-    {
-        size_t len = strlen(result);
-        if (len >= recv_len)
-            return false;
+    if (result == NULL || result[0] == '\0')
+        return NULL;
 
-        memcpy(recv, result, len + 1);
-        return true;
+    return strdup(result);
+}
+
+pal_char_t* pal_fullpath(const pal_char_t* path, bool skip_error_logging)
+{
+    if (path == NULL)
+        return NULL;
+
+    char* resolved = realpath(path, NULL);
+    if (resolved == NULL)
+    {
+        if (errno != ENOENT && !skip_error_logging)
+            trace_error(_X("realpath(%s) failed: %s"), path, strerror(errno));
+
+        return NULL;
     }
 
-    return false;
+    return resolved;
 }
 
-int pal_xtoi(const pal_char_t* input)
+bool pal_file_exists(const pal_char_t* path)
 {
-    return atoi(input);
+    return access(path, F_OK) == 0;
 }
 
-bool pal_load_library(const pal_char_t* path, void** dll)
+bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t callback, void* ctx)
 {
-    *dll = dlopen(path, RTLD_LAZY);
-    if (*dll == NULL)
-    {
-        trace_error(_X("Failed to load %s, error: %s"), path, dlerror());
+    if (path == NULL || callback == NULL)
         return false;
-    }
-    return true;
-}
 
-void pal_unload_library(void* library)
-{
-    if (dlclose(library) != 0)
-    {
-        trace_warning(_X("Failed to unload library, error: %s"), dlerror());
-    }
-}
-
-void* pal_get_symbol(void* library, const char* name)
-{
-    void* result = dlsym(library, name);
-    if (result == NULL)
-    {
-        trace_info(_X("Probed for and did not find library symbol %s, error: %s"), name, dlerror());
-    }
-    return result;
-}
-
-void pal_err_print_line(const pal_char_t* message)
-{
-    fputs(message, stderr);
-    fputc('\n', stderr);
-}
-
-void pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_fn callback, void* context)
-{
     DIR* dir = opendir(path);
     if (dir == NULL)
-        return;
+        return false;
 
-    struct dirent* entry = NULL;
+    struct dirent* entry;
     while ((entry = readdir(dir)) != NULL)
     {
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-            continue;
-
 #if HAVE_DIRENT_D_TYPE
-        int dirEntryType = entry->d_type;
+        int entry_type = entry->d_type;
 #else
-        int dirEntryType = DT_UNKNOWN;
+        int entry_type = DT_UNKNOWN;
 #endif
 
-        switch (dirEntryType)
+        bool is_dir;
+        switch (entry_type)
         {
         case DT_DIR:
+            is_dir = true;
             break;
 
         case DT_LNK:
         case DT_UNKNOWN:
         {
+            // Resolve via stat for symlinks and file systems that do not
+            // provide d_type.
             struct stat sb;
             if (fstatat(dirfd(dir), entry->d_name, &sb, 0) == -1)
                 continue;
 
-            if (!S_ISDIR(sb.st_mode))
-                continue;
+            is_dir = S_ISDIR(sb.st_mode);
             break;
         }
 
@@ -181,187 +120,180 @@ void pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_fn
             continue;
         }
 
-        if (!callback(entry->d_name, context))
+        if (!is_dir)
+            continue;
+
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+
+        if (!callback(entry->d_name, ctx))
             break;
     }
 
     closedir(dir);
+    return true;
 }
 
-// Retrieves environment variable which is only used for testing.
-// This will return the value of the variable only if the product binary is stamped
-// with test-only marker. The marker itself lives in `is_test_only_enabled` (utils.c)
-// to ensure there is only a single embedded copy in the binary.
-static bool test_only_getenv(const pal_char_t* name, pal_char_t* recv, size_t recv_len)
+pal_process_emulation_t pal_get_process_emulation(void)
 {
-    if (!is_test_only_enabled())
-        return false;
-
-    return pal_getenv(name, recv, recv_len);
-}
-
-static bool get_install_location_from_file(const pal_char_t* file_path, bool* file_found, pal_char_t* install_location, size_t install_location_len)
-{
-    *file_found = true;
-    FILE* f = fopen(file_path, "r");
-    if (f != NULL)
+#if defined(TARGET_OSX)
+    int is_translated_process = 0;
+    size_t size = sizeof(is_translated_process);
+    if (sysctlbyname("sysctl.proc_translated", &is_translated_process, &size, NULL, 0) == -1)
     {
-        if (fgets(install_location, (int)install_location_len, f) != NULL)
+        trace_info(_X("Could not determine whether the current process is running under Rosetta."));
+        if (errno != ENOENT)
         {
-            // Remove trailing newline
-            size_t len = strlen(install_location);
-            if (len > 0 && install_location[len - 1] == '\n')
-                install_location[len - 1] = '\0';
-
-            fclose(f);
-            return install_location[0] != '\0';
+            trace_info(_X("Call to sysctlbyname failed: %s"), strerror(errno));
         }
 
-        trace_warning(_X("Did not find any install location in '%s'."), file_path);
-        fclose(f);
+        return pal_process_emulation_none;
     }
-    else
+
+    if (is_translated_process == 1)
+        return pal_process_emulation_x64;
+#endif
+
+    return pal_process_emulation_none;
+}
+
+// Reads up to the first newline from `file`, returning the line (with the
+// trailing '\n' stripped) as a fresh allocation in *out_line. Blank lines are
+// not skipped; an empty line (or pure EOF) returns false, so the function
+// returns true only when a non-empty line was read.
+static bool get_line_from_file(FILE* file, pal_char_t** out_line)
+{
+    *out_line = NULL;
+
+    pal_char_t* line = NULL;
+    size_t capacity = 0;
+    ssize_t len = getline(&line, &capacity, file);
+
+    // getline keeps the trailing newline; strip it.
+    if (len > 0 && line[len - 1] == '\n')
+        line[--len] = '\0';
+
+    // Reject EOF/error (len < 0) and blank lines (len == 0). getline may
+    // allocate the buffer even on failure, so free it either way.
+    if (len <= 0)
+    {
+        free(line);
+        return false;
+    }
+
+    *out_line = line;
+    return true;
+}
+
+// Reads the first non-blank-stripped line of `file_path` (the recorded install
+// location). On success returns true and sets *out_location to a fresh
+// allocation. *out_file_found is set to indicate whether the file existed
+// (false → caller may attempt a fallback file; true → no fallback).
+static bool get_install_location_from_file(const pal_char_t* file_path, bool* out_file_found, pal_char_t** out_location)
+{
+    *out_file_found = true;
+    *out_location = NULL;
+
+    FILE* file = pal_file_open(file_path, _X("r"));
+    if (file == NULL)
     {
         if (errno == ENOENT)
         {
             trace_verbose(_X("The install_location file ['%s'] does not exist - skipping."), file_path);
-            *file_found = false;
+            *out_file_found = false;
         }
         else
         {
             trace_error(_X("The install_location file ['%s'] failed to open: %s."), file_path, strerror(errno));
         }
-    }
 
-    return false;
-}
-
-const pal_char_t* pal_get_dotnet_self_registered_config_location(pal_char_t* buf, size_t buf_len)
-{
-    const pal_char_t* config_location = _X("/etc/dotnet");
-    const pal_char_t* arch_name;
-
-    // ***Used only for testing***
-    pal_char_t environment_install_location_override[APPHOST_PATH_MAX];
-    if (test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_PATH"), environment_install_location_override, sizeof(environment_install_location_override)))
-    {
-        config_location = environment_install_location_override;
-    }
-
-#if defined(TARGET_AMD64)
-    arch_name = _X("x64");
-#elif defined(TARGET_X86)
-    arch_name = _X("x86");
-#elif defined(TARGET_ARMV6)
-    arch_name = _X("armv6");
-#elif defined(TARGET_ARM)
-    arch_name = _X("arm");
-#elif defined(TARGET_ARM64)
-    arch_name = _X("arm64");
-#elif defined(TARGET_LOONGARCH64)
-    arch_name = _X("loongarch64");
-#elif defined(TARGET_RISCV64)
-    arch_name = _X("riscv64");
-#elif defined(TARGET_S390X)
-    arch_name = _X("s390x");
-#elif defined(TARGET_POWERPC64)
-    arch_name = _X("ppc64le");
-#else
-    arch_name = _STRINGIFY(CURRENT_ARCH_NAME);
-#endif
-
-    // Need to use a lowercase version of the arch name
-    pal_char_t arch_lower[32];
-    size_t arch_len = strlen(arch_name);
-    if (arch_len >= sizeof(arch_lower))
-        arch_len = sizeof(arch_lower) - 1;
-    for (size_t i = 0; i < arch_len; i++)
-        arch_lower[i] = (pal_char_t)tolower((unsigned char)arch_name[i]);
-    arch_lower[arch_len] = '\0';
-
-    snprintf(buf, buf_len, _X("%s/install_location_%s"), config_location, arch_lower);
-    return buf;
-}
-
-bool pal_get_dotnet_self_registered_dir(pal_char_t* recv, size_t recv_len)
-{
-    recv[0] = '\0';
-
-    //  ***Used only for testing***
-    pal_char_t environment_override[APPHOST_PATH_MAX];
-    if (test_only_getenv(_X("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH"), environment_override, sizeof(environment_override)))
-    {
-        size_t len = strlen(environment_override);
-        if (len < recv_len)
-            memcpy(recv, environment_override, len + 1);
-        return true;
-    }
-    //  ***************************
-
-    pal_char_t arch_specific_path[APPHOST_PATH_MAX];
-    pal_get_dotnet_self_registered_config_location(arch_specific_path, sizeof(arch_specific_path));
-    trace_verbose(_X("Looking for architecture-specific install_location file in '%s'."), arch_specific_path);
-
-    pal_char_t install_location[APPHOST_PATH_MAX];
-    bool file_found = false;
-    if (!get_install_location_from_file(arch_specific_path, &file_found, install_location, sizeof(install_location)))
-    {
-        if (file_found)
-            return false;
-
-        // Also look for the non-architecture-specific file
-        // Get directory of arch_specific_path
-        pal_char_t dir_buf[APPHOST_PATH_MAX];
-        size_t len = strlen(arch_specific_path);
-        memcpy(dir_buf, arch_specific_path, len + 1);
-
-        // Find last '/' to get directory
-        pal_char_t* last_sep = strrchr(dir_buf, '/');
-        if (last_sep != NULL)
-            *last_sep = '\0';
-
-        pal_char_t legacy_path[APPHOST_PATH_MAX];
-        snprintf(legacy_path, sizeof(legacy_path), _X("%s/install_location"), dir_buf);
-        trace_verbose(_X("Looking for install_location file in '%s'."), legacy_path);
-
-        if (!get_install_location_from_file(legacy_path, &file_found, install_location, sizeof(install_location)))
-            return false;
-    }
-
-    size_t install_len = strlen(install_location);
-    if (install_len >= recv_len)
         return false;
+    }
 
-    memcpy(recv, install_location, install_len + 1);
-    trace_verbose(_X("Found registered install location '%s'."), recv);
-    return file_found;
+    bool got_line = get_line_from_file(file, out_location);
+    fclose(file);
+
+    if (!got_line)
+    {
+        trace_warning(_X("Did not find any install location in '%s'."), file_path);
+        return false;
+    }
+
+    return true;
 }
 
-bool pal_get_default_installation_dir(pal_char_t* recv, size_t recv_len)
+pal_char_t* pal_get_dotnet_self_registered_config_location(void)
 {
-    //  ***Used only for testing***
-    pal_char_t environment_override[APPHOST_PATH_MAX];
-    if (test_only_getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"), environment_override, sizeof(environment_override)))
+    pal_char_t* override = utils_test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_PATH"));
+    const pal_char_t* base = override != NULL ? override : _X("/etc/dotnet");
+    pal_char_t* result = utils_append_path_alloc(base, _X("install_location_") _STRINGIFY(CURRENT_ARCH_NAME));
+    free(override);
+    return result;
+}
+
+pal_char_t* pal_get_dotnet_self_registered_dir(void)
+{
+    pal_char_t* override = utils_test_only_getenv(_X("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH"));
+    if (override != NULL)
+        return override;
+
+    pal_char_t* path = pal_get_dotnet_self_registered_config_location();
+    if (path == NULL)
+        return NULL;
+
+    trace_verbose(_X("Looking for architecture-specific install_location file in '%s'."), path);
+
+    pal_char_t* location = NULL;
+    bool file_found = false;
+    bool success = get_install_location_from_file(path, &file_found, &location);
+    if (!success && !file_found)
     {
-        size_t len = strlen(environment_override);
-        if (len < recv_len)
-            memcpy(recv, environment_override, len + 1);
-        return true;
+        // Fall back to the non-arch-specific file in the same directory:
+        // install_location instead of install_location_<arch>.
+        path[pal_strlen(path) - (sizeof(_X("_") _STRINGIFY(CURRENT_ARCH_NAME)) - 1)] = '\0';
+
+        trace_verbose(_X("Looking for install_location file in '%s'."), path);
+        success = get_install_location_from_file(path, &file_found, &location);
     }
-    //  ***************************
+
+    free(path);
+
+    if (!success)
+        return NULL;
+
+    assert(file_found);
+    trace_verbose(_X("Found registered install location '%s'."), location);
+    return location;
+}
+
+pal_char_t* pal_get_default_installation_dir(void)
+{
+    pal_char_t* override = utils_test_only_getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"));
+    if (override != NULL)
+        return override;
 
 #if defined(TARGET_OSX)
-    const pal_char_t* default_dir = _X("/usr/local/share/dotnet");
+    const pal_char_t* base = _X("/usr/local/share/dotnet");
+    if (pal_get_process_emulation() == pal_process_emulation_x64)
+    {
+        return utils_append_path_alloc(base, _STRINGIFY(CURRENT_ARCH_NAME));
+    }
+
+    return pal_strdup(base);
 #elif defined(TARGET_FREEBSD)
-    const pal_char_t* default_dir = _X("/usr/local/share/dotnet");
+    int mib[2];
+    char buf[PATH_MAX];
+    size_t len = PATH_MAX;
+
+    mib[0] = CTL_USER;
+    mib[1] = USER_LOCALBASE;
+    if (sysctl(mib, 2, buf, &len, NULL, 0) == 0)
+    {
+        return utils_append_path_alloc(buf, _X("share/dotnet"));
+    }
+
+    return pal_strdup(_X("/usr/local/share/dotnet"));
 #else
-    const pal_char_t* default_dir = _X("/usr/share/dotnet");
+    return pal_strdup(_X("/usr/share/dotnet"));
 #endif
-
-    size_t len = strlen(default_dir);
-    if (len >= recv_len)
-        return false;
-
-    memcpy(recv, default_dir, len + 1);
-    return true;
 }

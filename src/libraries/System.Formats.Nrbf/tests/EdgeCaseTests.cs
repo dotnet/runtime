@@ -65,7 +65,9 @@ public class EdgeCaseTests : ReadTests
     [InlineData(100)]
     [InlineData(64_001)]
     [InlineData(127_000)]
+#if RELEASE // We need the library to be optimized to be able to handle such a big array in a reasonable time.
     [InlineData(2147483591)] // Array.MaxLength
+#endif
     public void CanReadArrayOfAnySize(int length)
     {
         if (length == 2147483591 && (!PlatformDetection.Is64BitProcess || !PlatformDetection.IsReleaseRuntime || !PlatformDetection.IsNetCore))

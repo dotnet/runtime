@@ -9,17 +9,11 @@
 
 #include "pal.h" // for pal_char_t, _X
 
-#define _TRACE_X(s) _X(s)
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifdef _WIN32
 typedef void (__cdecl *trace_error_writer_fn)(const pal_char_t* message);
-#else
-typedef void (*trace_error_writer_fn)(const pal_char_t* message);
-#endif
 
 void trace_setup(void);
 bool trace_enable(void);
@@ -32,14 +26,22 @@ void trace_println(const pal_char_t* format, ...);
 void trace_println_empty(void);
 void trace_flush(void);
 
-// va_list versions for forwarding from C++ wrappers
+// va_list variants used by the C++ inline wrappers below to forward variadic
+// arguments without re-implementing the message gating/locking logic.
 void trace_verbose_v(const pal_char_t* format, va_list args);
 void trace_info_v(const pal_char_t* format, va_list args);
 void trace_warning_v(const pal_char_t* format, va_list args);
 void trace_error_v(const pal_char_t* format, va_list args);
 void trace_println_v(const pal_char_t* format, va_list args);
 
+// Sets a callback which is called whenever an error is to be written.
+// The setting is per-thread (thread local). If no error writer is set for a
+// given thread the error is written to stderr. The callback is set for the
+// current thread which calls this function. Returns the previously registered
+// writer for the current thread (or NULL).
 trace_error_writer_fn trace_set_error_writer(trace_error_writer_fn error_writer);
+
+// Returns the currently set callback for error writing.
 trace_error_writer_fn trace_get_error_writer(void);
 
 #ifdef __cplusplus
@@ -47,15 +49,17 @@ trace_error_writer_fn trace_get_error_writer(void);
 #endif
 
 // ============================================================================
-// C++ section
+// C++ section: source-compat shim for existing trace::* callers.
 // ============================================================================
+//
+// The trace namespace provides C++ wrappers around the C implementation in
+// trace.c. pal::char_t and pal_char_t are the same type (wchar_t on Windows,
+// char on Unix), so the C functions can be called directly. The va_list
+// versions (trace_*_v) are used to forward variadic arguments from these
+// inline wrappers.
 
 #ifdef __cplusplus
 
-// The trace namespace provides C++ wrappers around the C implementation in trace.c.
-// On all platforms, pal::char_t == pal_char_t (char on Unix, wchar_t on Windows),
-// so the C functions can be called directly. The va_list versions (trace_*_v) are used
-// to forward variadic arguments from these C++ wrappers.
 namespace trace
 {
     inline void setup() { trace_setup(); }
@@ -107,16 +111,16 @@ namespace trace
 
     typedef trace_error_writer_fn error_writer_fn;
 
-    // Sets a callback which is called whenever error is to be written
-    // The setting is per-thread (thread local). If no error writer is set for a given thread
-    // the error is written to stderr.
-    // The callback is set for the current thread which calls this function.
-    // The function returns the previously registered writer for the current thread (or null)
-    inline error_writer_fn set_error_writer(error_writer_fn error_writer) { return trace_set_error_writer(error_writer); }
+    inline error_writer_fn set_error_writer(error_writer_fn error_writer)
+    {
+        return trace_set_error_writer(error_writer);
+    }
 
-    // Returns the currently set callback for error writing
-    inline error_writer_fn get_error_writer() { return trace_get_error_writer(); }
-};
+    inline error_writer_fn get_error_writer()
+    {
+        return trace_get_error_writer();
+    }
+}
 
 #endif // __cplusplus
 

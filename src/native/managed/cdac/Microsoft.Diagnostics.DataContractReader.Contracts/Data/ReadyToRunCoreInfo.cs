@@ -3,17 +3,9 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ReadyToRunCoreInfo : IData<ReadyToRunCoreInfo>
+[CdacType(nameof(DataType.ReadyToRunCoreInfo))]
+internal sealed partial class ReadyToRunCoreInfo : IData<ReadyToRunCoreInfo>
 {
-    static ReadyToRunCoreInfo IData<ReadyToRunCoreInfo>.Create(Target target, TargetPointer address)
-        => new ReadyToRunCoreInfo(target, address);
-
-    public ReadyToRunCoreInfo(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunCoreInfo);
-        TargetPointer headerAddress = target.ReadPointer(address + (ulong)type.Fields[nameof(Header)].Offset);
-        Header = target.ProcessedData.GetOrAdd<ReadyToRunCoreHeader>(headerAddress);
-    }
-
+    [Field(Pointer = true)]
     public ReadyToRunCoreHeader Header { get; }
 }

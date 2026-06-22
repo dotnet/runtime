@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
@@ -141,6 +142,81 @@ namespace System.IO.Tests
                         fileOffset += 2;
                     }
                 }
+            }
+        }
+
+        [Fact]
+        public void SyncIOOnAsyncHandle_DoesNotCorruptMemory_WhenSynchronizationContextThrows()
+        {
+            // This test verifies that when WaitOne() throws via SynchronizationContext,
+            // the pending IO is properly canceled before freeing the NativeOverlapped,
+            // preventing use-after-free / heap corruption.
+            byte[] expectedData = new byte[1024];
+            Random.Shared.NextBytes(expectedData);
+
+            SynchronizationContext previous = SynchronizationContext.Current;
+            try
+            {
+                ThrowingSynchronizationContext throwingContext = new();
+                SynchronizationContext.SetSynchronizationContext(throwingContext);
+
+                SafeFileHandle.CreateAnonymousPipe(
+                    out SafeFileHandle readHandle,
+                    out SafeFileHandle writeHandle,
+                    asyncRead: true,
+                    asyncWrite: false);
+
+                using (readHandle)
+                using (writeHandle)
+                {
+                    byte[] pendingReadBuffer = new byte[1];
+
+                    // The ThrowingSynchronizationContext.Wait throws, which should be caught
+                    // and the IO should be canceled gracefully.
+                    Assert.Throws<InvalidOperationException>(() => RandomAccess.Read(readHandle, pendingReadBuffer, 0));
+
+                    // Restore the previous context and verify the read handle is still usable.
+                    SynchronizationContext.SetSynchronizationContext(previous);
+
+                    RandomAccess.Write(writeHandle, expectedData, 0);
+
+                    byte[] readBuffer = new byte[expectedData.Length];
+                    int totalRead = 0;
+                    while (totalRead < readBuffer.Length)
+                    {
+                        int bytesRead = RandomAccess.Read(readHandle, readBuffer.AsSpan(totalRead), totalRead);
+                        if (bytesRead == 0)
+                        {
+                            break;
+                        }
+
+                        totalRead += bytesRead;
+                    }
+
+                    Assert.Equal(expectedData.Length, totalRead);
+                    Assert.Equal(expectedData, readBuffer);
+                }
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(previous);
+            }
+        }
+
+        /// <summary>
+        /// A SynchronizationContext that throws from Wait to simulate the scenario
+        /// where WaitOne() can throw arbitrary exceptions via user code.
+        /// </summary>
+        private sealed class ThrowingSynchronizationContext : SynchronizationContext
+        {
+            public ThrowingSynchronizationContext()
+            {
+                SetWaitNotificationRequired();
+            }
+
+            public override int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+            {
+                throw new InvalidOperationException("SynchronizationContext.Wait threw an exception");
             }
         }
     }

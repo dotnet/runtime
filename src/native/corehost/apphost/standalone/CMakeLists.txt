@@ -19,14 +19,11 @@ add_compile_definitions(FEATURE_APPHOST)
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
-        ../../hostmisc/fxr_resolver.c
         ../apphost.windows.cpp)
     list(APPEND HEADERS
         ../apphost.windows.h)
 
     add_compile_definitions(UNICODE)
-else()
-    # On non-Windows, fxr_resolver.c is compiled as part of hostmisc_c
 endif()
 
 list(APPEND SOURCES ${HEADERS})
@@ -38,7 +35,7 @@ target_include_directories(apphost PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
-target_link_libraries(apphost PRIVATE hostmisc_c)
+target_link_libraries(apphost PRIVATE hostmisc fxr_resolver)
 
 if(CLR_CMAKE_TARGET_WIN32)
     target_link_libraries(apphost PRIVATE shell32)

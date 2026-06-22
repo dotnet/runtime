@@ -39,22 +39,20 @@ class ConditionalWeakTableContainerObject final : public Object
     ENTRYARRAYREF _entries;
 
 public:
-#ifdef DACCESS_COMPILE
     bool TryGetValue(OBJECTREF key, OBJECTREF* value);
-#endif
 };
 
 class ConditionalWeakTableObject final : public Object
 {
     friend class CoreLibBinder;
     OBJECTREF _lock;
-    VolatilePtr<ConditionalWeakTableContainerObject, CONDITIONAL_WEAK_TABLE_CONTAINER_REF> _container;
+    VolatilePtr<ConditionalWeakTableContainerObject> _container;
 public:
-#ifdef DACCESS_COMPILE
-    // Currently, we only use this for access from the DAC, so we don't need to worry about
-    // locking or tracking the active enumerator count.
-    // If we need to use this in a context where the runtime isn't suspended, we need to add
-    // the locking and tracking support.
+    // This helper can be used when the runtime is suspended (for example, DAC access
+    // or Objective-C interop callbacks that run under GC suspension). During suspension
+    // the table shape is stable since no mutations can run, so lock-free lookup is safe.
+    // If we need to use this in a context where the runtime isn't suspended, we need to
+    // add locking and active enumerator tracking support.
     template<typename TKey, typename TValue>
     bool TryGetValue(TKey key, TValue* value)
     {
@@ -67,10 +65,8 @@ public:
         {
             *value = (TValue)valueObj;
         }
-
         return found;
     }
-#endif
 };
 
 #endif // CONDITIONAL_WEAK_TABLE_H

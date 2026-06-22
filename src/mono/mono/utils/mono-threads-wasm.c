@@ -342,7 +342,7 @@ typedef struct {
 } DsJobRegistration;
 
 void
-mono_schedule_ds_job (ds_job_cb cb, void* data)
+SystemJS_DiagnosticServerQueueJob (ds_job_cb cb, void* data)
 {
 	g_assert (cb);
 	DsJobRegistration* reg = g_new0 (DsJobRegistration, 1);
@@ -372,7 +372,7 @@ mono_background_exec (void)
 
 G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_ds_exec (void)
+SystemJS_ExecuteDiagnosticServerCallback (void)
 {
 	MONO_ENTER_GC_UNSAFE;
 	GSList *j1 = jobs_ds, *cur1;
@@ -381,13 +381,13 @@ mono_wasm_ds_exec (void)
 	for (cur1 = j1; cur1; cur1 = cur1->next) {
 		DsJobRegistration* reg = (DsJobRegistration*)cur1->data;
 		g_assert (reg->cb);
-		THREADS_DEBUG ("mono_wasm_ds_exec running job %p \n", (gpointer)cb);
+		THREADS_DEBUG ("SystemJS_ExecuteDiagnosticServerCallback running job %p \n", (gpointer)reg->cb);
 		gsize done = reg->cb (reg->data);
 		if (done){
-			THREADS_DEBUG ("mono_wasm_ds_exec done job %p \n", (gpointer)cb);
+			THREADS_DEBUG ("SystemJS_ExecuteDiagnosticServerCallback done job %p \n", (gpointer)reg->cb);
 			g_free (reg);
 		} else {
-			THREADS_DEBUG ("mono_wasm_ds_exec scheduling job %p again \n", (gpointer)cb);
+			THREADS_DEBUG ("SystemJS_ExecuteDiagnosticServerCallback scheduling job %p again \n", (gpointer)reg->cb);
 			jobs_ds = g_slist_prepend (jobs_ds, (gpointer)reg);
 		}
 	}

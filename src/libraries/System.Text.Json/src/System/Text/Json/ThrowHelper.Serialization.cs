@@ -302,37 +302,47 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray assignedOrNotRequiredPropertiesSet)
         {
-            StringBuilder listOfMissingPropertiesBuilder = new();
-            bool first = true;
-
-            // Soft cut-off length - once message becomes longer than that we won't be adding more elements
-            const int CutOffLength = 60;
+            StringBuilder builder = new();
 
             foreach (JsonPropertyInfo property in parent.PropertyCache)
             {
-                if (assignedOrNotRequiredPropertiesSet[property.PropertyIndex])
+                if (!assignedOrNotRequiredPropertiesSet[property.PropertyIndex])
                 {
-                    continue;
-                }
-
-                if (!first)
-                {
-                    listOfMissingPropertiesBuilder.Append(CultureInfo.CurrentUICulture.TextInfo.ListSeparator);
-                    listOfMissingPropertiesBuilder.Append(' ');
-                }
-
-                listOfMissingPropertiesBuilder.Append('\'');
-                listOfMissingPropertiesBuilder.Append(property.Name);
-                listOfMissingPropertiesBuilder.Append('\'');
-                first = false;
-
-                if (listOfMissingPropertiesBuilder.Length >= CutOffLength)
-                {
-                    break;
+                    if (!AppendMissingProperty(builder, property.Name))
+                    {
+                        break;
+                    }
                 }
             }
 
-            throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, parent.Type, listOfMissingPropertiesBuilder.ToString()));
+            throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, parent.Type, builder.ToString()));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_JsonRequiredPropertyMissing(Type type, string propertyList)
+        {
+            throw new JsonException(SR.Format(SR.JsonRequiredPropertiesMissing, type, propertyList));
+        }
+
+        /// <summary>
+        /// Appends a property name to a missing-properties list with culture-aware separators and a soft length cut-off.
+        /// Returns false when the cut-off is reached and no more names should be appended.
+        /// </summary>
+        internal static bool AppendMissingProperty(StringBuilder builder, string propertyName)
+        {
+            const int CutOffLength = 60;
+
+            if (builder.Length > 0)
+            {
+                builder.Append(CultureInfo.CurrentUICulture.TextInfo.ListSeparator);
+                builder.Append(' ');
+            }
+
+            builder.Append('\'');
+            builder.Append(propertyName);
+            builder.Append('\'');
+
+            return builder.Length < CutOffLength;
         }
 
         [DoesNotReturn]
@@ -360,7 +370,7 @@ namespace System.Text.Json
             throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_NameSpan, Truncate(name)));
         }
 
-        private static string Truncate(ReadOnlySpan<char> str)
+        private static unsafe string Truncate(ReadOnlySpan<char> str)
         {
             const int MaxLength = 15;
 
@@ -530,7 +540,9 @@ namespace System.Text.Json
             if (string.IsNullOrEmpty(message))
             {
                 // Use a default message.
-                Type propertyType = state.Current.JsonPropertyInfo?.PropertyType ?? state.Current.JsonTypeInfo.Type;
+                Type propertyType = state.Current.JsonPropertyInfo?.PropertyType ??
+                    state.Current.CtorArgumentState?.JsonParameterInfo?.ParameterType ??
+                    state.Current.JsonTypeInfo.Type;
                 message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType);
                 ex.AppendPathInformation = true;
             }
@@ -944,6 +956,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_OpenGenericDerivedTypeCouldNotBeResolved(Type baseType, Type derivedType, string reason)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_OpenGenericDerivedTypeCouldNotBeResolved, derivedType, baseType, reason));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_TypeDicriminatorIdIsAlreadySpecified(Type baseType, object typeDiscriminator)
         {
             throw new InvalidOperationException(SR.Format(SR.Polymorphism_TypeDicriminatorIdIsAlreadySpecified, baseType, typeDiscriminator));
@@ -965,6 +983,84 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_PolymorphicTypeConfigurationDoesNotSpecifyDerivedTypes(Type baseType)
         {
             throw new InvalidOperationException(SR.Format(SR.Polymorphism_ConfigurationDoesNotSpecifyDerivedTypes, baseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionDoesNotAcceptNull(Type unionType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionDoesNotAcceptNull, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionRuntimeTypeNotMatchedToCase(Type unionType, Type runtimeType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionRuntimeTypeNotMatchedToCase, runtimeType, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionCannotCreateValue(Type unionType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionCannotCreateValue, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionCannotReadValue(Type unionType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionCannotReadValue, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionTypeClassifierReturnedNull(Type unionType, JsonTokenType tokenType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionTypeClassifierReturnedNull, unionType, tokenType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionAmbiguousJsonValueType(Type unionType, JsonValueType valueType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionAmbiguousJsonValueType, valueType, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionCaseWithCustomConverterRequiresClassifier(Type unionType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionCaseWithCustomConverterRequiresClassifier, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnionJsonTokenTypeNotSupported(Type unionType, JsonTokenType tokenType)
+        {
+            ThrowJsonException(SR.Format(SR.UnionJsonTokenTypeNotSupported, tokenType, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_UnionCasesNotPopulated(Type unionType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.UnionCasesNotPopulated, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_UnionCannotCreateValue(Type unionType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.UnionCannotCreateValue, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_UnionCannotReadValue(Type unionType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.UnionCannotReadValue, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TypeClassifierMustDeriveFromJsonTypeClassifierFactory(Type classifierType, Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.TypeClassifierMustDeriveFromJsonTypeClassifierFactory, classifierType, type));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TypeClassifierNotSupported(Type classifierType, Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.TypeClassifierNotSupported, classifierType, type));
         }
 
         [DoesNotReturn]

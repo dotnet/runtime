@@ -3,9 +3,7 @@
 
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Text;
@@ -15,38 +13,6 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
-        /// <summary>
-        /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
-        /// remote computer. These process resources share the specified process name.
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public static Process[] GetProcessesByName(string? processName, string machineName)
-        {
-            ProcessManager.ThrowIfRemoteMachine(machineName);
-
-            processName ??= "";
-
-            ArrayBuilder<Process> processes = default;
-            foreach (int pid in ProcessManager.EnumerateProcessIds())
-            {
-                if (ProcessManager.TryGetProcPid(pid, out Interop.procfs.ProcPid procPid) &&
-                    Interop.procfs.TryReadStatFile(procPid, out Interop.procfs.ParsedStat parsedStat))
-                {
-                    string actualProcessName = GetUntruncatedProcessName(procPid, ref parsedStat);
-                    if ((processName == "" || string.Equals(processName, actualProcessName, StringComparison.OrdinalIgnoreCase)) &&
-                        Interop.procfs.TryReadStatusFile(procPid, out Interop.procfs.ParsedStatus parsedStatus))
-                    {
-                        ProcessInfo processInfo = ProcessManager.CreateProcessInfo(procPid, ref parsedStat, ref parsedStatus, actualProcessName);
-                        processes.Add(new Process(machineName, isRemoteMachine: false, pid, processInfo));
-                    }
-                }
-            }
-
-            return processes.ToArray();
-        }
-
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
@@ -103,7 +69,7 @@ namespace System.Diagnostics
             GetStat().ppid;
 
         /// <summary>Gets execution path</summary>
-        private static string? GetPathToOpenFile()
+        internal static string? GetPathToOpenFile()
         {
             ReadOnlySpan<string> allowedProgramsToRun = ["xdg-open", "gnome-open", "kfmclient"];
             foreach (var program in allowedProgramsToRun)
@@ -265,7 +231,7 @@ namespace System.Diagnostics
         /// <summary>Gets the name that was used to start the process, or null if it could not be retrieved.</summary>
         /// <param name="procPid">The pid for the target process.</param>
         /// <param name="stat">The stat for the target process.</param>
-        internal static string GetUntruncatedProcessName(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat stat)
+        internal static unsafe string GetUntruncatedProcessName(Interop.procfs.ProcPid procPid, ref Interop.procfs.ParsedStat stat)
         {
             string cmdLineFilePath = Interop.procfs.GetCmdLinePathForProcess(procPid);
 

@@ -56,7 +56,6 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// The <paramref name="isReferencedCallback"/> should return 0 for not reference or 1 for
         /// referenced. Any other value has undefined behavior.
         /// </remarks>
-        [RequiresUnsafe]
         public static unsafe void Initialize(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
@@ -93,6 +92,34 @@ namespace System.Runtime.InteropServices.ObjectiveC
         public static GCHandle CreateReferenceTrackingHandle(
             object obj,
             out Span<IntPtr> taggedMemory)
+            => throw new PlatformNotSupportedException();
+
+        /// <summary>
+        /// Gets reference tracking memory for the supplied object.
+        /// </summary>
+        /// <param name="obj">The object whose tracking memory to return.</param>
+        /// <returns>A span of tracking memory associated with <paramref name="obj"/>.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the ObjectiveCMarshal API has not been initialized.</exception>
+        /// <remarks>
+        /// The Initialize() must be called prior to calling this function.
+        ///
+        /// The <paramref name="obj"/> must have a type in its hierarchy marked with
+        /// <see cref="ObjectiveCTrackedTypeAttribute"/>.
+        ///
+        /// The "Is Referenced" callback passed to <see cref="Initialize" />
+        /// will be passed the memory returned from this function.
+        /// The memory it points at is defined by the length in the <see cref="Span{IntPtr}"/> and
+        /// will be zeroed out. It will be available until <paramref name="obj"/> is collected by the GC.
+        /// The returned memory can be used for any purpose by the caller of this function and is usable
+        /// during the "Is Referenced" callback.
+        ///
+        /// Calling this function multiple times with the same <paramref name="obj"/> will
+        /// return the same tracking memory. It is only guaranteed to be zero initialized on
+        /// the first call of this or <see cref="CreateReferenceTrackingHandle" />.
+        ///
+        /// The return value is the same as the tracking memory returned from <see cref="CreateReferenceTrackingHandle" />.
+        /// </remarks>
+        public static Span<IntPtr> GetOrCreateReferenceTrackingMemory(object obj)
             => throw new PlatformNotSupportedException();
 
         /// <summary>

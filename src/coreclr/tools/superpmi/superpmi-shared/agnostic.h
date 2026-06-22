@@ -185,7 +185,6 @@ struct Agnostic_CORINFO_EE_INFO
     DWORD offsetOfGCState;
     DWORD offsetOfDelegateInstance;
     DWORD offsetOfDelegateFirstTarget;
-    DWORD offsetOfWrapperDelegateIndirectCell;
     DWORD sizeOfReversePInvokeFrame;
     DWORD osPageSize;
     DWORD maxUncheckedOffsetForNullObject;
@@ -201,11 +200,12 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG continuationStateFldHnd;
     DWORDLONG continuationFlagsFldHnd;
     DWORDLONG captureExecutionContextMethHnd;
-    DWORDLONG restoreExecutionContextMethHnd;
     DWORDLONG captureContinuationContextMethHnd;
     DWORDLONG captureContextsMethHnd;
     DWORDLONG restoreContextsMethHnd;
     DWORDLONG restoreContextsOnSuspensionMethHnd;
+    DWORDLONG finishSuspensionNoContinuationContextMethHnd;
+    DWORDLONG finishSuspensionWithContinuationContextMethHnd;
 };
 
 struct Agnostic_GetOSRInfo
@@ -368,7 +368,6 @@ struct Agnostic_CORINFO_CALL_INFO
     DWORD                         exactContextNeedsRuntimeLookup;
     Agnostic_CORINFO_LOOKUP       stubLookup; // first view of union.  others are matching or subordinate
     Agnostic_CORINFO_CONST_LOOKUP instParamLookup;
-    DWORD                         wrapperDelegateInvoke;
     DWORD                         exceptionCode;
 };
 
@@ -686,19 +685,11 @@ struct Agnostic_ResolveVirtualMethodResult
 {
     bool                            returnValue;
     DWORDLONG                       devirtualizedMethod;
-    bool                            isInstantiatingStub;
-    bool                            needsMethodContext;
-    DWORDLONG                       exactContext;
+    DWORDLONG                       tokenLookupContext;
     DWORD                           detail;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
     Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
-};
-
-struct Agnostic_GetInstantiatedEntryResult
-{
-    DWORDLONG                       methodHandle;
-    DWORDLONG                       classHandle;
-    DWORDLONG                       result;
+    Agnostic_CORINFO_LOOKUP         instParamLookup;
 };
 
 struct ResolveTokenValue

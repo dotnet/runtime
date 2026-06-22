@@ -33,8 +33,8 @@
 
 #if !defined(FEATURE_PORTABLE_HELPERS) // @TODO: these are (currently) only implemented in assembly helpers
 EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionTailCall;
-#if (defined(HOST_AMD64) || defined(HOST_ARM64)) && defined(HOST_WINDOWS)
-EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionReturnResult;
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+EXTERN_C CODE_LOCATION ReturnFromUniversalTransitionGuardedTailCall;
 #endif
 
 EXTERN_C CODE_LOCATION RhpCallCatchFunclet2;
@@ -117,6 +117,7 @@ void StackFrameIterator::EnterInitialInvalidState(Thread * pThreadToWalk)
 #ifdef TARGET_X86
     m_pHijackedReturnValue = NULL;
     m_HijackedReturnValueKind = GCRK_Unknown;
+    m_pHijackedAsyncContinuation = NULL;
 #endif
     m_pConservativeStackRangeLowerBound = NULL;
     m_pConservativeStackRangeUpperBound = NULL;
@@ -336,11 +337,17 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 #endif // TARGET_AMD64
 
 #ifdef TARGET_X86
-    GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags);
+    bool isAsync;
+    GCRefKind retValueKind = TransitionFrameFlagsToReturnKind(pFrame->m_Flags, &isAsync);
     if (retValueKind != GCRK_Scalar)
     {
         m_pHijackedReturnValue = (PTR_OBJECTREF)m_RegDisplay.pRax;
         m_HijackedReturnValueKind = retValueKind;
+    }
+
+    if (isAsync)
+    {
+        m_pHijackedAsyncContinuation = (PTR_OBJECTREF)m_RegDisplay.pRcx;
     }
 #endif
 
@@ -1370,6 +1377,16 @@ public:
         UNREFERENCED_PARAMETER(pRegisterSet);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pRdi = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pRsi = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
+        pRegisterSet->pRcx = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pRdx = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+        pRegisterSet->pR8  = GET_POINTER_TO_FIELD(m_intArgRegs[4]);
+        pRegisterSet->pR9  = GET_POINTER_TO_FIELD(m_intArgRegs[5]);
+    }
+
 #elif defined(TARGET_AMD64)
 
     // Conservative GC reporting must be applied to everything between the base of the
@@ -1394,6 +1411,14 @@ public:
         UNREFERENCED_PARAMETER(pRegisterSet);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pRcx = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pRdx = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
+        pRegisterSet->pR8  = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pR9  = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+    }
+
 #elif defined(TARGET_ARM)
 
     // Conservative GC reporting must be applied to everything between the base of the
@@ -1416,6 +1441,14 @@ public:
         pRegisterSet->pR11 = GET_POINTER_TO_FIELD(m_pushedR11);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pR0 = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pR1 = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
+        pRegisterSet->pR2 = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pR3 = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+    }
+
 #elif defined(TARGET_X86)
 
     // Conservative GC reporting must be applied to everything between the base of the
@@ -1435,6 +1468,12 @@ public:
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
         pRegisterSet->pRbp = GET_POINTER_TO_FIELD(m_pushedEBP);
+    }
+
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pRdx = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pRcx = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
     }
 
 #elif defined(TARGET_ARM64)
@@ -1460,6 +1499,19 @@ public:
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pX0 = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pX1 = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
+        pRegisterSet->pX2 = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pX3 = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+        pRegisterSet->pX4 = GET_POINTER_TO_FIELD(m_intArgRegs[4]);
+        pRegisterSet->pX5 = GET_POINTER_TO_FIELD(m_intArgRegs[5]);
+        pRegisterSet->pX6 = GET_POINTER_TO_FIELD(m_intArgRegs[6]);
+        pRegisterSet->pX7 = GET_POINTER_TO_FIELD(m_intArgRegs[7]);
+        pRegisterSet->pX8 = GET_POINTER_TO_FIELD(m_intArgRegs[8]);
+    }
+
 #elif defined(TARGET_LOONGARCH64)
 
     // Conservative GC reporting must be applied to everything between the base of the
@@ -1480,6 +1532,18 @@ public:
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
     {
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
+    }
+
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pR4  = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pR5  = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
+        pRegisterSet->pR6  = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pR7  = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+        pRegisterSet->pR8  = GET_POINTER_TO_FIELD(m_intArgRegs[4]);
+        pRegisterSet->pR9  = GET_POINTER_TO_FIELD(m_intArgRegs[5]);
+        pRegisterSet->pR10 = GET_POINTER_TO_FIELD(m_intArgRegs[6]);
+        pRegisterSet->pR11 = GET_POINTER_TO_FIELD(m_intArgRegs[7]);
     }
 
 #elif defined(TARGET_RISCV64)
@@ -1504,6 +1568,18 @@ public:
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
     }
 
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
+    {
+        pRegisterSet->pA0 = GET_POINTER_TO_FIELD(m_intArgRegs[0]);
+        pRegisterSet->pA1 = GET_POINTER_TO_FIELD(m_intArgRegs[1]);
+        pRegisterSet->pA2 = GET_POINTER_TO_FIELD(m_intArgRegs[2]);
+        pRegisterSet->pA3 = GET_POINTER_TO_FIELD(m_intArgRegs[3]);
+        pRegisterSet->pA4 = GET_POINTER_TO_FIELD(m_intArgRegs[4]);
+        pRegisterSet->pA5 = GET_POINTER_TO_FIELD(m_intArgRegs[5]);
+        pRegisterSet->pA6 = GET_POINTER_TO_FIELD(m_intArgRegs[6]);
+        pRegisterSet->pA7 = GET_POINTER_TO_FIELD(m_intArgRegs[7]);
+    }
+
 #elif defined(TARGET_WASM)
 private:
     // WASMTODO: #error NYI for this arch
@@ -1514,6 +1590,12 @@ public:
     PTR_uintptr_t get_LowerBoundForConservativeReporting() { PORTABILITY_ASSERT("@TODO: FIXME:WASM"); return NULL; }
 
     void UnwindNonVolatileRegisters(REGDISPLAY * pRegisterSet)
+    {
+        UNREFERENCED_PARAMETER(pRegisterSet);
+        PORTABILITY_ASSERT("@TODO: FIXME:WASM");
+    }
+
+    void UnwindVolatileArgRegisters(REGDISPLAY * pRegisterSet)
     {
         UNREFERENCED_PARAMETER(pRegisterSet);
         PORTABILITY_ASSERT("@TODO: FIXME:WASM");
@@ -1551,6 +1633,7 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
     UniversalTransitionStackFrame * stackFrame = (PTR_UniversalTransitionStackFrame)m_RegDisplay.SP;
 
     stackFrame->UnwindNonVolatileRegisters(&m_RegDisplay);
+    stackFrame->UnwindVolatileArgRegisters(&m_RegDisplay);
 
     PTR_uintptr_t addressOfPushedCallerIP = stackFrame->get_AddressOfPushedCallerIP();
     m_RegDisplay.SetIP(PCODEToPINSTR(*addressOfPushedCallerIP));
@@ -1717,6 +1800,7 @@ UnwindOutOfCurrentManagedFrame:
 #ifdef TARGET_X86
     m_pHijackedReturnValue = NULL;
     m_HijackedReturnValueKind = GCRK_Unknown;
+    m_pHijackedAsyncContinuation = NULL;
 #endif
 
 #ifdef _DEBUG
@@ -1996,6 +2080,10 @@ void StackFrameIterator::UnwindNonEHThunkSequence()
     // The iterator has reached the next managed frame.  Publish the computed lower bound value.
     ASSERT(m_pConservativeStackRangeLowerBound == NULL);
     m_pConservativeStackRangeLowerBound = pLowestLowerBound;
+
+    // The active frame was the thunk we just unwound through, not the managed caller. Do not
+    // report scratch registers from the caller's post-call GC state until the thunk has completed.
+    m_dwFlags &= ~ActiveStackFrame;
 }
 
 // This function is called immediately before a given frame is yielded from the iterator
@@ -2143,6 +2231,15 @@ bool StackFrameIterator::GetHijackedReturnValueLocation(PTR_OBJECTREF * pLocatio
     *pKind = m_HijackedReturnValueKind;
     return true;
 }
+
+bool StackFrameIterator::GetHijackedAsyncContinuation(PTR_OBJECTREF * pLocation)
+{
+    if (m_pHijackedAsyncContinuation == NULL)
+        return false;
+
+    *pLocation = m_pHijackedAsyncContinuation;
+    return true;
+}
 #endif
 
 void StackFrameIterator::SetControlPC(PTR_VOID controlPC)
@@ -2230,16 +2327,14 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 
 #else // defined(FEATURE_PORTABLE_HELPERS)
 
-    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionTailCall))
-    {
-        return InUniversalTransitionThunk;
-    }
-#if (defined(HOST_AMD64) || defined(HOST_ARM64)) && defined(HOST_WINDOWS)
-    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionReturnResult))
-    {
-        return InUniversalTransitionThunk;
-    }
+    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionTailCall)
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+        || EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransitionGuardedTailCall)
 #endif
+        )
+    {
+        return InUniversalTransitionThunk;
+    }
 
     if (EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowImpl2) ||
         EQUALS_RETURN_ADDRESS(returnAddress, RhpThrowHwEx2) ||

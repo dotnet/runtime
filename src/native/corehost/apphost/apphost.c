@@ -113,7 +113,7 @@ static bool is_exe_enabled_for_execution(pal_char_t* app_dll, size_t app_dll_len
 static void need_newer_framework_error(const pal_char_t* dotnet_root, const pal_char_t* host_path)
 {
     pal_char_t download_url[1024];
-    utils_get_download_url(download_url, ARRAY_SIZE(download_url));
+    utils_get_download_url(download_url, ARRAY_SIZE(download_url), NULL, NULL);
 
     trace_error(
         MISSING_RUNTIME_ERROR_FORMAT,
@@ -163,17 +163,23 @@ static int exe_start(const int argc, const pal_char_t* argv[])
 #endif
 
     // Use realpath/GetModuleFileName to find the path of the host, resolving any symlinks.
-    pal_char_t* host_path = (pal_char_t*)malloc(APPHOST_PATH_MAX * sizeof(pal_char_t));
+    pal_char_t* host_path = pal_get_own_executable_path();
     if (host_path == NULL)
-        return CurrentHostFindFailure;
-
-    host_path[0] = _X('\0');  // Initialize in case get_own_executable_path fails
-    if (!pal_get_own_executable_path(host_path, APPHOST_PATH_MAX) || !pal_fullpath(host_path, APPHOST_PATH_MAX))
     {
-        trace_error(_X("Failed to resolve full path of the current executable [%s]"), host_path[0] != _X('\0') ? host_path : _X("<unknown>"));
+        trace_error(_X("Failed to resolve full path of the current executable [%s]"), _X("<unknown>"));
+        return CurrentHostFindFailure;
+    }
+
+    pal_char_t* host_path_full = pal_fullpath(host_path, false);
+    if (host_path_full == NULL)
+    {
+        trace_error(_X("Failed to resolve full path of the current executable [%s]"), host_path);
         free(host_path);
         return CurrentHostFindFailure;
     }
+
+    free(host_path);
+    host_path = host_path_full;
 
     bool requires_hostfxr_startupinfo_interface = false;
 
@@ -194,42 +200,41 @@ static int exe_start(const int argc, const pal_char_t* argv[])
         requires_hostfxr_startupinfo_interface = true;
     }
 
-    pal_char_t* app_dir = utils_get_directory_alloc(host_path);
+    pal_char_t* app_dir = utils_get_directory(host_path);
     if (app_dir == NULL)
     {
         free(host_path);
         return AppPathFindFailure;
     }
 
-    size_t dir_len = pal_strlen(app_dir);
-    size_t name_len = pal_strlen(embedded_app_name);
-    size_t app_path_init = dir_len + name_len + 2; // dir + sep + name + NUL
-    size_t app_path_len = app_path_init > APPHOST_PATH_MAX ? app_path_init : APPHOST_PATH_MAX;
-    pal_char_t* app_path = (pal_char_t*)malloc(app_path_len * sizeof(pal_char_t));
+    pal_char_t* app_path = utils_append_path_alloc(app_dir, embedded_app_name);
+    free(app_dir);
     if (app_path == NULL)
     {
-        free(app_dir);
         free(host_path);
         return AppPathFindFailure;
     }
-    pal_str_printf(app_path, app_path_len, _X("%s"), app_dir);
-    utils_append_path(app_path, app_path_len, embedded_app_name);
 
     if (bundle_marker_is_bundle())
     {
         trace_info(_X("Detected Single-File app bundle"));
     }
-    else if (!pal_fullpath(app_path, app_path_len))
+    else
     {
-        trace_error(_X("The application to execute does not exist: '%s'."), app_path);
+        pal_char_t* app_path_full = pal_fullpath(app_path, false);
+        if (app_path_full == NULL)
+        {
+            trace_error(_X("The application to execute does not exist: '%s'."), app_path);
+            free(app_path);
+            free(host_path);
+            return AppPathFindFailure;
+        }
+
         free(app_path);
-        free(app_dir);
-        free(host_path);
-        return AppPathFindFailure;
+        app_path = app_path_full;
     }
 
-    free(app_dir);
-    pal_char_t* app_root = utils_get_directory_alloc(app_path);
+    pal_char_t* app_root = utils_get_directory(app_path);
     if (app_root == NULL)
     {
         free(app_path);

@@ -64,6 +64,19 @@ INTRINS_OVR(CEIL, ceil, Generic, LLVMDoubleType ())
 INTRINS_OVR(CEILF, ceil, Generic, LLVMFloatType ())
 INTRINS_OVR(FMA, fma, Generic, LLVMDoubleType ())
 INTRINS_OVR(FMAF, fma, Generic, LLVMFloatType ())
+	/*
+	 * IEEE 754-2019 minimum/maximum (NaN-propagating). Used for scalar OP_FMIN/OP_FMAX/
+	 * OP_RMIN/OP_RMAX. We avoid the older fcmp+select lowering because (a) it has
+	 * asymmetric NaN semantics (Min(NaN,x)=NaN but Min(x,NaN)=x), violating
+	 * Math.Min/Math.Max (and the MathF.Min/MathF.Max forwarders) spec, and (b) on
+	 * AArch64 the backend folds it to fminnm/fmaxnm (IEEE 754-2008 minNum/maxNum),
+	 * which suppresses NaN entirely and miscompiles the System.Half software
+	 * conversion path under LLVM 23.
+	 */
+INTRINS_OVR(MINIMUM, minimum, Generic, LLVMDoubleType ())
+INTRINS_OVR(MINIMUMF, minimum, Generic, LLVMFloatType ())
+INTRINS_OVR(MAXIMUM, maximum, Generic, LLVMDoubleType ())
+INTRINS_OVR(MAXIMUMF, maximum, Generic, LLVMFloatType ())
 	/* This isn't an intrinsic, instead llvm seems to special case it by name */
 INTRINS_OVR(FABS, fabs, Generic, LLVMDoubleType ())
 INTRINS_OVR(ABSF, fabs, Generic, LLVMFloatType ())
@@ -247,13 +260,12 @@ INTRINS(AESNI_AESDECLAST, x86_aesni_aesdeclast, X86)
 INTRINS(AESNI_AESENC, x86_aesni_aesenc, X86)
 INTRINS(AESNI_AESENCLAST, x86_aesni_aesenclast, X86)
 INTRINS(AESNI_AESIMC, x86_aesni_aesimc, X86)
-
+#endif
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_WASM)
 INTRINS_OVR(SSE_SSUB_SATI8, ssub_sat, Generic, v128_i1_t)
 INTRINS_OVR(SSE_USUB_SATI8, usub_sat, Generic, v128_i1_t)
 INTRINS_OVR(SSE_SSUB_SATI16, ssub_sat, Generic, v128_i2_t)
 INTRINS_OVR(SSE_USUB_SATI16, usub_sat, Generic, v128_i2_t)
-#endif
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_WASM)
 INTRINS_OVR(SSE_SADD_SATI8, sadd_sat, Generic, v128_i1_t)
 INTRINS_OVR(SSE_UADD_SATI8, uadd_sat, Generic, v128_i1_t)
 INTRINS_OVR(SSE_SADD_SATI16, sadd_sat, Generic, v128_i2_t)
@@ -298,10 +310,6 @@ INTRINS_OVR(WASM_PMAX_V4, fabs, Generic, sse_r4_t)
 INTRINS_OVR(WASM_PMAX_V2, fabs, Generic, sse_r8_t)
 INTRINS(WASM_Q15MULR_SAT_SIGNED, wasm_q15mulr_sat_signed, Wasm)
 INTRINS(WASM_SHUFFLE, wasm_shuffle, Wasm)
-INTRINS_OVR(WASM_SUB_SAT_SIGNED_V16, wasm_sub_sat_signed, Wasm, sse_i1_t)
-INTRINS_OVR(WASM_SUB_SAT_SIGNED_V8, wasm_sub_sat_signed, Wasm, sse_i2_t)
-INTRINS_OVR(WASM_SUB_SAT_UNSIGNED_V16, wasm_sub_sat_unsigned, Wasm, sse_i1_t)
-INTRINS_OVR(WASM_SUB_SAT_UNSIGNED_V8, wasm_sub_sat_unsigned, Wasm, sse_i2_t)
 INTRINS(WASM_SWIZZLE, wasm_swizzle, Wasm)
 INTRINS(WASM_GET_EXCEPTION, wasm_get_exception, Wasm)
 INTRINS(WASM_GET_EHSELECTOR, wasm_get_ehselector, Wasm)

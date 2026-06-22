@@ -445,7 +445,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }, new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardOutput = true } }).Dispose();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [ConditionalTheory(typeof(ConsoleLoggerTest), nameof(IsThreadingAndRemoteExecutorSupported))]
         [InlineData("FORCE_COLOR", "1", null, null, true)]
         [InlineData("DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION", "1", null, null, true)]
         [InlineData(null, null, "NO_COLOR", "1", false)]

@@ -137,21 +137,6 @@ bool interceptor_ICJI::resolveVirtualMethod(
     return original_ICorJitInfo->resolveVirtualMethod(info);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg)
-{
-    return original_ICorJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg)
-{
-    return original_ICorJitInfo->getInstantiatedEntry(ftn, methodArg, classArg);
-}
-
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncOtherVariant(
           CORINFO_METHOD_HANDLE ftn,
           bool* variantIsThunk)
@@ -1253,6 +1238,12 @@ void interceptor_ICJI::recordCallSite(
           CORINFO_METHOD_HANDLE methodHandle)
 {
     original_ICorJitInfo->recordCallSite(instrOffset, callSig, methodHandle);
+}
+
+void interceptor_ICJI::recordWasmManagedCallSig(
+          CORINFO_SIG_INFO* callSig)
+{
+    original_ICorJitInfo->recordWasmManagedCallSig(callSig);
 }
 
 void interceptor_ICJI::recordRelocation(

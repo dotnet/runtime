@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public class File_Move_Tests : FileSystemWatcherTest
     {
         [Fact]
@@ -59,6 +58,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.OpenBSD, "libinotify on OpenBSD does not preserve event ordering.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
@@ -225,7 +225,10 @@ namespace System.IO.Tests
             Action action = () => Array.ForEach(files, file => File.Move(file.FileInWatchedDir, file.FileInUnwatchedDir));
 
             // Filter out Created and Changed events as there is a race-condition when moving a file and then observing a parent folder. It receives Create and Changed events although Watcher is not registered yet.
-            Func<FiredEvent, bool>? isFilteredOut = skipOldEvents ? x => (x.EventType & (WatcherChangeTypes.Created | WatcherChangeTypes.Changed)) != 0 : null;
+            // Also filter out duplicate events as Mac FSEvents can deliver the same Deleted event multiple times.
+            Func<FiredEvent, bool>? isFilteredOut = skipOldEvents
+                ? CreateDeduplicatingFilter(WatcherChangeTypes.Created | WatcherChangeTypes.Changed)
+                : null;
 
             IEnumerable<FiredEvent> events = ExpectEvents(watcher, filesCount, action, isFilteredOut);
 
