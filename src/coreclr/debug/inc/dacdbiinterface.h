@@ -2233,7 +2233,30 @@ public:
         OUT CORDB_ADDRESS* pNextContinuation,
         OUT UINT32* pState) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, OUT DacDbiArrayList<AsyncLocalData>* pAsyncLocals) = 0;
+    // Callback invoked once per async local enumerated by EnumerateAsyncLocals.
+    // The callback must not throw. Implementations typically push the value into an
+    // accumulator stashed in pUserData (see CallbackAccumulator<AsyncLocalData>).
+    typedef void (*FP_ASYNC_LOCAL_CALLBACK)(AsyncLocalData * pLocal, CALLBACK_DATA pUserData);
+
+    // Enumerate the async locals captured at a given async suspension point.
+    //
+    // Arguments:
+    //    vmMethod    - the async method in question
+    //    codeAddr    - native code address used to disambiguate code versions; when 0
+    //                  the active native code of vmMethod is used
+    //    state       - index of the async suspension point whose locals are requested
+    //    fpCallback  - callback invoked once per AsyncLocalData; must not be NULL and
+    //                  must not throw
+    //    pUserData   - opaque user data passed through to the callback
+    //
+    // Notes:
+    //    Returns S_OK with no callbacks invoked when:
+    //      - vmMethod refers to an async thunk method
+    //      - codeAddr is non-zero but does not resolve to a valid native code version
+    //      - state is past the number of suspension points reported for the method
+    //    Otherwise returns S_OK after invoking fpCallback for every local captured at
+    //    suspension point `state`.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(
         VMPTR_MethodDesc vmMethod,
