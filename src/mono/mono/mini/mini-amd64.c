@@ -708,10 +708,31 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	fields = (StructFieldInfo*)fields_array->data;
 	nfields = fields_array->len;
 
-	for (i = 0; i < nfields; ++i) {
-		if ((fields [i].offset < 8) && (fields [i].offset + fields [i].size) > 8) {
+	{
+		gboolean has_straddling_field = FALSE;
+		gboolean has_float_field = FALSE;
+		for (i = 0; i < nfields; ++i) {
+			MonoType *ftype = mini_get_underlying_type (fields [i].type);
+			if (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8)
+				has_float_field = TRUE;
+			if ((fields [i].offset < 8) && (fields [i].offset + fields [i].size) > 8)
+				has_straddling_field = TRUE;
+		}
+		if (has_straddling_field) {
 			pass_on_stack = TRUE;
-			break;
+			/*
+			 * A <=16 byte all-integer vtype only ends up on the stack here because a field crosses
+			 * the 8-byte eightbyte boundary, which the (non-LLVM) JIT cannot place in a register
+			 * pair. The LLVM backend has no such restriction, so record that it may pass the value
+			 * in two integer registers. This keeps the calling convention identical to a
+			 * fully-flattened instantiation of the same layout, which matters for gshared /
+			 * partially-shared generic code: a partially-shared caller sees the value type as an
+			 * opaque type parameter (one straddling field) while the concrete callee sees the
+			 * flattened layout. Without this they disagree on the calling convention, and recent
+			 * LLVM lowers the byval form onto the stack while the callee reads it from registers.
+			 */
+			if (!is_return && size <= 16 && !has_float_field)
+				ainfo->llvm_inreg_straddle = 1;
 		}
 	}
 
@@ -2428,10 +2449,20 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			linfo->args [i].storage = LLVMArgNormal;
 			break;
 		case ArgOnStack:
-			if (MONO_TYPE_ISSTRUCT (t))
-				linfo->args [i].storage = LLVMArgVtypeByVal;
-			else
+			if (MONO_TYPE_ISSTRUCT (t)) {
+				if (ainfo->llvm_inreg_straddle) {
+					/* See add_valuetype (): pass the straddling vtype in two integer registers
+					 * rather than as a byval struct, so the calling convention matches a
+					 * fully-flattened instantiation of the same layout. */
+					linfo->args [i].storage = LLVMArgVtypeInReg;
+					linfo->args [i].pair_storage [0] = LLVMArgInIReg;
+					linfo->args [i].pair_storage [1] = (ainfo->arg_size > 8) ? LLVMArgInIReg : LLVMArgNone;
+				} else {
+					linfo->args [i].storage = LLVMArgVtypeByVal;
+				}
+			} else {
 				linfo->args [i].storage = LLVMArgNormal;
+			}
 			break;
 		case ArgValuetypeInReg:
 			if (sig->pinvoke &&
