@@ -513,7 +513,16 @@ pal_char_t* pal_get_default_installation_dir(void)
 
 bool pal_is_path_fully_qualified(const pal_char_t* path)
 {
-    return !is_path_not_fully_qualified(path);
+    size_t len = pal_strlen(path);
+    if (len < 2)
+        return false;
+
+    // UNC and DOS device paths (e.g. \\server\share or \\?\C:\).
+    if (is_dir_separator(path[0]))
+        return path[1] == _X('?') || is_dir_separator(path[1]);
+
+    // Drive absolute path (e.g. C:\).
+    return len >= 3 && path[1] == VOLUME_SEPARATOR && is_dir_separator(path[2]);
 }
 
 bool pal_load_library(const pal_char_t* path, void** dll)
@@ -544,6 +553,40 @@ bool pal_load_library(const pal_char_t* path, void** dll)
         }
         free(full);
         return false;
+    }
+
+    // Pin the module so it is never unloaded (pal_unload_library is a no-op on Windows).
+    HMODULE pinned;
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, load_path, &pinned))
+    {
+        trace_error(_X("Failed to pin library [%s] in [pal_load_library]"), load_path);
+        free(full);
+        return false;
+    }
+
+    if (trace_is_enabled())
+    {
+        DWORD name_size = MAX_PATH / 2;
+        pal_char_t* name = NULL;
+        DWORD name_written = 0;
+        do
+        {
+            name_size *= 2;
+            pal_char_t* new_name = (pal_char_t*)realloc(name, name_size * sizeof(pal_char_t));
+            if (new_name == NULL)
+            {
+                free(name);
+                name = NULL;
+                break;
+            }
+            name = new_name;
+            name_written = GetModuleFileNameW(library, name, name_size);
+        } while (name_written == name_size);
+
+        if (name != NULL && name_written != 0)
+            trace_info(_X("Loaded library from %s"), name);
+
+        free(name);
     }
 
     *dll = library;

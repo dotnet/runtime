@@ -227,32 +227,17 @@ bool pal::get_loaded_library(
 
 bool pal::load_library(const string_t* path, dll_t* dll)
 {
-    *dll = dlopen(path->c_str(), RTLD_LAZY);
-    if (*dll == nullptr)
-    {
-        trace::error(_X("Failed to load %s, error: %s"), path->c_str(), dlerror());
-        return false;
-    }
-    return true;
+    return pal_load_library(path->c_str(), reinterpret_cast<void**>(dll));
 }
 
 pal::proc_t pal::get_symbol(dll_t library, const char* name)
 {
-    auto result = dlsym(library, name);
-    if (result == nullptr)
-    {
-        trace::info(_X("Probed for and did not find library symbol %s, error: %s"), name, dlerror());
-    }
-
-    return result;
+    return reinterpret_cast<proc_t>(pal_get_symbol(library, name));
 }
 
 void pal::unload_library(dll_t library)
 {
-    if (dlclose(library) != 0)
-    {
-        trace::warning(_X("Failed to unload library, error: %s"), dlerror());
-    }
+    pal_unload_library(library);
 }
 
 int pal::xtoi(const char_t* input)
@@ -267,7 +252,7 @@ bool pal::is_path_rooted(const pal::string_t& path)
 
 bool pal::is_path_fully_qualified(const pal::string_t& path)
 {
-    return is_path_rooted(path);
+    return pal_is_path_fully_qualified(path.c_str());
 }
 
 bool pal::get_default_breadcrumb_store(string_t* recv)
