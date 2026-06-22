@@ -383,7 +383,64 @@ namespace Microsoft.Extensions.Primitives
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task DisposingWhileConsumerInFlightSuppressesReRegistration(bool useAsyncConsumer)
+        public async Task DisposingDuringConsumerSuppressesReRegistration(bool useAsyncConsumer)
+        {
+            var provider = new ObservableChangeTokenProvider();
+            int invocations = 0;
+            TaskCompletionSource<bool> gate = NewTcs();
+
+            // The consumer disposes its own registration mid-invocation. The re-registration that follows the
+            // consumer (synchronously for the sync overload, after the returned task completes for the async one)
+            // must observe the disposal and not arm a live callback. Disposal happens on the thread running the
+            // consumer, so it doesn't block on the in-progress change callback.
+            IDisposable reg = null;
+            if (useAsyncConsumer)
+            {
+                reg = ChangeToken.OnChange(provider.GetChangeToken, () =>
+                {
+                    Interlocked.Increment(ref invocations);
+                    reg.Dispose();
+
+                    // Stay in flight by returning an incomplete task; re-registration is deferred until it completes.
+                    return gate.Task;
+                });
+            }
+            else
+            {
+                reg = ChangeToken.OnChange(provider.GetChangeToken, () =>
+                {
+                    Interlocked.Increment(ref invocations);
+                    reg.Dispose();
+                });
+            }
+
+            // Fire the change. The consumer runs synchronously and disposes itself.
+            provider.Changed();
+
+            if (useAsyncConsumer)
+            {
+                // The async consumer is still in flight, so re-registration is deferred. Arm a signal for it,
+                // then let the consumer complete so the deferred re-registration runs.
+                Task reRegistrationDisposed = provider.ArmRegistrationDisposed();
+                gate.SetResult(true);
+                await reRegistrationDisposed.WaitAsync(TimeSpan.FromSeconds(30));
+            }
+
+            Assert.Equal(1, invocations);
+
+            // Subsequent changes must not invoke the consumer again, because disposal suppressed re-registration.
+            for (int i = 0; i < 5; i++)
+            {
+                provider.Changed();
+            }
+
+            Assert.Equal(1, invocations);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DisposingFromAnotherThreadWhileConsumerExecutingSuppressesReRegistration(bool useAsyncConsumer)
         {
             var provider = new ObservableChangeTokenProvider();
             int invocations = 0;
@@ -414,24 +471,35 @@ namespace Microsoft.Extensions.Primitives
                 });
             }
 
-            // Trigger the change on a background thread: a synchronous consumer blocks the triggering thread
-            // until the gate is released.
+            // A synchronous consumer blocks the triggering thread, so fire the change on a background thread.
             Task trigger = Task.Run(provider.Changed);
-
             await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
             Assert.Equal(1, invocations);
 
-            // Dispose while the consumer is still in flight. This also disposes the initial registration.
-            reg.Dispose();
+            if (useAsyncConsumer)
+            {
+                // The change callback already returned (the consumer is in flight via its task), so Dispose does
+                // not block. Dispose from another thread, then let the consumer complete: the deferred
+                // re-registration must observe the disposal instead of arming a live callback.
+                await Task.Run(reg.Dispose).WaitAsync(TimeSpan.FromSeconds(30));
 
-            // Arm a signal for the re-registration that happens once the in-flight consumer completes. The
-            // deferred re-registration must observe the disposal and immediately dispose the new registration
-            // instead of arming a live callback.
-            Task reRegistrationDisposed = provider.ArmRegistrationDisposed();
+                Task reRegistrationDisposed = provider.ArmRegistrationDisposed();
+                gate.SetResult(true);
+                await reRegistrationDisposed.WaitAsync(TimeSpan.FromSeconds(30));
+                await trigger.WaitAsync(TimeSpan.FromSeconds(30));
+            }
+            else
+            {
+                // The consumer is running on the triggering thread, so Dispose blocks until it returns
+                // (CancellationTokenRegistration.Dispose waits for the in-progress callback). Run it on a
+                // separate thread, then release the consumer so both can complete.
+                Task dispose = Task.Run(reg.Dispose);
+                gate.SetResult(true);
+                await dispose.WaitAsync(TimeSpan.FromSeconds(30));
+                await trigger.WaitAsync(TimeSpan.FromSeconds(30));
+            }
 
-            gate.SetResult(true);
-            await reRegistrationDisposed.WaitAsync(TimeSpan.FromSeconds(30));
-            await trigger.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(1, invocations);
 
             // Subsequent changes must not invoke the consumer again, because disposal suppressed re-registration.
             for (int i = 0; i < 5; i++)
