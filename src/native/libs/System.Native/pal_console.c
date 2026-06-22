@@ -19,9 +19,6 @@
 #include <pthread.h>
 #include <signal.h>
 
-#if HAVE_POSIX_ADVISE
-#include <stdlib.h>
-#endif
 
 int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
 {
