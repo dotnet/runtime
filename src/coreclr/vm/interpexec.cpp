@@ -847,7 +847,7 @@ NOINLINE static void InterpThrow(InterpMethodContextFrame* pFrame, const int32_t
 
 // When enabled, each opcode dispatches directly to the next one via an indirect goto,
 // avoiding the overhead of the central switch dispatch.
-#if (defined(__GNUC__) || defined(__clang__)) && !defined(TARGET_WASM) && !defined(DEBUG)
+#if !defined(TARGET_WINDOWS) && !defined(TARGET_WASM) && !defined(DEBUG)
 #define USE_COMPUTED_GOTO 1
 #endif
 
