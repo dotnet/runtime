@@ -34,11 +34,11 @@ public sealed class CdacGenerator : IIncrementalGenerator
         // sees Contracts' copy via [InternalsVisibleTo] and shouldn't emit its own).
         // Each helper is gated independently to handle version-skew scenarios where
         // one helper is present but the other is not.
-        IncrementalValueProvider<(bool EmitLayoutSet, bool EmitTypeNameResolver, bool EmitGeneratedTypeContract)> shouldEmitHelpers = context.CompilationProvider
+        IncrementalValueProvider<(bool EmitLayoutSet, bool EmitTypeNameResolver, bool EmitGeneratedTypeCacheContract)> shouldEmitHelpers = context.CompilationProvider
             .Select(static (compilation, _) => (
                 EmitLayoutSet: !IsTypeAccessible(compilation, LayoutSetSource.FullyQualifiedName),
                 EmitTypeNameResolver: !IsTypeAccessible(compilation, TypeNameResolverSource.FullyQualifiedName),
-                EmitGeneratedTypeContract: !IsTypeAccessible(compilation, GeneratedTypeContractSource.FullyQualifiedName)));
+                EmitGeneratedTypeCacheContract: !IsTypeAccessible(compilation, GeneratedTypeCacheContractSource.FullyQualifiedName)));
 
         context.RegisterSourceOutput(shouldEmitHelpers, static (ctx, flags) =>
         {
@@ -56,11 +56,11 @@ public sealed class CdacGenerator : IIncrementalGenerator
                     SourceText.From(TypeNameResolverSource.Source, Encoding.UTF8));
             }
 
-            if (flags.EmitGeneratedTypeContract)
+            if (flags.EmitGeneratedTypeCacheContract)
             {
                 ctx.AddSource(
-                    GeneratedTypeContractSource.HintName,
-                    SourceText.From(GeneratedTypeContractSource.Source, Encoding.UTF8));
+                    GeneratedTypeCacheContractSource.HintName,
+                    SourceText.From(GeneratedTypeCacheContractSource.Source, Encoding.UTF8));
             }
         });
 
