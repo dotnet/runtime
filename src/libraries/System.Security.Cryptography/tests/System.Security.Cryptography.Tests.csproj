@@ -632,6 +632,7 @@
     <Compile Include="X509Certificates\ChainHolder.cs" />
     <Compile Include="X509Certificates\ChainPolicyTests.cs" />
     <Compile Include="X509Certificates\ChainTests.cs" />
+    <Compile Include="X509Certificates\ChainTests.TimeZone.Linux.cs" />
     <Compile Include="X509Certificates\CollectionImportTests.cs" />
     <Compile Include="X509Certificates\CollectionTests.cs" />
     <Compile Include="X509Certificates\ContentTypeTests.cs" />
