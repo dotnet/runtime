@@ -71,9 +71,40 @@ namespace Microsoft.Win32.SafeHandles
                 Debug.Assert(_handle != null);
                 _handle.DangerousRelease();
             }
+
             _waitStateHolder?.Dispose();
             return true;
         }
+
+        private static bool TryOpenCore(int processId, [NotNullWhen(true)] out SafeProcessHandle? processHandle, out int lastError)
+        {
+            int result = Interop.Sys.Kill(processId, 0);
+
+            if (result != 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                if (errorInfo.Error == Interop.Error.EPERM)
+                {
+                    ThrowOpenProcessAccessDeniedException(processId);
+                }
+
+                if (errorInfo.Error == Interop.Error.ESRCH || errorInfo.Error == Interop.Error.EINVAL)
+                {
+                    lastError = errorInfo.RawErrno;
+                    processHandle = null;
+                    return false;
+                }
+
+                throw new Win32Exception(errorInfo.RawErrno);
+            }
+
+            lastError = 0;
+            ProcessWaitState.Holder waitStateHolder = new(processId);
+            processHandle = new SafeProcessHandle(waitStateHolder);
+            return true;
+        }
+
 
         private bool SignalCore(PosixSignal signal)
         {
@@ -103,6 +134,11 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return true;
+        }
+
+        private static void ResumeCore()
+        {
+            throw new PlatformNotSupportedException();
         }
 
         private ProcessExitStatus WaitForExitCore()

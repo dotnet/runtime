@@ -655,13 +655,14 @@ namespace ILCompiler
                 if (CompilationModuleGroup.TypeLayoutCompilationUnits(type).HasMultipleInexactCompilationUnits)
                     return false;
 
-                while (!type.IsObject && type != null)
+                while (!type.IsObject)
                 {
                     if (!IsLayoutFixedInCurrentVersionBubble(type))
                     {
                         return false;
                     }
                     type = type.BaseType;
+                    Debug.Assert(type != null);
                 }
             }
 

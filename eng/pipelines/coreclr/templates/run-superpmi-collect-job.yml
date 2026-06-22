@@ -116,14 +116,15 @@ jobs:
       # containing the single System.Private.CoreLib.dll that crossgen2 will compile.
       # For wasm cross-target collections, source the wasm-built corelib (which has
       # the correct TARGET_BROWSER / 32-bit conditional IL) instead of the host
-      # release Core_Root corelib.
+      # release Core_Root corelib. The wasm corelib build emits the managed assembly
+      # under an 'IL' subdirectory of the configuration output.
       - ${{ if eq(parameters.targetArch, 'wasm') }}:
         - ${{ if eq(parameters.osGroup, 'windows') }}:
           - name: InputDirectory
-            value: '$(Build.SourcesDirectory)\artifacts\bin\coreclr\browser.wasm.Release'
+            value: '$(Build.SourcesDirectory)\artifacts\bin\coreclr\browser.wasm.Release\IL'
         - ${{ if ne(parameters.osGroup, 'windows') }}:
           - name: InputDirectory
-            value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/browser.wasm.Release'
+            value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/browser.wasm.Release/IL'
       - ${{ if ne(parameters.targetArch, 'wasm') }}:
         - name: InputDirectory
           value: '$(Release_Core_Root_Dir)'

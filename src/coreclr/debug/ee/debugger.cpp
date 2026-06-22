@@ -8886,6 +8886,40 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
 }
 
 
+void Debugger::SendCreateThreadAtInterpreterEntry(Thread *pRuntimeThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(pRuntimeThread != NULL);
+        PRECONDITION(pRuntimeThread == g_pEEInterface->GetThread());
+    }
+    CONTRACTL_END;
+
+    if (CORDBUnrecoverableError(this))
+        return;
+
+    if (!CORDebuggerAttached())
+        return;
+
+    {
+        GCX_PREEMP();
+        PollWaitingForHelper();
+    }
+
+    SENDIPCEVENT_BEGIN(this, pRuntimeThread);
+
+    if (CORDebuggerAttached())
+    {
+        ThreadStarted(pRuntimeThread);
+    }
+
+    SENDIPCEVENT_END;
+}
+
+
 //---------------------------------------------------------------------------------------
 //
 // DetachThread is called by Runtime threads when they are completing
@@ -15811,7 +15845,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Esp = (DWORD)GetSP(&pDE->m_context);
 
@@ -15819,7 +15852,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 #elif defined(TARGET_AMD64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(CONTEXT));
 
@@ -15845,7 +15877,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 #elif defined(TARGET_ARM)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
@@ -15869,7 +15900,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 #elif defined(TARGET_ARM64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
@@ -15908,7 +15938,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SyncRegDisplayToCurrentContext(pRD);
 #elif defined(TARGET_RISCV64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 
@@ -15948,7 +15977,6 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
     SyncRegDisplayToCurrentContext(pRD);
 #elif defined(TARGET_LOONGARCH64)
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
 
     memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
 

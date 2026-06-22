@@ -410,6 +410,47 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ZipArchiveEntry_OpenInUpdateMode_UncompressedSizeGreaterThanArrayMaxLength_ThrowsInvalidData(bool async)
+        {
+            // When _uncompressedSize > Array.MaxLength, the entry's uncompressed payload
+            // cannot be loaded into a MemoryStream (which is backed by a single byte[] and
+            // therefore bounded by Array.MaxLength). The entry must be rejected up front
+            // with a descriptive InvalidDataException when opened in Update mode, rather
+            // than failing later from the MemoryStream constructor with a misleading
+            // argument-out-of-range exception caused by the (int) cast wrapping negative
+            // when _uncompressedSize exceeds int.MaxValue.
+            byte[] payload = [0xCA, 0xFE, 0xBA, 0xBE, 0xDE, 0xAD, 0xBE, 0xEF];
+            MemoryStream stream = new MemoryStream();
+
+            ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry("entry.bin", CompressionLevel.NoCompression);
+            Stream entryStream = await OpenEntryStream(async, entry);
+            await entryStream.WriteAsync(payload);
+            await DisposeStream(async, entryStream);
+            await DisposeZipArchive(async, archive);
+
+            stream.Position = 0;
+            archive = await CreateZipArchive(async, stream, ZipArchiveMode.Update, leaveOpen: true);
+            entry = archive.GetEntry("entry.bin");
+
+            FieldInfo uncompressedSizeField = typeof(ZipArchiveEntry).GetField("_uncompressedSize", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(uncompressedSizeField);
+            uncompressedSizeField.SetValue(entry, (long)int.MaxValue + 1L);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => entry.OpenAsync());
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => entry.Open());
+            }
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         public static async Task UnseekableVeryLargeArchive_DataDescriptor_Read_Zip64(bool async)
         {
             MemoryStream stream = await LocalMemoryStream.ReadAppFileAsync(strange("veryLarge.zip"));
@@ -2433,6 +2474,128 @@ namespace System.IO.Compression.Tests
 
             Assert.Throws<ObjectDisposedException>(() => entry.Open(FileAccess.Read));
             await Assert.ThrowsAsync<ObjectDisposedException>(() => entry.OpenAsync(FileAccess.Read));
+        }
+
+        public enum NegativeZip64Field { UncompressedSize, CompressedSize, LocalHeaderOffset }
+
+        public static IEnumerable<object[]> Zip64ExtraField_NegativeField_Data() =>
+            from async in new[] { true, false }
+            from field in new[] { NegativeZip64Field.UncompressedSize, NegativeZip64Field.CompressedSize, NegativeZip64Field.LocalHeaderOffset }
+            select new object[] { async, field };
+
+        [Theory]
+        [MemberData(nameof(Zip64ExtraField_NegativeField_Data))]
+        public static async Task Zip64ExtraField_NegativeField_Throws(bool async, NegativeZip64Field negativeField)
+        {
+            // A ZIP64 extra that encodes a 64-bit size/offset as 0xFFFF_FFFF_FFFF_FFFF (read as -1L)
+            // is malformed: the long-based public surface cannot represent it. The central directory
+            // parser must reject it before callers observe a negative Length / CompressedLength /
+            // local header offset on a ZipArchiveEntry.
+            //
+            // CreateAsync reads the central directory eagerly; the sync ctor defers until .Entries
+            // is accessed, so we force that read below.
+            byte[] zipArchive = CreateZipWithNegativeZip64Field(negativeField);
+
+            await Assert.ThrowsAsync<InvalidDataException>(async () =>
+            {
+                ZipArchive? archive = null;
+                try
+                {
+                    archive = await CreateZipArchive(async, new MemoryStream(zipArchive), ZipArchiveMode.Read);
+                    _ = archive.Entries;
+                }
+                finally
+                {
+                    if (archive is not null)
+                    {
+                        await DisposeZipArchive(async, archive);
+                    }
+                }
+            });
+        }
+
+        private static byte[] CreateZipWithNegativeZip64Field(NegativeZip64Field negativeField)
+        {
+            // Minimal ZIP whose 32-bit size fields (and, for the local-header-offset case, the
+            // 32-bit relative-offset field) use the ZIP64 sentinel 0xFFFFFFFF so the parser is
+            // forced to read from the ZIP64 extra. Exactly one slot in the extra holds -1L,
+            // targeting the matching FieldTooBig* throw in Zip64ExtraField.TryGetZip64Block...
+            const uint Sentinel32 = 0xFFFFFFFF;
+            const ushort Zip64Tag = 1;
+
+            bool includeOffset = negativeField == NegativeZip64Field.LocalHeaderOffset;
+            ushort zip64DataSize = (ushort)(includeOffset ? 24 : 16);
+            ushort zip64TotalSize = (ushort)(4 + zip64DataSize);
+
+            long uncompressed = negativeField == NegativeZip64Field.UncompressedSize ? -1L : 0L;
+            long compressed = negativeField == NegativeZip64Field.CompressedSize ? -1L : 0L;
+            long offset = includeOffset ? -1L : 0L;
+            uint relativeOffsetSmall = includeOffset ? Sentinel32 : 0u;
+
+            byte[] name = Encoding.UTF8.GetBytes("test.txt");
+            using MemoryStream ms = new();
+            using BinaryWriter w = new(ms, Encoding.UTF8, leaveOpen: true);
+
+            void WriteZip64Extra()
+            {
+                w.Write(Zip64Tag);
+                w.Write(zip64DataSize);
+                w.Write(uncompressed);
+                w.Write(compressed);
+                if (includeOffset)
+                {
+                    w.Write(offset);
+                }
+            }
+
+            // Local file header
+            w.Write(0x04034b50u);                  // signature
+            w.Write((ushort)45);                   // version needed
+            w.Write((ushort)0);                    // gp flags
+            w.Write((ushort)0);                    // method
+            w.Write(0u);                           // mod time/date
+            w.Write(0u);                           // crc32
+            w.Write(Sentinel32);                   // compressed size
+            w.Write(Sentinel32);                   // uncompressed size
+            w.Write((ushort)name.Length);
+            w.Write(zip64TotalSize);
+            w.Write(name);
+            WriteZip64Extra();
+
+            long centralDirOffset = ms.Position;
+
+            // Central directory header
+            w.Write(0x02014b50u);                  // signature
+            w.Write((ushort)45);                   // version made by
+            w.Write((ushort)45);                   // version needed
+            w.Write((ushort)0);                    // gp flags
+            w.Write((ushort)0);                    // method
+            w.Write(0u);                           // mod time/date
+            w.Write(0u);                           // crc32
+            w.Write(Sentinel32);                   // compressed size
+            w.Write(Sentinel32);                   // uncompressed size
+            w.Write((ushort)name.Length);
+            w.Write(zip64TotalSize);
+            w.Write((ushort)0);                    // file comment length
+            w.Write((ushort)0);                    // disk number start
+            w.Write((ushort)0);                    // internal attrs
+            w.Write(0u);                           // external attrs
+            w.Write(relativeOffsetSmall);          // relative offset of local header
+            w.Write(name);
+            WriteZip64Extra();
+
+            long centralDirSize = ms.Position - centralDirOffset;
+
+            // End of central directory
+            w.Write(0x06054b50u);                  // signature
+            w.Write(0u);                           // disk numbers
+            w.Write((ushort)1);                    // entries on disk
+            w.Write((ushort)1);                    // total entries
+            w.Write((uint)centralDirSize);
+            w.Write((uint)centralDirOffset);
+            w.Write((ushort)0);                    // comment length
+
+            return ms.ToArray();
         }
     }
 }
