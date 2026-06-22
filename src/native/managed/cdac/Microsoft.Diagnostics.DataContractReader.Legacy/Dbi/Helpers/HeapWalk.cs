@@ -51,6 +51,7 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
             TargetPointer currentObj = _gc.GetPotentialNextObjectAddress(seg.Start, 0, seg);
             while (currentObj.Value < seg.End.Value)
             {
+                // Replicate IObject.GetMethodTableAddress in fast path with linear read cache
                 if (!_cache.TryReadPointer(currentObj.Value + _methodTableOffset, out TargetPointer mt))
                 {
                     pendingFailure = true;
@@ -58,6 +59,7 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
                 }
                 mt = new TargetPointer(mt.Value & _methodTableMask);
 
+                // Replicate IObject.GetSize in fast path with linear read cache
                 if (!TryGetObjectSize(currentObj, mt, out ulong size) || size == 0)
                 {
                     pendingFailure = true;

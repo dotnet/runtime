@@ -140,12 +140,14 @@ internal class GcScanContext
             while (currentObj.Value <= obj.Value)
             {
                 ulong size;
+                // Replicate IObject.GetMethodTableAddress in fast path with linear read cache
                 if (!_cache.TryReadPointer(currentObj.Value + _methodTableOffset, out TargetPointer mt))
                 {
                     return TargetPointer.Null;
                 }
                 mt = mt.Value & (ulong)~_objectToMethodTableUnmask;
 
+                // Replicate IObject.GetSize in fast path with linear read cache
                 if (!TryGetObjectSize(currentObj, mt, out size) || size == 0)
                 {
                     return TargetPointer.Null;
