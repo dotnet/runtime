@@ -100,7 +100,8 @@ INTRINS_OVR(COPYSIGNF, copysign, Generic, LLVMFloatType ())
 	/*
 	 * IEEE 754-2008 minNum/maxNum (NaN-suppressing). When exactly one operand
 	 * is NaN they return the other; when both are NaN they return NaN. This is
-	 * what Math.MinNumber/MaxNumber (and the MathF.MinNumber/MaxNumber forwarders)
+	 * what `float.MinNumber` / `double.MinNumber` (and the Max variants,
+	 * surfaced via INumber<TSelf> on the primitive Single/Double/Half types)
 	 * are documented to do, and on AArch64 these lower to single fminnm/fmaxnm
 	 * instructions. Use llvm.minimum/maximum (see above) for the NaN-propagating
 	 * Math.Min/Math.Max instead.

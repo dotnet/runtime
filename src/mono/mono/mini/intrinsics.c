@@ -290,12 +290,25 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 
 	if (in_corlib && (!strcmp (m_class_get_name (cmethod->klass), "Single") || !strcmp (m_class_get_name (cmethod->klass), "Double"))) {
-		// Recognize the IEEE 754-2008 numNum/maxNum helpers on Single/Double. These
-		// live on the primitive types (forwarded from INumber<TSelf>), not on
-		// Math/MathF. Lower them to llvm.minnum/llvm.maxnum (NaN-suppressing),
-		// which matches the spec ("if either is NaN, return the non-NaN; if both
-		// are NaN, return NaN") and on AArch64 maps to a single fminnm/fmaxnm.
+		// Recognize a handful of helpers on the primitive `Single` / `Double` types
+		// (forwarded from INumberBase<TSelf> / INumber<TSelf>). These don't have
+		// corresponding APIs on Math/MathF -- e.g. there is no `Math.MinNumber` --
+		// so the existing Math/MathF block above doesn't catch them.
+		//
+		// * MinNumber / MaxNumber: IEEE 754-2008 minNum / maxNum (NaN-suppressing).
+		//   Lower to llvm.minnum / llvm.maxnum, which on AArch64 maps to a single
+		//   fminnm / fmaxnm instruction; matches the BCL spec "if either is NaN
+		//   return the non-NaN; if both are NaN return NaN".
+		// * Abs: BCL forwarder to MathF.Abs / Math.Abs. Today this usually inlines
+		//   into the Math/MathF recognition above, but adding direct recognition
+		//   keeps the lowering working even if the JIT inliner declines.
 		opcode = 0;
+		if (fsig->param_count == 1 &&
+			(fsig->params [0]->type == MONO_TYPE_R4 || fsig->params [0]->type == MONO_TYPE_R8)) {
+			gboolean is_r4 = fsig->params [0]->type == MONO_TYPE_R4;
+			if (!strcmp (cmethod->name, "Abs"))
+				opcode = is_r4 ? OP_ABSF : OP_ABS;
+		}
 		if (fsig->param_count == 2 &&
 			fsig->params [0]->type == fsig->params [1]->type &&
 			(fsig->params [0]->type == MONO_TYPE_R4 || fsig->params [0]->type == MONO_TYPE_R8)) {
@@ -310,7 +323,8 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->type = STACK_R8;
 			ins->dreg = mono_alloc_dreg (cfg, (MonoStackType)ins->type);
 			ins->sreg1 = args [0]->dreg;
-			ins->sreg2 = args [1]->dreg;
+			if (fsig->param_count > 1)
+				ins->sreg2 = args [1]->dreg;
 			MONO_ADD_INS (cfg->cbb, ins);
 		}
 	}

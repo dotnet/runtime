@@ -7716,9 +7716,10 @@ MONO_RESTORE_WARNING
 		case OP_RMAXNUM: {
 			/*
 			 * IEEE 754-2008 minNum/maxNum (NaN-suppressing). Maps directly to
-			 * llvm.minnum/maxnum, which is what Math.MinNumber/MaxNumber (and the
-			 * MathF.MinNumber/MaxNumber forwarders) specify. On AArch64 this
-			 * lowers to a single fminnm/fmaxnm instruction.
+			 * llvm.minnum/maxnum, which is what `float.MinNumber` /
+			 * `double.MinNumber` (and the Max variants, surfaced via
+			 * INumber<TSelf> on the primitive Single/Double/Half types) specify.
+			 * On AArch64 this lowers to a single fminnm/fmaxnm instruction.
 			 */
 			gboolean is_r4 = ins->opcode == OP_RMINNUM || ins->opcode == OP_RMAXNUM;
 			LLVMTypeRef t = is_r4 ? LLVMFloatType () : LLVMDoubleType ();
