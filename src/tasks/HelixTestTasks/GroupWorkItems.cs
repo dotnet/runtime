@@ -62,7 +62,6 @@ public class GroupWorkItems : Task
         int nextBatchId = 0;
         string[] compatibilityKeys = CompatibilityMetadataKeys
             .Split(s_compatibilityMetadataKeySeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        bool hasCompatibilityKeys = compatibilityKeys.Length > 0;
         string batchCompatibleMetadataKey = BatchCompatibleMetadataKey.Trim();
 
         // Separate large items (each gets its own batch)
