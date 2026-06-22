@@ -2981,6 +2981,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compScopeInfo = opts.compDbgInfo;
 
+#ifdef TARGET_WASM
+    // Wasm uses virtual registers that cannot be encoded in the
+    // ICorDebugInfo register scheme, and there is no native debugger
+    // to consume scope info, so disable it entirely.
+    opts.compScopeInfo = false;
+#endif
+
 #ifdef LATE_DISASM
     codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName,
                                                     info.compMethodInfo->args.pSig);
