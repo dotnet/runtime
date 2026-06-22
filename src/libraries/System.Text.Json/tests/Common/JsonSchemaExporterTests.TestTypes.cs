@@ -353,26 +353,14 @@ namespace System.Text.Json.Schema.Tests
                 SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
 
             // Test nullable struct union to ensure nullability is preserved with anyOf
-            yield return new TestData<IStructDiscriminatedUnion?>(
-                Value: new StructLeft("test"),
-                AdditionalValues: [new StructRight(42), null],
+            yield return new TestData<MyUnion?>(
+                Value: 42,
+                AdditionalValues: ["test", null],
                 ExpectedJsonSchema: """
                     {
-                        "type": ["object","null"],
-                        "required": ["$type"],
                         "anyOf": [
-                            {
-                                "properties": {
-                                    "$type": { "const": "left" },
-                                    "Value": { "type": "string" }
-                                }
-                            },
-                            {
-                                "properties": {
-                                    "$type": { "const": "right" },
-                                    "Value": { "type": "integer" }
-                                }
-                            }
+                            { "type": ["integer","null"] },
+                            { "type": "string" }
                         ]
                     }
                     """);
@@ -1611,20 +1599,7 @@ namespace System.Text.Json.Schema.Tests
             public record Right(int value) : DiscriminatedUnion;
         }
 
-        [JsonPolymorphic]
-        [JsonDerivedType(typeof(StructLeft), "left")]
-        [JsonDerivedType(typeof(StructRight), "right")]
-        public interface IStructDiscriminatedUnion;
-
-        public struct StructLeft(string Value) : IStructDiscriminatedUnion
-        {
-            public string Value { get; set; } = Value;
-        }
-
-        public struct StructRight(int Value) : IStructDiscriminatedUnion
-        {
-            public int Value { get; set; } = Value;
-        }
+        public union MyUnion(int, string);
 
         public class PocoCombiningPolymorphicTypeAndDerivedTypes
         {
