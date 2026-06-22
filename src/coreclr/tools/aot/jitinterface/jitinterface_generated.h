@@ -28,8 +28,6 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getMethodClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method);
     void (* getMethodVTableOffset)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, unsigned* offsetOfIndirection, unsigned* offsetAfterIndirection, bool* isRelative);
     bool (* resolveVirtualMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_DEVIRTUALIZATION_INFO* info);
-    CORINFO_METHOD_HANDLE (* getUnboxedEntry)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
-    CORINFO_METHOD_HANDLE (* getInstantiatedEntry)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodArg, CORINFO_CLASS_HANDLE* classArg);
     CORINFO_METHOD_HANDLE (* getAsyncOtherVariant)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool* variantIsThunk);
     CORINFO_CLASS_HANDLE (* getDefaultComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
     CORINFO_CLASS_HANDLE (* getDefaultEqualityComparerClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE elemType);
@@ -372,27 +370,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->resolveVirtualMethod(_thisHandle, &pException, info);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CORINFO_METHOD_HANDLE temp = _callbacks->getUnboxedEntry(_thisHandle, &pException, ftn, requiresInstMethodTableArg);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CORINFO_METHOD_HANDLE getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CORINFO_METHOD_HANDLE temp = _callbacks->getInstantiatedEntry(_thisHandle, &pException, ftn, methodArg, classArg);
     if (pException != nullptr) throw pException;
     return temp;
 }
