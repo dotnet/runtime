@@ -5158,7 +5158,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 if (pCode != TargetCodePointer.Null)
                 {
                     IReadOnlyList<AsyncSuspensionInfo> suspensionPoints = _target.Contracts.DebugInfo.GetAsyncSuspensionPoints(pCode);
-                    if ((int)state < suspensionPoints.Count)
+                    if (state < (uint)suspensionPoints.Count)
                     {
                         IReadOnlyList<AsyncLocalInfo> localInfos = suspensionPoints[(int)state].Locals;
                         int varCount = localInfos.Count;
