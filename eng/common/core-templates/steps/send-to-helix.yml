@@ -40,7 +40,7 @@ steps:
       /p:EnableHelixJobMonitor=${{ parameters.UseHelixMonitor }}
       ${{ parameters.HelixProjectArguments }}
       /t:Test
-      /bl:$env:BUILD_SOURCESDIRECTORY\artifacts\log\$env:BuildConfig\SendToHelix.binlog"
+      /bl:$env:BUILD_SOURCESDIRECTORY\artifacts\log\$env:BuildConfig\SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }} (Windows)
     env:
       BuildConfig: $(_BuildConfig)
