@@ -4425,6 +4425,35 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     DEBUG_REP(dmpGetAsyncInfo(0, value));
 }
 
+void MethodContext::recGetWasmBaseGlobals(const CORINFO_WASM_BASE_GLOBALS* pBaseGlobals)
+{
+    if (GetWasmBaseGlobals == nullptr)
+        GetWasmBaseGlobals = new LightWeightMap<DWORD, Agnostic_CORINFO_WASM_BASE_GLOBALS>();
+
+    Agnostic_CORINFO_WASM_BASE_GLOBALS value;
+    ZeroMemory(&value, sizeof(value));
+
+    value.stackPointer = CastHandle(pBaseGlobals->stackPointer);
+    value.imageBase    = CastHandle(pBaseGlobals->imageBase);
+    value.tableBase    = CastHandle(pBaseGlobals->tableBase);
+
+    GetWasmBaseGlobals->Add(0, value);
+    DEBUG_REC(dmpGetWasmBaseGlobals(0, value));
+}
+void MethodContext::dmpGetWasmBaseGlobals(DWORD key, const Agnostic_CORINFO_WASM_BASE_GLOBALS& value)
+{
+    printf("GetWasmBaseGlobals key %u value stackPointer-%016" PRIX64 " imageBase-%016" PRIX64 " tableBase-%016" PRIX64,
+        key, value.stackPointer, value.imageBase, value.tableBase);
+}
+void MethodContext::repGetWasmBaseGlobals(CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+{
+    Agnostic_CORINFO_WASM_BASE_GLOBALS value = LookupByKeyOrMissNoMessage(GetWasmBaseGlobals, 0);
+    pBaseGlobalsOut->stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_HANDLE)value.stackPointer;
+    pBaseGlobalsOut->imageBase    = (CORINFO_WASM_GLOBAL_SYMBOL_HANDLE)value.imageBase;
+    pBaseGlobalsOut->tableBase    = (CORINFO_WASM_GLOBAL_SYMBOL_HANDLE)value.tableBase;
+    DEBUG_REP(dmpGetWasmBaseGlobals(0, value));
+}
+
 void MethodContext::recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
 {
     if (GetGSCookie == nullptr)

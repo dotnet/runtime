@@ -84,6 +84,7 @@ CORINFO_RESOLVED_TOKEN*,ref CORINFO_RESOLVED_TOKEN
 CORINFO_RESOLVED_TOKEN_PTR,CORINFO_RESOLVED_TOKEN*,CORINFO_RESOLVED_TOKEN*,CORINFO_RESOLVED_TOKEN*
 CORINFO_EE_INFO*,ref CORINFO_EE_INFO
 CORINFO_ASYNC_INFO*,ref CORINFO_ASYNC_INFO
+CORINFO_WASM_BASE_GLOBALS*,ref CORINFO_WASM_BASE_GLOBALS
 CORINFO_TAILCALL_HELPERS*,ref CORINFO_TAILCALL_HELPERS
 CORINFO_SWIFT_LOWERING*,ref CORINFO_SWIFT_LOWERING
 CORINFO_FPSTRUCT_LOWERING*,ref CORINFO_FPSTRUCT_LOWERING
@@ -293,6 +294,7 @@ FUNCTIONS
     [ManualNativeWrapper] bool runWithSPMIErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter);
     void getEEInfo(CORINFO_EE_INFO* pEEInfoOut);
     void getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut);
+    void getWasmBaseGlobals(CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut);
     mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
     size_t printMethodName(CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
     const char* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char **className, const char **namespaceName, const char **enclosingClassNames, size_t maxEnclosingClassNames);

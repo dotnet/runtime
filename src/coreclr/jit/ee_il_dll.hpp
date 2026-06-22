@@ -187,6 +187,17 @@ inline CORINFO_ASYNC_INFO* Compiler::eeGetAsyncInfo()
     return &asyncInfo;
 }
 
+inline CORINFO_WASM_BASE_GLOBALS* Compiler::eeGetWasmBaseGlobals()
+{
+    if (!wasmBaseGlobalsInitialized)
+    {
+        info.compCompHnd->getWasmBaseGlobals(&wasmBaseGlobals);
+        wasmBaseGlobalsInitialized = true;
+    }
+
+    return &wasmBaseGlobals;
+}
+
 /*****************************************************************************
  *
  *  Convert the type returned from the VM to a var_type.

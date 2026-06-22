@@ -1179,6 +1179,14 @@ void WrapICorJitInfo::getAsyncInfo(
     API_LEAVE(getAsyncInfo);
 }
 
+void WrapICorJitInfo::getWasmBaseGlobals(
+          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+{
+    API_ENTER(getWasmBaseGlobals);
+    wrapHnd->getWasmBaseGlobals(pBaseGlobalsOut);
+    API_LEAVE(getWasmBaseGlobals);
+}
+
 mdMethodDef WrapICorJitInfo::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {

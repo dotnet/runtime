@@ -3464,6 +3464,13 @@ namespace Internal.JitInterface
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
         }
 
+        private void getWasmBaseGlobals(ref CORINFO_WASM_BASE_GLOBALS pBaseGlobalsOut)
+        {
+            pBaseGlobalsOut.stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(WasmBaseGlobalSymbolNode.GetForIndex(WasmBaseGlobalSymbolNode.StackPointerGlobalIndex));
+            pBaseGlobalsOut.imageBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(WasmBaseGlobalSymbolNode.GetForIndex(WasmBaseGlobalSymbolNode.ImageBaseGlobalIndex));
+            pBaseGlobalsOut.tableBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(WasmBaseGlobalSymbolNode.GetForIndex(WasmBaseGlobalSymbolNode.TableBaseGlobalIndex));
+        }
+
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
         {
             Debug.Assert(objRefsSize == (dataSize + (nuint)(PointerSize - 1)) / (nuint)PointerSize);
@@ -4255,63 +4262,50 @@ namespace Internal.JitInterface
             int relocDelta = 0;
             ISymbolNode relocTarget;
 
-            if (fRelocType == CorInfoReloc.WASM_GLOBAL_INDEX_LEB)
-            {
-                // The JIT references the well-known wasm base globals (stack pointer / image base /
-                // table base) via WASM_GLOBAL_INDEX_LEB relocations, encoding the fixed base-global
-                // index as the relocation target. Map that index to the corresponding base-global
-                // symbol; the object writer resolves it to the final wasm global index. The inline
-                // value is target-only (no addend).
-                Debug.Assert(addlDelta == 0);
-                relocTarget = WasmBaseGlobalSymbolNode.GetForIndex(checked((int)(nint)target));
-            }
-            else
-            {
-                BlockType targetBlock = findKnownBlock(target, out relocDelta);
+            BlockType targetBlock = findKnownBlock(target, out relocDelta);
 
-                switch (targetBlock)
-                {
-                    case BlockType.Code:
-                        relocTarget = _methodCodeNode;
-                        break;
+            switch (targetBlock)
+            {
+                case BlockType.Code:
+                    relocTarget = _methodCodeNode;
+                    break;
 
-                    case BlockType.ColdCode:
+                case BlockType.ColdCode:
 #if READYTORUN
-                        Debug.Assert(_methodColdCodeNode != null);
-                        relocTarget = _methodColdCodeNode;
-                        break;
+                    Debug.Assert(_methodColdCodeNode != null);
+                    relocTarget = _methodColdCodeNode;
+                    break;
 #else
-                        throw new NotImplementedException("ColdCode relocs");
+                    throw new NotImplementedException("ColdCode relocs");
 #endif
 
-                    case BlockType.ROData:
-                        relocTarget = _roDataBlob;
-                        break;
+                case BlockType.ROData:
+                    relocTarget = _roDataBlob;
+                    break;
 
-                    case BlockType.RWData:
-                        relocTarget = _rwDataBlob;
-                        break;
+                case BlockType.RWData:
+                    relocTarget = _rwDataBlob;
+                    break;
 
 #if READYTORUN
-                    case BlockType.BBCounts:
-                        relocTarget = null;
-                        break;
+                case BlockType.BBCounts:
+                    relocTarget = null;
+                    break;
 #endif
 
-                    default:
-                        // Reloc points to something outside of the generated blocks
-                        var targetObject = HandleToObject(target);
+                default:
+                    // Reloc points to something outside of the generated blocks.
+                    var targetObject = HandleToObject(target);
 
 #if READYTORUN
-                        if (targetObject is RequiresRuntimeJitIfUsedSymbol requiresRuntimeSymbol)
-                        {
-                            throw new RequiresRuntimeJitException(requiresRuntimeSymbol.Message);
-                        }
+                    if (targetObject is RequiresRuntimeJitIfUsedSymbol requiresRuntimeSymbol)
+                    {
+                        throw new RequiresRuntimeJitException(requiresRuntimeSymbol.Message);
+                    }
 #endif
 
-                        relocTarget = (ISymbolNode)targetObject;
-                        break;
-                }
+                    relocTarget = (ISymbolNode)targetObject;
+                    break;
             }
 
             RelocType relocType = GetRelocType(fRelocType);

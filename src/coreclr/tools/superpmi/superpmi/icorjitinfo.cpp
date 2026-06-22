@@ -1197,6 +1197,12 @@ void MyICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
     jitInstance->mc->repGetAsyncInfo(pAsyncInfo);
 }
 
+void MyICJI::getWasmBaseGlobals(CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+{
+    jitInstance->mc->cr->AddCall("getWasmBaseGlobals");
+    jitInstance->mc->repGetWasmBaseGlobals(pBaseGlobalsOut);
+}
+
 /*********************************************************************************/
 //
 // Diagnostic methods

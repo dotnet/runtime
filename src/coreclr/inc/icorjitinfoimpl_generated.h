@@ -498,6 +498,9 @@ void getEEInfo(
 void getAsyncInfo(
           CORINFO_ASYNC_INFO* pAsyncInfoOut) override;
 
+void getWasmBaseGlobals(
+          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut) override;
+
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
 

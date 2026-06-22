@@ -995,6 +995,7 @@ typedef struct CORINFO_JUST_MY_CODE_HANDLE_*CORINFO_JUST_MY_CODE_HANDLE;
 typedef struct CORINFO_PROFILING_STRUCT_*   CORINFO_PROFILING_HANDLE;   // a handle guaranteed to be unique per process
 typedef struct CORINFO_GENERIC_STRUCT_*     CORINFO_GENERIC_HANDLE;     // a generic handle (could be any of the above)
 typedef struct CORINFO_WASM_TYPE_SYMBOL_STRUCT_* CORINFO_WASM_TYPE_SYMBOL_HANDLE; // a handle for WASM type symbols
+typedef struct CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* CORINFO_WASM_GLOBAL_SYMBOL_HANDLE; // a handle for a WASM global symbol
 
 // what is actually passed on the varargs call
 typedef struct CORINFO_VarArgInfo *         CORINFO_VARARGS_HANDLE;
@@ -1832,6 +1833,19 @@ struct CORINFO_ASYNC_INFO
     CORINFO_METHOD_HANDLE finishSuspensionNoContinuationContextMethHnd;
     // Finish suspension with saving continuation context (i.e. normal task await)
     CORINFO_METHOD_HANDLE finishSuspensionWithContinuationContextMethHnd;
+};
+
+// The well-known wasm "base globals" that JIT-generated code references via
+// WASM_GLOBAL_INDEX_LEB relocations. Each handle is the relocation target for the
+// corresponding base global; the object writer resolves it to the final wasm global index.
+struct CORINFO_WASM_BASE_GLOBALS
+{
+    // Shadow stack pointer global (read at the root frame, then threaded through locals).
+    CORINFO_WASM_GLOBAL_SYMBOL_HANDLE stackPointer;
+    // Image base global (__memory_base), added to static data offsets.
+    CORINFO_WASM_GLOBAL_SYMBOL_HANDLE imageBase;
+    // Table base global (__table_base), added to funclet pointer offsets.
+    CORINFO_WASM_GLOBAL_SYMBOL_HANDLE tableBase;
 };
 
 // Flags passed from JIT to runtime.
@@ -3122,6 +3136,12 @@ public:
 
     virtual void getAsyncInfo(
         CORINFO_ASYNC_INFO* pAsyncInfoOut
+    ) = 0;
+
+    // Get the well-known wasm base-global symbols (shadow stack pointer, image base, table base)
+    // that JIT-generated wasm code references via WASM_GLOBAL_INDEX_LEB relocations.
+    virtual void getWasmBaseGlobals(
+        CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut
     ) = 0;
 
     /*********************************************************************************/

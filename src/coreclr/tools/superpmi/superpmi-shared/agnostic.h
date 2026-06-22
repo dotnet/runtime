@@ -208,6 +208,13 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG finishSuspensionWithContinuationContextMethHnd;
 };
 
+struct Agnostic_CORINFO_WASM_BASE_GLOBALS
+{
+    DWORDLONG stackPointer;
+    DWORDLONG imageBase;
+    DWORDLONG tableBase;
+};
+
 struct Agnostic_GetOSRInfo
 {
     DWORD index;

@@ -131,6 +131,7 @@ struct JitInterfaceCallbacks
     bool (* runWithSPMIErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     void (* getEEInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_EE_INFO* pEEInfoOut);
     void (* getAsyncInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ASYNC_INFO* pAsyncInfoOut);
+    void (* getWasmBaseGlobals)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut);
     mdMethodDef (* getMethodDefFromMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod);
     size_t (* printMethodName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     const char* (* getMethodNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName, const char** enclosingClassNames, size_t maxEnclosingClassNames);
@@ -1357,6 +1358,14 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->getAsyncInfo(_thisHandle, &pException, pAsyncInfoOut);
+    if (pException != nullptr) throw pException;
+}
+
+    virtual void getWasmBaseGlobals(
+          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->getWasmBaseGlobals(_thisHandle, &pException, pBaseGlobalsOut);
     if (pException != nullptr) throw pException;
 }
 

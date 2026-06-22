@@ -140,6 +140,7 @@ namespace Internal.JitInterface
                 s_callbacks.runWithSPMIErrorTrap = &_runWithSPMIErrorTrap;
                 s_callbacks.getEEInfo = &_getEEInfo;
                 s_callbacks.getAsyncInfo = &_getAsyncInfo;
+                s_callbacks.getWasmBaseGlobals = &_getWasmBaseGlobals;
                 s_callbacks.getMethodDefFromMethod = &_getMethodDefFromMethod;
                 s_callbacks.printMethodName = &_printMethodName;
                 s_callbacks.getMethodNameFromMetadata = &_getMethodNameFromMetadata;
@@ -321,6 +322,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, void*, void*, byte> runWithSPMIErrorTrap;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_EE_INFO*, void> getEEInfo;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_ASYNC_INFO*, void> getAsyncInfo;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_WASM_BASE_GLOBALS*, void> getWasmBaseGlobals;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, mdToken> getMethodDefFromMethod;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, nuint, nuint*, nuint> printMethodName;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte**, byte**, byte**, nuint, byte*> getMethodNameFromMetadata;
@@ -2150,6 +2152,20 @@ namespace Internal.JitInterface
             try
             {
                 _this.getAsyncInfo(ref *pAsyncInfoOut);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void _getWasmBaseGlobals(IntPtr thisHandle, IntPtr* ppException, CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.getWasmBaseGlobals(ref *pBaseGlobalsOut);
             }
             catch (Exception ex)
             {

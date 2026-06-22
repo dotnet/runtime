@@ -1382,6 +1382,13 @@ void interceptor_ICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
     mc->recGetAsyncInfo(pAsyncInfo);
 }
 
+void interceptor_ICJI::getWasmBaseGlobals(CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+{
+    mc->cr->AddCall("getWasmBaseGlobals");
+    original_ICorJitInfo->getWasmBaseGlobals(pBaseGlobalsOut);
+    mc->recGetWasmBaseGlobals(pBaseGlobalsOut);
+}
+
 /*********************************************************************************/
 //
 // Diagnostic methods

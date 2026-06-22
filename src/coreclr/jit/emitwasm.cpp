@@ -120,14 +120,33 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 //   The bare immediate is replaced by a maximally-padded, relocatable global index. The object
 //   writer resolves the relocation to the final global index: crossgen2/R2R self-resolves it back
 //   to the same fixed index, while a relocatable NativeAOT object leaves it for wasm-ld to assign.
-//   The relocation target is encoded as the fixed index; the EE (recordRelocation) maps it to the
-//   corresponding base global symbol.
+//   The relocation target is the base global's symbol handle, obtained from the EE via
+//   getWasmBaseGlobals; the object writer maps that symbol to the corresponding global index.
 //
 void emitter::emitIns_BaseGlobalGet(unsigned baseGlobalIndex)
 {
     assert(baseGlobalIndex <= WASM_TABLE_BASE_GLOBAL);
 
-    instrDesc* id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)baseGlobalIndex);
+    // Resolve the base global to its symbol handle, which becomes the relocation target.
+    CORINFO_WASM_BASE_GLOBALS* baseGlobals = m_compiler->eeGetWasmBaseGlobals();
+
+    CORINFO_WASM_GLOBAL_SYMBOL_HANDLE symbol;
+    switch (baseGlobalIndex)
+    {
+        case WASM_STACK_POINTER_GLOBAL:
+            symbol = baseGlobals->stackPointer;
+            break;
+        case WASM_IMAGE_BASE_GLOBAL:
+            symbol = baseGlobals->imageBase;
+            break;
+        case WASM_TABLE_BASE_GLOBAL:
+            symbol = baseGlobals->tableBase;
+            break;
+        default:
+            unreached();
+    }
+
+    instrDesc* id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(size_t)symbol);
     id->idIns(INS_global_get);
     id->idInsFmt(IF_GLOBALIDX);
 

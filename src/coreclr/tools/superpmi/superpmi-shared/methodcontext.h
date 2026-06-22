@@ -559,6 +559,10 @@ public:
     void dmpGetAsyncInfo(DWORD key, const Agnostic_CORINFO_ASYNC_INFO& value);
     void repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut);
 
+    void recGetWasmBaseGlobals(const CORINFO_WASM_BASE_GLOBALS* pBaseGlobals);
+    void dmpGetWasmBaseGlobals(DWORD key, const Agnostic_CORINFO_WASM_BASE_GLOBALS& value);
+    void repGetWasmBaseGlobals(CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut);
+
     void recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
     void dmpGetGSCookie(DWORD key, DLDL value);
     void repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
@@ -1209,6 +1213,7 @@ enum mcPackets
     Packet_GetWasmTypeSymbol = 235,
     Packet_GetWasmLowering = 236,
     Packet_GetAsyncOtherVariant = 237,
+    Packet_GetWasmBaseGlobals = 238,
 };
 
 void SetDebugDumpVariables();
