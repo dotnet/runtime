@@ -325,7 +325,7 @@ namespace System.Diagnostics
 
         internal static string ResolveValidPath(string filename, string? workingDirectory)
         {
-            if (string.IsNullOrEmpty(workingDirectory))
+            if (string.IsNullOrWhiteSpace(workingDirectory))
             {
                 workingDirectory = null;
             }
