@@ -187,7 +187,18 @@ namespace System.Formats.Tar
                     return;
                 }
 
-                await TAdapter.AdvanceToEndAsync(dataStream, cancellationToken).ConfigureAwait(false);
+                // SubReadStream is not available in all assemblies that consume the shared
+                // IReadWriteAdapter (e.g. Net.Security, Net.Mail), so AdvanceToEnd cannot
+                // live on the adapter interface. Use typeof(TAdapter) to dispatch sync/async;
+                // the JIT eliminates the dead branch when the generic is specialized.
+                if (typeof(TAdapter) == typeof(SyncReadWriteAdapter))
+                {
+                    dataStream.AdvanceToEnd();
+                }
+                else
+                {
+                    await dataStream.AdvanceToEndAsync(cancellationToken).ConfigureAwait(false);
+                }
 
                 await TarHelpers.SkipBlockAlignmentPaddingCoreAsync<TAdapter>(_archiveStream, _previouslyReadEntry._header._size, cancellationToken).ConfigureAwait(false);
             }
