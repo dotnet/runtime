@@ -12334,6 +12334,7 @@ public:
     typeInfo makeTypeInfo(CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
     typeInfo makeTypeInfo(CorInfoType          ciType,
                           CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
+    typeInfo makeTypeInfoForFieldAddr(mdToken fieldToken);
 
     bool checkTailCallConstraint(OPCODE                  opcode,
                                  CORINFO_RESOLVED_TOKEN* pResolvedToken,
