@@ -1008,6 +1008,9 @@ namespace System.Text.Json
         {
             // Create local copy to avoid bounds checks.
             ReadOnlySpan<byte> localBuffer = _buffer;
+#if NET
+            int whiteSpaceRun = 0;
+#endif
             for (; _consumed < localBuffer.Length; _consumed++)
             {
                 byte val = localBuffer[_consumed];
@@ -1030,6 +1033,39 @@ namespace System.Text.Json
                 {
                     _bytePositionInLine++;
                 }
+
+#if NET
+                // Short whitespace runs (the common case) are handled by the scalar loop above at
+                // no extra cost. Once a long run is detected, hand the remainder of the buffer to a
+                // vectorized search, which is dramatically faster for deeply indented or
+                // whitespace-heavy documents. The check lives inside the whitespace branch so it is
+                // never reached when the next token immediately follows (e.g. minified JSON).
+                if (++whiteSpaceRun == JsonConstants.MaxScalarWhiteSpaceScanLength)
+                {
+                    _consumed++;
+                    ReadOnlySpan<byte> remaining = localBuffer.Slice(_consumed);
+                    int idx = remaining.IndexOfFirstNonWhiteSpace();
+                    if (idx > 0)
+                    {
+                        // Reproduce the scalar loop's line/byte-position bookkeeping for the run.
+                        (int newLines, int lastLineFeedIndex) = JsonReaderHelper.CountNewLines(remaining.Slice(0, idx));
+                        _lineNumber += newLines;
+                        if (lastLineFeedIndex >= 0)
+                        {
+                            // Byte positions on the current line start after the last line feed character.
+                            _bytePositionInLine = idx - lastLineFeedIndex - 1;
+                        }
+                        else
+                        {
+                            _bytePositionInLine += idx;
+                        }
+
+                        _consumed += idx;
+                    }
+
+                    return;
+                }
+#endif
             }
         }
 

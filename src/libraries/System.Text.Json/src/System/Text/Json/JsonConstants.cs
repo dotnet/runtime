@@ -51,6 +51,12 @@ namespace System.Text.Json
         // Explicitly skipping ReverseSolidus since that is handled separately
         public static ReadOnlySpan<byte> EscapableChars => "\"nrt/ubf"u8;
 
+        // SkipWhiteSpace scans up to this many leading bytes with a scalar loop before falling
+        // back to a vectorized search. Short inter-token whitespace runs (the common case) stay
+        // at scalar cost, while longer runs (e.g. deeply indented or whitespace-heavy documents)
+        // are accelerated. Only used on .NET, where SearchValues-based scanning is available.
+        public const int MaxScalarWhiteSpaceScanLength = 16;
+
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
         // In the worst case, an ASCII character represented as a single utf-8 byte could expand 6x when escaped.
