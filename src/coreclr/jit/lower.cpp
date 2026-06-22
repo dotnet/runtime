@@ -9466,8 +9466,8 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 
 #ifdef FEATURE_SIMD
         case GT_HWINTRINSIC:
-        // TODO-WASM: SIMD12 is still maintained through lowering.
-        // Fix the below once we've determined our lowering path for SIMD12.
+            // TODO-WASM: SIMD12 is still maintained through lowering.
+            // Fix the below once we've determined our lowering path for SIMD12.
 #ifndef TARGET_WASM
             assert(!node->TypeIs(TYP_SIMD12));
 #endif
