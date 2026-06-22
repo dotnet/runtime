@@ -2206,7 +2206,7 @@ public sealed unsafe partial class SOSDacImpl
 
             // Context is not stored in the target, but in our own process
             context.FillFromBuffer(new Span<byte>(ctx, (int)context.Size));
-            TargetPointer pThunk = context.InstructionPointer;
+            TargetPointer pThunk = context.InstructionPointer.AsTargetPointer;
 
             if (IsJumpRel64(pThunk))
             {

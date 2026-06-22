@@ -1530,28 +1530,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, ref bool requiresInstMethodTableArg)
-        {
-            MethodDesc result = null;
-            requiresInstMethodTableArg = false;
-
-            MethodDesc method = HandleToObject(ftn);
-            if (method.IsUnboxingThunk())
-            {
-                result = method.GetUnboxedMethod();
-                requiresInstMethodTableArg = method.RequiresInstMethodTableArg();
-            }
-
-            return result != null ? ObjectToHandle(result) : null;
-        }
-
-        private CORINFO_METHOD_STRUCT_* getInstantiatedEntry(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_STRUCT_** methodArg, CORINFO_CLASS_STRUCT_** classArg)
-        {
-            *methodArg = null;
-            *classArg = null;
-            return null;
-        }
-
         private CORINFO_METHOD_STRUCT_* getAsyncOtherVariant(CORINFO_METHOD_STRUCT_* ftn, ref bool variantIsThunk)
         {
             MethodDesc method = HandleToObject(ftn);
@@ -3441,9 +3419,9 @@ namespace Internal.JitInterface
 
             pEEInfoOut.inlinedCallFrameInfo.size = (uint)SizeOfPInvokeTransitionFrame;
 
-            // _target/_firstParameter
+            // _target
             pEEInfoOut.offsetOfDelegateInstance = 2 * (uint)pointerSize;
-            // _methodPtr/_functionPointer
+            // _methodPtr
             pEEInfoOut.offsetOfDelegateFirstTarget = pEEInfoOut.offsetOfDelegateInstance + (uint)pointerSize;
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;

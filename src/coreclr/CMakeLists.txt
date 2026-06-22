@@ -154,8 +154,9 @@ if (NOT CLR_CMAKE_TARGET_BROWSER OR CLR_CROSS_COMPONENTS_BUILD)
 endif ()
 
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
-  # NativeAOT only buildable for a subset of CoreCLR-supported configurations
-  if(CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_LOONGARCH64 OR CLR_CMAKE_HOST_ARCH_RISCV64 OR (CLR_CMAKE_HOST_ARCH_I386 AND CLR_CMAKE_HOST_WIN32))
+  # NativeAOT is buildable for all CoreCLR-supported configurations except a known reject list.
+  # Keep this in sync with the NativeAotSupported reject list in eng/common/native/NativeAotSupported.props.
+  if(NOT (CLR_CMAKE_HOST_ARCH_WASM OR (CLR_CMAKE_HOST_ARCH_I386 AND NOT CLR_CMAKE_HOST_WIN32)))
     add_subdirectory(nativeaot)
   endif()
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)

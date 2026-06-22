@@ -9,5 +9,5 @@ internal partial class TailCallFrame : IData<TailCallFrame>
     [FieldAddress]
     public TargetPointer CalleeSavedRegisters { get; }
 
-    [Field] public TargetPointer ReturnAddress { get; }
+    [Field] public TargetCodePointer ReturnAddress { get; }
 }
