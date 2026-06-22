@@ -152,6 +152,7 @@ namespace System.Runtime.CompilerServices
         internal ref struct Info
         {
             public object? Context;
+            public object? CurrentContinuation;
             public ref nint ContinuationTable;
             public uint ContinuationIndex;
         }
@@ -159,6 +160,7 @@ namespace System.Runtime.CompilerServices
         internal static void InitInfo(ref Info info)
         {
             info.Context = null;
+            info.CurrentContinuation = null;
             ContinuationWrapper.InitInfo(ref info);
         }
 
@@ -999,9 +1001,9 @@ namespace System.Runtime.CompilerServices
                         EmitEvent(context, currentTimestamp, dispatcherId, AsyncEventID.ResumeStateMachineAsyncContext);
                     }
 
-                    if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(activeEventKeywords) && info.Dispatcher != null)
+                    if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(activeEventKeywords))
                     {
-                        AsyncCallstack.EmitEvent(info.Dispatcher, context, currentTimestamp, dispatcherId);
+                        AsyncCallstack.EmitEvent(ref info, context, currentTimestamp, dispatcherId);
                     }
                 }
             }
@@ -1551,9 +1553,14 @@ namespace System.Runtime.CompilerServices
                 public static int MaxAsyncMethodFrameSize => MaxStateMachineAsyncMethodFrameSize;
             }
 
-            public static void EmitEvent(AsyncStateMachineDispatcher dispatcher, AsyncThreadContext context, long currentTimestamp, ulong dispatcherId)
+            public static void EmitEvent(ref AsyncStateMachineDispatcherInfo info, AsyncThreadContext context, long currentTimestamp, ulong dispatcherId)
             {
-                IAsyncStateMachineBox? box = ResolveAsyncStateMachineBox(dispatcher.CurrentContinuation);
+                if (info.Dispatcher == null)
+                {
+                    return;
+                }
+
+                IAsyncStateMachineBox? box = ResolveAsyncStateMachineBox(info.AsyncProfilerInfo.CurrentContinuation);
 
                 CaptureStateMachineAsyncCallstackState state = default;
                 state.Continuation = box;
@@ -1564,14 +1571,14 @@ namespace System.Runtime.CompilerServices
                 if (last != null)
                 {
                     Debug.Assert(last is Task);
-                    dispatcher.LastContinuation = Unsafe.As<Task>(last);
+                    info.Dispatcher.LastContinuation = Unsafe.As<Task>(last);
                 }
                 else
                 {
-                    dispatcher.LastContinuation = null;
+                    info.Dispatcher.LastContinuation = null;
                 }
 
-                dispatcher.ReachedLastContinuation = false;
+                info.Dispatcher.ReachedLastContinuation = false;
             }
 
             public static void EmitEvent(AsyncStateMachineDispatcher dispatcher, AsyncThreadContext context, object? continuation, long currentTimestamp, AsyncEventID eventID, ulong dispatcherId)

@@ -983,13 +983,14 @@ namespace System.Runtime.CompilerServices
                 {
                     Debug.Assert(asyncDispatcherInfo.NextContinuation != null);
                     Continuation curContinuation = asyncDispatcherInfo.NextContinuation;
-                    Continuation? nextContinuation = curContinuation.Next;
                     try
                     {
-                        RuntimeAsyncInstrumentationHelpers.SyncPointCheck(ref asyncDispatcherInfo, flags);
+                        Continuation? nextContinuation = curContinuation.Next;
+                        asyncDispatcherInfo.NextContinuation = nextContinuation;
+
+                        RuntimeAsyncInstrumentationHelpers.SyncPointCheck(ref asyncDispatcherInfo, flags, curContinuation);
 
                         Debug.Assert(awaitState.CurrentThread != null);
-
                         if (curContinuation.TryGetExecutionContext(out ExecutionContext? execContext))
                         {
                             RestoreExecutionContext(awaitState.CurrentThread, execContext);
@@ -1003,7 +1004,6 @@ namespace System.Runtime.CompilerServices
                         if (newContinuation != null)
                         {
                             newContinuation.Next = nextContinuation;
-                            asyncDispatcherInfo.NextContinuation = awaitState.SentinelContinuation!.Next ?? newContinuation;
 
                             RuntimeAsyncInstrumentationHelpers.AwaitSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation, newContinuation, awaitState.SentinelContinuation!.Next);
                             InstrumentedHandleSuspended(flags, ref awaitState);
@@ -1013,14 +1013,10 @@ namespace System.Runtime.CompilerServices
                             return;
                         }
 
-                        asyncDispatcherInfo.NextContinuation = nextContinuation;
-
                         RuntimeAsyncInstrumentationHelpers.CompleteRuntimeAsyncMethod(ref asyncDispatcherInfo, flags, curContinuation);
                     }
                     catch (Exception ex)
                     {
-                        asyncDispatcherInfo.NextContinuation = nextContinuation;
-
                         uint unwindedFrames = 1; // Count current frame.
                         Continuation? handlerContinuation = UnwindToPossibleHandler(asyncDispatcherInfo.NextContinuation, ex, ref unwindedFrames);
                         if (handlerContinuation == null)
@@ -1517,10 +1513,11 @@ namespace System.Runtime.CompilerServices
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void SyncPointCheck(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags)
+            public static void SyncPointCheck(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation curContinuation)
             {
                 if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
                 {
+                    info.AsyncProfilerInfo.CurrentContinuation = curContinuation;
                     AsyncProfiler.SyncPoint.Check(ref info.AsyncProfilerInfo);
                 }
             }

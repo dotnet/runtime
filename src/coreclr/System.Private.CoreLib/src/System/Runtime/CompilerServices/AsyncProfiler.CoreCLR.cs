@@ -101,7 +101,15 @@ namespace System.Runtime.CompilerServices
                     if (IsEnabled.ResumeRuntimeAsyncCallstackEvent(activeEventKeywords))
                     {
                         byte wrapperIndex = (byte)(info.AsyncProfilerInfo.ContinuationIndex & ContinuationWrapper.COUNT_MASK);
-                        AsyncCallstack.EmitResumeEvent(context, currentTimestamp, dispatcherId, wrapperIndex, info.NextContinuation);
+                        if (info.AsyncProfilerInfo.CurrentContinuation != null)
+                        {
+                            Debug.Assert(info.AsyncProfilerInfo.CurrentContinuation is Continuation);
+                            AsyncCallstack.EmitResumeEvent(context, currentTimestamp, dispatcherId, wrapperIndex, Unsafe.As<Continuation>(info.AsyncProfilerInfo.CurrentContinuation));
+                        }
+                        else
+                        {
+                            AsyncCallstack.EmitResumeEvent(context, currentTimestamp, dispatcherId, wrapperIndex, info.NextContinuation);
+                        }
                     }
                 }
             }

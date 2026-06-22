@@ -112,7 +112,7 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
-            activeDispatcher.CurrentContinuation = box;
+            info->AsyncProfilerInfo.CurrentContinuation = box;
 
             AsyncProfiler.SyncPoint.Check(ref info->AsyncProfilerInfo);
 
@@ -157,8 +157,6 @@ namespace System.Runtime.CompilerServices
         private IAsyncStateMachineBox? _inner;
         private Action? _moveNextAction;
 
-        internal IAsyncStateMachineBox? CurrentContinuation;
-
         internal Task? LastContinuation;
 
         internal bool ReachedLastContinuation;
@@ -168,7 +166,6 @@ namespace System.Runtime.CompilerServices
         internal AsyncStateMachineDispatcher(IAsyncStateMachineBox inner) : base()
         {
             _inner = inner;
-            CurrentContinuation = inner;
         }
 
         internal sealed override void ExecuteDirectly(Thread? threadPoolThread) => MoveNext();
@@ -192,6 +189,8 @@ namespace System.Runtime.CompilerServices
             AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
             AsyncProfiler.InitInfo(ref info.AsyncProfilerInfo);
 
+            info.AsyncProfilerInfo.CurrentContinuation = inner;
+
             if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
             {
                 AsyncProfiler.ResumeAsyncContext.Resume(ref info);
@@ -212,7 +211,6 @@ namespace System.Runtime.CompilerServices
 
                 if (IsCompleted)
                 {
-                    CurrentContinuation = null;
                     LastContinuation = null;
                 }
             }
