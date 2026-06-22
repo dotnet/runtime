@@ -4721,6 +4721,7 @@ do                                                                      \
 #if USE_COMPUTED_GOTO
                 // Labels for IR-only opcodes that are never emitted.
                 // The dispatch table needs valid labels for all enum values.
+                INTOP_CASE(INTOP_INVALID)
                 INTOP_CASE(INTOP_NOP)
                 INTOP_CASE(INTOP_DEF)
                 INTOP_CASE(INTOP_MOV_SRC_OFF)

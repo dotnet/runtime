@@ -6,6 +6,8 @@
 // are stored in uint32_t slots in the instruction stream for simplicity. In the future
 // we should add compact opcodes where all data is in uint16_t slots.
 
+OPDEF(INTOP_INVALID, "invalid", 1, 0, 0, InterpOpNoArgs)
+
 OPDEF(INTOP_RET, "ret", 2, 0, 1, InterpOpNoArgs)
 OPDEF(INTOP_RET_I1, "ret.i1", 2, 0, 1, InterpOpNoArgs)
 OPDEF(INTOP_RET_U1, "ret.u1", 2, 0, 1, InterpOpNoArgs)
