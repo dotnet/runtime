@@ -111,7 +111,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(GenericPocoWithNullableConstructorParameter<string>))]
         [JsonSerializable(typeof(PocoWithPolymorphism))]
         [JsonSerializable(typeof(DiscriminatedUnion))]
-        [JsonSerializable(typeof(MyUnion?))]
         [JsonSerializable(typeof(NonAbstractClassWithSingleDerivedType))]
         [JsonSerializable(typeof(PocoCombiningPolymorphicTypeAndDerivedTypes))]
         [JsonSerializable(typeof(ClassWithComponentModelAttributes))]

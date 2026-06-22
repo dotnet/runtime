@@ -352,19 +352,6 @@ namespace System.Text.Json.Schema.Tests
                     """,
                 SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
 
-            // Test nullable struct union to ensure nullability is preserved with anyOf
-            yield return new TestData<MyUnion?>(
-                Value: 42,
-                AdditionalValues: ["test", null],
-                ExpectedJsonSchema: """
-                    {
-                        "anyOf": [
-                            { "type": ["integer","null"] },
-                            { "type": "string" }
-                        ]
-                    }
-                    """);
-
             yield return new TestData<PocoWithRecursiveMembers>(
                 Value: new() { Value = 1, Next = new() { Value = 2, Next = new() { Value = 3 } } },
                 AdditionalValues: [new() { Value = 1, Next = null }],
@@ -1598,8 +1585,6 @@ namespace System.Text.Json.Schema.Tests
             public record Left(string value) : DiscriminatedUnion;
             public record Right(int value) : DiscriminatedUnion;
         }
-
-        public union MyUnion(int, string);
 
         public class PocoCombiningPolymorphicTypeAndDerivedTypes
         {

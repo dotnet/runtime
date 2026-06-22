@@ -182,30 +182,24 @@ namespace System.Text.Json.Schema
                 JsonTypeInfo elementTypeInfo = typeInfo.Options.GetTypeInfo(elementConverter.Type!);
                 schema = MapJsonSchemaCore(ref state, elementTypeInfo, customConverter: elementConverter, cacheResult: false);
 
-                if (schema.AnyOf is { } anyOf)
+                if (elementConverter.IsIeeeFloatingPointConverter &&
+                    (effectiveNumberHandling & JsonNumberHandling.AllowNamedFloatingPointLiterals) != 0)
                 {
-                    // The element schema is an "anyOf" composition. For nullable value types,
-                    // this typically originates from IEEE floating-point types using
-                    // AllowNamedFloatingPointLiterals, though other internal wrappers may also use anyOf.
-                    // Only fold null into the numeric branch for IEEE floating-point converters.
-                    if (elementConverter.IsIeeeFloatingPointConverter)
-                    {
-                        Debug.Assert(anyOf.Exists(b => (b.Type & JsonSchemaType.Number) != 0),
-                            "IEEE floating-point converters with AllowNamedFloatingPointLiterals should have a numeric branch.");
+                    // IEEE floating-point types with AllowNamedFloatingPointLiterals generate an anyOf schema.
+                    // Fold null into the numeric branch to preserve nullability for nullable wrappers.
+                    Debug.Assert(schema.AnyOf is not null, "IEEE floating-point types with AllowNamedFloatingPointLiterals should generate an anyOf schema.");
 
-                        foreach (JsonSchema branch in anyOf)
-                        {
-                            if ((branch.Type & JsonSchemaType.Number) != 0)
-                            {
-                                branch.Type |= JsonSchemaType.Null;
-                                break;
-                            }
-                        }
-                    }
-                    else
+                    List<JsonSchema> anyOf = schema.AnyOf;
+                    Debug.Assert(anyOf.Exists(b => (b.Type & JsonSchemaType.Number) != 0),
+                        "IEEE floating-point anyOf schema should have a numeric branch.");
+
+                    foreach (JsonSchema branch in anyOf)
                     {
-                        // For other anyOf schemas (e.g., nullable struct unions), append a standalone null type.
-                        anyOf.Add(new JsonSchema { Type = JsonSchemaType.Null });
+                        if ((branch.Type & JsonSchemaType.Number) != 0)
+                        {
+                            branch.Type |= JsonSchemaType.Null;
+                            break;
+                        }
                     }
                 }
                 else if (schema.Enum != null)
