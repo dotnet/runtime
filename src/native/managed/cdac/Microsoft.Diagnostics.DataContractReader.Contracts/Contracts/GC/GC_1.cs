@@ -549,11 +549,12 @@ internal struct GC_1 : IGC
             HandleType.Dependent,
             HandleType.WeakInteriorPointer
         ];
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0 || _target.ReadGlobal<byte>(Constants.Globals.FeatureComWrappers) != 0 || _target.ReadGlobal<byte>(Constants.Globals.FeatureObjCMarshal) != 0)
+        IFeatureFlags featureFlags = _target.Contracts.FeatureFlags;
+        if (featureFlags.IsEnabled(RuntimeFeature.COMInterop) || featureFlags.IsEnabled(RuntimeFeature.ComWrappers) || featureFlags.IsEnabled(RuntimeFeature.ObjCMarshal))
         {
             supportedTypes.Add(HandleType.RefCounted);
         }
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureJavaMarshal) != 0)
+        if (featureFlags.IsEnabled(RuntimeFeature.JavaMarshal))
         {
             supportedTypes.Add(HandleType.CrossReference);
         }
@@ -662,7 +663,7 @@ internal struct GC_1 : IGC
             handleData.Secondary = 0;
         }
 
-        if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0 && IsRefCounted(type))
+        if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.COMInterop) && IsRefCounted(type))
         {
             IObject obj = _target.Contracts.Object;
             TargetPointer handle = _target.ReadPointer(handleAddress);
