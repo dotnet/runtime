@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">net11.0-ios</TargetFramework>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">iossimulator-arm64</RuntimeIdentifier>
+    <SupportedOSPlatformVersion>13.4</SupportedOSPlatformVersion>
+    <ApplicationId>com.microsoft.runtime.aottypeloadrecovery.sourceonly</ApplicationId>
+    <UseMonoRuntime Condition="'$(UseMonoRuntime)' == ''">true</UseMonoRuntime>
+    <MonoEnableLLVM Condition="'$(MonoEnableLLVM)' == ''">true</MonoEnableLLVM>
+    <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
+    <EnableCodeSigning Condition="'$(EnableCodeSigning)' == ''">false</EnableCodeSigning>
+    <AotTypeLoadRecoverySourceOnlyDotNetPath Condition="'$(AotTypeLoadRecoverySourceOnlyDotNetPath)' == '' and '$(DOTNET_HOST_PATH)' != '' and Exists('$(DOTNET_HOST_PATH)')">$(DOTNET_HOST_PATH)</AotTypeLoadRecoverySourceOnlyDotNetPath>
+    <AotTypeLoadRecoverySourceOnlyDotNetPath Condition="'$(AotTypeLoadRecoverySourceOnlyDotNetPath)' == ''">dotnet</AotTypeLoadRecoverySourceOnlyDotNetPath>
+    <_SourceOnlyLinkedDir>obj\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\linked\</_SourceOnlyLinkedDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ReproCore\ReproCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SourceOnlyStubProject Include="..\Stubs\ReproContracts\ReproContracts.csproj" />
+  </ItemGroup>
+
+  <!--
+    This source-only app reproduces the trimmed StorePath shape without needing the full functional test app.
+    Before AOT runs, we build the stub contract assembly and copy it over the linked contract output so Apple's
+    build produces _AssembliesToAOT.items for the same missing-member shape that the replay script later uses.
+  -->
+  <Target Name="Issue129613BuildAndSwapSourceStubs" BeforeTargets="_AppleAotCompile;_AOTCompile;_CreateR2RImages;_XamarinComputeIlcCompileInputs">
+    <Exec Command="&quot;$(AotTypeLoadRecoverySourceOnlyDotNetPath)&quot; build &quot;%(SourceOnlyStubProject.Identity)&quot; -c &quot;$(Configuration)&quot;"
+          WorkingDirectory="$(MSBuildProjectDirectory)" />
+
+    <ItemGroup>
+      <SourceOnlyStubArtifacts Include="..\Stubs\ReproContracts\bin\$(Configuration)\netstandard2.0\ReproContracts.dll" />
+      <SourceOnlyStubArtifacts Include="..\Stubs\ReproContracts\bin\$(Configuration)\netstandard2.0\ReproContracts.pdb" Condition="Exists('..\Stubs\ReproContracts\bin\$(Configuration)\netstandard2.0\ReproContracts.pdb')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(SourceOnlyStubArtifacts)"
+          DestinationFolder="$(_SourceOnlyLinkedDir)"
+          SkipUnchangedFiles="false"
+          OverwriteReadOnlyFiles="true" />
+  </Target>
+</Project>

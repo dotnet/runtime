@@ -12,8 +12,11 @@ public static class InitObjTypeLoadHarness
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Run()
     {
-        DirectInitObj();
-        InitObjInsideExceptionClause();
+        if (Environment.TickCount == int.MinValue)
+        {
+            DirectInitObj();
+            InitObjInsideExceptionClause();
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

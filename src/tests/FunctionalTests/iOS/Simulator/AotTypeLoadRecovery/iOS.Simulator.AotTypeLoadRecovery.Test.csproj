@@ -15,8 +15,25 @@
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <iOSLikeDedup Condition="'$(iOSLikeDedup)' == ''">true</iOSLikeDedup>
     <_AotTypeLoadRecoveryContractOutputDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ReproContracts.Contract', '$(Configuration)', '$(TargetFramework)'))</_AotTypeLoadRecoveryContractOutputDir>
+    <_AotTypeLoadRecoveryContractOutputDir Condition="'$(TargetOS)' != '' and '$(TargetArchitecture)' != ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ReproContracts.Contract', '$(Configuration)', '$(TargetFramework)', '$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())'))</_AotTypeLoadRecoveryContractOutputDir>
     <_AotTypeLoadRecoveryReproCoreOutputDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ReproCore', '$(Configuration)', '$(TargetFramework)'))</_AotTypeLoadRecoveryReproCoreOutputDir>
     <_AotTypeLoadRecoveryStubOutputDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ReproContracts.Stub', '$(Configuration)', '$(TargetFramework)'))</_AotTypeLoadRecoveryStubOutputDir>
+    <_AotTypeLoadRecoverySourceOnlyRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', 'SourceOnlyValidation'))</_AotTypeLoadRecoverySourceOnlyRoot>
+    <_AotTypeLoadRecoverySourceOnlyProjectDir>$([MSBuild]::NormalizeDirectory('$(_AotTypeLoadRecoverySourceOnlyRoot)', 'AotTypeLoadRecovery.SourceOnly.iOS'))</_AotTypeLoadRecoverySourceOnlyProjectDir>
+    <_AotTypeLoadRecoverySourceOnlyProject>$([MSBuild]::NormalizePath('$(_AotTypeLoadRecoverySourceOnlyProjectDir)', 'AotTypeLoadRecovery.SourceOnly.iOS.csproj'))</_AotTypeLoadRecoverySourceOnlyProject>
+    <_AotTypeLoadRecoverySourceOnlyScript>$([MSBuild]::NormalizePath('$(_AotTypeLoadRecoverySourceOnlyRoot)', 'issue129613-sourceonly-run-mono-aot.sh'))</_AotTypeLoadRecoverySourceOnlyScript>
+    <_AotTypeLoadRecoverySourceOnlyFramework>$(NetCoreAppCurrent)-ios</_AotTypeLoadRecoverySourceOnlyFramework>
+    <_AotTypeLoadRecoverySourceOnlyRid>iossimulator-arm64</_AotTypeLoadRecoverySourceOnlyRid>
+    <_AotTypeLoadRecoverySourceOnlyBaseDir>$([MSBuild]::NormalizeDirectory('$(_AotTypeLoadRecoverySourceOnlyProjectDir)', 'obj', '$(Configuration)', '$(_AotTypeLoadRecoverySourceOnlyFramework)', '$(_AotTypeLoadRecoverySourceOnlyRid)'))</_AotTypeLoadRecoverySourceOnlyBaseDir>
+    <_AotTypeLoadRecoverySourceOnlyItemsFile>$([MSBuild]::NormalizePath('$(_AotTypeLoadRecoverySourceOnlyBaseDir)', 'linker-items', '_AssembliesToAOT.items'))</_AotTypeLoadRecoverySourceOnlyItemsFile>
+    <_AotTypeLoadRecoverySourceOnlyBuildLog>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'sourceonly-validation.build.log'))</_AotTypeLoadRecoverySourceOnlyBuildLog>
+    <_AotTypeLoadRecoverySourceOnlyWorkingDir>$([System.IO.Path]::GetTempPath())</_AotTypeLoadRecoverySourceOnlyWorkingDir>
+    <_AotTypeLoadRecoverySourceOnlyUserDotNetPath>$(HOME)/Library/Application Support/dotnet/dotnet</_AotTypeLoadRecoverySourceOnlyUserDotNetPath>
+    <AotTypeLoadRecoverySourceOnlyDotNetPath Condition="'$(AotTypeLoadRecoverySourceOnlyDotNetPath)' == '' and '$(DOTNET_HOST_PATH)' != '' and Exists('$(DOTNET_HOST_PATH)')">$(DOTNET_HOST_PATH)</AotTypeLoadRecoverySourceOnlyDotNetPath>
+    <AotTypeLoadRecoverySourceOnlyDotNetPath Condition="'$(AotTypeLoadRecoverySourceOnlyDotNetPath)' == '' and Exists('$(_AotTypeLoadRecoverySourceOnlyUserDotNetPath)')">$(_AotTypeLoadRecoverySourceOnlyUserDotNetPath)</AotTypeLoadRecoverySourceOnlyDotNetPath>
+    <AotTypeLoadRecoverySourceOnlyDotNetPath Condition="'$(AotTypeLoadRecoverySourceOnlyDotNetPath)' == '' and Exists('/usr/local/share/dotnet/dotnet')">/usr/local/share/dotnet/dotnet</AotTypeLoadRecoverySourceOnlyDotNetPath>
+    <AotTypeLoadRecoverySourceOnlyDotNetPath Condition="'$(AotTypeLoadRecoverySourceOnlyDotNetPath)' == ''">dotnet</AotTypeLoadRecoverySourceOnlyDotNetPath>
+    <_AotTypeLoadRecoverySourceOnlyDotNetDir>$([System.IO.Path]::GetDirectoryName('$(AotTypeLoadRecoverySourceOnlyDotNetPath)'))</_AotTypeLoadRecoverySourceOnlyDotNetDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,6 +53,12 @@
     <AotTypeLoadRecoveryStubProject Include="Stubs\ReproContracts\ReproContracts.Stub.csproj" />
   </ItemGroup>
 
+  <!--
+    The functional test app references the real contract assembly so trimming/AOT see the same public surface
+    as the repro, but we replace the linked/published copy with the stub assembly immediately before AOT.
+    That preserves the contract shape used by ReproCore while forcing the compiler to encounter the missing
+    members that trigger the recovery path under test.
+  -->
   <Target Name="AotTypeLoadRecoveryBuildAndSwapSourceStubs" BeforeTargets="_AppleAotCompile;_AOTCompile;_CreateR2RImages;_XamarinComputeIlcCompileInputs">
     <MSBuild Projects="@(AotTypeLoadRecoveryStubProject)"
              Targets="Build"
@@ -46,6 +69,7 @@
     <ItemGroup>
       <_AotTypeLoadRecoveryStubArtifacts Include="$(_AotTypeLoadRecoveryStubOutputDir)ReproContracts.dll" />
       <_AotTypeLoadRecoveryStubArtifacts Include="$(_AotTypeLoadRecoveryStubOutputDir)ReproContracts.pdb" Condition="Exists('$(_AotTypeLoadRecoveryStubOutputDir)ReproContracts.pdb')" />
+      <!-- Apple/mobile builds can consume the linked assembly from a few different staging locations depending on the phase. -->
       <_AotTypeLoadRecoveryStubDestinations Include="$(IntermediateLinkDir)" Condition="'$(IntermediateLinkDir)' != '' and Exists('$(IntermediateLinkDir)ReproContracts.dll')" />
       <_AotTypeLoadRecoveryStubDestinations Include="$(IntermediateOutputPath)linked\" Condition="'$(IntermediateLinkDir)' == '' and '$(IntermediateOutputPath)' != '' and Exists('$(IntermediateOutputPath)linked\ReproContracts.dll')" />
       <_AotTypeLoadRecoveryStubDestinations Include="$(AppleBuildDir)" Condition="'$(AppleBuildDir)' != '' and Exists('$(AppleBuildDir)ReproContracts.dll')" />
@@ -59,5 +83,42 @@
           DestinationFolder="%(_AotTypeLoadRecoveryStubDestinations.Identity)"
           SkipUnchangedFiles="false"
           OverwriteReadOnlyFiles="true" />
+  </Target>
+
+  <!--
+    This target turns the reduced source-only repro into a build-time proof that the local Mono AOT compiler
+    still handles the trimmed/generic StorePath shape correctly. The nested build intentionally uses the
+    workload-installed SDK to generate Apple's linker/AOT metadata, then the replay script reruns the captured
+    aot-instances.dll command with the repo-built mono-aot-cross from the current worktree.
+  -->
+  <Target Name="AotTypeLoadRecoveryValidateSourceOnlyStorePath"
+          BeforeTargets="_AppleAotCompile;_AOTCompile;_CreateR2RImages;_XamarinComputeIlcCompileInputs"
+          Condition="'$(TargetOS)' == 'iossimulator' and '$(TargetArchitecture)' == 'arm64'">
+    <PropertyGroup>
+      <_AotTypeLoadRecoverySourceOnlyCompiler>@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier', '$(_AotTypeLoadRecoverySourceOnlyRid)'))</_AotTypeLoadRecoverySourceOnlyCompiler>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_AotTypeLoadRecoverySourceOnlyGeneratedState Include="$(_AotTypeLoadRecoverySourceOnlyItemsFile)" />
+      <_AotTypeLoadRecoverySourceOnlyGeneratedState Include="$(_AotTypeLoadRecoverySourceOnlyBaseDir)aot-compiler-path-*.txt" />
+    </ItemGroup>
+
+    <!-- Force the inner build to regenerate the linker/AOT state files that the replay script consumes. -->
+    <Delete Files="@(_AotTypeLoadRecoverySourceOnlyGeneratedState)" />
+
+    <Error Condition="'$(_AotTypeLoadRecoverySourceOnlyCompiler)' == '' or !Exists('$(_AotTypeLoadRecoverySourceOnlyCompiler)')" Text="AotTypeLoadRecovery could not resolve the local mono-aot-cross compiler for $(_AotTypeLoadRecoverySourceOnlyRid)." />
+
+    <!--
+      Clear the repo-SDK resolver variables so the nested build stays on the workload-installed SDK even when
+      the outer test is being driven by ./dotnet.sh. We ignore the inner app-build exit code here because the
+      proof only needs the emitted linker/AOT inputs; the replay below is the actual pass/fail check.
+    -->
+    <Exec Command="/usr/bin/env -u DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR -u DOTNET_MSBUILD_SDK_RESOLVER_SDKS_DIR -u DOTNET_MSBUILD_SDK_RESOLVER_SDKS_VER -u MSBuildSDKsPath DOTNET_ROOT=&quot;$(_AotTypeLoadRecoverySourceOnlyDotNetDir)&quot; DOTNET_MULTILEVEL_LOOKUP=0 &quot;$(AotTypeLoadRecoverySourceOnlyDotNetPath)&quot; build &quot;$(_AotTypeLoadRecoverySourceOnlyProject)&quot; --no-incremental -c &quot;$(Configuration)&quot; -p:TargetFramework=&quot;$(_AotTypeLoadRecoverySourceOnlyFramework)&quot; -r &quot;$(_AotTypeLoadRecoverySourceOnlyRid)&quot; -p:EnableCodeSigning=false -p:SelfContained=true -p:UseMonoRuntime=true -p:MonoEnableLLVM=true -p:AotTypeLoadRecoverySourceOnlyDotNetPath=&quot;$(AotTypeLoadRecoverySourceOnlyDotNetPath)&quot; &gt; &quot;$(_AotTypeLoadRecoverySourceOnlyBuildLog)&quot; 2&gt;&amp;1"
+          IgnoreExitCode="true"
+          WorkingDirectory="$(_AotTypeLoadRecoverySourceOnlyWorkingDir)" />
+
+    <!-- Replay the exact captured AOT command with the repo-built compiler; this is the regression proof. -->
+    <Exec Command="&quot;$(_AotTypeLoadRecoverySourceOnlyScript)&quot; --project-dir &quot;$(_AotTypeLoadRecoverySourceOnlyProjectDir)&quot; --configuration &quot;$(Configuration)&quot; --framework &quot;$(_AotTypeLoadRecoverySourceOnlyFramework)&quot; --rid &quot;$(_AotTypeLoadRecoverySourceOnlyRid)&quot; --assembly aot-instances.dll --compiler &quot;$(_AotTypeLoadRecoverySourceOnlyCompiler)&quot; --expect-exit-code 0"
+          WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 </Project>

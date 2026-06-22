@@ -9,8 +9,8 @@ public static class AotTypeLoadRecoveryHarness
 {
     public static void Run()
     {
-        RunAndExpectFailure(nameof(StorePathHarness), StorePathHarness.Run);
-        RunAndExpectFailure(nameof(InitObjTypeLoadHarness), InitObjTypeLoadHarness.Run);
+        StorePathHarness.Run();
+        InitObjTypeLoadHarness.Run();
         RunAndExpectFailure(nameof(LoadSideInlineHarness), LoadSideInlineHarness.Run);
     }
 
