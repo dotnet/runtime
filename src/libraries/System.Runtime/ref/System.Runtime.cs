@@ -3959,8 +3959,8 @@ namespace System
         public static int Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static int Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static int Parse(string s, System.IFormatProvider? provider) { throw null; }
-        public static int ReverseBits(int value) { throw null; }
         public static int PopCount(int value) { throw null; }
+        public static int ReverseBits(int value) { throw null; }
         public static int RotateLeft(int value, int rotateAmount) { throw null; }
         public static int RotateRight(int value, int rotateAmount) { throw null; }
         public static int Sign(int value) { throw null; }
@@ -4102,8 +4102,8 @@ namespace System
         public static long Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static long Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static long Parse(string s, System.IFormatProvider? provider) { throw null; }
-        public static long ReverseBits(long value) { throw null; }
         public static long PopCount(long value) { throw null; }
+        public static long ReverseBits(long value) { throw null; }
         public static long RotateLeft(long value, int rotateAmount) { throw null; }
         public static long RotateRight(long value, int rotateAmount) { throw null; }
         public static int Sign(long value) { throw null; }
@@ -4263,8 +4263,8 @@ namespace System
         public static nint Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static nint Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static nint Parse(string s, System.IFormatProvider? provider) { throw null; }
-        public static nint ReverseBits(nint value) { throw null; }
         public static nint PopCount(nint value) { throw null; }
+        public static nint ReverseBits(nint value) { throw null; }
         public static nint RotateLeft(nint value, int rotateAmount) { throw null; }
         public static nint RotateRight(nint value, int rotateAmount) { throw null; }
         public static int Sign(nint value) { throw null; }
@@ -7119,8 +7119,8 @@ namespace System
         public static ushort Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static ushort Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static ushort Parse(string s, System.IFormatProvider? provider) { throw null; }
-        public static ushort ReverseBits(ushort value) { throw null; }
         public static ushort PopCount(ushort value) { throw null; }
+        public static ushort ReverseBits(ushort value) { throw null; }
         public static ushort RotateLeft(ushort value, int rotateAmount) { throw null; }
         public static ushort RotateRight(ushort value, int rotateAmount) { throw null; }
         public static int Sign(ushort value) { throw null; }
@@ -7262,8 +7262,8 @@ namespace System
         public static uint Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static uint Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static uint Parse(string s, System.IFormatProvider? provider) { throw null; }
-        public static uint ReverseBits(uint value) { throw null; }
         public static uint PopCount(uint value) { throw null; }
+        public static uint ReverseBits(uint value) { throw null; }
         public static uint RotateLeft(uint value, int rotateAmount) { throw null; }
         public static uint RotateRight(uint value, int rotateAmount) { throw null; }
         public static int Sign(uint value) { throw null; }
@@ -7405,8 +7405,8 @@ namespace System
         public static ulong Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static ulong Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static ulong Parse(string s, System.IFormatProvider? provider) { throw null; }
-        public static ulong ReverseBits(ulong value) { throw null; }
         public static ulong PopCount(ulong value) { throw null; }
+        public static ulong ReverseBits(ulong value) { throw null; }
         public static ulong RotateLeft(ulong value, int rotateAmount) { throw null; }
         public static ulong RotateRight(ulong value, int rotateAmount) { throw null; }
         public static int Sign(ulong value) { throw null; }
@@ -7563,8 +7563,8 @@ namespace System
         public static nuint Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static nuint Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static nuint Parse(string s, System.IFormatProvider? provider) { throw null; }
-        public static nuint ReverseBits(nuint value) { throw null; }
         public static nuint PopCount(nuint value) { throw null; }
+        public static nuint ReverseBits(nuint value) { throw null; }
         public static nuint RotateLeft(nuint value, int rotateAmount) { throw null; }
         public static nuint RotateRight(nuint value, int rotateAmount) { throw null; }
         public static int Sign(nuint value) { throw null; }
