@@ -485,12 +485,19 @@ CDAC_TYPE_FIELD(Debugger, T_POINTER, RCThread, cdac_data<Debugger>::RCThread)
 CDAC_TYPE_FIELD(Debugger, T_INT32, RSRequestedSync, cdac_data<Debugger>::RSRequestedSync)
 CDAC_TYPE_FIELD(Debugger, T_INT32, SendExceptionsOutsideOfJMC, cdac_data<Debugger>::SendExceptionsOutsideOfJMC)
 CDAC_TYPE_FIELD(Debugger, T_INT32, GCNotificationEventsEnabled, cdac_data<Debugger>::GCNotificationEventsEnabled)
+CDAC_TYPE_FIELD(Debugger, T_POINTER, RgHijackFunction, cdac_data<Debugger>::RgHijackFunction)
 CDAC_TYPE_END(Debugger)
 
 CDAC_TYPE_BEGIN(DebuggerRCThread)
 CDAC_TYPE_INDETERMINATE(DebuggerRCThread)
 CDAC_TYPE_FIELD(DebuggerRCThread, T_POINTER, DCB, cdac_data<DebuggerRCThread>::DCB)
 CDAC_TYPE_END(DebuggerRCThread)
+
+CDAC_TYPE_BEGIN(MemoryRange)
+CDAC_TYPE_SIZE(sizeof(MemoryRange))
+CDAC_TYPE_FIELD(MemoryRange, T_POINTER, StartAddress, cdac_data<MemoryRange>::StartAddress)
+CDAC_TYPE_FIELD(MemoryRange, T_NUINT, Size, cdac_data<MemoryRange>::Size)
+CDAC_TYPE_END(MemoryRange)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 
 CDAC_TYPE_BEGIN(ArrayListBase)
@@ -606,10 +613,11 @@ CDAC_TYPE_FIELD(StressLog, T_UINT32, LoggedFacilities, cdac_offsets<StressLog>::
 CDAC_TYPE_FIELD(StressLog, T_UINT32, Level, cdac_offsets<StressLog>::levelToLog)
 CDAC_TYPE_FIELD(StressLog, T_UINT32, MaxSizePerThread, cdac_offsets<StressLog>::MaxSizePerThread)
 CDAC_TYPE_FIELD(StressLog, T_UINT32, MaxSizeTotal, cdac_offsets<StressLog>::MaxSizeTotal)
-CDAC_TYPE_FIELD(StressLog, T_UINT32, TotalChunks, cdac_offsets<StressLog>::totalChunk)
+CDAC_TYPE_FIELD(StressLog, T_INT32, TotalChunks, cdac_offsets<StressLog>::totalChunk)
 CDAC_TYPE_FIELD(StressLog, T_POINTER, Logs, cdac_offsets<StressLog>::logs)
 CDAC_TYPE_FIELD(StressLog, T_UINT64, TickFrequency, cdac_offsets<StressLog>::tickFrequency)
 CDAC_TYPE_FIELD(StressLog, T_UINT64, StartTimestamp, cdac_offsets<StressLog>::startTimeStamp)
+CDAC_TYPE_FIELD(StressLog, T_UINT64, StartTime, cdac_offsets<StressLog>::startTime)
 CDAC_TYPE_FIELD(StressLog, T_NUINT, ModuleOffset, cdac_offsets<StressLog>::moduleOffset)
 CDAC_TYPE_FIELD(StressLog, T_ARRAY(TYPE(StressLogModuleDesc)), Modules, cdac_offsets<StressLog>::modules)
 CDAC_TYPE_END(StressLog)
@@ -1549,6 +1557,8 @@ CDAC_GLOBAL_STRING(Architecture, wasm)
 #error TARGET_{ARCH} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
 #endif
 
+CDAC_GLOBAL_STRING(RuntimeFlavor, Coreclr)
+
 CDAC_GLOBAL_STRING(RID, RID_STRING)
 
 CDAC_GLOBAL(GCInfoVersion, T_UINT32, GCINFO_VERSION)
@@ -1563,6 +1573,7 @@ CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
 CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
+CDAC_GLOBAL(MaxHijackFunctions, T_UINT32, cdac_data<Debugger>::MaxHijackFunctions)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
 #ifdef FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_POINTER(MetadataUpdatesApplied, &::g_metadataUpdatesApplied)

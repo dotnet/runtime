@@ -128,6 +128,10 @@ public abstract class ContractRegistry
     /// Gets an instance of the Debugger contract for the target.
     /// </summary>
     public virtual IDebugger Debugger => GetContract<IDebugger>();
+    /// <summary>
+    /// Gets an instance of the StressLog contract for the target.
+    /// </summary>
+    public virtual IStressLog StressLog => GetContract<IStressLog>();
 
     /// <summary>
     /// Gets an instance of the RuntimeMutableTypeSystem contract for the target.
