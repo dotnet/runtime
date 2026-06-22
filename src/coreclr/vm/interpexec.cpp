@@ -4719,20 +4719,8 @@ do                                                                      \
                     INTOP_NEXT;
                 }
 #if USE_COMPUTED_GOTO
-                // Labels for opcodes that are conditionally compiled out or never emitted.
+                // Labels for IR-only opcodes that are never emitted.
                 // The dispatch table needs valid labels for all enum values.
-#ifndef DEBUG
-                INTOP_CASE(INTOP_HALT)
-#endif
-#ifndef DEBUGGING_SUPPORTED
-                INTOP_CASE(INTOP_BREAKPOINT)
-                INTOP_CASE(INTOP_DEBUG_METHOD_ENTER)
-                INTOP_CASE(INTOP_DEBUG_SEQ_POINT)
-#endif
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-                INTOP_CASE(INTOP_STORESTUBCONTEXT)
-#endif
-                // IR-only opcodes (never emitted to bytecode)
                 INTOP_CASE(INTOP_NOP)
                 INTOP_CASE(INTOP_DEF)
                 INTOP_CASE(INTOP_MOV_SRC_OFF)

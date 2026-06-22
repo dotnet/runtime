@@ -437,8 +437,14 @@ OPDEF(INTOP_ZEROBLK_IMM, "zeroblk.imm", 3, 0, 1, InterpOpInt)
 OPDEF(INTOP_INITBLK, "initblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_CPBLK, "cpblk", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_LOCALLOC, "localloc", 3, 1, 1, InterpOpNoArgs)
+
+#ifdef DEBUGGING_SUPPORTED
 OPDEF(INTOP_BREAKPOINT, "breakpoint", 1, 0, 0, InterpOpNoArgs)
+#endif
+
+#ifdef DEBUG
 OPDEF(INTOP_HALT, "halt", 1, 0, 0, InterpOpNoArgs)
+#endif
 
 OPDEF(INTOP_THROW, "throw", 4, 0, 1, InterpOpInt)
 OPDEF(INTOP_RETHROW, "rethrow", 1, 0, 0, InterpOpInt)
@@ -475,9 +481,15 @@ OPDEF(INTOP_EXCHANGEADD_I4, "exchangeadd.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_EXCHANGEADD_I8, "exchangeadd.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SQRT_R4, "sqrt.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_SQRT_R8, "sqrt.r8", 3, 1, 1, InterpOpNoArgs)
+
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 OPDEF(INTOP_STORESTUBCONTEXT, "storestubcontext", 2, 1, 0, InterpOpNoArgs)
+#endif
+
+#ifdef DEBUGGING_SUPPORTED
 OPDEF(INTOP_DEBUG_METHOD_ENTER, "debug.method.enter", 2, 0, 0, InterpOpInt)
 OPDEF(INTOP_DEBUG_SEQ_POINT, "debug.seq.point", 1, 0, 0, InterpOpNoArgs)
+#endif
 
 // All instructions after this point are IROPS, instructions that are not emitted/executed
 OPDEF(INTOP_NOP, "nop", 1, 0, 0, InterpOpNoArgs)
