@@ -75,6 +75,7 @@ and inserting a property in a `<PropertyGroup>`, as follows:
 - Prevent a test from running when testing ildasm/ilasm round-tripping: add `<IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>`
 - Prevent a test assembly from being passed to the Mono AOT compiler: add `<MonoAotIncompatible>true</MonoAotIncompatible>`
 - Prevent a test from being passed to CrossGen2: add `<CrossGenTest>false</CrossGenTest>`
+- Prevent a test from running in ReadyToRun (R2R) test legs: add `<R2RIncompatible>true</R2RIncompatible>`
 - Prevent a test from being passed to the NativeAOT ILCompiler and run under NativeAOT: add `<NativeAotIncompatible>true</NativeAotIncompatible>`
 
 When one of the following settings is already required for a given test, the following settings can also be set in the project file instead of via XUnit attributes. They should not be the only reason a test is marked as `<RequiresProcessIsolation>true</RequiresProcessIsolation>`, however.
