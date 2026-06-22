@@ -1463,7 +1463,7 @@ private:
         }
     }
 };
-#else if defined(TARGET_WASM)
+#elif defined(TARGET_WASM)
 struct HWIntrinsic final
 {
     HWIntrinsic(const GenTreeHWIntrinsic* node)
