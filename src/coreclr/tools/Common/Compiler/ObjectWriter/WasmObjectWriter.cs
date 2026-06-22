@@ -875,16 +875,14 @@ namespace ILCompiler.ObjectWriter
                 if (reloc.Type == RelocType.WASM_GLOBAL_INDEX_LEB)
                 {
                     // The JIT references the well-known wasm base globals (stack pointer / image base /
-                    // table base) via WASM_GLOBAL_INDEX_LEB relocations against undefined imported symbols.
+                    // table base) via WASM_GLOBAL_INDEX_LEB relocations against the WasmBaseGlobalSymbolNode.
                     // For R2R these globals live at fixed indices supplied by the runtime loader, so we
-                    // self-resolve them here. They are intentionally absent from _definedSymbols.
-                    int globalIndex = reloc.SymbolName.ToString() switch
+                    // self-resolve them to the node's GlobalIndex here. They are intentionally absent from
+                    // _definedSymbols.
+                    if (!WasmBaseGlobalSymbolNode.TryGetGlobalIndexForSymbol(reloc.SymbolName.ToString(), out int globalIndex))
                     {
-                        WasmBaseGlobalSymbolNode.StackPointerSymbolName => StackPointerGlobalIndex,
-                        WasmBaseGlobalSymbolNode.ImageBaseSymbolName => ImageBaseGlobalIndex,
-                        WasmBaseGlobalSymbolNode.TableBaseSymbolName => TableBaseGlobalIndex,
-                        _ => throw new InvalidDataException($"Unexpected wasm base global symbol '{reloc.SymbolName}'")
-                    };
+                        throw new InvalidDataException($"Unexpected wasm base global symbol '{reloc.SymbolName}'");
+                    }
 
                     fixed (byte* pData = ReadRelocToDataSpan(reloc, relocScratchBuffer, sectionStart))
                     {

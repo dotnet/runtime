@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class WasmBaseGlobalSymbolNode : SortableDependencyNode, ISortableSymbolNode
     {
         // Fixed wasm global indices, matching the ABI shared with the object writer
-        // (see WasmAbiConstants / WasmObjectWriter and the JIT's emitwasm.cpp).
+        // (see WasmAbiConstants / WasmObjectWriter and the JIT's emitwasm.cpp, as well as the WebCIL spec).
         public const int StackPointerGlobalIndex = 0;
         public const int ImageBaseGlobalIndex = 1;
         public const int TableBaseGlobalIndex = 2;
@@ -43,6 +43,13 @@ namespace ILCompiler.DependencyAnalysis
             _globalIndex = globalIndex;
         }
 
+        private static readonly Dictionary<string, int> s_symbolNameToGlobalIndex = new()
+        {
+            { StackPointerSymbolName, StackPointerGlobalIndex },
+            { ImageBaseSymbolName, ImageBaseGlobalIndex },
+            { TableBaseSymbolName, TableBaseGlobalIndex },
+        };
+
         public static WasmBaseGlobalSymbolNode GetForIndex(int globalIndex) => globalIndex switch
         {
             StackPointerGlobalIndex => s_stackPointer,
@@ -50,6 +57,11 @@ namespace ILCompiler.DependencyAnalysis
             TableBaseGlobalIndex => s_tableBase,
             _ => throw new ArgumentOutOfRangeException(nameof(globalIndex))
         };
+
+        // Maps a well-known base-global symbol name back to its fixed wasm global index. This is the
+        // authoritative mapping used by the object writer to resolve WASM_GLOBAL_INDEX_LEB relocations.
+        public static bool TryGetGlobalIndexForSymbol(string symbolName, out int globalIndex)
+            => s_symbolNameToGlobalIndex.TryGetValue(symbolName, out globalIndex);
 
         public int GlobalIndex => _globalIndex;
 

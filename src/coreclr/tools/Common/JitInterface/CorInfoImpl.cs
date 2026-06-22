@@ -4259,11 +4259,10 @@ namespace Internal.JitInterface
             int length;
             ref ArrayBuilder<Relocation> sourceBlock = ref findRelocBlock(locationBlock, out length);
 
-            int relocDelta = 0;
-            ISymbolNode relocTarget;
-
+            int relocDelta;
             BlockType targetBlock = findKnownBlock(target, out relocDelta);
 
+            ISymbolNode relocTarget;
             switch (targetBlock)
             {
                 case BlockType.Code:
@@ -4294,7 +4293,7 @@ namespace Internal.JitInterface
 #endif
 
                 default:
-                    // Reloc points to something outside of the generated blocks.
+                    // Reloc points to something outside of the generated blocks
                     var targetObject = HandleToObject(target);
 
 #if READYTORUN
