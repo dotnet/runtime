@@ -42,5 +42,6 @@ constexpr GUID JITEEVersionIdentifier = { /* 91460d2c-d6a8-460b-a95f-8342301bebe
     0xd6a8,
     0x460b,
     {0xa9, 0x5f, 0x83, 0x42, 0x30, 0x1b, 0xeb, 0xe8}
+};
 
 #endif // JIT_EE_VERSIONING_GUID_H
