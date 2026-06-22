@@ -901,6 +901,8 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #if defined(TARGET_WASM)
 // Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
 RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
+RELEASE_CONFIG_INTEGER(JitWasmSimdNyiToR2RUnsupported, "JitWasmSimdNyiToR2RUnsupported", 0)
+
 // Specify methods that will fail with R2R unsupported after codegen.
 // Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
 CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")

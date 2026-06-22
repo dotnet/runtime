@@ -229,7 +229,7 @@ DEFINE_METHOD(DECIMAL,              CURRENCY_CTOR,          .ctor,              
 
 DEFINE_CLASS_U(System,                 Delegate,            NoClass)
 DEFINE_FIELD_U(_target,                    DelegateObject,   _target)
-DEFINE_FIELD_U(_methodBase,                DelegateObject,   _methodBase)
+DEFINE_FIELD_U(_helperObject,               DelegateObject,   _helperObject)
 DEFINE_FIELD_U(_methodPtr,                 DelegateObject,   _methodPtr)
 DEFINE_FIELD_U(_methodPtrAux,              DelegateObject,   _methodPtrAux)
 DEFINE_CLASS(DELEGATE,              System,                 Delegate)
@@ -629,7 +629,6 @@ DEFINE_CLASS(OLE_AUT_BINDER,        System,                 OleAutBinder)
 END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
-DEFINE_FIELD(MONITOR,               CONDITION_TABLE,        s_conditionTable)
 DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_ENTER, SynchronizedMethodEnter, SM_Obj_RefBool_RetVoid)
 DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_EXIT,  SynchronizedMethodExit,  SM_Obj_RefBool_RetVoid)
 

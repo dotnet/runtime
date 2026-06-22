@@ -29,7 +29,6 @@ namespace Internal.JitInterface
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
 
-        private uint OffsetOfDelegateFirstTarget => (uint)(4 * PointerSize); // Delegate._functionPointer
         private int SizeOfReversePInvokeTransitionFrame => 2 * PointerSize;
 
         private RyuJitCompilation _compilation;
@@ -1701,8 +1700,6 @@ namespace Internal.JitInterface
             {
                 pResult->sig.flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
             }
-
-            pResult->_wrapperDelegateInvoke = 0;
         }
 
         private CORINFO_CLASS_STRUCT_* embedClassHandle(CORINFO_CLASS_STRUCT_* handle, ref void* ppIndirection)

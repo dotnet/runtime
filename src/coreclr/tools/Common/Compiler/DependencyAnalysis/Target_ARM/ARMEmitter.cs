@@ -41,6 +41,17 @@ namespace ILCompiler.DependencyAnalysis.ARM
             Builder.EmitShort((short)(0x2000 + ((byte)reg << 8) + immediate));
         }
 
+        // movw reg, #imm16
+        // reg range: [0..12, LR, PC]
+        // immediate range: [0..65535]
+        public void EmitMOV(Register reg, ushort immediate)
+        {
+            Debug.Assert(IsValidReg(reg));
+            int imm16 = immediate;
+            Builder.EmitShort((short)(0xF240 | (((imm16 >> 11) & 1) << 10) | ((imm16 >> 12) & 0xF)));
+            Builder.EmitShort((short)((((imm16 >> 8) & 7) << 12) | ((byte)reg << 8) | (imm16 & 0xFF)));
+        }
+
         // cmp reg, immediate
         // reg range: [0..7]
         // immediage range: [0..255]
@@ -111,11 +122,20 @@ namespace ILCompiler.DependencyAnalysis.ARM
         }
 
         // ldr reg, [reg]
-        // reg range: [0..7]
+        // reg range: [0..PC]
         public void EmitLDR(Register destination, Register source)
         {
-            Debug.Assert(IsLowReg(destination) && IsLowReg(source));
-            Builder.EmitShort((short)(0x6800 + (((byte)source & 0x7) << 3) + ((byte)destination & 0x7)));
+            // If both registers are low (R0-R7), use the compact 16-bit encoding
+            if (IsLowReg(destination) && IsLowReg(source))
+            {
+                Builder.EmitShort((short)(0x6800 + (((byte)source & 0x7) << 3) + ((byte)destination & 0x7)));
+            }
+            else
+            {
+                // For high registers (R8-R12), use the 32-bit encoding with offset 0
+                Debug.Assert(IsValidReg(destination) && IsValidReg(source));
+                EmitLDR(destination, source, 0);
+            }
         }
 
         // ldr.w reg, [reg, #offset]

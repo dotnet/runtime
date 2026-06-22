@@ -223,11 +223,15 @@ function libCoreRunFactory() {
                 if (typeof (wasmExports.__stack_pointer) === "undefined") {
                     throw new Error("__stack_pointer was not preserved by the linker or optimizer");
                 }
+                if (typeof (wasmExports.__coreclr_wasm_rtlrestorecontext_tag) === "undefined") {
+                    throw new Error("__coreclr_wasm_rtlrestorecontext_tag was not preserved by the linker or optimizer");
+                }
                 payloadPtr = HEAPU32[ptrPtr >>> 2 >>> 0];
                 wasmInstance = new WebAssembly.Instance(wasmModule, {
                     webcil: {
                         memory: wasmMemory,
                         stackPointer: wasmExports.__stack_pointer,
+                        rtlRestoreContextTag: wasmExports.__coreclr_wasm_rtlrestorecontext_tag,
                         table: wasmTable,
                         tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
                         imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr)

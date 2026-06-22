@@ -520,6 +520,7 @@ namespace Internal.JitInterface
         WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
         WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                                // e.g. in R2R scenarios, encoding an offset from $imageBase
+        WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
     }
 
     public enum CorInfoGCType
@@ -929,9 +930,6 @@ namespace Internal.JitInterface
         public uint offsetOfDelegateInstance;
         public uint offsetOfDelegateFirstTarget;
 
-        // Wrapper delegate offsets
-        public uint offsetOfWrapperDelegateIndirectCell;
-
         // Reverse PInvoke offsets
         public uint sizeOfReversePInvokeFrame;
 
@@ -1134,9 +1132,6 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP instParamLookup;
-
-        public byte _wrapperDelegateInvoke;
-        public bool wrapperDelegateInvoke { get { return _wrapperDelegateInvoke != 0; } set { _wrapperDelegateInvoke = value ? (byte)1 : (byte)0; } }
     }
 
     public enum CORINFO_DEVIRTUALIZATION_DETAIL

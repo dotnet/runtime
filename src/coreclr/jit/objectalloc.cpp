@@ -3008,7 +3008,7 @@ void ObjectAllocator::RewriteUses()
                             call->gtCallType    = CT_INDIRECT;
                             call->gtControlExpr = target;
                             call->gtCallMethHnd = NO_METHOD_HANDLE;
-                            call->gtCallMoreFlags &= ~(GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
+                            call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
                         }
                     }
                 }
@@ -3546,7 +3546,7 @@ GenTree* ObjectAllocator::IsGuard(BasicBlock* block, GuardInfo* info)
     info->m_local  = addr->AsLclVar()->GetLclNum();
     bool isNonNull = false;
     bool isExact   = false;
-    info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtCompileTimeHandle;
+    info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->GetCompileTimeHandle();
     info->m_block  = block;
     info->m_stmt   = stmt;
     info->m_relop  = tree;
