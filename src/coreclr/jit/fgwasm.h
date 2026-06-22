@@ -437,6 +437,30 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
         }
     }
 
+    // Inject any unreachable in-try blocks as successors of the try entry, so
+    // wasm DFS visits them and the layout pass keeps them inside the try region.
+    //
+    if (comp->bbIsTryBeg(block))
+    {
+        EHblkDsc* const HBtab = comp->ehGetBlockTryDsc(block);
+
+        for (BasicBlock* const tb : comp->Blocks(HBtab->ebdTryBeg, HBtab->ebdTryLast))
+        {
+            if ((tb == block) || (tb->bbPreds != nullptr))
+            {
+                continue;
+            }
+            // Skip throw helpers (handled above) and blocks not in the same
+            // EH region as the try entry (inner try or different handler).
+            //
+            if (tb->HasFlag(BBF_THROW_HELPER) || !BasicBlock::sameEHRegion(tb, block))
+            {
+                continue;
+            }
+            RETURN_ON_ABORT(func(tb));
+        }
+    }
+
     switch (block->GetKind())
     {
             // Funclet returns have no successors
