@@ -119,7 +119,10 @@
     </PropertyGroup>
 
     <Message Importance="High" Text="$(DotNetPgoCmd)"/>
-    <Exec Command="$(DotNetPgoCmd)" />
+    <!-- dotnet-pgo merge can emit non-fatal warnings (e.g. when the restored optimization data
+         mixes mibc files collected on different RIDs/runtimes) while still succeeding. Rely on the
+         tool's exit code instead of letting MSBuild interpret such output lines as build errors. -->
+    <Exec Command="$(DotNetPgoCmd)" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
   <Target Name="CreateMergedMibcFile"
