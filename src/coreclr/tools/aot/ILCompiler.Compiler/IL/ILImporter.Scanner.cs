@@ -1743,7 +1743,7 @@ namespace Internal.IL
 
         private static bool IsRuntimeHelpersGetDelegate(MethodDesc method)
         {
-            if (method.IsIntrinsic && method.Name == "GetDelegate"u8 && method.Instantiation.Length == 1)
+            if (method.IsIntrinsic && method.Name == "GetDelegate"u8 && method.Instantiation.Length == 0)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)
