@@ -10,7 +10,10 @@
 #include "error_codes.h"
 #include "pal.h" // for pal_char_t
 
-// Opaque hostfxr resolver handle
+// Hostfxr resolver state.
+//
+// Ownership:
+//  - dotnet_root and fxr_path are allocated by hostfxr_resolver_init and freed by hostfxr_resolver_cleanup.
 typedef struct hostfxr_resolver
 {
     void* hostfxr_dll;
