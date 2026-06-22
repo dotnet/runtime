@@ -34,6 +34,8 @@ public interface IObject : IContract
     TargetPointer GetSyncBlockAddress(TargetPointer address) => throw new NotImplementedException();
     DelegateInfo GetDelegateInfo(TargetPointer address) => throw new NotImplementedException();
     ContinuationInfo GetContinuationInfo(TargetPointer address) => throw new NotImplementedException();
+    ulong GetSize(TargetPointer address) => throw new NotImplementedException();
+    void GetStringData(TargetPointer address, out uint length, out uint offsetToFirstChar) => throw new NotImplementedException();
 }
 
 public readonly struct Object : IObject

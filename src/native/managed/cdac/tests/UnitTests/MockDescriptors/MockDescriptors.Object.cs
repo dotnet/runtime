@@ -341,7 +341,7 @@ internal partial class MockDescriptors
             return mockObject.Address;
         }
 
-        internal ulong AddObjectWithSyncBlock(ulong methodTable, uint syncBlockIndex, ulong rcw, ulong ccw, ulong ccf, ulong taggedMemory = 0)
+        internal ulong AddObjectWithSyncBlock(ulong methodTable, uint syncBlockIndex, ulong rcw, ulong ccw, ulong ccf)
         {
             const uint IsSyncBlockIndexBits = 0x08000000;
             const uint SyncBlockIndexMask = (1 << 26) - 1;
@@ -356,7 +356,7 @@ internal partial class MockDescriptors
             ulong syncTableValueAddress = address - TestSyncBlockValueToObjectOffset;
             Builder.TargetTestHelpers.Write(Builder.BorrowAddressRange(syncTableValueAddress, sizeof(uint)), syncTableValue);
 
-            AddSyncBlock(syncBlockIndex, rcw, ccw, ccf, taggedMemory);
+            AddSyncBlock(syncBlockIndex, rcw, ccw, ccf);
             return address;
         }
 
@@ -474,9 +474,9 @@ internal partial class MockDescriptors
             Builder.AddHeapFragment(fragment);
         }
 
-        private void AddSyncBlock(uint index, ulong rcw, ulong ccw, ulong ccf, ulong taggedMemory = 0)
+        private void AddSyncBlock(uint index, ulong rcw, ulong ccw, ulong ccf)
         {
-            MockSyncBlock syncBlock = SyncBlockBuilder.AddSyncBlock(rcw, ccw, ccf, taggedMemory: taggedMemory, name: $"Sync Block {index}");
+            MockSyncBlock syncBlock = SyncBlockBuilder.AddSyncBlock(rcw, ccw, ccf, name: $"Sync Block {index}");
 
             ulong syncTableEntryAddress = TestSyncTableEntriesAddress + ((ulong)index * (ulong)SyncTableEntryLayout.Size);
             MockMemorySpace.HeapFragment syncTableEntryFragment = new()

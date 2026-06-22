@@ -1106,6 +1106,8 @@ class SuperPMICollect:
                             rsp_write_handle.write("--obj-format:wasm" + "\n")
                             # FIXME: Remove JitWasmNyiToR2RUnsupported once wasm codegen covers all cases
                             rsp_write_handle.write("--codegenopt:JitWasmNyiToR2RUnsupported=1" + "\n")
+                            # FIXME: Remove JitWasmSimdNyiToR2RUnsupported once wasm codegen covers all SIMD cases
+                            rsp_write_handle.write("--codegenopt:JitWasmSimdNyiToR2RUnsupported=1" + "\n")
                         for var, value in dotnet_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
@@ -1730,6 +1732,13 @@ class SuperPMIReplay:
             if self.coreclr_args.arch != self.coreclr_args.target_arch:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
+            if self.coreclr_args.target_arch == "wasm":
+                # FIXME: Remove JitWasmSimdNyiToR2RUnsupported as soon as we have collections which include the option
+                repro_flags += [
+                    "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1",
+                    "-jit2option", "force", "JitWasmSimdNyiToR2RUnsupported=1"
+                ]
+
             if not self.coreclr_args.sequential and not self.coreclr_args.compile:
                 if not self.coreclr_args.parallelism:
                     common_flags += [ "-p" ]
@@ -2207,6 +2216,12 @@ class SuperPMIReplayAsmDiffs:
                 "-jitoption", "force", "AltJitNgen=*"
             ]
 
+        if self.coreclr_args.target_arch == "wasm":
+            # FIXME: Remove JitWasmSimdNyiToR2RUnsupported as soon as we have collections which include the option
+            altjit_replay_flags += [
+                "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1"
+            ]
+
         # Keep track if any MCH file replay had asm diffs
         files_with_asm_diffs = []
         files_with_replay_failures = []
@@ -2279,6 +2294,25 @@ class SuperPMIReplayAsmDiffs:
                     # that both Release compilers can interpret). However, we rarely or never compare
                     # two Release compilers, so this is safest.
                     flags += [ "-ignoreStoredConfig" ]
+
+                    # `-ignoreStoredConfig` drops any codegenopt the collection recorded into the
+                    # MCH stored config. For wasm we need to re-supply
+                    # `JitWasmNyiToR2RUnsupported=1` (set by crossgen-corelib.proj during collection)
+                    # so that unimplemented opcodes turn into R2R-unsupported skips rather than
+                    # asserts. FIXME: remove once wasm codegen covers all cases.
+                    if self.coreclr_args.target_arch == "wasm":
+                        flags += [
+                            "-jitoption", "force", "JitWasmNyiToR2RUnsupported=1",
+                            "-jit2option", "force", "JitWasmNyiToR2RUnsupported=1"
+                        ]
+
+                # TODO: Remove this (and add under the above ignoreStoredConfig option)
+                # once we have collections which include JitWasmSimdNyiToR2RUnsupported
+                if self.coreclr_args.target_arch == "wasm":
+                    flags += [
+                            "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1",
+                            "-jit2option", "force", "JitWasmSimdNyiToR2RUnsupported=1"
+                    ]
 
                 # Change the working directory to the Core_Root we will call SuperPMI from.
                 # This is done to allow libcoredistools to be loaded correctly on unix

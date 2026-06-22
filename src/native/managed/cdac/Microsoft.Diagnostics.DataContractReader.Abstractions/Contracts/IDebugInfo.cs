@@ -72,6 +72,11 @@ public readonly struct DebugVarInfo
     public uint BaseRegister2 { get; init; }
     /// <summary>Second stack offset (RegisterStack).</summary>
     public int StackOffset2 { get; init; }
+    /// <summary>
+    /// For <see cref="VarNumber"/> == <c>ICorDebugInfo::CALL_RETURN_ILNUM</c> entries, the IL offset of
+    /// the call site whose return value this entry describes. Zero for all other entries.
+    /// </summary>
+    public uint CallReturnValueILOffset { get; init; }
 }
 
 /// <summary>
