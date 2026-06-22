@@ -635,13 +635,25 @@ public class TestPlaceholderTarget : Target
             }
             else if (_versions.TryGetValue(typeof(TContract), out string? version))
             {
-                if (!_creators.TryGetValue((typeof(TContract), version), out var creator))
+                if (_creators.TryGetValue((typeof(TContract), version), out var creator))
+                {
+                    resolved = creator(_target);
+                }
+                else if (_creators.TryGetValue((typeof(TContract), string.Empty), out var fallback))
+                {
+                    resolved = fallback(_target);
+                }
+                else
                 {
                     failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
                     return false;
                 }
-
-                resolved = creator(_target);
+            }
+            else if (_creators.TryGetValue((typeof(TContract), string.Empty), out var fallback))
+            {
+                // No target-declared version — fall back to the empty-string
+                // "default" registration. Matches CachingContractRegistry.
+                resolved = fallback(_target);
             }
             else
             {

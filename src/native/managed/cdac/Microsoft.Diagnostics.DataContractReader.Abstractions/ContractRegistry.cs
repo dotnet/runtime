@@ -171,6 +171,16 @@ public abstract class ContractRegistry
     /// Register a contract implementation for a specific version.
     /// External packages use this to add contract versions or entirely new contract interfaces.
     /// </summary>
+    /// <remarks>
+    /// The empty string (<c>""</c>) is a reserved "default" version. If a target's
+    /// contract descriptor does not declare a version for the contract — or
+    /// declares a version that is not registered — the registry falls back to the
+    /// implementation registered with the empty-string version, if any. This
+    /// allows host-side helpers (caches, adapters, cross-contract aggregators)
+    /// to provide an implementation that the target doesn't need to advertise,
+    /// while still allowing a future target to take over the contract by
+    /// declaring an explicit version.
+    /// </remarks>
     public abstract void Register<TContract>(string version, Func<Target, TContract> creator)
         where TContract : IContract;
 

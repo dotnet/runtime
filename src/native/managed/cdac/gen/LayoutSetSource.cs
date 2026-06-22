@@ -33,7 +33,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Generated;
 /// first, then managed type metadata), trying each candidate field name
 /// per source. Sources are resolved lazily.
 /// </summary>
-internal readonly struct LayoutSet
+internal sealed class LayoutSet
 {
     private readonly LazyLayout[] _layouts;
 

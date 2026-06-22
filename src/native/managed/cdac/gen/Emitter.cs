@@ -134,7 +134,7 @@ internal static class Emitter
 
         sb.AppendLine($"    public void Write{member.Name}({propType} value)");
         sb.AppendLine("    {");
-        sb.AppendLine($"        LayoutSet layouts = LayoutSet.Resolve(_target, _typeNames);");
+        sb.AppendLine($"        LayoutSet layouts = _target.GetCachedLayoutSet(_typeNames);");
         sb.AppendLine($"        layouts.Select(Address, out var t, out var b, out var n, {NameArgs(member)});");
         if (member.ReadKind == FieldReadKind.Bool)
         {
@@ -176,7 +176,7 @@ internal static class Emitter
         if (needsDescriptor)
         {
             sb.AppendLine();
-            sb.AppendLine($"        LayoutSet layouts = LayoutSet.Resolve(target, _typeNames);");
+            sb.AppendLine($"        LayoutSet layouts = target.GetCachedLayoutSet(_typeNames);");
         }
         sb.AppendLine();
 
