@@ -68,7 +68,28 @@ enum
 // Private requests for the cDAC stress harness.
 enum
 {
-    DACSTRESSPRIV_REQUEST_FLUSH_TARGET_STATE = 0xf2000000
+    DACSTRESSPRIV_REQUEST_FLUSH_TARGET_STATE   = 0xf2000000,
+    DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP = 0xf2000001
+};
+
+// Wire format for DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP.
+//
+// The runtime sends a MethodDesc address to the cDAC; the cDAC computes the
+// CallRefMap byte blob for that MD via its ArgIterator port and returns it
+// in `Blob`. `Hr` is S_OK on success, S_FALSE if the signature is unsupported
+// (treated as a skip), or a failure HRESULT (E_NOTIMPL for unported paths).
+// The fixed 252-byte blob covers any pathological signature -- typical blobs
+// are 1-4 bytes.
+struct DacStressArgGCRefMapRequest
+{
+    CLRDATA_ADDRESS MethodDesc;
+};
+
+struct DacStressArgGCRefMapResponse
+{
+    HRESULT Hr;
+    ULONG32 BlobSize;
+    BYTE    Blob[252];
 };
 
 enum DacpObjectType { OBJ_STRING=0,OBJ_FREE,OBJ_OBJECT,OBJ_ARRAY,OBJ_OTHER };

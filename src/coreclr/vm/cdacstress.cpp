@@ -47,14 +47,30 @@ static const unsigned int CDAC_DEFERRED_FRAME = 0x40000000;
 static const int MAX_DEFERRED_FRAMES = 64;
 
 // Bit flags for DOTNET_CdacStress configuration.
+//
+// Layout (little-endian DWORD):
+//   byte 0 (0x000000FF) -- WHERE: trigger points the stress harness fires at
+//   byte 1 (0x0000FF00) -- WHAT: which sub-checks run when a trigger fires
+//   byte 2 (0x00FF0000) -- MODIFIERS: output / behavior knobs
+//
+// A useful configuration combines at least one WHERE and at least one WHAT
+// (e.g. 0x0101 = ALLOC + GCREFS, 0x0301 = ALLOC + GCREFS + ARGITER).
 enum CdacStressFlags : DWORD
 {
-    // Trigger points (where stress fires)
-    CDACSTRESS_ALLOC        = 0x1,    // Verify at allocation points
+    // WHERE -- trigger points
+    CDACSTRESS_ALLOC        = 0x00000001,  // Verify at allocation points (gchelpers.cpp)
 
-    // Modifiers
-    CDACSTRESS_VERBOSE      = 0x200,  // Rich per-ref diagnostics in the log
+    // WHAT -- sub-checks (require a WHERE bit to be set as well)
+    CDACSTRESS_GCREFS       = 0x00000100,  // Compare cDAC GetStackReferences vs runtime GC root oracle
+    CDACSTRESS_ARGITER      = 0x00000200,  // Compare CallingConvention.EnumerateArguments vs runtime ComputeCallRefMap
+
+    // MODIFIERS
+    CDACSTRESS_VERBOSE      = 0x00010000,  // Rich per-ref diagnostics in the log
 };
+
+// Convenience masks.
+static const DWORD CDACSTRESS_WHERE_MASK = 0x000000FF;
+static const DWORD CDACSTRESS_WHAT_MASK  = 0x0000FF00;
 
 //-----------------------------------------------------------------------------
 // Types
@@ -193,6 +209,8 @@ extern void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags);
 
 static bool IsDeferredFrame(CLRDATA_ADDRESS source, const CLRDATA_ADDRESS* deferred, int deferredCount);
 static void ResolveMethodName(CLRDATA_ADDRESS source, int sourceType, char* buf, int bufLen);
+static void VerifyGcRefsAtStressPoint(Thread* pThread, PCONTEXT regs, DWORD osThreadId);
+static void VerifyArgIteratorOnStack(Thread* pThread);
 
 //-----------------------------------------------------------------------------
 // Static state — cDAC reader
@@ -230,6 +248,18 @@ static volatile LONG    s_frameTotal = 0;
 static volatile LONG    s_frameMatch = 0;
 static volatile LONG    s_frameMismatch = 0;
 static volatile LONG    s_frameKnownNie = 0;
+
+// ArgIterator (sub-trigger CDACSTRESS_ARGITER) counters. Distinct MDs only;
+// per-MD dedup means each MD contributes exactly once across the run.
+static volatile LONG    s_argIterPass = 0;
+static volatile LONG    s_argIterFail = 0;
+static volatile LONG    s_argIterSkip = 0;
+static volatile LONG    s_argIterError = 0;
+
+// Per-MD dedup for ArgIterator verification. Lazily allocated on first use,
+// freed in Shutdown. Protected by s_cdacLock acquired in VerifyAtStressPoint.
+class MethodDesc;
+static SetSHash<MethodDesc*, PtrSetSHashTraits<MethodDesc*>>* s_argIterVerifiedMDs = nullptr;
 
 //-----------------------------------------------------------------------------
 // Thread-local state
@@ -316,6 +346,22 @@ static int ReadThreadContextCallback(uint32_t threadId, uint32_t contextFlags, u
 static bool IsCdacStressVerboseEnabled()
 {
     return (s_cdacStressLevel & CDACSTRESS_VERBOSE) != 0;
+}
+
+// Sub-check: cDAC GetStackReferences vs runtime GC root oracle. This is the
+// original cdacstress comparison; gating it on a bit lets users enable
+// only the cheaper ArgIterator sub-check if desired.
+static bool IsCdacStressGcRefsEnabled()
+{
+    return (s_cdacStressLevel & CDACSTRESS_GCREFS) != 0;
+}
+
+// Sub-check: cDAC CallingConvention.EnumerateArguments vs runtime
+// ComputeCallRefMap. Runs inside VerifyAtStressPoint at every fired trigger
+// when CDACSTRESS_ARGITER is set.
+static bool IsCdacStressArgIterEnabled()
+{
+    return (s_cdacStressLevel & CDACSTRESS_ARGITER) != 0;
 }
 
 // Single-line file logger. Self-guards on s_logFile, so callers don't need to.
@@ -532,6 +578,12 @@ void CdacStressPolicy::Shutdown()
         "CDAC GC Stress: %ld frames examined "
         "(%ld matched / %ld mismatched / %ld known-NIE)\n",
         (long)s_frameTotal, (long)s_frameMatch, (long)s_frameMismatch, (long)s_frameKnownNie);
+    if (IsCdacStressArgIterEnabled())
+    {
+        fprintf(stderr,
+            "CDAC GC Stress: ArgIter: %ld pass / %ld fail / %ld skip / %ld error\n",
+            (long)s_argIterPass, (long)s_argIterFail, (long)s_argIterSkip, (long)s_argIterError);
+    }
     STRESS_LOG3(LF_GCROOTS, LL_ALWAYS,
         "CDAC GC Stress shutdown: %d verifications (%d pass / %d fail)\n",
         (int)totalVerifications, (int)s_passCount, (int)s_failCount);
@@ -547,8 +599,20 @@ void CdacStressPolicy::Shutdown()
         fprintf(s_logFile, "  Matched:       %ld\n", (long)s_frameMatch);
         fprintf(s_logFile, "  Mismatched:    %ld\n", (long)s_frameMismatch);
         fprintf(s_logFile, "  Known NIE:     %ld\n", (long)s_frameKnownNie);
+        if (IsCdacStressArgIterEnabled())
+        {
+            fprintf(s_logFile, "[ARG_STATS] pass=%ld fail=%ld skip=%ld error=%ld\n",
+                (long)s_argIterPass, (long)s_argIterFail,
+                (long)s_argIterSkip, (long)s_argIterError);
+        }
         fclose(s_logFile);
         s_logFile = nullptr;
+    }
+
+    if (s_argIterVerifiedMDs != nullptr)
+    {
+        delete s_argIterVerifiedMDs;
+        s_argIterVerifiedMDs = nullptr;
     }
 
     if (s_cdacSosDac != nullptr)
@@ -1249,6 +1313,130 @@ static bool IsDeferredFrame(CLRDATA_ADDRESS source, const CLRDATA_ADDRESS* defer
 }
 
 //-----------------------------------------------------------------------------
+// ArgIterator sub-trigger: compare CallingConvention.EnumerateArguments
+// (via the cDAC port) against the runtime's own ComputeCallRefMap for every
+// MD on a transition Frame in the active thread's frame chain.
+//
+// Phase 1 (this file): plumbing only. The cDAC handler returns E_NOTIMPL for
+// every MD, so every verification logs [ARG_SKIP]. This validates the
+// Request channel and frame iteration without touching the port itself.
+//-----------------------------------------------------------------------------
+
+// Per-MD dedup: each MD is verified at most once per process. The set grows
+// monotonically; bound is the number of distinct MDs that ever hit a
+// transition Frame -- in practice <10K even for long-running stress sessions.
+// Protected by s_cdacLock, which the caller (VerifyAtStressPoint) already holds.
+// (Forward-declared near the other static state above so Shutdown can free it.)
+
+// Resolve a MethodDesc address to a human-readable name via the cDAC.
+// Returns "<unknown>" on failure. Buffer must be at least 1 byte.
+static void ResolveMethodNameFromMD(CLRDATA_ADDRESS mdAddr, char* buf, int bufLen)
+{
+    if (bufLen <= 0)
+        return;
+
+    if (s_cdacSosDac != nullptr)
+    {
+        WCHAR wname[256] = {};
+        unsigned int nameLen = 0;
+        if (SUCCEEDED(s_cdacSosDac->GetMethodDescName(mdAddr, ARRAY_SIZE(wname), wname, &nameLen)) && nameLen > 0)
+        {
+            WideCharToMultiByte(CP_UTF8, 0, wname, -1, buf, bufLen, NULL, NULL);
+            return;
+        }
+    }
+    snprintf(buf, bufLen, "<unknown 0x%llx>", (unsigned long long)mdAddr);
+}
+
+// Verify ArgIterator output for a single MD. Phase 1: the cDAC always
+// returns E_NOTIMPL, so every call emits [ARG_SKIP]. Phase 2+ will add
+// runtime-side ComputeCallRefMap and byte-level comparison.
+static void VerifyArgIteratorForMD(MethodDesc* pMD, FrameIdentifier frameId)
+{
+    DacStressArgGCRefMapRequest req = {};
+    req.MethodDesc = (CLRDATA_ADDRESS)(LONG_PTR)pMD;
+
+    DacStressArgGCRefMapResponse resp = {};
+    HRESULT cdacHr = s_cdacProcess->Request(
+        DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP,
+        sizeof(req), (BYTE*)&req,
+        sizeof(resp), (BYTE*)&resp);
+
+    char methodName[256];
+    ResolveMethodNameFromMD(req.MethodDesc, methodName, sizeof(methodName));
+    LPCSTR frameName = Frame::GetFrameTypeName(frameId);
+    if (frameName == nullptr)
+        frameName = "<unknown>";
+
+    if (cdacHr == E_NOTIMPL || resp.Hr == E_NOTIMPL || resp.Hr == S_FALSE)
+    {
+        InterlockedIncrement(&s_argIterSkip);
+        CDAC_LOG("[ARG_SKIP] MD=0x%llx frame=%s reason=0x%08x %s\n",
+            (unsigned long long)req.MethodDesc, frameName,
+            (unsigned int)(FAILED(cdacHr) ? cdacHr : resp.Hr), methodName);
+        return;
+    }
+    if (FAILED(cdacHr) || FAILED(resp.Hr))
+    {
+        InterlockedIncrement(&s_argIterError);
+        CDAC_LOG("[ARG_ERROR] MD=0x%llx frame=%s cdacHr=0x%08x respHr=0x%08x %s\n",
+            (unsigned long long)req.MethodDesc, frameName,
+            (unsigned int)cdacHr, (unsigned int)resp.Hr, methodName);
+        return;
+    }
+
+    // Phase 2+ will compare resp.Blob against the runtime's ComputeCallRefMap
+    // output here. For Phase 1 a successful response is unexpected but harmless;
+    // we count it as a pass so the counter is non-zero once the port lands.
+    InterlockedIncrement(&s_argIterPass);
+    CDAC_LOG("[ARG_PASS] MD=0x%llx frame=%s blobSize=%u %s\n",
+        (unsigned long long)req.MethodDesc, frameName,
+        (unsigned int)resp.BlobSize, methodName);
+}
+
+static void VerifyArgIteratorOnStack(Thread* pThread)
+{
+    _ASSERTE(s_cdacProcess != nullptr);
+
+    // Lazily allocate the dedup set on first use. Bounded by the count of
+    // distinct MDs hitting frames during this run, so growing without bound is fine.
+    if (s_argIterVerifiedMDs == nullptr)
+    {
+        s_argIterVerifiedMDs = new (nothrow) SetSHash<MethodDesc*, PtrSetSHashTraits<MethodDesc*>>();
+        if (s_argIterVerifiedMDs == nullptr)
+            return;  // OOM: skip ArgIter verification entirely this run.
+    }
+
+    // Walk every frame on the chain. The ArgIterator port produces a result
+    // for any MD regardless of which Frame surfaced it, so the only filter
+    // is "does this frame have an MD". Per-MD dedup keeps cost flat.
+    for (Frame* pFrame = pThread->GetFrame();
+         pFrame != FRAME_TOP;
+         pFrame = pFrame->PtrNextFrame())
+    {
+        MethodDesc* pMD = pFrame->GetFunction();
+        if (pMD == nullptr)
+            continue;
+
+        if (s_argIterVerifiedMDs->Lookup(pMD) != nullptr)
+            continue;
+
+        EX_TRY
+        {
+            s_argIterVerifiedMDs->Add(pMD);
+        }
+        EX_CATCH
+        {
+            // Out of memory adding to the dedup set: skip this MD and try again later.
+            continue;
+        }
+        EX_END_CATCH
+
+        VerifyArgIteratorForMD(pMD, pFrame->GetFrameIdentifier());
+    }
+}
+
+//-----------------------------------------------------------------------------
 // Stress verification implementation: shared by all trigger-point
 // specializations below. Compares cDAC vs runtime stack refs at the captured
 // CONTEXT and records per-frame results.
@@ -1265,6 +1453,27 @@ static void VerifyAtStressPoint(Thread* pThread, PCONTEXT regs)
     CrstHolder cdacLock(&s_cdacLock);
 
     DWORD osThreadId = pThread->GetOSThreadId();
+
+    // Each sub-check below is gated independently on its CDACSTRESS_* WHAT bit.
+    if (IsCdacStressGcRefsEnabled())
+    {
+        VerifyGcRefsAtStressPoint(pThread, regs, osThreadId);
+    }
+
+    if (IsCdacStressArgIterEnabled() && s_cdacProcess != nullptr)
+    {
+        s_currentContext = regs;
+        s_currentThreadId = osThreadId;
+        VerifyArgIteratorOnStack(pThread);
+        s_currentContext = nullptr;
+        s_currentThreadId = 0;
+    }
+}
+
+// GC-refs sub-check: compare cDAC GetStackReferences output against the
+// runtime's own GC root enumeration at the captured CONTEXT.
+static void VerifyGcRefsAtStressPoint(Thread* pThread, PCONTEXT regs, DWORD osThreadId)
+{
 
     // Phase A: Collect raw refs from both sides (independent walks).
 

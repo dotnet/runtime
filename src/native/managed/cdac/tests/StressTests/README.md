@@ -38,17 +38,27 @@ turns on hooks in `src/coreclr/vm/cdacstress.cpp`. The native hook:
 
 ### `DOTNET_CdacStress` flag layout
 
-One trigger point is wired today: allocation (`gchelpers.cpp`). This is
-unrelated to `DOTNET_GCStress` (the JIT instruction stress feature).
+The DWORD is split into byte-wide regions:
 
-| Bits     | Name      | Meaning                                                         |
-|----------|-----------|-----------------------------------------------------------------|
-| `0x001`  | ALLOC     | Verify at every managed allocation                              |
-| `0x200`  | VERBOSE   | Rich per-ref diagnostics in the log                             |
+| Byte | Region   | Bits        | Meaning                                       |
+|------|----------|-------------|-----------------------------------------------|
+| 0    | WHERE    | `0x000000FF`| Trigger points -- when the harness fires      |
+| 1    | WHAT     | `0x0000FF00`| Sub-checks -- which comparison runs           |
+| 2    | MODIFIERS| `0x00FF0000`| Output / behavior knobs                       |
+
+A useful configuration sets at least one WHERE and at least one WHAT bit.
+
+| Bits         | Region   | Name      | Meaning                                                                      |
+|--------------|----------|-----------|------------------------------------------------------------------------------|
+| `0x00000001` | WHERE    | ALLOC     | Verify at every managed allocation (`gchelpers.cpp`)                         |
+| `0x00000100` | WHAT     | GCREFS    | Compare cDAC `GetStackReferences` vs runtime GC root oracle                  |
+| `0x00000200` | WHAT     | ARGITER   | Compare cDAC `CallingConvention.EnumerateArguments` vs runtime `ComputeCallRefMap` (Phase 1: cDAC returns `E_NOTIMPL` -> bucketed as `[ARG_SKIP]`) |
+| `0x00010000` | MODIFIER | VERBOSE   | Rich per-ref diagnostics in the log                                          |
 
 Common combinations:
-- `0x001` — ALLOC (default for `RunStressTests.ps1` and the xUnit tests)
-- `0x201` — ALLOC + VERBOSE (use when triaging a mismatch)
+- `0x00101` -- ALLOC + GCREFS (default for `RunStressTests.ps1` and the xUnit tests)
+- `0x00301` -- ALLOC + GCREFS + ARGITER (validates the ArgIterator round-trip plumbing too)
+- `0x10101` -- ALLOC + GCREFS + VERBOSE (use when triaging a mismatch)
 
 ### Pass/fail semantics in the log
 
@@ -72,7 +82,7 @@ See [known-issues.md § Log Format](known-issues.md#log-format) for the per-fram
 .\RunStressTests.ps1 -SkipBuild -Configuration Checked -Debuggee BasicAlloc
 
 # Run with verbose per-ref diagnostics (use when triaging a mismatch)
-.\RunStressTests.ps1 -SkipBuild -Configuration Checked -CdacStress 0x201
+.\RunStressTests.ps1 -SkipBuild -Configuration Checked -CdacStress 0x10101
 ```
 
 Logs land under
@@ -80,7 +90,7 @@ Logs land under
 
 ### Using `dotnet test` (xUnit harness — same path CI runs)
 
-The xUnit harness defaults to `DOTNET_CdacStress=0x001` (ALLOC).
+The xUnit harness defaults to `DOTNET_CdacStress=0x101` (ALLOC + GCREFS).
 
 ```powershell
 # Build and run all stress tests
@@ -90,7 +100,7 @@ The xUnit harness defaults to `DOTNET_CdacStress=0x001` (ALLOC).
 .\.dotnet\dotnet.exe test src\native\managed\cdac\tests\StressTests --filter "FullyQualifiedName~BasicAlloc"
 
 # Override CdacStress flags for a single run (e.g. enable verbose diagnostics)
-$env:DOTNET_CdacStress = "0x201"
+$env:DOTNET_CdacStress = "0x10101"
 .\.dotnet\dotnet.exe test src\native\managed\cdac\tests\StressTests
 
 # Point at an existing Core_Root explicitly
@@ -141,7 +151,7 @@ CdacStressTestBase.RunGCStressAsync(debuggeeName)
   ├── Locate debuggee DLL (artifacts/bin/StressTests/<name>/...)
   ├── Start Process: corerun <debuggee.dll>
   │     Environment:
-  │       DOTNET_CdacStress=0x001
+  │       DOTNET_CdacStress=0x101
   │       DOTNET_CdacStressLogFile=<temp file>
   │       DOTNET_ContinueOnAssert=1
   ├── Wait for exit (timeout: 300s)

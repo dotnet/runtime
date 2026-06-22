@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests.GCStress;
 
 /// <summary>
 /// Base class for cDAC stress tests. Runs a debuggee app under corerun
-/// with DOTNET_CdacStress=0x001 (ALLOC) and parses the verification results.
+/// with DOTNET_CdacStress=0x101 (ALLOC + GCREFS) and parses the verification results.
 /// </summary>
 public abstract class CdacStressTestBase
 {
@@ -58,8 +58,8 @@ public abstract class CdacStressTestBase
         };
         psi.Environment["CORE_ROOT"] = coreRoot;
         // Verifies every stress hit. We rely on the debuggee's own iteration
-        // count to keep test time bounded.
-        psi.Environment["DOTNET_CdacStress"] = "0x001";
+        // count to keep test time bounded. ALLOC (where=0x01) + GCREFS (what=0x100).
+        psi.Environment["DOTNET_CdacStress"] = "0x101";
         psi.Environment["DOTNET_CdacStressFailFast"] = "0";
         psi.Environment["DOTNET_CdacStressLogFile"] = logFile;
         psi.Environment["DOTNET_ContinueOnAssert"] = "1";

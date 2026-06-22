@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 namespace Microsoft.Diagnostics.DataContractReader.Tests.GCStress;
 
 /// <summary>
-/// Runs each debuggee app under corerun with DOTNET_CdacStress=0x001 (ALLOC)
+/// Runs each debuggee app under corerun with DOTNET_CdacStress=0x101 (ALLOC + GCREFS)
 /// and asserts that the cDAC stack reference verification produces no
 /// `[FAIL]` results. `[KNOWN_ISSUE]` verifications (where the cDAC explicitly
 /// marks a frame as deferred via `RecordDeferredFrame`) are tolerated.

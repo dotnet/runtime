@@ -20,6 +20,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProcess2
 {
     private const uint DacStressPrivRequestFlushTargetState = 0xf2000000;
+    private const uint DacStressPrivRequestComputeArgGCRefMap = 0xf2000001;
 
     int IXCLRDataProcess.Flush()
     {
@@ -762,14 +763,26 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 hr = HResults.S_OK;
             }
         }
+        else if (reqCode == DacStressPrivRequestComputeArgGCRefMap)
+        {
+            // Phase 1: plumbing only. Always returns E_NOTIMPL so cdacstress
+            // logs [ARG_SKIP] for every MD on a transition-frame stack and we
+            // can validate the round-trip without an ArgIterator port yet.
+            // Phase 2+ will read the MethodDesc address from `inBuffer`, walk
+            // the signature via CallingConvention.EnumerateArguments, and write
+            // the resulting GCRefMap blob to `outBuffer`.
+            hr = HResults.E_NOTIMPL;
+        }
         else
         {
             return LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
         }
 #if DEBUG
-        // The private DACSTRESSPRIV_REQUEST_FLUSH_TARGET_STATE opcode is cDAC-only
-        // and must NOT be forwarded to the legacy DAC.
-        if (_legacyProcess is not null && reqCode != DacStressPrivRequestFlushTargetState)
+        // Private DACSTRESSPRIV_REQUEST_* opcodes are cDAC-only and must NOT be
+        // forwarded to the legacy DAC.
+        if (_legacyProcess is not null
+            && reqCode != DacStressPrivRequestFlushTargetState
+            && reqCode != DacStressPrivRequestComputeArgGCRefMap)
         {
             byte[] localBuffer = new byte[(int)outBufferSize];
             fixed (byte* localOutBuffer = localBuffer)
