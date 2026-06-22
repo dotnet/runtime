@@ -9409,6 +9409,20 @@ calli_end:
 			MonoInst *vtable_arg = NULL;
 
 			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+			/*
+			 * In AOT mode, a type-load failure while resolving the constructor (e.g. an
+			 * invalid covariant override on the declaring type) should turn the method
+			 * into one that throws TypeLoadException at runtime, matching the JIT
+			 * behavior, instead of aborting compilation. Aborting would exclude the
+			 * method from the AOT image, and calling it under full-AOT would surface a
+			 * confusing 'JIT compile while running in aot-only mode' error instead.
+			 */
+			if (cfg->compile_aot && !is_ok (cfg->error) && mono_error_get_error_code (cfg->error) == MONO_ERROR_TYPE_LOAD) {
+				clear_cfg_error (cfg);
+				INLINE_FAILURE ("type load error");
+				method_make_alwaysthrow_typeloadfailure (cfg, cmethod ? cmethod->klass : NULL);
+				goto all_bbs_done;
+			}
 			CHECK_CFG_ERROR;
 
 			fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, cfg->error);
@@ -9416,8 +9430,20 @@ calli_end:
 
 			mono_save_token_info (cfg, image, token, cmethod);
 
-			if (mono_class_has_failure (cmethod->klass) || !mono_class_init_internal (cmethod->klass))
-				TYPE_LOAD_ERROR (cmethod->klass);
+			if (mono_class_has_failure (cmethod->klass) || !mono_class_init_internal (cmethod->klass)) {
+				if (!cfg->compile_aot)
+					TYPE_LOAD_ERROR (cmethod->klass);
+				/*
+				 * In AOT mode, rather than aborting compilation of the whole method
+				 * (which would exclude it from the AOT image and make a full-AOT call
+				 * site throw a confusing 'JIT compile while running in aot-only mode'
+				 * error), turn the method into one that throws the TypeLoadException at
+				 * runtime, matching the JIT behavior.
+				 */
+				INLINE_FAILURE ("type load error");
+				method_make_alwaysthrow_typeloadfailure (cfg, cmethod->klass);
+				goto all_bbs_done;
+			}
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
 
