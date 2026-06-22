@@ -10,7 +10,7 @@ parameters:
   HelixConfiguration: ''                 # optional -- additional property attached to a job
   HelixPreCommands: ''                   # optional -- commands to run before Helix work item execution
   HelixPostCommands: ''                  # optional -- commands to run after Helix work item execution
-  UseHelixMonitor: false                 # optional -- true will use the Helix Monitor to wait for work item completion instead of the built-in monitor
+  UseHelixMonitor: false                 # optional -- true will submit Helix jobs configured for the standalone Helix Job Monitor (results are reported/waited on out-of-band; this step will not wait, and WaitForWorkItemCompletion will be overridden)
   WorkItemDirectory: ''                  # optional -- a payload directory to zip up and send to Helix; requires WorkItemCommand; incompatible with XUnitProjects
   WorkItemCommand: ''                    # optional -- a command to execute on the payload; requires WorkItemDirectory; incompatible with XUnitProjects
   WorkItemTimeout: ''                    # optional -- a timeout in TimeSpan.Parse-ready value (e.g. 00:02:00) for the work item command; requires WorkItemDirectory; incompatible with XUnitProjects
@@ -40,7 +40,7 @@ steps:
       /p:EnableHelixJobMonitor=${{ parameters.UseHelixMonitor }}
       ${{ parameters.HelixProjectArguments }}
       /t:Test
-      /bl:$(Build.SourcesDirectory)/artifacts/log/$(BuildConfig)/SendToHelix.binlog
+      /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }} (Windows)
     env:
       BuildConfig: $(_BuildConfig)
@@ -78,7 +78,7 @@ steps:
       /p:EnableHelixJobMonitor=${{ parameters.UseHelixMonitor }}
       ${{ parameters.HelixProjectArguments }}
       /t:Test
-      /bl:$(Build.SourcesDirectory)/artifacts/log/$(BuildConfig)/SendToHelix.binlog
+      /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: ${{ parameters.DisplayNamePrefix }} (Unix)
     env:
       BuildConfig: $(_BuildConfig)
