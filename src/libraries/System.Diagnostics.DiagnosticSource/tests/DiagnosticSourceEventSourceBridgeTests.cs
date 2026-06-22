@@ -17,7 +17,8 @@ namespace System.Diagnostics.Tests
     {
         // Use a longer timeout than the RemoteExecutor default because some of these tests
         // can be slow to run on resource constrained CI machines.
-        private static readonly RemoteInvokeOptions s_remoteInvokeOptions = new RemoteInvokeOptions { TimeOut = 3 * 60 * 1000 };
+        // Ensure RemoteExecutor.IsSupported, otherwise remote execution can throw PlatformNotSupportedException.
+        private static readonly RemoteInvokeOptions? s_remoteInvokeOptions = RemoteExecutor.IsSupported ? new RemoteInvokeOptions { TimeOut = 180_000 } : null;
 
         // To avoid interactions between tests when they are run in parallel, we run all these tests in their
         // own sub-process using RemoteExecutor.Invoke()  However this makes it very inconvenient to debug the test.
