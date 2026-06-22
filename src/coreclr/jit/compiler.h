@@ -2354,6 +2354,11 @@ class FlowGraphTryRegion
     // region to some descendant region.
     jitstd::vector<FlowEdge*> m_entryEdges;
 
+    // In-try blocks that have no flow-graph predecessors. The wasm DFS will not
+    // reach them via normal succs, so they are surfaced as fake successors of
+    // the try entry by FgWasm::VisitWasmSuccs.
+    jitstd::vector<BasicBlock*> m_unreachableBlocks;
+
     bool m_requiresRuntimeResumption;
     bool m_hasSideEntry;
 
@@ -2394,6 +2399,11 @@ public:
     const jitstd::vector<FlowEdge*>& EntryEdges() const
     {
         return m_entryEdges;
+    }
+
+    const jitstd::vector<BasicBlock*>& UnreachableBlocks() const
+    {
+        return m_unreachableBlocks;
     }
 
     // True if resumption from a catch in this or in an enclosed

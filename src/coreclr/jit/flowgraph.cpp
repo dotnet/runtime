@@ -7769,6 +7769,7 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
     , m_ehDsc(ehDsc)
     , m_blocks(BitVecOps::UninitVal())
     , m_entryEdges(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
+    , m_unreachableBlocks(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
     , m_requiresRuntimeResumption(false)
     , m_hasSideEntry(false)
 {
@@ -7857,6 +7858,15 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
         {
             FlowGraphTryRegion* region = regions->m_tryRegions[dsc->ebdID];
             assert(region != nullptr);
+
+            // Track in-try blocks that won't be reached by the DFS so wasm
+            // codegen can attach them as fake successors of the try entry.
+            //
+            bool isUnreachable = (dfsTree != nullptr) ? !dfsTree->Contains(block) : (block->bbPreds == nullptr);
+            if (isUnreachable && (block != dsc->ebdTryBeg) && !block->HasFlag(BBF_THROW_HELPER))
+            {
+                region->m_unreachableBlocks.push_back(block);
+            }
 
             // A block may be in more than one region, so walk up the ancestor chain
             // adding the postorder number to each.
