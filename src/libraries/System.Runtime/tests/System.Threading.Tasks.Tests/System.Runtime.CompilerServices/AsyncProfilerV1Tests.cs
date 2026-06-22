@@ -248,6 +248,201 @@ namespace System.Threading.Tasks.Tests
             AssertTrue(stream, completeIdx > firstSuspendIdx, "Expected the terminal CompleteStateMachineAsyncContext after suspensions");
         }
 
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_InlineResume_CompletesWithoutSuspend_Marker(Task gate, StrongBox<int> resumedThreadId)
+        {
+            await gate;
+            resumedThreadId.Value = Environment.CurrentManagedThreadId;
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        public void StateMachineAsync_InlineResume_CompletesWithoutSuspend()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(async () =>
+                {
+                    var resumedThreadId = new StrongBox<int>();
+                    var gate = new TaskCompletionSource();
+                    Task marker = StateMachineAsync_InlineResume_CompletesWithoutSuspend_Marker(gate.Task, resumedThreadId);
+
+                    int setResultThreadId = Environment.CurrentManagedThreadId;
+                    gate.SetResult();
+
+                    Assert.True(resumedThreadId.Value == setResultThreadId,
+                        $"Expected inline resume on the SetResult thread {setResultThreadId}, but the marker resumed on thread {resumedThreadId.Value} (0 = did not resume synchronously)");
+
+                    await marker;
+                });
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_InlineResume_CompletesWithoutSuspend_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            ulong dispatcherId = markerCallstacks[0].DispatcherId;
+            var chain = stream.ChainEventsFromDispatcher(dispatcherId);
+            var ids = chain.Select(e => e.EventId).ToList();
+
+            int createIdx = ids.IndexOf(AsyncEventID.CreateStateMachineAsyncContext);
+            AssertTrue(stream, createIdx >= 0, "Expected CreateStateMachineAsyncContext");
+
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeStateMachineAsyncContext, createIdx + 1);
+            AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeStateMachineAsyncContext after Create");
+
+            int completeIdx = ids.IndexOf(AsyncEventID.CompleteStateMachineAsyncContext, resumeIdx + 1);
+            AssertTrue(stream, completeIdx > resumeIdx, "Expected CompleteStateMachineAsyncContext after Resume");
+
+            // Completing inline on the only resume must not emit a Suspend.
+            int suspendCount = ids.Count(id => id == AsyncEventID.SuspendStateMachineAsyncContext);
+            AssertEqual(stream, 0, suspendCount);
+
+            ParsedEvent resumeEvt = chain.First(e => e.EventId == AsyncEventID.ResumeStateMachineAsyncContext);
+            ParsedEvent completeEvt = chain.First(e => e.EventId == AsyncEventID.CompleteStateMachineAsyncContext);
+            AssertTrue(stream, resumeEvt.OsThreadId != 0, "Expected a valid OS thread id on the Resume event");
+            AssertEqual(stream, resumeEvt.OsThreadId, completeEvt.OsThreadId);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_InlineResume_ReSuspends_Marker(Task gate1, StrongBox<int> resumedThreadId, Task gate2)
+        {
+            await gate1;
+            resumedThreadId.Value = Environment.CurrentManagedThreadId;
+            await gate2;
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        public void StateMachineAsync_InlineResume_ReSuspends()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(async () =>
+                {
+                    var resumedThreadId = new StrongBox<int>();
+                    var gate1 = new TaskCompletionSource();
+                    var gate2 = new TaskCompletionSource();
+                    Task marker = StateMachineAsync_InlineResume_ReSuspends_Marker(gate1.Task, resumedThreadId, gate2.Task);
+
+                    int setResultThreadId = Environment.CurrentManagedThreadId;
+                    gate1.SetResult();
+
+                    Assert.True(resumedThreadId.Value == setResultThreadId,
+                        $"Expected inline resume on the gate1.SetResult thread {setResultThreadId}, but the marker resumed on thread {resumedThreadId.Value} (0 = did not resume synchronously)");
+
+                    gate2.SetResult();
+                    await marker;
+                });
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_InlineResume_ReSuspends_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            // The marker resumes under two dispatchers (one per gate). The first one re-suspends, so identify
+            // it as the marker dispatcher whose own events contain a Suspend.
+            var markerDispatcherIds = markerCallstacks.Select(c => c.DispatcherId).Distinct().ToList();
+
+            List<ParsedEvent>? suspendingEvents = null;
+            foreach (ulong id in markerDispatcherIds)
+            {
+                var own = stream.All.Where(e => e.DispatcherId == id).OrderBy(e => e.Timestamp).ToList();
+                if (own.Any(e => e.EventId == AsyncEventID.SuspendStateMachineAsyncContext))
+                {
+                    suspendingEvents = own;
+                    break;
+                }
+            }
+
+            AssertTrue(stream, suspendingEvents != null, "Expected a marker dispatcher that re-suspended inline");
+
+            var d1Ids = suspendingEvents!.Select(e => e.EventId).ToList();
+
+            int createIdx = d1Ids.IndexOf(AsyncEventID.CreateStateMachineAsyncContext);
+            AssertTrue(stream, createIdx >= 0, "Expected CreateStateMachineAsyncContext on the re-suspending dispatcher");
+
+            int resumeIdx = d1Ids.IndexOf(AsyncEventID.ResumeStateMachineAsyncContext, createIdx + 1);
+            AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeStateMachineAsyncContext after Create");
+
+            int suspendIdx = d1Ids.IndexOf(AsyncEventID.SuspendStateMachineAsyncContext, resumeIdx + 1);
+            AssertTrue(stream, suspendIdx > resumeIdx, "Expected SuspendStateMachineAsyncContext after Resume (inline re-suspension)");
+
+            ParsedEvent resumeEvt = suspendingEvents!.First(e => e.EventId == AsyncEventID.ResumeStateMachineAsyncContext);
+            ParsedEvent suspendEvt = suspendingEvents!.First(e => e.EventId == AsyncEventID.SuspendStateMachineAsyncContext);
+            AssertTrue(stream, resumeEvt.OsThreadId != 0, "Expected a valid OS thread id on the Resume event");
+            AssertEqual(stream, resumeEvt.OsThreadId, suspendEvt.OsThreadId);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_PoolResume_ReSuspends_Marker(Task gate)
+        {
+            await gate;
+            await Task.Delay(100);
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        public void StateMachineAsync_PoolResume_ReSuspends()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(async () =>
+                {
+                    var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                    Task marker = StateMachineAsync_PoolResume_ReSuspends_Marker(gate.Task);
+                    gate.SetResult();
+                    await marker;
+                });
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolResume_ReSuspends_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            // The marker resumes under two dispatchers (the gate hop and the Task.Delay hop). The first one
+            // re-suspends, so identify it as the marker dispatcher whose own events contain a Suspend.
+            var markerDispatcherIds = markerCallstacks.Select(c => c.DispatcherId).Distinct().ToList();
+
+            List<ParsedEvent>? suspendingEvents = null;
+            foreach (ulong id in markerDispatcherIds)
+            {
+                var own = stream.All.Where(e => e.DispatcherId == id).OrderBy(e => e.Timestamp).ToList();
+                if (own.Any(e => e.EventId == AsyncEventID.SuspendStateMachineAsyncContext))
+                {
+                    suspendingEvents = own;
+                    break;
+                }
+            }
+
+            AssertTrue(stream, suspendingEvents != null, "Expected a marker dispatcher that re-suspended on the pool");
+
+            var ids = suspendingEvents!.Select(e => e.EventId).ToList();
+
+            int createIdx = ids.IndexOf(AsyncEventID.CreateStateMachineAsyncContext);
+            AssertTrue(stream, createIdx >= 0, "Expected CreateStateMachineAsyncContext on the re-suspending dispatcher");
+
+            int resumeIdx = ids.IndexOf(AsyncEventID.ResumeStateMachineAsyncContext, createIdx + 1);
+            AssertTrue(stream, resumeIdx > createIdx, "Expected ResumeStateMachineAsyncContext after Create");
+
+            int suspendIdx = ids.IndexOf(AsyncEventID.SuspendStateMachineAsyncContext, resumeIdx + 1);
+            AssertTrue(stream, suspendIdx > resumeIdx, "Expected SuspendStateMachineAsyncContext after Resume (pool re-suspension)");
+
+            ParsedEvent resumeEvt = suspendingEvents!.First(e => e.EventId == AsyncEventID.ResumeStateMachineAsyncContext);
+            ParsedEvent suspendEvt = suspendingEvents!.First(e => e.EventId == AsyncEventID.SuspendStateMachineAsyncContext);
+            AssertTrue(stream, resumeEvt.OsThreadId != 0, "Expected a valid OS thread id on the Resume event");
+            AssertEqual(stream, resumeEvt.OsThreadId, suspendEvt.OsThreadId);
+        }
+
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
         public void StateMachineAsync_ResumeCompleteMethodEvents()
         {
