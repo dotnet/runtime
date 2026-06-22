@@ -4,6 +4,9 @@
     <NativeAotIncompatible>true</NativeAotIncompatible>
     <!-- This test exercises the CoreCLR system assembly binder -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <!-- Loading SPCL from a separate directory is incompatible with R2R composite mode
+         because the composite image won't be found beside the redirected assembly. -->
+    <R2RIncompatible>true</R2RIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="SystemCoreLibDirectory.cs" />

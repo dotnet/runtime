@@ -477,8 +477,6 @@ namespace Internal.JitInterface
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
 
-        private uint OffsetOfDelegateFirstTarget => (uint)(3 * PointerSize); // Delegate._methodPtr
-
         private readonly ReadyToRunCodegenCompilation _compilation;
         private MethodWithGCInfo _methodCodeNode;
         private MethodColdCodeNode _methodColdCodeNode;
@@ -2437,8 +2435,6 @@ namespace Internal.JitInterface
             pResult->classFlags = getClassAttribsInternal(type);
 
             pResult->methodFlags = getMethodAttribsInternal(methodToCall);
-
-            pResult->wrapperDelegateInvoke = false;
 
             Get_CORINFO_SIG_INFO(methodToCall, &pResult->sig, scope: null, useInstantiatingStub);
         }

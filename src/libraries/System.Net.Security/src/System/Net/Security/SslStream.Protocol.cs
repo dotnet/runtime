@@ -898,6 +898,13 @@ namespace System.Net.Security
                                        _sslAuthenticationOptions);
                         }
                     }
+
+#if TARGET_APPLE
+                    if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CertValidationNeeded)
+                    {
+                        token = VerifyRemoteCertificateAndGenerateNextToken(token);
+                    }
+#endif
                 } while (cachedCreds && _credentialsHandle == null);
             }
             finally
@@ -933,6 +940,28 @@ namespace System.Net.Security
 
             return token;
         }
+
+#if TARGET_APPLE
+        private ProtocolToken VerifyRemoteCertificateAndGenerateNextToken(ProtocolToken token)
+        {
+            // SecureTransport pauses the handshake (errSSL{Server,Client}AuthCompleted) before
+            // any bytes are produced for the next handshake flight, so the pending-writes buffer
+            // drained into token should be empty here. Assert to catch any future regression
+            // that would silently drop handshake bytes.
+            Debug.Assert(token.Size == 0, "Expected empty payload at CertValidationNeeded pause; dropping non-empty payload would lose handshake bytes.");
+            token.ReleasePayload();
+
+            ProtocolToken alertToken = default;
+
+            if (!VerifyRemoteCertificate(_sslAuthenticationOptions.CertificateContext?.Trust, ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
+            {
+                alertToken.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.CertValidationFailed, CreateCertificateValidationException(_sslAuthenticationOptions, sslPolicyErrors, chainStatus));
+                return alertToken;
+            }
+
+            return GenerateToken(ReadOnlySpan<byte>.Empty, out _);
+        }
+#endif
 
         internal ProtocolToken Renegotiate()
         {
@@ -1244,7 +1273,7 @@ namespace System.Net.Security
             if (!success)
             {
 #pragma warning disable CS0162 // unreachable code detected (compile time const)
-                if (SslStreamPal.CanGenerateCustomAlerts && !SslStreamPal.CertValidationInCallback)
+                if (SslStreamPal.CanGenerateCustomAlertsForContext(_securityContext) && !SslStreamPal.CertValidationInCallback)
                 {
                     CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
                 }
@@ -1298,6 +1327,17 @@ namespace System.Net.Security
                 }
             }
 
+#if TARGET_APPLE
+            if (_securityContext is not null && !SslStreamPal.IsAsyncSecurityContext(_securityContext))
+            {
+                byte[] alertFrame = TlsFrameHelper.CreateAlertFrame(_lastFrame.Header.Version, (TlsAlertDescription)alertMessage);
+                if (alertFrame.Length != 0)
+                {
+                    alertToken.SetPayload(alertFrame);
+                    return;
+                }
+            }
+#endif
             alertToken = GenerateAlertToken();
         }
 
