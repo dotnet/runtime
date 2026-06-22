@@ -48,26 +48,22 @@ internal sealed class CachingContractRegistry : ContractRegistry
             return true;
         }
 
-        Func<Target, IContract>? creator = null;
-        if (_tryGetContractVersion(TContract.Name, out string? version)
-            && _creators.TryGetValue((typeof(TContract), version), out Func<Target, IContract>? versioned))
+        Func<Target, IContract>? creator;
+        if (_tryGetContractVersion(TContract.Name, out string? version))
         {
-            creator = versioned;
+            // Target declares a version — require an implementation for it.
+            // Do NOT fall back to the default registration in this case: a
+            // missing version-specific impl is a real version-skew failure
+            // and silently using a default would mask it.
+            if (!_creators.TryGetValue((typeof(TContract), version), out creator))
+            {
+                failureReason = $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
+                return false;
+            }
         }
-        else if (_creators.TryGetValue((typeof(TContract), string.Empty), out Func<Target, IContract>? fallback))
+        else if (!_creators.TryGetValue((typeof(TContract), string.Empty), out creator))
         {
-            // No target-declared version, or version present but no registered
-            // implementation for it. Fall back to the empty-string "default"
-            // registration if any caller has provided one (e.g. host-side
-            // helpers like the layout-set cache).
-            creator = fallback;
-        }
-
-        if (creator is null)
-        {
-            failureReason = version is null
-                ? $"Target does not support contract '{typeof(TContract).Name}'."
-                : $"Target supports contract '{typeof(TContract).Name}' version {version}, but no implementation is registered for that version.";
+            failureReason = $"Target does not support contract '{typeof(TContract).Name}'.";
             return false;
         }
 
