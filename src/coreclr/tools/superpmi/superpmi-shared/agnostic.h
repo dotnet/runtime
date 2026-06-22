@@ -698,13 +698,6 @@ struct Agnostic_ResolveVirtualMethodResult
     Agnostic_CORINFO_LOOKUP         instParamLookup;
 };
 
-struct Agnostic_GetInstantiatedEntryResult
-{
-    DWORDLONG                       methodHandle;
-    DWORDLONG                       classHandle;
-    DWORDLONG                       result;
-};
-
 struct ResolveTokenValue
 {
     Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;

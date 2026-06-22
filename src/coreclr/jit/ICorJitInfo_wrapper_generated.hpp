@@ -181,27 +181,6 @@ bool WrapICorJitInfo::resolveVirtualMethod(
     return temp;
 }
 
-CORINFO_METHOD_HANDLE WrapICorJitInfo::getUnboxedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          bool* requiresInstMethodTableArg)
-{
-    API_ENTER(getUnboxedEntry);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getUnboxedEntry(ftn, requiresInstMethodTableArg);
-    API_LEAVE(getUnboxedEntry);
-    return temp;
-}
-
-CORINFO_METHOD_HANDLE WrapICorJitInfo::getInstantiatedEntry(
-          CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_HANDLE* methodArg,
-          CORINFO_CLASS_HANDLE* classArg)
-{
-    API_ENTER(getInstantiatedEntry);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getInstantiatedEntry(ftn, methodArg, classArg);
-    API_LEAVE(getInstantiatedEntry);
-    return temp;
-}
-
 CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncOtherVariant(
           CORINFO_METHOD_HANDLE ftn,
           bool* variantIsThunk)

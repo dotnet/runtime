@@ -37,8 +37,6 @@ namespace Internal.JitInterface
                 s_callbacks.getMethodClass = &_getMethodClass;
                 s_callbacks.getMethodVTableOffset = &_getMethodVTableOffset;
                 s_callbacks.resolveVirtualMethod = &_resolveVirtualMethod;
-                s_callbacks.getUnboxedEntry = &_getUnboxedEntry;
-                s_callbacks.getInstantiatedEntry = &_getInstantiatedEntry;
                 s_callbacks.getAsyncOtherVariant = &_getAsyncOtherVariant;
                 s_callbacks.getDefaultComparerClass = &_getDefaultComparerClass;
                 s_callbacks.getDefaultEqualityComparerClass = &_getDefaultEqualityComparerClass;
@@ -221,8 +219,6 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CLASS_STRUCT_*> getMethodClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint*, uint*, bool*, void> getMethodVTableOffset;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_DEVIRTUALIZATION_INFO*, byte> resolveVirtualMethod;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, bool*, CORINFO_METHOD_STRUCT_*> getUnboxedEntry;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_METHOD_STRUCT_**, CORINFO_CLASS_STRUCT_**, CORINFO_METHOD_STRUCT_*> getInstantiatedEntry;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, bool*, CORINFO_METHOD_STRUCT_*> getAsyncOtherVariant;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*> getDefaultComparerClass;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CLASS_STRUCT_*> getDefaultEqualityComparerClass;
@@ -633,36 +629,6 @@ namespace Internal.JitInterface
             try
             {
                 return _this.resolveVirtualMethod(info) ? (byte)1 : (byte)0;
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-                return default;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static CORINFO_METHOD_STRUCT_* _getUnboxedEntry(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, bool* requiresInstMethodTableArg)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                return _this.getUnboxedEntry(ftn, ref *requiresInstMethodTableArg);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-                return default;
-            }
-        }
-
-        [UnmanagedCallersOnly]
-        private static CORINFO_METHOD_STRUCT_* _getInstantiatedEntry(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_STRUCT_** methodArg, CORINFO_CLASS_STRUCT_** classArg)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                return _this.getInstantiatedEntry(ftn, methodArg, classArg);
             }
             catch (Exception ex)
             {

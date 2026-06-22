@@ -1172,10 +1172,15 @@ namespace Internal.JitInterface
         // [Out] results of resolveVirtualMethod.
         // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
         //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-        // - tokenLookupContext is set to the wrapped context handle to use for token lookups after devirtualization.
+        // - tokenLookupContext is set to the wrapped context handle to use for token lookups and the instantiation
+        //   parameter after devirtualization.
         // - detail describes the computation done by the jit host
+        // - resolvedTokenDevirtualizedMethod is used as the parameter to getCallInfo when targeting an R2R image.
+        // - resolvedTokenDevirtualizedUnboxedMethod is set when devirtualizedMethod is an unboxing stub. Its hMethod
+        //   is the unboxed entry point, and the resolved token is used as the parameter to getCallInfo when targeting
+        //   an R2R image.
         // - instParamLookup contains all the information necessary to pass the instantiation parameter for
-        //   the devirtualized method.
+        //   the devirtualized method or its unboxed entry point.
         //
         public CORINFO_METHOD_STRUCT_* devirtualizedMethod;
         public CORINFO_CONTEXT_STRUCT* tokenLookupContext;
