@@ -533,24 +533,12 @@ ep_session_wait_for_inflight_thread_ops (EventPipeSession *session)
 			// and cause operating threads to mistake the new session for this one.
 			EP_ASSERT (!ep_is_session_enabled ((EventPipeSessionID)session));
 			if (thread) {
-				// The session is disabled, so wait for any in-progress writes to complete. A producer
-				// keeps this session's index set while writing (WRITE_BUFFER_IN_USE bit set) and while
-				// parked for capacity in Block mode (bit clear); mask the bit to wait out both. When a
-				// Block-mode session is tearing down, also signal buffer_available_event each iteration
-				// so a parked producer wakes, observes the abort, drops, and clears its index.
-				EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
-				if (buffer_manager != NULL && ep_buffer_manager_get_buffering_mode (buffer_manager) == EP_BUFFERING_MODE_BLOCK) {
-					// A Block-mode session is always aborting by the time we wait out its inflight writers
-					// (disable_holding_lock calls ep_buffer_manager_abort_blocked_writers first), so a parked
-					// producer is guaranteed to wake, observe the abort, drop, and clear its index here.
-					EP_ASSERT (ep_buffer_manager_is_aborting (buffer_manager));
-					while ((ep_thread_get_session_use_in_progress (thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == session->index) {
-						ep_buffer_manager_signal_capacity (buffer_manager);
-						ep_rt_thread_sleep (0);
-					}
-				} else {
-					EP_YIELD_WHILE ((ep_thread_get_session_use_in_progress (thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == session->index);
-				}
+				// The session is disabled, so wait for any in-progress writes to complete. A producer keeps
+				// this session's index set while writing (WRITE_BUFFER_IN_USE bit set) and while parked for
+				// capacity in Block mode (bit clear); mask the bit to wait out both. A Block-mode teardown
+				// already woke and removed every parked producer (ep_buffer_manager_abort_blocked_writers),
+				// so each will observe the abort, drop, and clear its index - here we only wait it out.
+				EP_YIELD_WHILE ((ep_thread_get_session_use_in_progress (thread) & ~EP_SESSION_USE_WRITE_BUFFER_IN_USE) == session->index);
 
 				// Since we've already disabled the session, the thread won't call back in to this
 				// session once its done with the current write

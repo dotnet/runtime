@@ -678,12 +678,6 @@ test_buffer_manager_block_mode_abort_and_disable (void)
 		ep_raise_error_if_nok (write_result != EP_WRITE_EVENT_RESULT_BLOCKED);
 	}
 
-	test_location = 7;
-
-	// The wake path: signal then wait returns without hanging (auto-reset event).
-	ep_buffer_manager_signal_capacity (buffer_manager);
-	ep_buffer_manager_writer_wait_for_capacity (buffer_manager);
-
 ep_on_exit:
 	if (use_in_progress_set && current_thread != NULL)
 		ep_thread_set_session_use_in_progress (current_thread, UINT32_MAX);

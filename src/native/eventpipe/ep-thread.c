@@ -37,6 +37,10 @@ ep_thread_alloc (void)
 	instance->session_use_in_progress = UINT32_MAX;
 	instance->unregistered = 0;
 
+	instance->buffer_wait_enqueued = 0;
+	// Leave buffer_wait_event zero-initialized (invalid); it is lazily allocated on first park.
+	memset (&instance->buffer_wait_event, 0, sizeof (instance->buffer_wait_event));
+
 ep_on_exit:
 	return instance;
 
@@ -58,6 +62,10 @@ ep_thread_free (EventPipeThread *thread)
 		EP_ASSERT (thread->session_state [i] == NULL);
 	}
 #endif
+
+	EP_ASSERT (thread->buffer_wait_enqueued == 0);
+	if (ep_rt_wait_event_is_valid (&thread->buffer_wait_event))
+		ep_rt_wait_event_free (&thread->buffer_wait_event);
 
 	ep_rt_object_free (thread);
 }

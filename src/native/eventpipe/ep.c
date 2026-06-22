@@ -904,11 +904,14 @@ write_event_2 (
 					if (buffer_manager == NULL)
 						buffer_manager = ep_session_get_buffer_manager (write_session);
 
-					// Park: drop the write-buffer bit so the reader can drain our buffer, then wait.
+					// Park: drop the write-buffer bit so the reader can drain our buffer, then wait. In the
+					// common case the fair reserve inside ep_session_write_event enqueued us, so we park on our
+					// own event until the reader (or teardown) wakes us. If enqueueing failed under memory
+					// pressure, writer_wait_for_capacity instead just yields and this loop retries the reserve.
 					ep_thread_set_session_use_in_progress (current_thread, i);
 					if (ep_buffer_manager_is_aborting (buffer_manager))
 						break; // teardown: give up and drop the event
-					ep_buffer_manager_writer_wait_for_capacity (buffer_manager);
+					ep_buffer_manager_writer_wait_for_capacity (buffer_manager, current_thread);
 					if (ep_buffer_manager_is_aborting (buffer_manager))
 						break; // teardown: give up and drop the event
 
