@@ -51,8 +51,12 @@ struct xxHashDefaultTraits
 {
     static uint32_t GenerateGlobalSeed()
     {
-        uint32_t seed;
-        minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&seed, sizeof(seed));
+        static uint32_t seed = []()
+        {
+            uint32_t s;
+            minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&s, sizeof(s));
+            return s;
+        }();
         return seed;
     }
 };
