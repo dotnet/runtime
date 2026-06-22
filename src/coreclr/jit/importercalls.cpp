@@ -3866,7 +3866,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 unsigned delegateSlot = lvaGrabTemp(false DEBUGARG("delegateSlot"));
                 impStoreToTemp(delegateSlot, gtNewIndir(TYP_REF, storage), CHECK_SPILL_ALL);
 
-                GenTreeOp* nullcheck = gtNewOperNode(GT_EQ, TYP_INT, gtNewLclVarNode(delegateSlot), gtNewNull());
+                GenTreeOp* nullcheck = gtNewOperNode(GT_NE, TYP_INT, gtNewLclVarNode(delegateSlot), gtNewNull());
 
                 if (closureMT == nullptr)
                 {
@@ -3876,9 +3876,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                                           storageClone, delegateMT, closureMT, aotInfo);
 
                 GenTree*      storeCold = gtNewTempStore(delegateSlot, helper);
-                GenTreeColon* colon     = gtNewColonNode(TYP_VOID, storeCold, gtNewNothingNode());
+                GenTreeColon* colon     = gtNewColonNode(TYP_VOID, gtNewNothingNode(), storeCold);
                 GenTreeQmark* qmark     = gtNewQmarkNode(TYP_VOID, nullcheck, colon);
-                qmark->SetThenNodeLikelihood(0);
+                qmark->SetThenNodeLikelihood(100);
 
                 impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
 
