@@ -438,7 +438,7 @@ namespace System.Text.Encodings.Web
                     remaining = remaining.Slice(8);
                 }
 
-                for (int i = 0; i < remaining.Length; i++)
+                foreach (char c in remaining)
                 {
                     if (!_allowedBmpCodePoints.IsCharAllowed(remaining[i])) { goto Return; }
                     idx++;
