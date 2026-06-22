@@ -2,53 +2,76 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
+
 namespace Microsoft.Diagnostics.DataContractReader;
-public sealed class LinearReadCache : ITargetReadCache, IDisposable
+// Linear page cache used by the per-object heap walk.
+public sealed class LinearReadCache
 {
     // Typical page size
     private const uint PageSize = 0x1000;
+    private readonly Target _target;
     private readonly byte[] _page = new byte[PageSize];
     private ulong _currPageStart;
     private uint _currPageSize;
 
-    public bool TryRead(ulong addr, Span<byte> dest, RawReadDelegate readDelegate)
+    public LinearReadCache(Target target)
+    {
+        _target = target;
+    }
+
+    public bool TryReadPointer(ulong addr, out TargetPointer value)
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(ulong)];
+        buffer = buffer.Slice(0, _target.PointerSize);
+        if (!TryRead(addr, buffer))
+        {
+            value = TargetPointer.Null;
+            return false;
+        }
+        value = _target.ReadPointerFromSpan(buffer);
+        return true;
+    }
+
+    public bool TryReadUInt32(ulong addr, out uint value)
+    {
+        Span<byte> buffer = stackalloc byte[sizeof(uint)];
+        if (!TryRead(addr, buffer))
+        {
+            value = 0;
+            return false;
+        }
+        value = _target.IsLittleEndian
+            ? BinaryPrimitives.ReadUInt32LittleEndian(buffer)
+            : BinaryPrimitives.ReadUInt32BigEndian(buffer);
+        return true;
+    }
+
+    private bool TryRead(ulong addr, Span<byte> dest)
     {
         // If the request misses the currently-cached page, try to load the page
         // containing it. If that fails (e.g. the page is unmapped), or the request
         // straddles the end of the cached page, fall back to a direct read.
         if (addr < _currPageStart || addr - _currPageStart >= _currPageSize)
         {
-            if (!MoveToPage(addr, readDelegate))
-                return DirectRead(addr, dest, readDelegate);
+            if (!MoveToPage(addr))
+                return DirectRead(addr, dest);
         }
 
         ulong offset = addr - _currPageStart;
         if (offset + (ulong)dest.Length > _currPageSize)
-            return DirectRead(addr, dest, readDelegate);
+            return DirectRead(addr, dest);
 
         _page.AsSpan((int)offset, dest.Length).CopyTo(dest);
         return true;
     }
 
-    public void Invalidate()
-    {
-        // Clear the current page cache
-        _currPageStart = 0;
-        _currPageSize = 0;
-        Array.Clear(_page, 0, _page.Length);
-    }
-
-    public void Dispose()
-    {
-        // Nothing to dispose
-    }
-
-    private bool MoveToPage(ulong addr, RawReadDelegate readDelegate)
+    private bool MoveToPage(ulong addr)
     {
         ulong pageStart = addr - (addr % PageSize);
         try
         {
-            readDelegate(pageStart, _page.AsSpan(0, (int)PageSize));
+            _target.ReadBuffer(pageStart, _page.AsSpan(0, (int)PageSize));
             _currPageStart = pageStart;
             _currPageSize = PageSize;
             return true;
@@ -61,11 +84,11 @@ public sealed class LinearReadCache : ITargetReadCache, IDisposable
         }
     }
 
-    private static bool DirectRead(ulong addr, Span<byte> dest, RawReadDelegate readDelegate)
+    private bool DirectRead(ulong addr, Span<byte> dest)
     {
         try
         {
-            readDelegate(addr, dest);
+            _target.ReadBuffer(addr, dest);
             return true;
         }
         catch

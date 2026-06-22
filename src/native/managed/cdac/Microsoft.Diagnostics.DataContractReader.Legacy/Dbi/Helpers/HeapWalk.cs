@@ -13,8 +13,14 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
 {
     private readonly IGC _gc;
     private readonly IObject _object;
+    private readonly IRuntimeTypeSystem _rts;
     private readonly TargetPointer _freeObjectMT;
-    private readonly Target _target;
+    private readonly LinearReadCache _cache;
+    private readonly uint _numComponentsOffsetArray;
+    private readonly uint _numComponentsOffsetString;
+    private readonly uint _methodTableOffset;
+    private readonly ulong _methodTableMask;
+
     public IEnumerator<COR_HEAPOBJECT> Enumerator { get; }
     public nuint LegacyHandle { get; set; } = 0;
 
@@ -22,42 +28,38 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
     {
         _gc = target.Contracts.GC;
         _object = target.Contracts.Object;
+        _rts = target.Contracts.RuntimeTypeSystem;
         _freeObjectMT = target.Contracts.RuntimeTypeSystem.GetWellKnownMethodTable(WellKnownMethodTable.Free);
-        _target = target;
+        _cache = new LinearReadCache(target);
+        // use these fields directly instead of through RuntimeTypeSystem so that we can use our cache that we really only need for heap walking
+        _numComponentsOffsetArray = (uint)target.GetTypeInfo(DataType.Array).Fields[Constants.FieldNames.Array.NumComponents].Offset;
+        _numComponentsOffsetString = (uint)target.GetTypeInfo(DataType.String).Fields["m_StringLength"].Offset;
+        _methodTableOffset = (uint)target.GetTypeInfo(DataType.Object).Fields["m_pMethTab"].Offset;
+        _methodTableMask = (ulong)~target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
+
         Enumerator = Walk().GetEnumerator();
     }
 
     private IEnumerable<COR_HEAPOBJECT> Walk()
     {
         bool pendingFailure = false;
-        LinearReadCache cache = new();
 
         foreach ((GCHeapSegmentInfo seg, GCHeapData _) in _gc.EnumerateAllSegments())
         {
-            using IDisposable _ = _target.BeginCacheScope(cache);
             if (seg.Start.Value >= seg.End.Value)
                 continue;
 
             TargetPointer currentObj = _gc.GetPotentialNextObjectAddress(seg.Start, 0, seg);
             while (currentObj.Value < seg.End.Value)
             {
-                TargetPointer mt;
-                ulong size;
-                try
-                {
-                    mt = _object.GetMethodTableAddress(currentObj);
-                }
-                catch
+                if (!_cache.TryReadPointer(currentObj.Value + _methodTableOffset, out TargetPointer mt))
                 {
                     pendingFailure = true;
                     break;
                 }
+                mt = new TargetPointer(mt.Value & _methodTableMask);
 
-                try
-                {
-                    size = _object.GetSize(currentObj);
-                }
-                catch
+                if (!TryGetObjectSize(currentObj, mt, out ulong size) || size == 0)
                 {
                     pendingFailure = true;
                     break;
@@ -105,5 +107,36 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
         // before any yield at all), show a sentinel now.
         if (pendingFailure)
             yield return default;
+    }
+
+    private bool TryGetObjectSize(TargetPointer objAddr, TargetPointer mt, out ulong size)
+    {
+        size = 0;
+        try
+        {
+            TypeHandle handle = _rts.GetTypeHandle(mt);
+            ulong baseSize = _rts.GetBaseSize(handle);
+            uint componentSize = _rts.GetComponentSize(handle);
+            uint numComponentsOffset = 0;
+            if (componentSize != 0)
+            {
+                if (_rts.IsArray(handle, out _) || _rts.IsFreeObjectMethodTable(handle))
+                    numComponentsOffset = _numComponentsOffsetArray;
+                else if (_rts.IsString(handle))
+                    numComponentsOffset = _numComponentsOffsetString;
+                else
+                    return false; // unrecognized component type
+                if (!_cache.TryReadUInt32(objAddr.Value + numComponentsOffset, out uint numComponents))
+                    return false;
+                baseSize += (ulong)componentSize * numComponents;
+            }
+            size = baseSize;
+            return true;
+        }
+        catch
+        {
+            // The MT may be corrupt — surface as a read failure.
+            return false;
+        }
     }
 }

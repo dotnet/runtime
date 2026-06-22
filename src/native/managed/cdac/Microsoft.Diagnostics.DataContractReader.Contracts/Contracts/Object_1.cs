@@ -191,9 +191,6 @@ internal readonly struct Object_1 : IObject
 
     public ulong GetSize(TargetPointer address)
     {
-        // NOTE NOTE NOTE NOTE NOTE
-        // This method is called on every managed object in the debuggee during a heap walk.
-        // Do NOT allocate managed objects here in a way that scales with the number of heap objects.
         TargetPointer mt = GetMethodTableAddress(address);
         if (mt == TargetPointer.Null)
             throw new ArgumentException("Address represents a free object");
@@ -206,8 +203,8 @@ internal readonly struct Object_1 : IObject
         {
             // Variable-size object (array or string): add the component data size.
             // Both Array and String share the m_NumComponents/m_StringLength field layout.
-            uint numComponents = _target.Read<uint>(address.Value + (ulong)_target.GetTypeInfo(DataType.Array).Fields["m_NumComponents"].Offset);
-            size += (ulong)numComponents * componentSize;
+            Data.Array arr = _target.ProcessedData.GetOrAdd<Data.Array>(address);
+            size += (ulong)arr.NumComponents * componentSize;
         }
         return size;
     }

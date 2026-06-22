@@ -11,6 +11,13 @@ internal class GcScanContext
 
     private readonly Target _target;
     private readonly IGC _gc;
+    private readonly IRuntimeTypeSystem _rts;
+
+    private readonly LinearReadCache _cache;
+    private readonly uint _numComponentsOffsetArray;
+    private readonly uint _numComponentsOffsetString;
+    private readonly ulong _methodTableOffset;
+    private readonly byte _objectToMethodTableUnmask;
     public bool ResolveInteriorPointers { get; }
     public List<StackRefData> StackRefs { get; } = [];
     public TargetPointer StackPointer { get; private set; }
@@ -27,6 +34,12 @@ internal class GcScanContext
         _target = target;
         ResolveInteriorPointers = resolveInteriorPointers;
         _gc = target.Contracts.GC;
+        _rts = target.Contracts.RuntimeTypeSystem;
+        _cache = new LinearReadCache(target);
+        _numComponentsOffsetArray = (uint)target.GetTypeInfo(DataType.Array).Fields[Constants.FieldNames.Array.NumComponents].Offset;
+        _numComponentsOffsetString = (uint)target.GetTypeInfo(DataType.String).Fields["m_StringLength"].Offset;
+        _methodTableOffset = (ulong)target.GetTypeInfo(DataType.Object).Fields["m_pMethTab"].Offset;
+        _objectToMethodTableUnmask = target.ReadGlobal<byte>(Constants.Globals.ObjectToMethodTableUnmask);
     }
 
     public void UpdateScanContext(TargetPointer sp, TargetPointer ip, TargetPointer frame, StackRefData.SourceTypes? sourceTypeOverride = null)
@@ -117,22 +130,22 @@ internal class GcScanContext
     private TargetPointer GetInteriorPointer(TargetPointer obj)
     {
         TargetPointer outerObj = TargetPointer.Null;
-        LinearReadCache cache = new();
         foreach ((GCHeapSegmentInfo seg, GCHeapData _) in _gc.EnumerateAllSegments())
         {
             if (obj.Value < seg.Start.Value || obj.Value >= seg.End.Value)
                 continue;
 
-            using IDisposable _ = _target.BeginCacheScope(cache);
             TargetPointer currentObj = _gc.GetPotentialNextObjectAddress(seg.Start, 0, seg);
             while (currentObj.Value <= obj.Value)
             {
                 ulong size;
-                try
+                if (!_cache.TryReadPointer(currentObj.Value + _methodTableOffset, out TargetPointer mt))
                 {
-                    size = _target.Contracts.Object.GetSize(currentObj);
+                    return TargetPointer.Null;
                 }
-                catch
+                mt = mt.Value & (ulong)~_objectToMethodTableUnmask;
+
+                if (!TryGetObjectSize(currentObj, mt, out size) || size == 0)
                 {
                     return TargetPointer.Null;
                 }
@@ -148,6 +161,37 @@ internal class GcScanContext
             return outerObj;
         }
         return outerObj;
+    }
+
+    private bool TryGetObjectSize(TargetPointer objAddr, TargetPointer mt, out ulong size)
+    {
+        size = 0;
+        try
+        {
+            TypeHandle handle = _rts.GetTypeHandle(mt);
+            ulong baseSize = _rts.GetBaseSize(handle);
+            uint componentSize = _rts.GetComponentSize(handle);
+            uint numComponentsOffset = 0;
+            if (componentSize != 0)
+            {
+                if (_rts.IsArray(handle, out _) || _rts.IsFreeObjectMethodTable(handle))
+                    numComponentsOffset = _numComponentsOffsetArray;
+                else if (_rts.IsString(handle))
+                    numComponentsOffset = _numComponentsOffsetString;
+                else
+                    return false; // unrecognized component type
+                if (!_cache.TryReadUInt32(objAddr.Value + numComponentsOffset, out uint numComponents))
+                    return false;
+                baseSize += (ulong)componentSize * numComponents;
+            }
+            size = baseSize;
+            return true;
+        }
+        catch
+        {
+            // The MT may be corrupt — surface as a read failure.
+            return false;
+        }
     }
 
     public void GCReportCallback(TargetPointer ppObj, GcScanFlags flags)
