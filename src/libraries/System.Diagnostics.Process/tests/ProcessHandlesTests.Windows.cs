@@ -130,12 +130,12 @@ namespace System.Diagnostics.Tests
 
                 bool retVal = Interop.Kernel32.CreateProcess(
                     null,
-                    (char*)args.Arguments,
+                    args.Arguments,
                     ref unused_SecAttrs,
                     ref unused_SecAttrs,
                     bInheritHandles: true,
                     Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
-                    (char*)args.EnvironmentVariables,
+                    args.EnvironmentVariables,
                     null,
                     &startupInfoEx,
                     &processInfo

@@ -58,9 +58,7 @@ namespace System.Diagnostics.Tests
                         }
 
                         // Get SafeProcessHandle from the pid.
-                        // In the future, SafeProcessHandle.Open will be used instead.
-                        Process spawned = Process.GetProcessById(pid);
-                        return spawned.SafeHandle;
+                        return SafeProcessHandle.Open(pid);
                     }
                     finally
                     {
