@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
@@ -29,7 +28,7 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
         _gc = target.Contracts.GC;
         _object = target.Contracts.Object;
         _rts = target.Contracts.RuntimeTypeSystem;
-        _freeObjectMT = target.Contracts.RuntimeTypeSystem.GetWellKnownMethodTable(WellKnownMethodTable.Free);
+        _freeObjectMT = _rts.GetWellKnownMethodTable(WellKnownMethodTable.Free);
         _cache = new LinearReadCache(target);
         // use these fields directly instead of through RuntimeTypeSystem so that we can use our cache that we really only need for heap walking
         _numComponentsOffsetArray = (uint)target.GetTypeInfo(DataType.Array).Fields[Constants.FieldNames.Array.NumComponents].Offset;
