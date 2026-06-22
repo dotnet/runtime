@@ -739,7 +739,13 @@ static int32_t ForkAndExecProcessInternal(
 #endif
 
 #if HAVE_FORK
-    (void)startSuspended; // startSuspended is unused in the fork() path; POSIX_SPAWN_START_SUSPENDED is only available when using posix_spawn (macOS)
+    if (startSuspended)
+    {
+        // POSIX_SPAWN_START_SUSPENDED is only available in the posix_spawn() path (macOS, !setCredentials).
+        // The fork() path does not support startSuspended.
+        errno = ENOTSUP;
+        return -1;
+    }
     bool success = true;
     int waitForChildToExecPipe[2] = {-1, -1};
     pid_t processId = -1;

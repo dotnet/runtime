@@ -209,12 +209,12 @@ namespace Microsoft.Win32.SafeHandles
         /// Resumes the process that was started with <see cref="ProcessStartInfo.StartSuspended" /> set to <see langword="true" />.
         /// </summary>
         /// <remarks>
-        /// This method can only be called once. After the process has been resumed, calling this method again
-        /// throws <see cref="InvalidOperationException" />.
+        /// On Windows, this calls <c>ResumeThread</c> on the main thread of the process.
+        /// On macOS, this sends <c>SIGCONT</c> to the process.
         /// </remarks>
-        /// <exception cref="InvalidOperationException">The process was not started with <see cref="ProcessStartInfo.StartSuspended" /> set to <see langword="true" />, or has already been resumed.</exception>
+        /// <exception cref="InvalidOperationException">The handle is invalid.</exception>
         /// <exception cref="PlatformNotSupportedException">The current operating system is not supported.</exception>
-        /// <exception cref="Win32Exception">The thread could not be resumed.</exception>
+        /// <exception cref="Win32Exception">The OS call to resume the process failed.</exception>
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("macos")]
         public void Resume()

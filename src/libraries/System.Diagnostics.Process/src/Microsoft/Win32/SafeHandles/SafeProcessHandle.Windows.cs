@@ -23,8 +23,7 @@ namespace Microsoft.Win32.SafeHandles
         private static readonly Lazy<Interop.Kernel32.SafeJobHandle> s_killOnParentExitJob = new(CreateKillOnParentExitJob);
 
         // When the process was started with StartSuspended, this holds the main thread handle
-        // so that Resume() can call ResumeThread on it. The handle is closed after Resume() is called
-        // or when the SafeProcessHandle is disposed.
+        // so that Resume() can call ResumeThread on it. The handle is closed when the SafeProcessHandle is disposed.
         private IntPtr _mainThreadHandle;
 
         /// <summary>
@@ -705,24 +704,9 @@ namespace Microsoft.Win32.SafeHandles
 
         private void ResumeCore()
         {
-            Validate();
-
-            IntPtr threadHandle = Interlocked.Exchange(ref _mainThreadHandle, IntPtr.Zero);
-            if (threadHandle == IntPtr.Zero)
+            if (Interop.Kernel32.ResumeThread(_mainThreadHandle) == 0xFFFFFFFF)
             {
-                throw new InvalidOperationException(SR.ProcessNotStartedSuspended);
-            }
-
-            try
-            {
-                if (Interop.Kernel32.ResumeThread(threadHandle) == 0xFFFFFFFF)
-                {
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
-                }
-            }
-            finally
-            {
-                Interop.Kernel32.CloseHandle(threadHandle);
+                throw new Win32Exception(Marshal.GetLastWin32Error());
             }
         }
 

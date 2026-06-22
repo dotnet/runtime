@@ -473,10 +473,17 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.StartDetachedNotCompatible);
             }
 
-            if ((OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()) && StartSuspended && UseShellExecute)
+#pragma warning disable CA1416 // StartSuspended getter works on all platforms; the attribute guards the actual effect
+            if (StartSuspended && !OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            if (StartSuspended && UseShellExecute)
             {
                 throw new InvalidOperationException(SR.StartSuspendedNotCompatible);
             }
+#pragma warning restore CA1416
 
             if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))
             {
