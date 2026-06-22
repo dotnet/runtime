@@ -22,7 +22,7 @@
         01 00 00 00
     )
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
-      string('https://github.com/dotnet/runtime/issues/129508')
+      string('https://github.com/dotnet/runtime/pull/129708')
       int32(0x2) // Mono
     }
     .entrypoint

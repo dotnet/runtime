@@ -479,7 +479,7 @@
     )
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('Tests that expect TypeLoadException') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
-      string('https://github.com/dotnet/runtime/issues/129508')
+      string('https://github.com/dotnet/runtime/pull/129715')
       int32(0x2) // Mono
     }
     .entrypoint
