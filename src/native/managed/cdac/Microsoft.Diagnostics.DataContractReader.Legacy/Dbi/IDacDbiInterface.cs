@@ -221,9 +221,9 @@ public struct DebuggerIPCE_STRData_StubFrame
 // defined in src/coreclr/debug/inc/dbgipcevents.h.
 //
 // `ctx` is a pointer into dbi-allocated memory.
-// The DAC writes the populated context into this pointer rather
-// than storing them inline. Code paths that do not produce a context/regdisplay
-// (e.g. EnumerateInternalFrames for cStubFrame entries) leave them as 0.
+// The DAC writes the populated context through this pointer rather
+// than storing it inline. Code paths that do not produce a context
+// (e.g. EnumerateInternalFrames for cStubFrame entries) leave it as 0.
 [StructLayout(LayoutKind.Explicit)]
 public struct Debugger_STRData
 {
