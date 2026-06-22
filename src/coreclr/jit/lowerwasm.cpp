@@ -841,5 +841,5 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    NYI_WASM_SIMD("Lowering::ContainCheckHWIntrinsic");
+    // TODO-WASM: implement containment for hardware intrinsics, currently a no-op
 }
