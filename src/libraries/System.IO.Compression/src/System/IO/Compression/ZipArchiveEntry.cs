@@ -389,7 +389,7 @@ namespace System.IO.Compression
         /// <list type="bullet">
         /// <item><description><see cref="ZipArchiveMode.Read"/>: Only <see cref="FileAccess.Read"/> is allowed.</description></item>
         /// <item><description><see cref="ZipArchiveMode.Create"/>: <see cref="FileAccess.Write"/> and <see cref="FileAccess.ReadWrite"/> are allowed (both write-only).</description></item>
-        /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> reads directly from the archive. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="Open()"/>).</description></item>
+        /// <item><description><see cref="ZipArchiveMode.Update"/>: All values are allowed. <see cref="FileAccess.Read"/> provides a read-only stream over the entry's current content, including any modifications made in the current session. <see cref="FileAccess.Write"/> discards existing content and provides an empty writable stream. <see cref="FileAccess.ReadWrite"/> loads existing content into memory (equivalent to <see cref="Open()"/>).</description></item>
         /// </list>
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="access"/> is not a valid <see cref="FileAccess"/> value.</exception>
@@ -423,6 +423,11 @@ namespace System.IO.Compression
                     switch (access)
                     {
                         case FileAccess.Read:
+                            // Reads in Update mode must observe content written earlier in this session and
+                            // treat a newly created entry as empty. Only an unmodified entry that already
+                            // exists in the archive can be read directly without loading it into memory.
+                            if (_storedUncompressedData is not null || !_originallyInArchive)
+                                return OpenInUpdateModeForRead();
                             return OpenInReadMode(checkOpenable: true);
                         case FileAccess.Write:
                             return OpenInUpdateMode(loadExistingContent: false);
@@ -903,6 +908,18 @@ namespace System.IO.Compression
             return new WrappedStream(_storedUncompressedData, this,
                 onClosed: thisRef => thisRef!._currentlyOpenForWrite = false,
                 notifyEntryOnWrite: true);
+        }
+
+        // Returns a read-only, seekable snapshot of the entry's current uncompressed content in Update mode.
+        // This reflects modifications made in the current session (and is empty for a freshly created entry),
+        // unlike OpenInReadMode which reads the original bytes directly from the archive.
+        private MemoryStream OpenInUpdateModeForRead()
+        {
+            if (_currentlyOpenForWrite)
+                throw new IOException(SR.UpdateModeOneStream);
+
+            MemoryStream uncompressedData = GetUncompressedData();
+            return new MemoryStream(uncompressedData.GetBuffer(), 0, (int)uncompressedData.Length, writable: false);
         }
 
         /// <summary>

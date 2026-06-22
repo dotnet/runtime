@@ -2307,6 +2307,222 @@ namespace System.IO.Compression.Tests
             await DisposeZipArchive(async, readArchive);
         }
 
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_UpdateMode_ReadAccess_ReflectsInSessionModifications(bool async)
+        {
+            const string entryName = "first.txt";
+            const string newContent = "Updated content within the same session";
+            byte[] newData = System.Text.Encoding.UTF8.GetBytes(newContent);
+
+            using MemoryStream ms = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entry = archive.GetEntry(entryName);
+            Assert.NotNull(entry);
+
+            using (Stream writeStream = async ? await entry.OpenAsync(FileAccess.Write) : entry.Open(FileAccess.Write))
+            {
+                writeStream.Write(newData, 0, newData.Length);
+            }
+
+            // Reading the same entry within the session must observe the pending modification, not the
+            // original archived content.
+            using (Stream readStream = async ? await entry.OpenAsync(FileAccess.Read) : entry.Open(FileAccess.Read))
+            {
+                Assert.True(readStream.CanRead);
+                Assert.True(readStream.CanSeek);
+                Assert.Equal(newData.Length, readStream.Length);
+
+                using StreamReader reader = new StreamReader(readStream);
+                Assert.Equal(newContent, reader.ReadToEnd());
+            }
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_UpdateMode_ReadAccess_NewEntry_IsEmpty(bool async)
+        {
+            const string entryName = "brand_new.txt";
+
+            using MemoryStream ms = new MemoryStream();
+
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry(entryName);
+
+            // Reading an entry that was created in this session (and never written to) returns an empty
+            // stream instead of attempting to read non-existent archived data.
+            using (Stream readStream = async ? await entry.OpenAsync(FileAccess.Read) : entry.Open(FileAccess.Read))
+            {
+                Assert.True(readStream.CanRead);
+                Assert.True(readStream.CanSeek);
+                Assert.Equal(0, readStream.Length);
+
+                using StreamReader reader = new StreamReader(readStream);
+                Assert.Equal(string.Empty, reader.ReadToEnd());
+            }
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task OpenWithFileAccess_UpdateMode_ReadAccess_CompressedUnmodified_IsForwardOnly(bool async)
+        {
+            const string entryName = "compressed.txt";
+            string content = new string('a', 1024);
+            byte[] data = System.Text.Encoding.UTF8.GetBytes(content);
+
+            using MemoryStream ms = new MemoryStream();
+
+            ZipArchive seed = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry seedEntry = seed.CreateEntry(entryName, CompressionLevel.Optimal);
+            using (Stream seedStream = async ? await seedEntry.OpenAsync(FileAccess.Write) : seedEntry.Open(FileAccess.Write))
+            {
+                seedStream.Write(data, 0, data.Length);
+            }
+            await DisposeZipArchive(async, seed);
+
+            ms.Position = 0;
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entry = archive.GetEntry(entryName);
+            Assert.NotNull(entry);
+
+            // An unmodified compressed entry read in Update mode streams straight from the deflate
+            // decompressor, so the returned stream is forward-only (not seekable).
+            using (Stream readStream = async ? await entry.OpenAsync(FileAccess.Read) : entry.Open(FileAccess.Read))
+            {
+                Assert.True(readStream.CanRead);
+                Assert.False(readStream.CanWrite);
+                Assert.False(readStream.CanSeek);
+                Assert.Equal(content, ReadAllText(readStream));
+            }
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        public static IEnumerable<object[]> OpenWithFileAccess_UpdateMode_SequentialOpens_Data()
+        {
+            foreach (bool async in new[] { true, false })
+            {
+                foreach (FileAccess first in new[] { FileAccess.Read, FileAccess.Write, FileAccess.ReadWrite })
+                {
+                    foreach (FileAccess second in new[] { FileAccess.Read, FileAccess.Write, FileAccess.ReadWrite })
+                    {
+                        yield return new object[] { async, first, second };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(OpenWithFileAccess_UpdateMode_SequentialOpens_Data))]
+        public static async Task OpenWithFileAccess_UpdateMode_SequentialOpens(bool async, FileAccess firstAccess, FileAccess secondAccess)
+        {
+            const string entryName = "data.txt";
+            const string originalContent = "The original entry contents.";
+            const string replacementContent = "Replacement written in this session.";
+            byte[] replacementData = System.Text.Encoding.UTF8.GetBytes(replacementContent);
+
+            using MemoryStream ms = new MemoryStream();
+
+            // Seed an archive that already contains the entry (stored, so direct reads are seekable).
+            ZipArchive seed = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry seedEntry = seed.CreateEntry(entryName, CompressionLevel.NoCompression);
+            using (Stream seedStream = async ? await seedEntry.OpenAsync(FileAccess.Write) : seedEntry.Open(FileAccess.Write))
+            {
+                byte[] originalData = System.Text.Encoding.UTF8.GetBytes(originalContent);
+                seedStream.Write(originalData, 0, originalData.Length);
+            }
+            await DisposeZipArchive(async, seed);
+
+            ms.Position = 0;
+            ZipArchive archive = await CreateZipArchive(async, ms, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entry = archive.GetEntry(entryName);
+            Assert.NotNull(entry);
+
+            // A read-only first open leaves the content unchanged; a writing first open replaces it.
+            string expectedAfterFirst = firstAccess == FileAccess.Read ? originalContent : replacementContent;
+
+            using (Stream first = async ? await entry.OpenAsync(firstAccess) : entry.Open(firstAccess))
+            {
+                switch (firstAccess)
+                {
+                    case FileAccess.Read:
+                        Assert.True(first.CanRead);
+                        Assert.False(first.CanWrite);
+                        Assert.Equal(originalContent, ReadAllText(first));
+                        break;
+                    case FileAccess.Write:
+                        // At the archive-entry level a write access stream discards existing content and
+                        // exposes an empty, fully capable in-memory stream (read restrictions are layered on
+                        // top by higher-level callers such as System.IO.Packaging).
+                        Assert.True(first.CanWrite);
+                        Assert.True(first.CanSeek);
+                        Assert.Equal(0, first.Length);
+                        first.Write(replacementData, 0, replacementData.Length);
+                        break;
+                    case FileAccess.ReadWrite:
+                        Assert.True(first.CanRead);
+                        Assert.True(first.CanWrite);
+                        Assert.Equal(originalContent, ReadAllText(first));
+                        first.SetLength(0);
+                        first.Write(replacementData, 0, replacementData.Length);
+                        break;
+                }
+            }
+
+            using (Stream second = async ? await entry.OpenAsync(secondAccess) : entry.Open(secondAccess))
+            {
+                switch (secondAccess)
+                {
+                    case FileAccess.Read:
+                        Assert.True(second.CanRead);
+                        Assert.False(second.CanWrite);
+                        Assert.True(second.CanSeek);
+                        Assert.Equal(expectedAfterFirst.Length, second.Length);
+                        Assert.Equal(expectedAfterFirst, ReadAllText(second));
+                        break;
+                    case FileAccess.ReadWrite:
+                        Assert.True(second.CanRead);
+                        Assert.True(second.CanWrite);
+                        Assert.True(second.CanSeek);
+                        Assert.Equal(expectedAfterFirst.Length, second.Length);
+                        Assert.Equal(expectedAfterFirst, ReadAllText(second));
+                        break;
+                    case FileAccess.Write:
+                        Assert.True(second.CanWrite);
+                        Assert.True(second.CanSeek);
+                        Assert.Equal(0, second.Length);
+                        break;
+                }
+            }
+
+            // A write-only second open discards the content; otherwise the entry keeps what the first open left.
+            string expectedFinal = secondAccess == FileAccess.Write ? string.Empty : expectedAfterFirst;
+
+            await DisposeZipArchive(async, archive);
+
+            ms.Position = 0;
+            ZipArchive verifyArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Read);
+            ZipArchiveEntry verifyEntry = verifyArchive.GetEntry(entryName);
+            Assert.NotNull(verifyEntry);
+            using (Stream verifyStream = async ? await verifyEntry.OpenAsync() : verifyEntry.Open())
+            {
+                Assert.Equal(expectedFinal, ReadAllText(verifyStream));
+            }
+            await DisposeZipArchive(async, verifyArchive);
+        }
+
+        private static string ReadAllText(Stream stream)
+        {
+            using MemoryStream copy = new MemoryStream();
+            stream.CopyTo(copy);
+            return System.Text.Encoding.UTF8.GetString(copy.ToArray());
+        }
+
         public static IEnumerable<object[]> OpenWithFileAccess_InvalidAccess_Throws_Data()
         {
             foreach (bool async in new[] { true, false })

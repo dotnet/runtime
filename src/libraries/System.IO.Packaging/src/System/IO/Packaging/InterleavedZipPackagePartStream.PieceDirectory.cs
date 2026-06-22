@@ -219,7 +219,7 @@ namespace System.IO.Packaging
 
                 pieceStreamInfo.Stream.Dispose();
                 pieceStreamInfo.Stream = _zipStreamManager.Open(_sortedPieceInfoList[pieceNumber].ZipArchiveEntry,
-                                                                _fileAccess);
+                                                                _fileAccess, requireSeekableStream: true);
                 return pieceStreamInfo.Stream;
             }
 
@@ -359,7 +359,7 @@ namespace System.IO.Packaging
 
                     // Compute pieceInfoStream.Stream.
                     Stream pieceStream = _zipStreamManager.Open(_sortedPieceInfoList[pieceNumber].ZipArchiveEntry,
-                                                                _fileAccess);
+                                                                _fileAccess, requireSeekableStream: true);
 
                     // Update _pieceStreamInfoArray.
                     _indexOfLastPieceStreamInfoAccessed = i;
@@ -439,7 +439,7 @@ namespace System.IO.Packaging
                 // (In other cases, create on demand, as usual.)
                 if (lastPiece == 0)
                 {
-                    Stream pieceStream = _zipStreamManager.Open(newLastPieceDescriptor.ZipArchiveEntry, _fileAccess);
+                    Stream pieceStream = _zipStreamManager.Open(newLastPieceDescriptor.ZipArchiveEntry, _fileAccess, requireSeekableStream: true);
                     _indexOfLastPieceStreamInfoAccessed = 0;
 
                     // The list should be empty at this point
