@@ -513,16 +513,7 @@ pal_char_t* pal_get_default_installation_dir(void)
 
 bool pal_is_path_fully_qualified(const pal_char_t* path)
 {
-    size_t len = pal_strlen(path);
-    if (len < 2)
-        return false;
-
-    // UNC and DOS device paths (e.g. \\server\share or \\?\C:\).
-    if (path[0] == L'\\' || path[0] == L'/')
-        return path[1] == L'?' || path[1] == L'\\' || path[1] == L'/';
-
-    // Drive absolute path (e.g. C:\).
-    return len >= 3 && path[1] == L':' && (path[2] == L'\\' || path[2] == L'/');
+    return !is_path_not_fully_qualified(path);
 }
 
 bool pal_load_library(const pal_char_t* path, void** dll)
@@ -531,7 +522,7 @@ bool pal_load_library(const pal_char_t* path, void** dll)
     const pal_char_t* load_path = path;
 
     // LoadLibraryEx with the search flags below requires a fully-qualified path.
-    if (!pal_is_path_fully_qualified(path))
+    if (is_path_not_fully_qualified(path))
     {
         full = pal_fullpath(path, false);
         if (full == NULL)

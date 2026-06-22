@@ -301,7 +301,7 @@ pal_char_t* pal_get_default_installation_dir(void)
 
 bool pal_is_path_fully_qualified(const pal_char_t* path)
 {
-    return path != NULL && path[0] == '/';
+    return path != NULL && path[0] == DIR_SEPARATOR;
 }
 
 bool pal_load_library(const pal_char_t* path, void** dll)
