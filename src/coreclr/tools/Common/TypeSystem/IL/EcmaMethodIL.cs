@@ -154,6 +154,7 @@ namespace Internal.IL
 
         private EcmaMethodILScope(MethodDesc method)
         {
+            Debug.Assert(method.IsTypicalMethodDefinition);
             _method = method;
 
             // We allow MethodDesc so that this is usable with e.g. async variants too,
