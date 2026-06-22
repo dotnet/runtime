@@ -1894,9 +1894,9 @@ public sealed unsafe partial class SOSDacImpl
             GCHeapData heapData = gc.GetHeapData(addr.ToTargetPointer(_target));
 
             data->heapAddr = addr;
-            data->internal_root_array = heapData.InternalRootArray.ToClrDataAddress(_target);
-            data->internal_root_array_index = heapData.InternalRootArrayIndex.Value;
-            data->heap_analyze_success = heapData.HeapAnalyzeSuccess ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
+            data->internal_root_array = (heapData.InternalRootArray ?? TargetPointer.Null).ToClrDataAddress(_target);
+            data->internal_root_array_index = (heapData.InternalRootArrayIndex ?? default).Value;
+            data->heap_analyze_success = (heapData.HeapAnalyzeSuccess ?? false) ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
@@ -1940,9 +1940,9 @@ public sealed unsafe partial class SOSDacImpl
             GCHeapData heapData = gc.GetHeapData();
 
             data->heapAddr = 0; // Not applicable for static data
-            data->internal_root_array = heapData.InternalRootArray.ToClrDataAddress(_target);
-            data->internal_root_array_index = heapData.InternalRootArrayIndex.Value;
-            data->heap_analyze_success = heapData.HeapAnalyzeSuccess ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
+            data->internal_root_array = (heapData.InternalRootArray ?? TargetPointer.Null).ToClrDataAddress(_target);
+            data->internal_root_array_index = (heapData.InternalRootArrayIndex ?? default).Value;
+            data->heap_analyze_success = (heapData.HeapAnalyzeSuccess ?? false) ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
@@ -2206,7 +2206,7 @@ public sealed unsafe partial class SOSDacImpl
 
             // Context is not stored in the target, but in our own process
             context.FillFromBuffer(new Span<byte>(ctx, (int)context.Size));
-            TargetPointer pThunk = context.InstructionPointer;
+            TargetPointer pThunk = context.InstructionPointer.AsTargetPointer;
 
             if (IsJumpRel64(pThunk))
             {
@@ -3376,7 +3376,7 @@ public sealed unsafe partial class SOSDacImpl
             }
 
             // Populate COM data if this is a COM object
-            if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0
+            if (_target.Contracts.FeatureFlags.IsEnabled(Contracts.RuntimeFeature.COMInterop)
                 && objectContract.GetBuiltInComData(objPtr, out TargetPointer rcw, out TargetPointer ccw, out _))
             {
                 data->RCW = rcw & ~(_rcwMask);
@@ -4995,7 +4995,7 @@ public sealed unsafe partial class SOSDacImpl
 
             *inDCOMProxy = (int)Interop.BOOL.FALSE;
 
-            if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) == 0)
+            if (!_target.Contracts.FeatureFlags.IsEnabled(Contracts.RuntimeFeature.COMInterop))
             {
                 hr = HResults.E_NOTIMPL;
             }
@@ -5228,7 +5228,8 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface4.GetClrNotification(ClrDataAddress[] arguments, int count, int* pNeeded)
     {
         int hr = HResults.S_OK;
-        uint MaxClrNotificationArgs = _target.ReadGlobal<uint>(Constants.Globals.MaxClrNotificationArgs);
+        _target.TryReadGlobal<uint>(Constants.Globals.MaxClrNotificationArgs, out uint? maxArgs);
+        uint MaxClrNotificationArgs = maxArgs ?? 0;
         try
         {
             *pNeeded = (int)MaxClrNotificationArgs;
