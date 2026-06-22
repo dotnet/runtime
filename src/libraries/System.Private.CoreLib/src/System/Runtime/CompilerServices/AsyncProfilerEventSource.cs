@@ -28,11 +28,12 @@ namespace System.Runtime.CompilerServices
             public const EventKeywords CompleteRuntimeAsyncMethod = (EventKeywords)0x200;
             public const EventKeywords CreateStateMachineAsyncContext = (EventKeywords)0x400;
             public const EventKeywords ResumeStateMachineAsyncContext = (EventKeywords)0x800;
-            public const EventKeywords CompleteStateMachineAsyncContext = (EventKeywords)0x1000;
-            public const EventKeywords UnwindStateMachineAsyncException = (EventKeywords)0x2000;
-            public const EventKeywords ResumeStateMachineAsyncCallstack = (EventKeywords)0x4000;
-            public const EventKeywords ResumeStateMachineAsyncMethod = (EventKeywords)0x8000;
-            public const EventKeywords CompleteStateMachineAsyncMethod = (EventKeywords)0x10000;
+            public const EventKeywords SuspendStateMachineAsyncContext = (EventKeywords)0x1000;
+            public const EventKeywords CompleteStateMachineAsyncContext = (EventKeywords)0x2000;
+            public const EventKeywords UnwindStateMachineAsyncException = (EventKeywords)0x4000;
+            public const EventKeywords ResumeStateMachineAsyncCallstack = (EventKeywords)0x8000;
+            public const EventKeywords ResumeStateMachineAsyncMethod = (EventKeywords)0x10000;
+            public const EventKeywords CompleteStateMachineAsyncMethod = (EventKeywords)0x20000;
         }
 
         public const EventKeywords AsyncEventKeywords =
@@ -48,6 +49,7 @@ namespace System.Runtime.CompilerServices
             Keywords.CompleteRuntimeAsyncMethod |
             Keywords.CreateStateMachineAsyncContext |
             Keywords.ResumeStateMachineAsyncContext |
+            Keywords.SuspendStateMachineAsyncContext |
             Keywords.CompleteStateMachineAsyncContext |
             Keywords.UnwindStateMachineAsyncException |
             Keywords.ResumeStateMachineAsyncCallstack |

@@ -184,6 +184,11 @@ namespace System.Threading.Tasks.Tests
 
             int completeIdx = ids.IndexOf(AsyncEventID.CompleteStateMachineAsyncContext, resumeIdx + 1);
             AssertTrue(stream, completeIdx > resumeIdx, "Expected CompleteStateMachineAsyncContext after Resume");
+
+            // A single-await method completes on its only resume, so its dispatcher must report
+            // Complete and never Suspend (validates the complete side of the IsCompleted classification).
+            int suspendCount = ids.Count(id => id == AsyncEventID.SuspendStateMachineAsyncContext);
+            AssertEqual(stream, 0, suspendCount);
         }
 
         [RuntimeAsyncMethodGeneration(false)]
@@ -222,8 +227,25 @@ namespace System.Threading.Tasks.Tests
             int completeCount = ids.Count(id => id == AsyncEventID.CompleteStateMachineAsyncContext);
             AssertTrue(stream, completeCount >= 1, "Expected at least one CompleteStateMachineAsyncContext");
 
-            // Expected ResumeStateMachineAsyncContext and CompleteStateMachineAsyncContext counts to match.
-            AssertEqual(stream, resumeCount, completeCount);
+            int suspendCount = ids.Count(id => id == AsyncEventID.SuspendStateMachineAsyncContext);
+
+            // The 3-await marker yields before completing, so at least one Suspend must be emitted.
+            AssertTrue(stream, suspendCount >= 1, "Expected at least one SuspendStateMachineAsyncContext");
+
+            // Each resume ends in exactly one suspend (yielded) or one complete (finished).
+            AssertEqual(stream, resumeCount, completeCount + suspendCount);
+
+            // A suspension must sit between a resume and a later resume (Resume -> Suspend -> Resume),
+            // and the chain must end in Complete (terminal) after the final resume.
+            int firstResumeIdx = ids.IndexOf(AsyncEventID.ResumeStateMachineAsyncContext);
+            int firstSuspendIdx = ids.IndexOf(AsyncEventID.SuspendStateMachineAsyncContext, firstResumeIdx + 1);
+            AssertTrue(stream, firstSuspendIdx > firstResumeIdx, "Expected SuspendStateMachineAsyncContext after a Resume");
+
+            int resumeAfterSuspendIdx = ids.IndexOf(AsyncEventID.ResumeStateMachineAsyncContext, firstSuspendIdx + 1);
+            AssertTrue(stream, resumeAfterSuspendIdx > firstSuspendIdx, "Expected a ResumeStateMachineAsyncContext after a Suspend");
+
+            int completeIdx = ids.LastIndexOf(AsyncEventID.CompleteStateMachineAsyncContext);
+            AssertTrue(stream, completeIdx > firstSuspendIdx, "Expected the terminal CompleteStateMachineAsyncContext after suspensions");
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
@@ -885,6 +907,7 @@ namespace System.Threading.Tasks.Tests
         {
             yield return new object[] { (long)CreateStateMachineAsyncContextKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.AsyncProfilerMetadata, AsyncEventID.CreateStateMachineAsyncContext } };
             yield return new object[] { (long)ResumeStateMachineAsyncContextKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.AsyncProfilerMetadata, AsyncEventID.ResumeStateMachineAsyncContext } };
+            yield return new object[] { (long)SuspendStateMachineAsyncContextKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.AsyncProfilerMetadata, AsyncEventID.SuspendStateMachineAsyncContext } };
             yield return new object[] { (long)CompleteStateMachineAsyncContextKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.AsyncProfilerMetadata, AsyncEventID.CompleteStateMachineAsyncContext } };
             yield return new object[] { (long)UnwindStateMachineAsyncExceptionKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.AsyncProfilerMetadata, AsyncEventID.UnwindStateMachineAsyncException } };
             yield return new object[] { (long)ResumeStateMachineAsyncCallstackKeyword, new AsyncEventID[] { AsyncEventID.ResetAsyncThreadContext, AsyncEventID.AsyncProfilerMetadata, AsyncEventID.ResumeStateMachineAsyncCallstack, AsyncEventID.AppendStateMachineAsyncCallstack } };
@@ -1065,7 +1088,7 @@ namespace System.Threading.Tasks.Tests
             AssertExactlyOneCreateAndComplete(stream, fastCallstacks[0].DispatcherId, nameof(StateMachineAsync_WhenAny_TracksAllBranches_Fast_Marker));
             AssertExactlyOneCreateAndComplete(stream, slow1Callstacks[0].DispatcherId, nameof(StateMachineAsync_WhenAny_TracksAllBranches_Slow1_Marker));
             AssertExactlyOneCreateAndComplete(stream, slow2Callstacks[0].DispatcherId, nameof(StateMachineAsync_WhenAny_TracksAllBranches_Slow2_Marker));
-            AssertCreateEqualsCompleteInChain(stream, markerCallstacks[0].DispatcherId, nameof(StateMachineAsync_WhenAny_TracksAllBranches_Marker));
+            AssertCreateBalancesSuspendAndCompleteInChain(stream, markerCallstacks[0].DispatcherId, nameof(StateMachineAsync_WhenAny_TracksAllBranches_Marker));
 
             // The outer marker's chain: exactly one Create, at least two Resumes (one after
             // WhenAny, one after WhenAll on the slow branches), then Complete.
@@ -1240,13 +1263,15 @@ namespace System.Threading.Tasks.Tests
             int createCount = taskEvents.Count(e => e.EventId == AsyncEventID.CreateStateMachineAsyncContext);
             int completeCount = taskEvents.Count(e => e.EventId == AsyncEventID.CompleteStateMachineAsyncContext);
             int resumeCount = taskEvents.Count(e => e.EventId == AsyncEventID.ResumeStateMachineAsyncContext);
+            int suspendCount = taskEvents.Count(e => e.EventId == AsyncEventID.SuspendStateMachineAsyncContext);
 
             // At least one root Create event.
             AssertTrue(stream, createCount >= 1,
                 $"Expected at least one CreateStateMachineAsyncContext event, got {createCount}");
 
-            AssertEqual(stream, createCount, completeCount);
-            AssertEqual(stream, resumeCount, completeCount);
+            // Each created dispatcher and each resume ends in exactly one suspend or one complete.
+            AssertEqual(stream, createCount, completeCount + suspendCount);
+            AssertEqual(stream, resumeCount, completeCount + suspendCount);
 
             AssertTrue(stream, createCount >= 3,
                 $"Expected fan-out chain to produce at least 3 CreateStateMachineAsyncContext events (root + 2 child wraps), got {createCount}");

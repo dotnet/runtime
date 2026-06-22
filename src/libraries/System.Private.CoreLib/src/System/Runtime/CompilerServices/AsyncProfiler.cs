@@ -35,18 +35,19 @@ namespace System.Runtime.CompilerServices
             // V1 (StateMachineAsync) events.
             CreateStateMachineAsyncContext = 11,
             ResumeStateMachineAsyncContext = 12,
-            CompleteStateMachineAsyncContext = 13,
-            UnwindStateMachineAsyncException = 14,
-            ResumeStateMachineAsyncCallstack = 15,
-            ResumeStateMachineAsyncMethod = 16,
-            CompleteStateMachineAsyncMethod = 17,
-            AppendStateMachineAsyncCallstack = 18,
+            SuspendStateMachineAsyncContext = 13,
+            CompleteStateMachineAsyncContext = 14,
+            UnwindStateMachineAsyncException = 15,
+            ResumeStateMachineAsyncCallstack = 16,
+            ResumeStateMachineAsyncMethod = 17,
+            CompleteStateMachineAsyncMethod = 18,
+            AppendStateMachineAsyncCallstack = 19,
 
             // Neutral profiler events.
-            ResetAsyncThreadContext = 19,
-            ResetAsyncContinuationWrapperIndex = 20,
-            AsyncProfilerMetadata = 21,
-            AsyncProfilerSyncClock = 22,
+            ResetAsyncThreadContext = 20,
+            ResetAsyncContinuationWrapperIndex = 21,
+            AsyncProfilerMetadata = 22,
+            AsyncProfilerSyncClock = 23,
         }
 
         // Per-event manifest entry: schema version + payload length-prefix size.
@@ -125,6 +126,7 @@ namespace System.Runtime.CompilerServices
 
                     new EventManifestEntry(AsyncEventID.CreateStateMachineAsyncContext, 1, CreateAsyncContextPayloadLengthFieldSize),
                     new EventManifestEntry(AsyncEventID.ResumeStateMachineAsyncContext, 1, ResumeAsyncContextPayloadLengthFieldSize),
+                    new EventManifestEntry(AsyncEventID.SuspendStateMachineAsyncContext, 1, SuspendAsyncContextPayloadLengthFieldSize),
                     new EventManifestEntry(AsyncEventID.CompleteStateMachineAsyncContext, 1, CompleteAsyncContextPayloadLengthFieldSize),
                     new EventManifestEntry(AsyncEventID.UnwindStateMachineAsyncException, 1, UnwindAsyncExceptionPayloadLengthFieldSize),
                     new EventManifestEntry(AsyncEventID.ResumeStateMachineAsyncCallstack, 1, ResumeAsyncCallstackPayloadLengthFieldSize),
@@ -361,6 +363,7 @@ namespace System.Runtime.CompilerServices
                 flags |= IsEnabled.CompleteRuntimeAsyncMethodEvent(ActiveEventKeywords) ? AsyncInstrumentation.Flags.CompleteAsyncMethod : AsyncInstrumentation.Flags.Disabled;
                 flags |= IsEnabled.CreateStateMachineAsyncContextEvent(ActiveEventKeywords) ? AsyncInstrumentation.Flags.CreateAsyncContext : AsyncInstrumentation.Flags.Disabled;
                 flags |= IsEnabled.ResumeStateMachineAsyncContextEvent(ActiveEventKeywords) ? AsyncInstrumentation.Flags.ResumeAsyncContext : AsyncInstrumentation.Flags.Disabled;
+                flags |= IsEnabled.SuspendStateMachineAsyncContextEvent(ActiveEventKeywords) ? AsyncInstrumentation.Flags.SuspendAsyncContext : AsyncInstrumentation.Flags.Disabled;
                 flags |= IsEnabled.CompleteStateMachineAsyncContextEvent(ActiveEventKeywords) ? AsyncInstrumentation.Flags.CompleteAsyncContext : AsyncInstrumentation.Flags.Disabled;
                 flags |= IsEnabled.UnwindStateMachineAsyncExceptionEvent(ActiveEventKeywords) ? AsyncInstrumentation.Flags.UnwindAsyncException : AsyncInstrumentation.Flags.Disabled;
                 flags |= IsEnabled.ResumeStateMachineAsyncCallstackEvent(ActiveEventKeywords) ? AsyncInstrumentation.Flags.ResumeAsyncContext : AsyncInstrumentation.Flags.Disabled;
@@ -1045,6 +1048,39 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        internal static partial class SuspendAsyncContext
+        {
+            public static void Suspend(AsyncStateMachineDispatcher dispatcher, ref Info info)
+            {
+                AsyncThreadContext context = AsyncThreadContext.Acquire(ref info);
+
+                SyncPoint.Check(context);
+
+                EventKeywords activeEventKeywords = context.ActiveEventKeywords;
+                if (IsEnabled.AnyAsyncEvents(activeEventKeywords))
+                {
+                    long currentTimestamp = Stopwatch.GetTimestamp();
+                    if (IsEnabled.ResumeStateMachineAsyncCallstackEvent(activeEventKeywords))
+                    {
+                        ResumeAsyncContext.Append(dispatcher, context, currentTimestamp);
+                    }
+
+                    if (IsEnabled.SuspendStateMachineAsyncContextEvent(activeEventKeywords))
+                    {
+                        EmitEvent(context, currentTimestamp, AsyncEventID.SuspendStateMachineAsyncContext);
+                    }
+                }
+
+                AsyncThreadContext.Release(context);
+            }
+
+            public static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID)
+            {
+                Debug.Assert(eventID == AsyncEventID.SuspendRuntimeAsyncContext || eventID == AsyncEventID.SuspendStateMachineAsyncContext);
+                Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, eventID);
+            }
+        }
+
         internal static partial class CompleteAsyncContext
         {
             public static void Complete(AsyncStateMachineDispatcher dispatcher, ref Info info)
@@ -1324,6 +1360,7 @@ namespace System.Runtime.CompilerServices
             public static bool CompleteRuntimeAsyncMethodEvent(EventKeywords eventKeywords) => (eventKeywords & AsyncProfilerEventSource.Keywords.CompleteRuntimeAsyncMethod) != 0;
             public static bool CreateStateMachineAsyncContextEvent(EventKeywords eventKeywords) => (eventKeywords & AsyncProfilerEventSource.Keywords.CreateStateMachineAsyncContext) != 0;
             public static bool ResumeStateMachineAsyncContextEvent(EventKeywords eventKeywords) => (eventKeywords & AsyncProfilerEventSource.Keywords.ResumeStateMachineAsyncContext) != 0;
+            public static bool SuspendStateMachineAsyncContextEvent(EventKeywords eventKeywords) => (eventKeywords & AsyncProfilerEventSource.Keywords.SuspendStateMachineAsyncContext) != 0;
             public static bool CompleteStateMachineAsyncContextEvent(EventKeywords eventKeywords) => (eventKeywords & AsyncProfilerEventSource.Keywords.CompleteStateMachineAsyncContext) != 0;
             public static bool UnwindStateMachineAsyncExceptionEvent(EventKeywords eventKeywords) => (eventKeywords & AsyncProfilerEventSource.Keywords.UnwindStateMachineAsyncException) != 0;
             public static bool ResumeStateMachineAsyncCallstackEvent(EventKeywords eventKeywords) => (eventKeywords & AsyncProfilerEventSource.Keywords.ResumeStateMachineAsyncCallstack) != 0;

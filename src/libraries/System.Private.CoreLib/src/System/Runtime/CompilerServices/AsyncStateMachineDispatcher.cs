@@ -184,35 +184,18 @@ namespace System.Runtime.CompilerServices
             refInfo = &info;
             info.Next = refPreviousInfo;
 
-            info.Dispatcher = this;
-
-            AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
             AsyncProfiler.InitInfo(ref info.AsyncProfilerInfo);
 
+            info.Dispatcher = this;
             info.AsyncProfilerInfo.CurrentContinuation = inner;
-
-            if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
-            {
-                AsyncProfiler.ResumeAsyncContext.Resume(ref info);
-            }
 
             try
             {
-                inner.MoveNext();
+                InstrumentedMoveNext(ref info, inner);
             }
             finally
             {
-                if (AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags))
-                {
-                    AsyncProfiler.CompleteAsyncContext.Complete(this, ref info.AsyncProfilerInfo);
-                }
-
                 refInfo = info.Next;
-
-                if (IsCompleted)
-                {
-                    LastContinuation = null;
-                }
             }
         }
 
@@ -228,6 +211,9 @@ namespace System.Runtime.CompilerServices
         {
             _inner?.ClearStateUponCompletion();
             _inner = null;
+
+            LastContinuation = null;
+            ReachedLastContinuation = false;
         }
 
         public bool GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
@@ -242,6 +228,40 @@ namespace System.Runtime.CompilerServices
             state = -1;
             nextContinuation = null;
             return false;
+        }
+
+        private void InstrumentedMoveNext(ref AsyncStateMachineDispatcherInfo info, IAsyncStateMachineBox inner)
+        {
+            AsyncInstrumentation.Flags flags = AsyncInstrumentation.ActiveFlags;
+            try
+            {
+                flags = AsyncInstrumentation.SyncActiveFlags();
+                if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
+                {
+                    AsyncProfiler.ResumeAsyncContext.Resume(ref info);
+                }
+
+                inner.MoveNext();
+            }
+            finally
+            {
+                if (info.AsyncProfilerInfo.CurrentContinuation is Task curContinuation)
+                {
+                    bool isCompleted = curContinuation.IsCompleted;
+                    if (AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags) && isCompleted)
+                    {
+                        AsyncProfiler.CompleteAsyncContext.Complete(this, ref info.AsyncProfilerInfo);
+                    }
+                    else if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(flags) && !isCompleted)
+                    {
+                        AsyncProfiler.SuspendAsyncContext.Suspend(this, ref info.AsyncProfilerInfo);
+                    }
+                }
+                else if (AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags))
+                {
+                    AsyncProfiler.CompleteAsyncContext.Complete(this, ref info.AsyncProfilerInfo);
+                }
+            }
         }
     }
 }

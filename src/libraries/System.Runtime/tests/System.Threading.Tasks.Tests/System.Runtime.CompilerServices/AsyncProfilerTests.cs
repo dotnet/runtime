@@ -30,18 +30,19 @@ namespace System.Threading.Tasks.Tests
         // StateMachine (StateMachineAsync) events.
         CreateStateMachineAsyncContext = 11,
         ResumeStateMachineAsyncContext = 12,
-        CompleteStateMachineAsyncContext = 13,
-        UnwindStateMachineAsyncException = 14,
-        ResumeStateMachineAsyncCallstack = 15,
-        ResumeStateMachineAsyncMethod = 16,
-        CompleteStateMachineAsyncMethod = 17,
-        AppendStateMachineAsyncCallstack = 18,
+        SuspendStateMachineAsyncContext = 13,
+        CompleteStateMachineAsyncContext = 14,
+        UnwindStateMachineAsyncException = 15,
+        ResumeStateMachineAsyncCallstack = 16,
+        ResumeStateMachineAsyncMethod = 17,
+        CompleteStateMachineAsyncMethod = 18,
+        AppendStateMachineAsyncCallstack = 19,
 
         // Neutral profiler events.
-        ResetAsyncThreadContext = 19,
-        ResetAsyncContinuationWrapperIndex = 20,
-        AsyncProfilerMetadata = 21,
-        AsyncProfilerSyncClock = 22,
+        ResetAsyncThreadContext = 20,
+        ResetAsyncContinuationWrapperIndex = 21,
+        AsyncProfilerMetadata = 22,
+        AsyncProfilerSyncClock = 23,
     }
 
     public enum AsyncCallstackType : byte
@@ -80,6 +81,7 @@ namespace System.Threading.Tasks.Tests
 
                 new EventManifestEntry(AsyncEventID.CreateStateMachineAsyncContext, 1, BytePayloadLength),
                 new EventManifestEntry(AsyncEventID.ResumeStateMachineAsyncContext, 1, BytePayloadLength),
+                new EventManifestEntry(AsyncEventID.SuspendStateMachineAsyncContext, 1, NoPayload),
                 new EventManifestEntry(AsyncEventID.CompleteStateMachineAsyncContext, 1, NoPayload),
                 new EventManifestEntry(AsyncEventID.UnwindStateMachineAsyncException, 1, BytePayloadLength),
                 new EventManifestEntry(AsyncEventID.ResumeStateMachineAsyncCallstack, 1, UShortPayloadLength),
@@ -139,11 +141,12 @@ namespace System.Threading.Tasks.Tests
         private const EventKeywords CompleteRuntimeAsyncMethodKeyword = (EventKeywords)0x200;
         private const EventKeywords CreateStateMachineAsyncContextKeyword = (EventKeywords)0x400;
         private const EventKeywords ResumeStateMachineAsyncContextKeyword = (EventKeywords)0x800;
-        private const EventKeywords CompleteStateMachineAsyncContextKeyword = (EventKeywords)0x1000;
-        private const EventKeywords UnwindStateMachineAsyncExceptionKeyword = (EventKeywords)0x2000;
-        private const EventKeywords ResumeStateMachineAsyncCallstackKeyword = (EventKeywords)0x4000;
-        private const EventKeywords ResumeStateMachineAsyncMethodKeyword = (EventKeywords)0x8000;
-        private const EventKeywords CompleteStateMachineAsyncMethodKeyword = (EventKeywords)0x10000;
+        private const EventKeywords SuspendStateMachineAsyncContextKeyword = (EventKeywords)0x1000;
+        private const EventKeywords CompleteStateMachineAsyncContextKeyword = (EventKeywords)0x2000;
+        private const EventKeywords UnwindStateMachineAsyncExceptionKeyword = (EventKeywords)0x4000;
+        private const EventKeywords ResumeStateMachineAsyncCallstackKeyword = (EventKeywords)0x8000;
+        private const EventKeywords ResumeStateMachineAsyncMethodKeyword = (EventKeywords)0x10000;
+        private const EventKeywords CompleteStateMachineAsyncMethodKeyword = (EventKeywords)0x20000;
 
         private const EventKeywords AllRuntimeAsyncKeywords =
             CreateRuntimeAsyncContextKeyword |
@@ -160,6 +163,7 @@ namespace System.Threading.Tasks.Tests
         private const EventKeywords AllStateMachineAsyncKeywords =
             CreateStateMachineAsyncContextKeyword |
             ResumeStateMachineAsyncContextKeyword |
+            SuspendStateMachineAsyncContextKeyword |
             CompleteStateMachineAsyncContextKeyword |
             UnwindStateMachineAsyncExceptionKeyword |
             ResumeStateMachineAsyncCallstackKeyword |
@@ -179,6 +183,7 @@ namespace System.Threading.Tasks.Tests
         private const EventKeywords StateMachineAsyncCoreKeywords =
             CreateStateMachineAsyncContextKeyword |
             ResumeStateMachineAsyncContextKeyword |
+            SuspendStateMachineAsyncContextKeyword |
             CompleteStateMachineAsyncContextKeyword;
 
         private const EventKeywords RuntimeAsyncMethodKeywords =
@@ -203,6 +208,7 @@ namespace System.Threading.Tasks.Tests
         private const EventKeywords StateMachineAsyncCallstackKeywords =
             CreateStateMachineAsyncContextKeyword |
             ResumeStateMachineAsyncContextKeyword |
+            SuspendStateMachineAsyncContextKeyword |
             ResumeStateMachineAsyncCallstackKeyword |
             CompleteStateMachineAsyncContextKeyword |
             CompleteStateMachineAsyncMethodKeyword |
@@ -487,6 +493,7 @@ namespace System.Threading.Tasks.Tests
                 case AsyncEventID.CompleteRuntimeAsyncContext:
                 case AsyncEventID.ResumeRuntimeAsyncMethod:
                 case AsyncEventID.CompleteRuntimeAsyncMethod:
+                case AsyncEventID.SuspendStateMachineAsyncContext:
                 case AsyncEventID.CompleteStateMachineAsyncContext:
                 case AsyncEventID.ResumeStateMachineAsyncMethod:
                 case AsyncEventID.CompleteStateMachineAsyncMethod:
@@ -944,6 +951,7 @@ namespace System.Threading.Tasks.Tests
                     {
                         case AsyncEventID.SuspendRuntimeAsyncContext:
                         case AsyncEventID.CompleteRuntimeAsyncContext:
+                        case AsyncEventID.SuspendStateMachineAsyncContext:
                         case AsyncEventID.CompleteStateMachineAsyncContext:
                         {
                             openByDispatcherId.Remove(evt.DispatcherId);
@@ -1074,7 +1082,7 @@ namespace System.Threading.Tasks.Tests
                             ParseEndContextEvent(eventId, baseTimestamp, osThreadId,
                                 ref v2CurrentDispatcherId, ref v2CurrentParentDispatcherId, v2DispatcherStack),
 
-                        AsyncEventID.CompleteStateMachineAsyncContext =>
+                        AsyncEventID.CompleteStateMachineAsyncContext or AsyncEventID.SuspendStateMachineAsyncContext =>
                             ParseEndContextEvent(eventId, baseTimestamp, osThreadId,
                                 ref v1CurrentDispatcherId, ref v1CurrentParentDispatcherId, v1DispatcherStack),
 
@@ -1682,14 +1690,17 @@ namespace System.Threading.Tasks.Tests
 
         // StateMachine-friendly variant: StateMachine's per-MoveNext dispatcher model emits one Create per await
         // suspension, so a method with N awaits produces N dispatchers / N Creates within the
-        // same dispatcher tree. The invariant we can still assert is creates == completes (both >= 1).
-        private static void AssertCreateEqualsCompleteInChain(ParsedEventStream stream, ulong dispatcherId, string chainName)
+        // same dispatcher tree. Each dispatcher ends in exactly one Suspend (it yielded) or one
+        // Complete (it finished), so every Create is balanced by a Suspend or a Complete:
+        // creates == completes + suspends (creates >= 1).
+        private static void AssertCreateBalancesSuspendAndCompleteInChain(ParsedEventStream stream, ulong dispatcherId, string chainName)
         {
             var ids = stream.ChainEventsFromDispatcher(dispatcherId).Select(e => e.EventId).ToList();
             int creates = ids.Count(id => id == AsyncEventID.CreateStateMachineAsyncContext);
+            int suspends = ids.Count(id => id == AsyncEventID.SuspendStateMachineAsyncContext);
             int completes = ids.Count(id => id == AsyncEventID.CompleteStateMachineAsyncContext);
-            AssertTrue(stream, creates >= 1, $"Expected at least 1 CreateStateMachineAsyncContextKeyword for {chainName} (DispatcherId {dispatcherId}), got {creates}");
-            AssertTrue(stream, creates == completes, $"Expected CreateStateMachineAsyncContextKeyword count == CompleteStateMachineAsyncContextKeyword count for {chainName} (DispatcherId {dispatcherId}), got {creates} creates and {completes} completes");
+            AssertTrue(stream, creates >= 1, $"Expected at least 1 CreateStateMachineAsyncContext for {chainName} (DispatcherId {dispatcherId}), got {creates}");
+            AssertTrue(stream, creates == completes + suspends, $"Expected CreateStateMachineAsyncContext count == CompleteStateMachineAsyncContext + SuspendStateMachineAsyncContext count for {chainName} (DispatcherId {dispatcherId}), got {creates} creates, {completes} completes, {suspends} suspends");
         }
 
         private sealed class InlinePostSynchronizationContext : SynchronizationContext
@@ -1877,6 +1888,7 @@ namespace System.Threading.Tasks.Tests
 
                             AsyncEventID.CreateStateMachineAsyncContext => OutputCreateAsyncContextEvent(buffer.Slice(index)),
                             AsyncEventID.ResumeStateMachineAsyncContext => OutputResumeAsyncContextEvent(buffer.Slice(index)),
+                            AsyncEventID.SuspendStateMachineAsyncContext => OutputSuspendAsyncContextEvent(),
                             AsyncEventID.CompleteStateMachineAsyncContext => OutputCompleteAsyncContextEvent(),
                             AsyncEventID.UnwindStateMachineAsyncException => OutputUnwindAsyncExceptionEvent(buffer.Slice(index)),
                             AsyncEventID.ResumeStateMachineAsyncCallstack => OutputAsyncCallstackEvent(eventId, buffer.Slice(index)),

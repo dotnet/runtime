@@ -141,12 +141,6 @@ namespace System.Runtime.CompilerServices
 
                 AsyncThreadContext.Release(context);
             }
-
-            private static void EmitEvent(AsyncThreadContext context, long currentTimestamp, AsyncEventID eventID)
-            {
-                Debug.Assert(eventID == AsyncEventID.SuspendRuntimeAsyncContext);
-                Serializer.AsyncEventHeader(context, ref context.EventBuffer, currentTimestamp, eventID);
-            }
         }
 
         internal static partial class CompleteAsyncContext
