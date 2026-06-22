@@ -294,7 +294,6 @@ FUNCTIONS
     [ManualNativeWrapper] bool runWithSPMIErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter);
     void getEEInfo(CORINFO_EE_INFO* pEEInfoOut);
     void getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut);
-    void getWasmBaseGlobals(CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut);
     mdMethodDef getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod);
     size_t printMethodName(CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize)
     const char* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char **className, const char **namespaceName, const char **enclosingClassNames, size_t maxEnclosingClassNames);
@@ -303,6 +302,7 @@ FUNCTIONS
     void getSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
     void getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
     CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd);
+    void getWasmBaseGlobals(CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut);
     uint32_t getThreadTLSIndex(void                  **ppIndirection);
     int32_t * getAddrOfCaptureThreadGlobal(void                  **ppIndirection);
     void getHelperFtn (CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE *pMethod);

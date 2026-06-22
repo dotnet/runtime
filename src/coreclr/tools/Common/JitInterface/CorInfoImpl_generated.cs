@@ -140,7 +140,6 @@ namespace Internal.JitInterface
                 s_callbacks.runWithSPMIErrorTrap = &_runWithSPMIErrorTrap;
                 s_callbacks.getEEInfo = &_getEEInfo;
                 s_callbacks.getAsyncInfo = &_getAsyncInfo;
-                s_callbacks.getWasmBaseGlobals = &_getWasmBaseGlobals;
                 s_callbacks.getMethodDefFromMethod = &_getMethodDefFromMethod;
                 s_callbacks.printMethodName = &_printMethodName;
                 s_callbacks.getMethodNameFromMetadata = &_getMethodNameFromMetadata;
@@ -149,6 +148,7 @@ namespace Internal.JitInterface
                 s_callbacks.getSwiftLowering = &_getSwiftLowering;
                 s_callbacks.getFpStructLowering = &_getFpStructLowering;
                 s_callbacks.getWasmLowering = &_getWasmLowering;
+                s_callbacks.getWasmBaseGlobals = &_getWasmBaseGlobals;
                 s_callbacks.getThreadTLSIndex = &_getThreadTLSIndex;
                 s_callbacks.getAddrOfCaptureThreadGlobal = &_getAddrOfCaptureThreadGlobal;
                 s_callbacks.getHelperFtn = &_getHelperFtn;
@@ -322,7 +322,6 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, void*, void*, byte> runWithSPMIErrorTrap;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_EE_INFO*, void> getEEInfo;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_ASYNC_INFO*, void> getAsyncInfo;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_WASM_BASE_GLOBALS*, void> getWasmBaseGlobals;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, mdToken> getMethodDefFromMethod;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, nuint, nuint*, nuint> printMethodName;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte**, byte**, byte**, nuint, byte*> getMethodNameFromMetadata;
@@ -331,6 +330,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_SWIFT_LOWERING*, void> getSwiftLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_FPSTRUCT_LOWERING*, void> getFpStructLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoWasmType> getWasmLowering;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_WASM_BASE_GLOBALS*, void> getWasmBaseGlobals;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, uint> getThreadTLSIndex;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, int*> getAddrOfCaptureThreadGlobal;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, CORINFO_METHOD_STRUCT_**, void> getHelperFtn;
@@ -2160,20 +2160,6 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _getWasmBaseGlobals(IntPtr thisHandle, IntPtr* ppException, CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
-        {
-            var _this = GetThis(thisHandle);
-            try
-            {
-                _this.getWasmBaseGlobals(ref *pBaseGlobalsOut);
-            }
-            catch (Exception ex)
-            {
-                *ppException = _this.AllocException(ex);
-            }
-        }
-
-        [UnmanagedCallersOnly]
         private static mdToken _getMethodDefFromMethod(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* hMethod)
         {
             var _this = GetThis(thisHandle);
@@ -2288,6 +2274,20 @@ namespace Internal.JitInterface
             {
                 *ppException = _this.AllocException(ex);
                 return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static void _getWasmBaseGlobals(IntPtr thisHandle, IntPtr* ppException, CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                _this.getWasmBaseGlobals(ref *pBaseGlobalsOut);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
             }
         }
 

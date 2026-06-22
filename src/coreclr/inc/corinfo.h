@@ -3138,12 +3138,6 @@ public:
         CORINFO_ASYNC_INFO* pAsyncInfoOut
     ) = 0;
 
-    // Get the well-known wasm base-global symbols (shadow stack pointer, image base, table base)
-    // that JIT-generated wasm code references via WASM_GLOBAL_INDEX_LEB relocations.
-    virtual void getWasmBaseGlobals(
-        CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut
-    ) = 0;
-
     /*********************************************************************************/
     //
     // Diagnostic methods
@@ -3204,6 +3198,12 @@ public:
     // Returns the primitive type for passing/returning a Wasm struct by value,
     // or CORINFO_WASM_TYPE_VOID if passing/returning must be by reference.
     virtual CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) = 0;
+
+    // Get the well-known wasm base-global symbols (shadow stack pointer, image base, table base)
+    // that JIT-generated wasm code references via WASM_GLOBAL_INDEX_LEB relocations.
+    virtual void getWasmBaseGlobals(
+        CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut
+    ) = 0;
 };
 
 /*****************************************************************************

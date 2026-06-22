@@ -1179,14 +1179,6 @@ void WrapICorJitInfo::getAsyncInfo(
     API_LEAVE(getAsyncInfo);
 }
 
-void WrapICorJitInfo::getWasmBaseGlobals(
-          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
-{
-    API_ENTER(getWasmBaseGlobals);
-    wrapHnd->getWasmBaseGlobals(pBaseGlobalsOut);
-    API_LEAVE(getWasmBaseGlobals);
-}
-
 mdMethodDef WrapICorJitInfo::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -1265,6 +1257,14 @@ CorInfoWasmType WrapICorJitInfo::getWasmLowering(
     CorInfoWasmType temp = wrapHnd->getWasmLowering(structHnd);
     API_LEAVE(getWasmLowering);
     return temp;
+}
+
+void WrapICorJitInfo::getWasmBaseGlobals(
+          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+{
+    API_ENTER(getWasmBaseGlobals);
+    wrapHnd->getWasmBaseGlobals(pBaseGlobalsOut);
+    API_LEAVE(getWasmBaseGlobals);
 }
 
 uint32_t WrapICorJitInfo::getThreadTLSIndex(

@@ -187,6 +187,7 @@ inline CORINFO_ASYNC_INFO* Compiler::eeGetAsyncInfo()
     return &asyncInfo;
 }
 
+#if defined(TARGET_WASM)
 inline CORINFO_WASM_BASE_GLOBALS* Compiler::eeGetWasmBaseGlobals()
 {
     if (!wasmBaseGlobalsInitialized)
@@ -197,6 +198,7 @@ inline CORINFO_WASM_BASE_GLOBALS* Compiler::eeGetWasmBaseGlobals()
 
     return &wasmBaseGlobals;
 }
+#endif // defined(TARGET_WASM)
 
 /*****************************************************************************
  *

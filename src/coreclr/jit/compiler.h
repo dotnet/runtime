@@ -9475,10 +9475,12 @@ public:
 
     CORINFO_ASYNC_INFO* eeGetAsyncInfo();
 
+#if defined(TARGET_WASM)
     CORINFO_WASM_BASE_GLOBALS wasmBaseGlobals;
     bool                      wasmBaseGlobalsInitialized = false;
 
     CORINFO_WASM_BASE_GLOBALS* eeGetWasmBaseGlobals();
+#endif // defined(TARGET_WASM)
 
     // Gets the offset of a SDArray's first element
     static unsigned eeGetArrayDataOffset();

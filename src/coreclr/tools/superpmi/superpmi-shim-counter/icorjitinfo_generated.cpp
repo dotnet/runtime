@@ -969,13 +969,6 @@ void interceptor_ICJI::getAsyncInfo(
     original_ICorJitInfo->getAsyncInfo(pAsyncInfoOut);
 }
 
-void interceptor_ICJI::getWasmBaseGlobals(
-          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
-{
-    mcs->AddCall("getWasmBaseGlobals");
-    original_ICorJitInfo->getWasmBaseGlobals(pBaseGlobalsOut);
-}
-
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -1040,6 +1033,13 @@ CorInfoWasmType interceptor_ICJI::getWasmLowering(
 {
     mcs->AddCall("getWasmLowering");
     return original_ICorJitInfo->getWasmLowering(structHnd);
+}
+
+void interceptor_ICJI::getWasmBaseGlobals(
+          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+{
+    mcs->AddCall("getWasmBaseGlobals");
+    original_ICorJitInfo->getWasmBaseGlobals(pBaseGlobalsOut);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(

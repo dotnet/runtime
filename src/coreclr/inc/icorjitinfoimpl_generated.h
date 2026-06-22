@@ -498,9 +498,6 @@ void getEEInfo(
 void getAsyncInfo(
           CORINFO_ASYNC_INFO* pAsyncInfoOut) override;
 
-void getWasmBaseGlobals(
-          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut) override;
-
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
 
@@ -534,6 +531,9 @@ void getFpStructLowering(
 
 CorInfoWasmType getWasmLowering(
           CORINFO_CLASS_HANDLE structHnd) override;
+
+void getWasmBaseGlobals(
+          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut) override;
 
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
