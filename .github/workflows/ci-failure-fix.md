@@ -179,7 +179,7 @@ Apply these fixer-specific bounds on top of the skill's guidance:
 | KBE pipeline / area | Fix policy |
 |---|---|
 | Mobile (ios/tvos/maccatalyst/android/wasm/wasi) | Small test/csproj/condition fixes in bounds are fair game. |
-| JIT / GC / PGO stress (codegen) | JIT/GC product fixes are OUT of bounds for any PR — no safe diff is producible, so loop in JIT/GC owners with a comment. |
+| JIT / GC / PGO stress (codegen) | JIT/GC product fixes are OUT of bounds for any PR — no safe diff is producible, so loop in JIT/GC owners with a comment. Workarounds in unrelated code (e.g. changing library buffer sizes or API call patterns to sidestep a codegen bug) are equally OUT of bounds — go straight to the loop-in comment instead of opening a workaround PR. |
 | `System.Net.*` | In bounds only if it satisfies Step 5.2. |
 | `Microsoft.Extensions.*` | In bounds only if it satisfies Step 5.2. |
 | NativeAOT outer loop | In bounds only if it satisfies Step 5.2. |

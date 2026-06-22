@@ -457,6 +457,7 @@
       ReversePInvokeOutputPath="$(_WasmReversePInvokeTablePath)"
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
       CacheFilePath="$(_WasmM2NCachePath)"
+      TargetOS="browser"
       IsLibraryMode="$(_IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
