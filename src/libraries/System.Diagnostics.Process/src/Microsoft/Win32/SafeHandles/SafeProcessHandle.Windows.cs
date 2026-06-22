@@ -704,6 +704,11 @@ namespace Microsoft.Win32.SafeHandles
 
         private void ResumeCore()
         {
+            if (_mainThreadHandle == IntPtr.Zero)
+            {
+                throw new InvalidOperationException(SR.ProcessNotStartedSuspended);
+            }
+
             if (Interop.Kernel32.ResumeThread(_mainThreadHandle) == 0xFFFFFFFF)
             {
                 throw new Win32Exception(Marshal.GetLastWin32Error());

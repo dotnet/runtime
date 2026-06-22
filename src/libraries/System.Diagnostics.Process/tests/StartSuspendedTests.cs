@@ -54,13 +54,13 @@ namespace System.Diagnostics.Tests
 
         [ConditionalFact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void Resume_OnNonSuspendedProcess_ThrowsWin32Exception()
+        public void Resume_OnNonSuspendedProcess_ThrowsInvalidOperationException()
         {
             Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
 
             using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
 
-            Assert.Throws<System.ComponentModel.Win32Exception>(() => processHandle.Resume());
+            Assert.Throws<InvalidOperationException>(() => processHandle.Resume());
 
             processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
         }
