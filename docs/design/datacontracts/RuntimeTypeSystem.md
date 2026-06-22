@@ -250,6 +250,11 @@ partial interface IRuntimeTypeSystem : IContract
     // Corresponds to native MethodDesc::IsAsyncMethod().
     public virtual bool IsAsyncMethod(MethodDescHandle methodDesc);
 
+    // Gets the raw signature bytes for a MethodDesc by checking the stored signature,
+    // then the async variant signature, then ECMA metadata. Returns false if no
+    // signature could be resolved.
+    public virtual bool TryGetMethodSignature(MethodDescHandle methodDesc, out ReadOnlySpan<byte> signature);
+
     // Return true if a MethodDesc is in a collectible module
     public virtual bool IsCollectibleMethod(MethodDescHandle methodDesc);
 
@@ -1550,6 +1555,50 @@ And the various apis are implemented with the following algorithms
         uint tokenRange = ((uint)(_chunk.FlagsAndTokenRange & tokenRangeMask)) << tokenRemainderBitCount;
 
         return 0x06000000 | tokenRange | tokenRemainder;
+    }
+
+    public bool TryGetMethodSignature(MethodDescHandle methodDescHandle, out ReadOnlySpan<byte> signature)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        // Dynamic, EEImpl and Array methods store their signature directly on the MethodDesc.
+        MethodClassification classification = (MethodClassification)(methodDesc.Flags & MethodDescFlags.ClassificationMask);
+        if (classification is MethodClassification.Dynamic or MethodClassification.EEImpl or MethodClassification.Array)
+        {
+            signature = // StoredSigMethodDesc.Signature blob for methodDesc
+            return true;
+        }
+
+        // Async variant methods carry their signature in the AsyncMethodData.
+        if (HasFlag(methodDesc, MethodDescFlags.HasAsyncMethodData))
+        {
+            AsyncMethodData asyncData = // Read AsyncMethodData for methodDesc
+            if (((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.IsAsyncVariant))
+            {
+                signature = // Read asyncData.cSig bytes from asyncData.Sig
+                return true;
+            }
+        }
+
+        // Otherwise resolve the signature from ECMA metadata using the MethodDef token.
+        uint token = GetMethodToken(methodDescHandle);
+        if (EcmaMetadataUtils.GetRowId(token) == 0)
+        {
+            signature = default;
+            return false;
+        }
+
+        MetadataReader? mdReader = // Get metadata reader for the method's module, or null if unavailable
+        if (mdReader is null)
+        {
+            signature = default;
+            return false;
+        }
+
+        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token));
+        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
+        signature = mdReader.GetBlobBytes(methodDef.Signature);
+        return true;
     }
 
     public uint GetMethodDescSize(MethodDescHandle methodDescHandle)

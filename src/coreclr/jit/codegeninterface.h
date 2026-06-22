@@ -614,14 +614,6 @@ public:
             {
                 unsigned vlfvOffset;
             } vlFixedVarArg;
-
-            // VLT_MEMORY
-
-            struct
-            {
-                void* rpValue; // pointer to the in-process
-                               // location of the value.
-            } vlMemory;
         };
 
         // Helper functions

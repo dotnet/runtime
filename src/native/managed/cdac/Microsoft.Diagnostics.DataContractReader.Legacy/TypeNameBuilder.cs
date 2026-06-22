@@ -68,7 +68,6 @@ public struct TypeNameBuilder
         ILoader loader = target.Contracts.Loader;
         string methodName;
         TypeHandle th = default;
-        Contracts.ModuleHandle module = default;
 
         bool isNoMetadataMethod = runtimeTypeSystem.IsNoMetadataMethod(method, out methodName);
         if (isNoMetadataMethod)
@@ -120,9 +119,9 @@ public struct TypeNameBuilder
         }
         else
         {
-            module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th));
+            Contracts.ModuleHandle module = loader.GetModuleHandleFromModulePtr(runtimeTypeSystem.GetModule(th));
             MetadataReader reader = target.Contracts.EcmaMetadata.GetMetadata(module)!;
-            MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)runtimeTypeSystem.GetMethodToken(method)));
+            MethodDefinition methodDef = reader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(runtimeTypeSystem.GetMethodToken(method))));
             stringBuilder.Append(reader.GetString(methodDef.Name));
         }
 
@@ -138,11 +137,9 @@ public struct TypeNameBuilder
             MetadataReader? reader = default;
             if (runtimeTypeSystem.TryGetMethodSignature(method, out signature))
             {
-                // Stored signature methods don't have metadata to resolve type references
-                if (!runtimeTypeSystem.IsStoredSigMethodDesc(method, out _))
-                {
-                    reader = target.Contracts.EcmaMetadata.GetMetadata(module);
-                }
+                Contracts.ModuleHandle methodModule = loader.GetModuleHandleFromModulePtr(
+                    runtimeTypeSystem.GetModule(runtimeTypeSystem.GetTypeHandle(runtimeTypeSystem.GetMethodTable(method))));
+                reader = target.Contracts.EcmaMetadata.GetMetadata(methodModule);
             }
 
             ReadOnlySpan<TypeHandle> typeInstantiationSigFormat = default;

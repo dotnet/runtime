@@ -61,27 +61,19 @@ public enum VarLocType
     VLT_INVALID,
 }
 
-// The native VarLoc struct contains a union with a void* member (vlMemory),
-// which causes pointer-size alignment. On 64-bit, the union starts at offset 8
-// (after vlType + padding). We use nint for the first field to absorb the
-// architecture-dependent padding, matching the layout in CorInfoTypes.VarInfo.cs.
-[StructLayout(LayoutKind.Sequential)]
+// Mirrors the native ICorDebugInfo::VarLoc tagged union: a VarLocType selector
+// followed by a union of location variants. The union begins at offset 4 and the
+// struct is 16 bytes: the union contains only 4-byte members, so it is 4-byte aligned.
+[StructLayout(LayoutKind.Explicit, Size = 16)]
 public struct VarLoc
 {
-    // vlType (lower 32 bits) + pointer-size padding
-    private nint _vlTypeAndPadding;
+    [FieldOffset(0)] public VarLocType vlType;
 
     // Union data: three positional slots covering all union variants.
     // Different VarLocType values interpret these as different named fields.
-    private uint _field1;
-    private int _field2;
-    private int _field3;
-
-    public VarLocType vlType
-    {
-        get => (VarLocType)(int)(_vlTypeAndPadding & 0xFFFFFFFF);
-        set => _vlTypeAndPadding = (nint)(int)value;
-    }
+    [FieldOffset(4)] private uint _field1;
+    [FieldOffset(8)] private int _field2;
+    [FieldOffset(12)] private int _field3;
 
     // vlReg / vlReg_BYREF
     public uint vlrReg { get => _field1; set => _field1 = value; }
@@ -121,12 +113,24 @@ public struct NativeVarInfo
     public VarLoc loc;
 }
 
+[Flags]
+public enum DbiSourceTypes : uint
+{
+    SourceTypeInvalid = 0x00,
+    SequencePoint = 0x01,
+    StackEmpty = 0x02,
+    CallSite = 0x04,
+    NativeEndOffsetUnknown = 0x08,
+    CallInstruction = 0x10,
+    Async = 0x20,
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public struct DbiOffsetMapping
 {
     public uint nativeOffset;
     public uint ilOffset;
-    public uint source; // ICorDebugInfo::SourceTypes
+    public DbiSourceTypes source;
 }
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value

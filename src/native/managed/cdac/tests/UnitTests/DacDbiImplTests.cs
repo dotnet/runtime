@@ -1019,8 +1019,8 @@ public unsafe class DacDbiImplTests
     [InlineData(SourceTypes.StackEmpty | SourceTypes.CallInstruction | SourceTypes.Async, 0x32u)]
     public void ConvertSourceTypesToNative_MapsCorrectly(SourceTypes source, uint expected)
     {
-        uint result = DacDbiImpl.ConvertSourceTypesToNative(source);
-        Assert.Equal(expected, result);
+        DbiSourceTypes result = DacDbiImpl.ConvertSourceTypesToNative(source);
+        Assert.Equal(expected, (uint)result);
     }
 
     [Fact]

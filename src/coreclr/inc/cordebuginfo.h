@@ -354,14 +354,6 @@ public:
         unsigned        vlfvOffset;
     };
 
-    // VLT_MEMORY
-
-    struct vlMemory
-    {
-        void        *rpValue; // pointer to the in-process
-        // location of the value.
-    };
-
     // [cDAC]: Mirrored in managed code (IDacDbiInterface.cs).
     struct VarLoc
     {
@@ -377,7 +369,6 @@ public:
             ICorDebugInfo::vlStk2          vlStk2;
             ICorDebugInfo::vlFPstk         vlFPstk;
             ICorDebugInfo::vlFixedVarArg   vlFixedVarArg;
-            ICorDebugInfo::vlMemory        vlMemory;
         };
     };
 

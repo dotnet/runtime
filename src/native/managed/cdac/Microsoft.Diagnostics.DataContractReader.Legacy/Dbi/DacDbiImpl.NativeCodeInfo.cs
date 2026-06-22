@@ -22,7 +22,7 @@ public sealed unsafe partial class DacDbiImpl
         if (!rts.TryGetMethodSignature(mdh, out ReadOnlySpan<byte> signature))
             throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
 
-        MethodDescInfoHelpers.GetSignatureInfo(signature, out _, out uint numArgs);
+        MethodSignatureHelpers.GetSignatureInfo(signature, out _, out uint numArgs);
         return numArgs;
     }
 
@@ -96,19 +96,15 @@ public sealed unsafe partial class DacDbiImpl
 
     // Converts cDAC Contracts.SourceTypes to native ICorDebugInfo::SourceTypes values.
     // The cDAC uses compact bit positions while the native enum uses different bit values.
-    internal static uint ConvertSourceTypesToNative(Contracts.SourceTypes source)
+    internal static DbiSourceTypes ConvertSourceTypesToNative(Contracts.SourceTypes source)
     {
-        const uint NativeStackEmpty = 0x02;
-        const uint NativeCallInstruction = 0x10;
-        const uint NativeAsync = 0x20;
-
-        uint result = 0;
+        DbiSourceTypes result = DbiSourceTypes.SourceTypeInvalid;
         if ((source & Contracts.SourceTypes.StackEmpty) != 0)
-            result |= NativeStackEmpty;
+            result |= DbiSourceTypes.StackEmpty;
         if ((source & Contracts.SourceTypes.CallInstruction) != 0)
-            result |= NativeCallInstruction;
+            result |= DbiSourceTypes.CallInstruction;
         if ((source & Contracts.SourceTypes.Async) != 0)
-            result |= NativeAsync;
+            result |= DbiSourceTypes.Async;
 
         return result;
     }
@@ -126,12 +122,19 @@ public sealed unsafe partial class DacDbiImpl
         uint dacFixedArgCount = 0;
         var dacData = new DebugNativeCodeData();
         GCHandle dacHandle = GCHandle.Alloc(dacData);
-        int hrLocal = _legacy!.GetNativeCodeSequencePointsAndVarInfo(
-            vmMethodDesc, startAddress, fCodeAvailable, &dacFixedArgCount,
-            (delegate* unmanaged<NativeVarInfo*, void*, void>)&CollectNativeVarInfoCallback,
-            (delegate* unmanaged<DbiOffsetMapping*, void*, void>)&CollectOffsetMappingCallback,
-            GCHandle.ToIntPtr(dacHandle));
-        dacHandle.Free();
+        int hrLocal;
+        try
+        {
+            hrLocal = _legacy!.GetNativeCodeSequencePointsAndVarInfo(
+                vmMethodDesc, startAddress, fCodeAvailable, &dacFixedArgCount,
+                (delegate* unmanaged<NativeVarInfo*, void*, void>)&CollectNativeVarInfoCallback,
+                (delegate* unmanaged<DbiOffsetMapping*, void*, void>)&CollectOffsetMappingCallback,
+                GCHandle.ToIntPtr(dacHandle));
+        }
+        finally
+        {
+            dacHandle.Free();
+        }
 
         Debug.ValidateHResult(hr, hrLocal);
         if (hr == HResults.S_OK)

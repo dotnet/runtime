@@ -813,40 +813,32 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetNativeCodeSequencePointsAndVar
         DebugInfoRequest request;
         request.InitFromStartingAddr(pMD, CORDB_ADDRESS_TO_TADDR(startAddress));
 
-        // Get native variable info and invoke callback for each entry
+        // Retrieve sequence points and native variable info in a single request
+        NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
+        NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
+        ULONG32 seqEntryCount = 0;
+        ULONG32 varEntryCount = 0;
+
+        BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
+                                                    InfoStoreNew, NULL,
+                                                    BoundsType::Uninstrumented,
+                                                    &seqEntryCount, &mapCopy,
+                                                    &varEntryCount, &nativeVars);
+        if (!success)
+            ThrowHR(E_FAIL);
+
+        // Invoke the native variable info callback for each entry
         if (fpVarInfoCallback != NULL)
         {
-            NewArrayHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
-            ULONG32 varEntryCount;
-
-            BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
-                                                        InfoStoreNew, NULL,
-                                                        BoundsType::Instrumented,
-                                                        NULL, NULL,
-                                                        &varEntryCount, &nativeVars);
-            if (!success)
-                ThrowHR(E_FAIL);
-
             for (ULONG32 i = 0; i < varEntryCount; i++)
             {
                 fpVarInfoCallback(&nativeVars[i], pUserData);
             }
         }
 
-        // Get sequence points and invoke callback for each entry
+        // Invoke the sequence point callback for each entry
         if (fpSeqPointCallback != NULL)
         {
-            NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
-            ULONG32 seqEntryCount;
-
-            BOOL success = DebugInfoManager::GetBoundariesAndVars(request,
-                                                        InfoStoreNew, NULL,
-                                                        BoundsType::Uninstrumented,
-                                                        &seqEntryCount, &mapCopy,
-                                                        NULL, NULL);
-            if (!success)
-                ThrowHR(E_FAIL);
-
             for (ULONG32 i = 0; i < seqEntryCount; i++)
             {
                 fpSeqPointCallback(&mapCopy[i], pUserData);
