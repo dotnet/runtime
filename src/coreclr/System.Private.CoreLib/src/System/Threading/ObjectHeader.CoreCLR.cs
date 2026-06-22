@@ -248,51 +248,32 @@ namespace System.Threading
                 int* pHeader = GetHeaderPtr(pObjectData);
 
                 // We may need to retry if we own the lock but the CAS races with another thread
-                // touching unrelated header bits. GC should not set its bits while we are here, but
-                // finalization might. We still own the lock in that case, so retrying lets us release
-                // it without needlessly inflating it to a fat lock.
+                // touching unrelated header bits.
                 while (true)
                 {
                     int oldBits = *pHeader;
-                    int newBits;
 
-                    // Common case: the lock is thin, owned by us and held only once.
-                    // A single masked comparison verifies in one shot that the spinlock bit is clear,
-                    // there is no hashcode/syncblock index, the recursion level is 0 and we own the lock.
-                    // The comparison is only meaningful when the current thread id fits in the thread-id
-                    // field; ids that don't fit (including the uninitialized -1 sentinel) can never own a
-                    // thin lock and are routed to the checks below. This guard is independent of the header
-                    // load, so it can be evaluated while the header is fetched from memory.
-                    if ((uint)currentThreadID <= (uint)SBLK_MASK_LOCK_THREADID &&
-                        (oldBits & (BIT_SBLK_SPIN_LOCK | BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | SBLK_MASK_LOCK_RECLEVEL | SBLK_MASK_LOCK_THREADID)) == currentThreadID)
+                    if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID &&
+                        (oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) == 0)
                     {
-                        // Release entirely. Since the recursion level is 0, clearing the owning
-                        // thread id is the same as subtracting it from the header.
-                        newBits = oldBits - currentThreadID;
-                    }
-                    // Otherwise, if the lock is not thin
-                    else if ((oldBits & (BIT_SBLK_SPIN_LOCK | BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)) != 0)
-                    {
-                        return HeaderLockResult.UseSlowPath;
-                    }
-                    // If we own the lock it must be held recursively (the single-hold case is handled above),
-                    // so just decrement the recursion level.
-                    else if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
-                    {
-                        newBits = oldBits - SBLK_LOCK_RECLEVEL_INC;
-                    }
-                    else
-                    {
-                        return HeaderLockResult.Failure;
+                        // decrement count or release entirely.
+                        int newBits = (oldBits & SBLK_MASK_LOCK_RECLEVEL) != 0 ?
+                            oldBits - SBLK_LOCK_RECLEVEL_INC :
+                            oldBits & ~SBLK_MASK_LOCK_THREADID;
+
+                        if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
+                        {
+                            return HeaderLockResult.Success;
+                        }
+
+                        // rare contention on owned lock,
+                        // we still own the lock, try again
+                        continue;
                     }
 
-                    if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
-                    {
-                        return HeaderLockResult.Success;
-                    }
-
-                    // rare contention on owned lock,
-                    // we still own the lock, try again
+                    // This is a fat lock (most likely) or we don't own the lock and need to throw.
+                    // Let the slow path handle this.
+                    return HeaderLockResult.UseSlowPath;
                 }
             }
         }

@@ -101,11 +101,6 @@ namespace System.Threading
                 return;
             }
 
-            if (result == ObjectHeader.HeaderLockResult.Failure)
-            {
-                throw new SynchronizationLockException();
-            }
-
             GetLockObject(obj).Exit();
         }
 
@@ -148,11 +143,6 @@ namespace System.Threading
             if (result == ObjectHeader.HeaderLockResult.Success)
             {
                 return;
-            }
-
-            if (result == ObjectHeader.HeaderLockResult.Failure)
-            {
-                throw new SynchronizationLockException();
             }
 
             GetLockObject(obj).Exit();
