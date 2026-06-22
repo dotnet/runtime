@@ -470,10 +470,3 @@ bool test_only_getenv(const pal::char_t* name, pal::string_t* recv)
     free(value);
     return true;
 }
-
-// C-callable wrapper over get_host_version_description(), for use by C entrypoints (apphost.c).
-extern "C" void utils_get_host_version_description(pal_char_t* out_desc, size_t out_desc_len)
-{
-    pal::string_t desc = get_host_version_description();
-    pal_str_printf(out_desc, out_desc_len, _X("%s"), desc.c_str());
-}

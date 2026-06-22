@@ -1173,25 +1173,3 @@ bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const st
     return path1 == path2;
 #endif
 }
-
-// C-callable wrappers over the C++ pal:: API, for use by C entrypoints (apphost.c).
-extern "C" bool pal_is_path_fully_qualified(const pal_char_t* path)
-{
-    return pal::is_path_fully_qualified(pal::string_t(path));
-}
-
-extern "C" bool pal_load_library(const pal_char_t* path, void** dll)
-{
-    pal::string_t str(path);
-    return pal::load_library(&str, reinterpret_cast<pal::dll_t*>(dll));
-}
-
-extern "C" void pal_unload_library(void* library)
-{
-    pal::unload_library(reinterpret_cast<pal::dll_t>(library));
-}
-
-extern "C" void* pal_get_symbol(void* library, const char* name)
-{
-    return reinterpret_cast<void*>(pal::get_symbol(reinterpret_cast<pal::dll_t>(library), name));
-}

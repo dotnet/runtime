@@ -510,3 +510,81 @@ pal_char_t* pal_get_default_installation_dir(void)
 
     return result;
 }
+
+bool pal_is_path_fully_qualified(const pal_char_t* path)
+{
+    size_t len = pal_strlen(path);
+    if (len < 2)
+        return false;
+
+    // UNC and DOS device paths (e.g. \\server\share or \\?\C:\).
+    if (path[0] == L'\\' || path[0] == L'/')
+        return path[1] == L'?' || path[1] == L'\\' || path[1] == L'/';
+
+    // Drive absolute path (e.g. C:\).
+    return len >= 3 && path[1] == L':' && (path[2] == L'\\' || path[2] == L'/');
+}
+
+bool pal_load_library(const pal_char_t* path, void** dll)
+{
+    pal_char_t* full = NULL;
+    const pal_char_t* load_path = path;
+
+    // LoadLibraryEx with the search flags below requires a fully-qualified path.
+    if (!pal_is_path_fully_qualified(path))
+    {
+        full = pal_fullpath(path, false);
+        if (full == NULL)
+        {
+            trace_error(_X("Failed to load [%s], HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
+            return false;
+        }
+        load_path = full;
+    }
+
+    HMODULE library = LoadLibraryExW(load_path, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+    if (library == NULL)
+    {
+        DWORD error_code = GetLastError();
+        trace_error(_X("Failed to load [%s], HRESULT: 0x%X"), load_path, HRESULT_FROM_WIN32(error_code));
+        if (error_code == ERROR_BAD_EXE_FORMAT)
+        {
+            trace_error(_X("  - Ensure the library matches the current process architecture: ") _STRINGIFY(CURRENT_ARCH_NAME));
+        }
+        free(full);
+        return false;
+    }
+
+    *dll = library;
+    free(full);
+    return true;
+}
+
+void pal_unload_library(void* library)
+{
+    // No-op. On Windows the host pins loaded libraries so they are not unloaded.
+    (void)library;
+}
+
+void* pal_get_symbol(void* library, const char* name)
+{
+    // Convert the function pointer to void* via a union to avoid function/data
+    // pointer cast warnings (which are errors under /WX).
+    union { FARPROC proc; void* ptr; } convert;
+    convert.proc = GetProcAddress((HMODULE)library, name);
+    if (convert.proc == NULL)
+    {
+        trace_info(_X("Probed for and did not resolve library symbol %S"), name);
+        return NULL;
+    }
+    return convert.ptr;
+}
+
+bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len)
+{
+    int required = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+    if (required <= 0 || (size_t)required > out_len)
+        return false;
+
+    return MultiByteToWideChar(CP_UTF8, 0, utf8, -1, out, (int)out_len) > 0;
+}
