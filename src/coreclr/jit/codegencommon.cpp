@@ -1761,8 +1761,8 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
 
     // Emit an entry for managed return value reporting, if needed.
     GenTreeCall* call = params.returnValueCall;
-    if ((call == nullptr) || !m_compiler->opts.compDbgInfo || (m_compiler->genCallSite2DebugInfoMap == nullptr) ||
-        params.isJump)
+    if ((call == nullptr) || !m_compiler->opts.compDbgInfo || !m_compiler->opts.compScopeInfo ||
+        (m_compiler->genCallSite2DebugInfoMap == nullptr) || params.isJump)
     {
         return;
     }
@@ -1825,8 +1825,19 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         }
 
         assert(numRegs == 2);
-        info.returnValueLoc.storeVariableInRegisters(retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv()),
-                                                     retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv()));
+        regNumber reg1 = retDesc->GetABIReturnReg(0, call->GetUnmanagedCallConv());
+        regNumber reg2 = retDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv());
+
+        // VLT_REG_REG can only encode integer registers. On platforms where structs
+        // can be returned in a mix of int and float registers (SysV x64, RISC-V),
+        // skip recording if any register is not an int register.
+        // TODO: Supporting this case is tracked by https://github.com/dotnet/runtime/issues/129344
+        if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
+        {
+            return;
+        }
+
+        info.returnValueLoc.storeVariableInRegisters(reg1, reg2);
     }
     else if (varTypeIsFloating(call))
     {
@@ -1834,12 +1845,17 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         info.returnValueLoc.vlType         = VLT_FPSTK;
         info.returnValueLoc.vlFPstk.vlfReg = 0;
 #else
-        info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
+        // VLT_REG_FP uses a 0-based FP register index; the DBI adds the
+        // platform-specific XMM0/V0 base when converting to CorDebugRegister.
+        info.returnValueLoc.vlType       = VLT_REG_FP;
+        info.returnValueLoc.vlReg.vlrReg = (regNumber)(REG_FLOATRET - REG_FP_FIRST);
 #endif
     }
     else if (varTypeUsesFloatReg(call))
     {
-        info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
+        // VLT_REG_FP uses a 0-based FP register index.
+        info.returnValueLoc.vlType       = VLT_REG_FP;
+        info.returnValueLoc.vlReg.vlrReg = (regNumber)(REG_FLOATRET - REG_FP_FIRST);
     }
     else
     {
