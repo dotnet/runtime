@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 internal class GcScanContext
