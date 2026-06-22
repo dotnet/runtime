@@ -440,7 +440,7 @@ namespace System.Text.Encodings.Web
 
                 foreach (char c in remaining)
                 {
-                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[i])) { goto Return; }
+                    if (!_allowedBmpCodePoints.IsCharAllowed(c)) { goto Return; }
                     idx++;
                 }
             }
