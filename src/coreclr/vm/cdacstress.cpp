@@ -26,6 +26,7 @@
 #include "gccover.h"
 #include "sstring.h"
 #include "exinfo.h"
+#include "gcrefmap.h"
 
 #ifdef TARGET_LINUX
 // process_vm_readv is the safe in-process read path on Linux. See
@@ -1348,11 +1349,91 @@ static void ResolveMethodNameFromMD(CLRDATA_ADDRESS mdAddr, char* buf, int bufLe
     snprintf(buf, bufLen, "<unknown 0x%llx>", (unsigned long long)mdAddr);
 }
 
-// Verify ArgIterator output for a single MD. Phase 1: the cDAC always
-// returns E_NOTIMPL, so every call emits [ARG_SKIP]. Phase 2+ will add
-// runtime-side ComputeCallRefMap and byte-level comparison.
+// Compute the runtime's authoritative GCRefMap blob for `pMD` and copy it
+// into the caller's buffer (up to `bufSize` bytes). Returns the actual blob
+// length on success, or a negative HRESULT-coded value on failure:
+//   -1                  ComputeCallRefMap threw (signature couldn't be classified)
+//   -2                  blob exceeded `bufSize` (caller should treat as oracle skip)
+// A return >= 0 means `*pBufOut` has `return-value` valid bytes.
+static int ComputeRuntimeArgGCRefMap(MethodDesc* pMD, BYTE* pBufOut, int bufSize)
+{
+    GCRefMapBuilder builder;
+    bool threw = false;
+    EX_TRY
+    {
+        ComputeCallRefMap(pMD, &builder, /*isDispatchCell*/ false);
+    }
+    EX_CATCH
+    {
+        threw = true;
+    }
+    EX_END_CATCH
+
+    if (threw)
+        return -1;
+
+    DWORD blobLen = 0;
+    PVOID blob = builder.GetBlob(&blobLen);
+    if ((int)blobLen > bufSize)
+        return -2;
+
+    if (blobLen > 0)
+        memcpy(pBufOut, blob, blobLen);
+    return (int)blobLen;
+}
+
+// Hex-dump a blob into `buf` ("aa bb cc ...") for diagnostic output.
+// On overflow the dump is truncated with a trailing "..." marker.
+static void FormatBlobHex(const BYTE* blob, int len, char* buf, size_t bufLen)
+{
+    if (bufLen == 0)
+        return;
+    buf[0] = '\0';
+    size_t used = 0;
+    for (int i = 0; i < len; i++)
+    {
+        // Each byte needs 3 chars ("xx ") plus null and trailing "...".
+        if (used + 8 >= bufLen)
+        {
+            snprintf(buf + used, bufLen - used, "...");
+            return;
+        }
+        int n = snprintf(buf + used, bufLen - used, "%02x ", blob[i]);
+        if (n <= 0) break;
+        used += (size_t)n;
+    }
+}
+
+// Verify ArgIterator output for a single MD. Computes the runtime oracle
+// blob (via ComputeCallRefMap), asks the cDAC for the same blob via the
+// private Request opcode, and compares byte-for-byte. Phase 2: the cDAC
+// handler still returns E_NOTIMPL for every MD, so the comparison code
+// path runs only for any MDs the cDAC opts in to in Phase 3+.
 static void VerifyArgIteratorForMD(MethodDesc* pMD, FrameIdentifier frameId)
 {
+    char methodName[256];
+    ResolveMethodNameFromMD((CLRDATA_ADDRESS)(LONG_PTR)pMD, methodName, sizeof(methodName));
+    LPCSTR frameName = Frame::GetFrameTypeName(frameId);
+    if (frameName == nullptr)
+        frameName = "<unknown>";
+
+    // 1. Runtime oracle. Exercised for every MD we see (Phase 2 validation:
+    //    proves ComputeCallRefMap is safe to call for any frame's MD without
+    //    crashing). If the runtime itself can't classify this MD there's
+    //    nothing for the cDAC to be wrong about, so silently skip --
+    //    counted as ARG_SKIP for visibility in stats.
+    BYTE rtBlob[ARRAY_SIZE(((DacStressArgGCRefMapResponse*)0)->Blob)];
+    int rtLen = ComputeRuntimeArgGCRefMap(pMD, rtBlob, (int)sizeof(rtBlob));
+    if (rtLen < 0)
+    {
+        InterlockedIncrement(&s_argIterSkip);
+        const char* reason = (rtLen == -1) ? "runtime-threw" : "runtime-blob-too-large";
+        CDAC_LOG("[ARG_SKIP] MD=0x%llx frame=%s reason=%s %s\n",
+            (unsigned long long)(LONG_PTR)pMD, frameName, reason, methodName);
+        return;
+    }
+
+    // 2. cDAC side via the private Request opcode.
     DacStressArgGCRefMapRequest req = {};
     req.MethodDesc = (CLRDATA_ADDRESS)(LONG_PTR)pMD;
 
@@ -1362,18 +1443,12 @@ static void VerifyArgIteratorForMD(MethodDesc* pMD, FrameIdentifier frameId)
         sizeof(req), (BYTE*)&req,
         sizeof(resp), (BYTE*)&resp);
 
-    char methodName[256];
-    ResolveMethodNameFromMD(req.MethodDesc, methodName, sizeof(methodName));
-    LPCSTR frameName = Frame::GetFrameTypeName(frameId);
-    if (frameName == nullptr)
-        frameName = "<unknown>";
-
     if (cdacHr == E_NOTIMPL || resp.Hr == E_NOTIMPL || resp.Hr == S_FALSE)
     {
         InterlockedIncrement(&s_argIterSkip);
-        CDAC_LOG("[ARG_SKIP] MD=0x%llx frame=%s reason=0x%08x %s\n",
+        CDAC_LOG("[ARG_SKIP] MD=0x%llx frame=%s reason=0x%08x rtBlobSize=%d %s\n",
             (unsigned long long)req.MethodDesc, frameName,
-            (unsigned int)(FAILED(cdacHr) ? cdacHr : resp.Hr), methodName);
+            (unsigned int)(FAILED(cdacHr) ? cdacHr : resp.Hr), rtLen, methodName);
         return;
     }
     if (FAILED(cdacHr) || FAILED(resp.Hr))
@@ -1385,13 +1460,25 @@ static void VerifyArgIteratorForMD(MethodDesc* pMD, FrameIdentifier frameId)
         return;
     }
 
-    // Phase 2+ will compare resp.Blob against the runtime's ComputeCallRefMap
-    // output here. For Phase 1 a successful response is unexpected but harmless;
-    // we count it as a pass so the counter is non-zero once the port lands.
-    InterlockedIncrement(&s_argIterPass);
-    CDAC_LOG("[ARG_PASS] MD=0x%llx frame=%s blobSize=%u %s\n",
+    // 3. Byte-for-byte comparison.
+    if ((int)resp.BlobSize == rtLen && memcmp(resp.Blob, rtBlob, rtLen) == 0)
+    {
+        InterlockedIncrement(&s_argIterPass);
+        CDAC_LOG("[ARG_PASS] MD=0x%llx frame=%s blobSize=%d %s\n",
+            (unsigned long long)req.MethodDesc, frameName, rtLen, methodName);
+        return;
+    }
+
+    InterlockedIncrement(&s_argIterFail);
+    char rtHex[512], cdacHex[512];
+    FormatBlobHex(rtBlob, rtLen, rtHex, sizeof(rtHex));
+    FormatBlobHex(resp.Blob, (int)resp.BlobSize, cdacHex, sizeof(cdacHex));
+    CDAC_LOG("[ARG_FAIL] MD=0x%llx frame=%s rtSize=%d cdacSize=%u %s\n"
+             "    RT:   %s\n"
+             "    cDAC: %s\n",
         (unsigned long long)req.MethodDesc, frameName,
-        (unsigned int)resp.BlobSize, methodName);
+        rtLen, (unsigned int)resp.BlobSize, methodName,
+        rtHex, cdacHex);
 }
 
 static void VerifyArgIteratorOnStack(Thread* pThread)
