@@ -111,7 +111,12 @@ namespace System.Runtime.CompilerServices
             }
 
             EventKeywords keywords = m_matchAnyKeyword;
-            if (keywords == 0)
+
+            // A keyword mask of 0 from an enable means "all keywords", so substitute the full async set.
+            // On disable EventSource also resets m_matchAnyKeyword to 0 (with m_level 0 == LogAlways) before
+            // this callback, so gate the substitution on IsEnabled() to avoid re-enabling instrumentation
+            // while the source is being disabled.
+            if (keywords == 0 && IsEnabled())
             {
                 keywords = AsyncEventKeywords;
             }
