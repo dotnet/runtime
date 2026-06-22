@@ -54,19 +54,24 @@ public unsafe class ObjectTests
     }
 
     private static Dictionary<DataType, Target.TypeInfo> CreateContractTypes(MockDescriptors.MockObjectBuilder objectBuilder)
-        => new Dictionary<DataType, Target.TypeInfo>
-        {
-            [DataType.Object] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ObjectLayout),
-            [DataType.ObjectHeader] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ObjectHeaderLayout),
-            [DataType.String] = TargetTestHelpers.CreateTypeInfo(objectBuilder.StringLayout),
-            [DataType.Array] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ArrayLayout),
-            [DataType.Delegate] = TargetTestHelpers.CreateTypeInfo(objectBuilder.DelegateLayout),
-            [DataType.ContinuationObject] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ContinuationLayout),
-            [DataType.AsyncResumeInfo] = TargetTestHelpers.CreateTypeInfo(objectBuilder.AsyncResumeInfoLayout),
-            [DataType.SyncTableEntry] = TargetTestHelpers.CreateTypeInfo(objectBuilder.SyncTableEntryLayout),
-            [DataType.SyncBlock] = TargetTestHelpers.CreateTypeInfo(objectBuilder.SyncBlockLayout),
-            [DataType.InteropSyncBlockInfo] = TargetTestHelpers.CreateTypeInfo(objectBuilder.InteropSyncBlockInfoLayout),
-        }.Concat(MethodTableTests.CreateContractTypes(objectBuilder.RTSBuilder)).ToDictionary();
+    {
+        Dictionary<DataType, Target.TypeInfo> types = MethodTableTests.CreateContractTypes(objectBuilder.RTSBuilder);
+
+        // Object-specific types take precedence; the full ContinuationObject layout (with field
+        // offsets) overrides the size-only entry provided by MethodTableTests.CreateContractTypes.
+        types[DataType.Object] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ObjectLayout);
+        types[DataType.ObjectHeader] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ObjectHeaderLayout);
+        types[DataType.String] = TargetTestHelpers.CreateTypeInfo(objectBuilder.StringLayout);
+        types[DataType.Array] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ArrayLayout);
+        types[DataType.Delegate] = TargetTestHelpers.CreateTypeInfo(objectBuilder.DelegateLayout);
+        types[DataType.ContinuationObject] = TargetTestHelpers.CreateTypeInfo(objectBuilder.ContinuationLayout);
+        types[DataType.AsyncResumeInfo] = TargetTestHelpers.CreateTypeInfo(objectBuilder.AsyncResumeInfoLayout);
+        types[DataType.SyncTableEntry] = TargetTestHelpers.CreateTypeInfo(objectBuilder.SyncTableEntryLayout);
+        types[DataType.SyncBlock] = TargetTestHelpers.CreateTypeInfo(objectBuilder.SyncBlockLayout);
+        types[DataType.InteropSyncBlockInfo] = TargetTestHelpers.CreateTypeInfo(objectBuilder.InteropSyncBlockInfoLayout);
+
+        return types;
+    }
 
     private static (string Name, ulong Value)[] CreateContractGlobals(MockDescriptors.MockObjectBuilder objectBuilder)
         => MethodTableTests.CreateContractGlobals(objectBuilder.RTSBuilder).Concat(
