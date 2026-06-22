@@ -2342,7 +2342,6 @@ namespace System
         public static System.Delegate? Combine(System.Delegate? a, System.Delegate? b) { throw null; }
         public static System.Delegate? Combine(params System.Delegate?[]? delegates) { throw null; }
         public static System.Delegate? Combine(params System.ReadOnlySpan<System.Delegate?> delegates) { throw null; }
-        protected virtual System.Delegate CombineImpl(System.Delegate? d) { throw null; }
         public static System.Delegate CreateDelegate(System.Type type, object? firstArgument, System.Reflection.MethodInfo method) { throw null; }
         public static System.Delegate? CreateDelegate(System.Type type, object? firstArgument, System.Reflection.MethodInfo method, bool throwOnBindFailure) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target method might be removed")]
@@ -2357,12 +2356,10 @@ namespace System
         public static System.Delegate CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method, bool ignoreCase) { throw null; }
         public static System.Delegate? CreateDelegate(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method, bool ignoreCase, bool throwOnBindFailure) { throw null; }
         public object? DynamicInvoke(params object?[]? args) { throw null; }
-        protected virtual object? DynamicInvokeImpl(object?[]? args) { throw null; }
         public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate? d) where TDelegate : System.Delegate { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public virtual System.Delegate[] GetInvocationList() { throw null; }
-        protected virtual System.Reflection.MethodInfo GetMethodImpl() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -2370,7 +2367,6 @@ namespace System
         public static bool operator !=(System.Delegate? d1, System.Delegate? d2) { throw null; }
         public static System.Delegate? Remove(System.Delegate? source, System.Delegate? value) { throw null; }
         public static System.Delegate? RemoveAll(System.Delegate? source, System.Delegate? value) { throw null; }
-        protected virtual System.Delegate? RemoveImpl(System.Delegate? d) { throw null; }
         public partial struct InvocationListEnumerator<TDelegate> where TDelegate : System.Delegate
         {
             public TDelegate Current { get { throw null; } }
@@ -4793,17 +4789,14 @@ namespace System
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target method might be removed")]
         protected MulticastDelegate(object target, string method) : base (default(object), default(string)) { }
         protected MulticastDelegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method) : base (default(object), default(string)) { }
-        protected sealed override System.Delegate CombineImpl(System.Delegate? follow) { throw null; }
         public sealed override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public sealed override int GetHashCode() { throw null; }
         public sealed override System.Delegate[] GetInvocationList() { throw null; }
-        protected override System.Reflection.MethodInfo GetMethodImpl() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.MulticastDelegate? d1, System.MulticastDelegate? d2) { throw null; }
         public static bool operator !=(System.MulticastDelegate? d1, System.MulticastDelegate? d2) { throw null; }
-        protected sealed override System.Delegate? RemoveImpl(System.Delegate? value) { throw null; }
     }
     public sealed partial class MulticastNotSupportedException : System.SystemException
     {

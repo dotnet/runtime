@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
@@ -6,6 +6,30 @@
     <Target>T:System.Lazy`2</Target>
     <Left>netstandard2.0/System.ComponentModel.Composition.dll</Left>
     <Right>right</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/mscorlib.dll</Left>
+    <Right>net11.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Delegate.DynamicInvokeImpl(System.Object[])</Target>
+    <Left>netstandard2.0/mscorlib.dll</Left>
+    <Right>net11.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Delegate.GetMethodImpl</Target>
+    <Left>netstandard2.0/mscorlib.dll</Left>
+    <Right>net11.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/mscorlib.dll</Left>
+    <Right>net11.0/mscorlib.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -34,6 +58,30 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Constraint.SetDataSet(System.Data.DataSet)</Target>
+    <Left>netstandard2.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Delegate.DynamicInvokeImpl(System.Object[])</Target>
+    <Left>netstandard2.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Delegate.GetMethodImpl</Target>
+    <Left>netstandard2.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
     <Left>netstandard2.0/netstandard.dll</Left>
     <Right>net11.0/netstandard.dll</Right>
   </Suppression>
@@ -120,6 +168,30 @@
     <Target>M:System.Linq.EnumerableQuery.#ctor</Target>
     <Left>netstandard2.0/System.Linq.Queryable.dll</Left>
     <Right>net11.0/System.Linq.Queryable.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Delegate.DynamicInvokeImpl(System.Object[])</Target>
+    <Left>netstandard2.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Delegate.GetMethodImpl</Target>
+    <Left>netstandard2.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>

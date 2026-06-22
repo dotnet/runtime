@@ -20,7 +20,7 @@ namespace System
             if (a is null)
                 return b;
 
-            return a.CombineImpl(b);
+            return Unsafe.As<MulticastDelegate>(a).CombineImpl(b);
         }
 
         public static Delegate? Combine(params Delegate?[]? delegates) =>
@@ -68,10 +68,6 @@ namespace System
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
 #if !NATIVEAOT
-        protected virtual Delegate CombineImpl(Delegate? d) => throw new MulticastNotSupportedException(SR.Multicast_Combine);
-
-        protected virtual Delegate? RemoveImpl(Delegate? d) => Equals(d) ? null : this;
-
         public virtual Delegate[] GetInvocationList() => [this];
 
         /// <summary>
@@ -146,14 +142,14 @@ namespace System
 
         public object? DynamicInvoke(params object?[]? args)
         {
-            return DynamicInvokeImpl(args);
+            return Unsafe.As<MulticastDelegate>(this).DynamicInvokeImpl(args);
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) => throw new PlatformNotSupportedException();
 
-        public MethodInfo Method => GetMethodImpl();
+        public MethodInfo Method => Unsafe.As<MulticastDelegate>(this).GetMethodImpl();
 
         public static Delegate? Remove(Delegate? source, Delegate? value)
         {
@@ -166,7 +162,7 @@ namespace System
             if (!InternalEqualTypes(source, value))
                 throw new ArgumentException(SR.Arg_DlgtTypeMis);
 
-            return source.RemoveImpl(value);
+            return Unsafe.As<MulticastDelegate>(source).RemoveImpl(value);
         }
 
         public static Delegate? RemoveAll(Delegate? source, Delegate? value)
