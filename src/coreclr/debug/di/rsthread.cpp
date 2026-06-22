@@ -5959,11 +5959,13 @@ UINT_PTR * CordbNativeFrame::GetAddressOfRegister(CorDebugRegister regNum) const
 
     switch (regNum)
     {
+#if !defined(TARGET_WASM)
     case REGISTER_STACK_POINTER:
         ret = (UINT_PTR*)GetSPAddress(&m_context);
         break;
+#endif
 
-#if !defined(TARGET_AMD64) && !defined(TARGET_ARM) // @ARMTODO
+#if !defined(TARGET_AMD64) && !defined(TARGET_ARM) && !defined(TARGET_WASM) // @ARMTODO
     case REGISTER_FRAME_POINTER:
         ret = (UINT_PTR*)GetFPAddress(&m_context);
         break;

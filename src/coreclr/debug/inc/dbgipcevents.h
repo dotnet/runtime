@@ -979,31 +979,29 @@ struct MSLAYOUT IPCENames // We use a class/struct so that the function can rema
 #define DebuggerIPCE_FloatCount 1
 #endif
 
+#if !defined(TARGET_WASM)
 inline LPVOID GetSPAddress(const DT_CONTEXT * context)
 {
 #if defined(TARGET_X86)
     return (LPVOID)&context->Esp;
 #elif defined(TARGET_AMD64)
     return (LPVOID)&context->Rsp;
-#elif defined(TARGET_WASM)
-    return (LPVOID)&context->InterpreterSP;
 #else
     return (LPVOID)&context->Sp;
 #endif
 }
+#endif // !TARGET_WASM
 
-#if !defined(TARGET_AMD64) && !defined(TARGET_ARM)
+#if !defined(TARGET_AMD64) && !defined(TARGET_ARM) && !defined(TARGET_WASM)
 inline LPVOID GetFPAddress(const DT_CONTEXT * context)
 {
 #if defined(TARGET_X86)
     return (LPVOID)&context->Ebp;
-#elif defined(TARGET_WASM)
-    return (LPVOID)&context->InterpreterFP;
 #else
     return (LPVOID)&context->Fp;
 #endif
 }
-#endif // !TARGET_AMD64 && !TARGET_ARM
+#endif // !TARGET_AMD64 && !TARGET_ARM && !TARGET_WASM
 
 
 class MSLAYOUT FramePointer
