@@ -669,7 +669,7 @@ namespace System.Runtime.InteropServices
             internal readonly IntPtr _contextToken;
             private int _trackerObjectDisconnected; // Atomic boolean, so using int.
             private readonly bool _releaseTrackerObject;
-            internal GCHandle _nativeObjectWrapperWeakHandle;
+            internal GCHandle _nativeObjectWrapperWeakHandle; // mutable struct; do not make this readonly
 
             public IntPtr TrackerObject => (_trackerObject == IntPtr.Zero || _trackerObjectDisconnected == 1) ? IntPtr.Zero : _trackerObject;
 
