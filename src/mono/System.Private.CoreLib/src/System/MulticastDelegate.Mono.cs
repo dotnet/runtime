@@ -21,7 +21,7 @@ namespace System
             throw new SerializationException(SR.Serialization_DelegatesNotSupported);
         }
 
-        internal new object? DynamicInvokeImpl(object?[]? args)
+        protected sealed override object? DynamicInvokeImpl(object?[]? args)
         {
             if (delegates == null)
             {
@@ -82,7 +82,7 @@ namespace System
             return base.GetHashCode();
         }
 
-        internal new MethodInfo GetMethodImpl()
+        protected override MethodInfo GetMethodImpl()
         {
             if (delegates != null)
                 return delegates[delegates.Length - 1].Method;
@@ -94,7 +94,7 @@ namespace System
         //   Return, in order of invocation, the invocation list
         //   of a MulticastDelegate
         // </summary>
-        public sealed override Delegate[] GetInvocationList()
+        internal new Delegate[] GetInvocationList()
         {
             if (delegates != null)
                 return (Delegate[])delegates.Clone();
@@ -126,7 +126,7 @@ namespace System
         //   thing should have better been a simple System.Delegate class.
         //   Compiler generated delegates are always MulticastDelegates.
         // </summary>
-        internal Delegate CombineImpl(Delegate? follow)
+        internal new Delegate CombineImpl(Delegate? follow)
         {
             if (follow == null)
                 return this;
@@ -197,7 +197,7 @@ namespace System
             return -1;
         }
 
-        internal Delegate? RemoveImpl(Delegate? value)
+        internal new Delegate? RemoveImpl(Delegate? value)
         {
             if (value == null)
                 return this;

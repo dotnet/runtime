@@ -423,7 +423,7 @@ namespace System
             return match;
         }
 
-        internal object? DynamicInvokeImpl(object?[]? args)
+        protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
             MethodInfo method = Method;
 
@@ -518,7 +518,7 @@ namespace System
             return (m != null ? m.GetHashCode() : GetType().GetHashCode()) ^ RuntimeHelpers.GetHashCode(_target);
         }
 
-        internal MethodInfo GetMethodImpl()
+        protected virtual MethodInfo GetMethodImpl()
         {
             if (method_info != null)
                 return method_info;

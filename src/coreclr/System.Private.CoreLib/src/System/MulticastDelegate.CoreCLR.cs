@@ -172,7 +172,7 @@ namespace System
 
         // This method will combine this delegate with the passed delegate
         //    to form a new delegate.
-        internal Delegate CombineImpl(Delegate? follow)
+        internal new Delegate CombineImpl(Delegate? follow)
         {
             if (follow is null)
                 return this;
@@ -290,7 +290,7 @@ namespace System
         //    look at the invocation list.)  If this is found we remove it from
         //    this list and return a new delegate.  If its not found a copy of the
         //    current list is returned.
-        internal Delegate? RemoveImpl(Delegate? value)
+        internal new Delegate? RemoveImpl(Delegate? value)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
@@ -362,7 +362,7 @@ namespace System
         }
 
         // This method returns the Invocation list of this multicast delegate.
-        public sealed override Delegate[] GetInvocationList()
+        internal new Delegate[] GetInvocationList()
         {
             Delegate[] del;
             if (_invocationList is not object[] invocationList)
@@ -418,7 +418,7 @@ namespace System
             }
         }
 
-        internal new object? GetTarget()
+        internal override object? GetTarget()
         {
             if (_invocationCount != 0)
             {
@@ -436,14 +436,14 @@ namespace System
                     if (_invocationList is object[] invocationList)
                     {
                         int invocationCount = (int)_invocationCount;
-                        return ((MulticastDelegate)invocationList[invocationCount - 1]).GetTarget();
+                        return ((Delegate)invocationList[invocationCount - 1]).GetTarget();
                     }
                 }
             }
             return base.GetTarget();
         }
 
-        internal new MethodInfo GetMethodImpl()
+        protected override MethodInfo GetMethodImpl()
         {
             if (_invocationList is object[] invocationList)
             {

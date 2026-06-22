@@ -77,7 +77,7 @@ namespace System
                              DelegateBindingFlags.CaselessMatching);
         }
 
-        private object? DynamicInvokeImpl(object?[]? args)
+        protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
             RuntimeMethodHandleInternal method = new RuntimeMethodHandleInternal(GetInvokeMethod());
             RuntimeMethodInfo invoke = (RuntimeMethodInfo)RuntimeType.GetMethodBase((RuntimeType)GetType(), method)!;
@@ -156,7 +156,7 @@ namespace System
                 return GetType().GetHashCode();
         }
 
-        internal MethodInfo GetMethodImpl()
+        protected virtual MethodInfo GetMethodImpl()
         {
             if (_helperObject is MethodInfo methodInfo)
             {
@@ -218,7 +218,7 @@ namespace System
             return (MethodInfo)_helperObject;
         }
 
-        public object? Target => Unsafe.As<MulticastDelegate>(this).GetTarget();
+        public object? Target => GetTarget();
 
         // V1 API.
         [RequiresUnreferencedCode("The target method might be removed")]
@@ -550,7 +550,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
         private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
 
-        internal object? GetTarget()
+        internal virtual object? GetTarget()
         {
             return (_methodPtrAux == IntPtr.Zero) ? _target : null;
         }

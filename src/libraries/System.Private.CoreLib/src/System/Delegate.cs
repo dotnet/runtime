@@ -20,7 +20,7 @@ namespace System
             if (a is null)
                 return b;
 
-            return Unsafe.As<MulticastDelegate>(a).CombineImpl(b);
+            return a.CombineImpl(b);
         }
 
         public static Delegate? Combine(params Delegate?[]? delegates) =>
@@ -68,7 +68,11 @@ namespace System
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
 #if !NATIVEAOT
-        public virtual Delegate[] GetInvocationList() => [this];
+        protected Delegate CombineImpl(Delegate? d) => Unsafe.As<MulticastDelegate>(this).CombineImpl(d);
+
+        protected Delegate? RemoveImpl(Delegate? d) => Unsafe.As<MulticastDelegate>(this).RemoveImpl(d);
+
+        public Delegate[] GetInvocationList() => Unsafe.As<MulticastDelegate>(this).GetInvocationList();
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="Delegate"/> has a single invocation target.
@@ -142,14 +146,14 @@ namespace System
 
         public object? DynamicInvoke(params object?[]? args)
         {
-            return Unsafe.As<MulticastDelegate>(this).DynamicInvokeImpl(args);
+            return DynamicInvokeImpl(args);
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) => throw new PlatformNotSupportedException();
 
-        public MethodInfo Method => Unsafe.As<MulticastDelegate>(this).GetMethodImpl();
+        public MethodInfo Method => GetMethodImpl();
 
         public static Delegate? Remove(Delegate? source, Delegate? value)
         {
@@ -162,7 +166,7 @@ namespace System
             if (!InternalEqualTypes(source, value))
                 throw new ArgumentException(SR.Arg_DlgtTypeMis);
 
-            return Unsafe.As<MulticastDelegate>(source).RemoveImpl(value);
+            return source.RemoveImpl(value);
         }
 
         public static Delegate? RemoveAll(Delegate? source, Delegate? value)

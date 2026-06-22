@@ -9,30 +9,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
-    <Left>netstandard2.0/mscorlib.dll</Left>
-    <Right>net11.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.DynamicInvokeImpl(System.Object[])</Target>
-    <Left>netstandard2.0/mscorlib.dll</Left>
-    <Right>net11.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.GetMethodImpl</Target>
-    <Left>netstandard2.0/mscorlib.dll</Left>
-    <Right>net11.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
-    <Left>netstandard2.0/mscorlib.dll</Left>
-    <Right>net11.0/mscorlib.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.ComponentModel.BaseNumberConverter.#ctor</Target>
     <Left>netstandard2.0/netstandard.dll</Left>
     <Right>net11.0/netstandard.dll</Right>
@@ -58,30 +34,6 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Constraint.SetDataSet(System.Data.DataSet)</Target>
-    <Left>netstandard2.0/netstandard.dll</Left>
-    <Right>net11.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
-    <Left>netstandard2.0/netstandard.dll</Left>
-    <Right>net11.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.DynamicInvokeImpl(System.Object[])</Target>
-    <Left>netstandard2.0/netstandard.dll</Left>
-    <Right>net11.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.GetMethodImpl</Target>
-    <Left>netstandard2.0/netstandard.dll</Left>
-    <Right>net11.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
     <Left>netstandard2.0/netstandard.dll</Left>
     <Right>net11.0/netstandard.dll</Right>
   </Suppression>
@@ -168,30 +120,6 @@
     <Target>M:System.Linq.EnumerableQuery.#ctor</Target>
     <Left>netstandard2.0/System.Linq.Queryable.dll</Left>
     <Right>net11.0/System.Linq.Queryable.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
-    <Left>netstandard2.0/System.Runtime.dll</Left>
-    <Right>net11.0/System.Runtime.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.DynamicInvokeImpl(System.Object[])</Target>
-    <Left>netstandard2.0/System.Runtime.dll</Left>
-    <Right>net11.0/System.Runtime.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.GetMethodImpl</Target>
-    <Left>netstandard2.0/System.Runtime.dll</Left>
-    <Right>net11.0/System.Runtime.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
-    <Left>netstandard2.0/System.Runtime.dll</Left>
-    <Right>net11.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -300,6 +228,60 @@
     <Target>T:System.Xml.Schema.XmlSchemaGroupBase</Target>
     <Left>netstandard2.0/System.Xml.dll</Left>
     <Right>net11.0/System.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/mscorlib.dll</Left>
+    <Right>net11.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.GetInvocationList</Target>
+    <Left>netstandard2.0/mscorlib.dll</Left>
+    <Right>net11.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/mscorlib.dll</Left>
+    <Right>net11.0/mscorlib.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.GetInvocationList</Target>
+    <Left>netstandard2.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/netstandard.dll</Left>
+    <Right>net11.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.GetInvocationList</Target>
+    <Left>netstandard2.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
+    <Left>netstandard2.0/System.Runtime.dll</Left>
+    <Right>net11.0/System.Runtime.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>

@@ -232,7 +232,7 @@ namespace System
         internal bool IsDynamicDelegate() => GetThunk(MulticastThunk) == IntPtr.Zero;
 
         [DebuggerGuidedStepThroughAttribute]
-        private object? DynamicInvokeImpl(object?[]? args)
+        protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
             if (IsDynamicDelegate())
             {
@@ -252,7 +252,7 @@ namespace System
             }
         }
 
-        internal MethodInfo GetMethodImpl()
+        protected virtual MethodInfo GetMethodImpl()
         {
             // NOTE: this implementation is mirrored in GetDiagnosticMethodInfo below
 
@@ -484,7 +484,7 @@ namespace System
 
         // This method will combine this delegate with the passed delegate
         //  to form a new delegate.
-        internal Delegate CombineImpl(Delegate? d)
+        protected Delegate CombineImpl(Delegate? d)
         {
             if (d is null)
                 return this;
@@ -602,7 +602,7 @@ namespace System
         //  look at the invocation list.)  If this is found we remove it from
         //  this list and return a new delegate.  If its not found a copy of the
         //  current list is returned.
-        internal Delegate? RemoveImpl(Delegate? d)
+        protected Delegate? RemoveImpl(Delegate? d)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
@@ -671,7 +671,7 @@ namespace System
             return this;
         }
 
-        public virtual Delegate[] GetInvocationList()
+        public Delegate[] GetInvocationList()
         {
             if (_helperObject is Wrapper[] invocationList)
             {

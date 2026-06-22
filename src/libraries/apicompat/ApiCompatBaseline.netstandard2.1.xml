@@ -2,25 +2,19 @@
 <!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
+    <DiagnosticId>CP0012</DiagnosticId>
     <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
     <Left>netstandard2.1/netstandard.dll</Left>
     <Right>net11.0/netstandard.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.DynamicInvokeImpl(System.Object[])</Target>
+    <DiagnosticId>CP0012</DiagnosticId>
+    <Target>M:System.Delegate.GetInvocationList</Target>
     <Left>netstandard2.1/netstandard.dll</Left>
     <Right>net11.0/netstandard.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Delegate.GetMethodImpl</Target>
-    <Left>netstandard2.1/netstandard.dll</Left>
-    <Right>net11.0/netstandard.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
+    <DiagnosticId>CP0012</DiagnosticId>
     <Target>M:System.Delegate.RemoveImpl(System.Delegate)</Target>
     <Left>netstandard2.1/netstandard.dll</Left>
     <Right>net11.0/netstandard.dll</Right>
