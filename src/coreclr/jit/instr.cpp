@@ -2116,7 +2116,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
             return INS_f32_load;
         case TYP_DOUBLE:
             return INS_f64_load;
-#if FEATURE_SIMD
+#if defined(FEATURE_SIMD)
         case TYP_SIMD16:
             return INS_v128_load;
 #endif
@@ -2529,7 +2529,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
             return INS_f32_store;
         case TYP_DOUBLE:
             return INS_f64_store;
-#if FEATURE_SIMD
+#if defined(FEATURE_SIMD)
         case TYP_SIMD16:
             return INS_v128_store;
 #endif

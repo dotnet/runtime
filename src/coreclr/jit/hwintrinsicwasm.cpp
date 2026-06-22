@@ -91,7 +91,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // For either form, if T is a const we can leverage a GenTreeVecCon and map directly to v128.const
             if (sig->numArgs == 1)
             {
-                op1     = impPopStack().val;
+                op1 = impPopStack().val;
+
+                if (!op1->IsIntegralConst() && !op1->IsCnsFltOrDbl())
+                {
+                    NYI_WASM_SIMD("Vector128.Create(T) with non-constant operand");
+                    break;
+                }
+
                 retNode = gtNewSimdCreateBroadcastNode(retType, op1, simdBaseType, simdSize);
                 break;
             }

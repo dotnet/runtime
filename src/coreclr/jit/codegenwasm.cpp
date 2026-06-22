@@ -746,11 +746,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         return;
     }
 
+#ifdef FEATURE_HW_INTRINSICS
     if (treeNode->OperIsHWIntrinsic())
     {
         genHWIntrinsic(treeNode->AsHWIntrinsic());
         return;
     }
+#endif // FEATURE_HW_INTRINSICS
 
     switch (treeNode->OperGet())
     {
