@@ -8804,7 +8804,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         // DIV/MOD support an ordering side effect so that, once assertion propagation
         // proves the divide cannot throw (GTF_DIV_MOD_NO_BY_ZERO/GTF_DIV_MOD_NO_OVERFLOW)
         // and the node would otherwise look movable, it stays pinned below the dominating
-        // check that justified the flag (see https://github.com/dotnet/runtime/issues/129386).
+        // check that justified the flag.
         case GT_DIV:
         case GT_UDIV:
         case GT_MOD:

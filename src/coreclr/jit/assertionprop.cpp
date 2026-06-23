@@ -4147,9 +4147,8 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
     // is location-dependent (derived from a dominating assertion rather than from the
     // operand's own value), the divide is only safe at this position, so CSE/loop hoisting
     // must not move it above the check that justified the flag. Pin it with an ordering
-    // side effect in that case (see https://github.com/dotnet/runtime/issues/129386). A
-    // value-based proof (e.g. a constant non-zero divisor) holds everywhere, so such a
-    // divide stays freely movable and is not pinned.
+    // side effect in that case. A value-based proof (e.g. a constant non-zero divisor)
+    // holds everywhere, so such a divide stays freely movable and is not pinned.
     const bool byZeroNeedsPin   = op2IsNotZero && !op2->IsNeverZero();
     const bool overflowNeedsPin = (op1IsNotNegative || op2IsNotNegative) &&
                                   !op1->IsNeverNegative(this) && !op2->IsNeverNegative(this);
