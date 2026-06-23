@@ -841,7 +841,7 @@ namespace Internal.Runtime.TypeLoader
                 TypesToRegisterCount = typesToRegisterCount,
                 TypesToRegister = (typesToRegisterCount != 0) ? TypesToRegister() : null,
                 MethodsToRegisterCount = methodsToRegisterCount,
-                MethodsToRegister = (_methodsThatNeedDictionaries.Count != 0) ? MethodsToRegister() : null,
+                MethodsToRegister = (methodsToRegisterCount != 0) ? MethodsToRegister() : null,
             };
             TypeLoaderEnvironment.Instance.RegisterDynamicGenericTypesAndMethods(registrationData);
         }
