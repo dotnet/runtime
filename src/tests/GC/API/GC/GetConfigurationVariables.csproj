@@ -3,8 +3,15 @@
     <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>0</CLRTestPriority>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetConfigurationVariables.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CLRTestEnvironmentVariable Include="DOTNET_GCHeapAffinitizeRanges" Value="1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

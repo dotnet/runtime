@@ -439,6 +439,21 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
 
 ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
+        mov     rsi, [rsp + locArg1]                                 // rsi <- regdisplay
+
+        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pRbx]
+        mov     [rax]                            , rbx
+        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pRbp]
+        mov     [rax]                            , rbp
+        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR12]
+        mov     [rax]                            , r12
+        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR13]
+        mov     [rax]                            , r13
+        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR14]
+        mov     [rax]                            , r14
+        mov     rax, [rsi + OFFSETOF__REGDISPLAY__pR15]
+        mov     [rax]                            , r15
+
         mov     rax, [rsp + locThread]                               // rax <- Thread*
    lock or      dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
 

@@ -209,6 +209,13 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
         if (m_c1->OperIs(GT_LCL_VAR) && m_c2->OperIs(GT_LCL_VAR) &&
             m_c1->AsLclVarCommon()->GetLclNum() == m_c2->AsLclVarCommon()->GetLclNum())
         {
+            // The folded comparisons below are signed (e.g. "c1 <= 0", "c1 >= 0"), so
+            // bail if either input has GTF_UNSIGNED.
+            if (m_testInfo1.GetTestOp()->IsUnsigned() || m_testInfo2.GetTestOp()->IsUnsigned())
+            {
+                return false;
+            }
+
             if ((m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_EQ)) ||
                 (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_LT)))
             {
@@ -271,6 +278,13 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
         if (m_c1->OperIs(GT_LCL_VAR) && m_c2->OperIs(GT_LCL_VAR) &&
             m_c1->AsLclVarCommon()->GetLclNum() == m_c2->AsLclVarCommon()->GetLclNum())
         {
+            // The folded comparisons below are signed (e.g. "c1 > 0", "c1 < 0"), so
+            // bail if either input has GTF_UNSIGNED.
+            if (m_testInfo1.GetTestOp()->IsUnsigned() || m_testInfo2.GetTestOp()->IsUnsigned())
+            {
+                return false;
+            }
+
             if ((m_testInfo1.compTree->OperIs(GT_LT) && m_testInfo2.compTree->OperIs(GT_NE)) ||
                 (m_testInfo1.compTree->OperIs(GT_EQ) && m_testInfo2.compTree->OperIs(GT_GE)))
             {

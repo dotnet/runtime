@@ -64,6 +64,28 @@ namespace ComInterfaceGenerator.Tests
             public float GetFloat() => _floatValue;
         }
 
+        [GeneratedComClass]
+        [Guid("e0c6b35f-1234-4567-8901-123456789ac1")]
+        internal partial class DerivedFromExternalSameNameImpl : IDerivedFromExternalSameNameA, IDerivedFromExternalSameNameB
+        {
+            double IExternalSameNameA.MyMethod() => 1.5;
+            int IExternalSameNameB.MyMethod() => 33;
+        }
+
+        [GeneratedComClass]
+        [Guid("e0c6b35f-1234-4567-8901-123456789ac2")]
+        internal partial class DerivedFromExternalSameNameAOnlyImpl : IDerivedFromExternalSameNameA
+        {
+            public double MyMethod() => 2.5;
+        }
+
+        [GeneratedComClass]
+        [Guid("e0c6b35f-1234-4567-8901-123456789ac3")]
+        internal partial class DerivedFromExternalSameNameBOnlyImpl : IDerivedFromExternalSameNameB
+        {
+            public int MyMethod() => 77;
+        }
+
         [Fact]
         public void IDerivedExternalBase_CanCallMethods()
         {
@@ -156,6 +178,47 @@ namespace ComInterfaceGenerator.Tests
             Assert.True(derivedFromDerivedExternalDerived.GetBool());
             Assert.Equal("DerivedFromDerivedExternalDerived", derivedFromDerivedExternalDerived.GetName());
             Assert.Equal(3.14f, derivedFromDerivedExternalDerived.GetFloat());
+        }
+
+        [Fact]
+        public void IDerivedFromExternalSameName_CanCallBothDisjointBases()
+        {
+            var implementation = new DerivedFromExternalSameNameImpl();
+            var comWrappers = new StrategyBasedComWrappers();
+            var nativeObj = comWrappers.GetOrCreateComInterfaceForObject(implementation, CreateComInterfaceFlags.None);
+            var managedObj = comWrappers.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
+
+            var interfaceA = (IExternalSameNameA)managedObj;
+            var interfaceB = (IExternalSameNameB)managedObj;
+
+            Assert.Equal(1.5, interfaceA.MyMethod());
+            Assert.Equal(33, interfaceB.MyMethod());
+        }
+
+        [Fact]
+        public void IDerivedFromExternalSameNameA_CanCallStandalone()
+        {
+            var implementation = new DerivedFromExternalSameNameAOnlyImpl();
+            var comWrappers = new StrategyBasedComWrappers();
+            var nativeObj = comWrappers.GetOrCreateComInterfaceForObject(implementation, CreateComInterfaceFlags.None);
+            var managedObj = comWrappers.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
+
+            var interfaceA = (IExternalSameNameA)managedObj;
+
+            Assert.Equal(2.5, interfaceA.MyMethod());
+        }
+
+        [Fact]
+        public void IDerivedFromExternalSameNameB_CanCallStandalone()
+        {
+            var implementation = new DerivedFromExternalSameNameBOnlyImpl();
+            var comWrappers = new StrategyBasedComWrappers();
+            var nativeObj = comWrappers.GetOrCreateComInterfaceForObject(implementation, CreateComInterfaceFlags.None);
+            var managedObj = comWrappers.GetOrCreateObjectForComInstance(nativeObj, CreateObjectFlags.None);
+
+            var interfaceB = (IExternalSameNameB)managedObj;
+
+            Assert.Equal(77, interfaceB.MyMethod());
         }
 
         [Fact]
