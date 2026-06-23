@@ -7859,13 +7859,15 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
             FlowGraphTryRegion* region = regions->m_tryRegions[dsc->ebdID];
             assert(region != nullptr);
 
-            // Track in-try blocks that won't be reached by the DFS so wasm
-            // codegen can attach them as fake successors of the try entry.
+            // In-try blocks with no flow-graph preds won't be reached by the
+            // DFS; track them so wasm codegen can attach them as fake
+            // successors of the try entry. Their DFS index is meaningless,
+            // so skip the rest of the per-block work.
             //
-            bool isUnreachable = (dfsTree != nullptr) ? !dfsTree->Contains(block) : (block->bbPreds == nullptr);
-            if (isUnreachable && (block != dsc->ebdTryBeg) && !block->HasFlag(BBF_THROW_HELPER))
+            if ((block != dsc->ebdTryBeg) && (block->bbPreds == nullptr) && !block->HasFlag(BBF_THROW_HELPER))
             {
                 region->m_unreachableBlocks.push_back(block);
+                continue;
             }
 
             // A block may be in more than one region, so walk up the ancestor chain
