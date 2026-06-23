@@ -608,6 +608,27 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT
 
 ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
+        mov     rdx, [rsp + rsp_offsetof_arguments + 8h]            ;; rdx <- regdisplay
+
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
+        mov     [rax]                            , rbx
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
+        mov     [rax]                            , rbp
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRsi]
+        mov     [rax]                            , rsi
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRdi]
+        mov     [rax]                            , rdi
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR12]
+        mov     [rax]                            , r12
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR13]
+        mov     [rax]                            , r13
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR14]
+        mov     [rax]                            , r14
+        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
+        mov     [rax]                            , r15
+
+        ;; XMM6-15 do not need copy-back into REGDISPLAY (no GC adjustment required).
+
         mov     rax, [rsp + rsp_offsetof_thread]                                    ;; rax <- Thread*
         lock or             dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc
 
