@@ -50,15 +50,14 @@ namespace System.Diagnostics.Tests
                         Redirect(fileActionsBuffer, args.StandardError, 2);
 
                         int pid;
-                        result = posix_spawn(&pid, args.ResolvedPath, fileActionsBuffer, null, (byte**)args.Arguments, (byte**)args.EnvironmentVariables);
+                        result = posix_spawn(&pid, args.ResolvedPath, fileActionsBuffer, null, args.Arguments, args.EnvironmentVariables);
 
                         if (result != 0)
                         {
                             throw new Win32Exception(result);
                         }
 
-                        // Get SafeProcessHandle from the pid.
-                        return SafeProcessHandle.Open(pid);
+                        return pid;
                     }
                     finally
                     {

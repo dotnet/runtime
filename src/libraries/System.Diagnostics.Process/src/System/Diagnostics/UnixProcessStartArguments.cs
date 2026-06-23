@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices
 {
     /// <summary>
     /// Provides the prepared data required to start a process via a user-supplied callback.
-    /// This ref struct is populated by the <see cref="UnixProcessStartArguments.Start(ProcessStartInfo, Func{UnixProcessStartArguments, SafeProcessHandle})"/> method.
+    /// This ref struct is populated by the <see cref="UnixProcessStartArguments.Start(ProcessStartInfo, Func{UnixProcessStartArguments, int})"/> method.
     /// </summary>
     [UnsupportedOSPlatform("windows")]
     public ref struct UnixProcessStartArguments
@@ -71,11 +71,11 @@ namespace System.Runtime.InteropServices
         public ProcessStartInfo ProcessStartInfo { get; internal set; } = null!;
 
 
-        /// <inheritdoc cref="Start{TState}(ProcessStartInfo, Func{UnixProcessStartArguments, TState, SafeProcessHandle}, TState)"/>
+        /// <inheritdoc cref="Start{TState}(ProcessStartInfo, Func{UnixProcessStartArguments, TState, int}, TState)"/>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Process Start(ProcessStartInfo startInfo, Func<UnixProcessStartArguments, SafeProcessHandle> callback)
+        public static Process Start(ProcessStartInfo startInfo, Func<UnixProcessStartArguments, int> callback)
             => Start(startInfo, static (args, state) => state(args), state: callback);
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace System.Runtime.InteropServices
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Process Start<TState>(ProcessStartInfo startInfo, Func<UnixProcessStartArguments, TState, SafeProcessHandle> callback, TState state)
+        public static Process Start<TState>(ProcessStartInfo startInfo, Func<UnixProcessStartArguments, TState, int> callback, TState state)
         {
 #if TARGET_WINDOWS
             throw new PlatformNotSupportedException();

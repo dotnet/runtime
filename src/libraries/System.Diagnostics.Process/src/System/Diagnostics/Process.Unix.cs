@@ -358,7 +358,7 @@ namespace System.Diagnostics
             return new SafeProcessHandle(_waitStateHolder!.IncrementRefCount());
         }
 
-        private bool StartCore<TState>(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, Func<UnixProcessStartArguments, TState, SafeProcessHandle>? callback, TState state)
+        private bool StartCore<TState>(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, Func<UnixProcessStartArguments, TState, int>? callback, TState state)
         {
             ProcessWaitState.Holder? waitStateHolder = null;
 

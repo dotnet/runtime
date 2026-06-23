@@ -1195,13 +1195,13 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        internal bool StartCore<TState>(ProcessStartInfo startInfo, Func<
+        internal bool StartCore<TState>(ProcessStartInfo startInfo,
 #if TARGET_WINDOWS
-            WindowsProcessStartArguments,
+            Func<WindowsProcessStartArguments, TState, SafeProcessHandle>?
 #else
-            UnixProcessStartArguments,
+            Func<UnixProcessStartArguments, TState, int>?
 #endif
-            TState, SafeProcessHandle>? callback, TState state)
+            callback, TState state)
         {
             startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
             _startInfo = startInfo;
