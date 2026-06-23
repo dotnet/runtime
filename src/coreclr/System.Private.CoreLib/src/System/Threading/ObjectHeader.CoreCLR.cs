@@ -259,7 +259,7 @@ namespace System.Threading
                             oldBits - SBLK_LOCK_RECLEVEL_INC :
                             oldBits & ~SBLK_MASK_LOCK_THREADID;
 
-                        if (Interlocked.CompareExchange(ref *pHeader, newBits, oldBits) == oldBits)
+                        if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
                         {
                             return HeaderLockResult.Success;
                         }
