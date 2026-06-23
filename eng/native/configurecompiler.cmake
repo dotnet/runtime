@@ -759,6 +759,7 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
     add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
   elseif(NOT LD_SOLARIS)
     add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
+    add_linker_flag(-Wl,--icf=all RELEASE RELWITHDEBINFO)
   endif()
 
   # Specify the minimum supported version of macOS
