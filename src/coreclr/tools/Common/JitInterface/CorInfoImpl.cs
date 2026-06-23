@@ -1947,7 +1947,7 @@ namespace Internal.JitInterface
             pResolvedToken.cbMethodSpec = 0;
         }
 
-        private bool HasCallableAsyncVariant(MethodDesc method)
+        private static bool HasCallableAsyncVariant(MethodDesc method)
         {
             // In some cases a method that returns Task is not actually
             // TaskReturning (i.e. it might return T). We cannot resolve to an
