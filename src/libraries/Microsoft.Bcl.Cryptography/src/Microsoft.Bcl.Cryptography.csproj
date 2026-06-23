@@ -17,8 +17,8 @@
     <BuildX509Loader Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">true</BuildX509Loader>
     <!-- PQC is new in .NET 10, so build it for .NET 9, .NET Standard, and .NET Framework -->
     <BuildPqc Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">true</BuildPqc>
-    <!-- X25519DiffieHellman is new in .NET 11, so build it for .NET 10, .NET Standard, and .NET Framework -->
-    <BuildX25519 Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">true</BuildX25519>
+    <!-- X25519DiffieHellman is new in .NET 11. For this package, build it only for .NET Framework. -->
+    <BuildX25519 Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</BuildX25519>
     <OmitResources Condition="'$(BuildX509Loader)' != 'true' and '$(BuildPqc)' != 'true' and '$(BuildX25519)' != 'true'">true</OmitResources>
   </PropertyGroup>
 
