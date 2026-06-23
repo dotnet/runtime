@@ -226,7 +226,7 @@ enum insFlags : uint64_t
     KInstructionWithLBit = 1ULL << 42,
 
     // APX: extended EVEX encoding for APX-only instructions:
-    Encoding_APX   = 1ULL << 43,
+    Encoding_APX_EVEX = 1ULL << 43,
 
     // APX: REX2 prefix:
     Encoding_REX2  = 1ULL << 44,
@@ -255,7 +255,7 @@ enum insFlags : uint64_t
 
 // Combined mask for all instructions that can use APX extended EVEX encoding
 // (APX-only, NDD-capable, or NF-capable).
-#define INS_FLAGS_APX_EVEX_PROMOTABLE (Encoding_APX | INS_Flags_Has_NDD | INS_Flags_Has_NF)
+#define INS_FLAGS_APX_EVEX_PROMOTABLE (Encoding_APX_EVEX | INS_Flags_Has_NDD | INS_Flags_Has_NF)
 
 enum insOpts: unsigned
 {

@@ -88,7 +88,7 @@ bool emitter::IsAvx512OnlyInstruction(instruction ins)
 bool emitter::IsApxOnlyInstruction(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & Encoding_APX) != 0;
+    return (flags & Encoding_APX_EVEX) != 0;
 }
 
 bool emitter::IsAVXVNNIFamilyInstruction(instruction ins)
@@ -2065,6 +2065,16 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         // them to EVEX, so only return true when APX is available.
         if (IsKMOVInstruction(ins))
         {
+#if defined(DEBUG)
+            // KMOV only gains an EVEX form through APX promotion (MAP4), not the standard
+            // VEX-to-EVEX path. It is therefore excluded from DoJitStressEvexEncoding and
+            // instead stressed here under the promoted-EVEX stress knob.
+            if (m_compiler->DoJitStressPromotedEvexEncoding())
+            {
+                return true;
+            }
+#endif // DEBUG
+
             // Use EVEX only when needed.
             return HasExtendedGPReg(id);
         }
@@ -2097,9 +2107,20 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
     {
         // Requires the EVEX encoding due to STRESS mode.
         // BMI and KMOV instructions must not be promoted here: their EVEX form uses MAP4
-        // (APX-extended), not the standard VEX-to-EVEX promotion path. They should only
-        // be EVEX-encoded when a specific context requires it (NF, EGPR).
+        // (APX-extended), not the standard VEX-to-EVEX promotion path. They are instead
+        // stressed via the promoted-EVEX stress knob below.
         if (!IsBMIInstruction(ins) && !IsKMOVInstruction(ins))
+        {
+            return true;
+        }
+    }
+
+    if (m_compiler->DoJitStressPromotedEvexEncoding())
+    {
+        // BMI instructions only gain an EVEX form through APX promotion (MAP4), so they are
+        // excluded from the standard EVEX stress above and promoted here instead. KMOV is
+        // handled in its dedicated branch (it always has a mask register and returns earlier).
+        if (IsBMIInstruction(ins))
         {
             return true;
         }
