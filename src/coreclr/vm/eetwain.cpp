@@ -1716,17 +1716,25 @@ EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletTo
 EXTERN_C DWORD_PTR STDCALL CallEHFilterFunclet(Object *pThrowable, TADDR FP, UINT_PTR pFuncletToInvoke, UINT_PTR *pFuncletCallerSP);
 
 typedef DWORD_PTR (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
+#else
+typedef TADDR HandlerFn;
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
+
+DWORD_PTR CallFuncletWithThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, Object *pThrowable, UINT_PTR *pFuncletCallerSP);
+DWORD_PTR CallFuncletWithoutThrowable(UINT_PTR pFuncletToInvoke, TADDR fp, UINT_PTR *pFuncletCallerSP);
+#endif // TARGET_WASM
 
 static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 {
 #ifdef TARGET_ARM
     return DataPointerToThumbCode<UINT_PTR, HandlerFn *>(pfnHandler);
+#elif defined(TARGET_WASM)
+    return (TADDR)ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP((TADDR)pfnHandler);
 #else
     return (UINT_PTR)pfnHandler;
 #endif
 }
 
-#endif // TARGET_WASM
 
 // Call catch, finally or filter funclet.
 // Return value:
@@ -1736,15 +1744,24 @@ static inline UINT_PTR CastHandlerFn(HandlerFn *pfnHandler)
 DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilterFunclet)
 {
     DWORD_PTR dwResult = 0;
-#ifdef TARGET_WASM
-    _ASSERTE(!"CallFunclet for WASM not implemented yet");
-#else
     HandlerFn* pfnHandler = (HandlerFn*)pHandler;
 
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
     UINT_PTR *pFuncletCallerSP = &(pExInfo->m_csfEHClause.SP);
 
+#ifdef TARGET_WASM
+    TADDR wasmFramePointer = GetWasmFramePointerFromStackPointer(GetSP(pRD->pCurrentContext));
+    TADDR handlerFnIndex = CastHandlerFn(pfnHandler);
+    if (throwable != NULL)
+    {
+        dwResult = CallFuncletWithThrowable(handlerFnIndex, wasmFramePointer, OBJECTREFToObject(throwable), pFuncletCallerSP);
+    }
+    else
+    {
+        dwResult = CallFuncletWithoutThrowable(handlerFnIndex, wasmFramePointer, pFuncletCallerSP);
+    }
+#else
     if (isFilterFunclet)
     {
         // For invoking IL filter funclet, we pass the CallerSP to the funclet using which
@@ -1917,41 +1934,7 @@ void InterpreterCodeManager::ResumeAfterCatch(CONTEXT *pContext, size_t targetSS
 {
     TADDR resumeSP = GetSP(pContext);
     TADDR resumeIP = GetIP(pContext);
-#ifdef TARGET_WASM
-    throw ResumeAfterCatchException(resumeSP, resumeIP);
-#else
-    Thread *pThread = GetThread();
-    InterpreterFrame * pInterpreterFrame = (InterpreterFrame*)pThread->GetFrame();
-
-    ClrCaptureContext(pContext);
-
-    TADDR targetSP = pInterpreterFrame->GetInterpExecMethodSP();
-
-    // We are resuming in interpreter frame. So we need to skip all native, JIT and AOT generated frames until we reach
-    // the resumeSP
-    do
-    {
-        if (ExecutionManager::IsManagedCode(GetIP(pContext)))
-        {
-            // JIT / AOT generated managed code
-            Thread::VirtualUnwindCallFrame(pContext);
-        }
-        else
-        {
-#ifdef TARGET_UNIX
-            PAL_VirtualUnwind(pContext);
-#else
-            Thread::VirtualUnwindCallFrame(pContext);
-#endif
-        }
-    }
-    while (GetSP(pContext) != targetSP);
-
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    targetSSP = pInterpreterFrame->GetInterpExecMethodSSP();
-#endif
-    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, pContext, targetSSP, resumeSP, resumeIP);
-#endif // TARGET_WASM
+    ThrowResumeAfterCatchException(resumeSP, resumeIP);
 }
 
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)

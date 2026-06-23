@@ -2131,6 +2131,11 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                     {
                         BADCODE("tailcall. has to be followed by call, callvirt or calli");
                     }
+
+                    if (compIsAsyncVersion())
+                    {
+                        prefixFlags &= ~PREFIX_TAILCALL_EXPLICIT;
+                    }
                 }
                 handled = true;
                 goto OBSERVE_OPCODE;
@@ -3306,7 +3311,7 @@ void Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
     GOT_ENDP:
 
-        tailCall = (opcode == CEE_TAILCALL);
+        tailCall = (opcode == CEE_TAILCALL) && !compIsAsyncVersion();
 
         // Make sure a jump target isn't in the middle of our opcode
 

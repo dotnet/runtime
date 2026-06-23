@@ -1775,6 +1775,7 @@ struct FuncInfoDsc
 
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
     unsigned funWasmFrameSize;
+    unsigned funWasmExnRefLocalIndex = UINT_MAX;
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;
@@ -3487,6 +3488,12 @@ public:
     GenTree* gtNewSimdCreateSequenceNode(
         var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
 
+    GenTree* gtNewSimdCreateGeometricSequenceNode(
+        var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+
+    GenTree* gtNewSimdCreateAlternatingSequenceNode(
+        var_types type, GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+
     GenTree* gtNewSimdDotProdNode(var_types   type,
                                   GenTree*    op1,
                                   GenTree*    op2,
@@ -3616,6 +3623,30 @@ public:
                                  GenTree*    op2,
                                  var_types   simdBaseType,
                                  unsigned    simdSize);
+
+    GenTree* gtNewSimdConcatNode(var_types type,
+                                 GenTree*  op1,
+                                 GenTree*  op2,
+                                 var_types simdBaseType,
+                                 unsigned  simdSize,
+                                 bool      leftUpper,
+                                 bool      rightUpper);
+
+    GenTree* gtNewSimdZipNode(var_types type,
+                              GenTree*  op1,
+                              GenTree*  op2,
+                              var_types simdBaseType,
+                              unsigned  simdSize,
+                              bool      upper);
+
+    GenTree* gtNewSimdUnzipNode(var_types type,
+                                GenTree*  op1,
+                                GenTree*  op2,
+                                var_types simdBaseType,
+                                unsigned  simdSize,
+                                bool      odd);
+
+    GenTree* gtNewSimdReverseNode(var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
 
     GenTree* gtNewSimdRoundNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
@@ -4005,8 +4036,11 @@ public:
 
 #if defined(FEATURE_HW_INTRINSICS)
     GenTree* gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree);
-    GenTreeMskCon* gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon);
 #endif // FEATURE_HW_INTRINSICS
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(FEATURE_MASKED_HW_INTRINSICS)
+    GenTreeMskCon* gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
     enum BoxRemovalOptions
@@ -4257,6 +4291,14 @@ public:
     unsigned lvaWasmVirtualIP = BAD_VAR_NUM; // Wasm virtual IP slot
     unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm function index slot
     unsigned lvaWasmResumeIP = BAD_VAR_NUM; // Wasm catch resumption IP slot
+
+    struct WasmSpillSlot
+    {
+        unsigned lclNum;
+        bool     byRef;
+        bool     inUse;
+    };
+    jitstd::vector<WasmSpillSlot>* m_wasmSpillSlots = nullptr;
 #endif // defined(TARGET_WASM)
 
     unsigned lvaInlinedPInvokeFrameVar = BAD_VAR_NUM; // variable representing the InlinedCallFrame
@@ -4659,6 +4701,7 @@ public:
     unsigned lvaTrackedIndexToLclNum(unsigned trackedIndex)
     {
         assert(trackedIndex < lvaTrackedCount);
+        assert(trackedIndex < lvaTrackedToVarNumSize);
         unsigned lclNum = lvaTrackedToVarNum[trackedIndex];
         assert(lclNum < lvaCount);
         return lclNum;
@@ -4951,6 +4994,7 @@ private:
         // This call is a task await
         PREFIX_IS_TASK_AWAIT = 0x00000080,
         PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT = 0x00000100,
+        PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT = 0x00000200,
     };
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
@@ -4990,7 +5034,7 @@ public:
     {
         CORINFO_CONTEXT_HANDLE  tokenLookupContext;      // The class context or method context
         CORINFO_RESOLVED_TOKEN* pResolvedToken;          // Resolved token for the target method, used by R2R.
-        CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token for the unboxed entry, used by R2R.
+        CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken;   // Resolved token and method handle for the unboxed entry.
         CORINFO_LOOKUP*         pInstParamLookup;        // All the information needed for the instantiation parameter lookup.
         CORINFO_SIG_INFO*       pMethSig;                // The devirted method signature.
         bool                    objIsNonNull;            // True if the receiver is known non-null.
@@ -5155,7 +5199,7 @@ protected:
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
 
-    void impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
+    void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
 
     void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
     void impInheritAsyncContextsFromInliner(GenTreeCall* call);
@@ -5639,6 +5683,7 @@ private:
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
+    bool impWrapTopOfStackInAwait();
     void impPoisonImplicitByrefsBeforeReturn();
 
     // A free list of linked list nodes used to represent to-do stacks of basic blocks.
@@ -5957,6 +6002,8 @@ public:
     PhaseStatus fgRemoveEmptyTryCatchOrTryFault();
 
     PhaseStatus fgRemoveEmptyFinally();
+
+    PhaseStatus fgRemoveUnreachableTry();
 
     PhaseStatus fgMergeFinallyChains();
 
@@ -6768,6 +6815,7 @@ public:
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
     PhaseStatus fgWasmVirtualIP();
+    PhaseStatus fgWasmSpillRefs();
 #ifdef DEBUG
     void fgDumpWasmControlFlow();
     void fgDumpWasmControlFlowDot();
@@ -7386,6 +7434,7 @@ private:
 
     PhaseStatus fgLocalMorph();
     bool fgExposeUnpropagatedLocals(bool propagatedAny, class LocalEqualsLocalAddrAssertions* assertions);
+    PhaseStatus fgUnpinNonMovableLocals();
     void fgExposeLocalsInBitVec(BitVec_ValArg_T bitVec);
 
     PhaseStatus fgOptimizeMaskConversions();
@@ -9060,9 +9109,9 @@ protected:
     bool           optCanPropLclVar;
 
     RangeCheck* optRangeCheck = nullptr;
-    RangeCheck* GetRangeCheck();
 
 public:
+    RangeCheck*  GetRangeCheck(int customBudget = 0);
     void         optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTree* tree);
     fgWalkResult optVNBasedFoldCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
     GenTree*     optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test);
@@ -9142,14 +9191,17 @@ public:
     GenTree* optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* store, Statement* stmt);
     GenTree* optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenTreeBlk* store, Statement* stmt);
     GenTree* optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt, BasicBlock* block);
-    GenTree* optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions, GenTreeOp* tree, Statement* stmt);
+    GenTree* optAssertionProp_AddMulSub(ASSERT_VALARG_TP assertions,
+                                        GenTreeOp*       tree,
+                                        Statement*       stmt,
+                                        BasicBlock*      block);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                                           GenTree*         tree,
                                           Statement*       stmt,
@@ -9453,7 +9505,7 @@ public:
     class VirtualStubParamInfo
     {
     public:
-        VirtualStubParamInfo(bool isNativeAOT)
+        VirtualStubParamInfo()
         {
 #if defined(TARGET_X86)
             reg     = REG_EAX;
@@ -9462,16 +9514,8 @@ public:
             reg     = REG_R11;
             regMask = RBM_R11;
 #elif defined(TARGET_ARM)
-            if (isNativeAOT)
-            {
-                reg     = REG_R12;
-                regMask = RBM_R12;
-            }
-            else
-            {
-                reg     = REG_R4;
-                regMask = RBM_R4;
-            }
+            reg     = REG_R12;
+            regMask = RBM_R12;
 #elif defined(TARGET_ARM64)
             reg     = REG_R11;
             regMask = RBM_R11;
@@ -10229,6 +10273,9 @@ public:
 
                 return FP_REGSIZE_BYTES;
             }
+#elif defined(TARGET_WASM)
+        // TODO-WASM: Verify if we need a more complicated condition here
+        return FP_REGSIZE_BYTES;
 #else
         assert(!"getVectorTByteLength() unimplemented on target arch");
         unreached();
@@ -10259,7 +10306,7 @@ public:
         {
             return XMM_REGSIZE_BYTES;
         }
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
         return FP_REGSIZE_BYTES;
 #else
         assert(!"getMaxVectorByteLength() unimplemented on target arch");
@@ -10357,7 +10404,7 @@ public:
 
         // Return 0 if size is even less than XMM, otherwise - XMM
         return (size >= XMM_REGSIZE_BYTES) ? XMM_REGSIZE_BYTES : 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
         assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
         return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
 #else
@@ -10409,6 +10456,33 @@ public:
             noway_assert(!"Unexpected size for SIMD type");
         }
         return simdType;
+    }
+
+    static var_types getIndexTypeForShuffle(var_types simdBaseType)
+    {
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                return TYP_UBYTE;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                return TYP_USHORT;
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                return TYP_UINT;
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                return TYP_ULONG;
+
+            default:
+                unreached();
+        }
     }
 
 private:
@@ -11547,6 +11621,7 @@ public:
         STRESS_MODE(IF_CONVERSION_INNER_LOOPS)                                                  \
         STRESS_MODE(POISON_IMPLICIT_BYREFS)                                                     \
         STRESS_MODE(THREE_OPT_LAYOUT)                                                           \
+        STRESS_MODE(GET_RANGE) /* Force slow SSA-based range walk in GetRange */                \
         STRESS_MODE(COUNT)
 
     enum                compStressArea
@@ -11804,9 +11879,16 @@ public:
 #endif // TARGET_AMD64
     }
 
+    // Does this function have async calling convention and can have suspension points?
     bool compIsAsync() const
     {
         return opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ASYNC);
+    }
+
+    // Is this the async version of a non-async method? IL belongs to non-async method.
+    bool compIsAsyncVersion() const
+    {
+        return (info.compMethodInfo->options & CORINFO_ASYNC_VERSION) != 0;
     }
 
     //------------------------------------------------------------------------
