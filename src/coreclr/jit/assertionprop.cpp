@@ -3050,7 +3050,6 @@ GenTree* Compiler::optVNBasedFoldExpr_Cond_TypeCompare(BasicBlock* block, Statem
     Statement* defStmt = nullptr;
     if (storeNode != nullptr)
     {
-        assert(stmt != nullptr);
         defStmt = stmt->GetPrevStmt();
         if ((defStmt == stmt) || (defStmt->GetRootNode() != storeNode))
         {
@@ -3067,7 +3066,6 @@ GenTree* Compiler::optVNBasedFoldExpr_Cond_TypeCompare(BasicBlock* block, Statem
     // Bash the temp store to NOP.
     if (storeNode != nullptr)
     {
-        assert(storeSsaDsc != nullptr);
         storeSsaDsc->SetDefNode(nullptr);
         defStmt->SetRootNode(gtNewNothingNode());
         gtSetStmtInfo(defStmt);
