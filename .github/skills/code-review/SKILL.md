@@ -21,7 +21,7 @@ Use this skill when:
 
 ### Step 0: Load Relevant Instructions
 
-Before analyzing anything, load any and all instructions under `.github/instructions` that are relevant to the code changes, as indicated by the frontmatter. Said instructions supersede instructions in this skill.
+Before analyzing anything, load any and all instructions under `.github/instructions` that are relevant to the code changes, as indicated by the frontmatter. If conflict arises between said custom instructions and the instructions in this skill, the custom instructions supersede instructions in this skill.
 
 ### Step 1: Gather Code Context (No PR Narrative Yet)
 
