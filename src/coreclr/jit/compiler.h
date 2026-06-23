@@ -8839,8 +8839,8 @@ public:
                                                        const T&     cns,
                                                        ValueNum     cnsVN,
                                                        bool         equals,
-                                                       GenTreeFlags iconFlags = GTF_EMPTY,
-                                                       FieldSeq*    fldSeq    = nullptr,
+                                                       GenTreeFlags iconFlags         = GTF_EMPTY,
+                                                       FieldSeq*    fldSeq            = nullptr,
                                                        ssize_t      compileTimeHandle = 0)
         {
             AssertionDsc dsc    = CreateEmptyAssertion(comp);
