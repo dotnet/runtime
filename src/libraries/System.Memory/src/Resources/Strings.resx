@@ -156,7 +156,4 @@
   <data name="Argument_InvalidSeekOrigin" xml:space="preserve">
     <value>Invalid seek origin.</value>
   </data>
-  <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
-    <value>Stream length must be non-negative and less than the maximum array length {0} - origin.</value>
-  </data>
 </root>

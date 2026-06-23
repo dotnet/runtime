@@ -230,10 +230,7 @@ namespace System.Buffers
                 _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin))
             };
 
-            if (offset > long.MaxValue - basePosition)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, long.MaxValue - basePosition);
 
             long absolutePosition = basePosition + offset;
 
