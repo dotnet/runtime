@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Globalization;
 using System.Text;
 #if NET
 using System.Buffers;
@@ -93,8 +92,10 @@ namespace Microsoft.Extensions.Logging.Console
 #if NET
         private static SearchValues<char> CreateSearchValues()
         {
+            // ShouldEscape only returns true for characters in the C0/DEL/C1 range (<= U+009F),
+            // so there is no need to scan the rest of the BMP when building the set.
             var chars = new List<char>();
-            for (int c = char.MinValue; c <= char.MaxValue; c++)
+            for (int c = 0; c <= 0x9F; c++)
             {
                 if (ShouldEscape((char)c))
                 {
@@ -108,13 +109,16 @@ namespace Microsoft.Extensions.Logging.Console
 
         private static bool ShouldEscape(char c)
         {
-            // \t, \n and \r are control characters but are preserved for log formatting.
+            // Escape the control characters that can drive terminal escape sequences when written to a
+            // console: the C0 range (U+0000-U+001F), DEL (U+007F) and the C1 range (U+0080-U+009F). These
+            // are the same ranges sanitized by systemd and OpenSSH for terminal output. \t, \n and \r are
+            // control characters but are preserved for log formatting.
             if (c is '\t' or '\n' or '\r')
             {
                 return false;
             }
 
-            return char.GetUnicodeCategory(c) is UnicodeCategory.Control or UnicodeCategory.Format;
+            return c <= '\u001F' || (c >= '\u007F' && c <= '\u009F');
         }
     }
 }

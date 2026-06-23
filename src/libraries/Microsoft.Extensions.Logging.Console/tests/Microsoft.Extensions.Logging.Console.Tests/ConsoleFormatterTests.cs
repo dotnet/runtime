@@ -201,15 +201,39 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var logger = (ILogger)t.Logger;
             var sink = t.Sink;
 
-            logger.LogInformation("Payload: {Value}", "prefix\u001b[31mtext\u0008\u202E\r\n\tsuffix");
+            // ESC and BS are C0 controls, DEL is U+007F and CSI is a C1 control (U+009B).
+            logger.LogInformation("Payload: {Value}", "prefix\u001b[31mtext\u0008\u007f\u009bend\r\n\tsuffix");
 
             string output = GetMessage(sink.Writes);
             Assert.DoesNotContain('\u001b', output);
             Assert.DoesNotContain('\u0008', output);
-            Assert.DoesNotContain('\u202E', output);
+            Assert.DoesNotContain('\u007f', output);
+            Assert.DoesNotContain('\u009b', output);
             Assert.Contains("\\u001B", output);
             Assert.Contains("\\u0008", output);
-            Assert.Contains("\\u202E", output);
+            Assert.Contains("\\u007F", output);
+            Assert.Contains("\\u009B", output);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [MemberData(nameof(NonJsonFormatterNames))]
+        public void Log_NonTerminalControlCharacters_AreNotEscaped(string formatterName)
+        {
+            using var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = formatterName },
+                new SimpleConsoleFormatterOptions { ColorBehavior = LoggerColorBehavior.Disabled },
+                new ConsoleFormatterOptions(),
+                new JsonConsoleFormatterOptions());
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            // Bidirectional overrides and zero-width characters are spoofing/confusion-class, not terminal
+            // escape-sequence vectors, so the console sanitizer intentionally leaves them untouched.
+            logger.LogInformation("Payload: {Value}", "prefix\u202e\u200bsuffix");
+
+            string output = GetMessage(sink.Writes);
+            Assert.Contains('\u202e', output);
+            Assert.Contains('\u200b', output);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
