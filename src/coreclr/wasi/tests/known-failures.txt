@@ -429,36 +429,25 @@ Regressions/coreclr/GitHub_12224/Test12224/Test12224.sh
 # AFTER deliberately catching a PNSE — see below.)
 # Regressions/coreclr/GitHub_89834/test89834/test89834.sh
 
-# ----- REAL BUG: wasm `unreachable` trap after handled PNSE ------------------
+# ----- threading PNSE escapes async Main: not a runtime EH bug ---------------
 #
-# Test prints "Begin Observing Exception: PlatformNotSupportedException"
-# (which it deliberately catches via FirstChanceException), then traps
-# with `wasm trap: wasm "unreachable" instruction executed` and host
-# exit 134.
+# Test does `async Task<int> Main` -> Task.Run(...) which on single-
+# threaded WASI raises PlatformNotSupportedException synchronously at
+# the call site (before the `try` block opens). The first-chance
+# handler observes it correctly (we see "Begin Observing Exception"
+# and the full stack walk runs to completion). But the test source
+# only has a `try/finally` around the async helper -- no catch -- so
+# the PNSE escapes Main(), and the async-Main glue's synchronous
+# Task.InternalWait on the returned Task<int> re-hits
+# ThrowIfMultithreadingIsNotSupported with no handler anywhere on the
+# stack. SfiNextWorker:4134 then correctly takes the
+# CrashDumpAndTerminateProcess branch and the wasm `unreachable`
+# trap surfaces as host exit 134.
 #
-# Mechanism (different subsystem from self_override5): the trap is
-# the abort()/__builtin_trap() at the end of CrashDumpAndTerminateProcess.
-# Top of the wasm stack at trap is:
-#   abort -> PROCAbort (process.cpp:1939) ->
-#   PROCEndProcess (process.cpp:445) ->
-#   CrashDumpAndTerminateProcess (excep.cpp:3503) ->
-#   SfiNextWorker (exceptionhandling.cpp:4134) ->
-#   DispatchExSecondPass (exceptionhandling.cpp:4423) ->
-#   DispatchManagedException (exceptionhandling.cpp:1727)
-# i.e. the second-pass exception walk reaches the top of the managed
-# stack without finding a handler and terminates the process.
-#
-# The test uses async Task<int> Main + ThrowAndCatchTaskCancellation
-# + FirstChanceException + ThreadLocal<bool>. The first-chance
-# observation runs (prints "Begin Observing Exception"), but
-# second-pass unwind through the async state machine + FirstChance
-# observer doesn't find the catch frame that exists in the source.
-# Likely a stack-walker gap on WASI for one of: async resumption
-# frames, FirstChanceExceptionEventArgs invocation frame, or the
-# ThreadLocal field-init context.
-#
-# Different root cause from self_override5 but same class of "real
-# but narrow WASI EH bring-up gap" worth root-causing later.
+# Diagnosed by running under nesm-wasm (Nesm.Mcp wasm_run), which
+# unlike wasmtime printed the full managed unhandled-exception
+# message and stack before the trap. Same family as the other
+# Thread.Start / PNSE tests above, not a separate WASI bug.
 Regressions/coreclr/GitHub_89834/test89834/test89834.sh
 
 # ----- flaky under parallel sweep load ---------------------------------------
