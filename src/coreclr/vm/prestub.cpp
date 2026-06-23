@@ -2081,6 +2081,12 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
 
 void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp)
 {
+    // targetIp must point to valid interpreter byte code. A NULL here means a caller failed to route a
+    // method that has native (R2R) code but no interpreter code to InvokeManagedMethod. Dispatching a
+    // NULL byte code pointer would be (mis)interpreted as INTOP_INVALID and fail with a cryptic fatal
+    // error, so assert here at the actual point of misuse.
+    _ASSERTE(targetIp != (TADDR)NULL);
+
     // Copy arguments to the stack
     if (argSize > 0)
     {
@@ -2228,6 +2234,15 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
         GCX_PREEMP();
         (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
         targetIp = pMD->GetInterpreterCode();
+    }
+    if (targetIp == NULL)
+    {
+        // No interpreter code: the method was compiled to native (R2R) code. Invoke it as a compiled
+        // managed method through the interpreter->R2R thunk instead of handing a NULL byte code pointer
+        // to the interpreter (which would dispatch it as INTOP_INVALID).
+        ManagedMethodParam param = { pMD, args, ret, (PCODE)NULL, nullptr };
+        InvokeManagedMethod(&param);
+        return;
     }
     (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret, callerIp);
 }
