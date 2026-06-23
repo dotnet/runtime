@@ -4143,12 +4143,17 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
         changed = true;
     }
 
-    // GTF_DIV_MOD_NO_BY_ZERO/GTF_DIV_MOD_NO_OVERFLOW make the divide appear non-throwing,
-    // which would otherwise let CSE/loop hoisting move it above the dominating check that
-    // proved the divisor safe (the flag is only valid at this node's location). Pin the
-    // node with an ordering side effect so it cannot be reordered above that check, even
-    // across opt-repeat iterations (see https://github.com/dotnet/runtime/issues/129386).
-    if ((tree->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)) != 0)
+    // The no-throw flags above make the divide look non-throwing. When the safety proof
+    // is location-dependent (derived from a dominating assertion rather than from the
+    // operand's own value), the divide is only safe at this position, so CSE/loop hoisting
+    // must not move it above the check that justified the flag. Pin it with an ordering
+    // side effect in that case (see https://github.com/dotnet/runtime/issues/129386). A
+    // value-based proof (e.g. a constant non-zero divisor) holds everywhere, so such a
+    // divide stays freely movable and is not pinned.
+    const bool byZeroNeedsPin   = op2IsNotZero && !op2->IsNeverZero();
+    const bool overflowNeedsPin = (op1IsNotNegative || op2IsNotNegative) &&
+                                  !op1->IsNeverNegative(this) && !op2->IsNeverNegative(this);
+    if (byZeroNeedsPin || overflowNeedsPin)
     {
         tree->SetHasOrderingSideEffect();
     }
