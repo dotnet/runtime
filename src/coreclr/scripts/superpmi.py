@@ -2405,11 +2405,11 @@ class SuperPMIReplayAsmDiffs:
                                     # No miss/replay failure is expected in contexts that were reported as having diffs since then they succeeded during the diffs run.
                                     raise create_exception()
 
-                                # A JIT may exit successfully without writing any disassembly to DOTNET_JitStdOutFile. For example, the wasm JIT
-                                # with JitWasmSimdNyiToR2RUnsupported=1 bails via
+                                # A Wasm JIT may exit successfully without writing any disassembly to DOTNET_JitStdOutFile. For example, the wasm JIT
+                                # with JitWasmSimdNyiToR2RUnsupported=1 exits via
                                 # implReadyToRunUnsupported() (CORJIT_R2R_UNSUPPORTED) for NYI_WASM_SIMD during import, so no code is produced. This is an expected behavior.
                                 # TODO-WASM: This check can potentially be removed once we no longer have any NYI's in the import stage.
-                                if not os.path.exists(item_path):
+                                if not os.path.exists(item_path) and self.coreclr_args.target_arch == "wasm":
                                     return ""
 
                                 try:
