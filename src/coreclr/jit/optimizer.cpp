@@ -2005,9 +2005,11 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         bool           loopHasBoundsCheck   = false;
         bool           nestedHasBoundsCheck = false;
 
-        // If we see bounds checks in this loop's blocks, relax the size cap.
-        // If the only bounds checks are in nested loops, do not
-        // relax the size cap (those nested loops will be inverted+cloned independently).
+        // Only relax the size cap when this loop's own body has bounds checks AND no nested
+        // loop does. If any nested loop has its own bounds checks, it will be inverted+cloned
+        // independently to eliminate them; inverting (and subsequently cloning) this larger
+        // outer loop on top of that duplicates the entire nested body and disrupts downstream
+        // LICM/CSE on sibling code (see Benchstone.BenchF.InvMt).
         //
         loop->VisitLoopBlocks([&, this](BasicBlock* block) -> BasicBlockVisit {
             bool inNestedLoop = false;
