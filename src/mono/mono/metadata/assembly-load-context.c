@@ -24,9 +24,9 @@ static MonoCoopMutex alc_list_lock; /* Used when accessing 'alcs' */
 static GSList *loaded_assemblies;
 
 /*
- * Per-thread list of "resolve_method:assembly_name" keys currently being resolved via a
+ * Per-thread list of "alc:resolve_method:assembly_name" keys currently being resolved via a
  * managed ALC resolve hook. Used to break re-entrant resolution: invoking a managed hook
- * (e.g. MonoResolveUsingLoad) can have to JIT-compile methods, and under full-AOT that
+ * (e.g. MonoResolveUsingLoad) may need to JIT-compile methods, and under full-AOT that
  * compilation may re-trigger resolution of the same assembly, causing unbounded recursion.
  */
 static MonoNativeTlsKey alc_resolve_in_progress_tls_id;
@@ -500,10 +500,13 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 	 * assembly: constructing the AssemblyName inside the hook parses the name using a
 	 * generic method, and under full-AOT JIT-compiling that method can itself trigger
 	 * resolution of the same assembly -> unbounded recursion -> stack overflow.
-	 * Guard against re-entering the same hook for the same name on the current thread
-	 * (mirrors the TLS recursion guard in mono_class_setup_fields).
+	 * Guard against re-entering the same hook for the same name on the same ALC on the
+	 * current thread (mirrors the TLS recursion guard in mono_class_setup_fields). The key
+	 * includes the ALC instance because resolve_method is a single cached MonoMethod shared
+	 * by all ALCs, so keying on it alone would wrongly suppress a legitimate nested resolve
+	 * of the same name on a different ALC.
 	 */
-	resolve_key = g_strdup_printf ("%p:%s", (gpointer)resolve_method, aname_str);
+	resolve_key = g_strdup_printf ("%p:%p:%s", (gpointer)alc, (gpointer)resolve_method, aname_str);
 	in_progress = (GSList *)mono_native_tls_get_value (alc_resolve_in_progress_tls_id);
 	if (g_slist_find_custom (in_progress, resolve_key, (GCompareFunc)strcmp)) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Skipping re-entrant ALC resolve for '%s'.", aname_str);
