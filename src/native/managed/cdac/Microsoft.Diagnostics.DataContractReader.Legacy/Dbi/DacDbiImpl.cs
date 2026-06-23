@@ -1234,10 +1234,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         delegate* unmanaged<DbiOffsetMapping*, void*, void> fpSeqPointCallback,
         nint pUserData)
     {
-#if DEBUG
+        // Fully materialize both arrays before invoking any callback to avoid delivering partial results on failure.
         List<NativeVarInfo> cdacVarInfos = new();
         List<DbiOffsetMapping> cdacSeqPoints = new();
-#endif
         int hr = HResults.S_OK;
         if (pFixedArgCount != null)
             *pFixedArgCount = 0;
@@ -1252,32 +1251,34 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (pFixedArgCount != null)
                 *pFixedArgCount = GetArgCount(vmMethodDesc);
 
-            // Get native variable info and invoke callback for each entry
             if (fpVarInfoCallback != null)
             {
                 IEnumerable<DebugVarInfo> varInfos = debugInfo.GetMethodVarInfo(codePointer, out _);
                 foreach (DebugVarInfo varInfo in varInfos)
                 {
-                    NativeVarInfo nvi = ConvertToNativeVarInfo(varInfo);
-                    fpVarInfoCallback(&nvi, (void*)pUserData);
-#if DEBUG
-                    cdacVarInfos.Add(nvi);
-#endif
+                    cdacVarInfos.Add(ConvertToNativeVarInfo(varInfo));
                 }
             }
 
-            // Get sequence points and invoke callback for each entry
             if (fpSeqPointCallback != null)
             {
                 IEnumerable<Contracts.OffsetMapping> sequencePoints = debugInfo.GetMethodNativeMap(codePointer, preferUninstrumented: true, out _);
                 foreach (Contracts.OffsetMapping mapping in sequencePoints)
                 {
-                    DbiOffsetMapping nativeMapping = ConvertToDbiOffsetMapping(mapping);
-                    fpSeqPointCallback(&nativeMapping, (void*)pUserData);
-#if DEBUG
-                    cdacSeqPoints.Add(nativeMapping);
-#endif
+                    cdacSeqPoints.Add(ConvertToDbiOffsetMapping(mapping));
                 }
+            }
+
+            foreach (NativeVarInfo nvi in cdacVarInfos)
+            {
+                NativeVarInfo entry = nvi;
+                fpVarInfoCallback(&entry, (void*)pUserData);
+            }
+
+            foreach (DbiOffsetMapping mapping in cdacSeqPoints)
+            {
+                DbiOffsetMapping entry = mapping;
+                fpSeqPointCallback(&entry, (void*)pUserData);
             }
         }
         catch (System.Exception ex)

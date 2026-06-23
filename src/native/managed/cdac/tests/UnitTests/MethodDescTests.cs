@@ -257,6 +257,100 @@ public class MethodDescTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetMethodSignature_StoredSig_ReturnsStoredSignature(MockTarget.Architecture arch)
+    {
+        byte[] expectedSig = [0x20, 0x01, 0x01, 0x0e];
+        TargetPointer dynamicMethod = TargetPointer.Null;
+
+        IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
+        {
+            TargetPointer methodTable = AddMethodTable(methodDescBuilder.RTSBuilder);
+
+            uint methodDescSize = (uint)methodDescBuilder.DynamicMethodDescLayout.Size;
+            byte chunkSize = (byte)(methodDescSize / methodDescBuilder.MethodDescAlignment);
+            MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("storedSig", chunkSize);
+            chunk.MethodTable = methodTable.Value;
+            chunk.Size = chunkSize;
+            chunk.Count = 1;
+
+            MockDynamicMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.DynamicMethodDescLayout);
+            md.Flags = (ushort)MethodClassification.Dynamic;
+            md.Sig = methodDescBuilder.AddSignatureBuffer(expectedSig).Value;
+            md.CSig = (uint)expectedSig.Length;
+            dynamicMethod = new TargetPointer(md.Address);
+        });
+
+        MethodDescHandle handle = rts.GetMethodDescHandle(dynamicMethod);
+        Assert.True(rts.TryGetMethodSignature(handle, out ReadOnlySpan<byte> signature));
+        Assert.Equal(expectedSig, signature.ToArray());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetMethodSignature_AsyncVariant_ReturnsAsyncSignature(MockTarget.Architecture arch)
+    {
+        byte[] expectedSig = [0x00, 0x02, 0x08, 0x08, 0x0e];
+        TargetPointer asyncVariantMethod = TargetPointer.Null;
+
+        IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
+        {
+            TargetTestHelpers helpers = methodDescBuilder.TargetTestHelpers;
+            TargetPointer methodTable = AddMethodTable(methodDescBuilder.RTSBuilder);
+
+            uint mdBaseSize = (uint)methodDescBuilder.MethodDescLayout.Size;
+            uint totalSize = mdBaseSize + methodDescBuilder.AsyncMethodDataSize;
+            byte chunkSize = (byte)(totalSize / methodDescBuilder.MethodDescAlignment);
+            MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("asyncVariant", chunkSize);
+            chunk.MethodTable = methodTable.Value;
+            chunk.Size = chunkSize;
+            chunk.Count = 1;
+
+            MockMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+            md.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
+            asyncVariantMethod = new TargetPointer(md.Address);
+
+            int pointerSize = helpers.PointerSize;
+            int asyncDataOffset = (int)(md.Address - chunk.Address) + (int)mdBaseSize;
+            TargetPointer sigBuffer = methodDescBuilder.AddSignatureBuffer(expectedSig);
+            helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset, sizeof(uint)), (uint)RuntimeTypeSystem_1.AsyncMethodFlags.IsAsyncVariant);
+            helpers.WritePointer(chunk.Memory.Span.Slice(asyncDataOffset + pointerSize, pointerSize), sigBuffer.Value);
+            helpers.Write(chunk.Memory.Span.Slice(asyncDataOffset + pointerSize * 2, sizeof(uint)), (uint)expectedSig.Length);
+        });
+
+        MethodDescHandle handle = rts.GetMethodDescHandle(asyncVariantMethod);
+        Assert.True(rts.TryGetMethodSignature(handle, out ReadOnlySpan<byte> signature));
+        Assert.Equal(expectedSig, signature.ToArray());
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void TryGetMethodSignature_NilToken_ReturnsFalse(MockTarget.Architecture arch)
+    {
+        TargetPointer ilMethod = TargetPointer.Null;
+
+        IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
+        {
+            TargetPointer methodTable = AddMethodTable(methodDescBuilder.RTSBuilder);
+
+            byte methodDescSize = (byte)(methodDescBuilder.MethodDescLayout.Size / methodDescBuilder.MethodDescAlignment);
+            MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("ilMethod", methodDescSize);
+            chunk.MethodTable = methodTable.Value;
+            chunk.Size = methodDescSize;
+            chunk.Count = 1;
+
+            // Leave FlagsAndTokenRange / Flags3AndTokenRemainder at 0 so the MethodDef token has rowId 0.
+            MockMethodDesc md = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+            md.Flags = (ushort)MethodClassification.IL;
+            ilMethod = new TargetPointer(md.Address);
+        });
+
+        MethodDescHandle handle = rts.GetMethodDescHandle(ilMethod);
+        Assert.False(rts.TryGetMethodSignature(handle, out ReadOnlySpan<byte> signature));
+        Assert.True(signature.IsEmpty);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void IsGenericMethodDefinition(MockTarget.Architecture arch)
     {
         TargetPointer[] typeArgsRawAddrs = [0x1000, 0x2000, 0x3000];

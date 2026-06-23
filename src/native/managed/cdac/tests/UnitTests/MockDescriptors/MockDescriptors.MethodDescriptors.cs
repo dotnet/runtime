@@ -302,6 +302,15 @@ internal partial class MockDescriptors
             return chunk;
         }
 
+        internal TargetPointer AddSignatureBuffer(byte[] signature)
+        {
+            ArgumentNullException.ThrowIfNull(signature);
+
+            MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)signature.Length, "MethodSignature");
+            signature.CopyTo(fragment.Data.AsSpan());
+            return new TargetPointer(fragment.Address);
+        }
+
         internal MockPerInstInfo AddPerInstInfo(ulong[] typeArgs)
         {
             ArgumentNullException.ThrowIfNull(typeArgs);
