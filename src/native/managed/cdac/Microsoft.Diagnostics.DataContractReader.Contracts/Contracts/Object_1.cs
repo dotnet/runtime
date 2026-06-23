@@ -189,6 +189,18 @@ internal readonly struct Object_1 : IObject
             DelegateType: delegateType);
     }
 
+    public ContinuationInfo GetContinuationInfo(TargetPointer address)
+    {
+        Data.ContinuationObject cont = _target.ProcessedData.GetOrAdd<Data.ContinuationObject>(address);
+        TargetPointer diagnosticIP = cont.ResumeInfo != TargetPointer.Null
+            ? _target.ProcessedData.GetOrAdd<Data.AsyncResumeInfo>(cont.ResumeInfo).DiagnosticIP
+            : TargetPointer.Null;
+        return new ContinuationInfo(
+            Next: cont.Next,
+            DiagnosticIP: diagnosticIP,
+            State: (uint)cont.State);
+    }
+
     public ulong GetSize(TargetPointer address)
     {
         TargetPointer mt = GetMethodTableAddress(address);
