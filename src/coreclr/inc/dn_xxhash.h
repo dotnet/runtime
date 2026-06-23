@@ -44,21 +44,11 @@
 #pragma once
 #include <stdlib.h>
 #include <type_traits>
-#include <minipal/random.h>
 #include "clrtypes.h"
 
 struct xxHashDefaultTraits
 {
-    static uint32_t GenerateGlobalSeed()
-    {
-        static uint32_t seed = []()
-        {
-            uint32_t s;
-            minipal_get_non_cryptographically_secure_random_bytes((uint8_t*)&s, sizeof(s));
-            return s;
-        }();
-        return seed;
-    }
+    static uint32_t GenerateGlobalSeed();
 };
 
 // This is a port of the System.HashCode logic for computing a hashcode using the xxHash algorithm.
