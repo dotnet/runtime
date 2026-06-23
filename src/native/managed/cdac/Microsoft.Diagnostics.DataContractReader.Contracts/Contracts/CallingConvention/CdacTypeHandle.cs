@@ -93,7 +93,17 @@ internal readonly struct CdacTypeHandle : ITypeHandle
         if (_typeHandle.IsNull)
             return (SharedCorElementType)0;
 
-        CdacCorElementType cdacType = Rts.GetSignatureCorElementType(_typeHandle);
+        // Mirror the runtime's MetaSig::PeekArgNormalized -- for value types
+        // it resolves the closed TypeHandle and returns
+        // MethodTable::GetInternalCorElementType, which collapses enums to
+        // their underlying primitive (byte enum -> U1, int enum -> I4, ...).
+        // The shared ArgIterator's x86 IsArgumentInRegister relies on this
+        // normalization to recognise sub-pointer-size enums as register-
+        // passable; returning ELEMENT_TYPE_VALUETYPE for a byte enum makes
+        // it fall into the IsTrivialPointerSizedStruct path which then
+        // (correctly) rejects it because GetSize() != PointerSize, and the
+        // arg gets mis-accounted as stack-passed.
+        CdacCorElementType cdacType = Rts.GetInternalCorElementType(_typeHandle);
         return MapCorElementType(cdacType);
     }
 
