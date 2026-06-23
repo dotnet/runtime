@@ -212,7 +212,7 @@
     DependsOnTargets=ResolveReferences guarantees @(ReferenceCopyLocalPaths) is populated before we prune;
     _GatherWasmFilesToBuild (unlike _ComputeWasmBuildCandidates) does not pull it in on its own.
   -->
-  <Target Name="_CoreCLRPreferAppLocalAssembliesOverRuntimePack"
+  <Target Name="_CoreCLRResolveRuntimePackVsAppLocalConflicts"
           BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild"
           DependsOnTargets="ResolveReferences"
           Condition="'$(IsBrowserWasmProject)' == 'true'">
