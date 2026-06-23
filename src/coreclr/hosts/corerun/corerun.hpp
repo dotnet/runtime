@@ -384,6 +384,16 @@ public:
 #include <link.h>
 #include <elf.h>
 #include <cstring>
+
+// glibc defines the ElfW() macro to select the native-width Elf type, but some
+// libcs (e.g. OpenBSD) don't provide it. Fall back to the appropriate fixed-width type.
+#ifndef ElfW
+#if defined(TARGET_64BIT)
+#define ElfW(type) Elf64_##type
+#else
+#define ElfW(type) Elf32_##type
+#endif
+#endif // ElfW
 #endif
 
 // CMake generated

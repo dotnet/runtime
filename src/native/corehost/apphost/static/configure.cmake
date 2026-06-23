@@ -8,8 +8,8 @@ option(HeimdalGssApi "use heimdal implementation of GssApi" OFF)
 
 if (CLR_CMAKE_TARGET_OPENBSD)
     set(HeimdalGssApi ON)
-    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/heimdal/include)
-    set(CMAKE_PREFIX_PATH ${CROSS_ROOTFS}/heimdal/lib)
+    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/heimdal/include)
+    set(CMAKE_PREFIX_PATH ${CROSS_ROOTFS}/usr/local/heimdal/lib)
 endif()
 
 if (HeimdalGssApi)

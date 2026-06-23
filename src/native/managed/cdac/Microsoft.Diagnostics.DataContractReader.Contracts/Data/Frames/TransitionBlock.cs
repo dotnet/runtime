@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.TransitionBlock))]
 internal partial class TransitionBlock : IData<TransitionBlock>
 {
-    [Field] public TargetPointer ReturnAddress { get; }
+    [Field] public TargetCodePointer ReturnAddress { get; }
 
     [FieldAddress]
     public TargetPointer CalleeSavedRegisters { get; }

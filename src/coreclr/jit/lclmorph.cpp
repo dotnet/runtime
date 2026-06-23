@@ -959,14 +959,6 @@ public:
 
         for (Statement* const stmt : block->Statements())
         {
-#ifdef FEATURE_SIMD
-            if (m_compiler->opts.OptimizationEnabled() && stmt->GetRootNode()->TypeIs(TYP_FLOAT) &&
-                stmt->GetRootNode()->OperIsStore())
-            {
-                m_madeChanges |= m_compiler->fgMorphCombineSIMDFieldStores(block, stmt);
-            }
-#endif
-
             VisitStmt(stmt);
         }
 
@@ -2409,113 +2401,204 @@ PhaseStatus Compiler::fgLocalMorph()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
-#ifdef FEATURE_SIMD
-//-----------------------------------------------------------------------------------
-// fgMorphCombineSIMDFieldStores:
-//    If the store of the input stmt is a read for simd vector X Field, then this
-//    function will keep reading next few stmts based on the vector size(2, 3, 4).
-//    If the next stmts stores are located contiguous and values are also located
-//    contiguous, then we replace those statements with one store.
+//------------------------------------------------------------------------
+// fgUnpinNonMovableLocals: unpin pinned locals whose value is provably
+//   non-movable.
 //
-// Argument:
-//    block - BasicBlock*. block which stmt belongs to
-//    stmt  - Statement*. the stmt node we want to check
+// Notes:
+//   For each STORE V = x, V is a "no-gc value" candidate if x is direct
+//   no-gc (constant, LCL_ADDR, frozen object handle, GT_LCLHEAP) or
+//   if x is a LCL_VAR V' that is itself a no-gc value candidate. The
+//   per-local property is the AND over all stores, so the lattice only
+//   ever flips from true to false; iteration terminates in at most one
+//   round per chain depth. Walks the per-statement local thread that
+//   was established by LocalSequencer in local morph rather than the
+//   full IR.
 //
-// Return Value:
-//    Whether the stores were successfully coalesced.
+//   Runs after physical promotion so forward sub and promotion have
+//   simplified the IR.
 //
-bool Compiler::fgMorphCombineSIMDFieldStores(BasicBlock* block, Statement* stmt)
+//   Params, implicitly-referenced locals, and address-exposed locals
+//   have defs we cannot see (call-site initialization, runtime writes,
+//   or aliased writes via the local's address) and so are excluded.
+//
+PhaseStatus Compiler::fgUnpinNonMovableLocals()
 {
-    GenTree* store = stmt->GetRootNode();
-    assert(store->OperIsStore());
-
-    GenTree*  prevValue    = store->Data();
-    unsigned  index        = 0;
-    var_types simdBaseType = store->TypeGet();
-    unsigned  simdSize     = 0;
-    GenTree*  simdLclAddr  = getSIMDStructFromField(prevValue, &index, &simdSize, true);
-
-    if ((simdLclAddr == nullptr) || (index != 0) || (simdBaseType != TYP_FLOAT))
+    if (opts.OptimizationDisabled())
     {
-        // if the value is not from a SIMD vector field X, then there is no need to check further.
-        return false;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    var_types  simdType        = getSIMDTypeForSize(simdSize);
-    int        storeCount      = simdSize / genTypeSize(simdBaseType) - 1;
-    int        remainingStores = storeCount;
-    GenTree*   prevStore       = store;
-    Statement* curStmt         = stmt->GetNextStmt();
-    Statement* lastStmt        = stmt;
-
-    while (curStmt != nullptr && remainingStores > 0)
+    // Single scan to detect pinned locals and initialize the lattice.
+    //
+    BitVecTraits traits(lvaCount, this);
+    BitVec       hasNoGcValue = BitVecOps::MakeEmpty(&traits);
+    bool         anyPinned    = false;
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
-        if (!curStmt->GetRootNode()->OperIsStore())
+        LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+        anyPinned |= varDsc->lvPinned;
+        if (!varDsc->lvImplicitlyReferenced && !varDsc->lvIsParam && !varDsc->IsAddressExposed())
         {
-            break;
+            BitVecOps::AddElemD(&traits, hasNoGcValue, lclNum);
         }
+    }
 
-        GenTree* curStore = curStmt->GetRootNode();
-        GenTree* curValue = curStore->Data();
+    if (!anyPinned)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
-        if (!areArgumentsContiguous(prevStore, curStore) || !areArgumentsContiguous(prevValue, curValue))
+    unsigned iterations = 0;
+    bool     changed    = true;
+    while (changed)
+    {
+        changed = false;
+        iterations++;
+        for (BasicBlock* const block : Blocks())
         {
-            break;
+            for (Statement* const stmt : block->Statements())
+            {
+                for (GenTreeLclVarCommon* const lcl : stmt->LocalsTreeList())
+                {
+                    if (lcl->OperIs(GT_STORE_LCL_VAR))
+                    {
+                        unsigned const   dstLclNum = lcl->GetLclNum();
+                        LclVarDsc* const dstDsc    = lvaGetDesc(dstLclNum);
+                        GenTree* const   value     = lcl->Data();
+
+                        // A struct store to a promoted destination implicitly
+                        // defines each field. Propagate per-field from a
+                        // matching promoted source LCL_VAR; otherwise mark
+                        // each destination field as has-GC.
+                        //
+                        if (varTypeIsStruct(dstDsc->TypeGet()) && dstDsc->lvPromoted)
+                        {
+                            LclVarDsc* srcDsc      = nullptr;
+                            unsigned   srcLclN     = BAD_VAR_NUM;
+                            bool       srcEligible = false;
+                            if (value->OperIs(GT_LCL_VAR))
+                            {
+                                srcLclN     = value->AsLclVar()->GetLclNum();
+                                srcDsc      = lvaGetDesc(srcLclN);
+                                srcEligible = varTypeIsStruct(srcDsc->TypeGet()) && srcDsc->lvPromoted &&
+                                              (srcDsc->lvFieldCnt == dstDsc->lvFieldCnt);
+                            }
+
+                            for (unsigned i = 0; i < dstDsc->lvFieldCnt; i++)
+                            {
+                                unsigned const dstFieldLclNum = dstDsc->lvFieldLclStart + i;
+                                if (!BitVecOps::IsMember(&traits, hasNoGcValue, dstFieldLclNum))
+                                {
+                                    continue;
+                                }
+
+                                bool isNoGc = false;
+                                if (srcEligible)
+                                {
+                                    LclVarDsc* const dstFld         = lvaGetDesc(dstFieldLclNum);
+                                    unsigned const   srcFieldLclNum = srcDsc->lvFieldLclStart + i;
+                                    LclVarDsc* const srcFld         = lvaGetDesc(srcFieldLclNum);
+                                    if (dstFld->lvIsStructField && srcFld->lvIsStructField &&
+                                        (dstFld->lvParentLcl == dstLclNum) && (srcFld->lvParentLcl == srcLclN) &&
+                                        (dstFld->lvFldOffset == srcFld->lvFldOffset) &&
+                                        (dstFld->lvFldOrdinal == srcFld->lvFldOrdinal) &&
+                                        (dstFld->TypeGet() == srcFld->TypeGet()))
+                                    {
+                                        isNoGc = BitVecOps::IsMember(&traits, hasNoGcValue, srcFieldLclNum);
+                                    }
+                                }
+
+                                if (!isNoGc)
+                                {
+                                    BitVecOps::RemoveElemD(&traits, hasNoGcValue, dstFieldLclNum);
+                                    changed = true;
+                                }
+                            }
+
+                            // Mark the promoted parent as has-GC for tidiness;
+                            // it is never consulted as a pinned local.
+                            //
+                            if (BitVecOps::IsMember(&traits, hasNoGcValue, dstLclNum))
+                            {
+                                BitVecOps::RemoveElemD(&traits, hasNoGcValue, dstLclNum);
+                                changed = true;
+                            }
+
+                            continue;
+                        }
+
+                        if (!BitVecOps::IsMember(&traits, hasNoGcValue, dstLclNum))
+                        {
+                            continue;
+                        }
+
+                        bool isNoGc = value->IsNotGcDef();
+
+                        if (!isNoGc && value->OperIs(GT_LCL_VAR))
+                        {
+                            isNoGc = BitVecOps::IsMember(&traits, hasNoGcValue, value->AsLclVar()->GetLclNum());
+                        }
+
+                        if (!isNoGc)
+                        {
+                            BitVecOps::RemoveElemD(&traits, hasNoGcValue, dstLclNum);
+                            changed = true;
+                        }
+
+                        continue;
+                    }
+
+                    // Any other def we do not analyze (GT_STORE_LCL_FLD,
+                    // retbuf GT_LCL_ADDR, etc.): mark the destination as
+                    // has-GC, plus all fields if it is a promoted parent.
+                    //
+                    if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
+                    {
+                        unsigned const   dstLclNum = lcl->GetLclNum();
+                        LclVarDsc* const dstDsc    = lvaGetDesc(dstLclNum);
+
+                        if (BitVecOps::IsMember(&traits, hasNoGcValue, dstLclNum))
+                        {
+                            BitVecOps::RemoveElemD(&traits, hasNoGcValue, dstLclNum);
+                            changed = true;
+                        }
+
+                        if (varTypeIsStruct(dstDsc->TypeGet()) && dstDsc->lvPromoted)
+                        {
+                            for (unsigned i = 0; i < dstDsc->lvFieldCnt; i++)
+                            {
+                                unsigned const dstFieldLclNum = dstDsc->lvFieldLclStart + i;
+                                if (BitVecOps::IsMember(&traits, hasNoGcValue, dstFieldLclNum))
+                                {
+                                    BitVecOps::RemoveElemD(&traits, hasNoGcValue, dstFieldLclNum);
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-
-        remainingStores--;
-        prevStore = curStore;
-        prevValue = curValue;
-
-        lastStmt = curStmt;
-        curStmt  = curStmt->GetNextStmt();
     }
 
-    if (remainingStores > 0)
+    unsigned unpinned = 0;
+    for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
     {
-        // if the left store number is bigger than zero, then this means that the stores
-        // are not assigning to the contiguous memory locations from same vector.
-        return false;
-    }
-
-    JITDUMP("\nFound contiguous stores from a SIMD vector to memory.\n");
-    JITDUMP("From " FMT_BB ", " FMT_STMT " to " FMT_STMT "\n", block->bbNum, stmt->GetID(), lastStmt->GetID());
-
-    for (int i = 0; i < storeCount; i++)
-    {
-        fgRemoveStmt(block, stmt->GetNextStmt());
-    }
-
-    GenTree* fullValue = gtNewLclvNode(simdLclAddr->AsLclVarCommon()->GetLclNum(), simdType);
-    GenTree* fullStore;
-    if (store->OperIs(GT_STORE_LCL_FLD))
-    {
-        store->gtType             = simdType;
-        store->AsLclFld()->Data() = fullValue;
-        if (!store->IsPartialLclFld(this))
+        LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+        if (varDsc->lvPinned && BitVecOps::IsMember(&traits, hasNoGcValue, lclNum))
         {
-            store->gtFlags &= ~GTF_VAR_USEASG;
+            varDsc->lvPinned = 0;
+            unpinned++;
+            JITDUMP("V%02u unpinned: all defs are no-gc\n", lclNum);
         }
-
-        fullStore = store;
-    }
-    else
-    {
-        GenTree* dstAddr = CreateAddressNodeForSimdHWIntrinsicCreate(store, simdBaseType, simdSize);
-        fullStore        = gtNewStoreIndNode(simdType, dstAddr, fullValue);
     }
 
-    JITDUMP("\n" FMT_BB " " FMT_STMT " (before):\n", block->bbNum, stmt->GetID());
-    DISPSTMT(stmt);
+    JITDUMP("fgUnpinNonMovableLocals: %u local%s unpinned after %u iteration%s\n", unpinned, unpinned == 1 ? "" : "s",
+            iterations, iterations == 1 ? "" : "s");
 
-    stmt->SetRootNode(fullStore);
-
-    JITDUMP("\nReplaced " FMT_BB " " FMT_STMT " (after):\n", block->bbNum, stmt->GetID());
-    DISPSTMT(stmt);
-
-    return true;
+    return PhaseStatus::MODIFIED_NOTHING;
 }
-#endif // FEATURE_SIMD
 
 //-----------------------------------------------------------------------------------
 // fgExposeUnpropagatedLocals:

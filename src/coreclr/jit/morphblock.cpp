@@ -1231,7 +1231,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             // handling.
             GenTreeIntCon* fldOffsetNode = m_compiler->gtNewIconNode(fullOffs, TYP_I_IMPL);
             fldOffsetNode->SetMorphed(m_compiler);
-            fldOffsetNode->gtFieldSeq = addrBaseOffsFldSeq;
+            fldOffsetNode->SetFieldSeq(addrBaseOffsFldSeq);
             addrClone = m_compiler->gtNewOperNode(GT_ADD, varTypeIsGC(addrClone) ? TYP_BYREF : TYP_I_IMPL, addrClone,
                                                   fldOffsetNode);
             // Avoid constant prop propagating each field access with a large

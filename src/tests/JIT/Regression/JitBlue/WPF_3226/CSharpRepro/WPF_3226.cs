@@ -38,6 +38,7 @@ public class Test_WPF_3226
         Marshal.StructureToPtr(mmi, lParam, true);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/129508", TestRuntimes.Mono)]
     [Fact]
     public unsafe static int TestEntryPoint()
     {

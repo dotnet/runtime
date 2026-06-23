@@ -497,7 +497,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);
         }
         break;
@@ -791,8 +791,8 @@ void CodeGen::genCodeForLongUMod(GenTreeOp* node)
     GenTree* const divisor = node->gtOp2;
     assert(divisor->gtSkipReloadOrCopy()->OperGet() == GT_CNS_INT);
     assert(divisor->gtSkipReloadOrCopy()->isUsedFromReg());
-    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->gtIconVal >= 2);
-    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->gtIconVal <= 0x3fffffff);
+    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->IconValue() >= 2);
+    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->IconValue() <= 0x3fffffff);
 
     // dividendLo must be in RAX; dividendHi must be in RDX
     genCopyRegIfNeeded(dividendLo, REG_EAX);
@@ -2802,7 +2802,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     size_t amount = 0;
     if (size->IsCnsIntOrI() && size->isContained())
     {
-        amount = size->AsIntCon()->gtIconVal;
+        amount = size->AsIntCon()->IconValue();
         assert((amount > 0) && (amount <= UINT_MAX));
 
         // 'amount' is the total number of bytes to localloc to properly STACK_ALIGN
@@ -3047,17 +3047,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
             genCodeForInitBlkLoop(storeBlkNode);
             break;
 
-        case GenTreeBlk::BlkOpKindRepInstr:
-            assert(!storeBlkNode->gtBlkOpGcUnsafe);
-            if (isCopyBlk)
-            {
-                genCodeForCpBlkRepMovs(storeBlkNode);
-            }
-            else
-            {
-                genCodeForInitBlkRepStos(storeBlkNode);
-            }
-            break;
         case GenTreeBlk::BlkOpKindUnrollMemmove:
         case GenTreeBlk::BlkOpKindUnroll:
             if (isCopyBlk)
@@ -3089,19 +3078,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
         default:
             unreached();
     }
-}
-
-//
-//------------------------------------------------------------------------
-// genCodeForInitBlkRepStos: Generate code for InitBlk using rep stos.
-//
-// Arguments:
-//    initBlkNode - The Block store for which we are generating code.
-//
-void CodeGen::genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode)
-{
-    genConsumeBlockOp(initBlkNode, REG_RDI, REG_RAX, REG_RCX);
-    instGen(INS_r_stosb);
 }
 
 //----------------------------------------------------------------------------------
@@ -3679,24 +3655,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         }
 #endif
     }
-}
-
-//----------------------------------------------------------------------------------
-// genCodeForCpBlkRepMovs - Generate code for CpBlk by using rep movs
-//
-// Arguments:
-//    cpBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
-//
-// Preconditions:
-//   The register assignments have been set appropriately.
-//   This is validated by genConsumeBlockOp().
-//
-void CodeGen::genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode)
-{
-    // Destination address goes in RDI, source address goes in RSE, and size goes in RCX.
-    // genConsumeBlockOp takes care of this for us.
-    genConsumeBlockOp(cpBlkNode, REG_RDI, REG_RSI, REG_RCX);
-    instGen(INS_r_movsb);
 }
 
 //------------------------------------------------------------------------
@@ -5277,10 +5235,10 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
         noway_assert(EA_ATTR(genTypeSize(targetType)) == EA_PTRSIZE);
 #if TARGET_64BIT
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_GS,
-                          (int)addr->AsIntCon()->gtIconVal);
+                          (int)addr->AsIntCon()->IconValue());
 #else
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
-                          (int)addr->AsIntCon()->gtIconVal);
+                          (int)addr->AsIntCon()->IconValue());
 #endif
     }
     else
@@ -5551,7 +5509,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             ssize_t        ival = op2->IconValue();
 
                             assert((ival >= 0) && (ival <= 255));
-                            op2->gtIconVal = static_cast<int8_t>(ival);
+                            op2->SetIconValue(static_cast<int8_t>(ival));
                             break;
                         }
 
@@ -6058,20 +6016,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
     }
 
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
-
-    // We need to propagate the IL offset information to the call instruction, so we can emit
-    // an IL to native mapping record for the call, to support managed return value debugging.
-    // We don't want tail call helper calls that were converted from normal calls to get a record,
-    // so we skip this hash table lookup logic in that case.
-
-    if (m_compiler->opts.compDbgInfo && m_compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
-    {
-        DebugInfo di;
-        (void)m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
-        params.debugInfo = di;
-    }
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
+    params.returnValueCall = call;
 
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
@@ -6189,7 +6136,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 
                 params.callType    = EC_FUNC_TOKEN;
                 params.methHnd     = (CORINFO_METHOD_HANDLE)1;
-                params.addr        = (void*)tlsGetAddr->AsIntCon()->gtIconVal;
+                params.addr        = (void*)tlsGetAddr->AsIntCon()->IconValue();
                 params.noSafePoint = true;
                 genEmitCallWithCurrentGC(params);
             }
