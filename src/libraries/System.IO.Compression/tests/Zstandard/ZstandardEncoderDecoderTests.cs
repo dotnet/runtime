@@ -576,5 +576,65 @@ namespace System.IO.Compression
                 Assert.Equal(input, decompressed);
             }
         }
+
+        [Fact]
+        public void Decoder_Ctor_DecompressionOptions_Null_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("decompressionOptions", () => new ZstandardDecoder((ZstandardDecompressionOptions)null!));
+        }
+
+        [Fact]
+        public void Decoder_Ctor_DecompressionOptions_Default_Succeeds()
+        {
+            ZstandardDecompressionOptions options = new();
+            using ZstandardDecoder decoder = new(options);
+
+            byte[] testData = ZstandardTestUtils.CreateTestData();
+            byte[] compressed = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
+            ZstandardEncoder.TryCompress(testData, compressed, out int compressedLength);
+
+            byte[] decompressed = new byte[testData.Length];
+            OperationStatus status = decoder.Decompress(compressed.AsSpan(0, compressedLength), decompressed, out _, out int bytesWritten);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(testData, decompressed.AsSpan(0, bytesWritten).ToArray());
+        }
+
+        [Fact]
+        public void Decoder_Ctor_DecompressionOptions_WithMaxWindowLog_Succeeds()
+        {
+            ZstandardDecompressionOptions options = new() { MaxWindowLog = 10 };
+            using ZstandardDecoder decoder = new(options);
+
+            byte[] testData = ZstandardTestUtils.CreateTestData(100);
+            byte[] compressed = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
+            ZstandardEncoder.TryCompress(testData, compressed, out int compressedLength);
+
+            byte[] decompressed = new byte[testData.Length];
+            OperationStatus status = decoder.Decompress(compressed.AsSpan(0, compressedLength), decompressed, out _, out int bytesWritten);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(testData, decompressed.AsSpan(0, bytesWritten).ToArray());
+        }
+
+        [Fact]
+        public void Decoder_Ctor_DecompressionOptions_WithDictionary_RoundTrips()
+        {
+            byte[] dictionaryData = ZstandardTestUtils.CreateSampleDictionary();
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData);
+
+            byte[] testData = ZstandardTestUtils.CreateTestData(500);
+
+            // Compress with dictionary
+            using ZstandardEncoder encoder = new(dictionary);
+            byte[] compressed = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
+            encoder.Compress(testData, compressed, out _, out int compressedLength, isFinalBlock: true);
+
+            // Decompress with ZstandardDecompressionOptions containing the dictionary
+            ZstandardDecompressionOptions options = new() { Dictionary = dictionary };
+            using ZstandardDecoder decoder = new(options);
+            byte[] decompressed = new byte[testData.Length];
+            OperationStatus status = decoder.Decompress(compressed.AsSpan(0, compressedLength), decompressed, out _, out int bytesWritten);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(testData, decompressed.AsSpan(0, bytesWritten).ToArray());
+        }
     }
 }

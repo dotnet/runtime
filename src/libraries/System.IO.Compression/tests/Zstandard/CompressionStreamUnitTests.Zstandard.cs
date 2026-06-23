@@ -282,5 +282,85 @@ namespace System.IO.Compression
             }, testScenario.ToString()).Dispose();
         }
 
+        [Fact]
+        public void ZstandardStream_WithDecompressionOptions_DecompressesData()
+        {
+            byte[] testData = ZstandardTestUtils.CreateTestData();
+            byte[] compressedData = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
+            ZstandardEncoder.TryCompress(testData, compressedData, out int compressedLength);
+            Array.Resize(ref compressedData, compressedLength);
+
+            ZstandardDecompressionOptions options = new();
+            using MemoryStream input = new(compressedData);
+            using MemoryStream output = new();
+
+            using (ZstandardStream decompressionStream = new(input, options, leaveOpen: true))
+            {
+                decompressionStream.CopyTo(output);
+            }
+
+            Assert.Equal(testData, output.ToArray());
+        }
+
+        [Fact]
+        public void ZstandardStream_WithDecompressionOptions_NullOptions_ThrowsArgumentNullException()
+        {
+            using MemoryStream input = new();
+            Assert.Throws<ArgumentNullException>("decompressionOptions", () => new ZstandardStream(input, (ZstandardDecompressionOptions)null!));
+        }
+
+        [Fact]
+        public void ZstandardStream_WithDecompressionOptions_OwnsDecoder_DisposesOnStreamDispose()
+        {
+            byte[] testData = ZstandardTestUtils.CreateTestData();
+            byte[] compressedData = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
+            ZstandardEncoder.TryCompress(testData, compressedData, out int compressedLength);
+            Array.Resize(ref compressedData, compressedLength);
+
+            ZstandardDecompressionOptions options = new();
+            using MemoryStream input = new(compressedData);
+            using MemoryStream output = new();
+
+            ZstandardStream decompressionStream = new(input, options, leaveOpen: true);
+            decompressionStream.CopyTo(output);
+            decompressionStream.Dispose();
+
+            Assert.Equal(testData, output.ToArray());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ZstandardStream_WithDecompressionOptions_WithDictionary_RoundTrips(bool async)
+        {
+            byte[] dictionaryData = ZstandardTestUtils.CreateSampleDictionary();
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData);
+
+            byte[] testData = ZstandardTestUtils.CreateTestData(5000);
+
+            using MemoryStream compressedStream = new();
+            using (ZstandardStream compressionStream = new(compressedStream, CompressionMode.Compress, dictionary, leaveOpen: true))
+            {
+                if (async)
+                    await compressionStream.WriteAsync(testData, 0, testData.Length);
+                else
+                    compressionStream.Write(testData, 0, testData.Length);
+            }
+
+            compressedStream.Position = 0;
+
+            ZstandardDecompressionOptions options = new() { Dictionary = dictionary };
+            using MemoryStream decompressedStream = new();
+            using (ZstandardStream decompressionStream = new(compressedStream, options))
+            {
+                if (async)
+                    await decompressionStream.CopyToAsync(decompressedStream);
+                else
+                    decompressionStream.CopyTo(decompressedStream);
+            }
+
+            Assert.Equal(testData, decompressedStream.ToArray());
+        }
+
     }
 }

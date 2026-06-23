@@ -78,6 +78,37 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with the specified decompression options.</summary>
+        /// <param name="decompressionOptions">The options to use for Zstandard decompression.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="decompressionOptions"/> is null.</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
+        public ZstandardDecoder(ZstandardDecompressionOptions decompressionOptions)
+        {
+            ArgumentNullException.ThrowIfNull(decompressionOptions);
+
+            _disposed = false;
+
+            InitializeDecoder();
+
+            try
+            {
+                if (decompressionOptions.MaxWindowLog != 0)
+                {
+                    SetWindowLog(decompressionOptions.MaxWindowLog);
+                }
+
+                if (decompressionOptions.Dictionary is not null)
+                {
+                    SetDictionary(decompressionOptions.Dictionary);
+                }
+            }
+            catch
+            {
+                _context.Dispose();
+                throw;
+            }
+        }
+
         /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with the specified dictionary and maximum window size.</summary>
         /// <param name="dictionary">The decompression dictionary to use.</param>
         /// <param name="maxWindowLog">The maximum window size to use for decompression, expressed as base 2 logarithm.</param>
