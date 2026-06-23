@@ -11,12 +11,12 @@ jobs:
 #
 # Build CoreCLR + libraries for WASI (wasm32-wasi).
 #
-# This is the minimum viable CoreCLR-WASI CI: it produces a runtime
-# pack + corerun.wasm artifact under wasi.wasm.Release. Tests are not
-# run in CI yet — wasmtime is not yet distributed in our helix images,
-# and src/tests for wasi-coreclr is still being validated. Once both
-# pieces land we will add a wasi-wasm-coreclr-runtime-tests.yml that
-# consumes BuildArtifacts_wasi_wasm_*_Release_CoreCLR.
+# Produces a runtime pack + corerun.wasm artifact under
+# wasi.wasm.Release. The companion pipeline that actually runs the
+# src/tests CoreCLR runtime tests on Helix under wasmtime lives in
+# wasi-wasm-coreclr-runtime-tests.yml (the 'wasi_wasm' Helix queue is
+# already mapped to the ubuntu-26.04-helix-webassembly-amd64 image,
+# which ships wasmtime — see eng/pipelines/libraries/helix-queues-setup.yml).
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

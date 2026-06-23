@@ -142,8 +142,9 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
-      # Release build of wasi wasm for CoreCLR (build-only — wasmtime
-      # is not yet in our helix queues, so no test run for now).
+      # Release build of wasi wasm for CoreCLR (build-only — the
+      # runtime tests run in a separate job dispatched to Helix from
+      # wasi-wasm-coreclr-runtime-tests.yml below).
       - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-build-only.yml
         parameters:
           platforms:
@@ -155,6 +156,14 @@ extends:
               eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
               eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
               eq(variables['isRollingBuild'], true))
+
+      # CoreCLR src/tests subset run on wasmtime via Helix
+      # (wasi_wasm queue -> ubuntu-26.04-helix-webassembly-amd64 image).
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-runtime-tests.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          alwaysRun: ${{ variables.isRollingBuild }}
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
