@@ -315,27 +315,30 @@ Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
 
 # ----- self-overriding methodimpl: wasm "uninitialized element" trap ---------
 #
-# REAL BUG. Test runs partially (prints "In MyFoo::DoBarOverride")
-# then traps in CallFunc_This_RetI32_PE on the SECOND, non-virtual
-# call to MyBar::DoBar (which is methodimpl'd to MyBar::DoBarOverride).
-# Trap is "wasm trap: uninitialized element" — a call_indirect through
-# wasm table slot 0 (i.e. _pActualCode == NULL).
+# REAL BUG, fix in flight as dotnet/runtime PR #126124 (Radek Doulik).
+# Test runs partially (prints "In MyFoo::DoBarOverride") then traps in
+# CallFunc_This_RetI32_PE on the SECOND, non-virtual call to MyBar::DoBar
+# (which is methodimpl'd to MyBar::DoBarOverride). Trap is
+# "wasm trap: uninitialized element" — a call_indirect through wasm
+# table slot 0 (i.e. PortableEntryPoint::_pActualCode == NULL).
 #
-# Mechanism: PortableEntryPoint for MyBar::DoBarOverride was created
-# via PortableEntryPoint::Init(MethodDesc*) (precode_portable.cpp:113)
-# which leaves _pActualCode = NULL and only sets
-# kPrefersInterpreterEntryPoint. The interpreter thunk is supposed to
-# be installed later by ResolvePendingPortableEntryPointThunksGlobal()
-# via TrySetInterpreterThunk(), but in the methodimpl-non-virtual-call
-# path it appears the method is dispatched before the install runs (or
-# GetPortableEntryPointToInterpreterThunk returned NULL because no
-# pre-generated thunk exists for the signature, so the slot stays
-# NULL forever). The first virtual call works because the vtable slot
-# was already populated for MyFoo::DoBarOverride; only the non-virtual
-# call to MyBar::DoBarOverride trips the bug.
+# Per #126124: when a .override directive remaps a virtual method's
+# vtable slot, the overriding method's PortableEntryPoint occupies the
+# slot. SetNativeCodeInterlocked CAS then fails for the overridden
+# method, so SetInterpreterCode is never reached and GetInterpreterCode
+# returns NULL -> NULL fptr in _pActualCode -> uninitialized element
+# trap on indirect call. Fix:
+#   - method.cpp: ShouldCallPrestub uses the method's own PEP instead
+#     of the remapped vtable slot.
+#   - interpexec.cpp: PrepareInterpreterCode follows the redirect to
+#     the overriding method's interpreter code when the slot points
+#     to a different method.
 #
-# Worth root-causing in the interpreter / methodimpl resolution path
-# alongside the GitHub_89834 second-pass-unwind bug.
+# Same bug affects Browser CoreCLR (test already had ActiveIssue ...
+# IsBrowser); we broadened the annotation to IsWasm so both targets
+# are covered until #126124 merges. Entry stays here because .il
+# tests don't go through XUnitWrapperGenerator in standalone-build
+# mode, so the ActiveIssue attribute is ignored by our sweep runner.
 Loader/classloader/MethodImpl/self_override5/self_override5.sh
 
 # ----- CircularCctor*BFI: threading-driven cctor races -----------------------
