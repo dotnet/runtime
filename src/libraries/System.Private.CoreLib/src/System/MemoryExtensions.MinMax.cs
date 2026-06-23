@@ -136,24 +136,24 @@ namespace System
             where TDirection : struct, IMinMaxDirection
         {
             T? value = default;
-            int i = 0;
 
             if (value is null)
             {
-                do
+                int i;
+
+                for (i = 0; i < span.Length; i++)
                 {
-                    if (i >= span.Length)
+                    value = span[i];
+
+                    if (value is not null)
                     {
-                        return value;
+                        break;
                     }
-
-                    value = span[i++];
                 }
-                while (value is null);
 
-                while (i < span.Length)
+                for (; (uint)i < (uint)span.Length; i++)
                 {
-                    T next = span[i++];
+                    T next = span[i];
                     if (next is not null && TDirection.CompareResult(comparer.Compare(next, value)))
                     {
                         value = next;
@@ -167,12 +167,13 @@ namespace System
                     ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NoElements);
                 }
 
-                value = span[i++];
+                value = span[0];
+
                 if (comparer == Comparer<T>.Default)
                 {
-                    while (i < span.Length)
+                    for (int i = 1; i < span.Length; i++)
                     {
-                        T next = span[i++];
+                        T next = span[i];
                         if (TDirection.CompareResult(Comparer<T>.Default.Compare(next, value)))
                         {
                             value = next;
@@ -181,9 +182,9 @@ namespace System
                 }
                 else
                 {
-                    while (i < span.Length)
+                    for (int i = 1; i < span.Length; i++)
                     {
-                        T next = span[i++];
+                        T next = span[i];
                         if (TDirection.CompareResult(comparer.Compare(next, value)))
                         {
                             value = next;
