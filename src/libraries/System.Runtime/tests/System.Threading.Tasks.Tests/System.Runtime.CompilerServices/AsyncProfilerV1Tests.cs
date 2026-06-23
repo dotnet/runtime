@@ -102,6 +102,18 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_RecursiveChainGated(int depth, Task gate)
+        {
+            if (depth <= 1)
+            {
+                await gate;
+                return;
+            }
+            await StateMachineAsync_RecursiveChainGated(depth - 1, gate);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static async ValueTask ValueStateMachineAsync_Level1()
         {
             await ValueStateMachineAsync_Level2();
@@ -1353,6 +1365,49 @@ namespace System.Threading.Tasks.Tests
                 AssertTrue(stream, methodId != 0, "Frame has zero MethodId");
                 var method = GetMethodNameFromMethodId(deepest.CallstackType, methodId);
                 AssertTrue(stream, method is not null, $"MethodId 0x{methodId:X} does not resolve to a managed method");
+            }
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        public void StateMachineAsync_CallstackOverflow_PreservesFullDepth()
+        {
+            const int Depth = 200;
+            const int Iterations = 500;
+
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword, () =>
+            {
+                RunScenarioAndFlush(async () =>
+                {
+                    for (int i = 0; i < Iterations; i++)
+                    {
+                        var gate = new TaskCompletionSource();
+                        Task chain = StateMachineAsync_RecursiveChainGated(Depth, gate.Task);
+                        gate.SetResult();
+                        await chain;
+                    }
+                });
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            // The deep chains overflow the per-thread buffer many times over (Iterations deep callstacks far
+            // exceed one buffer's capacity), so the rent/overflow path is exercised. The regression check:
+            // every chain resume must carry its full frame count. Scope to our recursive chains by method
+            // rather than by frame count -- a callstack truncated by the overflow bug has fewer frames but
+            // still consists of the recursive method, so it stays in scope and is caught.
+            var chainCallstacks = stream.OfType(AsyncEventID.ResumeStateMachineAsyncCallstack)
+                .Where(cs => cs.Frames.Any(f => GetMethodNameFromMethodId(cs.CallstackType, f.MethodId) == nameof(StateMachineAsync_RecursiveChainGated)))
+                .ToList();
+            AssertNotEmpty(stream, chainCallstacks);
+
+            int leafDepth = chainCallstacks.Max(cs => (int)cs.FrameCount);
+            AssertTrue(stream, leafDepth >= Depth, $"Expected captured depth >= {Depth}, got {leafDepth}");
+            foreach (var cs in chainCallstacks)
+            {
+                AssertEqual(stream, leafDepth, (int)cs.FrameCount);
+                AssertEqual(stream, (int)cs.FrameCount, cs.Frames.Count);
             }
         }
 

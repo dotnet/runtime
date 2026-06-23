@@ -1664,11 +1664,13 @@ namespace System.Runtime.CompilerServices
                     return true;
                 }
 
-                byte maxAsyncCallstackFrames = (byte)Math.Min(byte.MaxValue, (buffer.Length - index) / MaxStateMachineAsyncMethodFrameSize);
-                if (maxAsyncCallstackFrames == 0)
+                int remainingFrames = (buffer.Length - index) / MaxStateMachineAsyncMethodFrameSize;
+                if (remainingFrames == 0)
                 {
                     return false;
                 }
+
+                byte maxAsyncCallstackFrames = (byte)Math.Min(byte.MaxValue, state.Count + remainingFrames);
 
                 Span<byte> callstackSpan = buffer.AsSpan(index);
                 int callstackSpanIndex = 0;
@@ -1786,9 +1788,6 @@ namespace System.Runtime.CompilerServices
 
                 ref EventBuffer eventBuffer = ref context.EventBuffer;
 
-                // Max callstack data that can fit in the buffer after flush.
-                int maxCallstackBytes = Math.Min(byte.MaxValue * T.MaxAsyncMethodFrameSize, eventBuffer.Data.Length);
-
                 // Static callstack payload: callstackId (1) + continuationIndex (1) + frameCount (1) + parentDispatcherId + dispatcherId (max 10 bytes compressed each).
                 const int MaxPayloadLength = sizeof(byte) + sizeof(byte) + sizeof(byte) + 2 * Serializer.MaxCompressedUInt64Size;
 
@@ -1802,6 +1801,9 @@ namespace System.Runtime.CompilerServices
 
                     if (!captureCallstack.Capture(buffer, ref currentIndex, out byte count))
                     {
+                        int maxReEmitOverhead = Serializer.MaxEventHeaderSize + Serializer.MaxAsyncEventHeaderSize + (byte)EventManifest.CallstackPayloadLengthFieldSize + MaxPayloadLength;
+                        int maxCallstackBytes = Math.Min(byte.MaxValue * T.MaxAsyncMethodFrameSize, eventBuffer.Data.Length - maxReEmitOverhead);
+
                         byte[]? rentedArray = RentArray(maxCallstackBytes);
                         if (rentedArray != null)
                         {

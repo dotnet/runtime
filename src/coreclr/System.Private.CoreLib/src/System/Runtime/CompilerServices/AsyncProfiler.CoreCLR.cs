@@ -600,11 +600,13 @@ namespace System.Runtime.CompilerServices
                     return true;
                 }
 
-                byte maxAsyncCallstackFrames = (byte)Math.Min(byte.MaxValue, (buffer.Length - index) / MaxRuntimeAsyncMethodFrameSize);
-                if (maxAsyncCallstackFrames == 0)
+                int remainingFrames = (buffer.Length - index) / MaxRuntimeAsyncMethodFrameSize;
+                if (remainingFrames == 0)
                 {
                     return false;
                 }
+
+                byte maxAsyncCallstackFrames = (byte)Math.Min(byte.MaxValue, state.Count + remainingFrames);
 
                 Span<byte> callstackSpan = buffer.AsSpan(index);
 
