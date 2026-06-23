@@ -981,7 +981,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 }
 
 #ifdef TARGET_X86
-GCRefKind CoffNativeCodeManager::GetReturnValueKind(MethodInfo *   pMethodInfo, REGDISPLAY *   pRegisterSet)
+GCRefKind CoffNativeCodeManager::GetReturnValueKind(MethodInfo *   pMethodInfo, REGDISPLAY *   pRegisterSet, bool* isAsync)
 {
     PTR_uint8_t gcInfo;
     uint32_t codeOffset = GetCodeOffset(pMethodInfo, (PTR_VOID)pRegisterSet->IP, &gcInfo);
@@ -989,6 +989,7 @@ GCRefKind CoffNativeCodeManager::GetReturnValueKind(MethodInfo *   pMethodInfo, 
     size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &infoBuf);
 
     ASSERT(infoBuf.returnKind != RT_Float); // See TODO above
+    *isAsync = infoBuf.isAsync;
     return (GCRefKind)infoBuf.returnKind;
 }
 #endif

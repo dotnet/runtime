@@ -12,6 +12,14 @@
 #include "gchelpers.inl"
 #include "arraynative.inl"
 
+#ifdef TARGET_WASM
+extern "C" void SamplingProfiler_OnSamplepoint();
+#endif
+
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+#include "wasm/browserprofiler.h"
+#endif
+
 // for numeric_limits
 #include <limits>
 #include <functional>
@@ -193,14 +201,6 @@ static size_t CreateDispatchTokenForMethod(MethodDesc* pMD)
         return DispatchToken::CreateDispatchToken(slotNumber).To_SIZE_T();
     }
 }
-
-#ifdef TARGET_WASM
-// Unused on WASM
-#define SAVE_THE_LOWEST_SP do {} while (0)
-#else
-// Save the lowest SP in the current method so that we can identify it by that during stackwalk
-#define SAVE_THE_LOWEST_SP pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP())
-#endif // !TARGET_WASM
 
 // Call invoker helpers provided by platform.
 void InvokeManagedMethod(ManagedMethodParam *pParam);
@@ -1333,6 +1333,9 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     }
     CONTRACTL_END;
 
+    TADDR resumeSP = 0;
+    TADDR resumeIP = 0;
+
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     pInterpreterFrame->SetInterpExecMethodSSP((TADDR)_rdsspq());
 #endif // HOST_AMD64 && HOST_WINDOWS
@@ -1381,8 +1384,6 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     bool frameNeedsTailcallUpdate = false;
     MethodDesc* targetMethod;
     uint32_t opcode;
-
-    SAVE_THE_LOWEST_SP;
 
 MAIN_LOOP:
     try
@@ -1441,7 +1442,7 @@ SWITCH_OPCODE:
                         if (seqPointOffset >= 0)
                         {
                             callbackIp = pFrame->startIp->GetByteCodes() + seqPointOffset;
-                            _ASSERTE(*callbackIp == INTOP_DEBUG_SEQ_POINT);
+                            _ASSERTE(*callbackIp == INTOP_DEBUG_SEQ_POINT || *callbackIp == INTOP_BREAKPOINT);
                         }
                         g_pDebugInterface->OnMethodEnter((void*)callbackIp);
                     }
@@ -1613,11 +1614,11 @@ SWITCH_OPCODE:
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R4:
-                    ConvFpHelper<uint8_t, uint32_t, float>(stack, ip);
+                    ConvFpHelper<uint8_t, int32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R8:
-                    ConvFpHelper<uint8_t, uint32_t, double>(stack, ip);
+                    ConvFpHelper<uint8_t, int32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_I4:
@@ -1645,11 +1646,11 @@ SWITCH_OPCODE:
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R4:
-                    ConvFpHelper<uint16_t, uint32_t, float>(stack, ip);
+                    ConvFpHelper<uint16_t, int32_t, float>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R8:
-                    ConvFpHelper<uint16_t, uint32_t, double>(stack, ip);
+                    ConvFpHelper<uint16_t, int32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I4_R4:
@@ -1942,6 +1943,25 @@ SWITCH_OPCODE:
                     }
                     ip++;
                     break;
+
+#ifdef PERFTRACING_DISABLE_THREADS
+                case INTOP_PROF_SAMPLEPOINT:
+                    SamplingProfiler_OnSamplepoint();
+                    ip++;
+                    break;
+#endif // PERFTRACING_DISABLE_THREADS
+
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+                case INTOP_PROF_ENTER:
+                    BrowserProfiler_OnMethodEnter(pMethod->pDataItems[ip[1]]);
+                    ip += 2;
+                    break;
+
+                case INTOP_PROF_LEAVE:
+                    BrowserProfiler_OnMethodLeave(pMethod->methodHnd);
+                    ip++;
+                    break;
+#endif // TARGET_BROWSER && PERFTRACING_DISABLE_THREADS
 
                 case INTOP_BR:
                     ip += ip[1];
@@ -3342,7 +3362,6 @@ SWITCH_OPCODE:
                                     pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                                     pChildFrame->pNext = NULL;
                                     pFrame->pNext = pChildFrame;
-                                    SAVE_THE_LOWEST_SP;
                                 }
                                 pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, LOCAL_VAR_ADDR(callArgsOffset, int8_t));
                                 pFrame = pChildFrame;
@@ -3426,6 +3445,9 @@ CALL_INTERP_METHOD:
 
                     if (frameNeedsTailcallUpdate)
                     {
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+                        BrowserProfiler_OnMethodLeave(pMethod->methodHnd);
+#endif
                         InterpMethod* pTargetMethod = targetIp->Method;
                         UpdateFrameForTailCall(pFrame, targetIp, callArgsAddress);
                         frameNeedsTailcallUpdate = false;
@@ -3443,7 +3465,6 @@ CALL_INTERP_METHOD:
                                 pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                                 pChildFrame->pNext = NULL;
                                 pFrame->pNext = pChildFrame;
-                                SAVE_THE_LOWEST_SP;
                             }
                             pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, callArgsAddress);
                             pFrame = pChildFrame;
@@ -4277,7 +4298,6 @@ do                                                                      \
                             pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                             pChildFrame->pNext = NULL;
                             pFrame->pNext = pChildFrame;
-                            SAVE_THE_LOWEST_SP;
                         }
                         // Set the frame to the same values as the caller frame.
                         pChildFrame->ReInit(pFrame, pFrame->startIp, pFrame->pRetVal, pFrame->pStack);
@@ -4543,7 +4563,7 @@ do                                                                      \
                         }
                     }
 
-                    continuation->SetState((int32_t)((uint8_t*)ip - (uint8_t*)pFrame->startIp));
+                    continuation->SetState(pAsyncSuspendData->suspensionPointIndex);
                     _ASSERTE(pAsyncSuspendData->methodStartIP != 0);
                     continuation->SetResumeInfo(&pAsyncSuspendData->resumeInfo);
                     pInterpreterFrame->SetContinuation(continuation);
@@ -4581,7 +4601,7 @@ do                                                                      \
 
                     // Explicitly copy the return value from the continuation's result storage
                     // to the interpreter stack.
-                    if (pAsyncSuspendData->returnValueContinuationDataSize > 0)
+                    if (pAsyncSuspendData->returnValueVarStackOffset != -1)
                     {
                         memcpy(LOCAL_VAR_ADDR(pAsyncSuspendData->returnValueVarStackOffset, uint8_t),
                                continuation->GetResultStorage(),
@@ -4612,9 +4632,11 @@ do                                                                      \
                     _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
                     if (continuation != NULL)
                     {
-                        // A continuation is present, begin the restoration process
+                        // State is the suspension-point index; map it to the resume IP.
                         int32_t state = continuation->GetState();
-                        ip = (int32_t*)((uint8_t*)pFrame->startIp + state);
+                        _ASSERTE(state >= 0 && state < pMethod->numSuspensionPoints);
+                        _ASSERTE(pMethod->suspensionPointIPOffsets != NULL);
+                        ip = (int32_t*)((uint8_t*)pFrame->startIp + pMethod->suspensionPointIPOffsets[state]);
 
                         // Now we have an IP to where we should resume execution. This should be an INTOP_HANDLE_CONTINUATION_RESUME opcode
                         // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
@@ -4635,8 +4657,7 @@ do                                                                      \
     }
     catch (const ResumeAfterCatchException& ex)
     {
-        TADDR resumeSP;
-        TADDR resumeIP;
+        GCX_COOP_NO_DTOR();
         ex.GetResumeContext(&resumeSP, &resumeIP);
         _ASSERTE(resumeSP != 0 && resumeIP != 0);
 
@@ -4650,8 +4671,13 @@ do                                                                      \
                 // sequences of interpreted frames without any AOTed/JITted frames in between. In such case, the topmost native frame
                 // the ResumeAfterCatchException is thrown from may not be the one that corresponds to the target interpreted frame.
                 // Thus, we need to rethrow it to let it propagate further.
-                throw;
+                // We don't rethrow the exception here to work around a Windows bug in shadow stack pointer updating,
+                // tracked by (internal) OS issue: https://microsoft.visualstudio.com/OS/_workitems/edit/62622295
+                goto RETHROW_RESUME_AFTER_CATCH;
             }
+#if defined(TARGET_BROWSER) && defined(PERFTRACING_DISABLE_THREADS)
+            BrowserProfiler_OnMethodLeave(pFrame->startIp->Method->methodHnd);
+#endif
             pThreadContext->frameDataAllocator.PopInfo(pFrame);
             pFrame->ip = 0;
             pFrame = pFrame->pParent;
@@ -4702,6 +4728,11 @@ EXIT_FRAME:
     }
 
     pThreadContext->pStackPointer = pFrame->pStack;
+    return;
+
+RETHROW_RESUME_AFTER_CATCH:
+    // Rethrow the exception to let it propagate to the correct resume frame
+    ThrowResumeAfterCatchException(resumeSP, resumeIP);
 }
 
 #endif // FEATURE_INTERPRETER

@@ -29,9 +29,10 @@ namespace System.Runtime.InteropServices.ObjectiveC
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization)
              => throw new NotImplementedException();
 
-        private static IntPtr CreateReferenceTrackingHandleInternal(
-            ObjectHandleOnStack obj,
-            out int memInSizeT,
-            out IntPtr mem) => throw new NotImplementedException();
+        private static IntPtr AllocateReferenceTrackingHandle(object obj)
+            => throw new NotImplementedException();
+
+        private static bool IsTrackedReferenceWithFinalizer(object obj)
+            => throw new NotImplementedException();
     }
 }

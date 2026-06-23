@@ -48,6 +48,11 @@ struct InterpMethod
     bool publishSecretStubParam;
     int32_t codeSize; // size in int32_t slots
 
+    // Maps Continuation.State (suspension-point index) to the byte offset of the matching
+    // INTOP_HANDLE_CONTINUATION_RESUME opcode from InterpByteCodeStart.
+    int32_t numSuspensionPoints;
+    int32_t* suspensionPointIPOffsets;
+
 #ifdef INTERPRETER_COMPILER_INTERNAL
     InterpMethod(
         CORINFO_METHOD_HANDLE methodHnd, int32_t argsSize, int32_t allocaSize,
@@ -66,6 +71,8 @@ struct InterpMethod
         this->unmanagedCallersOnly = unmanagedCallersOnly;
         this->publishSecretStubParam = publishSecretStubParam;
         this->codeSize = codeSize;
+        this->numSuspensionPoints = 0;
+        this->suspensionPointIPOffsets = NULL;
         pCallStub = NULL;
     }
 #endif
@@ -218,6 +225,9 @@ struct InterpAsyncSuspendData
 
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), captureSyncContextMethod);
     COMPILER_SHARED_TYPE(CORINFO_METHOD_HANDLE, DPTR(MethodDesc), restoreContextsOnSuspensionMethod);
+
+    // Written into Continuation.State at suspend; matches the JIT encoding.
+    int32_t suspensionPointIndex;
 };
 
 #endif

@@ -54,12 +54,12 @@
       </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
         <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
-        <target state="new">The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</target>
+        <target state="translated">O membro '{0}.{1}' foi anotado com o JsonIncludeAttribute, mas não é visível para o gerador de origem.</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
         <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
-        <target state="new">Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</target>
+        <target state="translated">Propriedades inacessíveis anotadas com JsonIncludeAttribute não são suportadas no modo de geração de origem.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
@@ -74,12 +74,12 @@
       </trans-unit>
       <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeFormat">
         <source>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</source>
-        <target state="new">The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</target>
+        <target state="translated">O tipo '{0}' foi anotado com 'JsonIgnoreAttribute' usando 'JsonIgnoreCondition.Always', o que não é válido em declarações de tipo. O atributo será ignorado.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeTitle">
         <source>'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</source>
-        <target state="new">'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</target>
+        <target state="translated">'JsonIgnoreCondition.Always' não é válido em anotações de 'JsonIgnoreAttribute' no nível de tipo.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
@@ -132,6 +132,41 @@
         <target state="translated">Tipo tem vários membros anotados com JsonExtensionDataAttribute.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
+        <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
+        <target state="translated">O tipo derivado genérico aberto '{0}' não pôde ser resolvido para o tipo base polimórfico '{1}': {2}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
+        <source>the derived type matches the base type through multiple ancestors</source>
+        <target state="translated">o tipo derivado corresponde ao tipo base por meio de vários ancestrais</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
+        <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
+        <target state="translated">a restrição no parâmetro de tipo '{0}' não é atendida por '{1}'</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
+        <source>the derived type is not assignable to the base type</source>
+        <target state="translated">o tipo derivado não pode ser atribuído ao tipo base</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
+        <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
+        <target state="translated">o parâmetro de tipo '{0}' do tipo derivado não é vinculado pelos argumentos do tipo base</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
+        <source>the base type's arguments do not match the derived type's base specification</source>
+        <target state="translated">os argumentos do tipo base não correspondem à especificação de base do tipo derivado</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
+        <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
+        <target state="translated">O tipo derivado genérico aberto não pôde ser resolvido para o tipo base polimórfico.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">
         <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
         <target state="translated">O tipo "{0}" inclui a propriedade ref like, campo ou parâmetro de construtor "{1}". Nenhum código-fonte será gerado para a propriedade, campo ou construtor.</target>
@@ -150,6 +185,26 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate serialization metadata for type.</source>
         <target state="translated">Não gerou metadados de serialização para o tipo.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableMessageFormat">
+        <source>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</source>
+        <target state="translated">Tipo de união "{0}": {1}. Defina JsonUnionAttribute.TypeClassifier para fornecer um classificador personalizado que possa diferenciá-los.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableTitle">
+        <source>Union case types cannot be unambiguously classified by JSON value type.</source>
+        <target state="translated">Os tipos de caso de união não podem ser classificados sem ambiguidade pelo tipo de valor JSON.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedMessageFormat">
+        <source>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</source>
+        <target state="translated">O tipo de união "{0}" não corresponde à convenção de forma união do C#: ele deve declarar pelo menos um construtor de caso de parâmetro único público e uma propriedade de instância pública chamada "Value" com o tipo "object".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedTitle">
+        <source>Union type shape is not a valid C# union.</source>
+        <target state="translated">A forma do tipo união não é uma união C# válida.</target>
         <note />
       </trans-unit>
     </body>

@@ -12,7 +12,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 #endif
         bool IsCurveValid(Oid oid);
         bool ExplicitCurvesSupported { get; }
-        bool ExplicitCurvesSupportFailOnUseOnly => PlatformDetection.IsSymCryptOpenSsl;
+
+        // In OSSL 3+ we use EVP_PKEY APIs instead of EC_KEY APIs so import and export of explicit curves also fails for SymCrypt.
+        bool ExplicitCurvesSupportFailOnUseOnly => PlatformDetection.IsSymCryptOpenSsl && SafeEvpPKeyHandle.OpenSslVersion < 0x3_00_00_00_0;
+
         bool CanDeriveNewPublicKey { get; }
         bool SupportsRawDerivation { get; }
         bool SupportsSha3 { get; }

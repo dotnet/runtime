@@ -182,6 +182,13 @@ private:
     SArray<TADDR> _starts;
     void* _id;
     bool _collectible;
+    friend struct ::cdac_data<CodeRangeMapRangeList>;
+};
+
+template<>
+struct cdac_data<CodeRangeMapRangeList>
+{
+    static constexpr size_t RangeListType = offsetof(CodeRangeMapRangeList, _rangeListType);
 };
 
 // Iterator over Assemblies in the same ALC
@@ -956,6 +963,8 @@ struct cdac_data<LoaderAllocator>
 #endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
     static constexpr size_t VirtualCallStubManager = offsetof(LoaderAllocator, m_pVirtualCallStubManager);
     static constexpr size_t ObjectHandle = offsetof(LoaderAllocator, m_hLoaderAllocatorObjectHandle);
+    static constexpr size_t IsCollectible = offsetof(LoaderAllocator, m_IsCollectible);
+    static constexpr size_t CreationNumber = offsetof(LoaderAllocator, m_nLoaderAllocator);
 };
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;

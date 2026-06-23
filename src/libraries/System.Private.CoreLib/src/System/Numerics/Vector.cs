@@ -100,6 +100,14 @@ namespace System.Numerics
                 [Intrinsic]
                 get => Create(T.NegativeOne);
             }
+
+            /// <inheritdoc cref="Vector128.get_SignSequence{T}" />
+            public static Vector<T> SignSequence
+            {
+                [Intrinsic]
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => CreateAlternatingSequence(T.One, T.NegativeOne);
+            }
         }
 
         /// <summary>Computes the absolute value of each element in a vector.</summary>
@@ -110,11 +118,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> Abs<T>(Vector<T> value)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return value;
             }
@@ -355,20 +359,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector<T> Ceiling<T>(Vector<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 Unsafe.SkipInit(out Vector<T> result);
 
@@ -379,6 +370,10 @@ namespace System.Numerics
                 }
 
                 return result;
+            }
+            else
+            {
+                return vector;
             }
         }
 
@@ -737,11 +732,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> CopySign<T>(Vector<T> value, Vector<T> sign)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return value;
             }
@@ -878,6 +869,295 @@ namespace System.Numerics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> CreateSequence<T>(T start, T step) => (Vector<T>.Indices * step) + Create(start);
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> instance where the elements begin at a specified value and are multiplied by another specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="initial">The value that element 0 will be initialized to.</param>
+        /// <param name="multiplier">The value that indicates how each element should be scaled from the previous.</param>
+        /// <returns>A new <see cref="Vector{T}" /> instance with each element initialized to <paramref name="initial" /> multiplied by <paramref name="multiplier" /> raised to the element index.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="initial"/> and <paramref name="multiplier"/> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> CreateGeometricSequence<T>(T initial, [ConstantExpected] T multiplier)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.CreateGeometricSequence(initial, multiplier).AsVector();
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.CreateGeometricSequence(initial, multiplier).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.CreateGeometricSequence(initial, multiplier).AsVector();
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> instance whose elements alternate between two specified values.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="even">The value assigned to even-indexed elements.</param>
+        /// <param name="odd">The value assigned to odd-indexed elements.</param>
+        /// <returns>A new <see cref="Vector{T}" /> instance whose even-indexed elements are initialized to <paramref name="even" /> and odd-indexed elements are initialized to <paramref name="odd" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="even"/> and <paramref name="odd"/> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> CreateAlternatingSequence<T>(T even, T odd)
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 1; index < Vector<T>.Count; index += 2)
+            {
+                result.SetElementUnsafe(index - 1, even);
+                result.SetElementUnsafe(index, odd);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new <see cref="Vector{T}" /> instance whose elements are the reciprocal of an arithmetic sequence.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="start">The value that element 0 of the arithmetic sequence will be initialized to.</param>
+        /// <param name="step">The value that indicates how far apart each element of the arithmetic sequence should be from the previous.</param>
+        /// <returns>A new <see cref="Vector{T}" /> instance whose elements are initialized to one divided by the corresponding element of the arithmetic sequence.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="start"/> and <paramref name="step"/> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> CreateHarmonicSequence<T>(T start, T step) => Vector<T>.One / CreateSequence(start, step);
+
+        /// <summary>Creates a new vector by concatenating the lower halves of two vectors.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="left">The vector that provides the lower half of the result.</param>
+        /// <param name="right">The vector that provides the upper half of the result.</param>
+        /// <returns>A new vector whose lower half comes from the lower half of <paramref name="left" /> and whose upper half comes from the lower half of <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> ConcatLowerLower<T>(Vector<T> left, Vector<T> right)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.ConcatLowerLower(left.AsVector512(), right.AsVector512()).AsVector();
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.ConcatLowerLower(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.ConcatLowerLower(left.AsVector128(), right.AsVector128()).AsVector();
+            }
+        }
+
+        /// <summary>Creates a new vector by concatenating the upper half of one vector and the lower half of another vector.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="left">The vector that provides the lower half of the result.</param>
+        /// <param name="right">The vector that provides the upper half of the result.</param>
+        /// <returns>A new vector whose lower half comes from the upper half of <paramref name="left" /> and whose upper half comes from the lower half of <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> ConcatUpperLower<T>(Vector<T> left, Vector<T> right)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.ConcatUpperLower(left.AsVector512(), right.AsVector512()).AsVector();
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.ConcatUpperLower(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.ConcatUpperLower(left.AsVector128(), right.AsVector128()).AsVector();
+            }
+        }
+
+        /// <summary>Creates a new vector by concatenating the upper halves of two vectors.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="left">The vector that provides the lower half of the result.</param>
+        /// <param name="right">The vector that provides the upper half of the result.</param>
+        /// <returns>A new vector whose lower half comes from the upper half of <paramref name="left" /> and whose upper half comes from the upper half of <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> ConcatUpperUpper<T>(Vector<T> left, Vector<T> right)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.ConcatUpperUpper(left.AsVector512(), right.AsVector512()).AsVector();
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.ConcatUpperUpper(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.ConcatUpperUpper(left.AsVector128(), right.AsVector128()).AsVector();
+            }
+        }
+
+        /// <summary>Creates a new vector by concatenating the lower half of one vector and the upper half of another vector.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="left">The vector that provides the lower half of the result.</param>
+        /// <param name="right">The vector that provides the upper half of the result.</param>
+        /// <returns>A new vector whose lower half comes from the lower half of <paramref name="left" /> and whose upper half comes from the upper half of <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> ConcatLowerUpper<T>(Vector<T> left, Vector<T> right)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.ConcatLowerUpper(left.AsVector512(), right.AsVector512()).AsVector();
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.ConcatLowerUpper(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.ConcatLowerUpper(left.AsVector128(), right.AsVector128()).AsVector();
+            }
+        }
+
+        /// <summary>Interleaves the lower halves of two vectors.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="left">The vector that provides the even-indexed elements.</param>
+        /// <param name="right">The vector that provides the odd-indexed elements.</param>
+        /// <returns>A new vector containing interleaved elements from the lower halves of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> ZipLower<T>(Vector<T> left, Vector<T> right)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.ZipLower(left.AsVector512(), right.AsVector512()).AsVector();
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.ZipLower(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.ZipLower(left.AsVector128(), right.AsVector128()).AsVector();
+            }
+        }
+
+        /// <summary>Interleaves the upper halves of two vectors.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="left">The vector that provides the even-indexed elements.</param>
+        /// <param name="right">The vector that provides the odd-indexed elements.</param>
+        /// <returns>A new vector containing interleaved elements from the upper halves of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> ZipUpper<T>(Vector<T> left, Vector<T> right)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.ZipUpper(left.AsVector512(), right.AsVector512()).AsVector();
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.ZipUpper(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.ZipUpper(left.AsVector128(), right.AsVector128()).AsVector();
+            }
+        }
+
+        /// <summary>Interleaves two vectors into their lower and upper halves.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="left">The vector that provides the even-indexed elements.</param>
+        /// <param name="right">The vector that provides the odd-indexed elements.</param>
+        /// <returns>A pair of vectors containing interleaved elements from the lower and upper halves of <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector<T> Lower, Vector<T> Upper) Zip<T>(Vector<T> left, Vector<T> right) => (ZipLower(left, right), ZipUpper(left, right));
+
+        /// <summary>De-interleaves the even-indexed elements from two vectors.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="left">The vector that provides the lower half of the result.</param>
+        /// <param name="right">The vector that provides the upper half of the result.</param>
+        /// <returns>A new vector containing the even-indexed elements from <paramref name="left" /> followed by the even-indexed elements from <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> UnzipEven<T>(Vector<T> left, Vector<T> right)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.UnzipEven(left.AsVector512(), right.AsVector512()).AsVector();
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.UnzipEven(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.UnzipEven(left.AsVector128(), right.AsVector128()).AsVector();
+            }
+        }
+
+        /// <summary>De-interleaves the odd-indexed elements from two vectors.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="left">The vector that provides the lower half of the result.</param>
+        /// <param name="right">The vector that provides the upper half of the result.</param>
+        /// <returns>A new vector containing the odd-indexed elements from <paramref name="left" /> followed by the odd-indexed elements from <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> UnzipOdd<T>(Vector<T> left, Vector<T> right)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.UnzipOdd(left.AsVector512(), right.AsVector512()).AsVector();
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.UnzipOdd(left.AsVector256(), right.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.UnzipOdd(left.AsVector128(), right.AsVector128()).AsVector();
+            }
+        }
+
+        /// <summary>De-interleaves two vectors into their even-indexed and odd-indexed elements.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="left">The vector that provides the lower half of each result.</param>
+        /// <param name="right">The vector that provides the upper half of each result.</param>
+        /// <returns>A pair of vectors containing the even-indexed and odd-indexed elements from <paramref name="left" /> and <paramref name="right" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector<T> Even, Vector<T> Odd) Unzip<T>(Vector<T> left, Vector<T> right) => (UnzipEven(left, right), UnzipOdd(left, right));
+
+        /// <summary>Creates a new vector with the elements of a specified vector in reverse order.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="vector">The vector whose elements will be reversed.</param>
+        /// <returns>A new vector containing the elements of <paramref name="vector" /> in reverse order.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<T> Reverse<T>(Vector<T> vector)
+        {
+            if (Vector<T>.Count == Vector512<T>.Count)
+            {
+                return Vector512.Reverse(vector.AsVector512()).AsVector();
+            }
+            else if (Vector<T>.Count == Vector256<T>.Count)
+            {
+                return Vector256.Reverse(vector.AsVector256()).AsVector();
+            }
+            else
+            {
+                Debug.Assert(Vector<T>.Count == Vector128<T>.Count);
+                return Vector128.Reverse(vector.AsVector128()).AsVector();
+            }
+        }
 
         internal static Vector<T> DegreesToRadians<T>(Vector<T> degrees)
             where T : ITrigonometricFunctions<T>
@@ -1072,20 +1352,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector<T> Floor<T>(Vector<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 Unsafe.SkipInit(out Vector<T> result);
 
@@ -1096,6 +1363,10 @@ namespace System.Numerics
                 }
 
                 return result;
+            }
+            else
+            {
+                return vector;
             }
         }
 
@@ -1534,11 +1805,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> IsNegative<T>(Vector<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return Vector<T>.Zero;
             }
@@ -1609,11 +1876,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> IsPositive<T>(Vector<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong))
-             || (typeof(T) == typeof(nuint)))
+            if (Scalar<T>.IsUnsigned)
             {
                 return Vector<T>.AllBitsSet;
             }
@@ -2611,20 +2874,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector<T> Round<T>(Vector<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 Unsafe.SkipInit(out Vector<T> result);
 
@@ -2635,6 +2885,10 @@ namespace System.Numerics
                 }
 
                 return result;
+            }
+            else
+            {
+                return vector;
             }
         }
 
@@ -2966,6 +3220,7 @@ namespace System.Numerics
         /// <param name="value">The vector whose square root is to be computed.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <returns>A vector whose elements are the square root of the corresponding elements in <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value"/> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> SquareRoot<T>(Vector<T> value)
@@ -3110,20 +3365,7 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector<T> Truncate<T>(Vector<T> vector)
         {
-            if ((typeof(T) == typeof(byte))
-             || (typeof(T) == typeof(short))
-             || (typeof(T) == typeof(int))
-             || (typeof(T) == typeof(long))
-             || (typeof(T) == typeof(nint))
-             || (typeof(T) == typeof(nuint))
-             || (typeof(T) == typeof(sbyte))
-             || (typeof(T) == typeof(ushort))
-             || (typeof(T) == typeof(uint))
-             || (typeof(T) == typeof(ulong)))
-            {
-                return vector;
-            }
-            else
+            if (Scalar<T>.IsFloatingPoint)
             {
                 Unsafe.SkipInit(out Vector<T> result);
 
@@ -3134,6 +3376,10 @@ namespace System.Numerics
                 }
 
                 return result;
+            }
+            else
+            {
+                return vector;
             }
         }
 

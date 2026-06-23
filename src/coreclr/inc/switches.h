@@ -84,6 +84,10 @@
 #define HAVE_GCCOVER
 #endif
 
+#if defined(_DEBUG)
+#define CDAC_STRESS
+#endif
+
 // Some platforms may see spurious AVs when GcCoverage is enabled because of races.
 // Enable further processing to see if they recur.
 #if defined(HAVE_GCCOVER) && (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(TARGET_UNIX)

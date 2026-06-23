@@ -10,10 +10,6 @@
     <AssemblyName>.NET Runtime</AssemblyName>
   </PropertyGroup>
 
-  <ItemGroup Condition="$([MSBuild]::IsOsPlatform(Linux)) and '$(ContinuousIntegrationBuild)' == 'true'">
-    <PackageDownload Include="sccache" Version="[0.15.0]" />
-  </ItemGroup>
-
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 

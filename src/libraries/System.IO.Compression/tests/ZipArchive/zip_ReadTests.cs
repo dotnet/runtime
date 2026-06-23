@@ -1083,6 +1083,31 @@ namespace System.IO.Compression.Tests
                 await DisposeZipArchive(async, archive);
             });
         }
+
+        [Fact]
+        public static async Task ReadArchiveCommentAsync_DoesNotCallSyncRead()
+        {
+            const string ExpectedComment = "this is the archive-level comment";
+
+            byte[] zipBytes;
+            using (MemoryStream buildStream = new MemoryStream())
+            {
+                using (ZipArchive archive = new ZipArchive(buildStream, ZipArchiveMode.Create, leaveOpen: true))
+                {
+                    archive.CreateEntry("file.txt");
+                    archive.Comment = ExpectedComment;
+                }
+                zipBytes = buildStream.ToArray();
+            }
+
+            await using MemoryStream ms = new MemoryStream(zipBytes);
+            await using NoSyncCallsStream noSync = new NoSyncCallsStream(ms);
+
+            ZipArchive readArchive = await ZipArchive.CreateAsync(noSync, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: null);
+            Assert.Equal(ExpectedComment, readArchive.Comment);
+            await readArchive.DisposeAsync();
+        }
+        }
     }
 }
 

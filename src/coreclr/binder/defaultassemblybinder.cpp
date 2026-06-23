@@ -14,7 +14,8 @@ using namespace BINDER_SPACE;
 HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName,
                                                        BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly,
                                                        bool excludeAppPaths,
-                                                       BINDER_SPACE::Assembly **ppExistingAssemblyOnFailure)
+                                                       BINDER_SPACE::Assembly **ppExistingAssemblyOnFailure,
+                                                       SString *pDiagnosticInfo)
 {
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppCoreCLRFoundAssembly != nullptr);
     HRESULT hr = S_OK;
@@ -28,7 +29,8 @@ HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNa
                                             pAssemblyName,
                                             excludeAppPaths,
                                             ppCoreCLRFoundAssembly,
-                                            ppExistingAssemblyOnFailure);
+                                            ppExistingAssemblyOnFailure,
+                                            pDiagnosticInfo);
     if (!FAILED(hr))
     {
         (*ppCoreCLRFoundAssembly)->SetBinder(this);
@@ -46,7 +48,8 @@ HRESULT DefaultAssemblyBinder::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNa
 // DefaultAssemblyBinder implementation
 // ============================================================================
 HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName *pAssemblyName,
-                                                     BINDER_SPACE::Assembly **ppAssembly)
+                                                     BINDER_SPACE::Assembly **ppAssembly,
+                                                     SString *pDiagnosticInfo)
 {
     HRESULT hr = S_OK;
     VALIDATE_ARG_RET(pAssemblyName != nullptr && ppAssembly != nullptr);
@@ -55,7 +58,7 @@ HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName 
 
     ReleaseHolder<BINDER_SPACE::Assembly> pCoreCLRFoundAssembly;
 
-    hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, false /* excludeAppPaths */);
+    hr = BindAssemblyByNameWorker(pAssemblyName, &pCoreCLRFoundAssembly, false /* excludeAppPaths */, nullptr /* ppExistingAssemblyOnFailure */, pDiagnosticInfo);
 
 #if !defined(DACCESS_COMPILE)
     if ((hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)) ||

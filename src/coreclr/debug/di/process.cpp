@@ -665,7 +665,7 @@ CordbProcess::CreateDacDbiInterface()
     // same directory as DBI
     if (m_hDacModule == NULL)
     {
-        m_hDacModule.Assign(ShimProcess::GetDacModule(m_cordb->GetDacModulePath()));
+        m_hDacModule = ShimProcess::GetDacModule(m_cordb->GetDacModulePath());
     }
 
     //
@@ -1541,7 +1541,7 @@ void CordbProcess::FreeDac()
     if (m_hDacModule != NULL)
     {
         LOG((LF_CORDB, LL_INFO1000, "Unloading DAC\n"));
-        m_hDacModule.Clear();
+        m_hDacModule.Free();
     }
 }
 
@@ -2094,10 +2094,6 @@ HRESULT CordbProcess::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugProcess8*>(this);
     }
-    else if (id == IID_ICorDebugProcess11)
-    {
-        *pInterface = static_cast<ICorDebugProcess11*>(this);
-    }
     else if (id == IID_ICorDebugProcess12)
     {
         *pInterface = static_cast<ICorDebugProcess12*>(this);
@@ -2192,6 +2188,24 @@ HRESULT CordbProcess::GetGCHeapInformation(COR_HEAPINFO *pHeapInfo)
     return hr;
 }
 
+namespace
+{
+    void HeapSegmentCallback(
+        CORDB_ADDRESS rangeStart,
+        CORDB_ADDRESS rangeEnd,
+        int generation,
+        ULONG heap,
+        CALLBACK_DATA pUserData)
+    {
+        COR_SEGMENT s;
+        s.start = rangeStart;
+        s.end = rangeEnd;
+        s.type = (CorDebugGenerationTypes)generation;
+        s.heap = heap;
+        CallbackAccumulator<COR_SEGMENT>::From(pUserData)->Push(s);
+    }
+}
+
 HRESULT CordbProcess::EnumerateHeapRegions(ICorDebugHeapSegmentEnum **ppRegions)
 {
     if (!ppRegions)
@@ -2203,14 +2217,17 @@ HRESULT CordbProcess::EnumerateHeapRegions(ICorDebugHeapSegmentEnum **ppRegions)
 
     EX_TRY
     {
-        DacDbiArrayList<COR_SEGMENT> segments;
-        hr = GetDAC()->GetHeapSegments(&segments);
+        CallbackAccumulator<COR_SEGMENT> acc;
+
+        hr = GetDAC()->EnumerateHeapSegments(&HeapSegmentCallback, &acc);
+        if (SUCCEEDED(hr) && FAILED(acc.hrError))
+            hr = acc.hrError;
 
         if (SUCCEEDED(hr))
         {
-            if (!segments.IsEmpty())
+            if (acc.items.Size() != 0)
             {
-                CordbHeapSegmentEnumerator *segEnum = new CordbHeapSegmentEnumerator(this, &segments[0], (DWORD)segments.Count());
+                CordbHeapSegmentEnumerator *segEnum = new CordbHeapSegmentEnumerator(this, acc.items.Ptr(), (DWORD)acc.items.Size());
                 GetContinueNeuterList()->Add(this, segEnum);
                 hr = segEnum->QueryInterface(__uuidof(ICorDebugHeapSegmentEnum), (void**)ppRegions);
             }
@@ -2263,10 +2280,12 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
                 _ASSERTE(pType != NULL);
                 _ASSERTE(cdbAppDomain != NULL);
 
-                DebuggerIPCE_ObjectData objData;
-                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, ELEMENT_TYPE_CLASS, &objData));
+                DacDbiObjectData objData = {};
+                BOOL isValidRef = FALSE;
 
-                NewHolder<CordbObjectValue> pNewObjectValue(new CordbObjectValue(cdbAppDomain, pType, TargetBuffer(addr, (ULONG)objData.objSize), &objData));
+                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, &isValidRef, &objData.objSize, &objData.objOffsetToVars, &objData.objTypeData));
+                objData.objRefBad = !isValidRef;
+                NewHolder<CordbObjectValue> pNewObjectValue(new CordbObjectValue(cdbAppDomain, pType, TargetBuffer(addr, objData.objSize), &objData));
                 hr = pNewObjectValue->Init();
 
                 if (SUCCEEDED(hr))
@@ -2361,7 +2380,7 @@ HRESULT CordbProcess::GetTypeForTypeID(COR_TYPEID id, ICorDebugType **ppType)
     EX_TRY
     {
         DebuggerIPCE_ExpandedTypeData data;
-        IfFailThrow(GetDAC()->GetObjectExpandedTypeInfoFromID(AllBoxed, id, &data));
+        IfFailThrow(GetDAC()->TypeHandleToExpandedTypeInfo(AllBoxed, id.token1, &data));
 
         CordbType *type = 0;
         hr = CordbType::TypeDataToType(GetAppDomain(), &data, &type);
@@ -2408,7 +2427,7 @@ COM_METHOD CordbProcess::GetTypeFields(COR_TYPEID id, ULONG32 celt, COR_FIELD fi
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this);
 
-    hr = GetProcess()->GetDAC()->GetObjectFields(id, celt, fields, pceltNeeded);
+    hr = GetProcess()->GetDAC()->GetObjectFields(id.token1, celt, fields, pceltNeeded);
 
     PUBLIC_API_END(hr);
     return hr;
@@ -2458,35 +2477,6 @@ COM_METHOD CordbProcess::EnableGCNotificationEvents(BOOL fEnable)
     PUBLIC_API_BEGIN(this)
     {
         hr = this->m_pDacPrimitives->EnableGCNotificationEvents(fEnable);
-    }
-    PUBLIC_API_END(hr);
-    return hr;
-}
-
-//-----------------------------------------------------------
-// ICorDebugProcess11
-//-----------------------------------------------------------
-COM_METHOD CordbProcess::EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum **ppRanges)
-{
-    VALIDATE_POINTER_TO_OBJECT(ppRanges, ICorDebugMemoryRangeEnum **);
-    FAIL_IF_NEUTERED(this);
-
-    HRESULT hr = S_OK;
-
-    PUBLIC_API_BEGIN(this);
-    {
-        DacDbiArrayList<COR_MEMORY_RANGE> heapRanges;
-
-        hr = GetDAC()->GetLoaderHeapMemoryRanges(&heapRanges);
-
-        if (SUCCEEDED(hr))
-        {
-            RSInitHolder<CordbMemoryRangeEnumerator> heapSegmentEnumerator(
-                new CordbMemoryRangeEnumerator(this, &heapRanges[0], (DWORD)heapRanges.Count()));
-
-            GetContinueNeuterList()->Add(this, heapSegmentEnumerator);
-            heapSegmentEnumerator.TransferOwnershipExternal(ppRanges);
-        }
     }
     PUBLIC_API_END(hr);
     return hr;
@@ -4369,156 +4359,6 @@ void CordbProcess::GetAssembliesInLoadOrder(
     // pAssemblies array has now been updated.
 }
 
-// Callback data for code:CordbProcess::GetModulesInLoadOrder
-class ShimModuleCallbackData
-{
-public:
-    // Ctor to initialize callback data
-    //
-    // Arguments:
-    //   pAssembly - assembly that the Modules are in.
-    //   pModules - preallocated array of smart pointers to hold Modules
-    //   countModules - size of pModules in elements.
-    ShimModuleCallbackData(
-        CordbAssembly * pAssembly,
-        RSExtSmartPtr<ICorDebugModule>* pModules,
-        ULONG countModules)
-    {
-        _ASSERTE(pAssembly != NULL);
-        _ASSERTE(pModules != NULL);
-
-        m_pProcess = pAssembly->GetAppDomain()->GetProcess();
-        m_pAssembly = pAssembly;
-        m_pModules = pModules;
-        m_countElements = countModules;
-        m_index = 0;
-
-        // Just to be safe, clear them all out
-        for(ULONG i = 0; i < countModules; i++)
-        {
-            pModules[i].Clear();
-        }
-    }
-
-    // Dtor
-    //
-    // Notes:
-    //   This can assert end-of-enumeration invariants.
-    ~ShimModuleCallbackData()
-    {
-        // Ensure that we went through all Modules.
-        _ASSERTE(m_index == m_countElements);
-    }
-
-    // Callback invoked from DAC enumeration.
-    //
-    // arguments:
-    //    vmAssembly - VMPTR for Assembly
-    //    pData - a 'this' pointer
-    //
-    static void Callback(VMPTR_Assembly vmAssembly, void * pData)
-    {
-        ShimModuleCallbackData * pThis = static_cast<ShimModuleCallbackData *> (pData);
-        INTERNAL_DAC_CALLBACK(pThis->m_pProcess);
-
-        CordbModule * pModule = pThis->m_pAssembly->GetAppDomain()->LookupOrCreateModule(vmAssembly);
-
-        pThis->SetAndMoveNext(pModule);
-    }
-
-    // Set the current index in the table and increment the cursor.
-    //
-    // Arguments:
-    //    pModule - Module from DAC enumerator
-    void SetAndMoveNext(CordbModule * pModule)
-    {
-        _ASSERTE(pModule != NULL);
-
-        if (m_index >= m_countElements)
-        {
-            // Enumerating the Modules in the target should be fixed since
-            // the target is not running.
-            // We should never get here unless the target is unstable.
-            // The caller (the shim) pre-allocated the table of Modules.
-            m_pProcess->TargetConsistencyCheck(!"Target changed Module count");
-            return;
-        }
-
-        m_pModules[m_index].Assign(pModule);
-        m_index++;
-    }
-
-protected:
-    CordbProcess * m_pProcess;
-    CordbAssembly * m_pAssembly;
-    RSExtSmartPtr<ICorDebugModule>* m_pModules;
-    ULONG m_countElements;
-    ULONG m_index;
-};
-
-//---------------------------------------------------------------------------------------
-// Shim Helper to enumerate the Modules in the load-order
-//
-// Arguments:
-//    pAppdomain - non-null appdomain to enumerate Modules.
-//    pModules - caller pre-allocated array to hold Modules
-//    countModules - size of the array.
-//
-// Notes:
-//    Caller preallocated array (likely from ICorDebugModuleEnum::GetCount),
-//    and now this function fills in the Modules in the order they were
-//    loaded.
-//
-//    The target should be stable, such that the number of Modules in the
-//    target is stable, and therefore countModules as determined by the
-//    shim via ICorDebugModuleEnum::GetCount should match the number of
-//    Modules enumerated here.
-//
-//    Called by code:ShimProcess::QueueFakeAssemblyAndModuleEvent.
-//    This provides the Modules in load-order. In contrast,
-//    ICorDebugAssembly::EnumerateModules is a random order. The shim needs
-//    load-order to match Whidbey semantics for dispatching fake load-Module
-//    callbacks on attach. The most important thing is that the manifest module
-//    gets a LodModule callback before any secondary modules.  For dynamic
-//    modules, this is necessary for operations on the secondary module
-//    that rely on manifest metadata (eg. GetSimpleName).
-//
-//    @dbgtodo : This is almost identical to GetAssembliesInLoadOrder, and
-//    (together wih the CallbackData classes) seems a HUGE amount of code and
-//    complexity for such a simple thing.  We also have extra code to order
-//    AppDomains and Threads.  We should try and rip all of this extra complexity
-//    out, and replace it with better data structures for storing these items.
-//    Eg., if we used std::map, we could have efficient lookups and ordered
-//    enumerations.  However, we do need to be careful about exposing new invariants
-//    through ICorDebug that customers may depend on, which could place a long-term
-//    compatibility burden on us.  We could have a simple generic data structure
-//    (eg. built on std::hash_map and std::list) which provided efficient look-up
-//    and both in-order and random enumeration.
-//
-void CordbProcess::GetModulesInLoadOrder(
-    ICorDebugAssembly * pAssembly,
-    RSExtSmartPtr<ICorDebugModule>* pModules,
-    ULONG countModules)
-{
-    PUBLIC_API_ENTRY_FOR_SHIM(this);
-    RSLockHolder lockHolder(GetProcessLock());
-
-    _ASSERTE(GetShim() != NULL);
-
-    CordbAssembly * pAssemblyInternal = static_cast<CordbAssembly *> (pAssembly);
-
-    ShimModuleCallbackData data(pAssemblyInternal, pModules, countModules);
-
-    // Enumerate through and fill out pModules table.
-    IfFailThrow(GetDAC()->EnumerateModulesInAssembly(
-        pAssemblyInternal->GetAssemblyPtr(),
-        ShimModuleCallbackData::Callback,
-        &data)); // user data
-
-    // pModules array has now been updated.
-}
-
-
 //---------------------------------------------------------------------------------------
 // Callback to count the number of enumerations in a process.
 //
@@ -5571,7 +5411,7 @@ void CordbProcess::RawDispatchEvent(
         {
             STRESS_LOG4(LF_CORDB, LL_INFO100,
                 "RCET::DRCE: Exception2 0x%p 0x%X 0x%X 0x%X\n",
-                 pEvent->ExceptionCallback2.framePointer.GetSPValue(),
+                 CORDB_ADDRESS_TO_PTR(pEvent->ExceptionCallback2.framePointer),
                  pEvent->ExceptionCallback2.nOffset,
                  pEvent->ExceptionCallback2.eventType,
                  pEvent->ExceptionCallback2.dwFlags
@@ -5593,7 +5433,7 @@ void CordbProcess::RawDispatchEvent(
             //
             RSSmartPtr<CordbFrame> pFrame;
 
-            FramePointer fp = pEvent->ExceptionCallback2.framePointer;
+            FramePointer fp = FramePointer::MakeFramePointer(CORDB_ADDRESS_TO_PTR(pEvent->ExceptionCallback2.framePointer));
             if (fp != LEAF_MOST_FRAME)
             {
                 // The interface forces us to pass a FramePointer via an ICorDebugFrame.
@@ -6822,19 +6662,6 @@ HRESULT CordbProcess::FindPatchByAddress(CORDB_ADDRESS address, bool *pfPatchFou
             if (traceType == m_runtimeOffsets.m_traceTypeUnmanaged)
             {
                 *pfPatchIsUnmanaged = true;
-
-#if defined(_DEBUG)
-                HRESULT hrDac = S_OK;
-                EX_TRY
-                {
-                    // We should be able to double check w/ DAC that this really is outside of the runtime.
-                    IDacDbiInterface::AddressType addrType;
-                    IfFailThrow(GetDAC()->GetAddressType(address, &addrType));
-                    CONSISTENCY_CHECK_MSGF(addrType == IDacDbiInterface::kAddressUnrecognized, ("Bad address type = %d", addrType));
-                }
-                EX_CATCH_HRESULT(hrDac);
-                CONSISTENCY_CHECK_MSGF(SUCCEEDED(hrDac), ("DAC::GetAddressType failed, hr=0x%08x", hrDac));
-#endif
             }
 
             break;
@@ -12075,17 +11902,14 @@ Reaction CordbProcess::Triage1stChanceNonSpecial(CordbUnmanagedThread * pUnmanag
     // Use DAC to decide if it's ours or not w/o going inproc.
     CORDB_ADDRESS address = PTR_TO_CORDB_ADDRESS(pExAddress);
 
-    IDacDbiInterface::AddressType addrType;
+    BOOL fIsManaged;
 
-    IfFailThrow(GetDAC()->GetAddressType(address, &addrType));
-    bool fIsCorCode =((addrType == IDacDbiInterface::kAddressManagedMethod) ||
-                      (addrType == IDacDbiInterface::kAddressRuntimeManagedCode) ||
-                      (addrType == IDacDbiInterface::kAddressRuntimeUnmanagedCode));
+    IfFailThrow(GetDAC()->IsManagedCode(address, &fIsManaged));
 
-    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsCorCode(0x%p)=%d\n", address, fIsCorCode);
+    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsManagedCode(0x%p)=%d\n", address, fIsManaged);
 
 
-    if (fIsCorCode)
+    if (fIsManaged)
     {
         return REACTION(cCLR);
     }
@@ -14760,7 +14584,7 @@ CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_As
     if (pAppDomain != NULL)
     {
         VMPTR_Module vmModule = VMPTR_Module::NullPtr();
-        IfFailThrow(GetProcess()->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule));
+        IfFailThrow(GetProcess()->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule, NULL));
         _ASSERTE(!vmModule.IsNull());
         CordbModule * pModule = ((CordbAppDomain *)pAppDomain)->m_modules.GetBase(VmPtrToCookie(vmModule));
         if (pModule != NULL)

@@ -23,23 +23,34 @@ if(CLR_CMAKE_TARGET_TIZEN_LINUX)
   set(FEATURE_GDBJIT_LANGID_CS 1)
 endif()
 
+# FEATURE_EVENT_TRACE: Enables the full eventing infrastructure (generated FireEtw* functions,
+# EventPipe write calls, ETW on Windows). Set on all platforms except cross-component WASM builds.
 if(NOT DEFINED FEATURE_EVENT_TRACE)
-  if (NOT CLR_CMAKE_TARGET_BROWSER)
+  if (NOT (CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASM))
     # To actually disable FEATURE_EVENT_TRACE, also change clr.featuredefines.props
     set(FEATURE_EVENT_TRACE 1)
   endif()
 endif(NOT DEFINED FEATURE_EVENT_TRACE)
 
+# FEATURE_EVENTSOURCE_XPLAT: Enables the LTTng-based XplatEventLogger path (LTTNG_TRACE_CONTEXT,
+# XplatEventLogger, XplatEventLoggerController, and the generated FireEtXplat* functions).
+# Currently Linux-only (excluding Android). Used as the sole guard for all LTTng-related code;
+# platforms without this flag (Windows, macOS, Browser, WASI) use EventPipe-only eventing.
 if(NOT DEFINED FEATURE_EVENTSOURCE_XPLAT)
-  if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
+  if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT (CLR_CROSS_COMPONENTS_BUILD AND CLR_CMAKE_TARGET_ARCH_WASM))
     # To actually disable FEATURE_EVENTSOURCE_XPLAT, also change clr.featuredefines.props
     set(FEATURE_EVENTSOURCE_XPLAT 1)
   endif()
 endif(NOT DEFINED FEATURE_EVENTSOURCE_XPLAT)
 
-if(NOT DEFINED FEATURE_PERFTRACING AND FEATURE_EVENT_TRACE)
-  set(FEATURE_PERFTRACING 1)
-endif(NOT DEFINED FEATURE_PERFTRACING AND FEATURE_EVENT_TRACE)
+# FEATURE_PERFTRACING: Enables the EventPipe diagnostics subsystem (event sessions, IPC protocol,
+# diagnostic server). Set whenever FEATURE_EVENT_TRACE is set, or when threadless perftracing is
+# explicitly requested via FEATURE_PERFTRACING_DISABLE_THREADS.
+if(NOT DEFINED FEATURE_PERFTRACING)
+  if(FEATURE_EVENT_TRACE OR FEATURE_PERFTRACING_DISABLE_THREADS)
+    set(FEATURE_PERFTRACING 1)
+  endif()
+endif(NOT DEFINED FEATURE_PERFTRACING)
 
 if(NOT DEFINED FEATURE_DBGIPC)
   if(CLR_CMAKE_TARGET_UNIX)

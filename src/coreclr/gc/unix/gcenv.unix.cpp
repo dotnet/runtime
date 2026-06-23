@@ -26,6 +26,7 @@
 #include <minipal/memorybarrierprocesswide.h>
 #include <minipal/thread.h>
 #include <minipal/time.h>
+#include <minipal/cpucount.h>
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -111,6 +112,9 @@ typedef cpuset_t cpu_set_t;
 // The cached total number of CPUs that can be used in the OS.
 uint32_t g_totalCpuCount = 0;
 
+// The number of CPUs that are configured in the OS.
+uint32_t g_configuredCpuCount = 0;
+
 size_t GetRestrictedPhysicalMemoryLimit();
 bool GetPhysicalMemoryUsed(size_t* val);
 
@@ -146,13 +150,14 @@ bool GCToOSInterface::Initialize()
         return false;
     }
 
-    int configuredCpuCount = sysconf(_SC_NPROCESSORS_CONF);
+    int configuredCpuCount = minipal_get_cpu_max_possible_count();
     if (configuredCpuCount == -1)
     {
         return false;
     }
 
     g_totalCpuCount = cpuCount;
+    g_configuredCpuCount = configuredCpuCount;
 
     if (!g_processAffinitySet.Initialize(configuredCpuCount))
     {
@@ -458,7 +463,7 @@ static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool n
     }
 #endif
 
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     if (success && g_numaAvailable && (node != NUMA_NODE_UNDEFINED))
     {
         if ((int)node <= g_highestNumaNode)
@@ -476,7 +481,7 @@ static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool n
             // If the mbind fails, we still return the allocated memory since the node is just a hint
         }
     }
-#endif // TARGET_LINUX
+#endif // TARGET_LINUX && !TARGET_ANDROID
 
     return success;
 }
@@ -563,7 +568,7 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
     st = madvise(address, size, MADV_DONTDUMP);
 #endif
 
-#ifdef MADV_FREE
+#if defined(MADV_FREE) && !defined(TARGET_SUNOS)
     // Tell the kernel that the application doesn't need the pages in the range.
     // Freeing the pages can be delayed until a memory pressure occurs.
     st = madvise(address, size, MADV_FREE);
@@ -891,9 +896,16 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
 #if HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
-    cpu_set_t cpuSet;
-    CPU_ZERO(&cpuSet);
-    CPU_SET((int)procNo, &cpuSet);
+
+    size_t cpuSetSize = CPU_ALLOC_SIZE(g_configuredCpuCount);
+    cpu_set_t* pCpuSet = CPU_ALLOC(g_configuredCpuCount);
+    if (pCpuSet == nullptr)
+    {
+        return false;
+    }
+
+    CPU_ZERO_S(cpuSetSize, pCpuSet);
+    CPU_SET_S((int)procNo, cpuSetSize, pCpuSet);
 
     // Snap's default strict confinement does not allow sched_setaffinity(<nonzeroPid>, ...) without manually connecting the
     // process-control plug. sched_setaffinity(<currentThreadPid>, ...) is also currently not allowed, only
@@ -905,10 +917,12 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
     // - https://github.com/dotnet/runtime/issues/1634
     // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
 #if HAVE_SCHED_SETAFFINITY
-    int st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
+    int st = sched_setaffinity(0, cpuSetSize, pCpuSet);
 #else
-    int st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
+    int st = pthread_setaffinity_np(pthread_self(), cpuSetSize, pCpuSet);
 #endif
+
+    CPU_FREE(pCpuSet);
 
     return (st == 0);
 
@@ -999,11 +1013,13 @@ static size_t GetCurrentVirtualMemorySize()
 //  non zero if it has succeeded, GetVirtualMemoryMaxAddress() if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
+#ifdef RLIMIT_AS
     rlimit addressSpaceLimit;
     if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
     {
         return addressSpaceLimit.rlim_cur;
     }
+#endif // RLIMIT_AS
 
     // No virtual memory limit
     return GetVirtualMemoryMaxAddress();
@@ -1330,14 +1346,14 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
             if (availableProcNumber == heap_number)
             {
                 *proc_no = procNumber;
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
                 if (GCToOSInterface::CanEnableGCNumaAware())
                 {
                     int result = GetNumaNodeNumByCpu(procNumber);
                     *node_no = (result >= 0) ? (uint16_t)result : NUMA_NODE_UNDEFINED;
                 }
                 else
-#endif // TARGET_LINUX
+#endif // TARGET_LINUX && !TARGET_ANDROID
                 {
                     *node_no = NUMA_NODE_UNDEFINED;
                 }

@@ -20,7 +20,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true })]
-        [TestCategory("native")]
+        [TestCategory("native-mono")]
         public async Task TopLevelMain_AOT(Configuration config, bool aot)
             => await TestMain("top_level",
                     @"System.Console.WriteLine(""Hello, World!""); return await System.Threading.Tasks.Task.FromResult(42);",
@@ -35,7 +35,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true })]
-        [TestCategory("native")]
+        [TestCategory("native-mono")]
         public async Task AsyncMain_AOT(Configuration config, bool aot)
             => await TestMain("async_main", @"
             using System;
@@ -66,7 +66,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true })]
-        [TestCategory("native")]
+        [TestCategory("native-mono")]
         public async Task NonAsyncMain_AOT(Configuration config, bool aot)
             => await TestMain("non_async_main", @"
                 using System;
@@ -122,13 +122,13 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ true })]
-        [TestCategory("native")]
+        [TestCategory("native-mono")]
         public async Task Bug49588_RegressionTest_AOT(Configuration config, bool aot)
             => await TestMain("bug49588_aot", s_bug49588_ProgramCS, config, aot);
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false })]
-        [TestCategory("native")]
+        [TestCategory("native-mono")]
         public async Task Bug49588_RegressionTest_NativeRelinking(Configuration config, bool aot)
             => await TestMain("bug49588_native_relinking", s_bug49588_ProgramCS, config, aot,
                         extraArgs: "-p:WasmBuildNative=true",

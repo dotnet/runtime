@@ -7,7 +7,6 @@
     <IlcTrimMetadata>false</IlcTrimMetadata>
     <!-- https://github.com/dotnet/runtime/issues/126862 -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
-    <EnableAotAnalyzer>false</EnableAotAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CreateTransformCompat.cs" />
@@ -17,6 +16,8 @@
     <Compile Include="RSACryptoServiceProviderProvider.cs" />
     <Compile Include="RSACryptoServiceProviderTests.cs" />
     <Compile Include="ShimHelpers.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Security.Cryptography\tests\ShimHelpers.cs"
+             Link="ShimHelpers.Shared.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
              Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
@@ -48,8 +49,6 @@
     <Compile Include="AesCryptoServiceProviderTests.cs" />
     <Compile Include="DESCryptoServiceProviderProvider.cs" />
     <Compile Include="DESCryptoServiceProviderTests.cs" />
-    <Compile Include="DSACryptoServiceProviderProvider.cs" />
-    <Compile Include="DSACryptoServiceProviderTests.cs" />
     <Compile Include="MD5CryptoServiceProviderTests.cs" />
     <Compile Include="PasswordDeriveBytesTests.cs" />
     <Compile Include="RC2CryptoServiceProviderProvider.cs" />
@@ -65,30 +64,6 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESFactory.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DesTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DesTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactory.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactoryTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactoryTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DsaFamilySignatureFormatTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DsaFamilySignatureFormatTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAImportExport.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAImportExport.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyFileTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyFileTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyPemTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyPemTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyGeneration.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyGeneration.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignatureFormatter.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignatureFormatter.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignatureFormatTests.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignatureFormatTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSASignVerify.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSATestData.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAXml.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAXml.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs"

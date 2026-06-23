@@ -294,9 +294,18 @@ namespace System.IO.Compression
             // 2. When the size indicates that all the information is available ("slightly invalid files").
             bool readAllFields = extraField.Size >= MaximumExtraFieldLength;
 
+            // The original values are unsigned 64-bit, so a negative signed value means the
+            // value does not fit in Int64 and cannot be represented by the rest of the API
+            // (which uses long). Validate each field as it is read so that short extra fields
+            // (which exit early below) cannot bypass the check.
+
             if (readUncompressedSize)
             {
                 zip64Block._uncompressedSize = BinaryPrimitives.ReadInt64LittleEndian(data);
+                if (zip64Block._uncompressedSize < 0)
+                {
+                    throw new InvalidDataException(SR.FieldTooBigUncompressedSize);
+                }
                 data = data.Slice(FieldLengths.UncompressedSize);
             }
             else if (readAllFields)
@@ -312,6 +321,10 @@ namespace System.IO.Compression
             if (readCompressedSize)
             {
                 zip64Block._compressedSize = BinaryPrimitives.ReadInt64LittleEndian(data);
+                if (zip64Block._compressedSize < 0)
+                {
+                    throw new InvalidDataException(SR.FieldTooBigCompressedSize);
+                }
                 data = data.Slice(FieldLengths.CompressedSize);
             }
             else if (readAllFields)
@@ -327,6 +340,10 @@ namespace System.IO.Compression
             if (readLocalHeaderOffset)
             {
                 zip64Block._localHeaderOffset = BinaryPrimitives.ReadInt64LittleEndian(data);
+                if (zip64Block._localHeaderOffset < 0)
+                {
+                    throw new InvalidDataException(SR.FieldTooBigLocalHeaderOffset);
+                }
                 data = data.Slice(FieldLengths.LocalHeaderOffset);
             }
             else if (readAllFields)
@@ -342,20 +359,6 @@ namespace System.IO.Compression
             if (readStartDiskNumber)
             {
                 zip64Block._startDiskNumber = BinaryPrimitives.ReadUInt32LittleEndian(data);
-            }
-
-            // original values are unsigned, so implies value is too big to fit in signed integer
-            if (zip64Block._uncompressedSize < 0)
-            {
-                throw new InvalidDataException(SR.FieldTooBigUncompressedSize);
-            }
-            if (zip64Block._compressedSize < 0)
-            {
-                throw new InvalidDataException(SR.FieldTooBigCompressedSize);
-            }
-            if (zip64Block._localHeaderOffset < 0)
-            {
-                throw new InvalidDataException(SR.FieldTooBigLocalHeaderOffset);
             }
 
             return true;

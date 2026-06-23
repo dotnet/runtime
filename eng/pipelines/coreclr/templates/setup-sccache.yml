@@ -11,11 +11,11 @@ parameters:
   shouldContinueOnError: false
   osSubgroup: ''
 
-  # sccache NuGet package version — keep in sync with runtime-prereqs.proj
+  # sccache NuGet package version
   sccacheVersion: '0.15.0'
 
 steps:
-  - ${{ if and(eq(parameters.osGroup, 'linux'), or(eq(parameters.osSubgroup, ''), eq(parameters.osSubgroup, '_musl')), eq(parameters.archType, 'x64')) }}:
+  - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
     # Set up the Azure Pipeline Cache for sccache's local cache directory.
     # Use a rolling key so each build can update the cache; restoreKeys
     # falls back to the most recent saved entry.
@@ -35,15 +35,15 @@ steps:
         restoreKeys: |
           sccache | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | ${{ parameters.nameSuffix }}
 
-    # Configure sccache environment and add binary to PATH.
-    # The sccache package is restored by runtime-prereqs.proj during the build.
+    # Download the sccache NuGet package and configure the environment.
     - script: |
         sccacheVersion="${{ parameters.sccacheVersion }}"
         sccacheDir="$(Build.SourcesDirectory)/.packages/sccache/${sccacheVersion}/tools"
-        mkdir -p "$sccacheDir"
+        "$(Build.SourcesDirectory)/eng/common/dotnet.sh" package download "sccache@${sccacheVersion}" -o "$(Build.SourcesDirectory)/.packages" -v quiet
+        chmod +x "$sccacheDir/sccache"
         echo "##vso[task.prependpath]$sccacheDir"
         echo "##vso[task.setvariable variable=SCCACHE_DIR]$(Pipeline.Workspace)/.sccache"
-        echo "##vso[task.setvariable variable=SCCACHE_CACHE_SIZE]3584M"
+        echo "##vso[task.setvariable variable=SCCACHE_CACHE_SIZE]5120M"
         echo "##vso[task.setvariable variable=SCCACHE_IDLE_TIMEOUT]0"
         echo "##vso[task.setvariable variable=USE_SCCACHE]true"
-      displayName: Configure sccache
+      displayName: Download and configure sccache

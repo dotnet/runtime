@@ -50,15 +50,6 @@
     <ProjectCapability Include="DotNetCoreWeb"/>
   </ItemGroup>
 
-  <!-- When trimming non-exe projects, root the whole intermediate assembly. -->
-  <Target Name="_RootEntireIntermediateAssembly" AfterTargets="PrepareForILLink" BeforeTargets="_RunILLink" Condition="'$(RuntimeIdentifier)' == 'browser-wasm' And '$(OutputType)' == 'Library'">
-    <ItemGroup>
-      <TrimmerRootAssembly Condition="'%(Identity)' == '$(AssemblyName)'">
-        <RootMode>all</RootMode>
-      </TrimmerRootAssembly>
-    </ItemGroup>
-  </Target>
-
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
   <Target Name="_SetupEmscripten" BeforeTargets="_SetupToolchain">
     <PropertyGroup>
@@ -318,6 +309,9 @@
   </Target>
 
   <Target Name="_BrowserWasmWriteRspForLinking" BeforeTargets="_WasmWriteRspForLinking">
+    <ItemGroup>
+      <EmccExportedRuntimeMethod Include="PThread" Condition="'$(WasmEnableThreads)' == 'true'" />
+    </ItemGroup>
     <PropertyGroup>
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-wasm.a</_WasmEHLib>
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>

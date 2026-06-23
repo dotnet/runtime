@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
@@ -101,7 +101,7 @@ namespace System.Text.Json
         /// </remarks>
         public JsonTypeInfo<T> GetTypeInfo<T>()
         {
-            return (JsonTypeInfo<T>)GetTypeInfo(typeof(T));
+            return (JsonTypeInfo<T>)GetTypeInfoInternal(typeof(T), resolveIfMutable: true);
         }
 
         /// <summary>
@@ -116,9 +116,8 @@ namespace System.Text.Json
         /// </remarks>
         public bool TryGetTypeInfo<T>([NotNullWhen(true)] out JsonTypeInfo<T>? typeInfo)
         {
-            bool success = TryGetTypeInfo(typeof(T), out JsonTypeInfo? nonGeneric);
-            typeInfo = (JsonTypeInfo<T>?)nonGeneric;
-            return success;
+            typeInfo = (JsonTypeInfo<T>?)GetTypeInfoInternal(typeof(T), ensureNotNull: null, resolveIfMutable: true);
+            return typeInfo is not null;
         }
 
         /// <summary>
@@ -544,7 +543,8 @@ namespace System.Text.Json
                     left._indentSize == right._indentSize &&
                     left._typeInfoResolver == right._typeInfoResolver &&
                     left._allowDuplicateProperties == right._allowDuplicateProperties &&
-                    CompareLists(left._converters, right._converters);
+                    CompareLists(left._converters, right._converters) &&
+                    CompareLists(left._typeClassifiers, right._typeClassifiers);
 
                 static bool CompareLists<TValue>(ConfigurationList<TValue>? left, ConfigurationList<TValue>? right)
                     where TValue : class?
@@ -606,6 +606,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._typeInfoResolver);
                 AddHashCode(ref hc, options._allowDuplicateProperties);
                 AddListHashCode(ref hc, options._converters);
+                AddListHashCode(ref hc, options._typeClassifiers);
 
                 return hc.ToHashCode();
 
