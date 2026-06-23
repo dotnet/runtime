@@ -123,7 +123,22 @@ namespace Microsoft.Extensions.Configuration
         // Don't rebuild and reload all providers in the common case when a source is simply added to the IList.
         private void AddSource(IConfigurationSource source)
         {
-            IConfigurationProvider provider = source.Build(this);
+            IConfigurationProvider provider;
+            if (source is IContextualConfigurationSource contextual)
+            {
+                // The contextual source needs an upstream snapshot taken at its declaration
+                // point; whatever providers exist now become its previousProviders.
+                IConfigurationProvider[] upstream;
+                using (ReferenceCountedProviders existing = _providerManager.GetReference())
+                {
+                    upstream = existing.Providers.ToArray();
+                }
+                provider = contextual.Build(this, upstream);
+            }
+            else
+            {
+                provider = source.Build(this);
+            }
 
             provider.Load();
             _changeTokenRegistrations.Add(ChangeToken.OnChange(provider.GetReloadToken, RaiseChanged));
@@ -143,7 +158,9 @@ namespace Microsoft.Extensions.Configuration
 
             foreach (IConfigurationSource source in _sources)
             {
-                newProvidersList.Add(source.Build(this));
+                newProvidersList.Add(source is IContextualConfigurationSource cs
+                    ? cs.Build(this, newProvidersList.ToArray())
+                    : source.Build(this));
             }
 
             foreach (IConfigurationProvider p in newProvidersList)
