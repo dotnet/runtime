@@ -47,7 +47,7 @@ namespace System
         /// </summary>
         /// <typeparam name="T">The type of the elements in the span.</typeparam>
         /// <param name="span">The span of values to determine the minimum value of.</param>
-        /// <param name="comparer">The <see cref="IComparer{T}"/> to compare values.</param>
+        /// <param name="comparer">The <see cref="IComparer{T}"/> to compare values. If <see langword="null"/>, uses <see cref="Comparer{T}.Default"/>.</param>
         /// <returns>The minimum value in the span.</returns>
         /// <exception cref="InvalidOperationException"><paramref name="span"/> is empty and <typeparamref name="T"/> is a non-nullable value type.</exception>
         /// <remarks>
@@ -100,7 +100,7 @@ namespace System
         /// </summary>
         /// <typeparam name="T">The type of the elements in the span.</typeparam>
         /// <param name="span">The span of values to determine the maximum value of.</param>
-        /// <param name="comparer">The <see cref="IComparer{T}"/> to compare values.</param>
+        /// <param name="comparer">The <see cref="IComparer{T}"/> to compare values. If <see langword="null"/>, uses <see cref="Comparer{T}.Default"/>.</param>
         /// <returns>The maximum value in the span.</returns>
         /// <exception cref="InvalidOperationException"><paramref name="span"/> is empty and <typeparamref name="T"/> is a non-nullable value type.</exception>
         /// <remarks>
