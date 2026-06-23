@@ -14,6 +14,12 @@ namespace System.Security.Cryptography
         public static KeySizes NonceByteSizes { get; } = new KeySizes(7, 13, 1);
         public static KeySizes TagByteSizes { get; } = new KeySizes(4, 16, 2);
 
+        /// <summary>
+        /// Gets the size, in bytes, of the key used by this instance.
+        /// </summary>
+        /// <value>
+        /// The size, in bytes, of the key used by this instance.
+        /// </value>
         public int KeySizeInBytes { get; }
 
         public AesCcm(ReadOnlySpan<byte> key)
