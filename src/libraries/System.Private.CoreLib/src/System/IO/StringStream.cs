@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -293,44 +292,6 @@ namespace System.IO
         /// <inheritdoc/>
         public override Task FlushAsync(CancellationToken cancellationToken) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) : Task.CompletedTask;
-
-        /// <inheritdoc/>
-        public override void CopyTo(Stream destination, int bufferSize)
-        {
-            ValidateCopyToArguments(destination, bufferSize);
-            ObjectDisposedException.ThrowIf(_disposed, this);
-
-            // Size the rented buffer to the remaining encoded payload (capped by bufferSize).
-            // Stream.CopyTo's default buffer is 80 KB because this stream is non-seekable;
-            // sizing here avoids that waste and lets the single-shot Read fast path consume
-            // the entire input in one call when the rented buffer is large enough.
-            // Falls back to bufferSize when Encoding.GetMaxByteCount would overflow.
-            int rentSize;
-            int remainingChars = _text.Length - _charPosition;
-            if (remainingChars <= (int.MaxValue / _maxBytesPerChar) - 1)
-            {
-                int maxBytes = _encoding.GetMaxByteCount(remainingChars);
-                rentSize = Math.Max(1, Math.Min(maxBytes, bufferSize));
-            }
-            else
-            {
-                rentSize = bufferSize;
-            }
-
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(rentSize);
-            try
-            {
-                int n;
-                while ((n = Read(buffer, 0, buffer.Length)) != 0)
-                {
-                    destination.Write(buffer, 0, n);
-                }
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
-        }
 
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)

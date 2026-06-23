@@ -20,17 +20,17 @@ namespace System.IO
     // a stream "view" of the data.
     public class MemoryStream : Stream
     {
-        private protected byte[] _buffer;    // Either allocated internally or externally.
+        private byte[] _buffer;             // Either allocated internally or externally.
         private readonly int _origin;       // For user-provided arrays, start at this origin
         private protected int _position;    // read/write head.
         private protected int _length;      // Number of bytes within the memory stream
-        private int _capacity;     // length of usable portion of buffer for stream
+        private int _capacity;              // length of usable portion of buffer for stream
         // Note that _capacity == _buffer.Length for non-user-provided byte[]'s
 
-        private protected bool _expandable; // User-provided buffers aren't expandable.
+        private bool _expandable;           // User-provided buffers aren't expandable.
         private protected bool _writable;   // Can user write to this stream?
         private readonly bool _exposable;   // Whether the array can be returned to the user.
-        private protected bool _isOpen;     // Is this stream open or closed?
+        private bool _isOpen;               // Is this stream open or closed?
 
         private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
@@ -93,26 +93,13 @@ namespace System.IO
             _isOpen = true;
         }
 
-        // Derived-type construction hook. Subclasses (e.g. ReadOnlyMemoryStream,
-        // WritableMemoryStream) that store their data outside _buffer use this to
-        // configure the base flags without participating in byte[]-backed storage.
-        private protected MemoryStream(bool writable, bool exposable)
-        {
-            _buffer = [];
-            _capacity = 0;
-            _expandable = false;
-            _writable = writable;
-            _exposable = exposable;
-            _isOpen = true;
-        }
-
         public override bool CanRead => _isOpen;
 
         public override bool CanSeek => _isOpen;
 
         public override bool CanWrite => _writable;
 
-        private protected void EnsureNotClosed()
+        private void EnsureNotClosed()
         {
             if (!_isOpen)
                 ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);

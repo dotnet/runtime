@@ -20,6 +20,7 @@ namespace System.Buffers
         private SequencePosition _position;
         private long _absolutePosition;
         private bool _isDisposed;
+        private CachedCompletedInt32Task _lastReadTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ReadOnlySequenceStream"/> class over the specified <see cref="ReadOnlySequence{Byte}"/>.
@@ -121,6 +122,32 @@ namespace System.Buffers
 
             byte b = 0;
             return Read(new Span<byte>(ref b)) > 0 ? b : -1;
+        }
+
+        /// <inheritdoc/>
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            EnsureNotDisposed();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            try
+            {
+                int n = Read(buffer, offset, count);
+                return _lastReadTask.GetTask(n);
+            }
+            catch (OperationCanceledException oce)
+            {
+                return Task.FromCanceled<int>(oce.CancellationToken);
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException<int>(exception);
+            }
         }
 
         /// <inheritdoc/>

@@ -16,13 +16,15 @@ namespace System.IO
     public sealed class ReadOnlyMemoryStream : MemoryStream
     {
         private ReadOnlyMemory<byte> _memory;
+        private CachedCompletedInt32Task _lastReadTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ReadOnlyMemoryStream"/> class over the specified <see cref="ReadOnlyMemory{Byte}"/>.
         /// </summary>
         /// <param name="source">The <see cref="ReadOnlyMemory{Byte}"/> to wrap.</param>
-        public ReadOnlyMemoryStream(ReadOnlyMemory<byte> source) : base(writable: false, exposable: false)
+        public ReadOnlyMemoryStream(ReadOnlyMemory<byte> source) : base()
         {
+            _writable = false;
             _memory = source;
             _length = source.Length;
         }
@@ -79,6 +81,32 @@ namespace System.IO
             _position += bytesToRead;
 
             return bytesToRead;
+        }
+
+        /// <inheritdoc/>
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            EnsureNotClosed();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            try
+            {
+                int n = Read(buffer, offset, count);
+                return _lastReadTask.GetTask(n);
+            }
+            catch (OperationCanceledException oce)
+            {
+                return Task.FromCanceled<int>(oce.CancellationToken);
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException<int>(exception);
+            }
         }
 
         /// <inheritdoc/>
@@ -142,8 +170,7 @@ namespace System.IO
                 _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin))
             };
 
-            // Order matches MemoryStream.SeekCore / Common/src/System/IO/ReadOnlyMemoryStream.cs:
-            // overflow check first, then seek-before-begin.
+            // Order matches MemoryStream.SeekCore: overflow check first, then seek-before-begin.
             ArgumentOutOfRangeException.ThrowIfGreaterThan(newPosition, int.MaxValue, nameof(offset));
 
             if (newPosition < 0)
@@ -155,24 +182,6 @@ namespace System.IO
 
             return newPosition;
         }
-
-        /// <inheritdoc/>
-        public override void SetLength(long value) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-
-        /// <inheritdoc/>
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-
-        /// <inheritdoc/>
-        public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-
-        /// <inheritdoc/>
-        public override void WriteByte(byte value) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-
-        /// <inheritdoc/>
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-
-        /// <inheritdoc/>
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
         public override byte[] ToArray()
@@ -202,6 +211,12 @@ namespace System.IO
         {
             _memory = default;
             base.Dispose(disposing);
+        }
+
+        private void EnsureNotClosed()
+        {
+            if (!CanRead)
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
         }
     }
 }

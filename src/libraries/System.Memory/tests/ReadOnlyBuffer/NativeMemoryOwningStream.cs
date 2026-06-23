@@ -6,9 +6,11 @@ using System.IO;
 namespace System.Memory.Tests
 {
     /// <summary>
-    /// Delegating <see cref="Stream"/> wrapper that forwards every operation to an inner
-    /// <see cref="Stream"/> while also taking ownership of an associated
-    /// <see cref="System.Buffers.NativeMemoryManager"/>. Disposes the manager when the stream is
+    /// Delegating <see cref="Stream"/> wrapper that forwards the synchronous and Flush APIs to an
+    /// inner <see cref="Stream"/> while taking ownership of an associated
+    /// <see cref="System.Buffers.NativeMemoryManager"/>. Async byte[] and Memory-based overrides are
+    /// intentionally left to the base <see cref="Stream"/> implementation; they default to async-over-sync
+    /// dispatch onto the forwarded synchronous methods. The owned manager is disposed when the stream is
     /// disposed so the conformance harness can release the unmanaged buffer at end-of-test.
     /// </summary>
     internal sealed class NativeMemoryOwningStream : Stream

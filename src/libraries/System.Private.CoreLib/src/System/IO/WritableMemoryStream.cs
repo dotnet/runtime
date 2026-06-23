@@ -16,12 +16,13 @@ namespace System.IO
     public sealed class WritableMemoryStream : MemoryStream
     {
         private Memory<byte> _memory;
+        private CachedCompletedInt32Task _lastReadTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WritableMemoryStream"/> class over the specified <see cref="Memory{Byte}"/>.
         /// </summary>
         /// <param name="buffer">The <see cref="Memory{Byte}"/> to wrap.</param>
-        public WritableMemoryStream(Memory<byte> buffer) : base(writable: true, exposable: false)
+        public WritableMemoryStream(Memory<byte> buffer) : base()
         {
             _memory = buffer;
         }
@@ -78,6 +79,32 @@ namespace System.IO
             _position += bytesToRead;
 
             return bytesToRead;
+        }
+
+        /// <inheritdoc/>
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            EnsureNotClosed();
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+
+            try
+            {
+                int n = Read(buffer, offset, count);
+                return _lastReadTask.GetTask(n);
+            }
+            catch (OperationCanceledException oce)
+            {
+                return Task.FromCanceled<int>(oce.CancellationToken);
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException<int>(exception);
+            }
         }
 
         /// <inheritdoc/>
@@ -191,8 +218,7 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
             }
 
-            EnsureCapacity(count);
-            Write(buffer, offset, count);
+            Write(new ReadOnlySpan<byte>(buffer, offset, count));
             return Task.CompletedTask;
         }
 
@@ -206,7 +232,6 @@ namespace System.IO
                 return ValueTask.FromCanceled(cancellationToken);
             }
 
-            EnsureCapacity(buffer.Length);
             Write(buffer.Span);
             return default;
         }
@@ -269,6 +294,12 @@ namespace System.IO
         {
             _memory = default;
             base.Dispose(disposing);
+        }
+
+        private void EnsureNotClosed()
+        {
+            if (!CanRead)
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
         }
 
         private void EnsureCapacity(int count)
