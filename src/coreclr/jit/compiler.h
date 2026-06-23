@@ -8389,6 +8389,7 @@ public:
                 {
                     ssize_t   m_iconVal;
                     FieldSeq* m_fieldSeq;
+                    ssize_t   m_compileTimeHandle;
                 } m_icon;
             };
         public:
@@ -8519,6 +8520,12 @@ public:
             {
                 assert(KindIs(O2K_CONST_INT));
                 return m_icon.m_fieldSeq;
+            }
+
+            ssize_t GetCompileTimeHandle() const
+            {
+                assert(KindIs(O2K_CONST_INT));
+                return m_icon.m_compileTimeHandle;
             }
 
             bool IsConstant() const
@@ -8772,7 +8779,8 @@ public:
             {
                 case O2K_CONST_INT:
                     return ((GetOp2().GetIntConstant() == that.GetOp2().GetIntConstant()) &&
-                            (GetOp2().GetIconFlag() == that.GetOp2().GetIconFlag()));
+                            (GetOp2().GetIconFlag() == that.GetOp2().GetIconFlag()) &&
+                            (GetOp2().GetCompileTimeHandle() == that.GetOp2().GetCompileTimeHandle()));
 
                 case O2K_CONST_DOUBLE:
                     // exact match because of positive and negative zero.
@@ -8832,7 +8840,8 @@ public:
                                                        ValueNum     cnsVN,
                                                        bool         equals,
                                                        GenTreeFlags iconFlags = GTF_EMPTY,
-                                                       FieldSeq*    fldSeq    = nullptr)
+                                                       FieldSeq*    fldSeq    = nullptr,
+                                                       ssize_t      compileTimeHandle = 0)
         {
             AssertionDsc dsc    = CreateEmptyAssertion(comp);
             dsc.m_assertionKind = equals ? OAK_EQUAL : OAK_NOT_EQUAL;
@@ -8870,6 +8879,7 @@ public:
                 dsc.m_op2.m_kind           = O2K_CONST_INT;
                 dsc.m_op2.m_icon.m_iconVal = static_cast<ssize_t>(cns);
                 dsc.m_op2.SetIconFlag(iconFlags, fldSeq);
+                dsc.m_op2.m_icon.m_compileTimeHandle = compileTimeHandle;
             }
             else if constexpr (std::is_same_v<T, double>)
             {

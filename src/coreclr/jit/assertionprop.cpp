@@ -1275,7 +1275,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, bool equ
 
                 AssertionDsc dsc =
                     AssertionDsc::CreateConstLclVarAssertion(this, lclNum, op1VN, iconVal, op2VN, equals,
-                                                             op2->GetIconHandleFlag(), op2->AsIntCon()->GetFieldSeq());
+                                                             op2->GetIconHandleFlag(), op2->AsIntCon()->GetFieldSeq(),
+                                                             op2->AsIntCon()->GetCompileTimeHandle());
                 return optAddAssertion(dsc);
             }
 
@@ -3607,6 +3608,7 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
                 newTree =
                     gtNewIconHandleNode(curAssertion.GetOp2().GetIntConstant(), curAssertion.GetOp2().GetIconFlag(),
                                         curAssertion.GetOp2().GetIconFieldSeq());
+                newTree->AsIntCon()->SetCompileTimeHandle(curAssertion.GetOp2().GetCompileTimeHandle());
 
                 // Make sure we don't retype const gc handles to TYP_I_IMPL
                 // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
