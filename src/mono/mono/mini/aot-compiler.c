@@ -4597,7 +4597,7 @@ can_marshal_struct_internal (MonoClass *klass, int depth)
 			/*
 			 * A field whose type is a non-auto-layout (sequential/explicit) class is marshalled
 			 * as an embedded struct, the same way the runtime marshalling code handles it. Allow it
-			 * if the nested class is itself marshallable; otherwise the StructureToPtr/PtrToStructure
+			 * if the nested class is itself marshalable; otherwise the StructureToPtr/PtrToStructure
 			 * wrappers are not AOT compiled and full-AOT fails with a JIT-in-aot-only error.
 			 */
 			if (!can_marshal_struct_internal (mono_class_from_mono_type_internal (field->type), depth + 1))
