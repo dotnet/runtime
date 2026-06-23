@@ -1710,7 +1710,7 @@ export function generateWasmBody (
                 } else if (
                     // math intrinsics
                     (opcode >= MintOpcode.MINT_ASIN) &&
-                    (opcode <= MintOpcode.MINT_MAXF)
+                    (opcode <= MintOpcode.MINT_COPYSIGNF)
                 ) {
                     if (!emit_math_intrinsic(builder, ip, opcode))
                         ip = abort;
