@@ -403,7 +403,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+                    impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, di);
 
                     if (compDonotInline())
                     {
@@ -698,7 +698,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+        impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, di);
 
         if (compDonotInline())
         {
@@ -7079,33 +7079,53 @@ void Compiler::impCheckForPInvokeCall(
 //
 // Arguments:
 //    call        - The call
+//    methHnd     - Method handle being called
 //    opcode      - The IL opcode for the call
 //    prefixFlags - Flags containing context handling information from IL
 //    callDI      - Debug info for the async call
 //
-void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
+void Compiler::impSetupAsyncCall(
+    GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
 {
     AsyncCallInfo asyncInfo;
 
     if (compIsForInlining())
     {
-        if (!m_nextAwaitIsTail)
+        if (!m_nextAwaitIsTail && !compIsAsyncVersion())
         {
             compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
             return;
         }
 
+        // For async versions of synchronous methods all async calls are in
+        // tail position. Inlining is simple for these cases: we can just
+        // inherit all context handling from the inlining call.
+        assert(!compIsAsyncVersion() || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
+
         GenTreeCall* inlCall = impInlineInfo->iciCall;
-        JITDUMP("Call [%06u] is to call with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
+        JITDUMP("Call [%06u] is to function with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
 
         assert(inlCall->IsAsync());
 
         asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
         // Validate that below code won't override the handling
         assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
-        m_nextAwaitIsTail = false;
 
-        asyncInfo.IsTailAwait = inlCall->GetAsyncInfo().IsTailAwait;
+        asyncInfo.IsTailAwait =
+            inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
+        m_nextAwaitIsTail = false;
+    }
+    else
+    {
+        if (opts.OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
+            (call->gtReturnType == info.compRetType))
+        {
+            CORINFO_METHOD_HANDLE exactCalleeHnd =
+                ((call->AsCall()->gtCallType != CT_USER_FUNC) || call->AsCall()->IsVirtual()) ? nullptr : methHnd;
+
+            asyncInfo.IsTailAwait =
+                info.compCompHnd->canTailCall(info.compMethodHnd, methHnd, exactCalleeHnd, /* fIsTailPrefix */ false);
+        }
     }
 
     unsigned newSourceTypes = ICorDebugInfo::ASYNC;
@@ -8188,7 +8208,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     InlineCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo;
 
     pInfo->guardedMethodHandle               = methodHandle;
-    pInfo->guardedMethodUnboxedEntryHandle   = nullptr;
     pInfo->guardedMethodInstParamLookup      = {};
     pInfo->guardedMethodResolvedToken        = {};
     pInfo->guardedMethodUnboxedResolvedToken = {};
@@ -8206,22 +8225,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     {
         pInfo->guardedMethodResolvedToken        = *pResolvedToken;
         pInfo->guardedMethodUnboxedResolvedToken = *pUnboxedResolvedToken;
-    }
-
-    // If the guarded class is a value class, look for an unboxed entry point.
-    //
-    if ((classAttr & CORINFO_FLG_VALUECLASS) != 0)
-    {
-        JITDUMP("    ... class is a value class, looking for unboxed entry\n");
-        bool                  requiresInstMethodTableArg = false;
-        CORINFO_METHOD_HANDLE unboxedEntryMethodHandle =
-            info.compCompHnd->getUnboxedEntry(methodHandle, &requiresInstMethodTableArg);
-
-        if (unboxedEntryMethodHandle != nullptr)
-        {
-            JITDUMP("    ... updating GDV candidate with unboxed entry info\n");
-            pInfo->guardedMethodUnboxedEntryHandle = unboxedEntryMethodHandle;
-        }
     }
 
     call->AddGDVCandidateInfo(this, pInfo);
@@ -8499,9 +8502,9 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (call->IsGuardedDevirtualizationCandidate())
     {
         InlineCandidateInfo* gdvCandidate = call->GetGDVCandidateInfo(candidateIndex);
-        if (gdvCandidate->guardedMethodUnboxedEntryHandle != nullptr)
+        if (gdvCandidate->guardedMethodUnboxedResolvedToken.hMethod != nullptr)
         {
-            fncHandle = gdvCandidate->guardedMethodUnboxedEntryHandle;
+            fncHandle = gdvCandidate->guardedMethodUnboxedResolvedToken.hMethod;
         }
         else
         {
@@ -9438,61 +9441,62 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
         {
             JITDUMP("Have a direct call to boxed entry point. Trying to optimize to call an unboxed entry point\n");
 
-            // Note for some shared methods the unboxed entry point requires an extra parameter.
-            bool                  requiresInstMethodTableArg = false;
-            CORINFO_METHOD_HANDLE unboxedEntryMethod =
-                info.compCompHnd->getUnboxedEntry(derivedMethod, &requiresInstMethodTableArg);
+            CORINFO_METHOD_HANDLE const unboxedEntryMethod =
+                (dcInfo->pUnboxedResolvedToken == nullptr) ? nullptr : dcInfo->pUnboxedResolvedToken->hMethod;
 
             if (unboxedEntryMethod != nullptr)
             {
-                // Rewrite the call to target the unboxed entry on the box payload. Keep the heap box,
-                // since the callee may return an interior managed pointer into it; object stack allocation
-                // can later promote the box to the stack when escape analysis proves the receiver does not
-                // escape.
-                //
-                if (requiresInstMethodTableArg)
-                {
-                    // Get the method table from the boxed object.
-                    //
-                    // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
-                    GenTree* const clonedThisArg = gtClone(thisArg->GetEarlyNode());
+                CORINFO_SIG_INFO unboxedEntrySig;
+                info.compCompHnd->getMethodSig(unboxedEntryMethod, &unboxedEntrySig);
 
-                    if (clonedThisArg == nullptr)
+                bool canUseUnboxedEntry = true;
+
+                if (unboxedEntrySig.hasTypeArg())
+                {
+                    if (((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
                     {
-                        JITDUMP("unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
+                        CORINFO_METHOD_HANDLE exactMethodHandle =
+                            (CORINFO_METHOD_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
+
+                        instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+                        JITDUMP("revising call to invoke unboxed entry with additional method desc arg\n");
                     }
                     else
                     {
-                        JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
+                        assert(((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) ==
+                               CORINFO_CONTEXTFLAGS_CLASS);
 
-                        instParam = gtNewMethodTableLookup(clonedThisArg);
-
-                        // Update the 'this' pointer to refer to the box payload
+                        // Get the method table from the boxed object.
                         //
-                        GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                        GenTree* const boxPayload =
-                            gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
+                        // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
+                        GenTree* const clonedThisArg = gtClone(thisArg->GetEarlyNode());
 
-                        assert(thisObj == thisArg->GetEarlyNode());
-                        thisArg->SetEarlyNode(boxPayload);
-                        call->gtCallMethHnd = unboxedEntryMethod;
-                        INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
-
-                        // Method attributes will differ because unboxed entry point is shared
-                        //
-                        const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
-                        JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
-                                unboxedMethodAttribs);
-                        derivedMethod         = unboxedEntryMethod;
-                        pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
-                        derivedMethodAttribs  = unboxedMethodAttribs;
-                        Metrics.DevirtualizedCallUnboxedEntry++;
+                        if (clonedThisArg == nullptr)
+                        {
+                            JITDUMP(
+                                "unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
+                            canUseUnboxedEntry = false;
+                        }
+                        else
+                        {
+                            instParam = gtNewMethodTableLookup(clonedThisArg);
+                            assert(thisObj == thisArg->GetEarlyNode());
+                            JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
+                        }
                     }
                 }
                 else
                 {
                     JITDUMP("revising call to invoke unboxed entry\n");
+                }
 
+                if (canUseUnboxedEntry)
+                {
+                    // Rewrite the call to target the unboxed entry on the box payload. Keep the heap box,
+                    // since the callee may return an interior managed pointer into it; object stack allocation
+                    // can later promote the box to the stack when escape analysis proves the receiver does not
+                    // escape.
+                    //
                     GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                     GenTree* const boxPayload =
                         gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
@@ -9500,6 +9504,17 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                     thisArg->SetEarlyNode(boxPayload);
                     call->gtCallMethHnd = unboxedEntryMethod;
                     INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
+
+                    if (unboxedEntrySig.hasTypeArg())
+                    {
+                        // Method attributes will differ because unboxed entry point is shared.
+                        //
+                        const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
+                        JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
+                                unboxedMethodAttribs);
+                        derivedMethodAttribs = unboxedMethodAttribs;
+                    }
+
                     derivedMethod         = unboxedEntryMethod;
                     pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
                     Metrics.DevirtualizedCallUnboxedEntry++;
@@ -10095,7 +10110,6 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             //
             pInfo->guardedClassHandle                = nullptr;
             pInfo->guardedMethodHandle               = nullptr;
-            pInfo->guardedMethodUnboxedEntryHandle   = nullptr;
             pInfo->guardedMethodInstParamLookup      = {};
             pInfo->guardedMethodResolvedToken        = {};
             pInfo->guardedMethodUnboxedResolvedToken = {};

@@ -14,6 +14,8 @@ namespace System.Text.Json.Serialization.Converters
             IsInternalConverterForNumberType = true;
         }
 
+        internal override bool IsIeeeFloatingPointConverter => true;
+
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)

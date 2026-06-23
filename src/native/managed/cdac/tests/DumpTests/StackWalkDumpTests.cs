@@ -369,8 +369,8 @@ public class StackWalkDumpTests : DumpTestBase
             if (!rts.IsILStub(mdHandle))
                 continue;
 
-            TargetPointer ip = stackWalk.GetInstructionPointer(frame);
-            Assert.NotEqual(TargetPointer.Null, ip);
+            TargetCodePointer ip = stackWalk.GetInstructionPointer(frame);
+            Assert.NotEqual(TargetCodePointer.Null, ip);
 
             DacpCodeHeaderData codeHeaderData;
             int hr = sosDac.GetCodeHeaderData(new ClrDataAddress(ip.Value), &codeHeaderData);
@@ -408,6 +408,6 @@ public class StackWalkDumpTests : DumpTestBase
 
         var ctx = Contracts.StackWalkHelpers.IPlatformAgnosticContext.GetContextForPlatform(Target);
         ctx.FillFromBuffer(context);
-        Assert.NotEqual(TargetPointer.Null, ctx.InstructionPointer);
+        Assert.NotEqual(TargetCodePointer.Null, ctx.InstructionPointer);
     }
 }

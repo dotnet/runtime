@@ -5075,10 +5075,140 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     public int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.ParseContinuation(continuationAddress, pDiagnosticIP, pNextContinuation, pState) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pDiagnosticIP is null || pNextContinuation is null || pState is null)
+                throw new ArgumentException("Output pointers must not be null.");
 
-    public int GetAsyncLocals(ulong vmMethod, ulong codeAddr, uint state, nint pAsyncLocals)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetAsyncLocals(vmMethod, codeAddr, state, pAsyncLocals) : HResults.E_NOTIMPL;
+            ContinuationInfo info = _target.Contracts.Object.GetContinuationInfo(new TargetPointer(continuationAddress));
+            *pDiagnosticIP = info.DiagnosticIP.Value;
+            *pNextContinuation = info.Next.Value;
+            *pState = info.State;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            ulong diagnosticIPLocal;
+            ulong nextLocal;
+            uint stateLocal;
+            int hrLocal = _legacy.ParseContinuation(continuationAddress, &diagnosticIPLocal, &nextLocal, &stateLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pDiagnosticIP == diagnosticIPLocal, $"cDAC: {*pDiagnosticIP:x}, DAC: {diagnosticIPLocal:x}");
+                Debug.Assert(*pNextContinuation == nextLocal, $"cDAC: {*pNextContinuation:x}, DAC: {nextLocal:x}");
+                Debug.Assert(*pState == stateLocal, $"cDAC: {*pState}, DAC: {stateLocal}");
+            }
+        }
+#endif
+        return hr;
+    }
+
+#if DEBUG
+    [ThreadStatic]
+    private static List<AsyncLocalData>? _debugEnumerateAsyncLocals;
+
+    private static List<AsyncLocalData> DebugEnumerateAsyncLocals
+        => _debugEnumerateAsyncLocals ??= new();
+
+    [UnmanagedCallersOnly]
+    private static void EnumerateAsyncLocalsDebugCallback(AsyncLocalData* pLocal, nint _)
+    {
+        DebugEnumerateAsyncLocals.Add(*pLocal);
+    }
+#endif
+
+    public int EnumerateAsyncLocals(ulong vmMethod, ulong codeAddr, uint state,
+        delegate* unmanaged<AsyncLocalData*, nint, void> fpCallback, nint pUserData)
+    {
+        int hr = HResults.S_OK;
+#if DEBUG
+        List<AsyncLocalData> locals = new();
+#endif
+        try
+        {
+            if (vmMethod == 0)
+                throw new ArgumentException("vmMethod must not be zero.", nameof(vmMethod));
+            if (fpCallback is null)
+                throw new ArgumentNullException(nameof(fpCallback));
+
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodDescHandle md = rts.GetMethodDescHandle(new TargetPointer(vmMethod));
+
+            if (!rts.IsAsyncThunkMethod(md))
+            {
+                TargetCodePointer pCode;
+                if (codeAddr != 0)
+                {
+                    Contracts.ICodeVersions cv = _target.Contracts.CodeVersions;
+                    NativeCodeVersionHandle ncvh = cv.GetNativeCodeVersionForIP(new TargetCodePointer(codeAddr));
+                    pCode = ncvh.Valid ? cv.GetNativeCode(ncvh) : TargetCodePointer.Null;
+                }
+                else
+                {
+                    pCode = rts.GetNativeCode(md);
+                }
+
+                if (pCode != TargetCodePointer.Null)
+                {
+                    IReadOnlyList<AsyncSuspensionInfo> suspensionPoints = _target.Contracts.DebugInfo.GetAsyncSuspensionPoints(pCode);
+                    if (state < (uint)suspensionPoints.Count)
+                    {
+                        IReadOnlyList<AsyncLocalInfo> localInfos = suspensionPoints[(int)state].Locals;
+                        int varCount = localInfos.Count;
+                        for (int i = 0; i < varCount; i++)
+                        {
+                            AsyncLocalData local = new()
+                            {
+                                Offset = localInfos[i].Offset,
+                                IlVarNum = localInfos[i].ILVarNumber,
+                            };
+#if DEBUG
+                            locals.Add(local);
+#endif
+                            fpCallback(&local, pUserData);
+                        }
+                    }
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacy is not null)
+        {
+            DebugEnumerateAsyncLocals.Clear();
+            delegate* unmanaged<AsyncLocalData*, nint, void> debugCallbackPtr = &EnumerateAsyncLocalsDebugCallback;
+            int hrLocal = _legacy.EnumerateAsyncLocals(vmMethod, codeAddr, state, debugCallbackPtr, 0);
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (hr == HResults.S_OK)
+            {
+                List<AsyncLocalData> legacyLocals = DebugEnumerateAsyncLocals;
+                Debug.Assert(locals.Count == legacyLocals.Count,
+                    $"cDAC: {locals.Count} async locals, DAC: {legacyLocals.Count}");
+                for (int i = 0; i < locals.Count; i++)
+                {
+                    Debug.Assert(locals[i].Offset == legacyLocals[i].Offset,
+                        $"cDAC[{i}].Offset {locals[i].Offset} != DAC {legacyLocals[i].Offset}");
+                    Debug.Assert(locals[i].IlVarNum == legacyLocals[i].IlVarNum,
+                        $"cDAC[{i}].IlVarNum {locals[i].IlVarNum} != DAC {legacyLocals[i].IlVarNum}");
+                }
+            }
+            DebugEnumerateAsyncLocals.Clear();
+        }
+#endif
+        return hr;
+    }
 
     public int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex)
     {
