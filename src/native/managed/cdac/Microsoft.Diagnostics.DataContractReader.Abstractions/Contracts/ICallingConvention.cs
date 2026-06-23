@@ -53,6 +53,14 @@ public interface ICallingConvention : IContract
     /// <c>E_NOTIMPL</c> for the cdacstress ArgIterator sub-check.
     /// </summary>
     byte[]? TryComputeArgGCRefMapBlob(MethodDescHandle methodDesc) => null;
+
+    /// <summary>
+    /// Return the number of bytes the callee pops off the stack on return,
+    /// for use as the x86 GCRefMap WriteStackPop prefix. Returns 0 on
+    /// non-x86 architectures (or VarArgs methods). Used by the cdacstress
+    /// ArgIterator sub-check.
+    /// </summary>
+    uint GetCbStackPop(MethodDescHandle methodDesc) => 0;
 }
 
 public readonly struct CallingConvention : ICallingConvention

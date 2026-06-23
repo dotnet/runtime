@@ -40,6 +40,63 @@ internal sealed class CallingConvention_1 : ICallingConvention
         }
     }
 
+    public uint GetCbStackPop(MethodDescHandle methodDesc)
+    {
+        IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
+        if (runtimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.X86)
+            return 0;
+
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodSignature<TypeHandle> methodSig = DecodeMethodSignature(rts, methodDesc);
+
+        // VarArgs methods don't pop arguments on x86 (caller cleans up).
+        // ArgIterator.CbStackPop already encodes this, but we never call it
+        // for VarArgs because EnumerateArguments throws first; mirror its
+        // 0 return here so the encoder writes the correct prefix.
+        if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
+            return 0;
+
+        bool hasThis = methodSig.Header.IsInstance;
+        bool requiresInstArg = false;
+        bool isAsync = false;
+        try
+        {
+            GenericContextLoc ctxLoc = rts.GetGenericContextLoc(methodDesc);
+            requiresInstArg = ctxLoc is GenericContextLoc.InstArgMethodDesc or GenericContextLoc.InstArgMethodTable;
+            isAsync = rts.IsAsyncMethod(methodDesc);
+        }
+        catch
+        {
+        }
+
+        ITypeHandle[] parameterTypes = new ITypeHandle[methodSig.ParameterTypes.Length];
+        for (int i = 0; i < parameterTypes.Length; i++)
+            parameterTypes[i] = new CdacTypeHandle(methodSig.ParameterTypes[i], _target);
+        ITypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target);
+
+        TransitionBlock transitionBlock = BuildTransitionBlock(runtimeInfo);
+        CallingConventions callingConventions = hasThis
+            ? CallingConventions.ManagedInstance
+            : CallingConventions.ManagedStatic;
+        ArgIteratorData argIteratorData = new ArgIteratorData(
+            hasThis, isVarArg: false, parameterTypes, returnType);
+        bool isWindows = runtimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows;
+
+        ArgIterator argit = new ArgIterator(
+            transitionBlock,
+            argIteratorData,
+            callingConventions,
+            hasParamType: requiresInstArg,
+            hasAsyncContinuation: isAsync,
+            extraFunctionPointerArg: false,
+            forcedByRefParams: new bool[parameterTypes.Length],
+            skipFirstArg: false,
+            extraObjectFirstArg: false,
+            isWindows: isWindows);
+
+        return argit.CbStackPop();
+    }
+
     // Per-parameter metadata captured at signature-decode time. We track this
     // out-of-band because the standard SignatureTypeProvider collapses
     // ELEMENT_TYPE_BYREF, _PTR, _SZARRAY, and _ARRAY into the underlying type

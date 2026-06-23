@@ -50,11 +50,7 @@ internal static class CallingConventionGCRefMapBuilder
         ICallingConvention cc = target.Contracts.CallingConvention;
 
         RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
-        // x86's GCRefMap position encoding is non-monotonic (argument registers
-        // come last in pos-order but first in offset-order, with the stack-pop
-        // prefix in the bitstream). Defer to a later phase.
-        if (arch is RuntimeInfoArchitecture.X86)
-            return null;
+        bool isX86 = arch is RuntimeInfoArchitecture.X86;
 
         int pointerSize = target.PointerSize;
 
@@ -154,26 +150,43 @@ internal static class CallingConventionGCRefMapBuilder
             tokens[arg.Offset] = token;
         }
 
-        // No GC-significant arguments -> a 1-byte blob (a single empty pending byte).
-        // The runtime's GCRefMapBuilder::Flush emits the same.
+        // No GC-significant arguments. On non-x86 the empty blob is just the
+        // pending byte flush. On x86 it still carries the WriteStackPop prefix,
+        // so emit that first.
         if (tokens.Count == 0)
-            return EmptyBlob();
+        {
+            if (!isX86)
+                return EmptyBlob();
+            Encoder enc0 = default;
+            enc0.WriteStackPop(cc.GetCbStackPop(methodDesc) / (uint)pointerSize);
+            return enc0.Flush();
+        }
 
-        // Determine the highest GCRefMap slot position we need to encode.
-        // OffsetFromGCRefMapPos on x64/arm64/etc. is offset = first + pos*pointerSize,
-        // so the max pos is (maxOffset - first) / pointerSize. The shared cDAC
-        // TransitionBlock helper gives us OffsetOfFirstGCRefMapSlot.
+        // Walk positions 0..maxPos and look up each one's offset in the token
+        // map. This is necessary on x86 because pos-order and offset-order
+        // diverge there (argument registers occupy the highest offsets but
+        // the lowest positions). On non-x86 the mapping is monotonic so we
+        // could iterate the offset map directly, but using OffsetFromGCRefMapPos
+        // for both keeps the code path uniform.
         TransitionBlock tb = BuildTransitionBlock(runtimeInfo);
-        int maxOffset = 0;
+
+        // For x86 we need to know how many slot positions exist (we'd otherwise
+        // miss high-pos register slots when the offset map's max is on the
+        // stack). Walk every recorded offset and compute its position; for x86
+        // OffsetFromGCRefMapPos is bijective so the inverse is well-defined.
+        int maxPos = -1;
         foreach (int offset in tokens.Keys)
         {
-            if (offset > maxOffset) maxOffset = offset;
+            int pos = GCRefMapPosFromOffset(tb, offset, isX86, pointerSize);
+            if (pos < 0)
+                return null;  // alignment / out-of-range -- conservative skip
+            if (pos > maxPos) maxPos = pos;
         }
-        int maxPos = (maxOffset - tb.OffsetOfFirstGCRefMapSlot) / pointerSize;
-        if (maxPos < 0)
-            return null;  // misalignment -- conservative skip
 
         Encoder enc = default;
+        if (isX86)
+            enc.WriteStackPop(cc.GetCbStackPop(methodDesc) / (uint)pointerSize);
+
         for (int pos = 0; pos <= maxPos; pos++)
         {
             int offset = tb.OffsetFromGCRefMapPos(pos);
@@ -185,6 +198,40 @@ internal static class CallingConventionGCRefMapBuilder
             }
         }
         return enc.Flush();
+    }
+
+    // Inverse of TransitionBlock.OffsetFromGCRefMapPos. On non-x86 the mapping
+    // is offset = first + pos*ptr, so pos = (offset - first) / ptr. On x86 the
+    // first NumArgumentRegisters positions are argument registers laid out at
+    // OffsetOfArgumentRegisters + ARGUMENTREGISTERS_SIZE - (pos+1)*ptr; the
+    // remaining positions are stack args at OffsetOfArgs + (pos - n)*ptr.
+    // Returns -1 on misalignment.
+    private static int GCRefMapPosFromOffset(TransitionBlock tb, int offset, bool isX86, int pointerSize)
+    {
+        if (!isX86)
+        {
+            int delta = offset - tb.OffsetOfFirstGCRefMapSlot;
+            if (delta < 0 || delta % pointerSize != 0) return -1;
+            return delta / pointerSize;
+        }
+
+        // x86: arg registers come first in pos order, then stack args.
+        int argRegBase = tb.OffsetOfArgumentRegisters;
+        int argRegEnd = argRegBase + tb.NumArgumentRegisters * pointerSize;
+        if (offset >= argRegBase && offset < argRegEnd)
+        {
+            int delta = offset - argRegBase;
+            if (delta % pointerSize != 0) return -1;
+            // Reverse: pos = NumArgumentRegisters - 1 - (delta / ptr)
+            return tb.NumArgumentRegisters - 1 - (delta / pointerSize);
+        }
+        if (offset >= tb.OffsetOfArgs)
+        {
+            int delta = offset - tb.OffsetOfArgs;
+            if (delta % pointerSize != 0) return -1;
+            return tb.NumArgumentRegisters + (delta / pointerSize);
+        }
+        return -1;
     }
 
     private static GenericContextLoc SafeGetGenericContextLoc(IRuntimeTypeSystem rts, MethodDescHandle md)
@@ -275,6 +322,22 @@ internal static class CallingConventionGCRefMapBuilder
                 AppendBit(val != 0 ? 1u : 0u);
             }
             while (val != 0);
+        }
+
+        // x86-only prefix: encode the callee-popped stack-byte count in pointer-size
+        // units before any tokens. Mirrors native GCRefMapBuilder::WriteStackPop
+        // (inc/gcrefmap.h). Must be called before the first WriteToken.
+        public void WriteStackPop(uint stackPop)
+        {
+            if (stackPop < 3)
+            {
+                AppendTwoBit(stackPop);
+            }
+            else
+            {
+                AppendTwoBit(3);
+                AppendInt(stackPop - 3);
+            }
         }
 
         public void WriteToken(uint pos, uint token)
