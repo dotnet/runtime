@@ -2893,10 +2893,10 @@ GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTre
 // optVNBasedFoldExpr_Cond: Folds conditional jump operands using VN to simpler trees.
 //
 // Arguments:
-//    block - The block containing the tree
+//    block  - The block containing the tree
 //    parent - The parent node of the tree
-//    tree  - The GT_JTRUE node to fold.
-//    stmt  - The statement containing the tree.
+//    tree   - The GT_JTRUE node to fold.
+//    stmt   - The statement containing the tree.
 //
 // Return Value:
 //    Returns a new tree or nullptr if nothing is changed.
