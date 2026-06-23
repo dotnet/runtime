@@ -717,7 +717,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         // Hijack mutates live target state (it writes to the thread's stack and sets the thread context).
         // It therefore cannot be cross-checked against the legacy implementation in DEBUG builds.
-        // See https://github.com/rcj1/runtime/blob/eacf48a66e67ba40bfca35674b9623c634bfdddc/src/coreclr/debug/daccess/dacdbiimpl.cpp#L4909 for more algorithm detail.
+        // See https://github.com/dotnet/runtime/blob/0d1a20fb14109f277df06ebee3f83c964f9dcc61/src/coreclr/debug/daccess/dacdbiimpl.cpp#L4907 for more algorithm detail.
         int hr = HResults.S_OK;
         try
         {
@@ -799,7 +799,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IntegerArgPlacer.PlaceArgs(_target, ctx, ref sp, args);
 
             ctx.StackPointer = sp;
-            ctx.InstructionPointer = pfnHijackFunction;
+            ctx.InstructionPointer = new TargetCodePointer(pfnHijackFunction.Value);
 
             // Commit the modified context to the thread.
             if (!_target.TrySetThreadContext(dwThreadId, ctx.GetBytes()))

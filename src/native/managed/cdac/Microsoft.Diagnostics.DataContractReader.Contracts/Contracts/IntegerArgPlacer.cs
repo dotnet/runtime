@@ -78,7 +78,7 @@ public static class IntegerArgPlacer
     {
         if ((arch is RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.Arm) && value.Value > uint.MaxValue)
         {
-            throw new InvalidOperationException($"Cannot set register '{register}' to value {value.Value} on x86 context: value exceeds 32-bit range.");
+            throw new InvalidOperationException($"Cannot set register '{register}' to value {value.Value} on {arch} context: value exceeds 32-bit range.");
         }
         if (!ctx.TrySetRegister(register, value))
         {
