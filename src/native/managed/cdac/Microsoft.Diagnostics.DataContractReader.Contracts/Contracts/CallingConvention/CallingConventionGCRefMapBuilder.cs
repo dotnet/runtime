@@ -120,11 +120,25 @@ internal static class CallingConventionGCRefMapBuilder
                         }
                         else if (rts.ContainsGCPointers(arg.TypeHandle))
                         {
-                            // By-value struct with embedded GC pointers requires
-                            // walking the GCDesc series and emitting one Ref token
-                            // per embedded slot. Phase 4 work; for now skip the
-                            // whole MD so the comparison is conservative.
-                            return null;
+                            // By-value struct with embedded GC pointers: emit one
+                            // Ref token per pointer slot inside the struct. Mirrors
+                            // the runtime's ReportPointersFromValueTypeArg
+                            // (siginfo.cpp). The GCDesc series Offset is relative
+                            // to a boxed object's start (including the leading MT
+                            // pointer); subtract pointerSize to translate to the
+                            // unboxed in-frame layout.
+                            int structFieldStart = arg.Offset - pointerSize;
+                            foreach ((uint seriesOffset, uint seriesSize) in rts.GetGCDescSeries(arg.TypeHandle))
+                            {
+                                int seriesBase = structFieldStart + (int)seriesOffset;
+                                for (int subOff = 0; subOff < (int)seriesSize; subOff += pointerSize)
+                                {
+                                    tokens[seriesBase + subOff] = GCRefMapToken.Ref;
+                                    if (tokens.Count > MaxBlobLength)
+                                        return null;
+                                }
+                            }
+                            continue;
                         }
                         else
                         {
