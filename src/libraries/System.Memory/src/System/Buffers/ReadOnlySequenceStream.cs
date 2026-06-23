@@ -135,19 +135,8 @@ namespace System.Buffers
                 return Task.FromCanceled<int>(cancellationToken);
             }
 
-            try
-            {
-                int n = Read(buffer, offset, count);
-                return _lastReadTask.GetTask(n);
-            }
-            catch (OperationCanceledException oce)
-            {
-                return Task.FromCanceled<int>(oce.CancellationToken);
-            }
-            catch (Exception exception)
-            {
-                return Task.FromException<int>(exception);
-            }
+            int n = Read(buffer, offset, count);
+            return _lastReadTask.GetTask(n);
         }
 
         /// <inheritdoc/>
