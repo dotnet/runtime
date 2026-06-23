@@ -64,7 +64,7 @@ namespace System.Text.Json
         public static int NeedsEscaping(ReadOnlySpan<byte> value, JavaScriptEncoder? encoder)
         {
 #if NET
-            if (encoder is null)
+            if (encoder is null || ReferenceEquals(encoder, JavaScriptEncoder.Default))
             {
                 return value.IndexOfAnyExcept(s_allowedBytes);
             }
@@ -76,7 +76,7 @@ namespace System.Text.Json
         public static int NeedsEscaping(ReadOnlySpan<char> value, JavaScriptEncoder? encoder)
         {
 #if NET
-            if (encoder is null)
+            if (encoder is null || ReferenceEquals(encoder, JavaScriptEncoder.Default))
             {
                 return value.IndexOfAnyExcept(s_allowedChars);
             }
