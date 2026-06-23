@@ -91,14 +91,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // For either form, if T is a const we can leverage a GenTreeVecCon and map directly to v128.const
             if (sig->numArgs == 1)
             {
-                op1 = impPopStack().val;
-
-                if (!op1->IsIntegralConst() && !op1->IsCnsFltOrDbl())
+                GenTree* const arg = impStackTop().val;
+                if (!arg->IsIntegralConst() && !arg->IsCnsFltOrDbl())
                 {
-                    NYI_WASM_SIMD("Vector128.Create(T) with non-constant operand");
-                    break;
+                    // Non-constant broadcast isn't supported yet on WASM;
+                    return nullptr;
                 }
 
+                op1     = impPopStack().val;
                 retNode = gtNewSimdCreateBroadcastNode(retType, op1, simdBaseType, simdSize);
                 break;
             }
@@ -221,7 +221,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // TODO-WASM-SIMD: Build a GT_HWINTRINSIC node packing N non-constant operands
             // (mirroring the arm64/xarch IntrinsicNodeBuilder path) once WASM SIMD lowering
             // and codegen for Vector128.Create are implemented.
-            NYI_WASM_SIMD("Vector128.Create with non-constant operands");
+            retNode = nullptr;
             break;
         }
 
