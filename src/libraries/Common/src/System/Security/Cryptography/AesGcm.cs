@@ -32,10 +32,10 @@ namespace System.Security.Cryptography
         public int? TagSizeInBytes { get; }
 
         /// <summary>
-        /// Gets the size, in bytes, of the key used by this instance.
+        /// Gets the size of the key, in bytes.
         /// </summary>
         /// <value>
-        /// The size, in bytes, of the key used by this instance.
+        /// The size of the key, in bytes.
         /// </value>
         public int KeySizeInBytes { get; }
 
