@@ -16,7 +16,6 @@ namespace System.IO
     public sealed class WritableMemoryStream : MemoryStream
     {
         private Memory<byte> _memory;
-        private CachedCompletedInt32Task _lastReadTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WritableMemoryStream"/> class over the specified <see cref="Memory{Byte}"/>.
@@ -36,6 +35,17 @@ namespace System.IO
                 return _memory.Length;
             }
             set => throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
+        }
+
+        /// <inheritdoc/>
+        public override byte[] GetBuffer() =>
+            throw new UnauthorizedAccessException(SR.UnauthorizedAccess_MemStreamBuffer);
+
+        /// <inheritdoc/>
+        public override bool TryGetBuffer(out ArraySegment<byte> buffer)
+        {
+            buffer = default;
+            return false;
         }
 
         /// <inheritdoc/>
@@ -226,33 +236,6 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            EnsureNotClosed();
-
-            long newPosition = origin switch
-            {
-                SeekOrigin.Begin => offset,
-                SeekOrigin.Current => _position + offset,
-                SeekOrigin.End => _length + offset,
-                _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin))
-            };
-
-            // Order matches MemoryStream.SeekCore / Common/src/System/IO/ReadOnlyMemoryStream.cs:
-            // overflow check first, then seek-before-begin.
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(newPosition, int.MaxValue, nameof(offset));
-
-            if (newPosition < 0)
-            {
-                throw new IOException(SR.IO_SeekBeforeBegin);
-            }
-
-            _position = (int)newPosition;
-
-            return newPosition;
-        }
-
-        /// <inheritdoc/>
         public override void SetLength(long value) => throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
 
         /// <inheritdoc/>
@@ -287,7 +270,7 @@ namespace System.IO
 
         private void EnsureNotClosed()
         {
-            if (!CanRead)
+            if (!_isOpen)
                 ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
         }
 

@@ -222,13 +222,20 @@ namespace System.Buffers
         {
             EnsureNotDisposed();
 
-            long absolutePosition = origin switch
+            long basePosition = origin switch
             {
-                SeekOrigin.Begin => offset,
-                SeekOrigin.Current => _absolutePosition + offset,
-                SeekOrigin.End => _sequence.Length + offset,
+                SeekOrigin.Begin => 0L,
+                SeekOrigin.Current => _absolutePosition,
+                SeekOrigin.End => _sequence.Length,
                 _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin))
             };
+
+            if (offset > long.MaxValue - basePosition)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ArgumentOutOfRange_StreamLength, Array.MaxLength));
+            }
+
+            long absolutePosition = basePosition + offset;
 
             if (absolutePosition < 0)
             {
