@@ -550,11 +550,16 @@ namespace System.Tests
             foreach ((float original, Half expected) in data)
             {
                 // WASM on Mono lowers `float.Min` / `float.Max` through `f32.min` / `f32.max`
-                // (and `float.IsNaN(...)` branches through `f32.add`), all of which canonicalize
-                // the NaN payload per the WebAssembly spec. The bit-strict NaN cases in this
-                // theory don't round-trip through the software conversion path under that
-                // lowering. Other WASM runtimes (CoreCLR-on-WASM) don't share this lowering, so
-                // gate on Mono specifically. Tracked in https://github.com/dotnet/runtime/issues/103347.
+                // (and `float.IsNaN(...)` branches through `f32.add`). The WebAssembly spec
+                // permits NaN-payload canonicalization on these ops but doesn't require it --
+                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
+                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
+                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
+                // trip through the software conversion path in that environment. Gated on
+                // Mono specifically since other WASM runtimes don't share this lowering.
+                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
+                // be removed once the conversion path either avoids the canonicalizing ops
+                // or the host engines start preserving NaN payloads.
                 if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && float.IsNaN(original))
                     continue;
                 yield return new object[] { original, expected };
