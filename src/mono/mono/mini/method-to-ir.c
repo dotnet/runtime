@@ -7500,9 +7500,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				 * A real tailcall (OP_TAILCALL) disables AOT for the method (see DISABLE_AOT
 				 * below), which under aot-only/full-AOT leaves the method out of the image and
 				 * crashes at runtime. For AOT (and llvm_only) emit the jmp as a normal call
-				 * followed by a return instead. This is observably equivalent for jmp (transfer
-				 * to the target with the current arguments and return its result); it just does
-				 * not reuse the caller's stack frame. Keep the real tailcall for the JIT.
+				 * followed by a return instead. This preserves the jmp semantics that matter
+				 * here (transfer to the target with the current arguments and return its
+				 * result), but it is not a true tailcall: it adds a stack frame, so observable
+				 * details such as stack traces can differ. Keep the real tailcall for the JIT.
 				 */
 				args = (MonoInst **)mono_mempool_alloc (cfg->mempool, sizeof (MonoInst*) * nargs);
 				for (int i = 0; i < nargs; ++i)
