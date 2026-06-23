@@ -1949,18 +1949,29 @@ namespace Internal.JitInterface
 
         private bool HasCallableAsyncVariant(MethodDesc method)
         {
-            // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
-            // we cannot resolve to an Async variant in such case.
-            // return NULL, so that caller would re-resolve as a regular method call
-            bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
+            // In some cases a method that returns Task is not actually
+            // TaskReturning (i.e. it might return T). We cannot resolve to an
+            // async variant in such case.
+            if (!method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask())
+            {
+                return false;
+            }
 
-            // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
-            allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
+            // Don't get async variant of Delegate.Invoke method; the pointed
+            // to method is not an async variant either.
+            if (method.OwningType.IsDelegate)
+            {
+                return false;
+            }
 
-            // Don't get async variant of ComImport methods since we do not generate any runtime async entry points for them.
-            allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsComImport;
+            // Don't get async variant of ComImport methods since we do not
+            // generate any runtime async entry points for them.
+            if (!method.OwningType.IsComImport)
+            {
+                return false;
+            }
 
-            return allowAsyncVariant;
+            return true;
         }
 
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
