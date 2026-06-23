@@ -1546,7 +1546,7 @@ namespace Internal.JitInterface
             {
                 method = method.GetTargetOfAsyncVariant();
             }
-            else if (method.Signature.ReturnsTaskOrValueTask())
+            else if (HasCallableAsyncVariant(method))
             {
                 method = method.GetAsyncVariant();
             }
@@ -1874,15 +1874,7 @@ namespace Internal.JitInterface
 
                 if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)
                 {
-                    // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
-                    // we cannot resolve to an Async variant in such case.
-                    // return NULL, so that caller would re-resolve as a regular method call
-                    bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
-
-                    // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
-                    allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
-
-                    method = allowAsyncVariant
+                    method = HasCallableAsyncVariant(method)
                         ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
                         : null;
                 }
@@ -1953,6 +1945,22 @@ namespace Internal.JitInterface
             pResolvedToken.cbTypeSpec = 0;
             pResolvedToken.pMethodSpec = null;
             pResolvedToken.cbMethodSpec = 0;
+        }
+
+        private bool HasCallableAsyncVariant(MethodDesc method)
+        {
+            // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+            // we cannot resolve to an Async variant in such case.
+            // return NULL, so that caller would re-resolve as a regular method call
+            bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
+
+            // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
+            allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
+
+            // Don't get async variant of ComImport methods since we do not generate any runtime async entry points for them.
+            allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsComImport;
+
+            return allowAsyncVariant;
         }
 
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
