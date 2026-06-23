@@ -4315,6 +4315,9 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
                     case NI_Vector512_Shuffle:
                     case NI_Vector512_ShuffleNative:
                     case NI_Vector512_ShuffleNativeFallback:
+                    case NI_Vector128_CreateGeometricSequence:
+                    case NI_Vector256_CreateGeometricSequence:
+                    case NI_Vector512_CreateGeometricSequence:
                     {
                         // These are likely becoming calls
                         costEx = 5 + (3 * IND_COST_EX);
@@ -11727,6 +11730,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
+#ifdef TARGET_WASM
+        case GT_FRAME_SIZE:
+#endif // TARGET_WASM
         case GT_IL_OFFSET:
         case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:

@@ -52,7 +52,7 @@ public struct X86Context : IPlatformContext
         readonly get => new(Esp);
         set => Esp = (uint)value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Eip);
         set => Eip = (uint)value.Value;

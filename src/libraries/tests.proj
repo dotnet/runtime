@@ -697,12 +697,6 @@
                                      ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
                       BuildInParallel="false" />
 
-    <ProjectReference Include="$(WasiProjectRoot)\Wasi.Build.Tests\*.Tests.csproj"
-                      Exclude="@(ProjectExclusions)"
-                      Condition="'$(TargetOS)' == 'wasi' and
-                                    (('$(ContinuousIntegrationBuild)' == 'true' and '$(TestWasmBuildTests)' == 'true') or
-                                     ('$(ContinuousIntegrationBuild)' != 'true' and '$(TestAssemblies)' == 'true'))"
-                      BuildInParallel="false" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios' and '$(RunAOTCompilation)' == 'true'">
