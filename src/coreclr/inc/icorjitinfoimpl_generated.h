@@ -498,6 +498,10 @@ void getEEInfo(
 void getAsyncInfo(
           CORINFO_ASYNC_INFO* pAsyncInfoOut) override;
 
+CORINFO_METHOD_HANDLE getAwaitReturnCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_LOOKUP* instArg) override;
+
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
 

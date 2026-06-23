@@ -1614,6 +1614,20 @@ ValueNumPair ValueNumStore::VNPWithExc(ValueNumPair vnp, ValueNumPair excSetVNP)
 
 bool ValueNumStore::IsKnownNonNull(ValueNum vn)
 {
+    if (vn == NoVN)
+    {
+        return false;
+    }
+
+    assert((TypeOfVN(vn) == TYP_I_IMPL) || (TypeOfVN(vn) == TYP_REF) || (TypeOfVN(vn) == TYP_BYREF));
+
+    target_ssize_t offset;
+    PeelOffsets(&vn, &offset);
+    if ((offset < 0) || m_compiler->fgIsBigOffset(static_cast<size_t>(offset)))
+    {
+        return false;
+    }
+
     auto vnVisitor = [this](ValueNum vn) -> VNVisit {
         if (vn != NoVN)
         {
@@ -1623,8 +1637,8 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
                 return VNVisit::Continue;
             }
 
-            VNFuncApp funcAttr;
-            if (GetVNFunc(vn, &funcAttr) && ((s_vnfOpAttribs[funcAttr.GetFunc()] & VNFOA_KnownNonNull) != 0))
+            VNFuncApp funcApp;
+            if (GetVNFunc(vn, &funcApp) && ((s_vnfOpAttribs[funcApp.GetFunc()] & VNFOA_KnownNonNull) != 0))
             {
                 return VNVisit::Continue;
             }
