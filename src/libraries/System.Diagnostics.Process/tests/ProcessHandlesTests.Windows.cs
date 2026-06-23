@@ -148,7 +148,7 @@ namespace System.Diagnostics.Tests
 
                 Interop.Kernel32.CloseHandle(processInfo.hThread);
 
-                return new SafeProcessHandle(processInfo.hProcess, ownsHandle: true);
+                return processInfo.hProcess;
             });
 
             (string output, string error) = process.ReadAllText();

@@ -413,7 +413,7 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         internal static unsafe SafeProcessHandle StartWithCallback<TState>(ProcessStartInfo startInfo, SafeFileHandle stdinHandle, SafeFileHandle stdoutHandle, SafeFileHandle stderrHandle,
-            Func<WindowsProcessStartArguments, TState, SafeProcessHandle> callback, TState state)
+            Func<WindowsProcessStartArguments, TState, IntPtr> callback, TState state)
         {
             ValueStringBuilder commandLine = new(stackalloc char[256]);
             ProcessUtils.BuildCommandLine(startInfo, ref commandLine);
@@ -451,13 +451,13 @@ namespace Microsoft.Win32.SafeHandles
                     args.Arguments = commandLinePtr;
                     args.EnvironmentVariables = environmentBlockPtr;
 
-                    SafeProcessHandle startedProcess = callback(args, state);
-                    if (startedProcess is null || startedProcess.IsInvalid)
+                    IntPtr processHandle = callback(args, state);
+                    if (processHandle == IntPtr.Zero || processHandle == (IntPtr)(-1))
                     {
                         throw new ArgumentException(SR.Argument_InvalidHandle, nameof(callback));
                     }
 
-                    return startedProcess;
+                    return new SafeProcessHandle(processHandle, ownsHandle: true);
                 }
             }
             finally

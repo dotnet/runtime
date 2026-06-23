@@ -472,7 +472,6 @@ namespace System.Diagnostics
 }
 namespace System.Runtime.InteropServices
 {
-    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
     public ref struct WindowsProcessStartArguments
     {
         public WindowsProcessStartArguments() { }
@@ -484,10 +483,9 @@ namespace System.Runtime.InteropServices
         public System.IntPtr StandardError { get { throw null; } }
         public System.IntPtr StandardInput { get { throw null; } }
         public System.IntPtr StandardOutput { get { throw null; } }
-        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.WindowsProcessStartArguments, Microsoft.Win32.SafeHandles.SafeProcessHandle> callback) { throw null; }
-        public static System.Diagnostics.Process Start<TState>(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.WindowsProcessStartArguments, TState, Microsoft.Win32.SafeHandles.SafeProcessHandle> callback, TState state) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.WindowsProcessStartArguments, System.IntPtr> callback) { throw null; }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
     public ref struct UnixProcessStartArguments
     {
         public UnixProcessStartArguments() { }
@@ -501,13 +499,10 @@ namespace System.Runtime.InteropServices
         public System.IntPtr StandardError { get { throw null; } }
         public System.IntPtr StandardInput { get { throw null; } }
         public System.IntPtr StandardOutput { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
         public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.UnixProcessStartArguments, int> callback) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
-        public static System.Diagnostics.Process Start<TState>(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.UnixProcessStartArguments, TState, int> callback, TState state) { throw null; }
     }
 }

@@ -1197,7 +1197,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         internal bool StartCore<TState>(ProcessStartInfo startInfo,
 #if TARGET_WINDOWS
-            Func<WindowsProcessStartArguments, TState, SafeProcessHandle>?
+            Func<WindowsProcessStartArguments, TState, IntPtr>?
 #else
             Func<UnixProcessStartArguments, TState, int>?
 #endif

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 
@@ -9,9 +8,8 @@ namespace System.Runtime.InteropServices
 {
     /// <summary>
     /// Provides the prepared data required to start a process via a user-supplied callback.
-    /// This ref struct is populated by the <see cref="WindowsProcessStartArguments.Start(ProcessStartInfo, Func{WindowsProcessStartArguments, SafeProcessHandle})"/> method.
+    /// This ref struct is populated by the <see cref="WindowsProcessStartArguments.Start(ProcessStartInfo, Func{WindowsProcessStartArguments, IntPtr})"/> method.
     /// </summary>
-    [SupportedOSPlatform("windows")]
     public ref struct WindowsProcessStartArguments
     {
         public WindowsProcessStartArguments() { }
@@ -59,29 +57,25 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public ProcessStartInfo ProcessStartInfo { get; internal set; } = null!;
 
-        /// <inheritdoc cref="Start{TState}(ProcessStartInfo, Func{WindowsProcessStartArguments, TState, SafeProcessHandle}, TState)"/>
-        public static Process Start(ProcessStartInfo startInfo, Func<WindowsProcessStartArguments, SafeProcessHandle> callback)
-            => Start(startInfo, static (args, state) => state(args), state: callback);
-
         /// <summary>
         /// Starts a new process by preparing all necessary arguments (standard handles, command line, environment)
         /// and then invoking the user-supplied <paramref name="callback"/> to perform the actual process creation system call.
-        /// The callback receives a <see cref="WindowsProcessStartArguments"/> instance with the prepared data and must return a
-        /// <see cref="SafeProcessHandle"/> representing the created process.
+        /// The callback receives a <see cref="WindowsProcessStartArguments"/> instance with the prepared data and must return an
+        /// <see cref="IntPtr"/> representing the handle of the created process.
         /// </summary>
         /// <param name="startInfo">The <see cref="ProcessStartInfo"/> that contains the information used to start the process.</param>
-        /// <param name="state">The user-defined state object that is passed to the callback.</param>
         /// <param name="callback">
         /// A function that receives the prepared <see cref="WindowsProcessStartArguments"/> and creates the process using any system call of the user's choice.
-        /// The callback must return a valid <see cref="SafeProcessHandle"/> for the newly created process.
+        /// The callback must return a valid process handle (<see cref="IntPtr"/>) for the newly created process.
         /// The memory referenced by pointer properties in <see cref="WindowsProcessStartArguments"/> is only valid for the duration of the callback.
         /// The callback is invoked while an internal process-start lock is held; calling System.Diagnostics.Process APIs that start processes from within the callback may deadlock or throw.
         /// </param>
         /// <returns>A new <see cref="Process"/> instance associated with the started process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> or <paramref name="callback"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentException">The <see cref="SafeProcessHandle"/> returned by the callback is invalid.</exception>
+        /// <exception cref="ArgumentException">The <see cref="IntPtr"/> returned by the callback is invalid.</exception>
         /// <exception cref="InvalidOperationException"><see cref="ProcessStartInfo.UseShellExecute"/> is set to <see langword="true"/>.</exception>
-        public static Process Start<TState>(ProcessStartInfo startInfo, Func<WindowsProcessStartArguments, TState, SafeProcessHandle> callback, TState state)
+        [SupportedOSPlatform("windows")]
+        public static Process Start(ProcessStartInfo startInfo, Func<WindowsProcessStartArguments, IntPtr> callback)
         {
 #if !TARGET_WINDOWS
             throw new PlatformNotSupportedException();
@@ -98,7 +92,7 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                process.StartCore(startInfo, callback, state);
+                process.StartCore(startInfo, static (args, cb) => cb(args), state: callback);
             }
             catch
             {

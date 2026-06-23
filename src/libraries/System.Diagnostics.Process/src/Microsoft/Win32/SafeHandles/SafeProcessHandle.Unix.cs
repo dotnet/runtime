@@ -316,7 +316,7 @@ namespace Microsoft.Win32.SafeHandles
                     int processId = callback(args, state);
                     if (processId <= 0)
                     {
-                        throw new ArgumentException(SR.Argument_InvalidHandle, nameof(callback));
+                        throw new ArgumentException(SR.Argument_InvalidProcessId, nameof(callback));
                     }
 
                     waitStateHolder = new ProcessWaitState.Holder(processId, isNewChild: true, usesTerminal);
