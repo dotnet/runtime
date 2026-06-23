@@ -11,19 +11,6 @@
 #include "hostfxr_resolver.h"
 #include <cinttypes>
 
-void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::string_t& host_path)
-{
-    trace::error(
-        MISSING_RUNTIME_ERROR_FORMAT,
-        INSTALL_OR_UPDATE_NET_ERROR_MESSAGE,
-        host_path.c_str(),
-        get_current_arch_name(),
-        _STRINGIFY(HOST_VERSION),
-        dotnet_root.c_str(),
-        get_download_url().c_str(),
-        _STRINGIFY(HOST_VERSION));
-}
-
 int exe_start(const int argc, const pal::char_t* argv[])
 {
     // Use realpath to find the path of the host, resolving any symlinks.
@@ -100,7 +87,15 @@ int exe_start(const int argc, const pal::char_t* argv[])
         // the same mechanism of redirecting error writers.
         if (trace::get_error_writer() != nullptr && rc == static_cast<int>(StatusCode::FrameworkMissingFailure) && set_error_writer == nullptr)
         {
-            need_newer_framework_error(fxr.dotnet_root(), host_path);
+            trace::error(
+                MISSING_RUNTIME_ERROR_FORMAT,
+                INSTALL_OR_UPDATE_NET_ERROR_MESSAGE,
+                host_path.c_str(),
+                get_current_arch_name(),
+                _STRINGIFY(HOST_VERSION),
+                fxr.dotnet_root().c_str(),
+                get_download_url().c_str(),
+                _STRINGIFY(HOST_VERSION));
         }
     }
     else
