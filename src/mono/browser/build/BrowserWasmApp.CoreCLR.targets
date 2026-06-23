@@ -240,9 +240,9 @@
     <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
       <!-- The conflict set: copies of the same file name present in BOTH the runtime pack and app-local. -->
       <_CoreCLRConflictCandidate Include="@(_CoreCLRRuntimePackAssembly)"
-                                 Condition="$(_CoreCLRAppLocalAssemblyNames.Contains(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase))" />
+                                 Condition="$(_CoreCLRAppLocalAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase) != -1)" />
       <_CoreCLRConflictCandidate Include="@(_CoreCLRAppLocalAssembly)"
-                                 Condition="$(_CoreCLRRuntimePackAssemblyNames.Contains(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase))" />
+                                 Condition="$(_CoreCLRRuntimePackAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase) != -1)" />
     </ItemGroup>
 
     <!-- Version-based resolution (parity with SDK publish/desktop): keep the higher AssemblyVersion.
@@ -265,7 +265,7 @@
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
                                Condition="'%(Extension)' == '.dll'
                                           and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)', System.StringComparison.OrdinalIgnoreCase))
-                                          and $(_CoreCLRAppLocalAssemblyNames.Contains(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase))" />
+                                          and $(_CoreCLRAppLocalAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase) != -1)" />
     </ItemGroup>
   </Target>
 
