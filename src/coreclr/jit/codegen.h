@@ -226,7 +226,7 @@ protected:
     void                       ensureCurrentFuncIsUnwindable();
     void                       genEmitIf(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndIf();
-    void                       genEmitFunctionEnd();
+    void                       genEmitFunctionEnd(bool emitTerminalUnreachable = true);
 #endif
 
     void genEmitStartBlock(BasicBlock* block);

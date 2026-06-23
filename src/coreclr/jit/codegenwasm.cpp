@@ -703,18 +703,20 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// genEmitFunctionEnd: close any still-open wasm control flow intervals at the
-//   end of a function or funclet and emit the function-body terminator.
+// genEmitFunctionEnd: close still-open control flow intervals and emit the
+//   function-body terminator.
+//
+// Arguments:
+//   emitTerminalUnreachable - if true, emit `unreachable` before the closing
+//     `end` so the implicit return is polymorphic. Callers that have already
+//     emitted a terminator (e.g. BBJ_THROW) pass false.
 //
 // Notes:
-//   Mirrors the per-interval bookkeeping done by genEmitStartBlock when
-//   popping intervals: Try needs a trailing `unreachable`, ExnRefWrapper
-//   needs a preceding `unreachable` and a trailing `local.set` of the
-//   per-funclet exnref local. After all intervals are closed, an extra
-//   `unreachable` makes the implicit return polymorphic so it matches any
-//   function-return signature, then `end` terminates the function body.
+//   Per-interval bookkeeping mirrors genEmitStartBlock: Try needs a trailing
+//   `unreachable`; ExnRefWrapper needs a preceding `unreachable` and a
+//   trailing `local.set` of the per-funclet exnref local.
 //
-void CodeGen::genEmitFunctionEnd()
+void CodeGen::genEmitFunctionEnd(bool emitTerminalUnreachable)
 {
     while (!wasmControlFlowStack->Empty())
     {
@@ -741,7 +743,10 @@ void CodeGen::genEmitFunctionEnd()
         }
     }
 
-    instGen(INS_unreachable);
+    if (emitTerminalUnreachable)
+    {
+        instGen(INS_unreachable);
+    }
     instGen(INS_end);
 }
 

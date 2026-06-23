@@ -809,6 +809,21 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
 
         case BBJ_THROW:
         {
+#if defined(TARGET_WASM)
+            // Wasm validator needs an `unreachable` after the throw so the
+            // fall-through stack is polymorphic.
+            //
+            GetEmitter()->emitIns(INS_unreachable);
+
+            // At function/funclet end, close open intervals and emit `end`
+            // (we've already emitted the terminating `unreachable` above).
+            //
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            {
+                genEmitFunctionEnd(/* emitTerminalUnreachable */ false);
+            }
+#else  // !TARGET_WASM
+
             // If we have a throw at the end of a function or funclet, we need to emit another instruction
             // afterwards to help the OS unwinder determine the correct context during unwind.
             // We insert an unexecuted breakpoint instruction in several situations
@@ -840,23 +855,7 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
                     }
                 }
             }
-
-#if defined(TARGET_WASM)
-            // For wasm, every BBJ_THROW must be followed by `unreachable` so the
-            // wasm validator treats the subsequent stack as polymorphic; otherwise
-            // a normal-flow fall-through through this block would fail validation
-            // (the throw helper is a regular call from the validator's perspective).
-            //
-            GetEmitter()->emitIns(INS_unreachable);
-
-            // If this is the last block of the function or funclet, close any
-            // still-open intervals and emit the function-body terminator.
-            //
-            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
-            {
-                genEmitFunctionEnd();
-            }
-#endif // defined(TARGET_WASM)
+#endif // !TARGET_WASM
 
             break;
         }
