@@ -149,6 +149,10 @@ public interface IRuntimeTypeSystem : IContract
     bool IsObjRef(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the MethodTable represents a value type that may contain managed
+    // pointers (Span<T>, ReadOnlySpan<T>, etc.). Such types cannot be boxed
+    // and require ByRefPointerOffsetsReporter-style GC scanning of their fields.
+    bool IsByRefLike(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a continuation subtype that has no metadata of its own
@@ -295,6 +299,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsFieldDescRVA(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     CorElementType GetFieldDescType(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef) => throw new NotImplementedException();
+    TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer) => throw new NotImplementedException();
     TargetPointer GetFieldDescByName(TypeHandle typeHandle, string fieldName) => throw new NotImplementedException();
     TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true) => throw new NotImplementedException();
     TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true) => throw new NotImplementedException();
