@@ -3074,7 +3074,8 @@ GenTree* Compiler::optVNBasedFoldExpr_Cond_TypeCompare(BasicBlock* block, Statem
         fgSetStmtSeq(defStmt);
     }
 
-    JITDUMP("... optimized obj.GetType() %s typeof(%s) into:\n", relop->OperIs(GT_EQ) ? "==" : "!=", eeGetClassName(clsHnd));
+    JITDUMP("... optimized obj.GetType() %s typeof(%s) into:\n",
+            relop->OperIs(GT_EQ) ? "==" : "!=", eeGetClassName(clsHnd));
     DISPTREE(compare);
 
     return compare;
