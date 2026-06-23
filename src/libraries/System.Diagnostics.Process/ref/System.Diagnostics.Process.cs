@@ -484,7 +484,7 @@ namespace System.Runtime.InteropServices
         public System.IntPtr StandardInput { get { throw null; } }
         public System.IntPtr StandardOutput { get { throw null; } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.WindowsProcessStartArguments, nint> callback) { throw null; }
+        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.WindowsProcessStartArguments, System.IntPtr> callback) { throw null; }
     }
     public ref struct UnixProcessStartArguments
     {

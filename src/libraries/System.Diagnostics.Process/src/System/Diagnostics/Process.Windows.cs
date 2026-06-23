@@ -508,7 +508,7 @@ namespace System.Diagnostics
 
         private static ConsoleEncoding GetStandardOutputEncoding() => GetEncoding((int)Interop.Kernel32.GetConsoleOutputCP());
 
-        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, Func<WindowsProcessStartArguments, IntPtr>? callback)
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, Func<WindowsProcessStartArguments, nint>? callback)
         {
             SafeProcessHandle startedProcess = callback is null
                 ? SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles)

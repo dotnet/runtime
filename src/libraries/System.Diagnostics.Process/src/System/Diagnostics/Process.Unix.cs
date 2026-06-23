@@ -368,7 +368,8 @@ namespace System.Diagnostics
 
             Debug.Assert(!startedProcess.IsInvalid);
 
-            _waitStateHolder = waitStateHolder!.IncrementRefCount(); // SafeProcessHandle has its own copy of the wait state holder, so we need to increment the ref count for our copy.
+            // SafeProcessHandle has its own copy of the wait state holder, so we need to increment the ref count for our copy.
+            _waitStateHolder = waitStateHolder!.IncrementRefCount();
 
             SetProcessHandle(startedProcess);
             SetProcessId(startedProcess.ProcessId);
