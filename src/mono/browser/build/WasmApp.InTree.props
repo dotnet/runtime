@@ -36,8 +36,11 @@
     <_WasmCrossgen2JitPath Condition="'$(_WasmCrossgen2JitPath)' == ''">$(_WasmCrossgen2ToolsDir)$(_WasmCrossgen2JitName)</_WasmCrossgen2JitPath>
     <_WasmReadyToRunReferenceAssembliesPath Condition="'$(_WasmReadyToRunReferenceAssembliesPath)' == ''">$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\$(Configuration)\runtimes\browser-wasm\</_WasmReadyToRunReferenceAssembliesPath>
     <!-- -O works around the MinOpts wasm R2R JIT assert (https://github.com/dotnet/runtime/issues/129630).
-         JitWasmNyiToR2RUnsupported lets NYI methods fall back at runtime instead of failing crossgen. -->
-    <_WasmCrossgen2ExtraArgs Condition="'$(_WasmCrossgen2ExtraArgs)' == ''">--codegenopt:JitWasmNyiToR2RUnsupported=1 -O</_WasmCrossgen2ExtraArgs>
+         JitWasmNyiToR2RUnsupported lets NYI methods fall back at runtime instead of failing crossgen.
+         JitWasmSimdNyiToR2RUnsupported does the same for the NYI_WASM_SIMD paths (parity with
+         crossgen-corelib.proj), otherwise SIMD methods crash crossgen2
+         (https://github.com/dotnet/runtime/issues/129745). -->
+    <_WasmCrossgen2ExtraArgs Condition="'$(_WasmCrossgen2ExtraArgs)' == ''">--codegenopt:JitWasmNyiToR2RUnsupported=1 --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 -O</_WasmCrossgen2ExtraArgs>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">

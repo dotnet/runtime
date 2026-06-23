@@ -338,7 +338,7 @@ extern "C" void InterpreterStub()
 
 extern "C" UINT_PTR STDCALL GetCurrentIP(void)
 {
-    PORTABILITY_ASSERT("GetCurrentIP is not implemented on wasm");
+    // WASM-TODO: Implement this function to return the current instruction pointer in the interpreter.
     return 0;
 }
 
