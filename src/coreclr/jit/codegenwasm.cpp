@@ -703,6 +703,49 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
+// genEmitFunctionEnd: close any still-open wasm control flow intervals at the
+//   end of a function or funclet and emit the function-body terminator.
+//
+// Notes:
+//   Mirrors the per-interval bookkeeping done by genEmitStartBlock when
+//   popping intervals: Try needs a trailing `unreachable`, ExnRefWrapper
+//   needs a preceding `unreachable` and a trailing `local.set` of the
+//   per-funclet exnref local. After all intervals are closed, an extra
+//   `unreachable` makes the implicit return polymorphic so it matches any
+//   function-return signature, then `end` terminates the function body.
+//
+void CodeGen::genEmitFunctionEnd()
+{
+    while (!wasmControlFlowStack->Empty())
+    {
+        WasmInterval* const topInterval = wasmControlFlowStack->Top();
+
+        if (topInterval->IsExnRefWrapper())
+        {
+            instGen(INS_unreachable);
+        }
+
+        instGen(INS_end);
+        WasmInterval* interval = wasmControlFlowStack->Pop();
+
+        if (interval->IsTry())
+        {
+            instGen(INS_unreachable);
+        }
+
+        if (interval->IsExnRefWrapper())
+        {
+            unsigned const exnRefIdx = m_compiler->funCurrentFunc()->funWasmExnRefLocalIndex;
+            assert(exnRefIdx != UINT_MAX);
+            GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, exnRefIdx);
+        }
+    }
+
+    instGen(INS_unreachable);
+    instGen(INS_end);
+}
+
+//------------------------------------------------------------------------
 // WasmProduceReg: Produce a register and update liveness for an emitted node.
 //
 // Wrapper over "genProduceReg". Does two additional things:

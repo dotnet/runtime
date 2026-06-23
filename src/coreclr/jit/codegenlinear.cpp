@@ -849,11 +849,12 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
             //
             GetEmitter()->emitIns(INS_unreachable);
 
-            // The last instruction in a wasm function or funclet must be end.
+            // If this is the last block of the function or funclet, close any
+            // still-open intervals and emit the function-body terminator.
             //
             if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
             {
-                GetEmitter()->emitIns(INS_end);
+                genEmitFunctionEnd();
             }
 #endif // defined(TARGET_WASM)
 
@@ -916,21 +917,13 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
 #endif // FEATURE_LOOP_ALIGN
 
 #if defined(TARGET_WASM)
-            // The last instruction in a wasm function or funclet must be end.
-            // BBJ_ALWAYS that targets a backedge (e.g., an infinite loop tail) can
-            // be the last block emitted; close any still-open wasm intervals
-            // (loop/block), mark the implicit return as unreachable so it matches
-            // any return type, and emit the function-body terminator.
+            // If this BBJ_ALWAYS is the last block of the function or funclet
+            // (e.g., backedge of an infinite loop), close any still-open
+            // wasm intervals and emit the function-body terminator.
             //
             if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
             {
-                while (!wasmControlFlowStack->Empty())
-                {
-                    GetEmitter()->emitIns(INS_end);
-                    wasmControlFlowStack->Pop();
-                }
-                GetEmitter()->emitIns(INS_unreachable);
-                GetEmitter()->emitIns(INS_end);
+                genEmitFunctionEnd();
             }
 #endif // defined(TARGET_WASM)
 
