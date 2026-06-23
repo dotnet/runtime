@@ -4379,7 +4379,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (pVmILCodeVersionNode is null)
                 throw new ArgumentException("Output pointer cannot be null.", nameof(pVmILCodeVersionNode));
 
-            *pVmILCodeVersionNode = 0;
+            // *pVmILCodeVersionNode = 0;
 
             ICodeVersions codeVersions = _target.Contracts.CodeVersions;
             NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateExplicit(new TargetPointer(vmNativeCodeVersionNode));
