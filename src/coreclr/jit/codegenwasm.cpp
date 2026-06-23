@@ -571,6 +571,18 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
     //
     while (!wasmControlFlowStack->Empty() && (wasmControlFlowStack->Top()->End() == cursor))
     {
+        WasmInterval* const topInterval = wasmControlFlowStack->Top();
+
+        // The [exnref]-wrapper is only meant to be reached via catch_ref; any
+        // normal-flow fall-through into its `end` would fail to provide the
+        // required [exnref]. Emit `unreachable` right before the wrapper's end
+        // so the fall-through path is polymorphic.
+        //
+        if (topInterval->IsExnRefWrapper())
+        {
+            instGen(INS_unreachable);
+        }
+
         instGen(INS_end);
         WasmInterval* interval = wasmControlFlowStack->Pop();
 
