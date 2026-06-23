@@ -258,6 +258,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(ConsoleFormatterNames.Json)]
         public void Log_Json_ControlAndFormatCharacters_EscapedByWriter(string formatterName)
+        {
             using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = formatterName },
                 new SimpleConsoleFormatterOptions(),
