@@ -219,7 +219,9 @@
       <!-- Resolve the runtime pack dir the same way the WebAssembly SDK does (Browser.targets): prefer
            the property, fall back to the ResolvedRuntimePack metadata (WBT/Helix-created projects leave
            the property empty). Normalize once (full path + trailing slash) so the StartsWith checks
-           below reliably match %(FullPath), which uses native separators. -->
+           below reliably match %(FullPath), which uses native separators. The path/name comparisons
+           use OrdinalIgnoreCase so a casing difference between the property and the enumerated item
+           paths (common on case-insensitive filesystems) cannot silently misclassify a copy. -->
       <_CoreCLRRuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_CoreCLRRuntimePackDir>
       <_CoreCLRRuntimePackDir Condition="'$(_CoreCLRRuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_CoreCLRRuntimePackDir>
       <_CoreCLRRuntimePackDir Condition="'$(_CoreCLRRuntimePackDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_CoreCLRRuntimePackDir)'))</_CoreCLRRuntimePackDir>
@@ -227,9 +229,9 @@
     <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
       <!-- Split copy-local managed assemblies into app-local vs runtime-pack copies. -->
       <_CoreCLRAppLocalAssembly Include="@(ReferenceCopyLocalPaths)"
-                                Condition="'%(Extension)' == '.dll' and !$([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)'))" />
+                                Condition="'%(Extension)' == '.dll' and !$([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)', System.StringComparison.OrdinalIgnoreCase))" />
       <_CoreCLRRuntimePackAssembly Include="@(ReferenceCopyLocalPaths)"
-                                   Condition="'%(Extension)' == '.dll' and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)'))" />
+                                   Condition="'%(Extension)' == '.dll' and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)', System.StringComparison.OrdinalIgnoreCase))" />
     </ItemGroup>
     <PropertyGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
       <_CoreCLRAppLocalAssemblyNames>;@(_CoreCLRAppLocalAssembly->'%(FileName)%(Extension)');</_CoreCLRAppLocalAssemblyNames>
@@ -238,9 +240,9 @@
     <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
       <!-- The conflict set: copies of the same file name present in BOTH the runtime pack and app-local. -->
       <_CoreCLRConflictCandidate Include="@(_CoreCLRRuntimePackAssembly)"
-                                 Condition="$(_CoreCLRAppLocalAssemblyNames.Contains(';%(FileName)%(Extension);'))" />
+                                 Condition="$(_CoreCLRAppLocalAssemblyNames.Contains(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase))" />
       <_CoreCLRConflictCandidate Include="@(_CoreCLRAppLocalAssembly)"
-                                 Condition="$(_CoreCLRRuntimePackAssemblyNames.Contains(';%(FileName)%(Extension);'))" />
+                                 Condition="$(_CoreCLRRuntimePackAssemblyNames.Contains(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase))" />
     </ItemGroup>
 
     <!-- Version-based resolution (parity with SDK publish/desktop): keep the higher AssemblyVersion.
@@ -262,8 +264,8 @@
     <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != '' and '@(_CoreCLRConflictCandidate)' != '' and !Exists('$(MicrosoftNETBuildTasksAssembly)')">
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
                                Condition="'%(Extension)' == '.dll'
-                                          and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)'))
-                                          and $(_CoreCLRAppLocalAssemblyNames.Contains(';%(FileName)%(Extension);'))" />
+                                          and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)', System.StringComparison.OrdinalIgnoreCase))
+                                          and $(_CoreCLRAppLocalAssemblyNames.Contains(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase))" />
     </ItemGroup>
   </Target>
 
