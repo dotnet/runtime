@@ -326,6 +326,9 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [OuterLoop]
+        // Streams 5 GiB of JSON; the single-threaded wasm interpreter takes roughly an hour per
+        // case, so the suite exceeds the test timeout on browser. Still covered on other platforms.
+        [SkipOnPlatform(TestPlatforms.Browser, "Too slow on the single-threaded wasm interpreter (processes 5 GiB of JSON).")]
         [InlineData(typeof(ClassDeserializedFromLargeJson))]
         [InlineData(typeof(StructDeserializedFromLargeJson))]
         [InlineData(typeof(ClassWithSmallConstructorDeserializedFromLargeJson))]
