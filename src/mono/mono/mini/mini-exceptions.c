@@ -2498,7 +2498,15 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						 * methods, then execute the clause and the rest of the method
 						 * using the interpreter.
 						 */
-						g_assert (!jit_tls->resume_state.ex_gchandle);
+						/*
+						 * resume_state.ex_gchandle is shared with the finally-resume path
+						 * (mono_handle_exception_internal above). If a finally handler threw a
+						 * superseding exception that is now being caught here, that path left a
+						 * pinned handle behind that will never be resumed; free it instead of
+						 * asserting, mirroring the finally path.
+						 */
+						if (jit_tls->resume_state.ex_gchandle)
+							mono_gchandle_free_internal (jit_tls->resume_state.ex_gchandle);
 						jit_tls->resume_state.ex_gchandle = mono_gchandle_new_internal ((MonoObject*)obj, TRUE);
 						jit_tls->resume_state.ji = ji;
 						jit_tls->resume_state.clause_index = i;
