@@ -443,7 +443,9 @@ public static partial class ZipFile
     {
         ArgumentNullException.ThrowIfNull(options);
         if (options.EncryptionMethod != ZipEncryptionMethod.None && options.Password.IsEmpty)
+        {
             throw new ArgumentException(SR.EmptyPassword, nameof(options));
+        }
         cancellationToken.ThrowIfCancellationRequested();
 
         (sourceDirectoryName, destinationArchiveFileName) = GetFullPathsForDoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName);
@@ -468,7 +470,9 @@ public static partial class ZipFile
     {
         ArgumentNullException.ThrowIfNull(options);
         if (options.EncryptionMethod != ZipEncryptionMethod.None && options.Password.IsEmpty)
+        {
             throw new ArgumentException(SR.EmptyPassword, nameof(options));
+        }
         cancellationToken.ThrowIfCancellationRequested();
 
         sourceDirectoryName = ValidateAndGetFullPathForDoCreateFromDirectory(sourceDirectoryName, destination, options.CompressionLevel);

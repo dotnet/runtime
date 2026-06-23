@@ -454,18 +454,14 @@ namespace System.IO.Compression
 
         private void WriteCore(ReadOnlySpan<byte> buffer, byte[] workBuffer)
         {
-            int inputOffset = 0;
-            int inputCount = buffer.Length;
-
             // Fill the partial block buffer if it has data
             if (_partialBlockBytes > 0)
             {
-                int copyCount = Math.Min(BlockSize - _partialBlockBytes, inputCount);
-                buffer.Slice(inputOffset, copyCount).CopyTo(_partialBlock.AsSpan(_partialBlockBytes));
+                int copyCount = Math.Min(BlockSize - _partialBlockBytes, buffer.Length);
+                buffer[..copyCount].CopyTo(_partialBlock.AsSpan(_partialBlockBytes));
 
                 _partialBlockBytes += copyCount;
-                inputOffset += copyCount;
-                inputCount -= copyCount;
+                buffer = buffer[copyCount..];
 
                 // If full, encrypt and write immediately
                 if (_partialBlockBytes == BlockSize)
@@ -476,16 +472,15 @@ namespace System.IO.Compression
                 }
             }
 
-            while (inputCount > 0)
+            while (!buffer.IsEmpty)
             {
-                int bytesToProcess = Math.Min(inputCount, workBuffer.Length);
+                int bytesToProcess = Math.Min(buffer.Length, workBuffer.Length);
 
-                buffer.Slice(inputOffset, bytesToProcess).CopyTo(workBuffer);
+                buffer[..bytesToProcess].CopyTo(workBuffer);
                 ProcessBlock(workBuffer.AsSpan(0, bytesToProcess));
                 _baseStream.Write(workBuffer, 0, bytesToProcess);
 
-                inputOffset += bytesToProcess;
-                inputCount -= bytesToProcess;
+                buffer = buffer[bytesToProcess..];
             }
         }
 
@@ -531,19 +526,16 @@ namespace System.IO.Compression
                 await WriteHeaderAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            int inputOffset = 0;
-            int inputCount = buffer.Length;
             byte[] workBuffer = GetWriteWorkBuffer();
 
             // Fill the partial block buffer if it has data
             if (_partialBlockBytes > 0)
             {
-                int copyCount = Math.Min(BlockSize - _partialBlockBytes, inputCount);
-                buffer.Slice(inputOffset, copyCount).CopyTo(_partialBlock.AsMemory(_partialBlockBytes));
+                int copyCount = Math.Min(BlockSize - _partialBlockBytes, buffer.Length);
+                buffer[..copyCount].CopyTo(_partialBlock.AsMemory(_partialBlockBytes));
 
                 _partialBlockBytes += copyCount;
-                inputOffset += copyCount;
-                inputCount -= copyCount;
+                buffer = buffer[copyCount..];
 
                 // If full, encrypt and write immediately
                 if (_partialBlockBytes == BlockSize)
@@ -554,16 +546,15 @@ namespace System.IO.Compression
                 }
             }
 
-            while (inputCount > 0)
+            while (!buffer.IsEmpty)
             {
-                int bytesToProcess = Math.Min(inputCount, workBuffer.Length);
+                int bytesToProcess = Math.Min(buffer.Length, workBuffer.Length);
 
-                buffer.Slice(inputOffset, bytesToProcess).CopyTo(workBuffer);
+                buffer[..bytesToProcess].CopyTo(workBuffer);
                 ProcessBlock(workBuffer.AsSpan(0, bytesToProcess));
                 await _baseStream.WriteAsync(workBuffer.AsMemory(0, bytesToProcess), cancellationToken).ConfigureAwait(false);
 
-                inputOffset += bytesToProcess;
-                inputCount -= bytesToProcess;
+                buffer = buffer[bytesToProcess..];
             }
         }
 
@@ -666,9 +657,13 @@ namespace System.IO.Compression
             if (!_headerWritten)
             {
                 if (isAsync)
+                {
                     await WriteHeaderAsync(cancellationToken).ConfigureAwait(false);
+                }
                 else
+                {
                     WriteHeader();
+                }
             }
 
             // Encrypt remaining partial data
@@ -678,9 +673,13 @@ namespace System.IO.Compression
             await WriteAuthCodeCoreAsync(isAsync, cancellationToken).ConfigureAwait(false);
 
             if (isAsync)
+            {
                 await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
             else
+            {
                 _baseStream.Flush();
+            }
         }
 
         public override bool CanRead => !_encrypting && !_disposed;
@@ -697,22 +696,13 @@ namespace System.IO.Compression
         public override void Flush()
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-
-            // Only flush if the base stream supports writing
-            if (_baseStream.CanWrite)
-            {
-                _baseStream.Flush();
-            }
+            _baseStream.Flush();
         }
 
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-
-            if (_baseStream.CanWrite)
-            {
-                await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
-            }
+            await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();

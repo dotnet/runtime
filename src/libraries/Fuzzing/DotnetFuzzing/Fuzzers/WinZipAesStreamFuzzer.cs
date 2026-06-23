@@ -129,19 +129,11 @@ internal sealed class WinZipAesStreamFuzzer : IFuzzer
 #pragma warning restore IL2072
     }
 
-    private byte[] CopyToRentedArray(ReadOnlySpan<byte> bytes)
+    private static byte[] CopyToRentedArray(ReadOnlySpan<byte> bytes)
     {
         byte[] buffer = ArrayPool<byte>.Shared.Rent(bytes.Length);
-        try
-        {
-            bytes.CopyTo(buffer);
-            return buffer;
-        }
-        catch
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-            throw;
-        }
+        bytes.CopyTo(buffer);
+        return buffer;
     }
 
     private async Task TestStream(byte[] buffer, int length, bool async)

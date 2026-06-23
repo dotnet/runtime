@@ -226,12 +226,16 @@ namespace System.IO.Compression
             fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
 
             if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
+            {
                 throw new IOException(SR.IO_ExtractingResultsInOutside);
+            }
 
             if (Path.GetFileName(fileDestinationPath).Length == 0)
             {
                 if (source.Length != 0)
+                {
                     throw new IOException(SR.IO_DirectoryNameWithData);
+                }
 
                 Directory.CreateDirectory(fileDestinationPath);
 
@@ -249,9 +253,13 @@ namespace System.IO.Compression
                 // Create containing directory:
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
                 if (!password.IsEmpty)
+                {
                     ExtractToFile(source, fileDestinationPath, overwrite, password);
+                }
                 else
+                {
                     source.ExtractToFile(fileDestinationPath, overwrite: overwrite);
+                }
             }
         }
     }

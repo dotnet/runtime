@@ -412,7 +412,9 @@ namespace System.IO.Compression
         {
             ArgumentNullException.ThrowIfNull(options);
             if (options.EncryptionMethod != ZipEncryptionMethod.None && options.Password.IsEmpty)
+            {
                 throw new ArgumentException(SR.EmptyPassword, nameof(options));
+            }
 
             (sourceDirectoryName, destinationArchiveFileName) = GetFullPathsForDoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName);
 
@@ -432,7 +434,9 @@ namespace System.IO.Compression
         {
             ArgumentNullException.ThrowIfNull(options);
             if (options.EncryptionMethod != ZipEncryptionMethod.None && options.Password.IsEmpty)
+            {
                 throw new ArgumentException(SR.EmptyPassword, nameof(options));
+            }
 
             sourceDirectoryName = ValidateAndGetFullPathForDoCreateFromDirectory(sourceDirectoryName, destination, options.CompressionLevel);
 

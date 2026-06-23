@@ -196,7 +196,9 @@ namespace System.IO.Compression
             _fileComment = Array.Empty<byte>();
 
             if (_storedEntryNameBytes.Length > ushort.MaxValue)
+            {
                 throw new ArgumentException(SR.EntryNamesTooLong);
+            }
 
             // grab the stream if we're in create mode
             if (_archive.Mode == ZipArchiveMode.Create)
@@ -241,9 +243,13 @@ namespace System.IO.Compression
             private set
             {
                 if (value == ZipCompressionMethod.Deflate)
+                {
                     VersionToExtractAtLeast(ZipVersionNeededValues.Deflate);
+                }
                 else if (value == ZipCompressionMethod.Deflate64)
+                {
                     VersionToExtractAtLeast(ZipVersionNeededValues.Deflate64);
+                }
                 _storedCompressionMethod = value;
             }
         }
@@ -257,7 +263,9 @@ namespace System.IO.Compression
             get
             {
                 if (_everOpenedForWrite)
+                {
                     throw new InvalidOperationException(SR.LengthAfterWrite);
+                }
                 return _compressedSize;
             }
         }
@@ -358,11 +366,17 @@ namespace System.IO.Compression
             {
                 ThrowIfInvalidArchive();
                 if (_archive.Mode == ZipArchiveMode.Read)
+                {
                     throw new NotSupportedException(SR.ReadOnlyArchive);
+                }
                 if (_archive.Mode == ZipArchiveMode.Create && _everOpenedForWrite)
+                {
                     throw new IOException(SR.FrozenAfterWrite);
+                }
                 if (value.DateTime.Year < ZipHelper.ValidZipDate_YearMin || value.DateTime.Year > ZipHelper.ValidZipDate_YearMax)
+                {
                     throw new ArgumentOutOfRangeException(nameof(value), SR.DateTimeOutOfRange);
+                }
 
                 _lastModified = value;
                 Changes |= ZipArchive.ChangeState.FixedLengthMetadata;
@@ -378,7 +392,9 @@ namespace System.IO.Compression
             get
             {
                 if (_everOpenedForWrite)
+                {
                     throw new InvalidOperationException(SR.LengthAfterWrite);
+                }
                 return _uncompressedSize;
             }
         }
@@ -403,13 +419,19 @@ namespace System.IO.Compression
         public void Delete()
         {
             if (_archive == null)
+            {
                 return;
+            }
 
             if (_currentlyOpenForWrite)
+            {
                 throw new IOException(SR.DeleteOpenEntry);
+            }
 
             if (_archive.Mode != ZipArchiveMode.Update)
+            {
                 throw new NotSupportedException(SR.DeleteOnlyInUpdate);
+            }
 
             _archive.ThrowIfDisposed();
 
@@ -447,7 +469,9 @@ namespace System.IO.Compression
             ThrowIfInvalidArchive();
 
             if (IsEncrypted && password.IsEmpty)
+            {
                 throw new ArgumentException(SR.PasswordRequired, nameof(password));
+            }
 
             return OpenCore(InferAccessFromMode(), password);
         }
@@ -483,7 +507,9 @@ namespace System.IO.Compression
             ValidateAccessForMode(access);
 
             if (IsEncrypted && password.IsEmpty)
+            {
                 throw new ArgumentException(SR.PasswordRequired, nameof(password));
+            }
 
             return OpenCore(access, password);
         }
@@ -498,17 +524,23 @@ namespace System.IO.Compression
         private void ValidateAccessForMode(FileAccess access)
         {
             if (access is not (FileAccess.Read or FileAccess.Write or FileAccess.ReadWrite))
+            {
                 throw new ArgumentOutOfRangeException(nameof(access), SR.InvalidFileAccess);
+            }
 
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
                     if (access != FileAccess.Read)
+                    {
                         throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
+                    }
                     break;
                 case ZipArchiveMode.Create:
                     if (access == FileAccess.Read)
+                    {
                         throw new InvalidOperationException(SR.CannotBeReadInCreateMode);
+                    }
                     break;
             }
         }
@@ -562,7 +594,9 @@ namespace System.IO.Compression
                 // Skip the local file header to get to the compressed data
                 // TrySkipBlock handles both AES and non-AES cases correctly
                 if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
+                {
                     throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+                }
 
                 _storedOffsetOfCompressedData = _archive.ArchiveStream.Position;
             }
@@ -918,7 +952,9 @@ namespace System.IO.Compression
         internal void ThrowIfNotOpenable(bool needToUncompress, bool needToLoadIntoMemory)
         {
             if (!IsOpenable(needToUncompress, needToLoadIntoMemory, out string? message))
+            {
                 throw new InvalidDataException(message);
+            }
         }
 
         private void DetectEntryNameVersion()
@@ -986,7 +1022,9 @@ namespace System.IO.Compression
         {
             // If data descriptor NOT used, the check byte is the MSB of CRC32
             if ((_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
+            {
                 return (byte)((_crc32 >> 24) & 0xFF);
+            }
 
             // If data descriptor IS used, the check byte is the MSB of the DOS time from the *local* header
             return (byte)((ZipHelper.DateTimeToDosTime(_lastModified.DateTime) >> 8) & 0xFF);
@@ -1089,7 +1127,9 @@ namespace System.IO.Compression
         private Stream OpenInReadMode(bool checkOpenable, ReadOnlySpan<char> password = default)
         {
             if (checkOpenable)
+            {
                 ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: false);
+            }
             return OpenInReadModeGetDataCompressor(GetOffsetOfCompressedData(), password);
         }
 
@@ -1121,14 +1161,18 @@ namespace System.IO.Compression
             // AE-2 encrypted entries store CRC as 0 so skip CRC validation for those.
             // AE-1 version entries store a valid CRC.
             if (IsAesEncrypted && _aeVersion == 2)
+            {
                 return decompressedStream;
+            }
 
             return new CrcValidatingReadStream(decompressedStream, _crc32, _uncompressedSize);
         }
         private WrappedStream OpenInWriteMode()
         {
             if (_everOpenedForWrite)
+            {
                 throw new IOException(SR.CreateModeWriteOnceAndOneEntryAtATime);
+            }
 
             // we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderAndDataIfNeeded
             _archive.DebugAssertIsStillArchiveStreamOwner(this);
@@ -1205,15 +1249,21 @@ namespace System.IO.Compression
         private WrappedStream OpenInUpdateMode(bool loadExistingContent = true, ReadOnlySpan<char> password = default)
         {
             if (_currentlyOpenForWrite)
+            {
                 throw new IOException(SR.UpdateModeOneStream);
+            }
 
             if (Encryption == ZipEncryptionMethod.Unknown)
+            {
                 throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+            }
 
             // Encrypted entries always require a password for re-encryption,
             // even when discarding existing content (write-only access).
             if (IsEncrypted && password.IsEmpty)
+            {
                 throw new ArgumentException(SR.PasswordRequired, nameof(password));
+            }
 
             if (loadExistingContent)
             {
@@ -2107,7 +2157,9 @@ namespace System.IO.Compression
         private void ThrowIfInvalidArchive()
         {
             if (_archive == null)
+            {
                 throw new InvalidOperationException(SR.DeletedEntry);
+            }
             _archive.ThrowIfDisposed();
         }
 
@@ -2189,7 +2241,9 @@ namespace System.IO.Compression
             private void ThrowIfDisposed()
             {
                 if (_isDisposed)
+                {
                     throw new ObjectDisposedException(GetType().ToString(), SR.HiddenStreamName);
+                }
             }
 
             public override int Read(byte[] buffer, int offset, int count)
@@ -2233,7 +2287,9 @@ namespace System.IO.Compression
 
                 // if we're not actually writing anything, we don't want to trigger the header
                 if (count == 0)
+                {
                     return;
+                }
 
                 if (!_everWritten)
                 {
@@ -2253,7 +2309,9 @@ namespace System.IO.Compression
 
                 // if we're not actually writing anything, we don't want to trigger the header
                 if (source.Length == 0)
+                {
                     return;
+                }
 
                 if (!_everWritten)
                 {

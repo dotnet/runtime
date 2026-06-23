@@ -157,7 +157,9 @@ namespace System.IO.Compression
         private void CalculateHeader(Span<byte> header)
         {
             if (header.Length < 12)
+            {
                 throw new ArgumentException("Header must be at least 12 bytes.", nameof(header));
+            }
 
             // bytes 0..9 random
             RandomNumberGenerator.Fill(header.Slice(0, 10));
@@ -188,7 +190,9 @@ namespace System.IO.Compression
         private unsafe void WriteHeader()
         {
             if (!_encrypting || _headerWritten)
+            {
                 return;
+            }
 
             Span<byte> header = stackalloc byte[12];
             CalculateHeader(header);
@@ -199,7 +203,9 @@ namespace System.IO.Compression
         private async ValueTask WriteHeaderAsync(CancellationToken cancellationToken)
         {
             if (!_encrypting || _headerWritten)
+            {
                 return;
+            }
 
             byte[] header = new byte[12];
             CalculateHeader(header);
@@ -335,22 +341,21 @@ namespace System.IO.Compression
             EnsureHeader();
 
             byte[] workBuffer = GetWriteWorkBuffer();
-            ReadOnlySpan<byte> remaining = buffer;
 
-            while (!remaining.IsEmpty)
+            while (!buffer.IsEmpty)
             {
-                int chunkSize = Math.Min(remaining.Length, workBuffer.Length);
+                int chunkSize = Math.Min(buffer.Length, workBuffer.Length);
 
                 for (int i = 0; i < chunkSize; i++)
                 {
                     byte ks = DecryptByte(_key2);
-                    byte p = remaining[i];
+                    byte p = buffer[i];
                     workBuffer[i] = (byte)(p ^ ks);
                     UpdateKeys(ref _key0, ref _key1, ref _key2, p);
                 }
 
                 _base.Write(workBuffer, 0, chunkSize);
-                remaining = remaining.Slice(chunkSize);
+                buffer = buffer[chunkSize..];
             }
         }
 
@@ -445,23 +450,22 @@ namespace System.IO.Compression
             await EnsureHeaderAsync(cancellationToken).ConfigureAwait(false);
 
             byte[] workBuffer = GetWriteWorkBuffer();
-            int offset = 0;
 
-            while (offset < buffer.Length)
+            while (!buffer.IsEmpty)
             {
-                int chunkSize = Math.Min(buffer.Length - offset, workBuffer.Length);
-                ReadOnlySpan<byte> span = buffer.Span;
+                int chunkSize = Math.Min(buffer.Length, workBuffer.Length);
+                ReadOnlySpan<byte> chunk = buffer.Span[..chunkSize];
 
                 for (int i = 0; i < chunkSize; i++)
                 {
                     byte ks = DecryptByte(_key2);
-                    byte p = span[offset + i];
+                    byte p = chunk[i];
                     workBuffer[i] = (byte)(p ^ ks);
                     UpdateKeys(ref _key0, ref _key1, ref _key2, p);
                 }
 
                 await _base.WriteAsync(workBuffer.AsMemory(0, chunkSize), cancellationToken).ConfigureAwait(false);
-                offset += chunkSize;
+                buffer = buffer[chunkSize..];
             }
         }
 

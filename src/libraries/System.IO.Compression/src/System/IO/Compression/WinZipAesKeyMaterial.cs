@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
@@ -89,7 +90,7 @@ namespace System.IO.Compression
             }
 
             int maxPasswordByteCount = Encoding.UTF8.GetMaxByteCount(password.Length);
-            byte[] rentedPasswordBytes = System.Buffers.ArrayPool<byte>.Shared.Rent(maxPasswordByteCount);
+            byte[] rentedPasswordBytes = ArrayPool<byte>.Shared.Rent(maxPasswordByteCount);
             Debug.Assert(totalKeySize <= 66, "totalKeySize should be at most 66 bytes (AES-256: 32 + 32 + 2)");
             Span<byte> derivedKey = stackalloc byte[totalKeySize];
 
@@ -117,7 +118,7 @@ namespace System.IO.Compression
             {
                 CryptographicOperations.ZeroMemory(rentedPasswordBytes);
                 CryptographicOperations.ZeroMemory(derivedKey);
-                System.Buffers.ArrayPool<byte>.Shared.Return(rentedPasswordBytes);
+                ArrayPool<byte>.Shared.Return(rentedPasswordBytes);
             }
         }
 

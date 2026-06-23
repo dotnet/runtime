@@ -39,7 +39,9 @@ namespace System.IO.Compression.Tests
         protected override void Dispose(bool disposing)
         {
             if (disposing)
+            {
                 _baseStream.Dispose();
+            }
             base.Dispose(disposing);
         }
     }
@@ -639,7 +641,10 @@ namespace System.IO.Compression.Tests
                 {
                     foreach (ZipArchiveEntry e in archive.Entries)
                     {
-                        if (e.Length == 0) continue; // Skip empty entries for this test
+                        if (e.Length == 0)
+                        {
+                            continue; // Skip empty entries for this test
+                        }
 
                         Stream s = await OpenEntryStream(async, e);
 
@@ -709,7 +714,10 @@ namespace System.IO.Compression.Tests
                 {
                     foreach (ZipArchiveEntry e in archive.Entries)
                     {
-                        if (e.Length == 0) continue; // Skip empty entries for this test
+                        if (e.Length == 0)
+                        {
+                            continue; // Skip empty entries for this test
+                        }
 
                         Stream s = await OpenEntryStream(async, e);
 
@@ -932,9 +940,13 @@ namespace System.IO.Compression.Tests
             {
                 byte[] data = "hello"u8.ToArray();
                 if (async)
-                    await entryStream.WriteAsync(data);
-                else
-                    entryStream.Write(data, 0, data.Length);
+                    {
+                        await entryStream.WriteAsync(data);
+                    }
+                    else
+                    {
+                        entryStream.Write(data, 0, data.Length);
+                    }
             }
             await DisposeZipArchive(async, createArchive);
 
@@ -1106,7 +1118,6 @@ namespace System.IO.Compression.Tests
             ZipArchive readArchive = await ZipArchive.CreateAsync(noSync, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: null);
             Assert.Equal(ExpectedComment, readArchive.Comment);
             await readArchive.DisposeAsync();
-        }
         }
     }
 }

@@ -79,7 +79,9 @@ public partial class ZipArchiveEntry
         ValidateAccessForMode(access);
 
         if (IsEncrypted && password.IsEmpty)
+        {
             throw new ArgumentException(SR.PasswordRequired, nameof(password));
+        }
 
         return OpenAsyncCore(access, password, cancellationToken);
     }
@@ -104,7 +106,9 @@ public partial class ZipArchiveEntry
         ThrowIfInvalidArchive();
 
         if (IsEncrypted && password.IsEmpty)
+        {
             throw new ArgumentException(SR.PasswordRequired, nameof(password));
+        }
 
         return OpenAsyncCore(InferAccessFromMode(), password, cancellationToken);
     }
@@ -125,7 +129,9 @@ public partial class ZipArchiveEntry
                 // Encrypted entries always require a password for re-encryption,
                 // even when discarding existing content (write-only access).
                 if (IsEncrypted && password.IsEmpty && access != FileAccess.Read)
+                {
                     throw new ArgumentException(SR.PasswordRequired, nameof(password));
+                }
                 return access switch
                 {
                     FileAccess.Read => OpenInReadModeAsync(checkOpenable: true, password, cancellationToken),
@@ -150,7 +156,9 @@ public partial class ZipArchiveEntry
             // Skip the local file header to get to the compressed data
             // TrySkipBlockAsync handles both AES and non-AES cases correctly
             if (!await ZipLocalFileHeader.TrySkipBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false))
+            {
                 throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+            }
 
             _storedOffsetOfCompressedData = _archive.ArchiveStream.Position;
         }
@@ -245,7 +253,9 @@ public partial class ZipArchiveEntry
         async Task<Stream> OpenInReadModeAsyncCore(bool checkOpenable, WinZipAesKeyMaterial? aesKeys, ZipCryptoKeys? zipCryptoKeys, byte zipCryptoCheckByte, CancellationToken cancellationToken)
         {
             if (checkOpenable)
+            {
                 await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: false, cancellationToken).ConfigureAwait(false);
+            }
 
             long offset = await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false);
             Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offset, _compressedSize);
@@ -279,10 +289,14 @@ public partial class ZipArchiveEntry
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (_currentlyOpenForWrite)
+        {
             throw new IOException(SR.UpdateModeOneStream);
+        }
 
         if (Encryption == ZipEncryptionMethod.Unknown)
+        {
             throw new NotSupportedException(SR.UnsupportedEncryptionMethod);
+        }
 
         if (loadExistingContent)
         {
@@ -455,7 +469,9 @@ public partial class ZipArchiveEntry
         cancellationToken.ThrowIfCancellationRequested();
         (bool openable, string? message) = await IsOpenableAsync(needToUncompress, needToLoadIntoMemory, cancellationToken).ConfigureAwait(false);
         if (!openable)
+        {
             throw new InvalidDataException(message);
+        }
     }
 
     /// <summary>
@@ -563,7 +579,9 @@ public partial class ZipArchiveEntry
         _currentlyOpenForWrite = true;
 
         if (_uncompressedSize > Array.MaxLength)
+        {
             throw new InvalidDataException(SR.EntryTooLarge);
+        }
 
         _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 

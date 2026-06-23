@@ -744,7 +744,9 @@ namespace System.IO.Compression
             aesExtraField = default;
 
             if (extraFields == null)
+            {
                 return false;
+            }
 
             foreach (ZipGenericExtraField field in extraFields)
             {
@@ -776,7 +778,9 @@ namespace System.IO.Compression
                 ushort fieldSize = BinaryPrimitives.ReadUInt16LittleEndian(extraFieldData.Slice(offset + 2, 2));
 
                 if (offset + 4 + fieldSize > extraFieldData.Length)
+                {
                     break; // Not enough data for this field
+                }
 
                 if (headerId == HeaderId && fieldSize >= DataSize &&
                     TryParseData(extraFieldData.Slice(offset + 4, fieldSize), out aesExtraField))

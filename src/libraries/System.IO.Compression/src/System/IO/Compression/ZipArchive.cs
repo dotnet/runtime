@@ -230,7 +230,9 @@ namespace System.IO.Compression
             get
             {
                 if (_mode == ZipArchiveMode.Create)
+                {
                     throw new NotSupportedException(SR.EntriesInCreateMode);
+                }
 
                 ThrowIfDisposed();
 
@@ -393,7 +395,9 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(entryName);
 
             if (_mode == ZipArchiveMode.Create)
+            {
                 throw new NotSupportedException(SR.EntriesInCreateMode);
+            }
 
             EnsureCentralDirectoryRead();
             _entriesDictionary.TryGetValue(entryName, out ZipArchiveEntry? result);
@@ -466,7 +470,9 @@ namespace System.IO.Compression
                 foreach (ZipArchiveEntry entry in _entries)
                 {
                     if (!entry.OriginallyInArchive || entry.Changes != ChangeState.Unchanged)
+                    {
                         return true;
+                    }
                 }
 
                 return false;
@@ -478,7 +484,9 @@ namespace System.IO.Compression
             ArgumentException.ThrowIfNullOrEmpty(entryName);
 
             if (_mode == ZipArchiveMode.Read)
+            {
                 throw new NotSupportedException(SR.CreateInReadMode);
+            }
 
             ThrowIfDisposed();
 
@@ -556,7 +564,9 @@ namespace System.IO.Compression
                 // us to _backingStream (which they requested we leave open), and _archiveStream was
                 // the temporary copy that we needed
                 if (_backingStream != null)
+                {
                     _archiveStream.Dispose();
+                }
             }
         }
 
@@ -701,13 +711,17 @@ namespace System.IO.Compression
         private void ReadEndOfCentralDirectoryInnerWork(ZipEndOfCentralDirectoryBlock eocd)
         {
             if (eocd.NumberOfThisDisk != eocd.NumberOfTheDiskWithTheStartOfTheCentralDirectory)
+            {
                 throw new InvalidDataException(SR.SplitSpanned);
+            }
 
             _numberOfThisDisk = eocd.NumberOfThisDisk;
             _centralDirectoryStart = eocd.OffsetOfStartOfCentralDirectoryWithRespectToTheStartingDiskNumber;
 
             if (eocd.NumberOfEntriesInTheCentralDirectory != eocd.NumberOfEntriesInTheCentralDirectoryOnThisDisk)
+            {
                 throw new InvalidDataException(SR.SplitSpanned);
+            }
 
             _expectedNumberOfEntries = eocd.NumberOfEntriesInTheCentralDirectory;
 
@@ -760,12 +774,16 @@ namespace System.IO.Compression
         private void TryReadZip64EndOfCentralDirectoryInnerInitialWork(Zip64EndOfCentralDirectoryLocator? locator)
         {
             if (locator == null || locator.OffsetOfZip64EOCD > long.MaxValue)
+            {
                 throw new InvalidDataException(SR.FieldTooBigOffsetToZip64EOCD);
+            }
 
             long zip64EOCDOffset = (long)locator.OffsetOfZip64EOCD;
 
             if (zip64EOCDOffset < 0 || zip64EOCDOffset > _archiveStream.Length)
+            {
                 throw new InvalidDataException(SR.InvalidOffsetToZip64EOCD);
+            }
 
             _archiveStream.Seek(zip64EOCDOffset, SeekOrigin.Begin);
         }
@@ -775,13 +793,19 @@ namespace System.IO.Compression
             _numberOfThisDisk = record.NumberOfThisDisk;
 
             if (record.NumberOfEntriesTotal > long.MaxValue)
+            {
                 throw new InvalidDataException(SR.FieldTooBigNumEntries);
+            }
 
             if (record.OffsetOfCentralDirectory > long.MaxValue)
+            {
                 throw new InvalidDataException(SR.FieldTooBigOffsetToCD);
+            }
 
             if (record.NumberOfEntriesTotal != record.NumberOfEntriesOnThisDisk)
+            {
                 throw new InvalidDataException(SR.SplitSpanned);
+            }
 
             _expectedNumberOfEntries = (long)record.NumberOfEntriesTotal;
             _centralDirectoryStart = (long)record.OffsetOfCentralDirectory;
@@ -1011,11 +1035,15 @@ namespace System.IO.Compression
             {
                 case ZipArchiveMode.Create:
                     if (!stream.CanWrite)
+                    {
                         throw new ArgumentException(SR.CreateModeCapabilities);
+                    }
                     break;
                 case ZipArchiveMode.Read:
                     if (!stream.CanRead)
+                    {
                         throw new ArgumentException(SR.ReadModeCapabilities);
+                    }
                     if (!stream.CanSeek)
                     {
                         isReadModeAndUnseekable = true;
@@ -1023,7 +1051,9 @@ namespace System.IO.Compression
                     break;
                 case ZipArchiveMode.Update:
                     if (!stream.CanRead || !stream.CanWrite || !stream.CanSeek)
+                    {
                         throw new ArgumentException(SR.UpdateModeCapabilities);
+                    }
                     break;
                 default:
                     // still have to throw this, because stream constructor doesn't do mode argument checks

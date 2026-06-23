@@ -64,8 +64,9 @@ namespace System.IO.Compression.Tests
                    stream.Read(buffer, totalBytesRead, bytesLeftToRead);
 
                 if (bytesRead == 0) throw new IOException("Unexpected end of stream");
-
+                {
                 totalBytesRead += bytesRead;
+                }
                 bytesLeftToRead -= bytesRead;
             }
         }
@@ -98,7 +99,9 @@ namespace System.IO.Compression.Tests
             for (int i = 0; i < a.Length; i++)
             {
                 if (a[i].CompareTo(b[i]) != 0) return false;
+                {
             }
+                }
             return true;
         }
 
@@ -107,7 +110,9 @@ namespace System.IO.Compression.Tests
             for (int i = 0; i < length; i++)
             {
                 if (a[i].CompareTo(b[i]) != 0) return false;
+                {
             }
+                }
             return true;
         }
 
@@ -119,9 +124,13 @@ namespace System.IO.Compression.Tests
         public static void StreamsEqual(Stream ast, Stream bst, int blocksToRead)
         {
             if (ast.CanSeek)
+            {
                 ast.Seek(0, SeekOrigin.Begin);
+            }
             if (bst.CanSeek)
+            {
                 bst.Seek(0, SeekOrigin.Begin);
+            }
 
             const int bufSize = 4096;
             byte[] ad = new byte[bufSize];
@@ -136,7 +145,9 @@ namespace System.IO.Compression.Tests
             do
             {
                 if (blocksToRead != -1 && blocksRead >= blocksToRead)
+                {
                     break;
+                }
 
                 ac = ReadAllBytes(ast, ad, 0, 4096);
                 bc = ReadAllBytes(bst, bd, 0, 4096);
@@ -155,9 +166,13 @@ namespace System.IO.Compression.Tests
         public static async Task StreamsEqualAsync(Stream ast, Stream bst, int blocksToRead)
         {
             if (ast.CanSeek)
+            {
                 ast.Seek(0, SeekOrigin.Begin);
+            }
             if (bst.CanSeek)
+            {
                 bst.Seek(0, SeekOrigin.Begin);
+            }
 
             const int bufSize = 4096;
             byte[] ad = new byte[bufSize];
@@ -172,7 +187,9 @@ namespace System.IO.Compression.Tests
             do
             {
                 if (blocksToRead != -1 && blocksRead >= blocksToRead)
+                {
                     break;
+                }
 
                 ac = await ast.ReadAtLeastAsync(ad, 4096, throwOnEndOfStream: false);
                 bc = await bst.ReadAtLeastAsync(bd, 4096, throwOnEndOfStream: false);
@@ -217,7 +234,9 @@ namespace System.IO.Compression.Tests
                 count++;
                 string entryName = file.FullName;
                 if (file.IsFolder)
+                {
                     entryName += Path.DirectorySeparatorChar;
+                }
                 ZipArchiveEntry entry = archive.GetEntry(entryName);
                 if (entry == null)
                 {
@@ -279,7 +298,9 @@ namespace System.IO.Compression.Tests
                         }
 
                         if ((!requireExplicit && !isEmpty) || entryName.Contains("emptydir"))
+                        {
                             count--; //discount this entry
+                        }
                     }
                     else
                     {
@@ -368,7 +389,9 @@ namespace System.IO.Compression.Tests
                 string bName = Path.GetFileName(bEntry);
                 // expected 'emptydir' folder doesn't exist because MSBuild doesn't copy empty dir
                 if (!isFile && aName.Contains("emptydir") && bName.Contains("emptydir"))
+                {
                     continue;
+                }
 
                 //we want it to be false that one of them is a directory and the other isn't
                 Assert.False(Directory.Exists(aEntry) ^ Directory.Exists(bEntry), "Directory in one is file in other");
