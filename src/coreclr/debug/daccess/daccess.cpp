@@ -5946,7 +5946,15 @@ ClrDataAccess::GetMetaDataFileInfoFromModule(Module *pModule,
                                              const DWORD cchFilePath)
 {
     SUPPORTS_DAC_HOST_ONLY;
-    return ClrDataAccess::GetMetaDataFileInfoFromPEFile(pModule->GetPEAssembly(), dwTimeStamp, dwSize, dwDataSize, dwRvaHint, wszFilePath, cchFilePath);
+
+    if (pModule == NULL)
+        return false;
+
+    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
+    if (pPEAssembly == NULL)
+        return false;
+
+    return ClrDataAccess::GetMetaDataFileInfoFromPEFile(pPEAssembly, dwTimeStamp, dwSize, dwDataSize, dwRvaHint, wszFilePath, cchFilePath);
 }
 
 /* static */ bool

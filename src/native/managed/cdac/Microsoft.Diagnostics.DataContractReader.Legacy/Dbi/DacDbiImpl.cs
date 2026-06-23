@@ -3407,9 +3407,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (dwTimeStamp is null || dwImageSize is null || pStrFilename == 0 || pResult is null)
                 throw new NullReferenceException("One or more parameters are null");
             *pResult = Interop.BOOL.FALSE;
+            *dwTimeStamp = 0;
+            *dwImageSize = 0;
             if (vmModule == 0)
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
-            Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(vmModule);
             bool result = loader.GetFileHeadersInfo(moduleHandle, out uint timeStamp, out uint imageSize);
             if (result)
