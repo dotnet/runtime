@@ -3111,9 +3111,12 @@ mono_resume_unwind (MonoContext *ctx)
 	MONO_CONTEXT_SET_SP (ctx, MONO_CONTEXT_GET_SP (&jit_tls->resume_state.ctx));
 	new_ctx = *ctx;
 
-	MonoObject *ex_obj = mono_gchandle_get_target_internal (jit_tls->resume_state.ex_gchandle);
-	mono_gchandle_free_internal (jit_tls->resume_state.ex_gchandle);
-	jit_tls->resume_state.ex_gchandle = NULL;
+	MonoObject *ex_obj = NULL;
+	if (jit_tls->resume_state.ex_gchandle) {
+		ex_obj = mono_gchandle_get_target_internal (jit_tls->resume_state.ex_gchandle);
+		mono_gchandle_free_internal (jit_tls->resume_state.ex_gchandle);
+		jit_tls->resume_state.ex_gchandle = NULL;
+	}
 
 	mono_handle_exception_internal (&new_ctx, ex_obj, TRUE, NULL);
 
