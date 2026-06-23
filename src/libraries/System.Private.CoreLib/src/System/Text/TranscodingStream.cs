@@ -137,9 +137,9 @@ namespace System.Text
                 Stream innerStream = _innerStream;
                 _innerStream = null!;
 
-                if ((_leaveOpen))
+                if (_leaveOpen)
                 {
-                    return default;
+                    return default; // no work to do
                 }
                 return innerStream.DisposeAsync();
             }

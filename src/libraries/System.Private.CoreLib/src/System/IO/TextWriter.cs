@@ -685,10 +685,10 @@ namespace System.IO
                 return WriteAsync(array.Array!, array.Offset, array.Count);
             }
             return Task.Factory.StartNew(static state =>
-                            {
-                                var t = (TupleSlim<TextWriter, ReadOnlyMemory<char>>)state!;
-                                t.Item1.Write(t.Item2.Span);
-                            }, new TupleSlim<TextWriter, ReadOnlyMemory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            {
+                var t = (TupleSlim<TextWriter, ReadOnlyMemory<char>>)state!;
+                t.Item1.Write(t.Item2.Span);
+            }, new TupleSlim<TextWriter, ReadOnlyMemory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         public virtual Task WriteLineAsync(char value) =>
@@ -792,10 +792,10 @@ namespace System.IO
                 return WriteLineAsync(array.Array!, array.Offset, array.Count);
             }
             return Task.Factory.StartNew(static state =>
-                            {
-                                var t = (TupleSlim<TextWriter, ReadOnlyMemory<char>>)state!;
-                                t.Item1.WriteLine(t.Item2.Span);
-                            }, new TupleSlim<TextWriter, ReadOnlyMemory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            {
+                var t = (TupleSlim<TextWriter, ReadOnlyMemory<char>>)state!;
+                t.Item1.WriteLine(t.Item2.Span);
+            }, new TupleSlim<TextWriter, ReadOnlyMemory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         public virtual Task WriteLineAsync()

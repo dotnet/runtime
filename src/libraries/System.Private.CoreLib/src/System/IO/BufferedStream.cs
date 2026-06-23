@@ -607,7 +607,7 @@ namespace System.IO
                     if (completeSynchronously)
                     {
 
-                        if ((error == null))
+                        if (error == null)
                         {
                             return _lastSyncCompletedReadTask.GetTask(bytesFromBuffer);
                         }

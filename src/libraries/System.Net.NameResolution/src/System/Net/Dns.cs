@@ -668,8 +668,7 @@ namespace System.Net
             {
                 if (justAddresses)
                 {
-                    return (Task)
-                                        Task.FromCanceled<IPAddress[]>(cancellationToken);
+                    return Task.FromCanceled<IPAddress[]>(cancellationToken);
                 }
                 return Task.FromCanceled<IPHostEntry>(cancellationToken);
             }
@@ -678,8 +677,7 @@ namespace System.Net
             {
                 if (justAddresses)
                 {
-                    return (Task)
-                                        Task.FromResult((IPAddress[])resultOnFailure);
+                    return Task.FromResult((IPAddress[])resultOnFailure);
                 }
                 return Task.FromResult((IPHostEntry)resultOnFailure);
             }
@@ -699,8 +697,7 @@ namespace System.Net
                 {
                     if (justAddresses)
                     {
-                        return (Task)
-                                                Task.FromResult(family == AddressFamily.Unspecified || ipAddress.AddressFamily == family ? new[] { ipAddress } : Array.Empty<IPAddress>());
+                        return Task.FromResult(family == AddressFamily.Unspecified || ipAddress.AddressFamily == family ? new[] { ipAddress } : Array.Empty<IPAddress>());
                     }
                     return Task.FromResult(CreateHostEntryForAddress(ipAddress));
                 }
@@ -719,8 +716,7 @@ namespace System.Net
                     NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: invalidDomainException);
                     if (justAddresses)
                     {
-                        return (Task)
-                                                Task.FromException<IPAddress[]>(invalidDomainException!);
+                        return Task.FromException<IPAddress[]>(invalidDomainException!);
                     }
                     return Task.FromException<IPHostEntry>(invalidDomainException!);
                 }
