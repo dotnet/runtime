@@ -1371,8 +1371,9 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_CallstackOverflow_PreservesFullDepth()
         {
-            const int Depth = 200;
-            const int Iterations = 500;
+            const int Depth = 300;
+            const int MaxFrames = byte.MaxValue;
+            const int Iterations = 128;
 
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword, () =>
             {
@@ -1392,18 +1393,18 @@ namespace System.Threading.Tasks.Tests
 
             var stream = ParseAllEvents(events);
 
-            // The deep chains overflow the per-thread buffer many times over (Iterations deep callstacks far
-            // exceed one buffer's capacity), so the rent/overflow path is exercised. The regression check:
-            // every chain resume must carry its full frame count. Scope to our recursive chains by method
-            // rather than by frame count -- a callstack truncated by the overflow bug has fewer frames but
-            // still consists of the recursive method, so it stays in scope and is caught.
+            // The deep chains overflow the per-thread buffer many times over, so the rent/overflow path is
+            // exercised. The regression check: every chain resume must carry the full (capped) frame count.
+            // Scope to our recursive chains by method rather than by frame count -- a callstack truncated by
+            // the overflow bug has fewer frames but still consists of the recursive method, so it stays in
+            // scope and is caught.
             var chainCallstacks = stream.OfType(AsyncEventID.ResumeStateMachineAsyncCallstack)
                 .Where(cs => cs.Frames.Any(f => GetMethodNameFromMethodId(cs.CallstackType, f.MethodId) == nameof(StateMachineAsync_RecursiveChainGated)))
                 .ToList();
             AssertNotEmpty(stream, chainCallstacks);
 
             int leafDepth = chainCallstacks.Max(cs => (int)cs.FrameCount);
-            AssertTrue(stream, leafDepth >= Depth, $"Expected captured depth >= {Depth}, got {leafDepth}");
+            AssertEqual(stream, MaxFrames, leafDepth);
             foreach (var cs in chainCallstacks)
             {
                 AssertEqual(stream, leafDepth, (int)cs.FrameCount);

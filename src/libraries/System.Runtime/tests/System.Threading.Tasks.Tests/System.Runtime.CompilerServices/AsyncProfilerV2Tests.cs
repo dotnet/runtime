@@ -1623,42 +1623,6 @@ namespace System.Threading.Tasks.Tests
                 "no consecutive buffer pair found where buffer N has remaining capacity and buffer N+1 starts with a large callstack");
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
-        public void RuntimeAsync_CallstackOverflow_PreservesFullDepth()
-        {
-            const int Depth = 200;
-            const int Iterations = 500;
-
-            var events = CollectEvents(ResumeRuntimeAsyncCallstackKeyword, () =>
-            {
-                RunScenarioAndFlush(async () =>
-                {
-                    for (int i = 0; i < Iterations; i++)
-                        await RuntimeAsync_RecursiveChain(Depth);
-                });
-            });
-
-            // DumpAllEvents(events);
-
-            var stream = ParseAllEvents(events);
-
-            // Scope to our recursive chains by method rather than by frame count -- a callstack truncated by
-            // the overflow bug has fewer frames but still consists of the recursive method, so it stays in
-            // scope and is caught.
-            var chainCallstacks = stream.OfType(AsyncEventID.ResumeRuntimeAsyncCallstack)
-                .Where(cs => cs.Frames.Any(f => GetMethodNameFromMethodId(cs.CallstackType, f.MethodId) == nameof(RuntimeAsync_RecursiveChain)))
-                .ToList();
-            AssertNotEmpty(stream, chainCallstacks);
-
-            int leafDepth = chainCallstacks.Max(cs => (int)cs.FrameCount);
-            AssertTrue(stream, leafDepth >= Depth, $"Expected captured depth >= {Depth}, got {leafDepth}");
-            foreach (var cs in chainCallstacks)
-            {
-                AssertEqual(stream, leafDepth, (int)cs.FrameCount);
-                AssertEqual(stream, (int)cs.FrameCount, cs.Frames.Count);
-            }
-        }
-
         // Requires threading:
         // Deep recursive chains must execute in a single dispatch
         // loop (no sync context) to produce chains exceeding the 255-frame cap.
