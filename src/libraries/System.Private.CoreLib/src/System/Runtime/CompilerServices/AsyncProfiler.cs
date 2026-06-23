@@ -1590,6 +1590,9 @@ namespace System.Runtime.CompilerServices
                 public static int MaxAsyncMethodFrameSize => MaxStateMachineAsyncMethodFrameSize;
             }
 
+            private static bool IsTruncated(in CaptureStateMachineAsyncCallstackState state) =>
+                state.Count == byte.MaxValue && state.Continuation != null;
+
             public static void EmitEvent(ref AsyncStateMachineDispatcherInfo info, AsyncThreadContext context, long currentTimestamp, ulong dispatcherId)
             {
                 if (info.Dispatcher == null)
@@ -1604,7 +1607,7 @@ namespace System.Runtime.CompilerServices
 
                 EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, AsyncEventID.ResumeStateMachineAsyncCallstack, 0, dispatcherId, ref state);
 
-                IAsyncStateMachineBox? last = ResolveAsyncStateMachineBox(state.LastContinuation);
+                IAsyncStateMachineBox? last = IsTruncated(in state) ? null : ResolveAsyncStateMachineBox(state.LastContinuation);
                 if (last != null)
                 {
                     Debug.Assert(last is Task);
@@ -1632,7 +1635,7 @@ namespace System.Runtime.CompilerServices
 
                         EmitAsyncCallstack(context, currentTimestamp, currentTimestamp - context.LastEventTimestamp, eventID, 0, dispatcherId, ref state);
 
-                        box = ResolveAsyncStateMachineBox(state.LastContinuation);
+                        box = IsTruncated(in state) ? null : ResolveAsyncStateMachineBox(state.LastContinuation);
                         if (box != null)
                         {
                             Debug.Assert(box is Task);

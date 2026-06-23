@@ -1334,30 +1334,25 @@ namespace System.Threading.Tasks.Tests
 
             var stream = ParseAllEvents(events);
 
-            // With the cap at byte.MaxValue, the initial Resume walks the first 255 frames from
-            // the leaf. The marker sits at the top of the chain (deeper than 255), so it appears
-            // in a subsequent AppendAsyncCallstack carrying the remaining frames. Use the merged
-            // view to validate the chain as a whole.
-            var mergedMarker = stream.MergedResumeCallstacksWithMarker(nameof(StateMachineAsync_CallstackDepthCappedAtMaxFrames_Marker));
-            AssertNotEmpty(stream, mergedMarker);
-
-            var deepest = mergedMarker.MaxBy(cs => cs.Frames.Count);
-            AssertNotNull(stream, deepest);
-
-            // Walker should have captured at least the full requested depth across Resume+Appends.
-            AssertTrue(stream, deepest.Frames.Count >= requestedDepth,
-                $"Expected merged frame count >= {requestedDepth}, got {deepest.Frames.Count}");
-
-            // Each individual event clamps its own FrameCount at byte.MaxValue (wire format limit).
-            ulong chainDispatcherId = deepest.DispatcherId;
-            var perEventCallstacks = stream.ChainEventsFromDispatcher(chainDispatcherId)
-                .Where(e => e.EventId is AsyncEventID.ResumeStateMachineAsyncCallstack or AsyncEventID.AppendStateMachineAsyncCallstack)
+            // The chain is deeper than the 255-frame cap, so the initial Resume clamps at byte.MaxValue and
+            // the dropped frames are NOT backfilled by a later Append: the cap is a hard limit. The marker
+            // sits at the top of the chain (deeper than 255) and is therefore truncated away, so scope to the
+            // recursive method instead.
+            var mergedChain = stream.MergedResumeCallstacks()
+                .Where(cs => cs.Frames.Any(f => GetMethodNameFromMethodId(cs.CallstackType, f.MethodId) == nameof(StateMachineAsync_RecursiveChain)))
                 .ToList();
-            AssertNotEmpty(stream, perEventCallstacks);
-            AssertAll(stream, perEventCallstacks, cs => Assert.True(cs.FrameCount <= byte.MaxValue));
+            AssertNotEmpty(stream, mergedChain);
 
-            // At least one event must have hit the cap (otherwise the test isn't exercising it).
-            AssertContains(stream, perEventCallstacks, cs => cs.FrameCount == byte.MaxValue);
+            // Hard cap: no merged Resume+Append chain may exceed the cap. If Append backfilled the truncated
+            // frames, the merged count would climb back toward the requested depth.
+            AssertAll(stream, mergedChain, cs => Assert.True(cs.Frames.Count <= byte.MaxValue,
+                $"Merged frame count {cs.Frames.Count} exceeds the {byte.MaxValue}-frame cap"));
+
+            // The deepest chain must actually reach the cap (otherwise the test isn't exercising truncation).
+            var deepest = mergedChain.MaxBy(cs => cs.Frames.Count);
+            AssertNotNull(stream, deepest);
+            AssertEqual(stream, (int)byte.MaxValue, deepest!.Frames.Count);
+            AssertEqual(stream, (int)deepest.FrameCount, deepest.Frames.Count);
 
             // Every captured frame should resolve to a managed method.
             foreach (var (methodId, _) in deepest.Frames)
