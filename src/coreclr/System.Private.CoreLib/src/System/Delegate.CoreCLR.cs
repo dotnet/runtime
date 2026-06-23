@@ -421,7 +421,7 @@ namespace System
                 Unsafe.As<MulticastDelegate>(this)._invocationCount = bindToMethodDetails.invocationCount;
                 if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
                 {
-                    _methodBase = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+                    _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
                     GC.KeepAlive(method);
                 }
 
@@ -459,7 +459,7 @@ namespace System
                 Unsafe.As<MulticastDelegate>(this)._invocationCount = bindToMethodDetails.invocationCount;
                 if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
                 {
-                    _methodBase = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+                    _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
                     GC.KeepAlive(method);
                 }
 
@@ -527,7 +527,7 @@ namespace System
             Unsafe.As<MulticastDelegate>(this)._invocationCount = bindToMethodDetails.invocationCount;
             if (bindToMethodDetails.loaderAllocatorGCHandle.IsAllocated)
             {
-                _methodBase = bindToMethodDetails.loaderAllocatorGCHandle.Target;
+                _helperObject = bindToMethodDetails.loaderAllocatorGCHandle.Target;
             }
 
             if (bindToMethodDetails.selfReferentialTarget != 0)
