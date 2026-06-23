@@ -1746,6 +1746,7 @@ Thanks for contributing to CLR Stress!
                 ProcessStartInfo psi = new ProcessStartInfo("cscript.exe", Environment.ExpandEnvironmentVariables(arguments));
                 psi.UseShellExecute = false;
                 psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
 
                 ProcessTextOutput result = Process.RunAndCaptureText(psi);
                 if (result.ExitStatus.ExitCode != 0)

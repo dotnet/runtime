@@ -105,6 +105,7 @@ namespace Profiler.Tests
             startInfo.Arguments = arguments;
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
 
             foreach (string key in Environment.GetEnvironmentVariables().Keys)
             {

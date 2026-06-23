@@ -20,6 +20,7 @@ namespace TestStackOverflow
             startInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
             startInfo.Arguments = $"{Path.Combine(Directory.GetCurrentDirectory(), "..", testName, $"{testName}.dll")} {testArgs}";
             startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
             startInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0");
             startInfo.Environment.Add("DOTNET_LogStackOverflowExit", "1");
