@@ -394,8 +394,8 @@ namespace System.Runtime.CompilerServices
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        internal static unsafe ref byte GetMethodTableRef(this object obj)
-            => ref Unsafe.Subtract(ref GetRawData(obj), sizeof(void*));
+        internal static ref nint GetMethodTableRef(this object obj)
+            => ref Unsafe.Subtract(ref Unsafe.As<byte, nint>(ref GetRawData(obj)), 1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe nuint GetRawObjectDataSize(object obj)

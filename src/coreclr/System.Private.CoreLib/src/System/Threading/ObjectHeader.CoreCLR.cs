@@ -56,14 +56,7 @@ namespace System.Threading
         };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int* GetHeaderPtr(byte* ppObjectData)
-        {
-            // The header is the 4 bytes before a pointer-sized chunk before the object data pointer.
-            return (int*)(ppObjectData - sizeof(void*) - sizeof(int));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int* GetHeaderPtrFromMt(byte* ppMethodTable)
+        private static unsafe int* GetHeaderPtr(nint* ppMethodTable)
         {
             // The header is 4 bytes before MT pointer on all architectures
             return (int*)ppMethodTable - 1;
@@ -111,9 +104,9 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            fixed (byte* pObjectData = &obj.GetMethodTableRef())
+            fixed (nint* ppMethodTable = &obj.GetMethodTableRef())
             {
-                int* pHeader = GetHeaderPtrFromMt(pObjectData);
+                int* pHeader = GetHeaderPtr(ppMethodTable);
                 int oldBits = *pHeader;
 
                 // Common case: the header is clean. Take it by storing our thread id with a single CAS.
@@ -169,9 +162,9 @@ namespace System.Threading
             // this loop will spinwait between iterations.
             for (int i = 0; i <= retries; i++)
             {
-                fixed (byte* pObjectData = &obj.GetRawData())
+                fixed (nint* ppMethodTable = &obj.GetMethodTableRef())
                 {
-                    int* pHeader = GetHeaderPtr(pObjectData);
+                    int* pHeader = GetHeaderPtr(ppMethodTable);
 
                     // rare retries when lock is not owned by somebody else.
                     // these do not count as iterations and do not spinwait.
@@ -245,9 +238,9 @@ namespace System.Threading
         {
             Debug.Assert(obj != null);
 
-            fixed (byte* pObjectData = &obj.GetMethodTableRef())
+            fixed (nint* ppMethodTable = &obj.GetMethodTableRef())
             {
-                int* pHeader = GetHeaderPtrFromMt(pObjectData);
+                int* pHeader = GetHeaderPtr(ppMethodTable);
 
                 // We may need to retry if we own the lock but the CAS races with another thread
                 // touching unrelated header bits.
@@ -296,9 +289,9 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            fixed (byte* pObjectData = &obj.GetRawData())
+            fixed (nint* ppMethodTable = &obj.GetMethodTableRef())
             {
-                int* pHeader = GetHeaderPtr(pObjectData);
+                int* pHeader = GetHeaderPtr(ppMethodTable);
 
                 // Ignore the spinlock here.
                 // Either we'll read the thin-lock data in the header or we'll have a sync block.
