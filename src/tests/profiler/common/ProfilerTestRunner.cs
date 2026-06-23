@@ -100,27 +100,26 @@ namespace Profiler.Tests
                 FailFastWithMessage("Profiler library not found at expected path: " + profilerPath);
             }
 
-            Process process = new Process();
-            process.StartInfo.FileName = program;
-            process.StartInfo.Arguments = arguments;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.RedirectStandardOutput = true;
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = program;
+            startInfo.Arguments = arguments;
+            startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardOutput = true;
 
             foreach (string key in Environment.GetEnvironmentVariables().Keys)
             {
-                process.StartInfo.EnvironmentVariables[key] = Environment.GetEnvironmentVariable(key);
+                startInfo.EnvironmentVariables[key] = Environment.GetEnvironmentVariable(key);
             }
 
             foreach (string key in envVars.Keys)
             {
-                process.StartInfo.EnvironmentVariables[key] = envVars[key];
+                startInfo.EnvironmentVariables[key] = envVars[key];
             }
 
-            process.Start();
-            ProfileeOutputVerifier verifier = new ProfileeOutputVerifier(process.StandardOutput);
+            ProcessTextOutput result = Process.RunAndCaptureText(startInfo);
+            ProfileeOutputVerifier verifier = new ProfileeOutputVerifier(new StringReader(result.StandardOutput));
 
             verifier.VerifyOutput();
-            process.WaitForExit();
 
             // There are two conditions for profiler tests to pass, the output of the profiled program
             // must contain the phrase "PROFILER TEST PASSES" and the return code must be 100. This is
@@ -131,12 +130,12 @@ namespace Profiler.Tests
             {
                 FailFastWithMessage($"Profiler tests are expected to contain the text '{verifier.SuccessPhrase}' in the console output " +
                     $"of the profilee app to indicate a passing test. Usually it is printed from the Shutdown() method of the profiler implementation. This " +
-                    $"text was not found in the output above. Profilee returned exit code {process.ExitCode}.");
+                    $"text was not found in the output above. Profilee returned exit code {result.ExitStatus.ExitCode}.");
             }
 
-            if (process.ExitCode != 100)
+            if (result.ExitStatus.ExitCode != 100)
             {
-                FailFastWithMessage($"Profilee returned exit code {process.ExitCode} instead of expected exit code 100.");
+                FailFastWithMessage($"Profilee returned exit code {result.ExitStatus.ExitCode} instead of expected exit code 100.");
             }
 
             return 100;
@@ -194,9 +193,9 @@ namespace Profiler.Tests
             private volatile bool _hasPassingOutput;
 
             public string SuccessPhrase = "PROFILER TEST PASSES";
-            private StreamReader standardOutput;
+            private TextReader standardOutput;
 
-            public ProfileeOutputVerifier(StreamReader standardOutput)
+            public ProfileeOutputVerifier(TextReader standardOutput)
             {
                 this.standardOutput = standardOutput;
             }
