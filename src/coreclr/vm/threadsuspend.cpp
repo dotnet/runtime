@@ -4562,12 +4562,23 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
     // not being used to branch execution to.
     hijackedReturnAddress = (PCODE)PacStripPtr((void*)hijackedReturnAddress);
 #endif // TARGET_ARM64
+
+    if (IsCallDescrWorkerInternalReturnAddress(hijackedReturnAddress))
+    {
+        return;
+    }
+#if defined(FEATURE_INTERPRETER) || defined(_DEBUG)
     EECodeInfo codeInfo(hijackedReturnAddress);
     if (!codeInfo.IsValid())
     {
+#ifndef FEATURE_INTERPRETER
+        _ASSERTE(!"Unknown managed code callsite");
+#endif
         STRESS_LOG2(LF_SYNC, LL_INFO100, "Thread::HijackThread(%p): Early out - return address %p is not jitted code.\n", this, (void *)hijackedReturnAddress);
         return;
     }
+#endif // FEATURE_INTERPRETER || _DEBUG
+
 #endif // !TARGET_X86
 
     IS_VALID_CODE_PTR((FARPROC) (TADDR)m_pvHJRetAddr);
