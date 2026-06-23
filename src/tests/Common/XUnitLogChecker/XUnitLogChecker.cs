@@ -542,33 +542,25 @@ public class XUnitLogChecker
 
     static bool RunProcess(string fileName, string arguments, TextWriter outputWriter)
     {
-        Process proc = new Process()
+        ProcessStartInfo startInfo = new ProcessStartInfo()
         {
-            StartInfo = new ProcessStartInfo()
-            {
-                FileName = fileName,
-                Arguments = arguments,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            }
+            FileName = fileName,
+            Arguments = arguments,
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
         };
 
-        outputWriter.WriteLine($"Invoking: {proc.StartInfo.FileName} {proc.StartInfo.Arguments}");
-        proc.Start();
-
-        Task<string> stdOut = proc.StandardOutput.ReadToEndAsync();
-        Task<string> stdErr = proc.StandardError.ReadToEndAsync();
-        if (!proc.WaitForExit(DEFAULT_TIMEOUT_MS))
+        outputWriter.WriteLine($"Invoking: {startInfo.FileName} {startInfo.Arguments}");
+        ProcessTextOutput result = Process.RunAndCaptureText(startInfo, TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_MS));
+        if (result.ExitStatus.Canceled)
         {
-            proc.Kill(true);
             outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
             return false;
         }
 
-        Task.WaitAll(stdOut, stdErr);
-        string output = stdOut.Result;
-        string error = stdErr.Result;
+        string output = result.StandardOutput;
+        string error = result.StandardError;
         if (!string.IsNullOrWhiteSpace(output))
         {
             outputWriter.WriteLine($"stdout: {output}");
