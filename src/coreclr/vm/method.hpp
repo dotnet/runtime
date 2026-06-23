@@ -3818,10 +3818,10 @@ public:
         if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
         {
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
-            return pIMD->m_pDictLayout;
+            return VolatileLoad(&pIMD->m_pDictLayout);
         }
         else if (IMD_IsSharedByGenericMethodInstantiations())
-            return m_pDictLayout;
+            return VolatileLoad(&m_pDictLayout);
         else
             return NULL;
     }
@@ -3832,11 +3832,11 @@ public:
         if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
         {
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
-            pIMD->m_pDictLayout = pNewLayout;
+            VolatileStore(&pIMD->m_pDictLayout, pNewLayout);
         }
         else if (IMD_IsSharedByGenericMethodInstantiations())
         {
-            m_pDictLayout = pNewLayout;
+            VolatileStore(&m_pDictLayout, pNewLayout);
         }
     }
 #endif // !DACCESS_COMPILE
