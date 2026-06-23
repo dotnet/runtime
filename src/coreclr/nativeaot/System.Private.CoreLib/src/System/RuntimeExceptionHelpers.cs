@@ -40,74 +40,82 @@ namespace System
             internal delegate* unmanaged<FatalErrorInfo*, delegate* unmanaged<byte*, void*, void>, void*, void> PfnGetFatalErrorLog;
         }
 
-        // Pre-allocated buffer for crash log text (UTF-8). Only one thread should
-        // be in the crash path at a time (guarded by s_crashingThreadId).
-        private const int CrashLogBufferSize = 8192;
-        private static readonly byte[] s_crashLogBuffer = new byte[CrashLogBufferSize];
-        private static int s_crashLogLength;
+        // Pre-allocated array to hold crash log fragments as string references.
+        // Each fragment is stored during crash info building and replayed on-demand
+        // by GetFatalErrorLog (for the handler callback) or WriteCrashLogToStdErr
+        // (for the default RunDefaultHandler path). This avoids a fixed-size UTF-8
+        // buffer and eliminates truncation.
+        private const int MaxCrashLogFragments = 16;
+        private static readonly string?[] s_crashLogFragments = new string?[MaxCrashLogFragments];
+        private static int s_crashLogFragmentCount;
 
-        /// <summary>
-        /// Appends a string to the crash log buffer as UTF-8. If the buffer is full,
-        /// the remaining text is silently truncated.
-        /// </summary>
-        private static void AppendToCrashLog(string? text)
+        private static void StoreCrashLogFragment(string? text)
         {
             if (string.IsNullOrEmpty(text))
                 return;
-
-            try
+            if (s_crashLogFragmentCount >= MaxCrashLogFragments)
             {
-                int remaining = CrashLogBufferSize - s_crashLogLength;
-                if (remaining <= 0)
-                    return;
-
-                ReadOnlySpan<char> source = text.AsSpan();
-                Span<byte> destination = s_crashLogBuffer.AsSpan(s_crashLogLength, remaining);
-
-                // TryGetBytes is all-or-nothing — if the full string doesn't fit,
-                // truncate the source to a conservative estimate that will fit.
-                if (!Encoding.UTF8.TryGetBytes(source, destination, out int bytesUsed))
-                {
-                    int maxChars = remaining / Encoding.UTF8.GetMaxByteCount(1);
-                    if (maxChars <= 0)
-                        return;
-                    source = source.Slice(0, maxChars);
-                    bytesUsed = Encoding.UTF8.GetBytes(source, destination);
-                }
-                s_crashLogLength += bytesUsed;
+                Debug.Fail("Crash log fragment array exceeded capacity.");
+                return;
             }
-            catch
-            {
-                // Never fail on the crash path.
-            }
+            s_crashLogFragments[s_crashLogFragmentCount++] = text;
         }
 
-        private static void AppendNewlineToCrashLog()
+        /// <summary>
+        /// Writes all stored crash log fragments to stderr. Called after the fatal
+        /// error handler when the default crash output is not suppressed.
+        /// </summary>
+        private static void WriteCrashLogToStdErr()
         {
-            if (s_crashLogLength < CrashLogBufferSize)
+            for (int i = 0; i < s_crashLogFragmentCount; i++)
             {
-                s_crashLogBuffer[s_crashLogLength++] = (byte)'\n';
+                try
+                {
+                    Internal.Console.Error.Write(s_crashLogFragments[i]);
+                }
+                catch
+                {
+                    // Never fail on the crash path.
+                }
             }
         }
 
+        /// <summary>
+        /// Callback invoked by the user's fatal error handler to retrieve crash log text.
+        /// Iterates stored fragments, encodes each to UTF-8, and calls pfnLogAction
+        /// with null-terminated chunks.
+        /// </summary>
         [UnmanagedCallersOnly]
         private static unsafe void GetFatalErrorLog(
             FatalErrorInfo* errorData,
             delegate* unmanaged<byte*, void*, void> pfnLogAction,
             void* userContext)
         {
-            if (s_crashLogLength == 0 || pfnLogAction == null)
+            if (s_crashLogFragmentCount == 0 || pfnLogAction == null)
                 return;
 
-            // Null-terminate the buffer for the callback.
-            if (s_crashLogLength < CrashLogBufferSize)
-                s_crashLogBuffer[s_crashLogLength] = 0;
-            else
-                s_crashLogBuffer[CrashLogBufferSize - 1] = 0;
+            // Use a stack buffer for UTF-8 encoding. Large strings are sent in
+            // multiple chunks — the header documents that pfnLogAction may be
+            // called multiple times with fragments.
+            const int ChunkSize = 1024;
+            byte* buffer = stackalloc byte[ChunkSize];
 
-            fixed (byte* pBuffer = s_crashLogBuffer)
+            for (int i = 0; i < s_crashLogFragmentCount; i++)
             {
-                pfnLogAction(pBuffer, userContext);
+                string? fragment = s_crashLogFragments[i];
+                if (string.IsNullOrEmpty(fragment))
+                    continue;
+
+                ReadOnlySpan<char> remaining = fragment.AsSpan();
+                while (remaining.Length > 0)
+                {
+                    // Reserve 1 byte for null terminator.
+                    Span<byte> dest = new Span<byte>(buffer, ChunkSize - 1);
+                    Encoding.UTF8.GetEncoder().Convert(remaining, dest, flush: true, out int charsUsed, out int bytesUsed, out _);
+                    buffer[bytesUsed] = 0;
+                    pfnLogAction(buffer, userContext);
+                    remaining = remaining.Slice(charsUsed);
+                }
             }
         }
 
@@ -334,9 +342,7 @@ namespace System
                     // report that OOM is the reason for the crash.
                     try
                     {
-                        Internal.Console.Error.Write("Out of memory.");
-                        Internal.Console.Error.WriteLine();
-                        AppendToCrashLog("Out of memory.\n");
+                        StoreCrashLogFragment("Out of memory.\n");
                     }
                     catch { }
                 }
@@ -344,39 +350,31 @@ namespace System
                 {
                     string header = ((exception == null) || (reason is RhFailFastReason.EnvironmentFailFast or RhFailFastReason.AssertionFailure)) ?
                         "Process terminated. " : "Unhandled exception. ";
-                    Internal.Console.Error.Write(header);
-                    AppendToCrashLog(header);
+                    StoreCrashLogFragment(header);
 
                     if (errorSource != null)
                     {
-                        Internal.Console.Error.Write(errorSource);
-                        Internal.Console.Error.WriteLine();
-                        AppendToCrashLog(errorSource);
-                        AppendNewlineToCrashLog();
+                        StoreCrashLogFragment(errorSource);
+                        StoreCrashLogFragment("\n");
                     }
 
                     if (message != null)
                     {
-                        Internal.Console.Error.Write(message);
-                        Internal.Console.Error.WriteLine();
-                        AppendToCrashLog(message);
-                        AppendNewlineToCrashLog();
+                        StoreCrashLogFragment(message);
+                        StoreCrashLogFragment("\n");
                     }
 
                     if (errorSource == null && message == null && (exception == null || reason is RhFailFastReason.EnvironmentFailFast))
                     {
                         string reasonText = GetStringForFailFastReason(reason);
-                        Internal.Console.Error.Write(reasonText);
-                        Internal.Console.Error.WriteLine();
-                        AppendToCrashLog(reasonText);
-                        AppendNewlineToCrashLog();
+                        StoreCrashLogFragment(reasonText);
+                        StoreCrashLogFragment("\n");
                     }
 
                     if (reason is RhFailFastReason.EnvironmentFailFast)
                     {
                         string stackTrace = new StackTrace().ToString();
-                        Internal.Console.Error.Write(stackTrace);
-                        AppendToCrashLog(stackTrace);
+                        StoreCrashLogFragment(stackTrace);
                     }
 
                     if ((exception != null) && (reason is not RhFailFastReason.AssertionFailure))
@@ -384,10 +382,8 @@ namespace System
                         try
                         {
                             string exText = exception.ToString();
-                            Internal.Console.Error.Write(exText);
-                            Internal.Console.Error.WriteLine();
-                            AppendToCrashLog(exText);
-                            AppendNewlineToCrashLog();
+                            StoreCrashLogFragment(exText);
+                            StoreCrashLogFragment("\n");
                         }
                         catch
                         {
@@ -396,10 +392,8 @@ namespace System
                             {
                                 // Use an allocation-free MethodTable comparison.
                                 string? typeName = exception.GetMethodTable() == Internal.Runtime.MethodTable.Of<OutOfMemoryException>() ? "Out of memory." : exception.GetType().FullName;
-                                Internal.Console.Error.Write(typeName);
-                                Internal.Console.Error.WriteLine();
-                                AppendToCrashLog(typeName);
-                                AppendNewlineToCrashLog();
+                                StoreCrashLogFragment(typeName);
+                                StoreCrashLogFragment("\n");
                             }
                             catch { }
                         }
@@ -455,6 +449,7 @@ namespace System
             }
 
             // Invoke the user's fatal error handler, if one was registered.
+            bool skipDefault = false;
             IntPtr fatalHandler = ExceptionHandling.s_fatalErrorHandler;
             if (fatalHandler != IntPtr.Zero)
             {
@@ -466,15 +461,13 @@ namespace System
                 errorInfo.PfnGetFatalErrorLog = &GetFatalErrorLog;
 
                 int handlerResult = ((delegate* unmanaged<int, void*, int>)fatalHandler)(errorCode, &errorInfo);
-                if (handlerResult == 1)
-                {
-                    // SkipDefaultHandler — terminate without crash dump.
-#if TARGET_WINDOWS
-                    Interop.Kernel32.ExitProcess(errorCode);
-#else
-                    Interop.Sys._Exit(errorCode);
-#endif
-                }
+                skipDefault = (handlerResult == 1);
+            }
+
+            if (!skipDefault)
+            {
+                // Write the crash log to stderr when default handling is active.
+                WriteCrashLogToStdErr();
             }
 
             EXCEPTION_RECORD exceptionRecord;
@@ -492,7 +485,10 @@ namespace System
 #if TARGET_WINDOWS
             Interop.Kernel32.RaiseFailFastException(new IntPtr(&exceptionRecord), pExContext, pExAddress == IntPtr.Zero ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0);
 #else
-            RuntimeImports.RhCreateCrashDumpIfEnabled(new IntPtr(&exceptionRecord));
+            if (!skipDefault)
+            {
+                RuntimeImports.RhCreateCrashDumpIfEnabled(new IntPtr(&exceptionRecord));
+            }
             Interop.Sys.Abort();
 #endif
         }

@@ -89,10 +89,9 @@ unsafe class FatalErrorHandlerTest
     {
         // For NativeAOT, Assembly.Location is empty — the process IS the test binary.
         // For CoreCLR, we need to pass the DLL path as the first argument to corerun.
-        string assemblyLocation = Assembly.GetExecutingAssembly().Location;
-        string arguments = !string.IsNullOrEmpty(assemblyLocation)
-            ? $"\"{assemblyLocation}\" {scenario}"
-            : scenario;
+        string arguments = TestLibrary.Utilities.IsNativeAot
+            ? scenario
+            : $"\"{Assembly.GetExecutingAssembly().Location}\" {scenario}";
 
         ProcessStartInfo startInfo = new(Environment.ProcessPath!, arguments)
         {
@@ -112,16 +111,20 @@ unsafe class FatalErrorHandlerTest
         var (exitCode, stderr) = LaunchChild("skip-handler");
 
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
-        // SkipDefaultHandler should not produce a signal/fast-fail crash code.
-        bool exitedCleanly = exitCode != 0 && !IsCrashExitCode(exitCode);
+        // SkipDefaultHandler suppresses the runtime's crash log output but the
+        // process still terminates via the normal fatal path (Abort/RaiseFailFastException).
+        bool noRuntimeOutput = !stderr.Contains("Process terminated.");
+        bool exited = exitCode != 0;
 
-        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, exited cleanly: {exitedCleanly}");
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, no runtime output: {noRuntimeOutput}");
         if (!handlerInvoked)
             Console.WriteLine("  FAIL: Handler was not invoked");
-        if (!exitedCleanly)
-            Console.WriteLine($"  FAIL: Expected non-crash exit code, got 0x{exitCode:X8}");
+        if (!noRuntimeOutput)
+            Console.WriteLine("  FAIL: Runtime crash log should be suppressed by SkipDefaultHandler");
+        if (!exited)
+            Console.WriteLine("  FAIL: Expected non-zero exit code");
 
-        return handlerInvoked && exitedCleanly;
+        return handlerInvoked && noRuntimeOutput && exited;
     }
 
     static bool TestRunHandler()
@@ -151,8 +154,7 @@ unsafe class FatalErrorHandlerTest
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
         bool logReceived = stderr.Contains(LogReceivedMarker);
         bool logContainsMessage = stderr.Contains("test fatal error");
-        // SkipDefaultHandler should not produce a signal/fast-fail crash code.
-        bool exitedCleanly = exitCode != 0 && !IsCrashExitCode(exitCode);
+        bool exited = exitCode != 0;
 
         Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, log received: {logReceived}, log has message: {logContainsMessage}");
         if (!handlerInvoked)
@@ -162,7 +164,7 @@ unsafe class FatalErrorHandlerTest
         if (!logContainsMessage)
             Console.WriteLine("  FAIL: Log did not contain the FailFast message");
 
-        return handlerInvoked && logReceived && logContainsMessage && exitedCleanly;
+        return handlerInvoked && logReceived && logContainsMessage && exited;
     }
 
     static bool TestSetNull()
@@ -187,20 +189,6 @@ unsafe class FatalErrorHandlerTest
             Console.WriteLine("  FAIL: Expected exit code 100 (InvalidOperationException caught)");
 
         return exitCode == 100;
-    }
-
-    static bool IsCrashExitCode(int exitCode)
-    {
-        if (OperatingSystem.IsWindows())
-        {
-            // STATUS_STACK_BUFFER_OVERRUN (used by NativeAOT fast-fail)
-            return exitCode == unchecked((int)0xC0000409);
-        }
-        else
-        {
-            // SIGABRT = 128 + 6 = 134
-            return exitCode == 134;
-        }
     }
 
     //

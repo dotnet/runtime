@@ -27,7 +27,7 @@
 #include "eventtrace.h"
 #undef ExitProcess
 
-void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
+static void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca)
 {
     STRESS_LOG2(LF_SYNC, LL_INFO10, "SafeExitProcess: exitCode = %d sca = %d\n", exitCode, sca);
     CONTRACTL
@@ -410,7 +410,103 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
 // Return Value:
 //    None
 //
-static void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString, bool fIntentionalReentry = false)
+// Writer abstraction for crash info output. Allows EmitCrashInfo to target
+// either stderr (default) or a user-provided fatal error log callback.
+struct CrashInfoWriter
+{
+    void (*WriteA)(const char* pszString, void* context);
+    void (*WriteW)(const WCHAR* pwzString, void* context);
+    void* Context;
+};
+
+static void StdErrWriteA(const char* pszString, void* /*context*/)
+{
+    PrintToStdErrA(pszString);
+}
+
+static void StdErrWriteW(const WCHAR* pwzString, void* /*context*/)
+{
+    PrintToStdErrW(pwzString);
+}
+
+static void CallbackWriteA(const char* pszString, void* context)
+{
+    // Forward UTF-8 directly to the user's FatalErrorLogAction callback.
+    // context points to a struct holding {pfnLogAction, userContext}.
+    struct CallbackState { void (*pfnLogAction)(const char*, void*); void* userContext; };
+    CallbackState* state = static_cast<CallbackState*>(context);
+    state->pfnLogAction(pszString, state->userContext);
+}
+
+static void CallbackWriteW(const WCHAR* pwzString, void* context)
+{
+    // Convert wide string to UTF-8 and forward to the user's callback.
+    struct CallbackState { void (*pfnLogAction)(const char*, void*); void* userContext; };
+    CallbackState* state = static_cast<CallbackState*>(context);
+    MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pUtf8, pwzString, CP_UTF8);
+    state->pfnLogAction(pUtf8, state->userContext);
+}
+
+static const CrashInfoWriter s_stdErrWriter = { StdErrWriteA, StdErrWriteW, nullptr };
+
+static void EmitCrashInfo(const CrashInfoWriter& writer, UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
+{
+    WRAPPER_NO_CONTRACT;
+
+    EX_TRY
+    {
+        if (exitCode == (UINT)COR_E_FAILFAST)
+        {
+            writer.WriteA("Process terminated.\n", writer.Context);
+        }
+        else
+        {
+            writer.WriteA("Fatal error.\n", writer.Context);
+        }
+
+        if (errorSource != NULL)
+        {
+            writer.WriteW(errorSource, writer.Context);
+            writer.WriteA("\n", writer.Context);
+        }
+
+        if (pszMessage != NULL)
+        {
+            writer.WriteW(pszMessage, writer.Context);
+        }
+        else
+        {
+            // If no message was passed in, generate it from the exitCode
+            InlineSString<256> exitCodeMessage;
+            GetHRMsg(exitCode, exitCodeMessage);
+            writer.WriteW(exitCodeMessage.GetUnicode(), writer.Context);
+        }
+
+        writer.WriteA("\n", writer.Context);
+
+        Thread* pThread = GetThreadNULLOk();
+        if (pThread && errorSource == NULL)
+        {
+            // LogCallstackForLogWorker uses PrintToStdErrA/W directly for stack
+            // frames so it only works with the stderr writer. For callback writers,
+            // the stack trace is not included in the log output.
+            if (writer.WriteA == StdErrWriteA)
+            {
+                LogCallstackForLogWorker(pThread, pExceptionInfo);
+            }
+
+            if (argExceptionString != NULL) {
+                writer.WriteW(argExceptionString, writer.Context);
+            }
+        }
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH
+}
+
+static void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -430,8 +526,7 @@ static void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_P
     {
         if (previousThreadID == currentThreadID)
         {
-            if (!fIntentionalReentry)
-                PrintToStdErrA("Fatal error while logging another fatal error.\n");
+            PrintToStdErrA("Fatal error while logging another fatal error.\n");
         }
         else
         {
@@ -444,51 +539,7 @@ static void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_P
         return;
     }
 
-    EX_TRY
-    {
-        if (exitCode == (UINT)COR_E_FAILFAST)
-        {
-            PrintToStdErrA("Process terminated.\n");
-        }
-        else
-        {
-            PrintToStdErrA("Fatal error.\n");
-        }
-
-        if (errorSource != NULL)
-        {
-            PrintToStdErrW(errorSource);
-            PrintToStdErrA("\n");
-        }
-
-        if (pszMessage != NULL)
-        {
-            PrintToStdErrW(pszMessage);
-        }
-        else
-        {
-            // If no message was passed in, generate it from the exitCode
-            InlineSString<256> exitCodeMessage;
-            GetHRMsg(exitCode, exitCodeMessage);
-            PrintToStdErrW(exitCodeMessage.GetUnicode());
-        }
-
-        PrintToStdErrA("\n");
-
-        Thread* pThread = GetThreadNULLOk();
-        if (pThread && errorSource == NULL)
-        {
-            LogCallstackForLogWorker(pThread, pExceptionInfo);
-
-            if (argExceptionString != NULL) {
-                PrintToStdErrW(argExceptionString);
-            }
-        }
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH
+    EmitCrashInfo(s_stdErrWriter, exitCode, pszMessage, pExceptionInfo, errorSource, argExceptionString);
 }
 
 //This starts FALSE and then converts to true if HandleFatalError has ever been called by a GC thread
@@ -678,15 +729,36 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
 
 using FatalErrorHandlerFunc = int (DOTNET_CALLCONV *)(int hresult, void* errorData);
 
-static void DOTNET_CALLCONV GetFatalErrorLogCallback(FatalErrorInfo* errorData, FatalErrorLogAction pfnLogAction, void* userContext)
+// Stored crash context for on-demand replay by GetFatalErrorLogCallback.
+static UINT s_crashExitCode;
+static LPCWSTR s_crashMessage;
+static PEXCEPTION_POINTERS s_crashExceptionInfo;
+static LPCWSTR s_crashErrorSource;
+static LPCWSTR s_crashExceptionString;
+
+static void StoreCrashContext(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
     LIMITED_METHOD_CONTRACT;
+    s_crashExitCode = exitCode;
+    s_crashMessage = pszMessage;
+    s_crashExceptionInfo = pExceptionInfo;
+    s_crashErrorSource = errorSource;
+    s_crashExceptionString = argExceptionString;
+}
+
+static void DOTNET_CALLCONV GetFatalErrorLogCallback(FatalErrorInfo* errorData, FatalErrorLogAction pfnLogAction, void* userContext)
+{
+    WRAPPER_NO_CONTRACT;
     (void)errorData;
 
-    size_t length = 0;
-    char* buffer = GetCrashLogBuffer(&length);
-    if (length > 0 && pfnLogAction != nullptr)
-        pfnLogAction(buffer, userContext);
+    if (pfnLogAction == nullptr)
+        return;
+
+    // Build a callback writer that streams crash info as UTF-8 to the user's callback.
+    struct CallbackState { void (*pfnLogAction)(const char*, void*); void* userContext; };
+    CallbackState state = { reinterpret_cast<void(*)(const char*, void*)>(pfnLogAction), userContext };
+    CrashInfoWriter writer = { CallbackWriteA, CallbackWriteW, &state };
+    EmitCrashInfo(writer, s_crashExitCode, s_crashMessage, s_crashExceptionInfo, s_crashErrorSource, s_crashExceptionString);
 }
 
 // Invokes the user-registered fatal error handler if one has been set.
@@ -718,8 +790,13 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address, PEXCEPTION_
             errorInfo.address = reinterpret_cast<void*>(address);
             if (pExceptionInfo != NULL)
             {
+#ifndef TARGET_UNIX
+                // On Unix the PAL provides emulated EXCEPTION_RECORD/CONTEXT
+                // structures, not the siginfo_t/ucontext_t documented in the
+                // public header. Pass NULL until proper conversion is added.
                 errorInfo.info = pExceptionInfo->ExceptionRecord;
                 errorInfo.context = pExceptionInfo->ContextRecord;
+#endif
             }
             errorInfo.pfnGetFatalErrorLog = GetFatalErrorLogCallback;
 
@@ -766,7 +843,24 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleFatalStackOverflow\n");
 
-    EnableCrashLogCapture();
+    // Store crash context for the handler's pfnGetFatalErrorLog callback.
+    // For stack overflow, we store minimal context — the callback will emit
+    // "Stack overflow.\n" plus what the stack walk produces.
+    StoreCrashContext(COR_E_STACKOVERFLOW, W("Stack overflow."), pExceptionInfo, nullptr, nullptr);
+
+    // Invoke the user's fatal error handler first. If SkipDefaultHandler,
+    // skip all output and crash dump.
+    {
+        UINT_PTR soAddress = pExceptionInfo->ContextRecord ? GetIP(pExceptionInfo->ContextRecord) : 0;
+        if (InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress, pExceptionInfo))
+        {
+            // SkipDefaultHandler — skip Watson and crash dump, proceed to exit.
+            SafeExitProcess(COR_E_STACKOVERFLOW, SCA_TerminateProcessWhenShutdownComplete);
+            UNREACHABLE();
+        }
+    }
+
+    // RunDefaultHandler — write crash info to stderr and proceed with default handling.
 
     FaultingExceptionFrame fef;
     if (pExceptionInfo->ContextRecord)
@@ -859,17 +953,6 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
                        pExceptionInfo->ExceptionRecord ? pExceptionInfo->ExceptionRecord->ExceptionCode : 0,
                        COR_E_STACKOVERFLOW,
                        GetClrInstanceId());
-    }
-
-    // Invoke the user's fatal error handler before Watson / RaiseFailFastException.
-    // On Windows, WatsonLastChance invokes RaiseFailFastException which terminates
-    // the process, so the handler must run first.
-    {
-        UINT_PTR soAddress = pExceptionInfo->ContextRecord ? GetIP(pExceptionInfo->ContextRecord) : 0;
-        if (InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress, pExceptionInfo))
-        {
-            _exit(COR_E_STACKOVERFLOW);
-        }
     }
 
     if (!fSkipDebugger)
@@ -1009,22 +1092,23 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
 
         g_fFastExitProcess = 2;
 
-        EnableCrashLogCapture();
-
-        STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogInfoForFatalError\n");
-
-        // Log exception to StdErr — this populates the crash log buffer that the
-        // user's fatal error handler can retrieve via pfnGetFatalErrorLog.
-        // Pass fIntentionalReentry = true since LogFatalError will call this again.
-        LogInfoForFatalError(exitCode, pszMessage, pExceptionInfo, errorSource, argExceptionString, /* fIntentionalReentry */ true);
+        // Store crash context for on-demand replay by the fatal error handler's
+        // pfnGetFatalErrorLog callback.
+        StoreCrashContext(exitCode, pszMessage, pExceptionInfo, errorSource, argExceptionString);
 
         // Invoke the user's fatal error handler before Watson / RaiseFailFastException.
         // On Windows, WatsonLastChance (called from LogFatalError) invokes RaiseFailFastException
         // which terminates the process, so the handler must run first.
         if (InvokeFatalErrorHandler(exitCode, address, pExceptionInfo))
         {
-            _exit(exitCode);
+            // SkipDefaultHandler — suppress crash output and crash dump, proceed to exit.
+            SafeExitProcess(exitCode, SCA_TerminateProcessWhenShutdownComplete);
         }
+
+        // RunDefaultHandler — write crash info to stderr and proceed with
+        // default fatal handling (Watson, crash dump, etc.).
+        STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogInfoForFatalError\n");
+        LogInfoForFatalError(exitCode, pszMessage, pExceptionInfo, errorSource, argExceptionString);
 
         STRESS_LOG0(LF_CORDB,LL_INFO100, "D::HFE: About to call LogFatalError\n");
         LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);

@@ -120,44 +120,6 @@ LPVOID CQuickHeap::Alloc(UINT sz)
 // Output functions that avoid the crt's.
 //----------------------------------------------------------------------------
 
-static char s_crashLogBuffer[8192];
-static size_t s_crashLogPos = 0;
-static bool s_crashLogActive = false;
-
-void EnableCrashLogCapture()
-{
-    LIMITED_METHOD_CONTRACT;
-    s_crashLogActive = true;
-}
-
-char* GetCrashLogBuffer(size_t* pLength)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Ensure null termination when requested.
-    size_t nullTerminatorPos = (s_crashLogPos < ARRAY_SIZE(s_crashLogBuffer))
-        ? s_crashLogPos
-        : ARRAY_SIZE(s_crashLogBuffer) - 1;
-    s_crashLogBuffer[nullTerminatorPos] = '\0';
-
-    *pLength = nullTerminatorPos;
-    return s_crashLogBuffer;
-}
-
-static void AppendToCrashLog(const char* pszString, size_t len)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    size_t remaining = ARRAY_SIZE(s_crashLogBuffer) - s_crashLogPos;
-    if (len > remaining)
-        len = remaining;
-    if (len > 0)
-    {
-        memcpy(s_crashLogBuffer + s_crashLogPos, pszString, len);
-        s_crashLogPos += len;
-    }
-}
-
 void PrintToStdErrA(const char *pszString)
 {
     CONTRACTL
@@ -170,11 +132,6 @@ void PrintToStdErrA(const char *pszString)
     _ASSERTE(pszString != NULL);
 
     minipal_log_write_error(pszString);
-
-    if (s_crashLogActive)
-    {
-        AppendToCrashLog(pszString, strlen(pszString));
-    }
 }
 
 void PrintToStdErrW(const WCHAR *pwzString)
@@ -188,25 +145,9 @@ void PrintToStdErrW(const WCHAR *pwzString)
     CONTRACTL_END
     _ASSERTE(pwzString != NULL);
 
-    UINT codepage = GetConsoleOutputCP();
+    MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, GetConsoleOutputCP());
 
-    // Write to stderr using the console codepage for correct display.
-    MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, codepage);
-    minipal_log_write_error(pStr);
-
-    // Write to the crash log buffer as UTF-8 to honor the FatalErrorHandling.h contract.
-    if (s_crashLogActive)
-    {
-        if (codepage == CP_UTF8)
-        {
-            AppendToCrashLog(pStr, strlen(pStr));
-        }
-        else
-        {
-            MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pUtf8, pwzString, CP_UTF8);
-            AppendToCrashLog(pUtf8, strlen(pUtf8));
-        }
-    }
+    PrintToStdErrA(pStr);
 }
 //----------------------------------------------------------------------------
 
