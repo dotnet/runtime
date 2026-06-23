@@ -11,7 +11,6 @@ namespace System.IO
     /// </summary>
     /// <remarks>
     /// <para>The stream cannot expand beyond the initial memory capacity.</para>
-    /// <para>This type is not thread-safe. Synchronize access if the stream is used concurrently.</para>
     /// <para><see cref="GetBuffer"/> throws and <see cref="TryGetBuffer"/> returns <see langword="false"/>.</para>
     /// </remarks>
     public sealed class WritableMemoryStream : MemoryStream
@@ -20,7 +19,6 @@ namespace System.IO
         private int _position;
         private int _length;
         private bool _isOpen;
-        private CachedCompletedInt32Task _lastReadTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WritableMemoryStream"/> class over the specified <see cref="Memory{Byte}"/>.
@@ -126,32 +124,6 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            ValidateBufferArguments(buffer, offset, count);
-            EnsureNotClosed();
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
-
-            try
-            {
-                int n = Read(buffer, offset, count);
-                return _lastReadTask.GetTask(n);
-            }
-            catch (OperationCanceledException oce)
-            {
-                return Task.FromCanceled<int>(oce.CancellationToken);
-            }
-            catch (Exception exception)
-            {
-                return Task.FromException<int>(exception);
-            }
-        }
-
-        /// <inheritdoc/>
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             EnsureNotClosed();
@@ -203,11 +175,7 @@ namespace System.IO
         public override void WriteByte(byte value)
         {
             EnsureNotClosed();
-
-            if (_position >= _buffer.Length)
-            {
-                throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
-            }
+            EnsureCapacity(1);
 
             if (_position > _length)
             {
@@ -239,10 +207,7 @@ namespace System.IO
                 return;
             }
 
-            if (_position > _buffer.Length - buffer.Length)
-            {
-                throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
-            }
+            EnsureCapacity(buffer.Length);
 
             if (_position > _length)
             {
@@ -269,19 +234,9 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
             }
 
-            try
-            {
-                Write(buffer, offset, count);
-                return Task.CompletedTask;
-            }
-            catch (OperationCanceledException oce)
-            {
-                return Task.FromCanceled(oce.CancellationToken);
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException(ex);
-            }
+            EnsureCapacity(count);
+            Write(buffer, offset, count);
+            return Task.CompletedTask;
         }
 
         /// <inheritdoc/>
@@ -294,19 +249,9 @@ namespace System.IO
                 return ValueTask.FromCanceled(cancellationToken);
             }
 
-            try
-            {
-                Write(buffer.Span);
-                return default;
-            }
-            catch (OperationCanceledException oce)
-            {
-                return ValueTask.FromCanceled(oce.CancellationToken);
-            }
-            catch (Exception ex)
-            {
-                return ValueTask.FromException(ex);
-            }
+            EnsureCapacity(buffer.Length);
+            Write(buffer.Span);
+            return default;
         }
 
         /// <inheritdoc/>
@@ -391,6 +336,14 @@ namespace System.IO
         private void EnsureNotClosed()
         {
             ObjectDisposedException.ThrowIf(!_isOpen, this);
+        }
+
+        private void EnsureCapacity(int count)
+        {
+            if (count != 0 && _position > _buffer.Length - count)
+            {
+                throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
+            }
         }
     }
 }

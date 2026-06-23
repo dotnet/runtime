@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using Xunit;
 
 namespace System.IO.Tests
@@ -36,23 +35,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void ReadFromUnmanagedMemory()
-        {
-            byte[] expected = [1, 2, 3, 4, 5];
-
-            using var manager = new NativeMemoryManager(expected.Length);
-            expected.CopyTo(manager.GetSpan());
-
-            using var stream = new ReadOnlyMemoryStream(manager.Memory);
-
-            byte[] result = new byte[expected.Length];
-            int bytesRead = stream.Read(result);
-
-            Assert.Equal(expected.Length, bytesRead);
-            Assert.Equal(expected, result);
-        }
-
-        [Fact]
         public void GetBuffer_Throws_TryGetBuffer_ReturnsFalse()
         {
             var stream = new ReadOnlyMemoryStream(new byte[] { 1, 2, 3 });
@@ -65,3 +47,4 @@ namespace System.IO.Tests
         }
     }
 }
+

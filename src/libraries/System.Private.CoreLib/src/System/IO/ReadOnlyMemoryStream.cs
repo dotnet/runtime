@@ -10,7 +10,6 @@ namespace System.IO
     /// Provides a seekable, read-only <see cref="MemoryStream"/> over a <see cref="ReadOnlyMemory{Byte}"/>.
     /// </summary>
     /// <remarks>
-    /// <para>This type is not thread-safe. Synchronize access if the stream is used concurrently.</para>
     /// <para>The stream cannot be written to. <see cref="CanWrite"/> always returns <see langword="false"/>.</para>
     /// <para><see cref="GetBuffer"/> throws and <see cref="TryGetBuffer"/> returns <see langword="false"/>.</para>
     /// </remarks>
@@ -19,7 +18,6 @@ namespace System.IO
         private ReadOnlyMemory<byte> _buffer;
         private int _position;
         private bool _isOpen;
-        private CachedCompletedInt32Task _lastReadTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ReadOnlyMemoryStream"/> class over the specified <see cref="ReadOnlyMemory{Byte}"/>.
@@ -121,32 +119,6 @@ namespace System.IO
             _position += bytesToRead;
 
             return bytesToRead;
-        }
-
-        /// <inheritdoc/>
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            ValidateBufferArguments(buffer, offset, count);
-            EnsureNotClosed();
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
-
-            try
-            {
-                int n = Read(buffer, offset, count);
-                return _lastReadTask.GetTask(n);
-            }
-            catch (OperationCanceledException oce)
-            {
-                return Task.FromCanceled<int>(oce.CancellationToken);
-            }
-            catch (Exception exception)
-            {
-                return Task.FromException<int>(exception);
-            }
         }
 
         /// <inheritdoc/>

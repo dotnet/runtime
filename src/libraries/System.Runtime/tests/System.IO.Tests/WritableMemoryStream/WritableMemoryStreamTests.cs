@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using Xunit;
 
 namespace System.IO.Tests
@@ -100,21 +99,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void WriteToUnmanagedMemory()
-        {
-            byte[] data = [10, 20, 30, 40, 50];
-
-            using var manager = new NativeMemoryManager(data.Length);
-            manager.GetSpan().Clear();
-
-            using var stream = new WritableMemoryStream(manager.Memory);
-            stream.Write(data);
-
-            Assert.Equal(data, manager.GetSpan().ToArray());
-            Assert.Equal(data.Length, stream.Position);
-        }
-
-        [Fact]
         public void GetBuffer_Throws_TryGetBuffer_ReturnsFalse()
         {
             using var stream = new WritableMemoryStream(new byte[8]);
@@ -127,3 +111,4 @@ namespace System.IO.Tests
         }
     }
 }
+

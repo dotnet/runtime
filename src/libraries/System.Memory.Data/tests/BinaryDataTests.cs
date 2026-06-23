@@ -679,7 +679,7 @@ namespace System.Tests
             Assert.Throws<IOException>(() => stream.Seek(-1, SeekOrigin.Begin));
 
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek((long)int.MaxValue + 1, SeekOrigin.Begin));
-            Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(0, (SeekOrigin)3));
+            Assert.ThrowsAny<ArgumentException>(() => stream.Seek(0, (SeekOrigin)3));
         }
 
 

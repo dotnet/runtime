@@ -12,7 +12,6 @@ namespace System.Buffers
     /// </summary>
     /// <remarks>
     /// <para>The underlying sequence is not copied; reads are served directly from its segments.</para>
-    /// <para>This type is not thread-safe. Synchronize access if the stream is used concurrently.</para>
     /// <para>The stream cannot be written to. <see cref="CanWrite"/> always returns <see langword="false"/>.</para>
     /// </remarks>
     public sealed class ReadOnlySequenceStream : Stream
@@ -21,7 +20,6 @@ namespace System.Buffers
         private SequencePosition _position;
         private long _absolutePosition;
         private bool _isDisposed;
-        private CachedCompletedInt32Task _lastReadTask;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ReadOnlySequenceStream"/> class over the specified <see cref="ReadOnlySequence{Byte}"/>.
@@ -126,32 +124,6 @@ namespace System.Buffers
         }
 
         /// <inheritdoc/>
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            ValidateBufferArguments(buffer, offset, count);
-            EnsureNotDisposed();
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
-
-            try
-            {
-                int n = Read(buffer, offset, count);
-                return _lastReadTask.GetTask(n);
-            }
-            catch (OperationCanceledException oce)
-            {
-                return Task.FromCanceled<int>(oce.CancellationToken);
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<int>(ex);
-            }
-        }
-
-        /// <inheritdoc/>
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             EnsureNotDisposed();
@@ -161,19 +133,8 @@ namespace System.Buffers
                 return ValueTask.FromCanceled<int>(cancellationToken);
             }
 
-            try
-            {
-                int n = Read(buffer.Span);
-                return new ValueTask<int>(n);
-            }
-            catch (OperationCanceledException oce)
-            {
-                return ValueTask.FromCanceled<int>(oce.CancellationToken);
-            }
-            catch (Exception ex)
-            {
-                return ValueTask.FromException<int>(ex);
-            }
+            int n = Read(buffer.Span);
+            return new ValueTask<int>(n);
         }
 
         /// <inheritdoc />

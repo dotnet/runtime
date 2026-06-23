@@ -4,6 +4,7 @@ using System.IO;
 using System.Buffers;
 using System.IO.Tests;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Memory.Tests
 {
@@ -33,6 +34,29 @@ namespace System.Memory.Tests
 
         protected override Task<Stream?> CreateReadWriteStreamCore(byte[]? initialData)
             => Task.FromResult<Stream?>(null);
+
+        [Theory]
+        [MemberData(nameof(AllSeekModes))]
+        public override async Task Seek_PastEnd_ReadReturns0(SeekMode mode)
+        {
+            await base.Seek_PastEnd_ReadReturns0(mode);
+
+            // ReadOnlySequenceStream-specific: seeking past end against an empty sequence
+            // is allowed, Position reflects the requested offset, and reads stay at 0.
+            var stream = new ReadOnlySequenceStream(ReadOnlySequence<byte>.Empty);
+            Assert.Equal(0, stream.Length);
+            Assert.Equal(0, stream.Position);
+
+            byte[] buffer = new byte[10];
+            Assert.Equal(0, stream.Read(buffer, 0, 10));
+
+            stream.Seek(0, SeekOrigin.Begin);
+            Assert.Equal(0, stream.Position);
+
+            long newPosition = stream.Seek(1, SeekOrigin.Begin);
+            Assert.Equal(1, newPosition);
+            Assert.Equal(1, stream.Position);
+        }
     }
 
     /// <summary>

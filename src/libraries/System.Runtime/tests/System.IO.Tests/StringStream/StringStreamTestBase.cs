@@ -36,7 +36,7 @@ namespace System.IO.Tests
             int totalRead = ReadToEnd(stream, actualBytes);
 
             Assert.Equal(expectedBytes.Length, totalRead);
-            Assert.Equal(expectedBytes, actualBytes.AsSpan(0, totalRead).ToArray());
+            AssertExtensions.SequenceEqual(expectedBytes, (ReadOnlySpan<byte>)actualBytes.AsSpan(0, totalRead));
         }
 
         [Theory]
@@ -55,7 +55,7 @@ namespace System.IO.Tests
                 int totalRead = ReadToEnd(stream, actualBytes);
 
                 Assert.Equal(expectedBytes.Length, totalRead);
-                Assert.Equal(expectedBytes, actualBytes.AsSpan(0, totalRead).ToArray());
+                AssertExtensions.SequenceEqual(expectedBytes, (ReadOnlySpan<byte>)actualBytes.AsSpan(0, totalRead));
             }
         }
 
@@ -79,7 +79,7 @@ namespace System.IO.Tests
             int totalRead = ReadToEnd(stream, actualBytes);
 
             Assert.Equal(expectedBytes.Length, totalRead);
-            Assert.Equal(expectedBytes, actualBytes.AsSpan(0, totalRead).ToArray());
+            AssertExtensions.SequenceEqual(expectedBytes, (ReadOnlySpan<byte>)actualBytes.AsSpan(0, totalRead));
         }
 
         [Fact]
@@ -93,7 +93,7 @@ namespace System.IO.Tests
             int totalRead = ReadToEnd(stream, actualBytes);
 
             Assert.Equal(expectedBytes.Length, totalRead);
-            Assert.Equal(expectedBytes, actualBytes.AsSpan(0, totalRead).ToArray());
+            AssertExtensions.SequenceEqual(expectedBytes, (ReadOnlySpan<byte>)actualBytes.AsSpan(0, totalRead));
         }
 
         [Fact]
@@ -115,7 +115,7 @@ namespace System.IO.Tests
             }
 
             Assert.Equal(expectedBytes.Length, totalRead);
-            Assert.Equal(expectedBytes, actualBytes);
+            AssertExtensions.SequenceEqual(expectedBytes, (ReadOnlySpan<byte>)actualBytes);
         }
 
         [Fact]
@@ -150,6 +150,41 @@ namespace System.IO.Tests
             }
 
             Assert.Equal(0, ReadFromStream(stream, buffer, 0, 1));
+        }
+
+        [Fact]
+        public void Read_FastPathGuard_PreventsOverflowFromGetMaxByteCount()
+        {
+            // The fast-path precondition must skip GetMaxByteCount(_text.Length) when it would overflow.
+            using Stream stream = CreateStream("hello", new OverflowingEncoding());
+
+            Exception ex = Record.Exception(() => ReadFromStream(stream, new byte[16], 0, 16));
+            Assert.False(ex is OverflowException, ex?.ToString());
+        }
+
+        private sealed class OverflowingEncoding : Encoding
+        {
+            public override int GetByteCount(char[] chars, int index, int count)
+                => UTF8.GetByteCount(chars, index, count);
+
+            public override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
+                => UTF8.GetBytes(chars, charIndex, charCount, bytes, byteIndex);
+
+            public override int GetMaxByteCount(int charCount) => charCount switch
+            {
+                1 => int.MaxValue,
+                2 => 8,
+                _ => checked((charCount + 1) * int.MaxValue),
+            };
+
+            public override int GetCharCount(byte[] bytes, int index, int count)
+                => throw new NotImplementedException();
+
+            public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
+                => throw new NotImplementedException();
+
+            public override int GetMaxCharCount(int byteCount)
+                => throw new NotImplementedException();
         }
     }
 }

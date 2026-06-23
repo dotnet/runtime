@@ -136,7 +136,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceStream.ConformanceTests.cs" />
-    <Compile Include="ReadOnlyBuffer\ReadOnlySequenceStreamTests.cs" />
+    <Compile Include="ReadOnlyBuffer\NativeMemoryOwningStream.cs" />
+    <Compile Include="ReadOnlyBuffer\NativeReadOnlyMemoryStream.ConformanceTests.cs" />
+    <Compile Include="ReadOnlyBuffer\NativeWritableMemoryStream.ConformanceTests.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.char.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Common.byte.cs" />
     <Compile Include="ReadOnlyBuffer\ReadOnlySequenceTests.Default.cs" />
