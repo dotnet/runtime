@@ -377,7 +377,7 @@ namespace System.Collections.Frozen.Tests
             Assert.All(expected, s => actual.Contains(s));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Allocates ~1 GB strings; requires a 64-bit address space (OOMs on 32-bit platforms).
         [OuterLoop]
         public void ToFrozenSet_WithExtremelyLargeStrings()
         {
