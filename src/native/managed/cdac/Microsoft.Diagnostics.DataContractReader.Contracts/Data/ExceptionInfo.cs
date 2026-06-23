@@ -11,8 +11,6 @@ internal sealed partial class ExceptionInfo : IData<ExceptionInfo>
     [Field] public uint ExceptionFlags { get; }
     [Field] public TargetPointer StackLowBound { get; }
     [Field] public TargetPointer StackHighBound { get; }
-
-    // The OS EXCEPTION_RECORD and CONTEXT the OS exception dispatcher pushed for this exception.
     [Field] public TargetPointer ExceptionRecord { get; }
     [Field] public TargetPointer ContextRecord { get; }
 
