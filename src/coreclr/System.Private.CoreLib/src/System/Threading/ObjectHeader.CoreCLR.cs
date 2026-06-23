@@ -111,10 +111,8 @@ namespace System.Threading
                 int* pHeader = GetHeaderPtr(pObjectData);
                 int oldBits = *pHeader;
 
-                // Common case: the header has no hashcode/syncblock index, is not spin-locked and the
-                // lock is free (no owning thread id and no recursion level). Take it by storing our
-                // thread id with a single CAS.
-                if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK | SBLK_MASK_LOCK_THREADID | SBLK_MASK_LOCK_RECLEVEL)) == 0)
+                // Common case: the header is clean. Take it by storing our thread id with a single CAS.
+                if (oldBits == 0)
                 {
                     // Thread IDs are allocated sequentially starting from 1 and recycled, so it's
                     // unusual to have a thread ID that doesn't fit in the thin-lock field.
@@ -123,7 +121,7 @@ namespace System.Threading
                     // fixed block to avoid keeping the object pinned while potentially spinning.
                     if ((uint)currentThreadID <= (uint)SBLK_MASK_LOCK_THREADID)
                     {
-                        if (Interlocked.CompareExchange(pHeader, oldBits | currentThreadID, oldBits) == oldBits)
+                        if (Interlocked.CompareExchange(pHeader, currentThreadID, oldBits) == oldBits)
                         {
                             return HeaderLockResult.Success;
                         }

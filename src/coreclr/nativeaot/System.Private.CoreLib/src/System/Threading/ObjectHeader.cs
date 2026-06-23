@@ -302,7 +302,7 @@ namespace System.Threading
                 int oldBits = *pHeader;
                 // if unused for anything, try setting our thread id
                 // N.B. hashcode, thread ID and sync index are never 0, and hashcode is largest of all
-                if ((oldBits & MASK_HASHCODE_INDEX) == 0)
+                if (oldBits == 0)
                 {
                     // Thread IDs are allocated sequentially starting from 1 and recycled, so it's
                     // unusual to have a thread ID that doesn't fit in the thin-lock field.
@@ -312,7 +312,7 @@ namespace System.Threading
                     // fixed block to avoid keeping the object pinned while potentially spinning.
                     if ((uint)(currentThreadID - 1) < (uint)SBLK_MASK_LOCK_THREADID)
                     {
-                        if (Interlocked.CompareExchange(pHeader, oldBits | currentThreadID, oldBits) == oldBits)
+                        if (Interlocked.CompareExchange(pHeader, currentThreadID, oldBits) == oldBits)
                         {
                             return -1;
                         }
