@@ -5822,35 +5822,11 @@ void Compiler::ResetOptAnnotations()
     {
         for (Statement* const stmt : block->Statements())
         {
-            bool clearedDivModFlags = false;
             for (GenTree* const tree : stmt->TreeList())
             {
                 tree->ClearVN();
                 tree->ClearAssertion();
                 tree->gtCSEnum = NO_CSE;
-
-                // GTF_DIV_MOD_NO_BY_ZERO and GTF_DIV_MOD_NO_OVERFLOW are flow-sensitive
-                // annotations set by assertion propagation once a dominating check proves
-                // the divisor safe at the node's location. They are "set once" facts that
-                // become stale when we re-run the optimizer, and must not be observed by
-                // the next iteration's (flow-insensitive) value numbering: doing so would
-                // let VN model the divide as non-throwing and allow CSE/loop hoisting to
-                // move it above the check that justified the flag (see
-                // https://github.com/dotnet/runtime/issues/129386). Clear them here so each
-                // iteration's assertion propagation re-derives them from scratch.
-                if (tree->OperIs(GT_DIV, GT_UDIV, GT_MOD, GT_UMOD) &&
-                    ((tree->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)) != 0))
-                {
-                    tree->gtFlags &= ~(GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW);
-                    clearedDivModFlags = true;
-                }
-            }
-
-            // Clearing the no-throw flags above can make a divide throwing again, so
-            // recompute the statement's side effects to restore GTF_EXCEPT consistency.
-            if (clearedDivModFlags)
-            {
-                gtUpdateStmtSideEffects(stmt);
             }
         }
     }

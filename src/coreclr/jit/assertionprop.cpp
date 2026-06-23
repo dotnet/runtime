@@ -4143,6 +4143,16 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
         changed = true;
     }
 
+    // GTF_DIV_MOD_NO_BY_ZERO/GTF_DIV_MOD_NO_OVERFLOW make the divide appear non-throwing,
+    // which would otherwise let CSE/loop hoisting move it above the dominating check that
+    // proved the divisor safe (the flag is only valid at this node's location). Pin the
+    // node with an ordering side effect so it cannot be reordered above that check, even
+    // across opt-repeat iterations (see https://github.com/dotnet/runtime/issues/129386).
+    if ((tree->gtFlags & (GTF_DIV_MOD_NO_BY_ZERO | GTF_DIV_MOD_NO_OVERFLOW)) != 0)
+    {
+        tree->SetHasOrderingSideEffect();
+    }
+
     return changed ? optAssertionProp_Update(tree, tree, stmt) : nullptr;
 }
 
