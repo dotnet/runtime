@@ -7121,7 +7121,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     BADCODE("Stack must be empty after CEE_JMPs");
                 }
 
-                _impResolveToken(CORINFO_TOKENKIND_Method);
+                if (compIsAsyncVersion())
+                {
+                    _impResolveToken(CORINFO_TOKENKIND_Await);
+
+                    // Target may not have async variant. These cases would
+                    // fail in non-async case too since they are generic.
+                    if (resolvedToken.hMethod == NO_METHOD_HANDLE)
+                    {
+                        BADCODE("Incompatible target for CEE_JMP in async version");
+                    }
+                }
+                else
+                {
+                    _impResolveToken(CORINFO_TOKENKIND_Method);
+                }
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -8779,6 +8793,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         BADCODE("tailcall. has to be followed by call, callvirt or calli");
                     }
+
+                    if (compIsAsyncVersion())
+                    {
+                        // In async versions we just ignore tail.
+                        prefixFlags &= ~PREFIX_TAILCALL_EXPLICIT;
+                    }
                 }
                 assert(sz == 0);
                 goto PREFIX;
@@ -9029,22 +9049,41 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     int         configVal          = -1; // -1 not configured, 0/1 configured to false/true
                     const BYTE* codeAddrAfterMatch = nullptr;
                     IL_OFFSET   awaitOffset        = BAD_IL_OFFSET;
-#ifdef DEBUG
-                    if (compIsAsync() && JitConfig.JitOptimizeAwait())
-#else
-                    if (compIsAsync())
-#endif
-                    {
-                        codeAddrAfterMatch = impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal, &awaitOffset);
-                        if (codeAddrAfterMatch != nullptr)
-                        {
-                            JITDUMP("Recognized await%s\n", configVal == 0 ? " (with ConfigureAwait(false))" : "");
 
-                            isAwait = true;
-                            prefixFlags |= PREFIX_IS_TASK_AWAIT;
-                            if (configVal != 0)
+                    if (compIsAsyncVersion())
+                    {
+                        if ((codeAddr + sz < codeEndp) && (getU1LittleEndian(codeAddr + sz) == CEE_RET))
+                        {
+                            JITDUMP("\nRecognized tail-call in async version\n");
+                            awaitOffset = (IL_OFFSET)(codeAddr - 1 - info.compCode);
+                            isAwait     = true;
+                            prefixFlags |= PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT;
+
+                            // Consume the ret opcode. Note `codeAddr` points at the unconsumed token;
+                            // the main loop will still do `codeAddr += sz` (token size) after this case.
+                            codeAddrAfterMatch = codeAddr + 1;
+                        }
+                    }
+                    else
+                    {
+#ifdef DEBUG
+                        if (compIsAsync() && JitConfig.JitOptimizeAwait())
+#else
+                        if (compIsAsync())
+#endif
+                        {
+                            codeAddrAfterMatch = impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal, &awaitOffset);
+                            if (codeAddrAfterMatch != nullptr)
                             {
-                                prefixFlags |= PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
+                                JITDUMP("\nRecognized await%s\n",
+                                        configVal == 0 ? " (with ConfigureAwait(false))" : "");
+
+                                isAwait = true;
+                                prefixFlags |= PREFIX_IS_TASK_AWAIT;
+                                if (configVal != 0)
+                                {
+                                    prefixFlags |= PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT;
+                                }
                             }
                         }
                     }
@@ -9059,10 +9098,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // It can also happen generally if the VM does not think using the async entry point
                             // is worth it. Treat these as a regular call that is Awaited.
                             _impResolveToken(CORINFO_TOKENKIND_Method);
-                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
+                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT |
+                                             PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT);
                             isAwait = false;
 
-                            JITDUMP("No async variant provided by VM, treating as regular call that is awaited\n");
+                            JITDUMP("\nNo async variant provided by VM, treating as regular call that is awaited\n");
                         }
                     }
                     else
@@ -9080,7 +9120,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                   (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr, flags,
                                   &callInfo);
 
-                    if (isAwait && (callInfo.kind == CORINFO_CALL))
+                    // TODO: crossgen2 cannot handle us removing this
+                    if (isAwait && IsReadyToRun() && (callInfo.kind == CORINFO_CALL))
                     {
                         assert(callInfo.sig.isAsyncCall());
                         bool isSyncCallThunk;
@@ -9091,11 +9132,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // back to the non-async task-returning call. There
                             // is no reason to go through the thunk.
                             _impResolveToken(CORINFO_TOKENKIND_Method);
-                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT);
+                            prefixFlags &= ~(PREFIX_IS_TASK_AWAIT | PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT |
+                                             PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT);
                             isAwait = false;
 
-                            JITDUMP(
-                                "Async variant provided by VM is a thunk, switching direct call to synchronous task-returning method\n");
                             eeGetCallInfo(&resolvedToken,
                                           (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
                                           flags, &callInfo);
@@ -9274,9 +9314,31 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     return;
                 }
 
-                if (explicitTailCall || newBBcreatedForTailcallStress) // If newBBcreatedForTailcallStress is true, we
-                                                                       // have created a new BB after the "call"
-                // instruction in fgMakeBasicBlocks(). So we need to jump to RET regardless.
+                // For tail awaits we also import the ret right after.
+                // Also, we may have covariant cases like Task<int> return from a Task method,
+                // and in those cases we end up with an extra IL stack entry here.
+                if ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0)
+                {
+                    if ((info.compRetType == TYP_VOID) && (stackState.esStackDepth > 0))
+                    {
+                        JITDUMP("\nHave extra IL stack entry after tail await\n");
+                        GenTree* val = impPopStack().val;
+                        if (varTypeIsStruct(val))
+                        {
+                            val = impNormStructVal(val, CHECK_SPILL_ALL);
+                        }
+
+                        impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
+                    }
+
+                    goto RET;
+                }
+
+                // For explicit tailcalls import the ret as part of it.
+                // If newBBcreatedForTailcallStress is true we have created a
+                // new BB after the "call" instruction in fgMakeBasicBlocks().
+                // So we need to jump to RET regardless.
+                if (explicitTailCall || newBBcreatedForTailcallStress)
                 {
                     assert(!compIsForInlining());
                     goto RET;
@@ -11219,7 +11281,7 @@ GenTree* Compiler::impStoreMultiRegValueToVar(GenTree*                    op,
 //
 // Arguments:
 //     prefixFlags -- active IL prefixes
-//     opcode -- [in, out] IL opcode
+//     opcode      -- [in, out] IL opcode
 //
 // Returns:
 //     True if import was successful (may fail for some inlinees)
@@ -11246,6 +11308,20 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 
     GenTree* op2 = nullptr;
     GenTree* op1 = nullptr;
+
+    if (((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) == 0) && compIsAsyncVersion())
+    {
+        JITDUMP("\nWrapping return value in await\n");
+        if (!impWrapTopOfStackInAwait())
+        {
+            return false;
+        }
+
+        if (info.compRetType == TYP_VOID)
+        {
+            impAppendTree(impPopStack().val, CHECK_SPILL_ALL, impCurStmtDI);
+        }
+    }
 
     if (info.compRetType != TYP_VOID)
     {
@@ -11590,6 +11666,119 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     // Remember at which BC offset the tree was finished
     impNoteLastILoffs();
 #endif
+    return true;
+}
+
+//------------------------------------------------------------------------
+// impWrapTopOfStackInAwait:
+//   Wrap the value on the top of the stack in
+//   AsyncHelpers.TransparentAwaitWithResult.
+//
+// Returns:
+//   True if successful. False if the EE could not create the call (only during
+//   inlining), in which case inlining should be aborted.
+//
+// Remarks:
+//   Async versions of non-async task-returning methods are compiled with the
+//   exact same IL as the original method. This means the return value is
+//   mistyped; the original IL returns a Task or ValueTask, but the runtime
+//   async version expects to return the unwrapped result. This function
+//   accomplishes the unwrapping by inserting an async call to
+//   AsyncHelpers.TransparentAwaitWithResult around the value on the top of the
+//   stack.
+//
+bool Compiler::impWrapTopOfStackInAwait()
+{
+    CORINFO_LOOKUP        instArgLookup;
+    CORINFO_METHOD_HANDLE awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, &instArgLookup);
+
+    CORINFO_SIG_INFO awaitSig;
+    info.compCompHnd->getMethodSig(awaitMethod, &awaitSig);
+
+    assert(awaitSig.isAsyncCall());
+
+    var_types            callRetType = JITtype2varType(awaitSig.retType);
+    GenTreeCall*         awaitCall   = gtNewCallNode(CT_USER_FUNC, awaitMethod, callRetType);
+    CORINFO_CLASS_HANDLE taskTypeHnd;
+    CorInfoType          taskType = strip(info.compCompHnd->getArgType(&awaitSig, awaitSig.args, &taskTypeHnd));
+
+    GenTree*   awaitable   = impPopStack().val;
+    var_types  taskJitType = JITtype2varType(taskType);
+    NewCallArg taskArg;
+    if (taskJitType == TYP_STRUCT)
+    {
+        awaitable = impNormStructVal(awaitable, CHECK_SPILL_ALL);
+        taskArg   = NewCallArg::Struct(awaitable, TYP_STRUCT, typGetObjLayout(taskTypeHnd));
+    }
+    else
+    {
+        taskArg = NewCallArg::Primitive(awaitable, taskJitType);
+    }
+
+    awaitCall->gtArgs.PushFront(this, taskArg);
+
+    NewCallArg asyncContArg = NewCallArg::Primitive(gtNewNull()).WellKnown(WellKnownArg::AsyncContinuation);
+
+    NewCallArg instArg;
+    if (awaitSig.hasTypeArg())
+    {
+        GenTree* instArgTree = impLookupToTree(&instArgLookup, GTF_ICON_METHOD_HDL, awaitMethod);
+        if (instArgTree == nullptr)
+        {
+            // Can fail if runtime lookup cannot be represented properly during inlining
+            return false;
+        }
+
+        instArg = NewCallArg::Primitive(instArgTree).WellKnown(WellKnownArg::InstParam);
+    }
+
+    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
+    {
+        awaitCall->gtArgs.PushFront(this, asyncContArg);
+
+        if (awaitSig.hasTypeArg())
+        {
+            awaitCall->gtArgs.PushFront(this, instArg);
+        }
+    }
+    else
+    {
+        awaitCall->gtArgs.PushBack(this, asyncContArg);
+
+        if (awaitSig.hasTypeArg())
+        {
+            awaitCall->gtArgs.PushBack(this, instArg);
+        }
+    }
+
+    GenTree* toPush = awaitCall;
+    if (varTypeIsStruct(callRetType))
+    {
+        toPush = impFixupCallStructReturn(awaitCall, awaitSig.retTypeClass);
+    }
+
+    AsyncCallInfo* asyncInfo = new (this, CMK_Async) AsyncCallInfo;
+
+    if (impInlineRoot()->compIsAsyncVersion())
+    {
+        asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
+    }
+    else
+    {
+        // We are inlining into an async method. This means we have a proper
+        // async await, and we require proper handling.
+        assert(compIsForInlining() && impInlineInfo->iciCall->IsAsync());
+        GenTreeCall* inlCall = impInlineInfo->iciCall;
+
+        JITDUMP("Inheriting continuation handling %d from caller [%06u]\n",
+                (unsigned)inlCall->GetAsyncInfo().ContinuationContextHandling, dspTreeID(inlCall));
+        asyncInfo->ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+        impInheritAsyncContextsFromInliner(awaitCall);
+    }
+
+    awaitCall->SetIsAsync(asyncInfo);
+
+    impPushOnStack(toPush, makeTypeInfo(awaitSig.retType, awaitSig.retTypeClass));
     return true;
 }
 
