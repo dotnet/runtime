@@ -730,8 +730,13 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			 * opaque type parameter (one straddling field) while the concrete callee sees the
 			 * flattened layout. Without this they disagree on the calling convention, and recent
 			 * LLVM lowers the byval form onto the stack while the callee reads it from registers.
+			 *
+			 * This only applies to managed calls. For P/Invoke the calling convention must follow
+			 * the native ABI as implemented by the byval/stack path, so leave llvm_inreg_straddle
+			 * unset for pinvoke signatures (the value keeps the ArgOnStack -> LLVMArgVtypeByVal
+			 * lowering it had before this change).
 			 */
-			if (!is_return && size <= 16 && !has_float_field)
+			if (!is_return && size <= 16 && !has_float_field && !sig->pinvoke)
 				ainfo->llvm_inreg_straddle = 1;
 		}
 	}
