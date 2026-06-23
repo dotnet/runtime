@@ -545,8 +545,8 @@ static const Entry s_QCall[] =
     DllImportEntry(SystemJS_ScheduleBackgroundJob)
 #endif // TARGET_BROWSER
 #ifdef TARGET_WASI
-    DllImportEntry(SystemJS_ExecuteFinalizationCallback)
-    DllImportEntry(SystemJS_TryClearPendingFinalization)
+    DllImportEntry(WasiFinalizer_RunWorker)
+    DllImportEntry(WasiFinalizer_TryClearPending)
 #endif // TARGET_WASI
 };
 

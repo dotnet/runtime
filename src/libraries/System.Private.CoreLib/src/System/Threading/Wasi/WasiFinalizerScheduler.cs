@@ -17,18 +17,18 @@ namespace System.Threading
     // ThreadPool enqueue allocates and acquires locks, which would re-enter the
     // GC currently in progress.
     //
-    // The native side instead sets an atomic flag in SystemJS_ScheduleFinalization
+    // The native side instead sets an atomic flag in WasiFinalizer_Schedule
     // (just a volatile store, safe inside the GC). WasiEventLoop polls
-    // SystemJS_TryClearPendingFinalization between work-queue iterations from
+    // WasiFinalizer_TryClearPending between work-queue iterations from
     // PollWasiEventLoopUntilResolved and, when the flag is set, calls
-    // SystemJS_ExecuteFinalizationCallback at a safe point.
+    // WasiFinalizer_RunWorker at a safe point.
     internal static unsafe partial class WasiFinalizerScheduler
     {
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SystemJS_TryClearPendingFinalization")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WasiFinalizer_TryClearPending")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool TryClearPendingFinalization();
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SystemJS_ExecuteFinalizationCallback")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WasiFinalizer_RunWorker")]
         internal static partial void ExecuteFinalizationCallback();
 
         internal static void DrainIfPending()
