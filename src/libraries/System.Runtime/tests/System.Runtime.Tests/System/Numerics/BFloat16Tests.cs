@@ -532,10 +532,13 @@ namespace System.Numerics.Tests
 
             foreach ((float original, BFloat16 expected) in data)
             {
-                // WASM (f32.min / f32.add) canonicalizes NaN payloads per the WebAssembly
-                // spec, so the bit-strict NaN cases in this theory don't round-trip through
-                // the software conversion path. Tracked in https://github.com/dotnet/runtime/issues/103347.
-                if (PlatformDetection.IsWasm && float.IsNaN(original))
+                // WASM on Mono lowers `float.Min` / `float.Max` through `f32.min` / `f32.max`
+                // (and `float.IsNaN(...)` branches through `f32.add`), all of which canonicalize
+                // the NaN payload per the WebAssembly spec. The bit-strict NaN cases in this
+                // theory don't round-trip through the software conversion path under that
+                // lowering. Other WASM runtimes (CoreCLR-on-WASM) don't share this lowering, so
+                // gate on Mono specifically. Tracked in https://github.com/dotnet/runtime/issues/103347.
+                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && float.IsNaN(original))
                     continue;
                 yield return new object[] { original, expected };
             }
@@ -622,10 +625,13 @@ namespace System.Numerics.Tests
 
             foreach ((double original, BFloat16 expected) in data)
             {
-                // WASM (f64.min / f64.add) canonicalizes NaN payloads per the WebAssembly
-                // spec, so the bit-strict NaN cases in this theory don't round-trip through
-                // the software conversion path. Tracked in https://github.com/dotnet/runtime/issues/103347.
-                if (PlatformDetection.IsWasm && double.IsNaN(original))
+                // WASM on Mono lowers `double.Min` / `double.Max` through `f64.min` / `f64.max`
+                // (and `double.IsNaN(...)` branches through `f64.add`), all of which canonicalize
+                // the NaN payload per the WebAssembly spec. The bit-strict NaN cases in this
+                // theory don't round-trip through the software conversion path under that
+                // lowering. Other WASM runtimes (CoreCLR-on-WASM) don't share this lowering, so
+                // gate on Mono specifically. Tracked in https://github.com/dotnet/runtime/issues/103347.
+                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && double.IsNaN(original))
                     continue;
                 yield return new object[] { original, expected };
             }
