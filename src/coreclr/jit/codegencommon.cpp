@@ -1761,8 +1761,8 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
 
     // Emit an entry for managed return value reporting, if needed.
     GenTreeCall* call = params.returnValueCall;
-    if ((call == nullptr) || !m_compiler->opts.compDbgInfo || (m_compiler->genCallSite2DebugInfoMap == nullptr) ||
-        params.isJump)
+    if ((call == nullptr) || !m_compiler->opts.compDbgInfo || !m_compiler->opts.compScopeInfo ||
+        (m_compiler->genCallSite2DebugInfoMap == nullptr) || params.isJump)
     {
         return;
     }
