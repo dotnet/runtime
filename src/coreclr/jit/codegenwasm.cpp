@@ -619,16 +619,30 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
                 assert(jTrue->OperIs(GT_WASM_JEXCEPT));
 
                 // try_table uses void result sig; the paired [exnref]-wrapper
-                // just outside it provides the depth-0 target for catch_ref.
+                // provides the catch_ref target. Find its depth on the control
+                // flow stack: any plain Blocks emitted between the wrapper and
+                // this try_table sit inside the wrapper and shift its index.
                 //
                 GetEmitter()->emitIns_Ty_I(INS_try_table, WasmValueType::Invalid, 1);
 
-                // One catch clause targeting the wrapper at depth 0. The true
-                // target of GT_WASM_JEXCEPT is passed only for disasm readability.
+                int const stackHeight  = wasmControlFlowStack->Height();
+                unsigned  wrapperDepth = UINT_MAX;
+                for (int i = 0; i < stackHeight; i++)
+                {
+                    if (wasmControlFlowStack->Top(i)->IsExnRefWrapper())
+                    {
+                        wrapperDepth = (unsigned)i;
+                        break;
+                    }
+                }
+                assert(wrapperDepth != UINT_MAX);
+
+                // One catch clause targeting the wrapper. The true target of
+                // GT_WASM_JEXCEPT is passed only for disasm readability.
                 //
                 assert(block->GetFalseTarget() == block->Next());
                 BasicBlock* const target = block->GetTrueTarget();
-                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, 0, target);
+                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, wrapperDepth, target);
             }
             else
             {
