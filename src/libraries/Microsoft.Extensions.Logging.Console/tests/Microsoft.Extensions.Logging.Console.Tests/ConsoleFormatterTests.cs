@@ -217,8 +217,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(NonJsonFormatterNames))]
-        public void Log_NonTerminalControlCharacters_AreNotEscaped(string formatterName)
-        {
+        public void Log_FormatCharacters_AreNotEscaped(string formatterName)
             using var t = SetUp(
                 new ConsoleLoggerOptions { FormatterName = formatterName },
                 new SimpleConsoleFormatterOptions { ColorBehavior = LoggerColorBehavior.Disabled },
