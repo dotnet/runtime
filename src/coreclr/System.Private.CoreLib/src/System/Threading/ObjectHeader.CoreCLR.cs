@@ -62,6 +62,13 @@ namespace System.Threading
             return (int*)(ppObjectData - sizeof(void*) - sizeof(int));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe int* GetHeaderPtrFromMt(byte* ppMethodTable)
+        {
+            // The header is 4 bytes before MT pointer on all architectures
+            return (int*)ppMethodTable - 1;
+        }
+
         //
         // A few words about spinning choices:
         //
@@ -104,11 +111,9 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            int currentThreadID = ManagedThreadId.Current;
-
-            fixed (byte* pObjectData = &obj.GetRawData())
+            fixed (byte* pObjectData = &obj.GetMethodTableRef())
             {
-                int* pHeader = GetHeaderPtr(pObjectData);
+                int* pHeader = GetHeaderPtrFromMt(pObjectData);
                 int oldBits = *pHeader;
 
                 // Common case: the header is clean. Take it by storing our thread id with a single CAS.
@@ -119,6 +124,7 @@ namespace System.Threading
                     // Check here rather than at entry to keep the hot path as tight as possible.
                     // If the id doesn't fit, we fall through and call AcquireUncommon outside the
                     // fixed block to avoid keeping the object pinned while potentially spinning.
+                    int currentThreadID = ManagedThreadId.Current;
                     if ((uint)currentThreadID <= (uint)SBLK_MASK_LOCK_THREADID)
                     {
                         if (Interlocked.CompareExchange(pHeader, currentThreadID, oldBits) == oldBits)
@@ -138,13 +144,15 @@ namespace System.Threading
             // Everything else (id doesn't fit, lost race, recursive acquire, contention) is handled by
             // AcquireUncommon. This call is outside the fixed block to avoid keeping the object pinned
             // while potentially spinning.
-            return AcquireUncommon(obj, currentThreadID, isOneShot);
+            return AcquireUncommon(obj, isOneShot);
         }
 
         // handling uncommon cases here - recursive lock, contention, retries
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe HeaderLockResult AcquireUncommon(object obj, int currentThreadID, bool isOneShot)
+        private static unsafe HeaderLockResult AcquireUncommon(object obj, bool isOneShot)
         {
+            int currentThreadID = ManagedThreadId.Current;
+
             // A thin lock can only store a thread id that fits in the thread-id field.
             // This check is deferred to here (rather than at entry) because it is unusual to be true.
             if ((uint)currentThreadID > (uint)SBLK_MASK_LOCK_THREADID)
@@ -237,9 +245,9 @@ namespace System.Threading
         {
             Debug.Assert(obj != null);
 
-            fixed (byte* pObjectData = &obj.GetRawData())
+            fixed (byte* pObjectData = &obj.GetMethodTableRef())
             {
-                int* pHeader = GetHeaderPtr(pObjectData);
+                int* pHeader = GetHeaderPtrFromMt(pObjectData);
 
                 // We may need to retry if we own the lock but the CAS races with another thread
                 // touching unrelated header bits.
