@@ -111,6 +111,7 @@ CompPhaseNameMacro(PHASE_VN_BASED_DEAD_STORE_REMOVAL,"VN-based dead store remova
 CompPhaseNameMacro(PHASE_EMPTY_FINALLY_3,            "Remove empty finally 3",         false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_TRY_3,                "Remove empty try 3",             false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_TRY_CATCH_FAULT_3,    "Remove empty try-catch-fault 3", false, -1, false)
+CompPhaseNameMacro(PHASE_REMOVE_UNREACHABLE_TRY,     "Remove unreachable try",         false, -1, false)
 CompPhaseNameMacro(PHASE_OPT_UPDATE_FLOW_GRAPH,      "Update flow graph opt pass",     false, -1, false)
 CompPhaseNameMacro(PHASE_OPT_DFS_BLOCKS,             "Remove unreachable blocks",      false, -1, false)
 CompPhaseNameMacro(PHASE_STRESS_SPLIT_TREE,          "Stress gtSplitTree",             false, -1, false)
