@@ -2498,7 +2498,15 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						 * methods, then execute the clause and the rest of the method
 						 * using the interpreter.
 						 */
-						g_assert (!jit_tls->resume_state.ex_gchandle);
+						/*
+						 * resume_state.ex_gchandle is shared with the finally-resume path
+						 * (mono_handle_exception_internal above). If a finally handler threw a
+						 * superseding exception that is now being caught here, that path left a
+						 * pinned handle behind that will never be resumed; free it instead of
+						 * asserting, mirroring the finally path.
+						 */
+						if (jit_tls->resume_state.ex_gchandle)
+							mono_gchandle_free_internal (jit_tls->resume_state.ex_gchandle);
 						jit_tls->resume_state.ex_gchandle = mono_gchandle_new_internal ((MonoObject*)obj, TRUE);
 						jit_tls->resume_state.ji = ji;
 						jit_tls->resume_state.clause_index = i;
@@ -2560,7 +2568,15 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						 * mono_resume_unwind () will call us again to continue
 						 * the unwinding.
 						 */
-						jit_tls->resume_state.ex_obj = obj;
+						/*
+						 * Keep the exception object alive across the (managed) finally
+						 * handler using a pinned GC handle. The handler can reach a GC
+						 * safepoint, and a moving GC would otherwise invalidate a raw
+						 * pointer stored here (see mono_resume_unwind ()).
+						 */
+						if (jit_tls->resume_state.ex_gchandle)
+							mono_gchandle_free_internal (jit_tls->resume_state.ex_gchandle);
+						jit_tls->resume_state.ex_gchandle = mono_gchandle_new_internal (obj, TRUE);
 						jit_tls->resume_state.ji = ji;
 						jit_tls->resume_state.clause_index = i + 1;
 						jit_tls->resume_state.ctx = *ctx;
@@ -3095,7 +3111,11 @@ mono_resume_unwind (MonoContext *ctx)
 	MONO_CONTEXT_SET_SP (ctx, MONO_CONTEXT_GET_SP (&jit_tls->resume_state.ctx));
 	new_ctx = *ctx;
 
-	mono_handle_exception_internal (&new_ctx, (MonoObject *)jit_tls->resume_state.ex_obj, TRUE, NULL);
+	MonoObject *ex_obj = mono_gchandle_get_target_internal (jit_tls->resume_state.ex_gchandle);
+	mono_gchandle_free_internal (jit_tls->resume_state.ex_gchandle);
+	jit_tls->resume_state.ex_gchandle = NULL;
+
+	mono_handle_exception_internal (&new_ctx, ex_obj, TRUE, NULL);
 
 	mono_restore_context (&new_ctx);
 }
