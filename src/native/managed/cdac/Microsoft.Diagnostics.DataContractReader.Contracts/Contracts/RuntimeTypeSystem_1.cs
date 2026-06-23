@@ -1435,7 +1435,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         // Check class-level sharing: canonical MethodTable with generic instantiation
         MethodTable mt = GetOrCreateMethodTable(methodDesc);
-        return mt.IsCanonMT && mt.Flags.HasInstantiation;
+        return mt.Flags.IsSharedByGenericInstantiations;
     }
 
     private bool IsAbstract(MethodDesc methodDesc)
