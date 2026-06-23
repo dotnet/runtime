@@ -454,8 +454,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         IStackWalk stackWalk = _target.Contracts.StackWalk;
         IDebugInfo debugInfo = _target.Contracts.DebugInfo;
 
-        TargetPointer ip = stackWalk.GetInstructionPointer(_dataFrame);
-        TargetCodePointer codePointer = new TargetCodePointer(ip.Value);
+        TargetCodePointer codePointer = stackWalk.GetInstructionPointer(_dataFrame);
         byte[] context = stackWalk.GetRawContext(_dataFrame);
         IEnumerable<DebugVarInfo> varInfos = debugInfo.GetMethodVarInfo(codePointer, out uint codeOffset);
         NativeVarLocation[] locations = FindAndResolveVarLocation(varInfos, codeOffset, varInfoSlot, context, _target);
