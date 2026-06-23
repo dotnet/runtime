@@ -52,13 +52,28 @@ A useful configuration sets at least one WHERE and at least one WHAT bit.
 |--------------|----------|-----------|------------------------------------------------------------------------------|
 | `0x00000001` | WHERE    | ALLOC     | Verify at every managed allocation (`gchelpers.cpp`)                         |
 | `0x00000100` | WHAT     | GCREFS    | Compare cDAC `GetStackReferences` vs runtime GC root oracle                  |
-| `0x00000200` | WHAT     | ARGITER   | Compare cDAC `CallingConvention.EnumerateArguments` vs runtime `ComputeCallRefMap` (Phase 1: cDAC returns `E_NOTIMPL` -> bucketed as `[ARG_SKIP]`) |
+| `0x00000200` | WHAT     | ARGITER   | Compare cDAC `CallingConvention.EnumerateArguments`-derived GCRefMap blobs vs runtime `ComputeCallRefMap` byte-for-byte (`[ARG_PASS]` / `[ARG_FAIL]` / `[ARG_SKIP]` / `[ARG_ERROR]` per MD, with a `[ARG_STATS]` summary at shutdown) |
 | `0x00010000` | MODIFIER | VERBOSE   | Rich per-ref diagnostics in the log                                          |
 
 Common combinations:
-- `0x00101` -- ALLOC + GCREFS (default for `RunStressTests.ps1` and the xUnit tests)
-- `0x00301` -- ALLOC + GCREFS + ARGITER (validates the ArgIterator round-trip plumbing too)
-- `0x10101` -- ALLOC + GCREFS + VERBOSE (use when triaging a mismatch)
+- `0x00101` -- ALLOC + GCREFS (default for `RunStressTests.ps1` and `GCStress_*` xunit theories)
+- `0x00201` -- ALLOC + ARGITER (default for `ArgIterStress_*` xunit theories; independent run on the same Helix build so the two sub-checks don't share state)
+- `0x00301` -- ALLOC + GCREFS + ARGITER (validates both sub-checks in one process)
+- `0x10101` -- ALLOC + GCREFS + VERBOSE (use when triaging a GCREFS mismatch)
+
+### Per-sub-check summary markers
+
+The native harness emits one machine-readable line per enabled sub-check at
+shutdown, parsed by `CdacStressResults`:
+
+- `[GC_STATS] verifications=N pass=N fail=N known_issue=N` -- emitted iff GCREFS ran
+- `[ARG_STATS] pass=N fail=N skip=N error=N` -- emitted iff ARGITER ran
+
+Both lines are gated on their respective `IsCdacStress*Enabled()` helpers, so a
+pure-ARGITER run does not produce `[GC_STATS]` and vice versa. The xunit
+`AssertAll*Passed` helpers use the presence of the marker (`AnyGcRefsRecorded`
+/ `AnyArgIterRecorded`) to distinguish "sub-check did not run" from "ran but
+recorded zero verifications".
 
 ### Pass/fail semantics in the log
 

@@ -26,8 +26,17 @@ using System.Runtime.InteropServices;
 ///   - Generic value-type instance methods (interface dispatch)
 ///   - Enum arguments (Int32-, Int64-, byte-backed)
 ///   - Large-struct return (HasRetBuffArg)
-///   - Vararg method (__arglist -> VASigCookie token)
+///   - __arglist vararg methods (mixed/all-refs/instance/deep)
 ///   - Mutually-recursive deep stack
+///
+/// Note: this debuggee exercises the ARGITER sub-check only (it is in
+/// ArgIterOnlyDebuggees, not the unified Debuggees list). The vararg
+/// methods trigger a real cDAC GCREFS gap -- GetStackReferences does
+/// not yet walk the VASigCookie's signature blob to enumerate the
+/// variadic-tail GC refs -- so GCREFS reports false failures on
+/// __arglist frames. ARGITER has no such gap (the encoder emits
+/// GCRefMapToken.VASigCookie and stops, matching the runtime's
+/// FakeGcScanRoots short-circuit).
 /// Every test method begins with AllocBurst() so the cdacstress allocation
 /// trigger fires while the frame is on the stack and per-MD dedup actually
 /// produces an ARG_PASS / ARG_FAIL log line for it.
@@ -434,18 +443,58 @@ internal static unsafe class Program
     [MethodImpl(MethodImplOptions.NoInlining)] private static Span<byte> ReturnSpan(Span<byte> s) { AllocBurst(); return s; }
 
     // ===== Category 12: vararg (__arglist) =====
+    // Exercises the GCRefMapToken.VASigCookie path in the cDAC encoder
+    // (and the runtime's FakeGcScanRoots short-circuit at
+    // argit.GetVASigCookieOffset()). NOT covered by GCREFS today --
+    // see file header.
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void VarargCategory()
     {
-        Vararg(1, __arglist("a", 2, "b"));
+        VarargMixed(1, __arglist("a", 2, "b", 3.14));
+        VarargAllRefs(1, __arglist("x", "y", "z"));
+        VarargFixedPrimitive(__arglist(1, 2L, 3.0));
+
+        var s = new InstanceVarargStruct { R = "this-ref" };
+        s.Method(1, __arglist("inst-a", "inst-b"));
+
+        DeepArglistOuter("outer", 1);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Vararg(int first, __arglist)
+    private static void VarargMixed(int first, __arglist) { AllocBurst(); GC.KeepAlive((object)first); }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void VarargAllRefs(int first, __arglist) { AllocBurst(); GC.KeepAlive((object)first); }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void VarargFixedPrimitive(__arglist) { AllocBurst(); }
+
+    private struct InstanceVarargStruct
+    {
+        public object R;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public void Method(int first, __arglist)
+        {
+            AllocBurst();
+            GC.KeepAlive(R);
+            GC.KeepAlive((object)first);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void DeepArglistOuter(string label, int n)
     {
         AllocBurst();
-        GC.KeepAlive((object)first);
+        DeepArglistInner(n, __arglist(label, n + 1, "tail"));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void DeepArglistInner(int n, __arglist)
+    {
+        AllocBurst();
+        GC.KeepAlive((object)n);
     }
 
     // ===== Category 13: deep stack =====

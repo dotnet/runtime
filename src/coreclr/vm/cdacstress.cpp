@@ -604,6 +604,18 @@ void CdacStressPolicy::Shutdown()
         fprintf(s_logFile, "  Matched:       %ld\n", (long)s_frameMatch);
         fprintf(s_logFile, "  Mismatched:    %ld\n", (long)s_frameMismatch);
         fprintf(s_logFile, "  Known NIE:     %ld\n", (long)s_frameKnownNie);
+        // Machine-readable sub-check markers. Mirrors the existing [ARG_STATS]
+        // line below: each is emitted only when its sub-check was enabled, so
+        // CdacStressResults can distinguish "GCREFS / ARGITER did not run"
+        // from "ran but produced zero results" (which the surrounding
+        // human-readable counters cannot, since they are always printed and
+        // always zero-initialized).
+        if (IsCdacStressGcRefsEnabled())
+        {
+            fprintf(s_logFile, "[GC_STATS] verifications=%ld pass=%ld fail=%ld known_issue=%ld\n",
+                (long)totalVerifications, (long)s_passCount,
+                (long)s_failCount, (long)s_knownIssueCount);
+        }
         if (IsCdacStressArgIterEnabled())
         {
             fprintf(s_logFile, "[ARG_STATS] pass=%ld fail=%ld skip=%ld error=%ld\n",
