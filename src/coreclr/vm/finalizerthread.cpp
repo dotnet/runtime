@@ -45,9 +45,29 @@ bool FinalizerThread::IsCurrentThreadFinalizer()
 
 #if defined(TARGET_BROWSER) || defined(TARGET_WASI)
 
+#ifdef TARGET_BROWSER
+// Browser provides this in its JS host (libSystem.Native.Browser scheduling.ts);
+// it queues a microtask that pumps SystemJS_ExecuteFinalizationCallback.
 extern "C" void SystemJS_ScheduleFinalization();
+#endif
 
+#ifdef TARGET_WASI
+// WASI has no host event loop; the equivalent of SystemJS_ScheduleFinalization
+// is a pure-native flag-set, drained from managed code via the QCall below.
+extern "C" void WasiFinalizer_Schedule();
+#endif
+
+// Cross-target callback that runs one FinalizerThreadWorkerIteration on the
+// current thread. On browser this is invoked from a JS microtask after the
+// SystemJS_ScheduleFinalization queue tick; on WASI it is a QCall invoked by
+// WasiEventLoop after WasiFinalizer_TryClearPending observes the flag.
+// The implementation is identical on both targets; each just exports it
+// under the symbol its host actually imports.
+#ifdef TARGET_BROWSER
 extern "C" void SystemJS_ExecuteFinalizationCallback()
+#else // TARGET_WASI
+extern "C" void WasiFinalizer_RunWorker()
+#endif
 {
     CONTRACTL
     {
@@ -74,20 +94,21 @@ extern "C" void SystemJS_ExecuteFinalizationCallback()
 // back into managed code (queueing into ThreadPool itself is a managed
 // allocation/lock-protected operation that re-enters the GC).
 //
-// Pure-native flag: SystemJS_ScheduleFinalization sets it from inside the GC,
-// and WasiEventLoop's polling loop drains it via SystemJS_TryClearPendingFinalization
-// at a safe point and then calls SystemJS_ExecuteFinalizationCallback (which
-// is already a QCall exposing the real FinalizerThreadWorkerIteration).
+// Pure-native flag: WasiFinalizer_Schedule sets it from inside the GC, and
+// the managed WasiEventLoop polling loop drains it via WasiFinalizer_TryClearPending
+// at a safe point and then calls WasiFinalizer_RunWorker (the QCall exposing
+// the real FinalizerThreadWorkerIteration; same body as browser's
+// SystemJS_ExecuteFinalizationCallback, exported under a WASI-specific name).
 static Volatile<bool> s_finalizationPending = false;
 
-extern "C" void SystemJS_ScheduleFinalization()
+extern "C" void WasiFinalizer_Schedule()
 {
     // Called from inside the GC. Setting an atomic flag is the only thing
     // we can safely do here — no allocation, no managed callback, no locks.
     s_finalizationPending = true;
 }
 
-extern "C" CLR_BOOL QCALLTYPE SystemJS_TryClearPendingFinalization()
+extern "C" CLR_BOOL QCALLTYPE WasiFinalizer_TryClearPending()
 {
     QCALL_CONTRACT;
     CLR_BOOL pending = FALSE;
@@ -110,16 +131,20 @@ void FinalizerThread::EnableFinalization()
 
 #ifndef TARGET_WASM
     hEventFinalizer->Set();
-#else  // !TARGET_WASM
-    // Defer finalization to the host's event loop. Running it inline from here
-    // is unsafe: EnableFinalization is called from inside the GC, while
+#elif defined(TARGET_BROWSER)
+    // Defer finalization to the host's JS event loop. Running it inline from
+    // here is unsafe: EnableFinalization is called from inside the GC, while
     // FinalizerThreadWorkerIteration declares GC_TRIGGERS + MODE_COOPERATIVE
     // and re-enters preemptive mode via EnablePreemptiveGC(). Re-entering the
     // GC, transitioning thread modes from inside a collection, and the risk
     // of unbounded recursion through finalizer-triggered allocations all make
     // synchronous execution wrong here.
     SystemJS_ScheduleFinalization();
-#endif // !TARGET_WASM
+#else // TARGET_WASI
+    // Same constraints as browser; WASI sets a native flag observed by the
+    // managed WasiEventLoop polling loop. See WasiFinalizer_Schedule above.
+    WasiFinalizer_Schedule();
+#endif
 }
 
 namespace
