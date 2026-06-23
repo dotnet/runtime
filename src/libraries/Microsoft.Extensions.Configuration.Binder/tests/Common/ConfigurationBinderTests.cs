@@ -1667,6 +1667,28 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(new string[] { "a", "b", "c" }, options.Array);
         }
 
+        /// <summary>
+        /// When a constructor parameter name differs only by case from a matching collection property,
+        /// the binder must bind the collection once (through the constructor) and must not bind it again
+        /// through the property, which would otherwise duplicate the collection items.
+        /// </summary>
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        public void CanBindOnParametersAndProperties_GetterOnlyCollectionWithCaseMismatchedConstructorParameter()
+        {
+            string json = """
+            {
+                "Instances": [ "first", "second" ]
+            }
+            """;
+
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+            string[] expected = new[] { "first", "second" };
+
+            Assert.Equal(expected, config.Get<GetterOnlyCollectionWithCaseMismatchedCtorParameter>().Instances);
+            Assert.Equal(expected, config.Get<SettableCollectionWithCaseMismatchedCtorParameter>().Instances);
+            Assert.Equal(expected, config.Get<GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter>().Instances);
+            Assert.Equal(expected, config.Get<ParamsCollectionCtor>().Instances);
+        }
 
         public static IEnumerable<object[]> Configuration_TestData()
         {
