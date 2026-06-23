@@ -27,8 +27,8 @@ namespace System.Diagnostics.Tests
                 int result;
 
                 // posix_spawn_file_actions_t is a platform-specific struct (80 bytes on glibc x64, 104 bytes on macOS arm64).
-                // Use 128 bytes to be safe across platforms; NativeMemory.Alloc provides sufficient native alignment.
-                const int PosixSpawnFileActionsSize = 128;
+                // Use 256 bytes as a conservative safe buffer across platforms; NativeMemory.Alloc provides sufficient native alignment.
+                const int PosixSpawnFileActionsSize = 256;
                 void* fileActionsBuffer = NativeMemory.Alloc(PosixSpawnFileActionsSize);
                 if (fileActionsBuffer is null)
                 {

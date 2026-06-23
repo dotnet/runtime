@@ -68,7 +68,6 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public ProcessStartInfo ProcessStartInfo { get; internal set; } = null!;
 
-
         /// <summary>
         /// Starts a new process by preparing all necessary arguments (standard handles, command line, environment)
         /// and then invoking the user-supplied <paramref name="callback"/> to perform the actual process creation system call.
@@ -124,6 +123,5 @@ namespace System.Runtime.InteropServices
             return process;
 #endif
         }
-
     }
 }
