@@ -80,7 +80,7 @@ public unsafe class LoaderTests
         ILoader contract = target.Contracts.Loader;
 
         Contracts.ModuleHandle handle = contract.GetModuleHandleFromModulePtr(moduleAddr);
-        Assert.Equal(expectedHint, contract.GetPath(handle, fallbackToHint: true));
+        Assert.Equal(expectedHint, contract.GetPath(handle, true));
     }
 
     [Theory]

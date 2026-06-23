@@ -73,6 +73,7 @@ typedef DPTR(class SString) PTR_SString;
 class EMPTY_BASES SString : private SBuffer
 {
     friend struct _DacGlobals;
+    friend struct ::cdac_data<SString>;
 
 private:
     enum Representation

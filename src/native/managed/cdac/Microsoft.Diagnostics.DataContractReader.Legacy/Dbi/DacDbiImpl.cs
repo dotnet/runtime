@@ -3411,6 +3411,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             *dwImageSize = 0;
             if (vmModule == 0)
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(vmModule);
             bool result = loader.GetFileHeadersInfo(moduleHandle, out uint timeStamp, out uint imageSize);
             if (result)
@@ -3418,7 +3419,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 *dwTimeStamp = timeStamp;
                 *dwImageSize = imageSize;
             }
-            path = loader.GetPath(moduleHandle, fallbackToHint: true);
+            path = loader.GetPath(moduleHandle, true);
             hr = StringHolderAssignCopy(pStrFilename, path);
             *pResult = result ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
