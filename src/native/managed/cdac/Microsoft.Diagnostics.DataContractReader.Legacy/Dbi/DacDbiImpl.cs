@@ -3942,10 +3942,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             {
                 hrLocal = _legacy.WalkHeap(walk.LegacyHandle, count, objectsLocalPtr, &fetchedLocal);
             }
-            // The number of reported stack refs is not guaranteed to match between cDAC and legacy DAC.
-            // If this is the case, the cDAC may report S_FALSE while the legacy DAC reports S_OK, or vice versa.
-            // Allow divergent success codes, but still validate the rest of the results.
-            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowDivergentSuccess);
+            Debug.ValidateHResult(hr, hrLocal);
             if (hr >= HResults.S_OK)
             {
                 Debug.Assert(*fetched == fetchedLocal,
@@ -4246,7 +4243,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             DacGcReference[] legacyRefs = new DacGcReference[(int)count];
             uint legacyFetched = 0;
             int hrLocal = _legacy.WalkRefs(walk.LegacyHandle, count, legacyRefs, &legacyFetched);
-            // Debug.ValidateHResult(hr, hrLocal);
+            // The number of reported stack refs is not guaranteed to match between cDAC and legacy DAC.
+            // If this is the case, the cDAC may report S_FALSE while the legacy DAC reports S_OK, or vice versa.
+            // Allow divergent success codes, but still validate the rest of the results.
+            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowDivergentSuccess);
             uint cdacHandlePrefix = CountHandlePrefix(refs, i);
             uint legacyHandlePrefix = CountHandlePrefix(legacyRefs, legacyFetched);
             Debug.Assert(

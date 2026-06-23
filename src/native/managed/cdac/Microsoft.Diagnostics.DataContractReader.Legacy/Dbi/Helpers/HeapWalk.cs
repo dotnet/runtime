@@ -11,7 +11,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
 {
     private readonly IGC _gc;
-    private readonly IObject _object;
     private readonly IRuntimeTypeSystem _rts;
     private readonly TargetPointer _freeObjectMT;
     private readonly LinearReadCache _cache;
@@ -26,7 +25,6 @@ internal sealed class HeapWalk : IEnum<COR_HEAPOBJECT>
     public HeapWalk(Target target)
     {
         _gc = target.Contracts.GC;
-        _object = target.Contracts.Object;
         _rts = target.Contracts.RuntimeTypeSystem;
         _freeObjectMT = _rts.GetWellKnownMethodTable(WellKnownMethodTable.Free);
         _cache = new LinearReadCache(target);

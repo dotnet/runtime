@@ -980,11 +980,6 @@ private:
 
     // Handles
     DacHandleWalker *mHandleWalker;
-
-    // FQ
-    PTR_PTR_Object mFQStart;
-    PTR_PTR_Object mFQEnd;
-    PTR_PTR_Object mFQCurr;
 };
 
 #endif // _DACDBI_IMPL_H_

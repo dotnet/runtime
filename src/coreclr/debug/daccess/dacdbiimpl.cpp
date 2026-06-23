@@ -7412,7 +7412,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_Met
 
 DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers)
     : mDac(dac), mWalkStacks(walkStacks), mHandleMask(handleMask), mStackWalker(NULL),
-      mResolvePointers(resolvePointers), mHandleWalker(NULL), mFQStart(PTR_NULL), mFQEnd(PTR_NULL), mFQCurr(PTR_NULL)
+      mResolvePointers(resolvePointers), mHandleWalker(NULL)
 {
 }
 
@@ -7504,21 +7504,6 @@ HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetch
 
             if (FAILED(hr))
                 return hr;
-        }
-    }
-
-    if (total < celt)
-    {
-        while (total < celt && mFQCurr < mFQEnd)
-        {
-            DacGcReference &ref = roots[total++];
-
-            ref.vmDomain = VMPTR_AppDomain::NullPtr();
-            ref.objHnd.SetDacTargetPtr(mFQCurr.GetAddr());
-            ref.dwType = (DWORD)CorReferenceFinalizer;
-            ref.i64ExtraData = 0;
-
-            mFQCurr++;
         }
     }
 

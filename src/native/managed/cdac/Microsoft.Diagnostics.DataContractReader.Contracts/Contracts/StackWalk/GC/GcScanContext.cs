@@ -137,9 +137,9 @@ internal class GcScanContext
                 continue;
 
             TargetPointer currentObj = _gc.GetPotentialNextObjectAddress(seg.Start, 0, seg);
+            ulong size = 0;
             while (currentObj.Value <= obj.Value)
             {
-                ulong size;
                 // Replicate IObject.GetMethodTableAddress in fast path with linear read cache
                 if (!_cache.TryReadPointer(currentObj.Value + _methodTableOffset, out TargetPointer mt))
                 {
@@ -161,7 +161,7 @@ internal class GcScanContext
                 outerObj = currentObj;
                 currentObj = _gc.GetPotentialNextObjectAddress(currentObj, size, seg);
             }
-            return outerObj;
+            return outerObj + size > obj ? outerObj : TargetPointer.Null;
         }
         return outerObj;
     }
