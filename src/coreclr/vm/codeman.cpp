@@ -97,7 +97,7 @@ static bool s_publishingActive;              // Publishing to ETW is turned on
 namespace
 {
     // Uses unsigned subtraction to handle sequence counter wrapping correctly.
-    inline bool SequenceReached(LONG published, LONG target)
+    bool SequenceReached(LONG published, LONG target)
     {
         // published >= target
         return (LONG)((ULONG)published - (ULONG)target) >= 0;
@@ -131,7 +131,7 @@ namespace
         FlushGateHolder& operator=(FlushGateHolder&&) = delete;
     };
 
-    inline void SortPendingByBeginAddress(T_RUNTIME_FUNCTION* p, ULONG n)
+    void SortPendingByBeginAddress(T_RUNTIME_FUNCTION* p, ULONG n)
     {
         auto cmpSwap = [](T_RUNTIME_FUNCTION& x, T_RUNTIME_FUNCTION& y)
         {
