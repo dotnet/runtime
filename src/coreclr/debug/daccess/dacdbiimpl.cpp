@@ -784,7 +784,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::SetCompilerFlags(VMPTR_Assembly v
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Allocator to pass to the debug-info-stores...
-BYTE* InfoStoreNew(void * pData, size_t cBytes)
+static BYTE* InfoStoreNew(void * pData, size_t cBytes)
 {
     return new (nothrow) BYTE[cBytes];
 }
