@@ -709,6 +709,7 @@ private:
     // directly returns the continuation of the call instead of creating a new
     // suspension point.
     bool m_nextAwaitIsTail = false;
+    bool m_asyncVersionIsTailCalling = false;
 
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
@@ -916,6 +917,7 @@ private:
 
     void *m_asyncResumeFuncPtr = NULL;
     bool m_isAsyncMethodWithContextSaveRestore = false;
+    bool m_isAsyncVersionOfSyncMethod = false;
     int32_t m_asyncFinallyStartOffset = -1; // If the method is async, this is the offset of the start of the fault handler
 
     bool m_shadowCopyOfThisPointerActuallyNeeded = false;
@@ -1000,8 +1002,10 @@ private:
     bool    IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     bool    IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    bool    IsRuntimeAsyncCallRetOrJmpInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
 
     int     ApplyRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo) { return -1; }
+    int     ApplyRuntimeAsyncCallRetInAsyncVersion(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
     ContinuationContextHandling m_currentContinuationContextHandling = ContinuationContextHandling::None;
     CORINFO_RESOLVED_TOKEN m_resolvedAsyncCallToken;
 
@@ -1014,8 +1018,9 @@ private:
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
+    void    WrapTopOfStackInAwait();
     void    EmitRet(CORINFO_METHOD_INFO* methodInfo);
-    void    EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling ContinuationContextHandling);
+    void    EmitSuspend(CorInfoType callRetType, ContinuationContextHandling ContinuationContextHandling);
     void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
