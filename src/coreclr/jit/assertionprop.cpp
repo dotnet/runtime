@@ -3051,8 +3051,8 @@ GenTree* Compiler::optVNBasedFoldExpr_Cond_TypeCompare(BasicBlock* block, Statem
     Statement* defStmt = nullptr;
     if (storeNode != nullptr)
     {
-        defStmt = stmt->GetPrevStmt();
-        if ((defStmt == stmt) || (defStmt->GetRootNode() != storeNode))
+        defStmt = (stmt == block->firstStmt()) ? nullptr : stmt->GetPrevStmt();
+        if ((defStmt == nullptr) || (defStmt->GetRootNode() != storeNode))
         {
             JITDUMP("...GetType temp store is not immediately before the JTRUE - bail out.\n");
             return nullptr;
