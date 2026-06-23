@@ -190,7 +190,7 @@ namespace System.Reflection.PortableExecutable
                     {
                         var imageBlock = StreamMemoryBlockProvider.ReadMemoryBlockNoLock(peStream, start, actualSize);
                         _lazyImageBlock = imageBlock;
-                        _peImage = new ExternalMemoryBlockProvider(imageBlock.Pointer, imageBlock.Size);
+                        _peImage = new PinnedArrayMemoryBlockProvider(imageBlock.GetArray(), imageBlock.Size);
 
                         // if the caller asked for metadata initialize the PE headers (calculates metadata offset):
                         if ((options & PEStreamOptions.PrefetchMetadata) != 0)
@@ -354,7 +354,7 @@ namespace System.Reflection.PortableExecutable
 
         /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         /// <exception cref="InvalidOperationException">PE image doesn't have metadata.</exception>
-        private AbstractMemoryBlock GetMetadataBlock()
+        internal AbstractMemoryBlock GetMetadataBlock()
         {
             if (!HasMetadata)
             {
@@ -524,6 +524,26 @@ namespace System.Reflection.PortableExecutable
             }
 
             return new PEMemoryBlock(GetPESectionBlock(sectionIndex));
+        }
+
+        /// <summary>
+        /// Gets a pointer to the PE image's entire loaded content.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This method provides direct access to the underlying memory (including memory-mapped files)
+        /// without copying into managed memory. The caller must ensure that this <see cref="PEReader"/>
+        /// remains alive and undisposed for the entire duration of access to the returned block.
+        /// </para>
+        /// <para>
+        /// This is the high-performance path for tools that want zero-copy file access and accept
+        /// the lifetime responsibility. For safe access, use <see cref="GetEntireImage"/> instead.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">PE image not available.</exception>
+        public unsafe PEMemoryBlock GetEntireImageUnsafe()
+        {
+            return new PEMemoryBlock(GetEntireImageBlock());
         }
 
         /// <summary>

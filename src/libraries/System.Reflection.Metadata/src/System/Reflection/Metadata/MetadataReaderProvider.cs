@@ -263,7 +263,7 @@ namespace System.Reflection.Metadata
                 }
 
                 AbstractMemoryBlock metadata = GetMetadataBlock();
-                var newReader = new MetadataReader(metadata.Pointer, metadata.Size, options, utf8Decoder, memoryOwner: this);
+                var newReader = new MetadataReader(metadata.GetMemoryBlock(), options, utf8Decoder, memoryOwner: this);
                 _lazyMetadataReader = newReader;
                 return newReader;
             }

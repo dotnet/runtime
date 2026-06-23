@@ -331,6 +331,7 @@ namespace System.Reflection.Metadata
     {
         private int _dummyPrimitive;
         public unsafe BlobReader(byte* buffer, int length) { throw null; }
+        public BlobReader(System.ReadOnlyMemory<byte> memory) { throw null; }
         public unsafe byte* CurrentPointer { get { throw null; } }
         public int Length { get { throw null; } }
         public int Offset { get { throw null; } set { } }
@@ -3513,6 +3514,7 @@ namespace System.Reflection.PortableExecutable
         public unsafe byte* Pointer { get { throw null; } }
         public System.Collections.Immutable.ImmutableArray<byte> GetContent() { throw null; }
         public System.Collections.Immutable.ImmutableArray<byte> GetContent(int start, int length) { throw null; }
+        public System.ReadOnlyMemory<byte> GetMemory() { throw null; }
         public System.Reflection.Metadata.BlobReader GetReader() { throw null; }
         public System.Reflection.Metadata.BlobReader GetReader(int start, int length) { throw null; }
     }
@@ -3530,6 +3532,7 @@ namespace System.Reflection.PortableExecutable
         public System.Reflection.PortableExecutable.PEHeaders PEHeaders { get { throw null; } }
         public void Dispose() { }
         public System.Reflection.PortableExecutable.PEMemoryBlock GetEntireImage() { throw null; }
+        public unsafe System.Reflection.PortableExecutable.PEMemoryBlock GetEntireImageUnsafe() { throw null; }
         public System.Reflection.PortableExecutable.PEMemoryBlock GetMetadata() { throw null; }
         public System.Reflection.PortableExecutable.PEMemoryBlock GetSectionData(int relativeVirtualAddress) { throw null; }
         public System.Reflection.PortableExecutable.PEMemoryBlock GetSectionData(string sectionName) { throw null; }

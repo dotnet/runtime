@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Internal
 {
@@ -29,6 +30,11 @@ namespace System.Reflection.Internal
 
         public override unsafe byte* Pointer => _provider.Pointer + _start;
         public override int Size => _size;
+
+        public override ReadOnlyMemory<byte> GetMemory()
+        {
+            return ImmutableCollectionsMarshal.AsArray(_provider.Array)!.AsMemory(_start, _size);
+        }
 
         public override ImmutableArray<byte> GetContentUnchecked(int start, int length)
         {

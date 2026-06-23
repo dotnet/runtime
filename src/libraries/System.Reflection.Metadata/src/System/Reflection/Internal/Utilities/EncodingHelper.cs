@@ -31,6 +31,26 @@ namespace System.Reflection.Internal
             return utf8Decoder.GetString(bytes, byteCount);
         }
 
+        public static string DecodeUtf8(ReadOnlySpan<byte> bytes, byte[]? prefix, MetadataStringDecoder utf8Decoder)
+        {
+            Debug.Assert(utf8Decoder != null);
+
+            if (prefix != null)
+            {
+                return DecodeUtf8Prefixed(bytes, prefix, utf8Decoder);
+            }
+
+            if (bytes.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            fixed (byte* ptr = bytes)
+            {
+                return utf8Decoder.GetString(ptr, bytes.Length);
+            }
+        }
+
         private static string DecodeUtf8Prefixed(byte* bytes, int byteCount, byte[] prefix, MetadataStringDecoder utf8Decoder)
         {
             Debug.Assert(utf8Decoder != null);
@@ -46,6 +66,32 @@ namespace System.Reflection.Internal
 
             prefix.CopyTo(buffer, 0);
             Marshal.Copy((IntPtr)bytes, buffer, prefix.Length, byteCount);
+
+            string result;
+            fixed (byte* prefixedBytes = &buffer[0])
+            {
+                result = utf8Decoder.GetString(prefixedBytes, prefixedByteCount);
+            }
+
+            ArrayPool<byte>.Shared.Return(buffer);
+            return result;
+        }
+
+        private static string DecodeUtf8Prefixed(ReadOnlySpan<byte> bytes, byte[] prefix, MetadataStringDecoder utf8Decoder)
+        {
+            Debug.Assert(utf8Decoder != null);
+
+            int prefixedByteCount = bytes.Length + prefix.Length;
+
+            if (prefixedByteCount == 0)
+            {
+                return string.Empty;
+            }
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(prefixedByteCount);
+
+            prefix.CopyTo(buffer, 0);
+            bytes.CopyTo(buffer.AsSpan(prefix.Length));
 
             string result;
             fixed (byte* prefixedBytes = &buffer[0])

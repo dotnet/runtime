@@ -66,14 +66,14 @@ namespace System.Reflection.Internal
         }
 
         /// <exception cref="IOException">Error reading from the stream.</exception>
-        internal static unsafe NativeHeapMemoryBlock ReadMemoryBlockNoLock(Stream stream, long start, int size)
+        internal static PinnedArrayMemoryBlock ReadMemoryBlockNoLock(Stream stream, long start, int size)
         {
-            var block = new NativeHeapMemoryBlock(size);
+            var block = new PinnedArrayMemoryBlock(size);
             bool fault = true;
             try
             {
                 stream.Seek(start, SeekOrigin.Begin);
-                stream.ReadExactly(block.Pointer, size);
+                ReadExactlyToArray(stream, block.GetArray(), 0, size);
 
                 fault = false;
             }
@@ -86,6 +86,21 @@ namespace System.Reflection.Internal
             }
 
             return block;
+        }
+
+        private static void ReadExactlyToArray(Stream stream, byte[] buffer, int offset, int count)
+        {
+            while (count > 0)
+            {
+                int bytesRead = stream.Read(buffer, offset, count);
+                if (bytesRead <= 0)
+                {
+                    throw new IOException(SR.UnexpectedStreamEnd);
+                }
+
+                offset += bytesRead;
+                count -= bytesRead;
+            }
         }
 
         public override bool TryGetUnderlyingStream([NotNullWhen(true)] out Stream? stream, out long imageStart, out int imageSize, [NotNullWhen(true)] out object? streamGuard)

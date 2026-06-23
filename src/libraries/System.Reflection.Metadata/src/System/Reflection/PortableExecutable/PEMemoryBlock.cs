@@ -34,11 +34,46 @@ namespace System.Reflection.PortableExecutable
         public int Length => _block?.Size - _offset ?? 0;
 
         /// <summary>
+        /// Gets the content of the block as a <see cref="ReadOnlyMemory{T}"/>.
+        /// </summary>
+        /// <remarks>
+        /// This provides safe access to the underlying memory without requiring pointer manipulation.
+        /// The returned memory is valid as long as the owning <see cref="PEReader"/> or
+        /// <see cref="MetadataReaderProvider"/> is not disposed.
+        /// </remarks>
+        public ReadOnlyMemory<byte> GetMemory()
+        {
+            if (_block is null)
+            {
+                return default;
+            }
+
+            ReadOnlyMemory<byte> memory = _block.GetMemory();
+            if (memory.IsEmpty && Length == 0)
+            {
+                return default;
+            }
+
+            if (!memory.IsEmpty)
+            {
+                return memory.Slice(_offset, Length);
+            }
+
+            // Fallback: copy from pointer for blocks that don't support managed memory (e.g., memory-mapped)
+            return _block.GetContentUnchecked(_offset, Length).AsMemory();
+        }
+
+        /// <summary>
         /// Creates <see cref="BlobReader"/> for a blob spanning the entire block.
         /// </summary>
         public unsafe BlobReader GetReader()
         {
-            return new BlobReader(Pointer, Length);
+            if (_block is null)
+            {
+                return default;
+            }
+
+            return new BlobReader(_block.GetMemoryBlock(_offset, Length));
         }
 
         /// <summary>
@@ -48,7 +83,13 @@ namespace System.Reflection.PortableExecutable
         public unsafe BlobReader GetReader(int start, int length)
         {
             BlobUtilities.ValidateRange(Length, start, length, nameof(length));
-            return new BlobReader(Pointer + start, length);
+
+            if (_block is null)
+            {
+                return default;
+            }
+
+            return new BlobReader(_block.GetMemoryBlock(_offset + start, length));
         }
 
         /// <summary>

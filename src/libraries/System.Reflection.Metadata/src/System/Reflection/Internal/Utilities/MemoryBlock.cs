@@ -16,12 +16,55 @@ namespace System.Reflection.Internal
         internal readonly byte* Pointer;
         internal readonly int Length;
 
+        // Managed memory backing. When non-default, all read operations use this path.
+        private readonly ReadOnlyMemory<byte> _memory;
+        private readonly int _memoryOffset;
+
+        internal bool HasManagedMemory
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _memoryOffset >= 0;
+        }
+
         internal MemoryBlock(byte* buffer, int length)
         {
             Debug.Assert(length >= 0 && (buffer != null || length == 0));
             this.Pointer = buffer;
             this.Length = length;
+            _memory = default;
+            _memoryOffset = -1;
         }
+
+        internal MemoryBlock(ReadOnlyMemory<byte> memory, int offset, int length)
+        {
+            Debug.Assert(length >= 0 && offset >= 0 && offset + length <= memory.Length);
+            this.Length = length;
+            _memory = memory;
+            _memoryOffset = offset;
+            this.Pointer = null;
+        }
+
+        internal MemoryBlock(byte* buffer, ReadOnlyMemory<byte> memory, int offset, int length)
+        {
+            Debug.Assert(length >= 0 && offset >= 0 && offset + length <= memory.Length);
+            this.Length = length;
+            _memory = memory;
+            _memoryOffset = offset;
+            this.Pointer = buffer;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<byte> GetSpan()
+        {
+            if (HasManagedMemory)
+            {
+                return _memory.Span.Slice(_memoryOffset, Length);
+            }
+
+            return new ReadOnlySpan<byte>(Pointer, Length);
+        }
+
+        internal ReadOnlyMemory<byte> GetMemory() => _memory.Slice(_memoryOffset, Length);
 
         internal static MemoryBlock CreateChecked(byte* buffer, int length)
         {
@@ -38,6 +81,21 @@ namespace System.Reflection.Internal
             return new MemoryBlock(buffer, length);
         }
 
+        internal static MemoryBlock CreateChecked(ReadOnlyMemory<byte> memory, int offset, int length)
+        {
+            if (length < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(length));
+            }
+
+            if (offset < 0 || offset + length > memory.Length)
+            {
+                Throw.OutOfBounds();
+            }
+
+            return new MemoryBlock(memory, offset, length);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckBounds(int offset, int byteCount)
         {
@@ -49,12 +107,17 @@ namespace System.Reflection.Internal
 
         internal byte[]? ToArray()
         {
+            if (HasManagedMemory)
+            {
+                return Length == 0 ? null : GetSpan().ToArray();
+            }
+
             return Pointer == null ? null : PeekBytes(0, Length);
         }
 
         private string GetDebuggerDisplay()
         {
-            if (Pointer == null)
+            if (!HasManagedMemory && Pointer == null)
             {
                 return "<null>";
             }
@@ -76,7 +139,7 @@ namespace System.Reflection.Internal
 
         internal string GetDebuggerDisplay(int offset)
         {
-            if (Pointer == null)
+            if (!HasManagedMemory && Pointer == null)
             {
                 return "<null>";
             }
@@ -102,12 +165,27 @@ namespace System.Reflection.Internal
         internal MemoryBlock GetMemoryBlockAt(int offset, int length)
         {
             CheckBounds(offset, length);
+            if (HasManagedMemory)
+            {
+                if (Pointer != null)
+                {
+                    return new MemoryBlock(Pointer + offset, _memory, _memoryOffset + offset, length);
+                }
+
+                return new MemoryBlock(_memory, _memoryOffset + offset, length);
+            }
+
             return new MemoryBlock(Pointer + offset, length);
         }
 
         internal byte PeekByte(int offset)
         {
             CheckBounds(offset, sizeof(byte));
+            if (HasManagedMemory)
+            {
+                return GetSpan()[offset];
+            }
+
             return Pointer[offset];
         }
 
@@ -127,8 +205,16 @@ namespace System.Reflection.Internal
         {
             CheckBounds(offset, sizeof(uint));
 
-            uint result = Unsafe.ReadUnaligned<uint>(Pointer + offset);
-            return BitConverter.IsLittleEndian ? result : BinaryPrimitives.ReverseEndianness(result);
+            if (HasManagedMemory)
+            {
+                uint result = Unsafe.ReadUnaligned<uint>(ref Unsafe.AsRef(in GetSpan()[offset]));
+                return BitConverter.IsLittleEndian ? result : BinaryPrimitives.ReverseEndianness(result);
+            }
+
+            {
+                uint result = Unsafe.ReadUnaligned<uint>(Pointer + offset);
+                return BitConverter.IsLittleEndian ? result : BinaryPrimitives.ReverseEndianness(result);
+            }
         }
 
         /// <summary>
@@ -144,40 +230,80 @@ namespace System.Reflection.Internal
         {
             CheckBounds(offset, 0);
 
-            byte* ptr = Pointer + offset;
-            long limit = Length - offset;
-
-            if (limit == 0)
+            if (HasManagedMemory)
             {
+                ReadOnlySpan<byte> span = GetSpan();
+                int limit = Length - offset;
+
+                if (limit == 0)
+                {
+                    numberOfBytesRead = 0;
+                    return BlobReader.InvalidCompressedInteger;
+                }
+
+                byte headerByte = span[offset];
+                if ((headerByte & 0x80) == 0)
+                {
+                    numberOfBytesRead = 1;
+                    return headerByte;
+                }
+                else if ((headerByte & 0x40) == 0)
+                {
+                    if (limit >= 2)
+                    {
+                        numberOfBytesRead = 2;
+                        return ((headerByte & 0x3f) << 8) | span[offset + 1];
+                    }
+                }
+                else if ((headerByte & 0x20) == 0)
+                {
+                    if (limit >= 4)
+                    {
+                        numberOfBytesRead = 4;
+                        return ((headerByte & 0x1f) << 24) | (span[offset + 1] << 16) | (span[offset + 2] << 8) | span[offset + 3];
+                    }
+                }
+
                 numberOfBytesRead = 0;
                 return BlobReader.InvalidCompressedInteger;
             }
 
-            byte headerByte = ptr[0];
-            if ((headerByte & 0x80) == 0)
             {
-                numberOfBytesRead = 1;
-                return headerByte;
-            }
-            else if ((headerByte & 0x40) == 0)
-            {
-                if (limit >= 2)
-                {
-                    numberOfBytesRead = 2;
-                    return ((headerByte & 0x3f) << 8) | ptr[1];
-                }
-            }
-            else if ((headerByte & 0x20) == 0)
-            {
-                if (limit >= 4)
-                {
-                    numberOfBytesRead = 4;
-                    return ((headerByte & 0x1f) << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
-                }
-            }
+                byte* ptr = Pointer + offset;
+                long limit = Length - offset;
 
-            numberOfBytesRead = 0;
-            return BlobReader.InvalidCompressedInteger;
+                if (limit == 0)
+                {
+                    numberOfBytesRead = 0;
+                    return BlobReader.InvalidCompressedInteger;
+                }
+
+                byte headerByte = ptr[0];
+                if ((headerByte & 0x80) == 0)
+                {
+                    numberOfBytesRead = 1;
+                    return headerByte;
+                }
+                else if ((headerByte & 0x40) == 0)
+                {
+                    if (limit >= 2)
+                    {
+                        numberOfBytesRead = 2;
+                        return ((headerByte & 0x3f) << 8) | ptr[1];
+                    }
+                }
+                else if ((headerByte & 0x20) == 0)
+                {
+                    if (limit >= 4)
+                    {
+                        numberOfBytesRead = 4;
+                        return ((headerByte & 0x1f) << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
+                    }
+                }
+
+                numberOfBytesRead = 0;
+                return BlobReader.InvalidCompressedInteger;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -185,8 +311,16 @@ namespace System.Reflection.Internal
         {
             CheckBounds(offset, sizeof(ushort));
 
-            ushort result = Unsafe.ReadUnaligned<ushort>(Pointer + offset);
-            return BitConverter.IsLittleEndian ? result : BinaryPrimitives.ReverseEndianness(result);
+            if (HasManagedMemory)
+            {
+                ushort result = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AsRef(in GetSpan()[offset]));
+                return BitConverter.IsLittleEndian ? result : BinaryPrimitives.ReverseEndianness(result);
+            }
+
+            {
+                ushort result = Unsafe.ReadUnaligned<ushort>(Pointer + offset);
+                return BitConverter.IsLittleEndian ? result : BinaryPrimitives.ReverseEndianness(result);
+            }
         }
 
         // When reference has tag bits.
@@ -242,6 +376,26 @@ namespace System.Reflection.Internal
         {
             CheckBounds(offset, sizeof(Guid));
 
+            if (HasManagedMemory)
+            {
+                ReadOnlySpan<byte> span = GetSpan().Slice(offset, sizeof(Guid));
+                if (BitConverter.IsLittleEndian)
+                {
+                    return Unsafe.ReadUnaligned<Guid>(ref Unsafe.AsRef(in span[0]));
+                }
+                else
+                {
+                    unchecked
+                    {
+                        return new Guid(
+                            (int)(span[0] | (span[1] << 8) | (span[2] << 16) | (span[3] << 24)),
+                            (short)(span[4] | (span[5] << 8)),
+                            (short)(span[6] | (span[7] << 8)),
+                            span[8], span[9], span[10], span[11], span[12], span[13], span[14], span[15]);
+                    }
+                }
+            }
+
             byte* ptr = Pointer + offset;
             if (BitConverter.IsLittleEndian)
             {
@@ -264,21 +418,56 @@ namespace System.Reflection.Internal
         {
             CheckBounds(offset, byteCount);
 
-            byte* ptr = Pointer + offset;
+            if (HasManagedMemory)
+            {
+                ReadOnlySpan<byte> span = GetSpan().Slice(offset, byteCount);
+                if (byteCount == 0)
+                {
+                    return string.Empty;
+                }
+
+                fixed (byte* ptr = span)
+                {
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        return new string((char*)ptr, 0, byteCount / sizeof(char));
+                    }
+                    else
+                    {
+                        return Encoding.Unicode.GetString(ptr, byteCount);
+                    }
+                }
+            }
+
+            byte* rawPtr = Pointer + offset;
             if (BitConverter.IsLittleEndian)
             {
                 // doesn't allocate a new string if byteCount == 0
-                return new string((char*)ptr, 0, byteCount / sizeof(char));
+                return new string((char*)rawPtr, 0, byteCount / sizeof(char));
             }
             else
             {
-                return Encoding.Unicode.GetString(ptr, byteCount);
+                return Encoding.Unicode.GetString(rawPtr, byteCount);
             }
         }
 
         internal string PeekUtf8(int offset, int byteCount)
         {
             CheckBounds(offset, byteCount);
+            if (byteCount == 0)
+            {
+                return string.Empty;
+            }
+
+            if (HasManagedMemory)
+            {
+                ReadOnlySpan<byte> span = GetSpan().Slice(offset, byteCount);
+                fixed (byte* ptr = span)
+                {
+                    return Encoding.UTF8.GetString(ptr, byteCount);
+                }
+            }
+
             return Encoding.UTF8.GetString(Pointer + offset, byteCount);
         }
 
@@ -297,6 +486,13 @@ namespace System.Reflection.Internal
             Debug.Assert(terminator <= 0x7F);
             CheckBounds(offset, 0);
             int length = GetUtf8NullTerminatedLength(offset, out numberOfBytesRead, terminator);
+
+            if (HasManagedMemory)
+            {
+                ReadOnlySpan<byte> span = GetSpan().Slice(offset, length);
+                return EncodingHelper.DecodeUtf8(span, prefix, utf8Decoder);
+            }
+
             return EncodingHelper.DecodeUtf8(Pointer + offset, length, prefix, utf8Decoder);
         }
 
@@ -315,7 +511,7 @@ namespace System.Reflection.Internal
 
             Debug.Assert(terminator <= 0x7f);
 
-            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(Pointer + offset, Length - offset);
+            ReadOnlySpan<byte> span = GetSpan().Slice(offset);
             int length = terminator != '\0' ?
                 span.IndexOfAny((byte)0, (byte)terminator) :
                 span.IndexOf((byte)0);
@@ -337,7 +533,7 @@ namespace System.Reflection.Internal
 
             Debug.Assert(asciiChar != 0 && asciiChar <= 0x7f);
 
-            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(Pointer + startOffset, Length - startOffset);
+            ReadOnlySpan<byte> span = GetSpan().Slice(startOffset);
             int i = span.IndexOfAny((byte)asciiChar, (byte)0);
             return i >= 0 && span[i] == asciiChar ?
                 startOffset + i :
@@ -396,15 +592,14 @@ namespace System.Reflection.Internal
 
             Debug.Assert(terminator <= 0x7F);
 
-            byte* startPointer = Pointer + offset;
-            byte* endPointer = Pointer + Length;
-            byte* currentPointer = startPointer;
+            ReadOnlySpan<byte> span = GetSpan().Slice(offset);
+            int spanIndex = 0;
 
             int ignoreCaseMask = StringUtils.IgnoreCaseMask(ignoreCase);
             int currentIndex = textStart;
-            while (currentIndex < text.Length && currentPointer != endPointer)
+            while (currentIndex < text.Length && spanIndex < span.Length)
             {
-                byte currentByte = *currentPointer;
+                byte currentByte = span[spanIndex];
 
                 // note that terminator is not compared case-insensitively even if ignore case is true
                 if (currentByte == 0 || currentByte == terminator)
@@ -416,7 +611,7 @@ namespace System.Reflection.Internal
                 if ((currentByte & 0x80) == 0 && StringUtils.IsEqualAscii(currentChar, currentByte, ignoreCaseMask))
                 {
                     currentIndex++;
-                    currentPointer++;
+                    spanIndex++;
                 }
                 else
                 {
@@ -430,7 +625,7 @@ namespace System.Reflection.Internal
             firstDifferenceIndex = currentIndex;
 
             bool textTerminated = currentIndex == text.Length;
-            bool bytesTerminated = currentPointer == endPointer || *currentPointer == 0 || *currentPointer == terminator;
+            bool bytesTerminated = spanIndex == span.Length || span[spanIndex] == 0 || span[spanIndex] == terminator;
 
             if (textTerminated && bytesTerminated)
             {
@@ -453,18 +648,16 @@ namespace System.Reflection.Internal
                 return false;
             }
 
-            byte* p = Pointer + offset;
+            ReadOnlySpan<byte> span = GetSpan().Slice(offset);
 
             for (int i = 0; i < asciiPrefix.Length; i++)
             {
                 Debug.Assert(asciiPrefix[i] > 0 && asciiPrefix[i] <= 0x7f);
 
-                if (asciiPrefix[i] != *p)
+                if (asciiPrefix[i] != span[i])
                 {
                     return false;
                 }
-
-                p++;
             }
 
             return true;
@@ -476,38 +669,41 @@ namespace System.Reflection.Internal
 
             CheckBounds(offset, 0);
 
-            byte* p = Pointer + offset;
-            int limit = Length - offset;
+            ReadOnlySpan<byte> span = GetSpan().Slice(offset);
+            int limit = span.Length;
 
             for (int i = 0; i < asciiString.Length; i++)
             {
                 Debug.Assert(asciiString[i] > 0 && asciiString[i] <= 0x7f);
 
-                if (i > limit)
+                if (i >= limit)
                 {
                     // Heap value is shorter.
                     return -1;
                 }
 
-                if (*p != asciiString[i])
+                if (span[i] != asciiString[i])
                 {
-                    // If we hit the end of the heap value (*p == 0)
+                    // If we hit the end of the heap value (span[i] == 0)
                     // the heap value is shorter than the string, so we return negative value.
-                    return *p - asciiString[i];
+                    return span[i] - asciiString[i];
                 }
-
-                p++;
             }
 
             // Either the heap value name matches exactly the given string or
             // it is longer so it is considered "greater".
-            return (*p == 0) ? 0 : +1;
+            if (asciiString.Length >= limit)
+            {
+                return 0;
+            }
+
+            return (span[asciiString.Length] == 0) ? 0 : +1;
         }
 
         internal byte[] PeekBytes(int offset, int byteCount)
         {
             CheckBounds(offset, byteCount);
-            return new ReadOnlySpan<byte>(Pointer + offset, byteCount).ToArray();
+            return GetSpan().Slice(offset, byteCount).ToArray();
         }
 
         internal int IndexOf(byte b, int start)
@@ -518,7 +714,8 @@ namespace System.Reflection.Internal
 
         internal int IndexOfUnchecked(byte b, int start)
         {
-            int i = new ReadOnlySpan<byte>(Pointer + start, Length - start).IndexOf(b);
+            ReadOnlySpan<byte> span = GetSpan().Slice(start);
+            int i = span.IndexOf(b);
             return i >= 0 ?
                 i + start :
                 -1;

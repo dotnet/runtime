@@ -437,5 +437,89 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(-1, reader.IndexOf(0x8D));
             }
         }
+
+        [Fact]
+        public void ReadOnlyMemoryConstructor_BasicReads()
+        {
+            byte[] data = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+            var reader = new BlobReader(new ReadOnlyMemory<byte>(data));
+
+            Assert.Equal(8, reader.Length);
+            Assert.Equal(0, reader.Offset);
+            Assert.Equal(8, reader.RemainingBytes);
+
+            Assert.Equal(0x01, reader.ReadByte());
+            Assert.Equal(1, reader.Offset);
+            Assert.Equal(7, reader.RemainingBytes);
+
+            Assert.Equal(0x0302, reader.ReadUInt16());
+            Assert.Equal(3, reader.Offset);
+
+            Assert.Equal(0x07060504, reader.ReadInt32());
+            Assert.Equal(7, reader.Offset);
+
+            Assert.Equal(0x08, reader.ReadByte());
+            Assert.Equal(8, reader.Offset);
+            Assert.Equal(0, reader.RemainingBytes);
+        }
+
+        [Fact]
+        public unsafe void ReadOnlyMemoryConstructor_PointerAccessThrows()
+        {
+            byte[] data = { 0x01, 0x02 };
+            var reader = new BlobReader(new ReadOnlyMemory<byte>(data));
+
+            Assert.Throws<InvalidOperationException>(() => { var _ = reader.StartPointer; });
+            Assert.Throws<InvalidOperationException>(() => { var _ = reader.CurrentPointer; });
+        }
+
+        [Fact]
+        public void ReadOnlyMemoryConstructor_SliceOfArray()
+        {
+            byte[] data = { 0x00, 0x00, 0xAA, 0xBB, 0xCC, 0x00, 0x00 };
+            var reader = new BlobReader(new ReadOnlyMemory<byte>(data, 2, 3));
+
+            Assert.Equal(3, reader.Length);
+            Assert.Equal(0xAA, reader.ReadByte());
+            Assert.Equal(0xBB, reader.ReadByte());
+            Assert.Equal(0xCC, reader.ReadByte());
+            Assert.Equal(0, reader.RemainingBytes);
+        }
+
+        [Fact]
+        public void ReadOnlyMemoryConstructor_EmptyMemory()
+        {
+            var reader = new BlobReader(ReadOnlyMemory<byte>.Empty);
+
+            Assert.Equal(0, reader.Length);
+            Assert.Equal(0, reader.Offset);
+            Assert.Equal(0, reader.RemainingBytes);
+        }
+
+        [Fact]
+        public void ReadOnlyMemoryConstructor_ReadUTF8()
+        {
+            byte[] data = Encoding.UTF8.GetBytes("Hello");
+            var reader = new BlobReader(new ReadOnlyMemory<byte>(data));
+
+            string result = reader.ReadUTF8(5);
+            Assert.Equal("Hello", result);
+            Assert.Equal(5, reader.Offset);
+        }
+
+        [Fact]
+        public void ReadOnlyMemoryConstructor_Reset()
+        {
+            byte[] data = { 0x01, 0x02, 0x03, 0x04 };
+            var reader = new BlobReader(new ReadOnlyMemory<byte>(data));
+
+            reader.ReadInt32();
+            Assert.Equal(4, reader.Offset);
+
+            reader.Reset();
+            Assert.Equal(0, reader.Offset);
+            Assert.Equal(4, reader.RemainingBytes);
+            Assert.Equal(0x01, reader.ReadByte());
+        }
     }
 }

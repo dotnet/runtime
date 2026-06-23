@@ -21,6 +21,12 @@ namespace System.Reflection.Metadata
 
         private byte* _currentPointer;
 
+        // Managed-memory position tracking (used when _block.HasManagedMemory)
+        private int _offset;
+
+        // When true, StartPointer/CurrentPointer throw InvalidOperationException
+        private readonly bool _throwOnPointerAccess;
+
         /// <summary>
         /// Creates a reader of the specified memory block.
         /// </summary>
@@ -35,17 +41,37 @@ namespace System.Reflection.Metadata
 
         }
 
+        /// <summary>
+        /// Creates a reader over the specified memory.
+        /// </summary>
+        /// <param name="memory">The memory to read from.</param>
+        /// <remarks>
+        /// <see cref="StartPointer"/> and <see cref="CurrentPointer"/> will throw
+        /// <see cref="InvalidOperationException"/> on readers created with this constructor.
+        /// All other read operations work correctly via managed memory access.
+        /// </remarks>
+        public BlobReader(ReadOnlyMemory<byte> memory)
+        {
+            _block = new MemoryBlock(memory, 0, memory.Length);
+            _currentPointer = null;
+            _endPointer = null;
+            _offset = 0;
+            _throwOnPointerAccess = true;
+        }
+
         internal BlobReader(MemoryBlock block)
         {
-            Debug.Assert(block.Length >= 0 && (block.Pointer != null || block.Length == 0));
+            Debug.Assert(block.Length >= 0 && (block.Pointer != null || block.Length == 0 || block.HasManagedMemory));
             _block = block;
             _currentPointer = block.Pointer;
             _endPointer = block.Pointer + block.Length;
+            _offset = 0;
+            _throwOnPointerAccess = false;
         }
 
         internal string GetDebuggerDisplay()
         {
-            if (_block.Pointer == null)
+            if (_block.Pointer == null && !_block.HasManagedMemory)
             {
                 return "<null>";
             }
@@ -73,12 +99,40 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Pointer to the byte at the start of the underlying memory block.
         /// </summary>
-        public byte* StartPointer => _block.Pointer;
+        /// <exception cref="InvalidOperationException">
+        /// The reader was created from <see cref="ReadOnlyMemory{T}"/> and does not support pointer access.
+        /// </exception>
+        public byte* StartPointer
+        {
+            get
+            {
+                if (_throwOnPointerAccess)
+                {
+                    throw new InvalidOperationException(SR.BlobReaderDoesNotSupportPointerAccess);
+                }
+
+                return _block.Pointer;
+            }
+        }
 
         /// <summary>
         /// Pointer to the byte at the current position of the reader.
         /// </summary>
-        public byte* CurrentPointer => _currentPointer;
+        /// <exception cref="InvalidOperationException">
+        /// The reader was created from <see cref="ReadOnlyMemory{T}"/> and does not support pointer access.
+        /// </exception>
+        public byte* CurrentPointer
+        {
+            get
+            {
+                if (_throwOnPointerAccess)
+                {
+                    throw new InvalidOperationException(SR.BlobReaderDoesNotSupportPointerAccess);
+                }
+
+                return _currentPointer;
+            }
+        }
 
         /// <summary>
         /// The total length of the underlying memory block.
@@ -93,6 +147,11 @@ namespace System.Reflection.Metadata
         {
             get
             {
+                if (_block.HasManagedMemory)
+                {
+                    return _offset;
+                }
+
                 return (int)(_currentPointer - _block.Pointer);
             }
             set
@@ -102,20 +161,36 @@ namespace System.Reflection.Metadata
                     Throw.OutOfBounds();
                 }
 
-                _currentPointer = _block.Pointer + value;
+                _offset = value;
+                if (_block.Pointer != null)
+                {
+                    _currentPointer = _block.Pointer + value;
+                }
             }
         }
 
         /// <summary>
         /// Bytes remaining from current position to end of underlying memory block.
         /// </summary>
-        public int RemainingBytes => (int)(_endPointer - _currentPointer);
+        public int RemainingBytes
+        {
+            get
+            {
+                if (_block.HasManagedMemory)
+                {
+                    return _block.Length - _offset;
+                }
+
+                return (int)(_endPointer - _currentPointer);
+            }
+        }
 
         /// <summary>
         /// Repositions the reader to the start of the underlying memory block.
         /// </summary>
         public void Reset()
         {
+            _offset = 0;
             _currentPointer = _block.Pointer;
         }
 
@@ -145,7 +220,11 @@ namespace System.Reflection.Metadata
                     return false;
                 }
 
-                _currentPointer += bytesToSkip;
+                _offset += bytesToSkip;
+                if (_currentPointer != null)
+                {
+                    _currentPointer += bytesToSkip;
+                }
             }
 
             return true;
@@ -154,7 +233,8 @@ namespace System.Reflection.Metadata
         internal MemoryBlock GetMemoryBlockAt(int offset, int length)
         {
             CheckBounds(offset, length);
-            return new MemoryBlock(_currentPointer + offset, length);
+            int absoluteOffset = this.Offset + offset;
+            return _block.GetMemoryBlockAt(absoluteOffset, length);
         }
 
         #endregion
@@ -164,7 +244,7 @@ namespace System.Reflection.Metadata
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckBounds(int offset, int byteCount)
         {
-            if (unchecked((ulong)(uint)offset + (uint)byteCount) > (ulong)(_endPointer - _currentPointer))
+            if (unchecked((ulong)(uint)offset + (uint)byteCount) > (ulong)RemainingBytes)
             {
                 Throw.OutOfBounds();
             }
@@ -173,10 +253,29 @@ namespace System.Reflection.Metadata
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckBounds(int byteCount)
         {
-            if (unchecked((uint)byteCount) > (_endPointer - _currentPointer))
+            if (unchecked((uint)byteCount) > (uint)RemainingBytes)
             {
                 Throw.OutOfBounds();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int GetOffsetAndAdvance(int length)
+        {
+            int currentOffset = this.Offset;
+
+            if (unchecked((uint)length) > (uint)(_block.Length - currentOffset))
+            {
+                Throw.OutOfBounds();
+            }
+
+            _offset = currentOffset + length;
+            if (_currentPointer != null)
+            {
+                _currentPointer += length;
+            }
+
+            return currentOffset;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -190,6 +289,7 @@ namespace System.Reflection.Metadata
             }
 
             _currentPointer = p + length;
+            _offset += length;
             return p;
         }
 
@@ -204,6 +304,7 @@ namespace System.Reflection.Metadata
             }
 
             _currentPointer = p + 1;
+            _offset++;
             return p;
         }
 
@@ -228,16 +329,38 @@ namespace System.Reflection.Metadata
 
         public sbyte ReadSByte()
         {
+            if (_block.HasManagedMemory)
+            {
+                int off = GetOffsetAndAdvance(1);
+                return (sbyte)_block.GetSpan()[off];
+            }
+
             return *(sbyte*)GetCurrentPointerAndAdvance1();
         }
 
         public byte ReadByte()
         {
+            if (_block.HasManagedMemory)
+            {
+                int off = GetOffsetAndAdvance(1);
+                return _block.GetSpan()[off];
+            }
+
             return *(byte*)GetCurrentPointerAndAdvance1();
         }
 
         public char ReadChar()
         {
+            if (_block.HasManagedMemory)
+            {
+                int off = GetOffsetAndAdvance(sizeof(char));
+                ReadOnlySpan<byte> span = _block.GetSpan();
+                unchecked
+                {
+                    return (char)(span[off] + (span[off + 1] << 8));
+                }
+            }
+
             unchecked
             {
                 byte* ptr = GetCurrentPointerAndAdvance(sizeof(char));
@@ -247,6 +370,16 @@ namespace System.Reflection.Metadata
 
         public short ReadInt16()
         {
+            if (_block.HasManagedMemory)
+            {
+                int off = GetOffsetAndAdvance(sizeof(short));
+                ReadOnlySpan<byte> span = _block.GetSpan();
+                unchecked
+                {
+                    return (short)(span[off] + (span[off + 1] << 8));
+                }
+            }
+
             unchecked
             {
                 byte* ptr = GetCurrentPointerAndAdvance(sizeof(short));
@@ -256,6 +389,16 @@ namespace System.Reflection.Metadata
 
         public ushort ReadUInt16()
         {
+            if (_block.HasManagedMemory)
+            {
+                int off = GetOffsetAndAdvance(sizeof(ushort));
+                ReadOnlySpan<byte> span = _block.GetSpan();
+                unchecked
+                {
+                    return (ushort)(span[off] + (span[off + 1] << 8));
+                }
+            }
+
             unchecked
             {
                 byte* ptr = GetCurrentPointerAndAdvance(sizeof(ushort));
@@ -265,6 +408,16 @@ namespace System.Reflection.Metadata
 
         public int ReadInt32()
         {
+            if (_block.HasManagedMemory)
+            {
+                int off = GetOffsetAndAdvance(sizeof(int));
+                ReadOnlySpan<byte> span = _block.GetSpan();
+                unchecked
+                {
+                    return (int)(span[off] + (span[off + 1] << 8) + (span[off + 2] << 16) + (span[off + 3] << 24));
+                }
+            }
+
             unchecked
             {
                 byte* ptr = GetCurrentPointerAndAdvance(sizeof(int));
@@ -274,6 +427,16 @@ namespace System.Reflection.Metadata
 
         public uint ReadUInt32()
         {
+            if (_block.HasManagedMemory)
+            {
+                int off = GetOffsetAndAdvance(sizeof(uint));
+                ReadOnlySpan<byte> span = _block.GetSpan();
+                unchecked
+                {
+                    return (uint)(span[off] + (span[off + 1] << 8) + (span[off + 2] << 16) + (span[off + 3] << 24));
+                }
+            }
+
             unchecked
             {
                 byte* ptr = GetCurrentPointerAndAdvance(sizeof(uint));
@@ -283,6 +446,18 @@ namespace System.Reflection.Metadata
 
         public long ReadInt64()
         {
+            if (_block.HasManagedMemory)
+            {
+                int off = GetOffsetAndAdvance(sizeof(long));
+                ReadOnlySpan<byte> span = _block.GetSpan();
+                unchecked
+                {
+                    uint lo = (uint)(span[off] + (span[off + 1] << 8) + (span[off + 2] << 16) + (span[off + 3] << 24));
+                    uint hi = (uint)(span[off + 4] + (span[off + 5] << 8) + (span[off + 6] << 16) + (span[off + 7] << 24));
+                    return (long)(lo + ((ulong)hi << 32));
+                }
+            }
+
             unchecked
             {
                 byte* ptr = GetCurrentPointerAndAdvance(sizeof(long));
@@ -312,6 +487,28 @@ namespace System.Reflection.Metadata
         public Guid ReadGuid()
         {
             const int size = 16;
+
+            if (_block.HasManagedMemory)
+            {
+                int off = GetOffsetAndAdvance(size);
+                ReadOnlySpan<byte> span = _block.GetSpan().Slice(off, size);
+                if (BitConverter.IsLittleEndian)
+                {
+                    return Unsafe.ReadUnaligned<Guid>(ref Unsafe.AsRef(in span[0]));
+                }
+                else
+                {
+                    unchecked
+                    {
+                        return new Guid(
+                            (int)(span[0] | (span[1] << 8) | (span[2] << 16) | (span[3] << 24)),
+                            (short)(span[4] | (span[5] << 8)),
+                            (short)(span[6] | (span[7] << 8)),
+                            span[8], span[9], span[10], span[11], span[12], span[13], span[14], span[15]);
+                    }
+                }
+            }
+
             byte* ptr = GetCurrentPointerAndAdvance(size);
             if (BitConverter.IsLittleEndian)
             {
@@ -341,22 +538,46 @@ namespace System.Reflection.Metadata
         /// <exception cref="BadImageFormatException">The data at the current position was not a valid <see cref="decimal"/> number.</exception>
         public decimal ReadDecimal()
         {
-            byte* ptr = GetCurrentPointerAndAdvance(13);
-
-            byte scale = (byte)(*ptr & 0x7f);
-            if (scale > 28)
+            if (_block.HasManagedMemory)
             {
-                throw new BadImageFormatException(SR.ValueTooLarge);
+                int off = GetOffsetAndAdvance(13);
+                ReadOnlySpan<byte> span = _block.GetSpan();
+
+                byte scale = (byte)(span[off] & 0x7f);
+                if (scale > 28)
+                {
+                    throw new BadImageFormatException(SR.ValueTooLarge);
+                }
+
+                unchecked
+                {
+                    return new decimal(
+                        (int)(span[off + 1] | (span[off + 2] << 8) | (span[off + 3] << 16) | (span[off + 4] << 24)),
+                        (int)(span[off + 5] | (span[off + 6] << 8) | (span[off + 7] << 16) | (span[off + 8] << 24)),
+                        (int)(span[off + 9] | (span[off + 10] << 8) | (span[off + 11] << 16) | (span[off + 12] << 24)),
+                        isNegative: (span[off] & 0x80) != 0,
+                        scale: scale);
+                }
             }
 
-            unchecked
+            byte* ptr = GetCurrentPointerAndAdvance(13);
+
             {
-                return new decimal(
-                    (int)(ptr[1] | (ptr[2] << 8) | (ptr[3] << 16) | (ptr[4] << 24)),
-                    (int)(ptr[5] | (ptr[6] << 8) | (ptr[7] << 16) | (ptr[8] << 24)),
-                    (int)(ptr[9] | (ptr[10] << 8) | (ptr[11] << 16) | (ptr[12] << 24)),
-                    isNegative: (*ptr & 0x80) != 0,
-                    scale: scale);
+                byte scale = (byte)(*ptr & 0x7f);
+                if (scale > 28)
+                {
+                    throw new BadImageFormatException(SR.ValueTooLarge);
+                }
+
+                unchecked
+                {
+                    return new decimal(
+                        (int)(ptr[1] | (ptr[2] << 8) | (ptr[3] << 16) | (ptr[4] << 24)),
+                        (int)(ptr[5] | (ptr[6] << 8) | (ptr[7] << 16) | (ptr[8] << 24)),
+                        (int)(ptr[9] | (ptr[10] << 8) | (ptr[11] << 16) | (ptr[12] << 24)),
+                        isNegative: (*ptr & 0x80) != 0,
+                        scale: scale);
+                }
             }
         }
 
@@ -394,8 +615,14 @@ namespace System.Reflection.Metadata
         /// <exception cref="BadImageFormatException"><paramref name="byteCount"/> bytes not available.</exception>
         public string ReadUTF8(int byteCount)
         {
-            string s = _block.PeekUtf8(this.Offset, byteCount);
-            _currentPointer += byteCount;
+            int off = this.Offset;
+            string s = _block.PeekUtf8(off, byteCount);
+            _offset = off + byteCount;
+            if (_currentPointer != null)
+            {
+                _currentPointer += byteCount;
+            }
+
             return s;
         }
 
@@ -407,8 +634,14 @@ namespace System.Reflection.Metadata
         /// <exception cref="BadImageFormatException"><paramref name="byteCount"/> bytes not available.</exception>
         public string ReadUTF16(int byteCount)
         {
-            string s = _block.PeekUtf16(this.Offset, byteCount);
-            _currentPointer += byteCount;
+            int off = this.Offset;
+            string s = _block.PeekUtf16(off, byteCount);
+            _offset = off + byteCount;
+            if (_currentPointer != null)
+            {
+                _currentPointer += byteCount;
+            }
+
             return s;
         }
 
@@ -420,8 +653,14 @@ namespace System.Reflection.Metadata
         /// <exception cref="BadImageFormatException"><paramref name="byteCount"/> bytes not available.</exception>
         public byte[] ReadBytes(int byteCount)
         {
-            byte[] bytes = _block.PeekBytes(this.Offset, byteCount);
-            _currentPointer += byteCount;
+            int off = this.Offset;
+            byte[] bytes = _block.PeekBytes(off, byteCount);
+            _offset = off + byteCount;
+            if (_currentPointer != null)
+            {
+                _currentPointer += byteCount;
+            }
+
             return bytes;
         }
 
@@ -434,22 +673,35 @@ namespace System.Reflection.Metadata
         /// <exception cref="BadImageFormatException"><paramref name="byteCount"/> bytes not available.</exception>
         public void ReadBytes(int byteCount, byte[] buffer, int bufferOffset)
         {
-            Marshal.Copy((IntPtr)GetCurrentPointerAndAdvance(byteCount), buffer, bufferOffset, byteCount);
+            int off = GetOffsetAndAdvance(byteCount);
+            _block.GetSpan().Slice(off, byteCount).CopyTo(buffer.AsSpan(bufferOffset));
         }
 
         internal string ReadUtf8NullTerminated()
         {
             int bytesRead;
-            string value = _block.PeekUtf8NullTerminated(this.Offset, null, MetadataStringDecoder.DefaultUTF8, out bytesRead, '\0');
-            _currentPointer += bytesRead;
+            int off = this.Offset;
+            string value = _block.PeekUtf8NullTerminated(off, null, MetadataStringDecoder.DefaultUTF8, out bytesRead, '\0');
+            _offset = off + bytesRead;
+            if (_currentPointer != null)
+            {
+                _currentPointer += bytesRead;
+            }
+
             return value;
         }
 
         private int ReadCompressedIntegerOrInvalid()
         {
             int bytesRead;
-            int value = _block.PeekCompressedInteger(this.Offset, out bytesRead);
-            _currentPointer += bytesRead;
+            int off = this.Offset;
+            int value = _block.PeekCompressedInteger(off, out bytesRead);
+            _offset = off + bytesRead;
+            if (_currentPointer != null)
+            {
+                _currentPointer += bytesRead;
+            }
+
             return value;
         }
 
@@ -490,7 +742,8 @@ namespace System.Reflection.Metadata
         public bool TryReadCompressedSignedInteger(out int value)
         {
             int bytesRead;
-            value = _block.PeekCompressedInteger(this.Offset, out bytesRead);
+            int off = this.Offset;
+            value = _block.PeekCompressedInteger(off, out bytesRead);
 
             if (value == InvalidCompressedInteger)
             {
@@ -517,7 +770,12 @@ namespace System.Reflection.Metadata
                 }
             }
 
-            _currentPointer += bytesRead;
+            _offset = off + bytesRead;
+            if (_currentPointer != null)
+            {
+                _currentPointer += bytesRead;
+            }
+
             return true;
         }
 

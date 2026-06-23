@@ -866,5 +866,68 @@ namespace System.Reflection.PortableExecutable.Tests
                 }
             }
         }
+
+        [Fact]
+        public void GetMemory_FromImmutableArray()
+        {
+            var peImage = ImmutableArray.Create(Misc.Members);
+            using (var peReader = new PEReader(peImage))
+            {
+                var metadata = peReader.GetMetadata();
+                var memory = metadata.GetMemory();
+
+                Assert.Equal(metadata.Length, memory.Length);
+                Assert.False(memory.IsEmpty);
+
+                var content = metadata.GetContent();
+                Assert.Equal(content.AsSpan().ToArray(), memory.ToArray());
+            }
+        }
+
+        [Fact]
+        public void GetMemory_FromStream()
+        {
+            using (var stream = new MemoryStream(Misc.Members))
+            using (var peReader = new PEReader(stream))
+            {
+                var metadata = peReader.GetMetadata();
+                var memory = metadata.GetMemory();
+
+                Assert.Equal(metadata.Length, memory.Length);
+                Assert.False(memory.IsEmpty);
+            }
+        }
+
+        [Fact]
+        public void GetEntireImageUnsafe_FromImmutableArray()
+        {
+            var peImage = ImmutableArray.Create(Misc.Members);
+            using (var peReader = new PEReader(peImage))
+            {
+                var block = peReader.GetEntireImageUnsafe();
+                Assert.Equal(peImage.Length, block.Length);
+            }
+        }
+
+        [Fact]
+        public void ManagedPathBlobReader_FromPEReader()
+        {
+            var peImage = ImmutableArray.Create(Misc.Members);
+            using (var peReader = new PEReader(peImage))
+            {
+                var metadata = peReader.GetMetadata();
+                var reader = metadata.GetReader();
+
+                Assert.Equal(metadata.Length, reader.Length);
+                Assert.Equal(0, reader.Offset);
+
+                // Pointer access should still work (pinned array)
+                unsafe
+                {
+                    Assert.True(reader.StartPointer != null);
+                    Assert.True(reader.CurrentPointer != null);
+                }
+            }
+        }
     }
 }

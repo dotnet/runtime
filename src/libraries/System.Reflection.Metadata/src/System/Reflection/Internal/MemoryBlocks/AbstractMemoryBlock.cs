@@ -22,12 +22,49 @@ namespace System.Reflection.Internal
         /// </summary>
         public abstract int Size { get; }
 
-        public unsafe BlobReader GetReader() => new BlobReader(Pointer, Size);
+        /// <summary>
+        /// Gets the memory backing this block as a <see cref="ReadOnlyMemory{T}"/>.
+        /// Returns default if the block is not backed by managed memory.
+        /// </summary>
+        public virtual ReadOnlyMemory<byte> GetMemory() => default;
+
+        public unsafe MemoryBlock GetMemoryBlock()
+        {
+            return GetMemoryBlock(0, Size);
+        }
+
+        public unsafe MemoryBlock GetMemoryBlock(int offset, int size)
+        {
+            ReadOnlyMemory<byte> memory = GetMemory();
+            if (!memory.IsEmpty || Size == 0)
+            {
+                byte* pointer = Pointer;
+                if (pointer != null)
+                {
+                    return new MemoryBlock(pointer + offset, memory, offset, size);
+                }
+
+                return new MemoryBlock(memory, offset, size);
+            }
+
+            byte* ptr = Pointer;
+            return new MemoryBlock(ptr + offset, size);
+        }
+
+        public BlobReader GetReader() => new BlobReader(GetMemoryBlock());
 
         /// <summary>
         /// Creates a new stream wrapping the block's memory.
         /// </summary>
-        public unsafe Stream GetStream() => new UnmanagedMemoryStream(Pointer, Size);
+        public unsafe Stream GetStream()
+        {
+            if (Size == 0)
+            {
+                return new MemoryStream(Array.Empty<byte>(), writable: false);
+            }
+
+            return new UnmanagedMemoryStream(Pointer, Size);
+        }
 
         /// <summary>
         /// Returns the content of the entire memory block.

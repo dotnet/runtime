@@ -16,11 +16,11 @@ namespace System.Reflection.Metadata
     /// </summary>
     public sealed partial class MetadataReader
     {
-        internal readonly NamespaceCache NamespaceCache;
+        internal NamespaceCache NamespaceCache = null!;
         internal readonly MemoryBlock Block;
 
         // A row id of "mscorlib" AssemblyRef in a WinMD file (each WinMD file must have such a reference).
-        internal readonly int WinMDMscorlibRef;
+        internal int WinMDMscorlibRef;
 
         // Keeps the underlying memory alive.
         private readonly object? _memoryOwnerObj;
@@ -81,7 +81,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentOutOfRange(nameof(length));
             }
 
-            if (metadata == null)
+            if (metadata == null && length > 0)
             {
                 Throw.ArgumentNull(nameof(metadata));
             }
@@ -94,11 +94,32 @@ namespace System.Reflection.Metadata
             }
 
             Block = new MemoryBlock(metadata, length);
-
             _memoryOwnerObj = memoryOwner;
             _options = options;
             UTF8Decoder = utf8Decoder;
 
+            ReadMetadataAndInitialize();
+        }
+
+        internal MetadataReader(MemoryBlock block, MetadataReaderOptions options, MetadataStringDecoder? utf8Decoder, object? memoryOwner)
+        {
+            utf8Decoder ??= MetadataStringDecoder.DefaultUTF8;
+
+            if (!(utf8Decoder.Encoding is UTF8Encoding))
+            {
+                Throw.InvalidArgument(SR.MetadataStringDecoderEncodingMustBeUtf8, nameof(utf8Decoder));
+            }
+
+            Block = block;
+            _memoryOwnerObj = memoryOwner;
+            _options = options;
+            UTF8Decoder = utf8Decoder;
+
+            ReadMetadataAndInitialize();
+        }
+
+        private unsafe void ReadMetadataAndInitialize()
+        {
             var headerReader = new BlobReader(Block);
             ReadMetadataHeader(ref headerReader, out _versionString);
             _metadataKind = GetMetadataKind(_versionString);
@@ -110,7 +131,7 @@ namespace System.Reflection.Metadata
             int[]? externalTableRowCountsOpt;
             if (pdbStream.Length > 0)
             {
-                int pdbStreamOffset = (int)(pdbStream.Pointer - metadata);
+                int pdbStreamOffset = (int)(pdbStream.Pointer - Block.Pointer);
                 ReadStandalonePortablePdbStream(pdbStream, pdbStreamOffset, out _debugMetadataHeader, out externalTableRowCountsOpt);
             }
             else
@@ -149,10 +170,10 @@ namespace System.Reflection.Metadata
 
         #region Metadata Headers
 
-        private readonly string _versionString;
-        private readonly MetadataKind _metadataKind;
-        private readonly MetadataStreamKind _metadataStreamKind;
-        private readonly DebugMetadataHeader? _debugMetadataHeader;
+        private string _versionString = null!;
+        private MetadataKind _metadataKind;
+        private MetadataStreamKind _metadataStreamKind;
+        private DebugMetadataHeader? _debugMetadataHeader;
 
         internal StringHeap StringHeap;
         internal BlobHeap BlobHeap;
@@ -366,7 +387,7 @@ namespace System.Reflection.Metadata
 
         #region Tables and Heaps
 
-        private readonly TableMask _sortedTables;
+        private TableMask _sortedTables;
 
         /// <summary>
         /// A row count for each possible table. May be indexed by <see cref="TableIndex"/>.

@@ -77,7 +77,7 @@ namespace System.Reflection.Internal.Tests
                 {
                     using (var block = provider.GetMemoryBlock())
                     {
-                        Assert.IsType<NativeHeapMemoryBlock>(block);
+                        Assert.IsType<PinnedArrayMemoryBlock>(block);
                         Assert.Equal(4, block.Size);
                         AssertEx.Equal(new byte[] { }, block.GetContentUnchecked(0, 0));
                         AssertEx.Equal(new byte[] { 3, 4 }, block.GetContentUnchecked(2, 2));
@@ -88,7 +88,7 @@ namespace System.Reflection.Internal.Tests
 
                     using (var block = provider.GetMemoryBlock(1, 2))
                     {
-                        Assert.IsType<NativeHeapMemoryBlock>(block);
+                        Assert.IsType<PinnedArrayMemoryBlock>(block);
                         Assert.Equal(2, block.Size);
                         AssertEx.Equal(new byte[] { 2, 3 }, block.GetContentUnchecked(0, 2));
                         AssertEx.Equal(new byte[] { 3 }, block.GetContentUnchecked(1, 1));
@@ -102,7 +102,7 @@ namespace System.Reflection.Internal.Tests
                 {
                     using (var block = provider.GetMemoryBlock())
                     {
-                        Assert.IsType<NativeHeapMemoryBlock>(block);
+                        Assert.IsType<PinnedArrayMemoryBlock>(block);
                         Assert.Equal(4, block.Size);
                         AssertEx.Equal(new byte[] { }, block.GetContentUnchecked(0, 0));
                         AssertEx.Equal(new byte[] { 3, 4 }, block.GetContentUnchecked(2, 2));
@@ -151,7 +151,7 @@ namespace System.Reflection.Internal.Tests
                             // small:
                             using (var block = provider.GetMemoryBlock(1, 2))
                             {
-                                Assert.IsType<NativeHeapMemoryBlock>(block);
+                                Assert.IsType<PinnedArrayMemoryBlock>(block);
                                 Assert.Equal(2, block.Size);
                                 Assert.Equal(new byte[] { 0x12, 0x12 }, block.GetContentUnchecked(0, block.Size));
                             }

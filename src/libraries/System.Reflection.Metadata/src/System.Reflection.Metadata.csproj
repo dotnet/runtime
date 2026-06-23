@@ -111,6 +111,8 @@ The System.Reflection.Metadata library is built-in as part of the shared framewo
     <Compile Include="System\Reflection\Internal\MemoryBlocks\MemoryBlockProvider.cs" />
     <Compile Include="System\Reflection\Internal\MemoryBlocks\MemoryMappedFileBlock.cs" />
     <Compile Include="System\Reflection\Internal\MemoryBlocks\NativeHeapMemoryBlock.cs" />
+    <Compile Include="System\Reflection\Internal\MemoryBlocks\PinnedArrayMemoryBlock.cs" />
+    <Compile Include="System\Reflection\Internal\MemoryBlocks\PinnedArrayMemoryBlockProvider.cs" />
     <Compile Include="System\Reflection\Internal\MemoryBlocks\StreamMemoryBlockProvider.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\BitArithmetic.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\StringUtils.cs" />
