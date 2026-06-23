@@ -4131,7 +4131,7 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
 
     if (op2IsNotZero)
     {
-        JITDUMP("Divisor for DIV/MOD is proven to be never negative...\n")
+        JITDUMP("Divisor for DIV/MOD is proven to be never zero...\n")
         tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
         changed = true;
     }
