@@ -1751,8 +1751,11 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
             else
             {
                 // got another value type. Get the type
-                TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
+                // The type itself may be generic. We need to get the instantiated
+                // type for the field to properly call its method.
+                TypeHandle fieldTH = field->GetExactFieldType(TypeHandle(mt));
                 _ASSERTE(!fieldTH.IsNull());
+                _ASSERTE(!fieldTH.IsSharedByGenericInstantiations());
                 MethodTable* fieldMT = fieldTH.GetMethodTable();
                 if (CanCompareBitsOrUseFastGetHashCode(fieldMT))
                 {
