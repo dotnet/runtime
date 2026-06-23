@@ -10,33 +10,22 @@ namespace System.IO
     /// Provides a seekable, read-only <see cref="MemoryStream"/> over a <see cref="ReadOnlyMemory{Byte}"/>.
     /// </summary>
     /// <remarks>
-    /// <para>The stream cannot be written to. <see cref="CanWrite"/> always returns <see langword="false"/>.</para>
-    /// <para><see cref="GetBuffer"/> throws and <see cref="TryGetBuffer"/> returns <see langword="false"/>.</para>
+    /// <para>The stream cannot be written to. <see cref="MemoryStream.CanWrite"/> always returns <see langword="false"/>.</para>
+    /// <para><see cref="MemoryStream.GetBuffer"/> throws and <see cref="MemoryStream.TryGetBuffer"/> returns <see langword="false"/>.</para>
     /// </remarks>
     public sealed class ReadOnlyMemoryStream : MemoryStream
     {
-        private ReadOnlyMemory<byte> _buffer;
-        private int _position;
-        private bool _isOpen;
+        private ReadOnlyMemory<byte> _memory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ReadOnlyMemoryStream"/> class over the specified <see cref="ReadOnlyMemory{Byte}"/>.
         /// </summary>
         /// <param name="source">The <see cref="ReadOnlyMemory{Byte}"/> to wrap.</param>
-        public ReadOnlyMemoryStream(ReadOnlyMemory<byte> source) : base()
+        public ReadOnlyMemoryStream(ReadOnlyMemory<byte> source) : base(writable: false, exposable: false)
         {
-            _buffer = source;
-            _isOpen = true;
+            _memory = source;
+            _length = source.Length;
         }
-
-        /// <inheritdoc/>
-        public override bool CanRead => _isOpen;
-
-        /// <inheritdoc/>
-        public override bool CanSeek => _isOpen;
-
-        /// <inheritdoc/>
-        public override bool CanWrite => false;
 
         /// <inheritdoc/>
         public override int Capacity
@@ -44,38 +33,9 @@ namespace System.IO
             get
             {
                 EnsureNotClosed();
-                return _buffer.Length;
+                return _memory.Length;
             }
             set => throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
-        }
-
-        /// <inheritdoc/>
-        public override long Length
-        {
-            get
-            {
-                EnsureNotClosed();
-
-                return _buffer.Length;
-            }
-        }
-
-        /// <inheritdoc/>
-        public override long Position
-        {
-            get
-            {
-                EnsureNotClosed();
-
-                return _position;
-            }
-            set
-            {
-                EnsureNotClosed();
-                ArgumentOutOfRangeException.ThrowIfNegative(value);
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, int.MaxValue);
-                _position = (int)value;
-            }
         }
 
         /// <inheritdoc/>
@@ -83,7 +43,7 @@ namespace System.IO
         {
             EnsureNotClosed();
 
-            ReadOnlySpan<byte> span = _buffer.Span;
+            ReadOnlySpan<byte> span = _memory.Span;
             int position = _position;
 
             if ((uint)position < (uint)span.Length)
@@ -108,14 +68,14 @@ namespace System.IO
         {
             EnsureNotClosed();
 
-            int remaining = _buffer.Length - _position;
+            int remaining = _memory.Length - _position;
             if (remaining <= 0 || buffer.Length == 0)
             {
                 return 0;
             }
 
             int bytesToRead = Math.Min(remaining, buffer.Length);
-            _buffer.Span.Slice(_position, bytesToRead).CopyTo(buffer);
+            _memory.Span.Slice(_position, bytesToRead).CopyTo(buffer);
             _position += bytesToRead;
 
             return bytesToRead;
@@ -140,10 +100,10 @@ namespace System.IO
             ValidateCopyToArguments(destination, bufferSize);
             EnsureNotClosed();
 
-            if (_buffer.Length > _position)
+            if (_memory.Length > _position)
             {
-                destination.Write(_buffer.Span.Slice(_position));
-                _position = _buffer.Length;
+                destination.Write(_memory.Span.Slice(_position));
+                _position = _memory.Length;
             }
         }
 
@@ -158,10 +118,10 @@ namespace System.IO
                 return Task.FromCanceled(cancellationToken);
             }
 
-            if (_buffer.Length > _position)
+            if (_memory.Length > _position)
             {
-                ReadOnlyMemory<byte> content = _buffer.Slice(_position);
-                _position = _buffer.Length;
+                ReadOnlyMemory<byte> content = _memory.Slice(_position);
+                _position = _memory.Length;
 
                 return destination.WriteAsync(content, cancellationToken).AsTask();
             }
@@ -178,7 +138,7 @@ namespace System.IO
             {
                 SeekOrigin.Begin => offset,
                 SeekOrigin.Current => _position + offset,
-                SeekOrigin.End => _buffer.Length + offset,
+                SeekOrigin.End => _memory.Length + offset,
                 _ => throw new ArgumentException(SR.Argument_InvalidSeekOrigin, nameof(origin))
             };
 
@@ -215,27 +175,16 @@ namespace System.IO
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
-        public override byte[] GetBuffer() =>
-            throw new UnauthorizedAccessException(SR.UnauthorizedAccess_MemStreamBuffer);
-
-        /// <inheritdoc/>
-        public override bool TryGetBuffer(out ArraySegment<byte> buffer)
-        {
-            buffer = default;
-            return false;
-        }
-
-        /// <inheritdoc/>
         public override byte[] ToArray()
         {
             EnsureNotClosed();
-            if (_buffer.Length == 0)
+            if (_memory.Length == 0)
             {
                 return Array.Empty<byte>();
             }
 
-            byte[] copy = GC.AllocateUninitializedArray<byte>(_buffer.Length);
-            _buffer.Span.CopyTo(copy);
+            byte[] copy = GC.AllocateUninitializedArray<byte>(_memory.Length);
+            _memory.Span.CopyTo(copy);
             return copy;
         }
 
@@ -245,27 +194,14 @@ namespace System.IO
             ArgumentNullException.ThrowIfNull(stream);
             EnsureNotClosed();
 
-            stream.Write(_buffer.Span);
+            stream.Write(_memory.Span);
         }
-
-        /// <inheritdoc/>
-        public override void Flush() { }
-
-        /// <inheritdoc/>
-        public override Task FlushAsync(CancellationToken cancellationToken) =>
-            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) : Task.CompletedTask;
 
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
-            _isOpen = false;
-            _buffer = default;
+            _memory = default;
             base.Dispose(disposing);
-        }
-
-        private void EnsureNotClosed()
-        {
-            ObjectDisposedException.ThrowIf(!_isOpen, this);
         }
     }
 }
