@@ -191,6 +191,14 @@ static int exe_start(const int argc, const pal_char_t* argv[])
         return AppHostExeNotBoundFailure;
     }
 
+#if defined(_WIN32)
+    for (pal_char_t* c = embedded_app_name; *c != _X('\0'); c++)
+    {
+        if (*c == _X('/'))
+            *c = DIR_SEPARATOR;
+    }
+#endif
+
     if (pal_strchr(embedded_app_name, _X('/')) != NULL
 #if defined(_WIN32)
         || pal_strchr(embedded_app_name, _X('\\')) != NULL
