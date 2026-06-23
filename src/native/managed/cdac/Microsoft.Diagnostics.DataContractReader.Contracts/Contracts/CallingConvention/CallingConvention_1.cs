@@ -212,9 +212,14 @@ internal sealed class CallingConvention_1 : ICallingConvention
         if (mdReader is null)
             throw new InvalidOperationException("Cannot read metadata for method");
 
-        SignatureTypeProvider<TypeHandle> provider = new(_target, moduleHandle);
-        RuntimeSignatureDecoder<TypeHandle, TypeHandle> decoder = new(
-            provider, _target, mdReader, typeHandle);
+        // Carry both the method and its owning type as the generic context so
+        // ELEMENT_TYPE_VAR and _MVAR each resolve through the right
+        // instantiation. The standard one-handle SignatureTypeProvider throws
+        // NotSupportedException for whichever side it wasn't parameterized on.
+        MethodSigContext context = new(methodDesc, typeHandle);
+        MethodAndTypeContextProvider provider = new(_target, moduleHandle, rts);
+        RuntimeSignatureDecoder<TypeHandle, MethodSigContext> decoder = new(
+            provider, _target, mdReader, context);
 
         if (rts.IsStoredSigMethodDesc(methodDesc, out ReadOnlySpan<byte> storedSig))
         {
@@ -259,9 +264,10 @@ internal sealed class CallingConvention_1 : ICallingConvention
         if (mdReader is null)
             return new ParamTypeInfo[paramCount];
 
-        ParamMetadataProvider provider = new(new SignatureTypeProvider<TypeHandle>(_target, moduleHandle), rts);
-        RuntimeSignatureDecoder<TrackedType, TypeHandle> decoder = new(
-            provider, _target, mdReader, typeHandle);
+        MethodSigContext context = new(methodDesc, typeHandle);
+        ParamMetadataProvider provider = new(new MethodAndTypeContextProvider(_target, moduleHandle, rts), rts);
+        RuntimeSignatureDecoder<TrackedType, MethodSigContext> decoder = new(
+            provider, _target, mdReader, context);
 
         MethodSignature<TrackedType> sig;
         if (rts.IsStoredSigMethodDesc(methodDesc, out ReadOnlySpan<byte> storedSig))
@@ -344,13 +350,15 @@ internal sealed class CallingConvention_1 : ICallingConvention
     // ELEMENT_TYPE_* wrapper (BYREF / PTR / SZARRAY / ARRAY) on each parameter
     // so the caller can recover that information even when the standard
     // SignatureTypeProvider would have returned a null TypeHandle from
-    // GetConstructedType. Used only by DecodeParamTypeInfo.
-    private sealed class ParamMetadataProvider : IRuntimeSignatureTypeProvider<TrackedType, TypeHandle>
+    // GetConstructedType. Used only by DecodeParamTypeInfo. The generic
+    // context is a MethodDescHandle so both ELEMENT_TYPE_VAR and _MVAR can be
+    // resolved by the inner MethodGenericContextProvider.
+    private sealed class ParamMetadataProvider : IRuntimeSignatureTypeProvider<TrackedType, MethodSigContext>
     {
-        private readonly SignatureTypeProvider<TypeHandle> _inner;
+        private readonly MethodAndTypeContextProvider _inner;
         private readonly IRuntimeTypeSystem _rts;
 
-        public ParamMetadataProvider(SignatureTypeProvider<TypeHandle> inner, IRuntimeTypeSystem rts)
+        public ParamMetadataProvider(MethodAndTypeContextProvider inner, IRuntimeTypeSystem rts)
         {
             _inner = inner;
             _rts = rts;
@@ -402,10 +410,10 @@ internal sealed class CallingConvention_1 : ICallingConvention
             return new TrackedType { Underlying = constructed, OutermostKind = kind };
         }
 
-        public TrackedType GetGenericMethodParameter(TypeHandle context, int index)
+        public TrackedType GetGenericMethodParameter(MethodSigContext context, int index)
             => Wrap(_inner.GetGenericMethodParameter(context, index));
 
-        public TrackedType GetGenericTypeParameter(TypeHandle context, int index)
+        public TrackedType GetGenericTypeParameter(MethodSigContext context, int index)
             => Wrap(_inner.GetGenericTypeParameter(context, index));
 
         public TrackedType GetModifiedType(TrackedType modifier, TrackedType unmodifiedType, bool isRequired)
@@ -423,7 +431,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         public TrackedType GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
             => Wrap(_inner.GetTypeFromReference(reader, handle, rawTypeKind));
 
-        public TrackedType GetTypeFromSpecification(MetadataReader reader, TypeHandle context, TypeSpecificationHandle handle, byte rawTypeKind)
+        public TrackedType GetTypeFromSpecification(MetadataReader reader, MethodSigContext context, TypeSpecificationHandle handle, byte rawTypeKind)
             => Wrap(_inner.GetTypeFromSpecification(reader, context, handle, rawTypeKind));
 
         public TrackedType GetInternalType(TargetPointer typeHandlePointer)
@@ -431,5 +439,33 @@ internal sealed class CallingConvention_1 : ICallingConvention
 
         public TrackedType GetInternalModifiedType(TargetPointer typeHandlePointer, TrackedType unmodifiedType, bool isRequired)
             => unmodifiedType;
+    }
+
+    // Generic context for signature decoding that carries both the method
+    // (for ELEMENT_TYPE_MVAR resolution) and its owning type (for
+    // ELEMENT_TYPE_VAR resolution). The existing SignatureTypeProvider<T>
+    // only resolves one or the other depending on T -- since a method
+    // signature can reference both kinds of type parameters, we need both.
+    internal readonly record struct MethodSigContext(MethodDescHandle Method, TypeHandle OwningType);
+
+    // SignatureTypeProvider variant that resolves both VAR (owning type's
+    // type parameters) and MVAR (method's type parameters) by pulling the
+    // appropriate field out of the MethodSigContext. Overrides the base
+    // implementations, which only handle one direction.
+    internal sealed class MethodAndTypeContextProvider : SignatureTypeProvider<MethodSigContext>
+    {
+        private readonly IRuntimeTypeSystem _rts;
+
+        public MethodAndTypeContextProvider(Target target, ModuleHandle moduleHandle, IRuntimeTypeSystem rts)
+            : base(target, moduleHandle)
+        {
+            _rts = rts;
+        }
+
+        public override TypeHandle GetGenericMethodParameter(MethodSigContext context, int index)
+            => _rts.GetGenericMethodInstantiation(context.Method)[index];
+
+        public override TypeHandle GetGenericTypeParameter(MethodSigContext context, int index)
+            => _rts.GetInstantiation(context.OwningType)[index];
     }
 }
