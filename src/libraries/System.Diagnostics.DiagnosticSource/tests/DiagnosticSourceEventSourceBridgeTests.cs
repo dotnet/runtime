@@ -15,6 +15,11 @@ namespace System.Diagnostics.Tests
     //Complex types are not supported on EventSource for .NET 4.5
     public class DiagnosticSourceEventSourceBridgeTests
     {
+        // Use a longer timeout than the RemoteExecutor default because some of these tests
+        // can be slow to run on resource constrained CI machines.
+        // Ensure RemoteExecutor.IsSupported, otherwise remote execution can throw PlatformNotSupportedException.
+        private static readonly RemoteInvokeOptions? s_remoteInvokeOptions = RemoteExecutor.IsSupported ? new RemoteInvokeOptions { TimeOut = 180_000 } : null;
+
         // To avoid interactions between tests when they are run in parallel, we run all these tests in their
         // own sub-process using RemoteExecutor.Invoke()  However this makes it very inconvenient to debug the test.
         // By setting this #if to true you stub out RemoteInvoke and the code will run in-proc which is useful
@@ -69,7 +74,7 @@ namespace System.Diagnostics.Tests
                     sources[i].Dispose();
                 }
 
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -122,7 +127,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(eventsCount, eventSourceListener.EventCount);
                     sources[i].Dispose();
                 }
-            }, eventName).Dispose();
+            }, eventName, s_remoteInvokeOptions).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -154,7 +159,7 @@ namespace System.Diagnostics.Tests
 
                 Assert.Equal(2, eventSourceListener.EventCount);
                 ValidateActivityEvents(eventSourceListener, "ActivityStop", source.Name, activity.OperationName);
-            }, samplingResult, alldataRequested.ToString(), activityTraceFlags.ToString()).Dispose();
+            }, samplingResult, alldataRequested.ToString(), activityTraceFlags.ToString(), s_remoteInvokeOptions).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -194,7 +199,7 @@ namespace System.Diagnostics.Tests
                 Activity activity = source.StartActivity($"ActivityFromNoneDefault"); // Shouldn't fire any event
                 Assert.Equal(eCount, eventSourceListener.EventCount);
                 Assert.Null(activity);
-            }, eventName, samplingResult, allDataRequested.ToString()).Dispose();
+            }, eventName, samplingResult, allDataRequested.ToString(), s_remoteInvokeOptions).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -231,7 +236,7 @@ namespace System.Diagnostics.Tests
                 a2.Dispose();
                 Assert.Equal(4, eventSourceListener.EventCount);
 
-            }, spec, isAllDataRequestedFromSpecific.ToString(), isAllDataRequestedFromNoneSpecific.ToString()).Dispose();
+            }, spec, isAllDataRequestedFromSpecific.ToString(), isAllDataRequestedFromNoneSpecific.ToString(), s_remoteInvokeOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -295,7 +300,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(a.ParentSpanId.ToString(), eventSourceListener.LastEvent.Arguments["ParentSpanId"]);
                 }
 
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
 
@@ -378,7 +383,7 @@ namespace System.Diagnostics.Tests
                     Assert.Null(a);
                 }
 
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         internal void ValidateActivityEvents(TestDiagnosticSourceEventListener eventSourceListener, string eventName, string sourceName, string activityName)
@@ -470,7 +475,7 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.True(!listen.Name.StartsWith("BuildTestSource"));
                 }));
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         /// <summary>
@@ -504,7 +509,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("Second url", eventSourceListener.LastEvent.Arguments["Url_2"]);
                     eventSourceListener.ResetEventCountAndLastEvent();
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         /// <summary>
@@ -537,7 +542,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("MyUrl", eventSourceListener.LastEvent.Arguments["Url"]);
                     eventSourceListener.ResetEventCountAndLastEvent();
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         /// <summary>
@@ -596,7 +601,7 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.True(!listen.Name.StartsWith("BuildTestSource"));
                 }));
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         /// <summary>
@@ -660,7 +665,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("122", eventSourceListener.LastEvent.Arguments["prop222"]);
                     eventSourceListener.ResetEventCountAndLastEvent();
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         /// <summary>
@@ -745,7 +750,7 @@ namespace System.Diagnostics.Tests
                     }
                     Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         public class PropertyThrow
@@ -777,7 +782,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("", eventSourceListener.LastEvent.Arguments["property2"]);
                     eventSourceListener.ResetEventCountAndLastEvent();
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         /// <summary>
@@ -859,7 +864,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("8", eventSourceListener.LastEvent.Arguments["cls_Point_X"]);
                     eventSourceListener.ResetEventCountAndLastEvent();
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         /// <summary>
@@ -893,7 +898,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("MyUrl", eventSourceListener.LastEvent.Arguments["Url"]);
                     eventSourceListener.ResetEventCountAndLastEvent();
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         /// <summary>
@@ -927,7 +932,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("4", eventSourceListener.LastEvent.Arguments["propInt"]);
                     eventSourceListener.ResetEventCountAndLastEvent();
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         // Tests that messages about DiagnosticSourceEventSource make it out.
@@ -958,7 +963,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(0, eventSourceListener.EventCount);
                     Assert.True(3 <= messages.Count);
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         // Tests that version event from DiagnosticSourceEventSource is fired.
@@ -994,7 +999,7 @@ namespace System.Diagnostics.Tests
                         new Version(typeof(Activity).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? "0.0.0").ToString(3),
                         version.ToString());
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         /// <summary>
@@ -1067,7 +1072,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("stop", eventSourceListener.LastEvent.Arguments["propStr"]);
                     eventSourceListener.ResetEventCountAndLastEvent();
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         /// <summary>
@@ -1191,7 +1196,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("200", eventSourceListener.LastEvent.Arguments["StatusCode"]);
                     eventSourceListener.ResetEventCountAndLastEvent();
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         [OuterLoop("Runs for several seconds")]
@@ -1224,7 +1229,7 @@ namespace System.Diagnostics.Tests
                     }
                     ce.Wait();
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1261,7 +1266,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal("2", eventListener.LastEvent.Arguments["OtherNumber"]);
                     Assert.Equal("2", eventListener.LastEvent.Arguments["Count"]);
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1316,7 +1321,7 @@ namespace System.Diagnostics.Tests
                     AssertActivityMatchesEvent(activity1, eventListener.LastEvent, isStart: false);
 
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         private void AssertActivityMatchesEvent(Activity a, DiagnosticSourceEvent e, bool isStart)
@@ -1405,7 +1410,7 @@ namespace System.Diagnostics.Tests
                 using var root = a.Source.StartActivity("TestName");
 
                 Assert.Null(root);
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1438,7 +1443,7 @@ namespace System.Diagnostics.Tests
                 root.Stop();
 
                 Assert.Equal(1, eventSourceListener.EventCount);
-            }, spec, errorMessage).Dispose();
+            }, spec, errorMessage, s_remoteInvokeOptions).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1484,7 +1489,7 @@ namespace System.Diagnostics.Tests
 
                 using var child = a.Source.StartActivity("child");
                 Assert.NotNull(child); // Child should be created as the parent is recorded.
-            },  maxOperationPerSecond.ToString(CultureInfo.InvariantCulture)).Dispose();
+            },  maxOperationPerSecond.ToString(CultureInfo.InvariantCulture), s_remoteInvokeOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1511,7 +1516,7 @@ namespace System.Diagnostics.Tests
                 using var child = a.Source.StartActivity("child");
 
                 Assert.Null(child);
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
 
             RemoteExecutor.Invoke(() =>
             {
@@ -1534,7 +1539,7 @@ namespace System.Diagnostics.Tests
                 Assert.NotNull(child);
                 Assert.True(child.Recorded);
 
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
 
             RemoteExecutor.Invoke(() =>
             {
@@ -1568,7 +1573,7 @@ namespace System.Diagnostics.Tests
                         (long)(0.0001D * long.MaxValue),
                         parentContext: default,
                         notSampledtraceId));
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
 
             RemoteExecutor.Invoke(() =>
             {
@@ -1602,7 +1607,7 @@ namespace System.Diagnostics.Tests
                         (long)(0.0001D * long.MaxValue),
                         parentContext: default,
                         sampledtraceId));
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1627,7 +1632,7 @@ namespace System.Diagnostics.Tests
                     Assert.NotNull(a);
                     Assert.False(a.Recorded);
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
 
             RemoteExecutor.Invoke(() =>
             {
@@ -1648,7 +1653,7 @@ namespace System.Diagnostics.Tests
                     Assert.NotNull(a);
                     Assert.False(a.Recorded);
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
 
             RemoteExecutor.Invoke(() =>
             {
@@ -1669,7 +1674,7 @@ namespace System.Diagnostics.Tests
                     Assert.NotNull(a);
                     Assert.False(a.Recorded);
                 }
-            }).Dispose();
+            }, s_remoteInvokeOptions).Dispose();
         }
     }
 

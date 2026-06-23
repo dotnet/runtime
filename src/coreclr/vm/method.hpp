@@ -1546,7 +1546,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         // methods with transient IL bodies do not have IL headers
-        return IsIL() && !IsUnboxingStub() && !IsAsyncThunkMethod();
+        return IsIL() && !IsUnboxingStub() && (!IsAsyncThunkMethod() || SupportsAsyncVersionCodegen());
     }
 
     ULONG GetRVA();
@@ -2075,6 +2075,12 @@ public:
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
     }
 
+    inline bool SupportsAsyncVersionCodegen() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return IsAsyncThunkMethod() && IsAsyncVariantMethod() && !IsReturnDroppingThunk();
+    }
+
     inline bool MatchesAsyncVariantLookup(AsyncVariantLookup lookup) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2303,13 +2309,11 @@ private:
     bool TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     void EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
-    void EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig& msig, ILStubLinker* pSL);
     void EmitReturnDroppingThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
-    SigPointer GetAsyncThunkResultTypeSig();
     int GetTokenForThunkTarget(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
-    int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
 public:
+    SigPointer GetAsyncThunkResultTypeSig();
     static void CreateDerivedTargetSig(MetaSig& msig, SigBuilder* stubSigBuilder);
     bool TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     void GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
