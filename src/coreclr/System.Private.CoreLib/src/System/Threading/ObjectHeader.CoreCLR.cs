@@ -233,13 +233,9 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe HeaderLockResult Release(object obj)
+        public static unsafe void Release(object obj)
         {
             Debug.Assert(obj != null);
-
-            // In CoreCLR, the managed ID is set by the runtime, thus we do not
-            // call CurrentManagedThreadIdUnchecked like we do in NativeAOT
-            int currentThreadID = ManagedThreadId.Current;
 
             fixed (byte* pObjectData = &obj.GetRawData())
             {
@@ -250,30 +246,41 @@ namespace System.Threading
                 while (true)
                 {
                     int oldBits = *pHeader;
-
-                    if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID &&
-                        (oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) == 0)
+                    // is the lock fat or becoming fat?
+                    if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) == 0)
                     {
-                        // decrement count or release entirely.
-                        int newBits = (oldBits & SBLK_MASK_LOCK_RECLEVEL) != 0 ?
-                            oldBits - SBLK_LOCK_RECLEVEL_INC :
-                            oldBits & ~SBLK_MASK_LOCK_THREADID;
+                        // In CoreCLR, the managed ID is set by the runtime, thus we do not
+                        // call CurrentManagedThreadIdUnchecked like we do in NativeAOT
+                        int currentThreadID = ManagedThreadId.Current;
 
-                        if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
+                        // do we own the thin lock?
+                        if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
                         {
-                            return HeaderLockResult.Success;
+                            // decrement count or release entirely.
+                            int newBits = (oldBits & SBLK_MASK_LOCK_RECLEVEL) != 0 ?
+                                oldBits - SBLK_LOCK_RECLEVEL_INC :
+                                oldBits & ~SBLK_MASK_LOCK_THREADID;
+
+                            if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
+                            {
+                                return;
+                            }
                         }
 
-                        // rare contention on owned lock,
+                        // rare contention on owned thin lock,
                         // we still own the lock, try again
                         continue;
                     }
 
-                    // This is a fat lock (most likely) or we don't own the lock and need to throw.
-                    // Let the slow path handle this.
-                    return HeaderLockResult.UseSlowPath;
+                    break;
                 }
             }
+
+            // This is a case when we have:
+            // * a fat lock - the most likely case by far, or
+            // * we don't own the lock and need to throw and it is ok if the lock gets inflated
+            // Let the slow path handle this.
+            Monitor.GetLockObject(obj).Exit();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

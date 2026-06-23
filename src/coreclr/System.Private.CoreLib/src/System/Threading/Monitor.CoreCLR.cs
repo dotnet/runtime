@@ -94,14 +94,7 @@ namespace System.Threading
         public static void Exit(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
-            ObjectHeader.HeaderLockResult result = ObjectHeader.Release(obj);
-
-            if (result == ObjectHeader.HeaderLockResult.Success)
-            {
-                return;
-            }
-
-            GetLockObject(obj).Exit();
+            ObjectHeader.Release(obj);
         }
 
         // Marked no-inlining to prevent recursive inlining of IsAcquired.
@@ -138,14 +131,7 @@ namespace System.Threading
             if (!lockTaken)
                 return;
 
-            ObjectHeader.HeaderLockResult result = ObjectHeader.Release(obj);
-
-            if (result == ObjectHeader.HeaderLockResult.Success)
-            {
-                return;
-            }
-
-            GetLockObject(obj).Exit();
+            ObjectHeader.Release(obj);
         }
     }
 }
