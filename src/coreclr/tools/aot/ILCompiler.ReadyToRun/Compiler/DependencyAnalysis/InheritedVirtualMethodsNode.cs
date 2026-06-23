@@ -148,6 +148,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 currentType = currentType.BaseType;
             }
 
+            // Look for generic DIMs from implemented interfaces
+            foreach (DefType interfaceType in type.RuntimeInterfaces)
+            {
+                foreach (MethodDesc interfaceMethod in interfaceType.GetVirtualMethods())
+                {
+                    if (interfaceMethod.HasInstantiation && !interfaceMethod.IsAbstract)
+                        return true;
+                }
+            }
+
             return false;
         }
 
