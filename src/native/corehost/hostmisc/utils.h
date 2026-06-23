@@ -248,10 +248,6 @@ pal_char_t* utils_get_runtime_id(void);
 #define MAX_DOWNLOAD_URL_LEN 512
 void utils_get_download_url(pal_char_t* out_url, size_t out_url_len, const pal_char_t* framework_name, const pal_char_t* framework_version);
 
-// Returns the architecture name for the current process (e.g. "x64", "arm64").
-// The returned pointer refers to a static string and must not be freed.
-const pal_char_t* utils_get_current_arch_name(void);
-
 // Writes a human-readable host version description (including the commit hash
 // when available) into the caller-provided buffer of out_desc_len characters.
 void utils_get_host_version_description(pal_char_t* out_desc, size_t out_desc_len);

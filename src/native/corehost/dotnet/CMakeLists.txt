@@ -8,7 +8,7 @@ if(CLR_CMAKE_TARGET_WIN32)
 endif()
 
 list(APPEND SOURCES
-    ../apphost/standalone/hostfxr_resolver.cpp
+    hostfxr_resolver.cpp
     dotnet.cpp
 )
 

@@ -119,7 +119,7 @@ static void need_newer_framework_error(const pal_char_t* dotnet_root, const pal_
         MISSING_RUNTIME_ERROR_FORMAT,
         INSTALL_OR_UPDATE_NET_ERROR_MESSAGE,
         host_path,
-        utils_get_current_arch_name(),
+        _STRINGIFY(CURRENT_ARCH_NAME),
         _STRINGIFY(HOST_VERSION),
         dotnet_root,
         download_url,

@@ -245,11 +245,6 @@ void utils_get_download_url(pal_char_t* out_url, size_t out_url_len, const pal_c
     free(rid);
 }
 
-const pal_char_t* utils_get_current_arch_name(void)
-{
-    return _STRINGIFY(CURRENT_ARCH_NAME);
-}
-
 void utils_get_host_version_description(pal_char_t* out_desc, size_t out_desc_len)
 {
 #if defined(TARGET_WINDOWS)
