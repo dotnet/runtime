@@ -2155,9 +2155,9 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ReadLongWhitespaceAndDigitRuns()
         {
-            // Whitespace runs longer than the scalar-scan threshold exercise the vectorized
-            // whitespace-skipping path in Utf8JsonReader, alongside long integer/fraction
-            // digit runs, to lock in correct tokenization and number parsing for large runs.
+            // Long whitespace runs exercise the vectorized whitespace-skipping path in
+            // Utf8JsonReader, alongside long integer/fraction digit runs, to lock in correct
+            // tokenization and number parsing for large runs.
             string jsonString =
                 "[" + new string(' ', 60) + "1234567890123456789," +
                 "\n\n" + new string(' ', 40) + "-1.25e3," +
