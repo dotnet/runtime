@@ -326,8 +326,9 @@ internal partial struct RuntimeTypeSystem_1
     internal enum WFLAGS_LOW : uint
     {
         GenericsMask = 0x00000030,
-        GenericsMask_NonGeneric = 0x00000000,   // no instantiation
-        GenericsMask_TypicalInstantiation = 0x00000030,   // the type instantiated at its formal parameters, e.g. List<T>
+        GenericsMask_NonGeneric = 0x00000000,            // no instantiation
+        GenericsMask_SharedInst = 0x00000020,            // shared instantiation, e.g. List<__Canon> or List<MyValueType<__Canon>>
+        GenericsMask_TypicalInstantiation = 0x00000030,  // the type instantiated at its formal parameters, e.g. List<T>
 
         StringArrayValues = GenericsMask_NonGeneric,
     }
@@ -402,6 +403,7 @@ internal partial struct RuntimeTypeSystem_1
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
         public bool IsTrackedReferenceWithFinalizer => GetFlag(WFLAGS_HIGH.IsTrackedReferenceWithFinalizer) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
+        public bool IsSharedByGenericInstantiations => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_SharedInst);
     }
 
     [Flags]
@@ -1837,7 +1839,7 @@ Determining where a shared generic method obtains its generic context:
                 return true;
         }
         MethodTable mt = _methodTables[md.MethodTable];
-        return mt.IsCanonMT && mt.Flags.HasInstantiation;
+        return mt.Flags.IsSharedByGenericInstantiations;
     }
 ```
 
