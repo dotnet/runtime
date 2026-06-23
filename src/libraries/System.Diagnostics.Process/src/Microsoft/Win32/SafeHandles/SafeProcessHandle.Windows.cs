@@ -455,7 +455,7 @@ namespace Microsoft.Win32.SafeHandles
                     IntPtr processHandle = callback(args);
                     if (IsInvalidHandle(processHandle))
                     {
-                        throw new ArgumentException(null, nameof(callback));
+                        throw new ArgumentException(SR.Argument_InvalidProcessHandle, nameof(callback));
                     }
 
                     Marshal.InitHandle(procSH, processHandle);
