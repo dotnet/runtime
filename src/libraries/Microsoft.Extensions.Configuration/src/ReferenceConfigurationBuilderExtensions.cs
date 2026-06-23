@@ -18,12 +18,12 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add references to.</param>
         /// <param name="configure">A callback that declares the allowed references and, optionally, a custom parser.</param>
         /// <returns>The same <see cref="IConfigurationBuilder"/> so calls can be chained.</returns>
-        public static IConfigurationBuilder AllowReferences(this IConfigurationBuilder builder, Action<AllowedReferencesBuilder> configure)
+        public static IConfigurationBuilder AllowReferences(this IConfigurationBuilder builder, Action<ConfigurationReferenceBuilder> configure)
         {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentNullException.ThrowIfNull(configure);
 
-            var references = new AllowedReferencesBuilder();
+            var references = new ConfigurationReferenceBuilder();
             configure(references);
 
             builder.Add(new ReferenceConfigurationSource(references.ConcreteRules, references.TemplateRules, references.Parser));

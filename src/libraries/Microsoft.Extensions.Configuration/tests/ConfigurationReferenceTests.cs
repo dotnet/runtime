@@ -425,9 +425,9 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void Disallow_MultipleTargets_InOneCall_AllVetoed()
+        public void Deny_MultipleTargets_InOneCall_AllVetoed()
         {
-            // Both vetoed targets come from a single Disallow via the params overload.
+            // Both vetoed targets come from a single Deny via the params overload.
             foreach (string blocked in new[] { "Secrets:A", "Secrets:B" })
             {
                 IConfigurationBuilder builder = BuilderWith(Dict(
@@ -436,7 +436,7 @@ namespace Microsoft.Extensions.Configuration.Test
                         ("App:X", $"ref({blocked})")))
                     .AllowReferences(r => r
                         .Allow("App:X", "Secrets:*")
-                        .Disallow("App:X", "Secrets:A", "Secrets:B"));
+                        .Deny("App:X", "Secrets:A", "Secrets:B"));
 
                 Assert.Throws<InvalidOperationException>(() => builder.Build());
             }
@@ -697,7 +697,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 {
                     r.Allow("App:Path", "**");
                     r.Parser = static value => value == "literal"
-                        ? Expansion.Value("C:\\Program Files\\{app}")
+                        ? ConfigurationExpansion.Literal("C:\\Program Files\\{app}")
                         : null;
                 })
                 .Build();
@@ -716,7 +716,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 {
                     r.Allow("App:Conn", "Db:*");
                     r.Parser = static value => value == "compose"
-                        ? Expansion.Format("Server={0};Database={1}", "Db:Host", "Db:Name")
+                        ? ConfigurationExpansion.Format("Server={0};Database={1}", "Db:Host", "Db:Name")
                         : null;
                 })
                 .Build();
@@ -733,7 +733,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 {
                     r.Allow("App:Greeting", "**");
                     r.Parser = static value => value == "shout"
-                        ? Expansion.Format("HELLO")
+                        ? ConfigurationExpansion.Format("HELLO")
                         : null;
                 })
                 .Build();
@@ -754,8 +754,8 @@ namespace Microsoft.Extensions.Configuration.Test
                     r.Allow("App:*", "**");
                     r.Parser = static value => value switch
                     {
-                        "fmt" => Expansion.Format("{{x}}"),
-                        "val" => Expansion.Value("{{x}}"),
+                        "fmt" => ConfigurationExpansion.Format("{{x}}"),
+                        "val" => ConfigurationExpansion.Literal("{{x}}"),
                         _ => null,
                     };
                 })
@@ -777,7 +777,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 {
                     r.Allow("App:Conn", "Db:*");
                     r.Parser = static value => value == "compose"
-                        ? Expansion.Format("{0}-{1}", "Db:Only")
+                        ? ConfigurationExpansion.Format("{0}-{1}", "Db:Only")
                         : null;
                 });
 
@@ -796,9 +796,9 @@ namespace Microsoft.Extensions.Configuration.Test
                     r.Allow("App:Conn", "Db:Host").Allow("Db:Host", "Db:RealHost");
                     r.Parser = static value => value switch
                     {
-                        "compose" => Expansion.Format("Server={0}", "Db:Host"),
+                        "compose" => ConfigurationExpansion.Format("Server={0}", "Db:Host"),
                         _ when value.StartsWith("ref(", StringComparison.Ordinal) && value.EndsWith(")", StringComparison.Ordinal)
-                            => Expansion.Reference(value.Substring(4, value.Length - 5)),
+                            => ConfigurationExpansion.Reference(value.Substring(4, value.Length - 5)),
                         _ => null,
                     };
                 })
@@ -820,9 +820,9 @@ namespace Microsoft.Extensions.Configuration.Test
                 {
                     r.Allow("Client1:Credential", "Shared:Credential").Allow("Client2:Credential", "Shared:Credential");
 
-                    Func<string, Expansion?> fallback = r.Parser;
+                    Func<string, ConfigurationExpansion?> fallback = r.Parser;
                     r.Parser = value => value.StartsWith("$ref ", StringComparison.Ordinal)
-                        ? Expansion.Reference(value.Substring("$ref ".Length).Trim())
+                        ? ConfigurationExpansion.Reference(value.Substring("$ref ".Length).Trim())
                         : fallback(value);
                 })
                 .Build();
@@ -832,7 +832,7 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
-        public void Disallow_VetoesAPermittedTarget()
+        public void Deny_VetoesAPermittedTarget()
         {
             IConfigurationBuilder b = BuilderWith(Dict(
                     ("Secrets:Public", "ok"),
@@ -840,7 +840,7 @@ namespace Microsoft.Extensions.Configuration.Test
                     ("App:Value", "ref(Secrets:Private)")))
                 .AllowReferences(r => r
                     .Allow("App:Value", "Secrets:*")
-                    .Disallow("App:Value", "Secrets:Private"));
+                    .Deny("App:Value", "Secrets:Private"));
 
             Assert.Throws<InvalidOperationException>(() => b.Build());
         }

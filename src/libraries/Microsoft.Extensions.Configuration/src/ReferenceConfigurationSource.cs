@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration
 {
     // Internal carrier for the reference rule set and parser declared through
-    // AllowedReferencesBuilder. Implements IContextualConfigurationSource because the reference
+    // ConfigurationReferenceBuilder. Implements IContextualConfigurationSource because the reference
     // provider must materialise against an upstream provider snapshot, which the standard
     // IConfigurationSource.Build contract does not expose.
     internal sealed class ReferenceConfigurationSource : IContextualConfigurationSource
@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Configuration
         internal ReferenceConfigurationSource(
             IReadOnlyDictionary<string, ReferenceRule> concreteRules,
             IReadOnlyList<ReferenceRule> templateRules,
-            Func<string, Expansion?> parser)
+            Func<string, ConfigurationExpansion?> parser)
         {
             ConcreteRules = concreteRules;
             TemplateRules = templateRules;
@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Configuration
 
         internal IReadOnlyList<ReferenceRule> TemplateRules { get; }
 
-        internal Func<string, Expansion?> Parser { get; }
+        internal Func<string, ConfigurationExpansion?> Parser { get; }
 
         // The default IConfigurationSource.Build contract has no view of peer providers, so the
         // reference source can't satisfy it. ConfigurationBuilder and ConfigurationManager detect

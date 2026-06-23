@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Configuration
     /// optionally swaps the default reference recogniser. The rule set declared here is the security boundary: a
     /// reference resolves only if a rule admits both its subject and its target.
     /// </summary>
-    public sealed class AllowedReferencesBuilder
+    public sealed class ConfigurationReferenceBuilder
     {
         private const string ReferenceMarkerPrefix = "ref(";
         private const string FormatMarkerPrefix = "format(";
@@ -20,9 +20,9 @@ namespace Microsoft.Extensions.Configuration
         private readonly Dictionary<string, ReferenceRule> _concreteRules =
             new Dictionary<string, ReferenceRule>(StringComparer.OrdinalIgnoreCase);
         private readonly List<ReferenceRule> _templateRules = new List<ReferenceRule>();
-        private Func<string, Expansion?> _parser = DefaultParse;
+        private Func<string, ConfigurationExpansion?> _parser = DefaultParse;
 
-        internal AllowedReferencesBuilder() { }
+        internal ConfigurationReferenceBuilder() { }
 
         /// <summary>
         /// Permits keys matching <paramref name="subject"/> to reference keys matching <paramref name="target"/>
@@ -33,8 +33,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="subject">The subject key or pattern that may hold a reference.</param>
         /// <param name="target">A target key or pattern that may be referenced.</param>
         /// <param name="additionalTargets">Further target keys or patterns that may be referenced.</param>
-        /// <returns>The same <see cref="AllowedReferencesBuilder"/> so calls can be chained.</returns>
-        public AllowedReferencesBuilder Allow(string subject, string target, params string[] additionalTargets)
+        /// <returns>The same <see cref="ConfigurationReferenceBuilder"/> so calls can be chained.</returns>
+        public ConfigurationReferenceBuilder Allow(string subject, string target, params string[] additionalTargets)
         {
             ArgumentNullException.ThrowIfNull(subject);
             ArgumentNullException.ThrowIfNull(target);
@@ -57,8 +57,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="subject">The subject key or pattern to veto.</param>
         /// <param name="target">A target key or pattern to veto.</param>
         /// <param name="additionalTargets">Further target keys or patterns to veto.</param>
-        /// <returns>The same <see cref="AllowedReferencesBuilder"/> so calls can be chained.</returns>
-        public AllowedReferencesBuilder Disallow(string subject, string target, params string[] additionalTargets)
+        /// <returns>The same <see cref="ConfigurationReferenceBuilder"/> so calls can be chained.</returns>
+        public ConfigurationReferenceBuilder Deny(string subject, string target, params string[] additionalTargets)
         {
             ArgumentNullException.ThrowIfNull(subject);
             ArgumentNullException.ThrowIfNull(target);
@@ -74,12 +74,12 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Gets or sets the recogniser that maps a raw configuration value to an <see cref="Expansion"/>, or to
-        /// <see langword="null"/> when the value is not a reference. It starts as the default recogniser, which maps
-        /// <c>ref(target)</c> to a reference and <c>format(template, ref1, ref2, ...)</c> to a composed value.
+        /// Gets or sets the recogniser that maps a raw configuration value to a <see cref="ConfigurationExpansion"/>,
+        /// or to <see langword="null"/> when the value is not a reference. It starts as the default recogniser, which
+        /// maps <c>ref(target)</c> to a reference and <c>format(template, ref1, ref2, ...)</c> to a composed value.
         /// Replace it to recognise a different syntax; capture the current value first to fall back to it.
         /// </summary>
-        public Func<string, Expansion?> Parser
+        public Func<string, ConfigurationExpansion?> Parser
         {
             get => _parser;
             set
@@ -160,19 +160,19 @@ namespace Microsoft.Extensions.Configuration
             return start == 0 && end == raw.Length ? raw : raw.Substring(start, end - start);
         }
 
-        private static Expansion? DefaultParse(string value)
+        private static ConfigurationExpansion? DefaultParse(string value)
         {
             // An escaped marker (\ref(...) or \format(...)) is taken as the literal text with one backslash removed.
             if (value.StartsWith("\\" + ReferenceMarkerPrefix, StringComparison.Ordinal) ||
                 value.StartsWith("\\" + FormatMarkerPrefix, StringComparison.Ordinal))
             {
-                return Expansion.Value(value.Substring(1));
+                return ConfigurationExpansion.Literal(value.Substring(1));
             }
 
             if (TryGetMarkerBody(value, ReferenceMarkerPrefix, out string? referenceBody))
             {
                 string target = referenceBody.Trim();
-                return target.Length == 0 ? (Expansion?)null : Expansion.Reference(target);
+                return target.Length == 0 ? (ConfigurationExpansion?)null : ConfigurationExpansion.Reference(target);
             }
 
             if (TryGetMarkerBody(value, FormatMarkerPrefix, out string? formatBody))
@@ -202,7 +202,7 @@ namespace Microsoft.Extensions.Configuration
         // format(template, ref1, ref2, ...): the first unescaped comma separates the template from the
         // comma-delimited reference keys. A literal comma in the template is written as "\," (reference keys are
         // configuration keys and need no escaping). With no references the template is taken verbatim.
-        private static Expansion? ParseFormat(string body)
+        private static ConfigurationExpansion? ParseFormat(string body)
         {
             if (body.Length == 0)
             {
@@ -212,7 +212,7 @@ namespace Microsoft.Extensions.Configuration
             int split = IndexOfUnescapedComma(body);
             if (split < 0)
             {
-                return Expansion.Format(UnescapeCommas(body));
+                return ConfigurationExpansion.Format(UnescapeCommas(body));
             }
 
             string template = UnescapeCommas(body.Substring(0, split));
@@ -229,8 +229,8 @@ namespace Microsoft.Extensions.Configuration
             }
 
             return references.Count == 0
-                ? Expansion.Format(template)
-                : Expansion.Format(template, references.ToArray());
+                ? ConfigurationExpansion.Format(template)
+                : ConfigurationExpansion.Format(template, references.ToArray());
         }
 
         private static int IndexOfUnescapedComma(string value)

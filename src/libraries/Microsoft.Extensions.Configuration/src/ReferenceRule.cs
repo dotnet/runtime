@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Configuration
         //   * A recognised reference: every key it points at must be a permitted target of this
         //     rule; otherwise resolution throws. A Value spec names no targets, so it is never
         //     subject to the target check.
-        internal Expansion? Resolve(string subjectKey, string? selection, Func<string, Expansion?> parser)
+        internal ConfigurationExpansion? Resolve(string subjectKey, string? selection, Func<string, ConfigurationExpansion?> parser)
         {
             if (string.IsNullOrEmpty(selection))
             {
@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.Configuration
                 return null;
             }
 
-            foreach (string? reference in spec.References)
+            foreach (string? reference in spec.ReferencedKeys)
             {
                 if (!IsTargetAllowed(reference!))
                 {

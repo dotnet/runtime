@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Configuration
 
         private readonly IReadOnlyDictionary<string, ReferenceRule> _concreteRules;
         private readonly List<ReferenceRule> _templateRules;
-        private readonly Func<string, Expansion?> _parser;
+        private readonly Func<string, ConfigurationExpansion?> _parser;
         private readonly IReadOnlyList<IConfigurationProvider> _upstream;
         private readonly List<IDisposable> _upstreamRegistrations;
         private bool _disposed;
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Configuration
             var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
             // Phase 1: concrete rules resolve by direct key lookup.
-            var matched = new Dictionary<string, Expansion>(StringComparer.OrdinalIgnoreCase);
+            var matched = new Dictionary<string, ConfigurationExpansion>(StringComparer.OrdinalIgnoreCase);
             foreach (KeyValuePair<string, ReferenceRule> kv in _concreteRules)
             {
                 if (kv.Value.Resolve(kv.Key, ReadUpstream(kv.Key), _parser) is { } spec)
@@ -108,10 +108,10 @@ namespace Microsoft.Extensions.Configuration
             // under another resolved subject we must materialise that subject first.
             string[] resolvedByLengthDesc = ByLengthDesc(matched.Keys);
             var dependsOn = new Dictionary<string, List<string>>(matched.Count, StringComparer.OrdinalIgnoreCase);
-            foreach (KeyValuePair<string, Expansion> m in matched)
+            foreach (KeyValuePair<string, ConfigurationExpansion> m in matched)
             {
                 var deps = new List<string>();
-                foreach (string? referenced in m.Value.References)
+                foreach (string? referenced in m.Value.ReferencedKeys)
                 {
                     if (TryFindSubject(resolvedByLengthDesc, referenced!, out string? dep)
                         && !string.Equals(dep, m.Key, StringComparison.OrdinalIgnoreCase)
@@ -141,16 +141,16 @@ namespace Microsoft.Extensions.Configuration
             Data = values;
         }
 
-        private void Materialise(string subject, Expansion spec, Dictionary<string, string?> values)
+        private void Materialise(string subject, ConfigurationExpansion spec, Dictionary<string, string?> values)
         {
             if (spec.Template is null)
             {
-                string target = spec.References[0]!;
+                string target = spec.ReferencedKeys[0]!;
                 // Subject itself: always populated so we mask the raw reference literal.
                 values[subject] = OverlayAwareRead(target, values);
                 MirrorSubtree(target, subject, values);
             }
-            else if (spec.References.Count == 0)
+            else if (spec.ReferencedKeys.Count == 0)
             {
                 values[subject] = spec.Template;
             }
@@ -160,9 +160,9 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        private string Compose(string subject, Expansion spec, Dictionary<string, string?> values)
+        private string Compose(string subject, ConfigurationExpansion spec, Dictionary<string, string?> values)
         {
-            StringValues references = spec.References;
+            StringValues references = spec.ReferencedKeys;
             int count = references.Count;
             // Compose only runs for the Format kind, so the template is non-null.
             string template = spec.Template!;
