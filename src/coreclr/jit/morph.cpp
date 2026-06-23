@@ -6533,6 +6533,69 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         }
     }
 
+    // Morph "ldelema" helper call (array element address with a covariant type check) into a
+    // direct array element address when we can prove the array's element type exactly, making
+    // the covariant type check redundant.
+    // Like the stelem.ref case above, this is done after the arguments are morphed so that constant
+    // propagation has already taken place.
+    if (opts.OptimizationEnabled() && call->IsHelperCallOrUserEquivalent(this, CORINFO_HELP_LDELEMA_REF))
+    {
+        assert(call->gtArgs.CountUserArgs() == 3);
+
+        GenTree* arr     = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+        GenTree* typeArg = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+
+        if (!call->IsHelperCall())
+        {
+            // Convert back to helper call if it wasn't inlined.
+            // Currently, only helper calls are eligible to be direct calls if the target has reached
+            // its final tier. TODO: remove this workaround and convert this user call to direct as well.
+            call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_LDELEMA_REF);
+            call->gtCallType    = CT_HELPER;
+        }
+
+        CORINFO_CLASS_HANDLE elemClsHnd = gtGetHelperArgClassHandle(typeArg);
+        if (gtCanSkipCovariantLdElemCheck(arr, elemClsHnd))
+        {
+            GenTree* index = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+            // Either or both of the array and index arguments may have been spilled to temps by `fgMorphArgs`.
+            // Copy the spill trees as well if necessary.
+            GenTree* argSetup = nullptr;
+            for (CallArg& arg : call->gtArgs.EarlyArgs())
+            {
+                if (arg.GetLateNode() == nullptr)
+                {
+                    continue;
+                }
+
+                GenTree* const setupArgNode = arg.GetEarlyNode();
+                assert((setupArgNode != arr) && (setupArgNode != index));
+
+                if (argSetup == nullptr)
+                {
+                    argSetup = setupArgNode;
+                }
+                else
+                {
+                    argSetup = new (this, GT_COMMA) GenTreeOp(GT_COMMA, TYP_VOID, argSetup, setupArgNode);
+                    argSetup->SetMorphed(this);
+                }
+            }
+
+            GenTree* indexAddr = gtNewArrayIndexAddr(arr, index, TYP_REF, elemClsHnd);
+            GenTree* result    = fgMorphTree(indexAddr);
+
+            if (argSetup != nullptr)
+            {
+                result = new (this, GT_COMMA) GenTreeOp(GT_COMMA, result->TypeGet(), argSetup, result);
+                result->SetMorphed(this);
+            }
+
+            return result;
+        }
+    }
+
     if (call->IsNoReturn())
     {
         //

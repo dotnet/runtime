@@ -3996,6 +3996,7 @@ public:
     }
 
     bool gtCanSkipCovariantStoreCheck(GenTree* value, GenTree* array);
+    bool gtCanSkipCovariantLdElemCheck(GenTree* array, CORINFO_CLASS_HANDLE elemClsHnd);
 
     //-------------------------------------------------------------------------
 

@@ -15999,18 +15999,20 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
         return NO_CLASS_HANDLE;
     }
 
-    // CastClass/IsInstanceOf/JitNew all have the class handle as the first argument
+    // CastClass/IsInstanceOf/JitNew(Arr) all have the class handle as the first argument
     const VNFunc func = funcApp.GetFunc();
-    if ((func == VNF_CastClass) || (func == VNF_IsInstanceOf) || (func == VNF_JitNew))
+    if ((func == VNF_CastClass) || (func == VNF_IsInstanceOf) || (func == VNF_JitNew) ||
+        (func == VNF_JitNewArr) || (func == VNF_JitNewLclArr))
     {
         ValueNum clsVN = funcApp.GetArg(0);
 
         CORINFO_CLASS_HANDLE clsHandle;
         if (IsVNTypeHandle(clsVN, &clsHandle))
         {
-            // JitNew returns an exact and non-null obj, castclass and isinst do not have this guarantee.
-            *pIsNonNull = func == VNF_JitNew;
-            *pIsExact   = func == VNF_JitNew;
+            // JitNew/JitNewArr return an exact and non-null obj, castclass and isinst do not have this guarantee.
+            const bool isAlloc = (func == VNF_JitNew) || (func == VNF_JitNewArr) || (func == VNF_JitNewLclArr);
+            *pIsNonNull        = isAlloc;
+            *pIsExact          = isAlloc;
             return clsHandle;
         }
     }

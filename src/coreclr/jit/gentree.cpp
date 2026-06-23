@@ -36291,6 +36291,63 @@ GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree,
 #endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
+// gtCanSkipCovariantLdElemCheck: see if taking the address of a ref type array
+//    element ("ldelema") can skip the covariant type check.
+//
+// Arguments:
+//    array      -- tree representing the array being indexed
+//    elemClsHnd -- the static element class handle the IL reads (the helper verifies
+//                  that the array's actual element type matches this)
+//
+// Returns:
+//    true if the access does not require a covariant type check.
+//
+// Notes:
+//    The covariant type check verifies that the array's runtime element type equals
+//    "elemClsHnd". This can be skipped when we know the array's type exactly, since then
+//    its element type is exactly "elemClsHnd". (The sealed-element case is already handled
+//    during import.)
+//
+bool Compiler::gtCanSkipCovariantLdElemCheck(GenTree* array, CORINFO_CLASS_HANDLE elemClsHnd)
+{
+    // We should only call this when optimizing.
+    assert(opts.OptimizationEnabled());
+
+    if (elemClsHnd == NO_CLASS_HANDLE)
+    {
+        return false;
+    }
+
+    bool                 arrayIsExact   = false;
+    bool                 arrayIsNonNull = false;
+    CORINFO_CLASS_HANDLE arrayHandle    = gtGetClassHandle(array, &arrayIsExact, &arrayIsNonNull);
+
+    if ((arrayHandle == NO_CLASS_HANDLE) || !arrayIsExact)
+    {
+        return false;
+    }
+
+    // There are some methods in corelib where we're indexing into an array but the IL
+    // doesn't reflect this (see SZArrayHelper). Avoid.
+    if ((info.compCompHnd->getClassAttribs(arrayHandle) & CORINFO_FLG_ARRAY) == 0)
+    {
+        return false;
+    }
+
+    // The runtime element type is exactly the array's (exact) element type. The covariant
+    // check can be skipped only when that equals the static element type the IL reads.
+    CORINFO_CLASS_HANDLE arrayElementHandle = NO_CLASS_HANDLE;
+    if ((info.compCompHnd->getChildType(arrayHandle, &arrayElementHandle) != CORINFO_TYPE_CLASS) ||
+        (arrayElementHandle != elemClsHnd))
+    {
+        return false;
+    }
+
+    JITDUMP("\nldelema of exactly known T[]: skipping covariant type check\n");
+    return true;
+}
+
+//------------------------------------------------------------------------
 // gtCanSkipCovariantStoreCheck: see if storing a ref type value to an array
 //    can skip the array store covariance check.
 //
