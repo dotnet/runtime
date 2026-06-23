@@ -32,6 +32,14 @@ namespace System.Security.Cryptography
         public int? TagSizeInBytes { get; }
 
         /// <summary>
+        /// Gets the size, in bytes, of the key used by this instance.
+        /// </summary>
+        /// <value>
+        /// The size, in bytes, of the key used by this instance.
+        /// </value>
+        public int KeySizeInBytes { get; }
+
+        /// <summary>
         /// Gets the tag sizes, in bytes, supported by this instance.
         /// </summary>
         /// <value>
@@ -78,6 +86,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_InvalidTagLength, nameof(tagSizeInBytes));
             }
 
+            KeySizeInBytes = key.Length;
             TagSizeInBytes = tagSizeInBytes;
             ImportKey(key);
         }
