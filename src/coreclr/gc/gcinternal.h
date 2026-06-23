@@ -1328,7 +1328,7 @@ public:
         int heap_num;
         for (heap_num = 0; heap_num < n_heaps; heap_num++)
         {
-            if (!GCToOSInterface::GetProcessorForHeap ((uint16_t)heap_num, &proc_no[heap_num], &node_no[heap_num]))
+            if (!GCToOSInterface::GetProcessorForHeap (static_cast<uint16_t>(heap_num), &proc_no[heap_num], &node_no[heap_num]))
                 break;
             assert(proc_no[heap_num] < GCToOSInterface::GetMaxProcessorCount());
             if (!do_numa || node_no[heap_num] == NUMA_NODE_UNDEFINED)
