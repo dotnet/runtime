@@ -11730,6 +11730,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
+#ifdef TARGET_WASM
+        case GT_FRAME_SIZE:
+#endif // TARGET_WASM
         case GT_IL_OFFSET:
         case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:

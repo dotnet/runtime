@@ -685,11 +685,12 @@ namespace
 
         // For a Runtime Async method the methoddef maps to a Task-returning thunk with runtime-provided implementation,
         // while the default IL belongs to the Async implementation variant.
+        // Similarly we can get here for an async variant of a task-returning method where we use the original method's
+        // IL and create an async version.
         // By default the config captures the default methoddesc, which would be a thunk, thus no IL header.
         // So, if config provides no header and we see an implementation method desc, then just ask the method desc itself.
         if (ilHeader == NULL && pMD->IsAsyncVariantMethod())
         {
-            _ASSERTE(!pMD->IsAsyncThunkMethod());
             ilHeader = pMD->GetILHeader();
         }
 
