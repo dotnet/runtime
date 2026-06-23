@@ -419,7 +419,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
     /// <summary>
     /// Resolves the frame's MethodDesc and its containing module.
-    /// Throws on failure (no MethodDesc, no metadata, etc.).
+    /// Throws on failure (no MethodDesc).
     /// </summary>
     private MethodDescHandle GetFrameMethodDesc(out Contracts.ModuleHandle moduleHandle)
     {
