@@ -52,13 +52,36 @@ namespace System.Text.Json
 
         private static bool NeedsEscapingNoBoundsCheck(char value) => AllowList[value] == 0;
 
+#if NET
+        // The characters allowed by AllowList, used to vectorize the default (no custom encoder) escaping
+        // scan directly instead of routing through System.Text.Encodings.Web.
+        private static readonly SearchValues<byte> s_allowedBytes = SearchValues.Create(
+            " !#$%()*,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{|}~"u8);
+        private static readonly SearchValues<char> s_allowedChars = SearchValues.Create(
+            " !#$%()*,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{|}~");
+#endif
+
         public static int NeedsEscaping(ReadOnlySpan<byte> value, JavaScriptEncoder? encoder)
         {
+#if NET
+            if (encoder is null)
+            {
+                return value.IndexOfAnyExcept(s_allowedBytes);
+            }
+#endif
+
             return (encoder ?? JavaScriptEncoder.Default).FindFirstCharacterToEncodeUtf8(value);
         }
 
         public static int NeedsEscaping(ReadOnlySpan<char> value, JavaScriptEncoder? encoder)
         {
+#if NET
+            if (encoder is null)
+            {
+                return value.IndexOfAnyExcept(s_allowedChars);
+            }
+#endif
+
             // Some implementations of JavaScriptEncoder.FindFirstCharacterToEncode may not accept
             // null pointers and guard against that. Hence, check up-front to return -1.
             if (value.IsEmpty)
