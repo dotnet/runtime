@@ -24,7 +24,7 @@ namespace System.Text.Encodings.Web
 
 #if NET
         private readonly SearchValues<byte> _allowedAsciiBytes;
-        private readonly SearchValues<char> _allowedAsciiChars;
+        private readonly SearchValues<char> _allowedChars;
 #endif
 
         internal unsafe OptimizedInboxTextEncoder(
@@ -70,22 +70,23 @@ namespace System.Text.Encodings.Web
 
 #if NET
             // Create the SearchValues instances for vectorized fast paths.
+            // _allowedAsciiBytes is used by the UTF-8 path, which decodes any non-ASCII bytes manually.
             Span<byte> allowedAsciiBytes = stackalloc byte[128];
-            Span<char> allowedAsciiChars = stackalloc char[128];
             int allowedAsciiCount = 0;
 
             for (int i = 0; i < 128; i++)
             {
                 if (_allowedBmpCodePoints.IsCharAllowed((char)i))
                 {
-                    allowedAsciiBytes[allowedAsciiCount] = (byte)i;
-                    allowedAsciiChars[allowedAsciiCount] = (char)i;
-                    allowedAsciiCount++;
+                    allowedAsciiBytes[allowedAsciiCount++] = (byte)i;
                 }
             }
 
             _allowedAsciiBytes = SearchValues.Create(allowedAsciiBytes.Slice(0, allowedAsciiCount));
-            _allowedAsciiChars = SearchValues.Create(allowedAsciiChars.Slice(0, allowedAsciiCount));
+
+            // _allowedChars covers the entire allowed BMP range. SearchValues.Create picks an implementation
+            // that uses a vectorized ASCII fast-path and a scalar fallback for the rest of the BMP.
+            _allowedChars = _allowedBmpCodePoints.CreateSearchValues();
 #endif
         }
 
@@ -394,61 +395,36 @@ namespace System.Text.Encodings.Web
 
         public int GetIndexOfFirstCharToEncode(ReadOnlySpan<char> data)
         {
-            int asciiCharsSkipped = 0;
-
 #if NET
-            // First, try calling the SIMD-enabled version.
-            // The SIMD-enabled version handles only ASCII characters.
-            if (data.Length >= 8)
-            {
-                asciiCharsSkipped = data.IndexOfAnyExcept(_allowedAsciiChars);
+            return data.IndexOfAnyExcept(_allowedChars);
+#else
+            _AssertThisNotNull(); // hoist "this != null" check out of hot loop below
 
-                if ((uint)asciiCharsSkipped >= (uint)data.Length || char.IsAscii(data[asciiCharsSkipped]))
-                {
-                    // We either processed the whole span (in which case asciiCharsSkipped is -1), or we've found a disallowed ASCII char.
-                    return asciiCharsSkipped;
-                }
+            int idx = 0;
+
+            // unroll the loop 8x
+            while (data.Length >= 8)
+            {
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[0])) { return idx; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[1])) { return idx + 1; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[2])) { return idx + 2; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[3])) { return idx + 3; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[4])) { return idx + 4; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[5])) { return idx + 5; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[6])) { return idx + 6; }
+                if (!_allowedBmpCodePoints.IsCharAllowed(data[7])) { return idx + 7; }
+                idx += 8;
+                data = data.Slice(8);
             }
+
+            foreach (char c in data)
+            {
+                if (!_allowedBmpCodePoints.IsCharAllowed(c)) { return idx; }
+                idx++;
+            }
+
+            return -1;
 #endif
-
-            int idx = asciiCharsSkipped;
-
-            // If there's any leftover data, try consuming it now.
-
-            if ((uint)idx < (uint)data.Length)
-            {
-                _AssertThisNotNull(); // hoist "this != null" check out of hot loop below
-
-                // Slicing keeps the indexed accesses below provably in-bounds, so the JIT
-                // elides the bounds checks just as the previous pointer-based loop did.
-                ReadOnlySpan<char> remaining = data.Slice(idx);
-
-                // unroll the loop 8x
-                while (remaining.Length >= 8)
-                {
-                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[0])) { goto Return; }
-                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[1])) { idx += 1; goto Return; }
-                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[2])) { idx += 2; goto Return; }
-                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[3])) { idx += 3; goto Return; }
-                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[4])) { idx += 4; goto Return; }
-                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[5])) { idx += 5; goto Return; }
-                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[6])) { idx += 6; goto Return; }
-                    if (!_allowedBmpCodePoints.IsCharAllowed(remaining[7])) { idx += 7; goto Return; }
-                    idx += 8;
-                    remaining = remaining.Slice(8);
-                }
-
-                foreach (char c in remaining)
-                {
-                    if (!_allowedBmpCodePoints.IsCharAllowed(c)) { goto Return; }
-                    idx++;
-                }
-            }
-
-        Return:
-
-            Debug.Assert(0 <= idx && idx <= data.Length);
-            return (idx == data.Length) ? -1 : idx;
         }
 
         /// <summary>

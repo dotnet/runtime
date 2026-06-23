@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Unicode;
 
 #if NET
+using System.Buffers;
 using System.Numerics;
 #endif
 
@@ -122,5 +123,48 @@ namespace System.Text.Encodings.Web
             index = value >> 5;
             offset = (int)value & 0x1F;
         }
+
+#if NET
+        /// <summary>
+        /// Creates a <see cref="SearchValues{Char}"/> containing every <see cref="char"/> currently in the allow list.
+        /// </summary>
+        public readonly SearchValues<char> CreateSearchValues()
+        {
+            // Rather than probing all 64K code points individually, scan the bitmap one DWORD at a time and
+            // use a vectorized search to quickly skip over runs of all-disallowed (zero) DWORDs.
+            char[] allowedChars = ArrayPool<char>.Shared.Rent(64 * 1024);
+            int count = 0;
+
+            fixed (uint* pBitmap = Bitmap)
+            {
+                ReadOnlySpan<uint> bitmap = new ReadOnlySpan<uint>(pBitmap, BitmapLengthInDWords);
+
+                int dwordIndex = 0;
+                int next;
+                while ((next = bitmap.IndexOfAnyExcept(0u)) >= 0)
+                {
+                    dwordIndex += next;
+                    bitmap = bitmap.Slice(next);
+
+                    uint dword = bitmap[0];
+                    int charBase = dwordIndex * 32;
+                    do
+                    {
+                        int bit = BitOperations.TrailingZeroCount(dword);
+                        allowedChars[count++] = (char)(charBase + bit);
+                        dword &= dword - 1; // clear the lowest set bit
+                    }
+                    while (dword != 0);
+
+                    dwordIndex++;
+                    bitmap = bitmap.Slice(1);
+                }
+            }
+
+            SearchValues<char> result = SearchValues.Create(allowedChars.AsSpan(0, count));
+            ArrayPool<char>.Shared.Return(allowedChars);
+            return result;
+        }
+#endif
     }
 }
