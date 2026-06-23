@@ -85,9 +85,10 @@ internal sealed class CallingConvention_1 : ICallingConvention
         {
         }
 
+        ParamTypeInfo[] paramInfo = DecodeParamTypeInfo(rts, methodDesc, methodSig.ParameterTypes.Length);
         ITypeHandle[] parameterTypes = new ITypeHandle[methodSig.ParameterTypes.Length];
         for (int i = 0; i < parameterTypes.Length; i++)
-            parameterTypes[i] = new CdacTypeHandle(methodSig.ParameterTypes[i], _target);
+            parameterTypes[i] = new CdacTypeHandle(methodSig.ParameterTypes[i], _target, paramInfo[i].OutermostKind);
         ITypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target);
 
         TransitionBlock transitionBlock = BuildTransitionBlock(runtimeInfo);
@@ -168,7 +169,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         ITypeHandle[] parameterTypes = new ITypeHandle[methodSig.ParameterTypes.Length];
         for (int i = 0; i < parameterTypes.Length; i++)
         {
-            parameterTypes[i] = new CdacTypeHandle(methodSig.ParameterTypes[i], _target);
+            parameterTypes[i] = new CdacTypeHandle(methodSig.ParameterTypes[i], _target, paramInfo[i].OutermostKind);
         }
 
         ITypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target);

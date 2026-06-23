@@ -22,28 +22,58 @@ internal readonly struct CdacTypeHandle : ITypeHandle
     private readonly RuntimeInfoArchitecture _arch;
     private readonly RuntimeInfoOperatingSystem _os;
 
+    // Outermost ELEMENT_TYPE_* wrapper (PTR / BYREF / SZARRAY / ARRAY / etc.)
+    // recorded out-of-band by the signature wrapper provider in
+    // CallingConvention_1.ParamMetadataProvider. Used when the underlying
+    // TypeHandle would be null (the runtime hasn't cached the constructed
+    // form), in which case Rts.GetSignatureCorElementType would return 0 and
+    // ArgIterator would fail to classify the arg for stack-size accounting.
+    // CdacCorElementType.End (== default) means "no override; ask Rts".
+    private readonly CdacCorElementType _kindOverride;
+
     public CdacTypeHandle(TypeHandle typeHandle, Target target)
+        : this(typeHandle, target, kindOverride: default)
+    {
+    }
+
+    public CdacTypeHandle(TypeHandle typeHandle, Target target, CdacCorElementType kindOverride)
     {
         _typeHandle = typeHandle;
         _target = target;
         _arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
         _os = _target.Contracts.RuntimeInfo.GetTargetOperatingSystem();
+        _kindOverride = kindOverride;
     }
 
     private IRuntimeTypeSystem Rts => _target.Contracts.RuntimeTypeSystem;
 
     public int PointerSize => _target.PointerSize;
 
-    public bool IsNull() => _typeHandle.IsNull;
+    public bool IsNull() => _typeHandle.IsNull && _kindOverride == default;
 
     public bool IsValueType() => !_typeHandle.IsNull && Rts.IsValueType(_typeHandle);
 
-    public bool IsPointerType() => !_typeHandle.IsNull && Rts.IsPointer(_typeHandle);
+    public bool IsPointerType()
+        => _kindOverride == CdacCorElementType.Ptr
+           || (!_typeHandle.IsNull && Rts.IsPointer(_typeHandle));
 
     public bool HasIndeterminateSize() => false;
 
     public int GetSize()
     {
+        // Constructed pointer/array/byref args always occupy one TADDR slot
+        // in the transition block (the actual pointee is reached via the
+        // pointer value, not stored inline). When _kindOverride is set, the
+        // underlying TypeHandle may be null (uncached PTR), so GetBaseSize
+        // would fault.
+        if (_kindOverride is CdacCorElementType.Ptr
+                          or CdacCorElementType.Byref
+                          or CdacCorElementType.SzArray
+                          or CdacCorElementType.Array)
+        {
+            return PointerSize;
+        }
+
         if (_typeHandle.IsNull)
             return 0;
 
@@ -57,6 +87,9 @@ internal readonly struct CdacTypeHandle : ITypeHandle
 
     public SharedCorElementType GetCorElementType()
     {
+        if (_kindOverride != default)
+            return MapCorElementType(_kindOverride);
+
         if (_typeHandle.IsNull)
             return (SharedCorElementType)0;
 
