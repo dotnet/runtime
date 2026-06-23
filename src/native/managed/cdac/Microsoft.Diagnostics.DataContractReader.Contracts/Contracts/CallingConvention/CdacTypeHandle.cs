@@ -179,13 +179,13 @@ internal readonly struct CdacTypeHandle : ITypeHandle
 
             case CdacCorElementType.ValueType:
                 // Recurse: if the wrapped struct is itself a trivial
-                // pointer-sized struct, we are too. cDAC's GetFieldDescType
-                // doesn't directly hand us the nested TypeHandle, so we
-                // can't follow this chain without more API. Conservative
-                // fallback: report false. The relevant runtime cases
-                // (e.g. IntPtr inside a single-field struct) collapse to
-                // the primitive checks above for most reachable types.
-                return false;
+                // pointer-sized struct, we are too. Resolve the field's
+                // TypeHandle via the field's metadata signature and
+                // re-run IsTrivialPointerSizedStruct on it.
+                TypeHandle nested = Rts.GetFieldDescApproxTypeHandle(singleFieldType.Value);
+                if (nested.IsNull)
+                    return false;
+                return new CdacTypeHandle(nested, _target).IsTrivialPointerSizedStruct();
 
             default:
                 return false;

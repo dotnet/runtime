@@ -114,30 +114,65 @@ internal static class CallingConventionGCRefMapBuilder
                         {
                             token = GCRefMapToken.Interior;
                         }
-                        else if (rts.ContainsGCPointers(arg.TypeHandle))
+                        else
                         {
-                            // By-value struct with embedded GC pointers: emit one
-                            // Ref token per pointer slot inside the struct. Mirrors
-                            // the runtime's ReportPointersFromValueTypeArg
-                            // (siginfo.cpp). The GCDesc series Offset is relative
-                            // to a boxed object's start (including the leading MT
-                            // pointer); subtract pointerSize to translate to the
-                            // unboxed in-frame layout.
-                            int structFieldStart = arg.Offset - pointerSize;
-                            foreach ((uint seriesOffset, uint seriesSize) in rts.GetGCDescSeries(arg.TypeHandle))
+                            bool emitted = false;
+
+                            if (arg.IsByRefLikeStruct)
                             {
-                                int seriesBase = structFieldStart + (int)seriesOffset;
-                                for (int subOff = 0; subOff < (int)seriesSize; subOff += pointerSize)
+                                // ByRefLike value type (Span<T>, ReadOnlySpan<T>,
+                                // ByteRef, any ref struct). Mirrors the runtime's
+                                // ByRefPointerOffsetsReporter (siginfo.cpp): walk
+                                // the type's instance fields and emit INTERIOR
+                                // for each ELEMENT_TYPE_BYREF field at its
+                                // in-struct offset. ELEMENT_TYPE_PTR / IntPtr /
+                                // void* fields are explicitly NOT reported
+                                // (so QCallTypeHandle, ObjectHandleOnStack,
+                                // StringHandleOnStack contribute nothing).
+                                //
+                                // For uncached generic instantiations (Span<int>
+                                // whose closed MT isn't loaded), the field
+                                // layout lives on the open generic (Span<T>).
+                                // The byref/ptr distinction is preserved at the
+                                // FieldDesc level regardless of which T closes
+                                // the type.
+                                TypeHandle probe = arg.TypeHandle;
+                                if (probe.Address == TargetPointer.Null)
+                                    probe = arg.OpenGenericType;
+                                if (probe.Address != TargetPointer.Null)
                                 {
-                                    tokens[seriesBase + subOff] = GCRefMapToken.Ref;
+                                    EmitByRefLikeInterior(rts, probe, arg.Offset, tokens);
                                     if (tokens.Count > MaxBlobLength)
                                         return null;
                                 }
+                                emitted = true;
                             }
-                            continue;
-                        }
-                        else
-                        {
+
+                            if (rts.ContainsGCPointers(arg.TypeHandle))
+                            {
+                                // By-value struct with embedded GC pointers: emit one
+                                // Ref token per pointer slot inside the struct. Mirrors
+                                // the runtime's ReportPointersFromValueTypeArg
+                                // (siginfo.cpp). The GCDesc series Offset is relative
+                                // to a boxed object's start (including the leading MT
+                                // pointer); subtract pointerSize to translate to the
+                                // unboxed in-frame layout.
+                                int structFieldStart = arg.Offset - pointerSize;
+                                foreach ((uint seriesOffset, uint seriesSize) in rts.GetGCDescSeries(arg.TypeHandle))
+                                {
+                                    int seriesBase = structFieldStart + (int)seriesOffset;
+                                    for (int subOff = 0; subOff < (int)seriesSize; subOff += pointerSize)
+                                    {
+                                        tokens[seriesBase + subOff] = GCRefMapToken.Ref;
+                                        if (tokens.Count > MaxBlobLength)
+                                            return null;
+                                    }
+                                }
+                                emitted = true;
+                            }
+
+                            if (!emitted)
+                                continue;
                             continue;
                         }
                         break;
@@ -243,6 +278,89 @@ internal static class CallingConventionGCRefMapBuilder
         catch
         {
             return GenericContextLoc.None;
+        }
+    }
+
+    // Mirror of runtime ByRefPointerOffsetsReporter (siginfo.cpp): walk the
+    // instance fields of a ByRefLike value type and emit one INTERIOR token
+    // per ELEMENT_TYPE_BYREF field at its offset within the unboxed struct
+    // (so absolute offset is baseOffset + fieldOffset). Recurses into nested
+    // ByRefLike value-type fields. ELEMENT_TYPE_PTR / IntPtr / void* fields
+    // are deliberately skipped to match runtime behavior for QCall-style
+    // handle wrappers.
+    private static void EmitByRefLikeInterior(
+        IRuntimeTypeSystem rts,
+        TypeHandle byRefLikeType,
+        int baseOffset,
+        SortedDictionary<int, GCRefMapToken> tokens)
+    {
+        // Bound recursion just in case the data is corrupt / cycles in a dump.
+        EmitByRefLikeInteriorRecursive(rts, byRefLikeType, baseOffset, tokens, depth: 0);
+    }
+
+    private const int MaxByRefLikeRecursionDepth = 16;
+
+    private static void EmitByRefLikeInteriorRecursive(
+        IRuntimeTypeSystem rts,
+        TypeHandle byRefLikeType,
+        int baseOffset,
+        SortedDictionary<int, GCRefMapToken> tokens,
+        int depth)
+    {
+        if (depth > MaxByRefLikeRecursionDepth)
+            return;
+        if (byRefLikeType.Address == TargetPointer.Null)
+            return;
+
+        IEnumerable<TargetPointer> fieldDescs;
+        try
+        {
+            fieldDescs = rts.GetFieldDescList(byRefLikeType);
+        }
+        catch
+        {
+            return;
+        }
+
+        foreach (TargetPointer fdPtr in fieldDescs)
+        {
+            bool isStatic;
+            CorElementType fieldType;
+            uint fieldOffset;
+            try
+            {
+                isStatic = rts.IsFieldDescStatic(fdPtr);
+                if (isStatic)
+                    continue;
+                fieldType = rts.GetFieldDescType(fdPtr);
+                fieldOffset = rts.GetFieldDescOffset(fdPtr, fieldDef: null);
+            }
+            catch
+            {
+                continue;
+            }
+
+            int absOffset = baseOffset + (int)fieldOffset;
+
+            if (fieldType == CorElementType.Byref)
+            {
+                tokens[absOffset] = GCRefMapToken.Interior;
+            }
+            else if (fieldType == CorElementType.ValueType)
+            {
+                // Nested value-type field. Recurse only if the field's own
+                // MethodTable is ByRefLike (matches runtime Find(FieldDesc*)
+                // in ByRefPointerOffsetsReporter).
+                TypeHandle nested = rts.GetFieldDescApproxTypeHandle(fdPtr);
+                if (nested.Address == TargetPointer.Null)
+                    continue;
+                bool nestedByRefLike;
+                try { nestedByRefLike = rts.IsByRefLike(nested); }
+                catch { continue; }
+                if (!nestedByRefLike)
+                    continue;
+                EmitByRefLikeInteriorRecursive(rts, nested, absOffset, tokens, depth + 1);
+            }
         }
     }
 

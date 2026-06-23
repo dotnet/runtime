@@ -130,6 +130,12 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // means "no constructed-type wrapper -- caller should fall back to
         // GetSignatureCorElementType on the underlying TypeHandle".
         public CdacCorElementType OutermostKind { get; init; }
+
+        // For generic-instantiation parameters, the open generic type
+        // (e.g. Span<T> for a Span<int> arg). Used by the encoder when the
+        // constructed TypeHandle is null (uncached) to fall back to
+        // attributes of the open type (IsByRefLike, etc.).
+        public TypeHandle OpenGenericType { get; init; }
     }
 
     public IEnumerable<ArgumentLocation> EnumerateArguments(MethodDescHandle methodDesc)
@@ -262,12 +268,35 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 bool passedByRef = elemType == CdacCorElementType.ValueType
                     && transitionBlock.IsArgPassedByRef(parameterTypes[argIndex]);
 
+                // Detect ByRefLike value types (Span<T>, ReadOnlySpan<T>,
+                // ref structs in general). The runtime emits one INTERIOR
+                // token per managed-pointer field inside the unboxed struct
+                // via ByRefPointerOffsetsReporter, in addition to any REF
+                // tokens from GCDesc. For constructed generic instantiations
+                // (Span<int>) the closed TypeHandle may be uncached/null, so
+                // we fall back to the open generic type captured during
+                // signature decoding.
+                bool isByRefLikeStruct = false;
+                if (elemType == CdacCorElementType.ValueType && !passedByRef)
+                {
+                    TypeHandle probe = methodSig.ParameterTypes[argIndex];
+                    if (probe.Address == TargetPointer.Null)
+                        probe = paramInfo[argIndex].OpenGenericType;
+                    if (probe.Address != TargetPointer.Null)
+                    {
+                        try { isByRefLikeStruct = rts.IsByRefLike(probe); }
+                        catch { /* leave false on partial-state failures */ }
+                    }
+                }
+
                 yield return new ArgumentLocation
                 {
                     Offset = argOffset,
                     ElementType = elemType,
                     TypeHandle = methodSig.ParameterTypes[argIndex],
                     IsPassedByRef = passedByRef,
+                    IsByRefLikeStruct = isByRefLikeStruct,
+                    OpenGenericType = paramInfo[argIndex].OpenGenericType,
                 };
             }
             argIndex++;
@@ -377,6 +406,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
             {
                 IsByRef = t.IsByRef,
                 OutermostKind = t.OutermostKind,
+                OpenGenericType = t.OpenGeneric,
             };
         }
         return result;
@@ -418,6 +448,11 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // The enum's zero value (default) means "no constructed-type wrapper;
         // use GetSignatureCorElementType on Underlying instead".
         public CdacCorElementType OutermostKind { get; init; }
+        // For generic instantiations: the open generic type before
+        // GetConstructedType collapsed it. Lets the encoder inspect
+        // attributes (IsByRefLike, etc.) even when the constructed
+        // TypeHandle isn't cached.
+        public TypeHandle OpenGeneric { get; init; }
     }
 
     // ISignatureTypeProvider wrapper that records the outermost
@@ -481,7 +516,12 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 try { kind = _rts.GetSignatureCorElementType(genericType.Underlying); }
                 catch { /* leave default */ }
             }
-            return new TrackedType { Underlying = constructed, OutermostKind = kind };
+            return new TrackedType
+            {
+                Underlying = constructed,
+                OutermostKind = kind,
+                OpenGeneric = genericType.Underlying,
+            };
         }
 
         public TrackedType GetGenericMethodParameter(MethodSigContext context, int index)

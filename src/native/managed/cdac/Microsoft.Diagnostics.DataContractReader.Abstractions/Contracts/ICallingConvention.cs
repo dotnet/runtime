@@ -31,6 +31,26 @@ public readonly struct ArgumentLocation
 
     /// <summary>True if this argument is a struct passed by reference (e.g., large struct on AMD64).</summary>
     public bool IsPassedByRef { get; init; }
+
+    /// <summary>
+    /// True if this argument is a by-value ByRefLike struct (Span&lt;T&gt;,
+    /// ReadOnlySpan&lt;T&gt;, etc.). The runtime's
+    /// <c>ReportPointersFromValueType</c> walks a <c>ByRefPointerOffsetsReporter</c>
+    /// for these to emit INTERIOR tokens at each managed-pointer slot inside the
+    /// struct, separate from the GCDesc-driven REF emission.
+    /// </summary>
+    public bool IsByRefLikeStruct { get; init; }
+
+    /// <summary>
+    /// For generic-instantiation arguments whose closed
+    /// <see cref="TypeHandle"/> is null (uncached), this carries the open
+    /// generic <c>MethodTable</c> (e.g. <c>Span&lt;T&gt;</c> for a
+    /// <c>Span&lt;int&gt;</c> arg). Encoders that need to inspect the type's
+    /// structure (e.g. walk its instance fields to find <c>byref</c> fields
+    /// for ByRefLike-struct INTERIOR emission) can fall back to this when
+    /// <see cref="TypeHandle"/> isn't resolvable.
+    /// </summary>
+    public TypeHandle OpenGenericType { get; init; }
 }
 
 public interface ICallingConvention : IContract
