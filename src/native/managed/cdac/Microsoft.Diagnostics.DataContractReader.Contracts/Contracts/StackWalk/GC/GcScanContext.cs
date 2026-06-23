@@ -13,7 +13,7 @@ internal class GcScanContext
     public bool ResolveInteriorPointers { get; }
     public List<StackRefData> StackRefs { get; } = [];
     public TargetPointer StackPointer { get; private set; }
-    public TargetPointer InstructionPointer { get; private set; }
+    public TargetCodePointer InstructionPointer { get; private set; }
     public TargetPointer Frame { get; private set; }
 
     // When set, overrides the default IP/Frame source-type classification for reported roots.
@@ -27,7 +27,7 @@ internal class GcScanContext
         ResolveInteriorPointers = resolveInteriorPointers;
     }
 
-    public void UpdateScanContext(TargetPointer sp, TargetPointer ip, TargetPointer frame, StackRefData.SourceTypes? sourceTypeOverride = null)
+    public void UpdateScanContext(TargetPointer sp, TargetCodePointer ip, TargetPointer frame, StackRefData.SourceTypes? sourceTypeOverride = null)
     {
         StackPointer = sp;
         InstructionPointer = ip;
@@ -50,7 +50,7 @@ internal class GcScanContext
         else
         {
             data.SourceType = StackRefData.SourceTypes.StackSourceIP;
-            data.Source = InstructionPointer;
+            data.Source = CodePointerUtils.AddressFromCodePointer(InstructionPointer, _target);
         }
     }
 

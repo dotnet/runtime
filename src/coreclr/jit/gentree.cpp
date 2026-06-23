@@ -10052,8 +10052,7 @@ GenTreeFieldAddr* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HAN
 //------------------------------------------------------------------------
 // gtInitializeStoreNode: Initialize a store node.
 //
-// Common initialization for all STORE nodes. Marks SIMD locals as "used in
-// a HW intrinsic".
+// Common initialization for all STORE nodes.
 //
 // Arguments:
 //    store - The store node
@@ -10063,21 +10062,6 @@ void Compiler::gtInitializeStoreNode(GenTree* store, GenTree* value)
 {
     // TODO-ASG: add asserts that the types match here.
     assert(store->Data() == value);
-
-#if defined(FEATURE_SIMD)
-    if (varTypeIsSIMDOrMask(store))
-    {
-        // TODO-ASG: delete this zero-diff quirk.
-        if (!value->IsCall() || !value->AsCall()->ShouldHaveRetBufArg())
-        {
-            // We want to track SIMD/Mask stores as being intrinsics since they
-            // are functionally `mov` instructions and are more efficient when
-            // we don't promote, particularly when it occurs due to inlining.
-            SetOpLclRelatedToSIMDIntrinsic(store);
-            SetOpLclRelatedToSIMDIntrinsic(value);
-        }
-    }
-#endif // FEATURE_SIMD
 }
 
 //------------------------------------------------------------------------
@@ -11730,6 +11714,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PHI_ARG:
         case GT_JMPTABLE:
         case GT_PHYSREG:
+#ifdef TARGET_WASM
+        case GT_FRAME_SIZE:
+#endif // TARGET_WASM
         case GT_IL_OFFSET:
         case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
@@ -21870,21 +21857,6 @@ FieldSeq::FieldSeq(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fiel
 }
 
 #ifdef FEATURE_SIMD
-//-------------------------------------------------------------------
-// SetOpLclRelatedToSIMDIntrinsic: Determine if the tree has a local var that needs to be set
-// as used by a SIMD intrinsic, and if so, set that local var appropriately.
-//
-// Arguments:
-//     op - The tree, to be an operand of a new SIMD-related node, to check.
-//
-void Compiler::SetOpLclRelatedToSIMDIntrinsic(GenTree* op)
-{
-    if ((op != nullptr) && op->OperIsScalarLocal())
-    {
-        setLclRelatedToSIMDIntrinsic(op);
-    }
-}
-
 void GenTreeMultiOp::ResetOperandArray(size_t    newOperandCount,
                                        Compiler* compiler,
                                        GenTree** inlineOperands,
@@ -22665,8 +22637,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
     var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, var_types simdBaseType, unsigned simdSize)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, simdBaseType, simdSize, op1);
 }
@@ -22674,9 +22644,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(
     var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic hwIntrinsicID, var_types simdBaseType, unsigned simdSize)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-    SetOpLclRelatedToSIMDIntrinsic(op2);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, simdBaseType, simdSize, op1, op2);
 }
@@ -22689,10 +22656,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
                                                        var_types      simdBaseType,
                                                        unsigned       simdSize)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-    SetOpLclRelatedToSIMDIntrinsic(op2);
-    SetOpLclRelatedToSIMDIntrinsic(op3);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, simdBaseType, simdSize, op1, op2, op3);
 }
@@ -22706,11 +22669,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
                                                        var_types      simdBaseType,
                                                        unsigned       simdSize)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-    SetOpLclRelatedToSIMDIntrinsic(op2);
-    SetOpLclRelatedToSIMDIntrinsic(op3);
-    SetOpLclRelatedToSIMDIntrinsic(op4);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, simdBaseType, simdSize, op1, op2, op3, op4);
 }
@@ -22726,7 +22684,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
     for (size_t i = 0; i < operandCount; i++)
     {
         nodeBuilder.AddOperand(i, operands[i]);
-        SetOpLclRelatedToSIMDIntrinsic(operands[i]);
     }
 
     return new (this, GT_HWINTRINSIC)
@@ -22739,11 +22696,6 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types              ty
                                                        var_types              simdBaseType,
                                                        unsigned               simdSize)
 {
-    for (size_t i = 0; i < nodeBuilder.GetOperandCount(); i++)
-    {
-        SetOpLclRelatedToSIMDIntrinsic(nodeBuilder.GetOperand(i));
-    }
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, std::move(nodeBuilder), hwIntrinsicID, simdBaseType, simdSize);
 }
@@ -25801,10 +25753,9 @@ GenTree* Compiler::gtNewSimdLoadNode(var_types type, GenTree* op1, var_types sim
     assert(getSIMDTypeForSize(simdSize) == type);
 
     assert(op1 != nullptr);
-
     assert(varTypeIsArithmetic(simdBaseType));
 
-    return gtNewIndir(type, op1);
+    return gtNewLoadValueNode(type, op1);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -29161,12 +29112,12 @@ GenTree* Compiler::gtNewSimdStoreNode(GenTree* op1, GenTree* op2, var_types simd
     assert(op1 != nullptr);
     assert(op2 != nullptr);
 
+    assert(varTypeIsArithmetic(simdBaseType));
+
     assert(varTypeIsSIMD(op2));
     assert(getSIMDTypeForSize(simdSize) == op2->TypeGet());
 
-    assert(varTypeIsArithmetic(simdBaseType));
-
-    return gtNewStoreIndNode(op2->TypeGet(), op1, op2);
+    return gtNewStoreValueNode(op2->TypeGet(), op1, op2);
 }
 
 //----------------------------------------------------------------------------------------------
@@ -30402,8 +30353,6 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, NamedIn
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, TYP_UNKNOWN, 0, op1);
 }
@@ -30413,9 +30362,6 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types      type,
                                                          GenTree*       op2,
                                                          NamedIntrinsic hwIntrinsicID)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-    SetOpLclRelatedToSIMDIntrinsic(op2);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, TYP_UNKNOWN, 0, op1, op2);
 }
@@ -30423,10 +30369,6 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types      type,
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
     var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID)
 {
-    SetOpLclRelatedToSIMDIntrinsic(op1);
-    SetOpLclRelatedToSIMDIntrinsic(op2);
-    SetOpLclRelatedToSIMDIntrinsic(op3);
-
     return new (this, GT_HWINTRINSIC)
         GenTreeHWIntrinsic(type, getAllocator(CMK_ASTNode), hwIntrinsicID, TYP_UNKNOWN, 0, op1, op2, op3);
 }
