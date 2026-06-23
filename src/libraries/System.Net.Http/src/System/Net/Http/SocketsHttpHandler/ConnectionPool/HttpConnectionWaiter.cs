@@ -22,9 +22,11 @@ namespace System.Net.Http
             bool withTelemetry = HttpTelemetry.Log.IsEnabled()
                                 || (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled && pool.Settings._metrics!.RequestsQueueDuration.Enabled)
                                 || (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation && Activity.Current?.Source == DiagnosticsHandler.s_activitySource);
-            return withTelemetry
-                ? WaitForConnectionWithTelemetryAsync(request, pool, async, requestCancellationToken)
-                : WaitWithCancellationAsync(async, requestCancellationToken);
+            if (withTelemetry)
+            {
+                return WaitForConnectionWithTelemetryAsync(request, pool, async, requestCancellationToken);
+            }
+            return WaitWithCancellationAsync(async, requestCancellationToken);
         }
 
         private async ValueTask<T> WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)

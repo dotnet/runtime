@@ -16,10 +16,16 @@ namespace System.Threading.Tasks
             // If the task hasn't completed or was faulted/canceled, wrap it in an unwrap promise. Otherwise,
             // it completed successfully.  Return its inner task to avoid unnecessary wrapping, or if the inner
             // task is null, return a canceled task to match the same semantics as CreateUnwrapPromise.
-            return
-                !task.IsCompletedSuccessfully ? Task.CreateUnwrapPromise<VoidTaskResult>(task, lookForOce: false) :
-                task.Result ??
-                Task.FromCanceled(new CancellationToken(true));
+            if (!task.IsCompletedSuccessfully)
+            {
+                return Task.CreateUnwrapPromise<VoidTaskResult>(task, lookForOce: false);
+            }
+            var result = task.Result;
+            if (result is not null)
+            {
+                return result;
+            }
+            return Task.FromCanceled(new CancellationToken(true));
         }
 
         /// <summary>Creates a proxy <see cref="Task{TResult}"/> that represents the asynchronous operation of a wrapped <see cref="Task{TResult}"/>.</summary>
@@ -32,10 +38,16 @@ namespace System.Threading.Tasks
             // If the task hasn't completed or was faulted/canceled, wrap it in an unwrap promise. Otherwise,
             // it completed successfully.  Return its inner task to avoid unnecessary wrapping, or if the inner
             // task is null, return a canceled task to match the same semantics as CreateUnwrapPromise.
-            return
-                !task.IsCompletedSuccessfully ? Task.CreateUnwrapPromise<TResult>(task, lookForOce: false) :
-                task.Result ??
-                Task.FromCanceled<TResult>(new CancellationToken(true));
+            if (!task.IsCompletedSuccessfully)
+            {
+                return Task.CreateUnwrapPromise<TResult>(task, lookForOce: false);
+            }
+            var result = task.Result;
+            if (result is not null)
+            {
+                return result;
+            }
+            return Task.FromCanceled<TResult>(new CancellationToken(true));
         }
     }
 }

@@ -20,9 +20,11 @@ namespace System.Net.Http
 
         private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool async, bool isProxyAuth, HttpConnectionPool pool, HttpConnection connection, CancellationToken cancellationToken)
         {
-            return isProxyAuth ?
-                connection.SendAsync(request, async, cancellationToken) :
-                pool.SendWithNtProxyAuthAsync(connection, request, async, cancellationToken);
+            if (isProxyAuth)
+            {
+                return connection.SendAsync(request, async, cancellationToken);
+            }
+            return pool.SendWithNtProxyAuthAsync(connection, request, async, cancellationToken);
         }
 
         private static bool ProxySupportsConnectionAuth(HttpResponseMessage response)

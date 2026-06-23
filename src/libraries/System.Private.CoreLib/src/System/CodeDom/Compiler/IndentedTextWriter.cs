@@ -63,10 +63,18 @@ namespace System.CodeDom.Compiler
         /// </summary>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous flush operation.</returns>
-        public override Task FlushAsync(CancellationToken cancellationToken) =>
-            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-            GetType() != typeof(IndentedTextWriter) ? FlushAsync() :
-            _writer.FlushAsync(cancellationToken);
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+            if (GetType() != typeof(IndentedTextWriter))
+            {
+                return FlushAsync();
+            }
+            return _writer.FlushAsync(cancellationToken);
+        }
 
         protected virtual void OutputTabs()
         {

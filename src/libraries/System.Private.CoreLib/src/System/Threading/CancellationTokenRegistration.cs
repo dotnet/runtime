@@ -68,9 +68,11 @@ namespace System.Threading
         /// </summary>
         public ValueTask DisposeAsync()
         {
-            return _node is CancellationTokenSource.CallbackNode node && !node.Registrations.Unregister(_id, node) ?
-                WaitForCallbackIfNecessaryAsync(_id, node) :
-                default;
+            if (_node is CancellationTokenSource.CallbackNode node && !node.Registrations.Unregister(_id, node))
+            {
+                return WaitForCallbackIfNecessaryAsync(_id, node);
+            }
+            return default;
 
             static ValueTask WaitForCallbackIfNecessaryAsync(long id, CancellationTokenSource.CallbackNode node)
             {

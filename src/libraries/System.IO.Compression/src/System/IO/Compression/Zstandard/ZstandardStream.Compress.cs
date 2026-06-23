@@ -281,9 +281,11 @@ namespace System.IO.Compression
 
             EnsureNotDisposed();
 
-            return cancellationToken.IsCancellationRequested ?
-                ValueTask.FromCanceled(cancellationToken) :
-                WriteCoreAsync(buffer, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+            return WriteCoreAsync(buffer, cancellationToken);
         }
 
         /// <summary>Begins an asynchronous write operation.</summary>

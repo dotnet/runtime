@@ -169,13 +169,16 @@ public abstract class HybridCache
     /// <remarks>Implementors should treat <c>null</c> as empty</remarks>
     public virtual ValueTask RemoveAsync(IEnumerable<string> keys, CancellationToken cancellationToken = default)
     {
-        return keys switch
+        // for consistency with GetOrCreate/Set: interpret null as "none"
+        if (keys is null or ICollection<string> { Count: 0 })
         {
-            // for consistency with GetOrCreate/Set: interpret null as "none"
-            null or ICollection<string> { Count: 0 } => default,
-            ICollection<string> { Count: 1 } => RemoveAsync(keys.First(), cancellationToken),
-            _ => ForEachAsync(this, keys, cancellationToken),
-        };
+            return default;
+        }
+        if (keys is ICollection<string> { Count: 1 })
+        {
+            return RemoveAsync(keys.First(), cancellationToken);
+        }
+        return ForEachAsync(this, keys, cancellationToken);
 
         // default implementation is to call RemoveAsync for each key in turn
         static async ValueTask ForEachAsync(HybridCache @this, IEnumerable<string> keys, CancellationToken cancellationToken)
@@ -193,13 +196,16 @@ public abstract class HybridCache
     /// <remarks>Implementors should treat <c>null</c> as empty</remarks>
     public virtual ValueTask RemoveByTagAsync(IEnumerable<string> tags, CancellationToken cancellationToken = default)
     {
-        return tags switch
+        // for consistency with GetOrCreate/Set: interpret null as "none"
+        if (tags is null or ICollection<string> { Count: 0 })
         {
-            // for consistency with GetOrCreate/Set: interpret null as "none"
-            null or ICollection<string> { Count: 0 } => default,
-            ICollection<string> { Count: 1 } => RemoveByTagAsync(tags.Single(), cancellationToken),
-            _ => ForEachAsync(this, tags, cancellationToken),
-        };
+            return default;
+        }
+        if (tags is ICollection<string> { Count: 1 })
+        {
+            return RemoveByTagAsync(tags.Single(), cancellationToken);
+        }
+        return ForEachAsync(this, tags, cancellationToken);
 
         // default implementation is to call RemoveByTagAsync for each key in turn
         static async ValueTask ForEachAsync(HybridCache @this, IEnumerable<string> keys, CancellationToken cancellationToken)

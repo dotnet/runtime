@@ -110,9 +110,11 @@ namespace System.Xml.Linq
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
 
-            return parent is XDocument ?
-                writer.WriteWhitespaceAsync(text) :
-                writer.WriteStringAsync(text);
+            if (parent is XDocument)
+            {
+                return writer.WriteWhitespaceAsync(text);
+            }
+            return writer.WriteStringAsync(text);
         }
 
         internal override void AppendText(StringBuilder sb)

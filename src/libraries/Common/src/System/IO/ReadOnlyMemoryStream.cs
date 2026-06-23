@@ -127,18 +127,22 @@ namespace System.IO
         {
             ValidateBufferArguments(buffer, offset, count);
             EnsureNotClosed();
-            return cancellationToken.IsCancellationRequested ?
-                Task.FromCanceled<int>(cancellationToken) :
-                Task.FromResult(ReadBuffer(new Span<byte>(buffer, offset, count)));
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+            return Task.FromResult(ReadBuffer(new Span<byte>(buffer, offset, count)));
         }
 
 #if !NETFRAMEWORK && !NETSTANDARD2_0
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             EnsureNotClosed();
-            return cancellationToken.IsCancellationRequested ?
-                ValueTask.FromCanceled<int>(cancellationToken) :
-                new ValueTask<int>(ReadBuffer(buffer.Span));
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+            return new ValueTask<int>(ReadBuffer(buffer.Span));
         }
 #endif
 

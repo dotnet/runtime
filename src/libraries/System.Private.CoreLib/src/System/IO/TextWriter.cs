@@ -638,10 +638,15 @@ namespace System.IO
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         public virtual Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default)
         {
-            return
-                cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-                value == null ? Task.CompletedTask :
-                WriteAsyncCore(value, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+            if (value == null)
+            {
+                return Task.CompletedTask;
+            }
+            return WriteAsyncCore(value, cancellationToken);
 
             async Task WriteAsyncCore(StringBuilder sb, CancellationToken ct)
             {
@@ -669,15 +674,22 @@ namespace System.IO
                 t.Item1.Write(t.Item2, t.Item3, t.Item4);
             }, new TupleSlim<TextWriter, char[], int, int>(this, buffer, index, count), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
-        public virtual Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) =>
-            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-            MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
-                WriteAsync(array.Array!, array.Offset, array.Count) :
-                Task.Factory.StartNew(static state =>
-                {
-                    var t = (TupleSlim<TextWriter, ReadOnlyMemory<char>>)state!;
-                    t.Item1.Write(t.Item2.Span);
-                }, new TupleSlim<TextWriter, ReadOnlyMemory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+        public virtual Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array))
+            {
+                return WriteAsync(array.Array!, array.Offset, array.Count);
+            }
+            return Task.Factory.StartNew(static state =>
+                            {
+                                var t = (TupleSlim<TextWriter, ReadOnlyMemory<char>>)state!;
+                                t.Item1.Write(t.Item2.Span);
+                            }, new TupleSlim<TextWriter, ReadOnlyMemory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+        }
 
         public virtual Task WriteLineAsync(char value) =>
             Task.Factory.StartNew(static state =>
@@ -732,10 +744,15 @@ namespace System.IO
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         public virtual Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default)
         {
-            return
-                cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-                value == null ? WriteAsync(CoreNewLine, cancellationToken) :
-                WriteLineAsyncCore(value, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+            if (value == null)
+            {
+                return WriteAsync(CoreNewLine, cancellationToken);
+            }
+            return WriteLineAsyncCore(value, cancellationToken);
 
             async Task WriteLineAsyncCore(StringBuilder sb, CancellationToken ct)
             {
@@ -764,15 +781,22 @@ namespace System.IO
                 t.Item1.WriteLine(t.Item2, t.Item3, t.Item4);
             }, new TupleSlim<TextWriter, char[], int, int>(this, buffer, index, count), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
-        public virtual Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) =>
-            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-            MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
-                WriteLineAsync(array.Array!, array.Offset, array.Count) :
-                Task.Factory.StartNew(static state =>
-                {
-                    var t = (TupleSlim<TextWriter, ReadOnlyMemory<char>>)state!;
-                    t.Item1.WriteLine(t.Item2.Span);
-                }, new TupleSlim<TextWriter, ReadOnlyMemory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+        public virtual Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array))
+            {
+                return WriteLineAsync(array.Array!, array.Offset, array.Count);
+            }
+            return Task.Factory.StartNew(static state =>
+                            {
+                                var t = (TupleSlim<TextWriter, ReadOnlyMemory<char>>)state!;
+                                t.Item1.WriteLine(t.Item2.Span);
+                            }, new TupleSlim<TextWriter, ReadOnlyMemory<char>>(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+        }
 
         public virtual Task WriteLineAsync()
         {
@@ -801,9 +825,14 @@ namespace System.IO
         /// <returns>A <see cref="Task"/> that represents the asynchronous flush operation.</returns>
         /// <exception cref="ObjectDisposedException">The text writer is disposed.</exception>
         /// <exception cref="InvalidOperationException">The writer is currently in use by a previous write operation.</exception>
-        public virtual Task FlushAsync(CancellationToken cancellationToken) =>
-            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-            FlushAsync();
+        public virtual Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+            return FlushAsync();
+        }
         #endregion
 
         private sealed class NullTextWriter : TextWriter

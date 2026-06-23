@@ -29,9 +29,11 @@ namespace System.Net.NetworkInformation
 
         private Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
-            return RawSocketPermissions.CanUseRawSockets(address.AddressFamily) ?
-                    SendIcmpEchoRequestOverRawSocketAsync(address, buffer, timeout, options) :
-                    SendWithPingUtilityAsync(address, buffer, timeout, options);
+            if (RawSocketPermissions.CanUseRawSockets(address.AddressFamily))
+            {
+                return SendIcmpEchoRequestOverRawSocketAsync(address, buffer, timeout, options);
+            }
+            return SendWithPingUtilityAsync(address, buffer, timeout, options);
         }
     }
 }

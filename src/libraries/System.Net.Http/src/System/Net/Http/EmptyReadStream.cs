@@ -21,9 +21,14 @@ namespace System.Net.Http
 
         public override int Read(Span<byte> buffer) => 0;
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
-            cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) :
-            new ValueTask<int>(0);
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled<int>(cancellationToken);
+            }
+            return new ValueTask<int>(0);
+        }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {

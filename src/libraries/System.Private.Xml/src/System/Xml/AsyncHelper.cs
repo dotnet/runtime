@@ -39,9 +39,11 @@ namespace System.Xml
 
         public static Task<bool> ReturnTrueTaskWhenFinishAsync(this Task task)
         {
-            return task.IsSuccess() ?
-                DoneTaskTrue :
-                ReturnTrueTaskWhenFinishCoreAsync(task);
+            if (task.IsSuccess())
+            {
+                return DoneTaskTrue;
+            }
+            return ReturnTrueTaskWhenFinishCoreAsync(task);
         }
 
         private static async Task<bool> ReturnTrueTaskWhenFinishCoreAsync(this Task task)
@@ -52,9 +54,11 @@ namespace System.Xml
 
         public static Task CallTaskFuncWhenFinishAsync<TArg>(this Task task, Func<TArg, Task> func, TArg arg)
         {
-            return task.IsSuccess() ?
-                func(arg) :
-                CallTaskFuncWhenFinishCoreAsync(task, func, arg);
+            if (task.IsSuccess())
+            {
+                return func(arg);
+            }
+            return CallTaskFuncWhenFinishCoreAsync(task, func, arg);
         }
 
         private static async Task CallTaskFuncWhenFinishCoreAsync<TArg>(Task task, Func<TArg, Task> func, TArg arg)
@@ -65,9 +69,11 @@ namespace System.Xml
 
         public static Task<bool> CallBoolTaskFuncWhenFinishAsync<TArg>(this Task task, Func<TArg, Task<bool>> func, TArg arg)
         {
-            return task.IsSuccess() ?
-                func(arg) :
-                CallBoolTaskFuncWhenFinishCoreAsync(task, func, arg);
+            if (task.IsSuccess())
+            {
+                return func(arg);
+            }
+            return CallBoolTaskFuncWhenFinishCoreAsync(task, func, arg);
         }
 
         private static async Task<bool> CallBoolTaskFuncWhenFinishCoreAsync<TArg>(this Task task, Func<TArg, Task<bool>> func, TArg arg)
@@ -80,7 +86,11 @@ namespace System.Xml
         {
             if (task.IsSuccess())
             {
-                return task.Result ? DoneTaskTrue : func(arg);
+                if (task.Result)
+                {
+                    return DoneTaskTrue;
+                }
+                return func(arg);
             }
             else
             {

@@ -245,10 +245,15 @@ namespace System.Net.Http
             {
                 ValidateCopyToArguments(destination, bufferSize);
 
-                return
-                    cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-                    _connection == null ? Task.CompletedTask :
-                    CopyToAsyncCore(destination, cancellationToken);
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
+                if (_connection == null)
+                {
+                    return Task.CompletedTask;
+                }
+                return CopyToAsyncCore(destination, cancellationToken);
             }
 
             private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
@@ -536,9 +541,11 @@ namespace System.Net.Http
             private ValueTask FillAsync()
             {
                 Debug.Assert(_connection is not null);
-                return _state == ParsingState.ConsumeTrailers
-                    ? _connection.FillForHeadersAsync(async: true)
-                    : _connection.FillAsync(async: true);
+                if (_state == ParsingState.ConsumeTrailers)
+                {
+                    return _connection.FillForHeadersAsync(async: true);
+                }
+                return _connection.FillAsync(async: true);
             }
         }
     }

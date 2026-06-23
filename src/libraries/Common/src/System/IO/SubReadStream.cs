@@ -273,9 +273,14 @@ namespace System.IO
 
         public override void Flush() { }
 
-        public override Task FlushAsync(CancellationToken cancellationToken) =>
-            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-            Task.CompletedTask;
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+            return Task.CompletedTask;
+        }
 
         // Close the stream for reading. Note that this does NOT close the super stream (since
         // this stream is just a 'chunk' of the super stream).

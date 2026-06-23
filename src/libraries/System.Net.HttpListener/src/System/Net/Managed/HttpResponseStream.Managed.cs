@@ -154,8 +154,14 @@ namespace System.Net
             }
         }
 
-        internal Task InternalWriteAsync(byte[] buffer, int offset, int count) =>
-            _ignore_errors ? InternalWriteIgnoreErrorsAsync(buffer, offset, count) : _stream.WriteAsync(buffer, offset, count);
+        internal Task InternalWriteAsync(byte[] buffer, int offset, int count)
+        {
+            if (_ignore_errors)
+            {
+                return InternalWriteIgnoreErrorsAsync(buffer, offset, count);
+            }
+            return _stream.WriteAsync(buffer, offset, count);
+        }
 
         private async Task InternalWriteIgnoreErrorsAsync(byte[] buffer, int offset, int count)
         {

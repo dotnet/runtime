@@ -76,9 +76,14 @@ namespace System.Net.Http
 
         public override Task FlushAsync(CancellationToken cancellationToken) => NopAsync(cancellationToken);
 
-        protected static Task NopAsync(CancellationToken cancellationToken) =>
-            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-            Task.CompletedTask;
+        protected static Task NopAsync(CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+            return Task.CompletedTask;
+        }
 
         //
         // Methods which must be implemented by derived classes

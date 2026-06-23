@@ -607,9 +607,11 @@ namespace System.IO
                     if (completeSynchronously)
                     {
 
-                        return (error == null)
-                                    ? _lastSyncCompletedReadTask.GetTask(bytesFromBuffer)
-                                    : Task.FromException<int>(error);
+                        if ((error == null))
+                        {
+                            return _lastSyncCompletedReadTask.GetTask(bytesFromBuffer);
+                        }
+                        return Task.FromException<int>(error);
                     }
                 }
                 finally
@@ -1277,9 +1279,11 @@ namespace System.IO
             EnsureNotClosed();
             EnsureCanRead();
 
-            return cancellationToken.IsCancellationRequested ?
-                Task.FromCanceled<int>(cancellationToken) :
-                CopyToAsyncCore(destination, bufferSize, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<int>(cancellationToken);
+            }
+            return CopyToAsyncCore(destination, bufferSize, cancellationToken);
         }
 
         private async Task CopyToAsyncCore(Stream destination, int bufferSize, CancellationToken cancellationToken)

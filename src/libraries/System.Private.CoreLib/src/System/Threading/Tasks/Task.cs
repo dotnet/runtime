@@ -5928,11 +5928,22 @@ namespace System.Threading.Tasks
             return Delay((uint)millisecondsDelay, TimeProvider.System, cancellationToken);
         }
 
-        private static Task Delay(uint millisecondsDelay, TimeProvider timeProvider, CancellationToken cancellationToken) =>
-            cancellationToken.IsCancellationRequested ? FromCanceled(cancellationToken) :
-            millisecondsDelay == 0 ? CompletedTask :
-            cancellationToken.CanBeCanceled ? new DelayPromiseWithCancellation(millisecondsDelay, timeProvider, cancellationToken) :
-            new DelayPromise(millisecondsDelay, timeProvider);
+        private static Task Delay(uint millisecondsDelay, TimeProvider timeProvider, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return FromCanceled(cancellationToken);
+            }
+            if (millisecondsDelay == 0)
+            {
+                return CompletedTask;
+            }
+            if (cancellationToken.CanBeCanceled)
+            {
+                return new DelayPromiseWithCancellation(millisecondsDelay, timeProvider, cancellationToken);
+            }
+            return new DelayPromise(millisecondsDelay, timeProvider);
+        }
 
         internal static uint ValidateTimeout(TimeSpan timeout, ExceptionArgument argument)
         {
@@ -6454,9 +6465,11 @@ namespace System.Threading.Tasks
                 taskList.Add(task);
             }
 
-            return taskList.Count == 0 ?
-                new Task<TResult[]>(false, [], TaskCreationOptions.None, default) :
-                new WhenAllPromise<TResult>(taskList.ToArray());
+            if (taskList.Count == 0)
+            {
+                return new Task<TResult[]>(false, [], TaskCreationOptions.None, default);
+            }
+            return new WhenAllPromise<TResult>(taskList.ToArray());
         }
 
         /// <summary>
@@ -6771,10 +6784,15 @@ namespace System.Threading.Tasks
             ArgumentNullException.ThrowIfNull(task1);
             ArgumentNullException.ThrowIfNull(task2);
 
-            return
-                task1.IsCompleted ? FromResult(task1) :
-                task2.IsCompleted ? FromResult(task2) :
-                new TwoTaskWhenAnyPromise<TTask>(task1, task2);
+            if (task1.IsCompleted)
+            {
+                return FromResult(task1);
+            }
+            if (task2.IsCompleted)
+            {
+                return FromResult(task2);
+            }
+            return new TwoTaskWhenAnyPromise<TTask>(task1, task2);
         }
 
         /// <summary>A promise type used by WhenAny to wait on exactly two tasks.</summary>

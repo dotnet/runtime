@@ -193,11 +193,16 @@ namespace System.Net.Http
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsyncCore(stream, context, default);
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
-            GetType() == typeof(MultipartContent) ? SerializeToStreamAsyncCore(stream, context, cancellationToken) :
-            base.SerializeToStreamAsync(stream, context, cancellationToken);
+            if (GetType() == typeof(MultipartContent))
+            {
+                return SerializeToStreamAsyncCore(stream, context, cancellationToken);
+            }
+            return base.SerializeToStreamAsync(stream, context, cancellationToken);
+        }
 
         private protected async Task SerializeToStreamAsyncCore(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
@@ -242,11 +247,16 @@ namespace System.Net.Http
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             CreateContentReadStreamAsyncCore(async: true, CancellationToken.None).AsTask();
 
-        protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken) =>
+        protected override Task<Stream> CreateContentReadStreamAsync(CancellationToken cancellationToken)
+        {
             // Only skip the original protected virtual CreateContentReadStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
-            GetType() == typeof(MultipartContent) ? CreateContentReadStreamAsyncCore(async: true, cancellationToken).AsTask() :
-            base.CreateContentReadStreamAsync(cancellationToken);
+            if (GetType() == typeof(MultipartContent))
+            {
+                return CreateContentReadStreamAsyncCore(async: true, cancellationToken).AsTask();
+            }
+            return base.CreateContentReadStreamAsync(cancellationToken);
+        }
 
         private async ValueTask<Stream> CreateContentReadStreamAsyncCore(bool async, CancellationToken cancellationToken)
         {

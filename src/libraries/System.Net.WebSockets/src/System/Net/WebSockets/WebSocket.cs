@@ -53,10 +53,14 @@ namespace System.Net.WebSockets
             }
         }
 
-        public virtual ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
-            MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> arraySegment) ?
-                new ValueTask(SendAsync(arraySegment, messageType, endOfMessage, cancellationToken)) :
-                SendWithArrayPoolAsync(buffer, messageType, endOfMessage, cancellationToken);
+        public virtual ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
+        {
+            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> arraySegment))
+            {
+                return new ValueTask(SendAsync(arraySegment, messageType, endOfMessage, cancellationToken));
+            }
+            return SendWithArrayPoolAsync(buffer, messageType, endOfMessage, cancellationToken);
+        }
 
         public virtual ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, WebSocketMessageFlags messageFlags, CancellationToken cancellationToken = default)
         {

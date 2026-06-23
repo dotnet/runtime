@@ -72,7 +72,15 @@ namespace System.Runtime.CompilerServices
         public Task Task
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => m_task ?? InitializeTaskAsPromise();
+            get
+            {
+                Task? task = m_task;
+                if (task is not null)
+                {
+                    return task;
+                }
+                return InitializeTaskAsPromise();
+            }
         }
 
         /// <summary>

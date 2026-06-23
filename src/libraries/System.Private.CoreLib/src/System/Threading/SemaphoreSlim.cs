@@ -699,9 +699,11 @@ namespace System.Threading
                 {
                     Debug.Assert(m_currentCount == 0, "m_currentCount should never be negative");
                     TaskNode asyncWaiter = CreateAndAddAsyncWaiter();
-                    return (millisecondsTimeout == Timeout.Infinite && !cancellationToken.CanBeCanceled) ?
-                        asyncWaiter :
-                        WaitUntilCountOrTimeoutAsync(asyncWaiter, millisecondsTimeout, cancellationToken);
+                    if ((millisecondsTimeout == Timeout.Infinite && !cancellationToken.CanBeCanceled))
+                    {
+                        return asyncWaiter;
+                    }
+                    return WaitUntilCountOrTimeoutAsync(asyncWaiter, millisecondsTimeout, cancellationToken);
                 }
             }
         }

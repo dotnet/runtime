@@ -484,9 +484,11 @@ namespace System.Net.WebSockets
             // Similarly, it should be rare that there are multiple outstanding calls to SendFrameAsync, but if there are, again
             // fall back to the fallback path.
             Task lockTask = _sendMutex.EnterAsync(cancellationToken);
-            return cancellationToken.CanBeCanceled || !lockTask.IsCompletedSuccessfully ?
-                SendFrameFallbackAsync(opcode, endOfMessage, disableCompression, payloadBuffer, lockTask, cancellationToken) :
-                SendFrameLockAcquiredNonCancelableAsync(opcode, endOfMessage, disableCompression, payloadBuffer);
+            if (cancellationToken.CanBeCanceled || !lockTask.IsCompletedSuccessfully)
+            {
+                return SendFrameFallbackAsync(opcode, endOfMessage, disableCompression, payloadBuffer, lockTask, cancellationToken);
+            }
+            return SendFrameLockAcquiredNonCancelableAsync(opcode, endOfMessage, disableCompression, payloadBuffer);
         }
 
         /// <summary>Sends a websocket frame to the network. The caller must hold the sending lock.</summary>

@@ -129,7 +129,11 @@ namespace System.Net.Http.Json
 
             // If ResponseHeadersRead wasn't used, HttpClient will have already buffered the whole response upfront.
             // No need to check the limit again.
-            return usingResponseHeadersRead ? GetLengthLimitReadStreamAsync(client, task) : task;
+            if (usingResponseHeadersRead)
+            {
+                return GetLengthLimitReadStreamAsync(client, task);
+            }
+            return task;
         }
 
         private static async ValueTask<Stream> GetLengthLimitReadStreamAsync(HttpClient client, ValueTask<Stream> task)

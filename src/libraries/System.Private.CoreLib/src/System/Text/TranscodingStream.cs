@@ -137,9 +137,11 @@ namespace System.Text
                 Stream innerStream = _innerStream;
                 _innerStream = null!;
 
-                return (_leaveOpen)
-                    ? default /* no work to do */
-                    : innerStream.DisposeAsync();
+                if ((_leaveOpen))
+                {
+                    return default;
+                }
+                return innerStream.DisposeAsync();
             }
 
             // Slower path; need to perform an async write followed by an async dispose.

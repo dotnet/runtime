@@ -253,7 +253,18 @@ namespace System.Diagnostics
             }
         }
 
-        internal Task EOF => _readToBufferTask ?? Task.CompletedTask;
+        internal Task EOF
+        {
+            get
+            {
+                Task? task = _readToBufferTask;
+                if (task is not null)
+                {
+                    return task;
+                }
+                return Task.CompletedTask;
+            }
+        }
 
         public void Dispose()
         {

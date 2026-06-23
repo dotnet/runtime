@@ -429,9 +429,11 @@ namespace System.IO.Compression
             ThrowIfDisposed();
             Debug.Assert(CanWrite);
 
-            return !buffer.IsEmpty ?
-                Core(buffer, cancellationToken) :
-                default;
+            if (!buffer.IsEmpty)
+            {
+                return Core(buffer, cancellationToken);
+            }
+            return default;
 
             async ValueTask Core(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
@@ -466,7 +468,12 @@ namespace System.IO.Compression
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-            return _baseStream?.FlushAsync(cancellationToken) ?? Task.CompletedTask;
+            Task? task = _baseStream?.FlushAsync(cancellationToken);
+            if (task is not null)
+            {
+                return task;
+            }
+            return Task.CompletedTask;
         }
 
         protected override void Dispose(bool disposing)

@@ -173,14 +173,27 @@ namespace System.Threading.Tasks
         {
             object? obj = _obj;
             Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
-            return
-                obj == null ? Task.CompletedTask :
-                obj as Task ??
-                GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj));
+            if (obj == null)
+            {
+                return Task.CompletedTask;
+            }
+            Task? task = obj as Task;
+            if (task is not null)
+            {
+                return task;
+            }
+            return GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj));
         }
 
         /// <summary>Gets a <see cref="ValueTask"/> that may be used at any point in the future.</summary>
-        public ValueTask Preserve() => _obj == null ? this : new ValueTask(AsTask());
+        public ValueTask Preserve()
+        {
+            if (_obj == null)
+            {
+                return this;
+            }
+            return new ValueTask(AsTask());
+        }
 
         /// <summary>Creates a <see cref="Task"/> to represent the <see cref="IValueTaskSource"/>.</summary>
         /// <remarks>
@@ -589,7 +602,14 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Gets a <see cref="ValueTask{TResult}"/> that may be used at any point in the future.</summary>
-        public ValueTask<TResult> Preserve() => _obj == null ? this : new ValueTask<TResult>(AsTask());
+        public ValueTask<TResult> Preserve()
+        {
+            if (_obj == null)
+            {
+                return this;
+            }
+            return new ValueTask<TResult>(AsTask());
+        }
 
         /// <summary>Creates a <see cref="Task{TResult}"/> to represent the <see cref="IValueTaskSource{TResult}"/>.</summary>
         /// <remarks>

@@ -46,9 +46,11 @@ namespace System.Net.Http.Metrics
             }
             else
             {
-                return async ?
-                    new ValueTask<HttpResponseMessage>(_innerHandler.SendAsync(request, cancellationToken)) :
-                    new ValueTask<HttpResponseMessage>(_innerHandler.Send(request, cancellationToken));
+                if (async)
+                {
+                    return new ValueTask<HttpResponseMessage>(_innerHandler.SendAsync(request, cancellationToken));
+                }
+                return new ValueTask<HttpResponseMessage>(_innerHandler.Send(request, cancellationToken));
             }
         }
 

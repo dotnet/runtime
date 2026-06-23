@@ -160,9 +160,11 @@ namespace System.Threading.Channels
                     // There are no items, so if we're done writing, there's never going to be data available.
                     if (parent._doneWriting is not null)
                     {
-                        return parent._doneWriting != ChannelUtilities.s_doneWritingSentinel ?
-                            new ValueTask<bool>(Task.FromException<bool>(parent._doneWriting)) :
-                            default;
+                        if (parent._doneWriting != ChannelUtilities.s_doneWritingSentinel)
+                        {
+                            return new ValueTask<bool>(Task.FromException<bool>(parent._doneWriting));
+                        }
+                        return default;
                     }
 
                     // If we're able to use the singleton waiter, do so. Otherwise, create a new waiter.
@@ -287,17 +289,33 @@ namespace System.Threading.Channels
             public override ValueTask<bool> WaitToWriteAsync(CancellationToken cancellationToken)
             {
                 Exception? doneWriting = _parent._doneWriting;
-                return
-                    cancellationToken.IsCancellationRequested ? new ValueTask<bool>(Task.FromCanceled<bool>(cancellationToken)) :
-                    doneWriting is null ? new ValueTask<bool>(true) : // unbounded writing can always be done if we haven't completed
-                    doneWriting != ChannelUtilities.s_doneWritingSentinel ? new ValueTask<bool>(Task.FromException<bool>(doneWriting)) :
-                    default;
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return new ValueTask<bool>(Task.FromCanceled<bool>(cancellationToken));
+                }
+                if (doneWriting is null)
+                {
+                    return new ValueTask<bool>(true);
+                }
+                if (doneWriting != ChannelUtilities.s_doneWritingSentinel)
+                {
+                    return new ValueTask<bool>(Task.FromException<bool>(doneWriting));
+                }
+                return default;
             }
 
-            public override ValueTask WriteAsync(T item, CancellationToken cancellationToken) =>
-                cancellationToken.IsCancellationRequested ? new ValueTask(Task.FromCanceled(cancellationToken)) :
-                TryWrite(item) ? default :
-                new ValueTask(Task.FromException(ChannelUtilities.CreateInvalidCompletionException(_parent._doneWriting)));
+            public override ValueTask WriteAsync(T item, CancellationToken cancellationToken)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return new ValueTask(Task.FromCanceled(cancellationToken));
+                }
+                if (TryWrite(item))
+                {
+                    return default;
+                }
+                return new ValueTask(Task.FromException(ChannelUtilities.CreateInvalidCompletionException(_parent._doneWriting)));
+            }
 
             /// <summary>Gets the number of items in the channel. This should only be used by the debugger.</summary>
             private int ItemsCountForDebugger => _parent._items.Count;

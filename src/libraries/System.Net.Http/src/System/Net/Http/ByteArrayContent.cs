@@ -43,11 +43,16 @@ namespace System.Net.Http
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
             SerializeToStreamAsyncCore(stream, default);
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
+        {
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
-            GetType() == typeof(ByteArrayContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
-            base.SerializeToStreamAsync(stream, context, cancellationToken);
+            if (GetType() == typeof(ByteArrayContent))
+            {
+                return SerializeToStreamAsyncCore(stream, cancellationToken);
+            }
+            return base.SerializeToStreamAsync(stream, context, cancellationToken);
+        }
 
         private protected Task SerializeToStreamAsyncCore(Stream stream, CancellationToken cancellationToken) =>
             stream.WriteAsync(_content, _offset, _count, cancellationToken);

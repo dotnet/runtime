@@ -428,7 +428,15 @@ namespace System.Runtime.CompilerServices
         public Task<TResult> Task
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => m_task ?? InitializeTaskAsPromise();
+            get
+            {
+                Task<TResult>? task = m_task;
+                if (task is not null)
+                {
+                    return task;
+                }
+                return InitializeTaskAsPromise();
+            }
         }
 
         /// <summary>
@@ -452,9 +460,11 @@ namespace System.Runtime.CompilerServices
             // generating this extra code until a better solution is implemented.
             return new AsyncStateMachineBox<IAsyncStateMachine>();
 #else
-            return AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
-                CreateDebugFinalizableAsyncStateMachineBox<IAsyncStateMachine>() :
-                new AsyncStateMachineBox<IAsyncStateMachine>();
+            if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+            {
+                return CreateDebugFinalizableAsyncStateMachineBox<IAsyncStateMachine>();
+            }
+            return new AsyncStateMachineBox<IAsyncStateMachine>();
 #endif
         }
 
