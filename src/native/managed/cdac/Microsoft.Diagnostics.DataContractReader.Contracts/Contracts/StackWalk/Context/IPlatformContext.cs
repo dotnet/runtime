@@ -13,7 +13,7 @@ public interface IPlatformContext
     int StackPointerRegister { get; }
 
     TargetPointer StackPointer { get; set; }
-    TargetPointer InstructionPointer { get; set; }
+    TargetCodePointer InstructionPointer { get; set; }
     TargetPointer FramePointer { get; set; }
 
     uint RawContextFlags { get; set; }

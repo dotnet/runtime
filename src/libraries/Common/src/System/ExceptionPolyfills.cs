@@ -39,6 +39,27 @@ namespace System
         private static void ThrowArgumentOutOfRangeException(string? paramName) =>
             throw new ArgumentOutOfRangeException(paramName);
 
+        extension(ArgumentException)
+        {
+            public static void ThrowIfNullOrEmpty([NotNull] string? argument, [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+            {
+                if (string.IsNullOrEmpty(argument))
+                {
+                    ThrowNullOrEmptyException(argument, paramName);
+                }
+            }
+        }
+
+        [DoesNotReturn]
+        private static void ThrowNullOrEmptyException(string? argument, string? paramName)
+        {
+            if (argument is null)
+            {
+                ThrowArgumentNullException(paramName);
+            }
+            throw new ArgumentException("The value cannot be an empty string.", paramName);
+        }
+
         extension(ObjectDisposedException)
         {
             public static void ThrowIf([DoesNotReturnIf(true)] bool condition, object instance)
