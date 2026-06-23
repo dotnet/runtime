@@ -2579,7 +2579,7 @@ namespace System.Threading.Tasks.Tests
             await innerDone.Task;
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndRuntimeAsyncAndThreadingSupported))]
         public async Task RuntimeAsync_ResetContext_ReplaysMixedV1V2ChainInAddressOrder()
         {
             var events = await CollectEventsAsync(AllKeywords, async () =>

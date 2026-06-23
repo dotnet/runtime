@@ -133,7 +133,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(100);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_EventsEmitted()
         {
             var events = CollectEvents(StateMachineAsyncCoreKeywords, () =>
@@ -147,7 +147,7 @@ namespace System.Threading.Tasks.Tests
             AssertContains(events, events.Events, e => e.EventId == AsyncEventsId);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_CreateAsyncContextEmittedOnFirstAwait()
         {
             var events = CollectEvents(StateMachineAsyncCoreKeywords, () =>
@@ -170,7 +170,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(100);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_EventSequenceOrder()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -212,7 +212,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(100);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_SuspendResumeCompleteEvents()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -268,7 +268,7 @@ namespace System.Threading.Tasks.Tests
             resumedThreadId.Value = Environment.CurrentManagedThreadId;
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_InlineResume_CompletesWithoutSuspend()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -328,7 +328,7 @@ namespace System.Threading.Tasks.Tests
             await gate2;
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_InlineResume_ReSuspends()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -400,7 +400,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(100);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_PoolResume_ReSuspends()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -455,7 +455,7 @@ namespace System.Threading.Tasks.Tests
             AssertEqual(stream, resumeEvt.OsThreadId, suspendEvt.OsThreadId);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_ResumeCompleteMethodEvents()
         {
             var events = CollectEvents(StateMachineAsyncMethodKeywords, () =>
@@ -479,7 +479,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_ExceptionHandled();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_HandledException_EmitsUnwindAndComplete()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | UnwindStateMachineAsyncExceptionKeyword, () =>
@@ -517,7 +517,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_UnhandledExceptionOuter();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_UnhandledException_EmitsUnwindAndComplete()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | UnwindStateMachineAsyncExceptionKeyword, () =>
@@ -565,7 +565,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_DeepChain();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_MethodEventCountMatchesChainDepth()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncMethodKeywords | StateMachineAsyncCoreKeywords, () =>
@@ -602,7 +602,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_ExceptionHandled();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_HandledException_MethodEventsWithUnwind()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncMethodKeywords | StateMachineAsyncCoreKeywords | UnwindStateMachineAsyncExceptionKeyword, () =>
@@ -646,7 +646,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_UnhandledExceptionOuter();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_UnhandledException_MethodEventsWithUnwind()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncMethodKeywords | StateMachineAsyncCoreKeywords | UnwindStateMachineAsyncExceptionKeyword, () =>
@@ -700,7 +700,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_DeepChain();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_ResumeAsyncCallstackEmitted()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -729,7 +729,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_Level1();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_CallstackDepthMatchesChainDepth()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -755,7 +755,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_Level1();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_CallstackFramesHaveDistinctMethodIds()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -806,7 +806,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_CallstackFramesHaveDistinctStates_Root_Marker();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_CallstackFramesHaveDistinctStates()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -865,7 +865,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_YieldAtEachLevel_CallstackShrinks_Level1_Marker();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_YieldAtEachLevel_CallstackShrinks()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -908,7 +908,7 @@ namespace System.Threading.Tasks.Tests
             await t;
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_AppendCallstack_FiresOnLateParentRegistration()
         {
             s_appendRace_proceed = new SemaphoreSlim(0, 1);
@@ -939,7 +939,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_DeepChain();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_CompleteChain_DoesNotEmitAppendEvents()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -993,7 +993,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_CustomSyncContext_EmitsContextEventsAndCallstack()
         {
             s_stateMachineAsyncSyncContextCtx = new InlinePostSynchronizationContext();
@@ -1036,7 +1036,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(100);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_CustomTaskScheduler_EmitsContextEventsAndCallstack()
         {
             var scheduler = new InlineRunTaskScheduler();
@@ -1090,7 +1090,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(50);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_NoEventsWhenDisabled()
         {
             for (int i = 0; i < 50; i++)
@@ -1136,7 +1136,7 @@ namespace System.Threading.Tasks.Tests
             await Task.Delay(50);
         }
 
-        [ConditionalTheory(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalTheory(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         [MemberData(nameof(StateMachineAsyncKeywordGatekeepingData))]
         public void StateMachineAsync_KeywordGatekeeping(long keywordValue, AsyncEventID[] allowedEventIds)
         {
@@ -1186,7 +1186,7 @@ namespace System.Threading.Tasks.Tests
                 StateMachineAsync_WhenAll_TracksAllBranches_BranchC_Marker());
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_WhenAll_TracksAllBranches()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -1266,7 +1266,7 @@ namespace System.Threading.Tasks.Tests
             await Task.WhenAll(slow1, slow2);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_WhenAny_TracksAllBranches()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -1318,7 +1318,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_RecursiveChain(depth);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_CallstackDepthCappedAtMaxFrames()
         {
             // Build a chain deeper than the 255-frame cap (byte FrameCount). The deepest
@@ -1368,7 +1368,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_CallstackOverflow_PreservesFullDepth()
         {
             const int Depth = 200;
@@ -1418,7 +1418,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_RecursiveChain(depth);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_CallstackStressWithVaryingDepths()
         {
             const int iterations = 100;
@@ -1489,7 +1489,7 @@ namespace System.Threading.Tasks.Tests
             await Task.WhenAll(b1, b2);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_WaitThenYield_BalancesResumeAndComplete()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -1548,7 +1548,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_ConfigureAwaitFalse_Mid_Marker().ConfigureAwait(false);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_ConfigureAwaitFalse()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -1598,7 +1598,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_FaultedTask()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | UnwindStateMachineAsyncExceptionKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -1653,7 +1653,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_TaskCancellation()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | UnwindStateMachineAsyncExceptionKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -1683,7 +1683,7 @@ namespace System.Threading.Tasks.Tests
             await ValueStateMachineAsync_Level1();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void ValueStateMachineAsync_EventSequenceOrder()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -1718,7 +1718,7 @@ namespace System.Threading.Tasks.Tests
             await ValueStateMachineAsync_Level1();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void ValueStateMachineAsync_MethodEventsEmitted()
         {
             var events = CollectEvents(StateMachineAsyncMethodKeywords | StateMachineAsyncCoreKeywords, () =>
@@ -1751,7 +1751,7 @@ namespace System.Threading.Tasks.Tests
             await ValueStateMachineAsync_Level1();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void ValueStateMachineAsync_CallstackDepthMatchesChainDepth()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -1777,7 +1777,7 @@ namespace System.Threading.Tasks.Tests
             await ValueStateMachineAsync_Level1();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void ValueStateMachineAsync_CallstackFramesHaveDistinctMethodIds()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
@@ -1824,7 +1824,7 @@ namespace System.Threading.Tasks.Tests
             await ValueStateMachineAsync_HandledException_EmitsUnwindAndComplete_Handled_Marker();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void ValueStateMachineAsync_HandledException_EmitsUnwindAndComplete()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | UnwindStateMachineAsyncExceptionKeyword, () =>
@@ -1878,7 +1878,7 @@ namespace System.Threading.Tasks.Tests
             await ValueStateMachineAsync_UnhandledException_EmitsUnwindAndComplete_UnhandledOuter_Marker();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void ValueStateMachineAsync_UnhandledException_EmitsUnwindAndComplete()
         {
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | UnwindStateMachineAsyncExceptionKeyword, () =>
@@ -1941,7 +1941,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_ResetContext_ReplaysPendingV1Chain_Mid_Marker();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_ResetContext_ReplaysPendingV1Chain()
         {
             var events = CollectEvents(AllStateMachineAsyncKeywords, () =>
@@ -2027,7 +2027,7 @@ namespace System.Threading.Tasks.Tests
             await innerDone.Task;
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_ResetContext_ReplaysMultipleDispatchers()
         {
             var events = CollectEvents(AllStateMachineAsyncKeywords, () =>
@@ -2143,7 +2143,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_ResetContext_ReplayResumeCompleteBalance_Mid_Marker();
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationAndThreadingSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
         public void StateMachineAsync_ResetContext_ReplayResumeCompleteBalance()
         {
             var events = CollectEvents(AllStateMachineAsyncKeywords, () =>
@@ -2201,7 +2201,7 @@ namespace System.Threading.Tasks.Tests
             await StateMachineAsync_SingleThread_ChainEventsAndCallstack_Mid_Marker(gate);
         }
 
-        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncInstrumentationSupported))]
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncSupported))]
         public async Task StateMachineAsync_SingleThread_ChainEventsAndCallstack()
         {
             var events = await CollectEventsAsync(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | StateMachineAsyncMethodKeywords, async () =>

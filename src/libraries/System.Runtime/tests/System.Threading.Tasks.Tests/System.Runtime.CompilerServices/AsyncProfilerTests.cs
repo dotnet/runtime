@@ -115,11 +115,16 @@ namespace System.Threading.Tasks.Tests
         // StateMachine (StateMachineAsync_*) async-task instrumentation is opt-out on NativeAOT to avoid
         // ~100KB of per-state-machine generic instantiation overhead. Tests that depend
         // on StateMachine events must be gated on these properties so they are skipped on NAOT.
-        public static bool IsStateMachineAsyncInstrumentationSupported =>
+        public static bool IsStateMachineAsyncSupported =>
             IsRuntimeAsyncSupported && !PlatformDetection.IsNativeAot;
 
-        public static bool IsStateMachineAsyncInstrumentationAndThreadingSupported =>
+        public static bool IsStateMachineAsyncAndThreadingSupported =>
             IsRuntimeAsyncAndThreadingSupported && !PlatformDetection.IsNativeAot;
+
+        // Gate for tests that exercise a mixed V1 (StateMachine) + V2 (RuntimeAsync) chain: they need both
+        // instrumentation paths, and V1 is disabled on NativeAOT, so require both conditions.
+        public static bool IsStateMachineAsyncAndRuntimeAsyncAndThreadingSupported =>
+            IsStateMachineAsyncAndThreadingSupported && IsRuntimeAsyncAndThreadingSupported;
 
         private const string AsyncProfilerEventSourceName = "System.Runtime.CompilerServices.AsyncProfilerEventSource";
         private const string WrapperNameTemplate = "Continuation_Wrapper_{0}";
