@@ -2859,11 +2859,12 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
 //    block  -  The block containing the tree.
 //    parent -  The parent node of the tree.
 //    tree   -  The tree to fold.
+//    stmt   -  The statement containing the tree.
 //
 // Return Value:
 //    Returns a new tree or nullptr if nothing is changed.
 //
-GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree)
+GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree, Statement* stmt)
 {
     // First, attempt to fold it to a constant if possible.
     GenTree* foldedToCns = optVNBasedFoldConstExpr(block, parent, tree);
@@ -2877,12 +2878,206 @@ GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTre
         case GT_CALL:
             return optVNBasedFoldExpr_Call(block, parent, tree->AsCall());
 
+        case GT_JTRUE:
+            return optVNBasedFoldExpr_Cond(block, parent, tree->AsOp(), stmt);
+
             // We can add more VN-based foldings here.
 
         default:
             break;
     }
     return nullptr;
+}
+
+//------------------------------------------------------------------------------
+// optVNBasedFoldExpr_Cond: Folds conditional jump operands using VN to simpler trees.
+//
+// Arguments:
+//    block - The block containing the tree
+//    parent - The parent node of the tree
+//    tree  - The GT_JTRUE node to fold.
+//    stmt  - The statement containing the tree.
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr_Cond(BasicBlock* block, GenTree* parent, GenTreeOp* tree, Statement* stmt)
+{
+    assert(!optLocalAssertionProp);
+
+    GenTree* relop = nullptr;
+    switch (tree->gtGetOp1()->OperGet())
+    {
+        case GT_EQ:
+        case GT_NE:
+            relop = optVNBasedFoldExpr_Cond_TypeCompare(block, stmt, tree->gtGetOp1()->AsOp());
+            break;
+
+        default:
+            return nullptr;
+    }
+
+    if (relop == nullptr)
+    {
+        return nullptr;
+    }
+
+    tree->gtOp1 = relop;
+    return tree;
+}
+
+//------------------------------------------------------------------------------
+// optVNBasedFoldExpr_Cond_TypeCompare:
+//    Folds obj.GetType() == typeof(T) (and !=) into obj->pMT == T.
+//
+// Arguments:
+//    block - The block containing the comparison.
+//    stmt  - The statement containing the comparison.
+//    relop - The GT_EQ/GT_NE node to fold.
+//
+// Return Value:
+//    Returns the replacement relop or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr_Cond_TypeCompare(BasicBlock* block, Statement* stmt, GenTreeOp* relop)
+{
+    assert(!optLocalAssertionProp);
+    assert(relop->OperIs(GT_EQ, GT_NE));
+
+    JITDUMP("See if we can fold obj.GetType() == typeof(T) with help of VN...\n");
+
+    GenTree* const op1 = relop->gtGetOp1();
+    GenTree* const op2 = relop->gtGetOp2();
+
+    ValueNum  op1VN = optConservativeNormalVN(op1);
+    ValueNum  op2VN = optConservativeNormalVN(op2);
+    VNFuncApp getTypeFunc;
+
+    GenTree* getTypeOp = nullptr;
+    GenTree* typeOfOp  = nullptr;
+    if (vnStore->GetVNFunc(op1VN, &getTypeFunc) && getTypeFunc.FuncIs(VNF_ObjGetType))
+    {
+        getTypeOp = op1;
+        typeOfOp  = op2;
+    }
+    else if (vnStore->GetVNFunc(op2VN, &getTypeFunc) && getTypeFunc.FuncIs(VNF_ObjGetType))
+    {
+        getTypeOp = op2;
+        typeOfOp  = op1;
+    }
+    else
+    {
+        JITDUMP("...neither side is obj.GetType() - bail out.\n");
+        return nullptr;
+    }
+
+    CORINFO_CLASS_HANDLE clsHnd  = NO_CLASS_HANDLE;
+    GenTree*             knownMT = nullptr;
+    if (typeOfOp->IsIconHandle(GTF_ICON_OBJ_HDL))
+    {
+        clsHnd = (CORINFO_CLASS_HANDLE)typeOfOp->AsIntCon()->GetCompileTimeHandle();
+        if (clsHnd != NO_CLASS_HANDLE)
+        {
+            knownMT = gtNewIconEmbClsHndNode(clsHnd);
+        }
+    }
+    else if (gtGetTypeProducerKind(typeOfOp) == TPK_Handle)
+    {
+        knownMT = typeOfOp->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+        clsHnd  = gtGetHelperArgClassHandle(knownMT);
+    }
+
+    if (clsHnd == NO_CLASS_HANDLE)
+    {
+        JITDUMP("...class handle is not known at compile time - bail out.\n");
+        return nullptr;
+    }
+
+    GenTree*             objNode     = nullptr;
+    GenTreeLclVarCommon* storeNode   = nullptr;
+    LclSsaVarDsc*        storeSsaDsc = nullptr;
+    if (getTypeOp->OperIs(GT_INTRINSIC) && (getTypeOp->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType))
+    {
+        objNode = getTypeOp->AsIntrinsic()->gtGetOp1();
+    }
+    else if (getTypeOp->OperIs(GT_LCL_VAR) && getTypeOp->AsLclVarCommon()->HasSsaName())
+    {
+        // See if we have a single-use temp that is assigned from obj.GetType().
+        LclVarDsc* const    varDsc = lvaGetDesc(getTypeOp->AsLclVarCommon());
+        LclSsaVarDsc* const ssaDsc = varDsc->GetPerSsaData(getTypeOp->AsLclVarCommon()->GetSsaNum());
+
+        GenTreeLclVarCommon* defNode = ssaDsc->GetDefNode();
+        if ((defNode != nullptr) && defNode->OperIs(GT_STORE_LCL_VAR) && (ssaDsc->GetBlock() == block) &&
+            (ssaDsc->GetNumUses() == 1))
+        {
+            GenTree* data = defNode->AsLclVar()->Data();
+            if (data->OperIs(GT_INTRINSIC) && (data->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType))
+            {
+                objNode     = data->AsIntrinsic()->gtGetOp1();
+                storeNode   = defNode;
+                storeSsaDsc = ssaDsc;
+            }
+        }
+    }
+
+    if (objNode == nullptr)
+    {
+        JITDUMP("...obj.GetType() is not a direct call or a single-use temp - bail out.\n");
+        return nullptr;
+    }
+
+    if (storeNode != nullptr)
+    {
+        if (!objNode->OperIs(GT_LCL_VAR) || lvaGetDesc(objNode->AsLclVarCommon())->IsAddressExposed())
+        {
+            JITDUMP("...the temp is not a local or is address-exposed - bail out.\n");
+            return nullptr;
+        }
+    }
+    else if (!objNode->TypeIs(TYP_REF) || ((objNode->gtFlags & GTF_ALL_EFFECT) != 0))
+    {
+        JITDUMP("...the object might have side effects - bail out.\n");
+        return nullptr;
+    }
+
+    if (optConservativeNormalVN(objNode) != getTypeFunc.GetArg(0))
+    {
+        JITDUMP("...object VN does not match GetType() arg VN - bail out.\n");
+        return nullptr;
+    }
+
+    // If we are folding through a temp, the GetType() store must be the statement right before this
+    // one, so relocating its null-check to the comparison below cannot skip any side effect.
+    Statement* defStmt = nullptr;
+    if (storeNode != nullptr)
+    {
+        assert(stmt != nullptr);
+        defStmt = stmt->GetPrevStmt();
+        if ((defStmt == stmt) || (defStmt->GetRootNode() != storeNode))
+        {
+            JITDUMP("...GetType temp store is not immediately before the JTRUE - bail out.\n");
+            return nullptr;
+        }
+    }
+
+    GenTree* const methodTable = gtNewMethodTableLookup(objNode);
+    GenTree* const compare     = gtNewOperNode(relop->OperGet(), TYP_INT, methodTable, knownMT);
+
+    compare->gtFlags |= relop->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+
+    // Bash the temp store to NOP.
+    if (storeNode != nullptr)
+    {
+        assert(storeSsaDsc != nullptr);
+        storeSsaDsc->SetDefNode(nullptr);
+        defStmt->SetRootNode(gtNewNothingNode());
+        gtSetStmtInfo(defStmt);
+        fgSetStmtSeq(defStmt);
+    }
+
+    JITDUMP("... optimized obj.GetType() %s typeof(%s) into:\n", relop->OperIs(GT_EQ) ? "==" : "!=", eeGetClassName(clsHnd));
+    DISPTREE(compare);
+
+    return compare;
 }
 
 //------------------------------------------------------------------------------
@@ -6542,7 +6737,7 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
     }
 
     // Perform the VN-based folding:
-    GenTree* newTree = optVNBasedFoldExpr(block, parent, tree);
+    GenTree* newTree = optVNBasedFoldExpr(block, parent, tree, stmt);
 
     if (newTree == nullptr)
     {

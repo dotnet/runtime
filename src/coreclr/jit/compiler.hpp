@@ -1459,9 +1459,9 @@ inline GenTree* Compiler::gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd)
 
 //-----------------------------------------------------------------------------
 
-inline GenTree* Compiler::gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd)
+inline GenTree* Compiler::gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd, CORINFO_CLASS_HANDLE compileTimeHnd)
 {
-    return gtNewIconEmbHndNode((void*)objHnd, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+    return gtNewIconEmbHndNode((void*)objHnd, nullptr, GTF_ICON_OBJ_HDL, (void*)compileTimeHnd);
 }
 
 //-----------------------------------------------------------------------------

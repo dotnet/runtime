@@ -3282,7 +3282,7 @@ public:
     GenTree* gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags flags, void* compileTimeHandle);
 
     GenTree* gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd);
-    GenTree* gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd);
+    GenTree* gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd, CORINFO_CLASS_HANDLE compileTimeHnd = NO_CLASS_HANDLE);
     GenTree* gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd);
     GenTree* gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd);
     GenTree* gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd);
@@ -9112,7 +9112,9 @@ public:
     fgWalkResult optVNBasedFoldCurStmt(BasicBlock* block, Statement* stmt, GenTree* parent, GenTree* tree);
     GenTree*     optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test);
     GenTree*     optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
-    GenTree*     optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree);
+    GenTree*     optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTree* tree, Statement* stmt);
+    GenTree*     optVNBasedFoldExpr_Cond(BasicBlock* block, GenTree* parent, GenTreeOp* tree, Statement* stmt);
+    GenTree*     optVNBasedFoldExpr_Cond_TypeCompare(BasicBlock* block, Statement* stmt, GenTreeOp* relop);
     GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);

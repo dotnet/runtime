@@ -6444,7 +6444,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
             if (ptr != NULL)
             {
-                return fgMorphTree(gtNewIconEmbObjHndNode(ptr));
+                return fgMorphTree(gtNewIconEmbObjHndNode(ptr, hClass));
             }
         }
     }
