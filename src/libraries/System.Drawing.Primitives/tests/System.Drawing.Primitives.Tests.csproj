@@ -23,8 +23,4 @@
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs"
              Link="Common\System\Runtime\Serialization\Utils.cs" />
   </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(DisableR2R)' != 'true'">
-    <WasmReadyToRunAssembly Include="$(AssemblyName)" />
-  </ItemGroup>
 </Project>
