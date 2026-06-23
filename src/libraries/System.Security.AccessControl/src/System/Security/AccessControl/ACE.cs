@@ -54,8 +54,6 @@ namespace System.Security.AccessControl
 
     public abstract class GenericAce
     {
-        // The 'byte' type is used to accommodate user-defined,
-        // as well as well-known ACE types.
         private readonly AceType _type;
         private AceFlags _flags;
         internal ushort _indexInAcl;
@@ -1020,6 +1018,7 @@ namespace System.Security.AccessControl
     //     ULONG SidStart;
     //     // Opaque resource manager specific data
     // } SYSTEM_ALARM_CALLBACK_ACE, *PSYSTEM_ALARM_CALLBACK_ACE;
+
     public sealed class CommonAce : QualifiedAce
     {
         // The constructor computes the type of this ACE and passes the rest
@@ -1300,6 +1299,7 @@ namespace System.Security.AccessControl
     //     ULONG SidStart;
     //     // Opaque resource manager specific data
     // } SYSTEM_ALARM_CALLBACK_OBJECT_ACE, *PSYSTEM_ALARM_CALLBACK_OBJECT_ACE;
+
     [Flags]
     public enum ObjectAceFlags
     {

@@ -1854,29 +1854,39 @@ namespace System.Security.AccessControl
                     // To illustrate with an example, consider this equation:
                     //            From: CI OI    NP SA FA R W
                     //          Remove:    OI IO NP SA    R
+                    //
                     // PermissionSplit: CI OI    NP SA FA   W   // remove R
                     //   AuditingSplit: CI OI    NP    FA R     // remove SA
                     //      MergeSplit: CI OI    NP SA    R     // ready for merge
                     //          Remove:    OI IO NP SA    R     // same audit and perm flags as merge split
+                    //
                     //          Result: CI OI    NP SA FA   W   // PermissionSplit
                     //                  CI OI    NP    FA R     // AuditingSplit
                     //                  CI       NP SA    R     // Result of perm removal
+                    //
                     // Example for DS acls (when removal is possible)
+                    //
                     // From: CI(Guid) LC CC(Guid)
                     // Remove: CI IO LC
+                    //
                     // PermissionSplit: CI(Guid) CC(Guid) // Remove GR
                     //        MergeSplit: CI(Guid) LC // Ready for merge
                     //           Remove: CI IO LC // Removal is possible since we are trying to remove inheritance for
                     //                                            all child types when it exists for one specific child type
+                    //
                     //              Result: CI(Guid) CC(Guid) // PermissionSplit
                     //                         LC // Result of perm removal
+                    //
                     // Example for DS acls (when removal is NOT possible)
+                    //
                     // From: CI GR CC(Guid)
                     // Remove: CI(Guid) IO LC
+                    //
                     // PermissionSplit: CI CC(Guid) // Remove GR
                     //        MergeSplit: CI LC // Ready for merge
                     //           Remove: CI(Guid) IO CC // Removal is not possible since we are trying to remove
                     //                                                     inheritance for a specific child type when it exists for all child types
+
                     // Permission split settings
                     AceFlags ps_AceFlags = 0;
                     int ps_AccessMask = 0;
