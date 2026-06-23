@@ -29,6 +29,7 @@ namespace System.Memory.Tests
         public override long Position { get => _inner.Position; set => _inner.Position = value; }
 
         public override void Flush() => _inner.Flush();
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) => _inner.FlushAsync(cancellationToken);
         public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
         public override int Read(Span<byte> buffer) => _inner.Read(buffer);
         public override int ReadByte() => _inner.ReadByte();

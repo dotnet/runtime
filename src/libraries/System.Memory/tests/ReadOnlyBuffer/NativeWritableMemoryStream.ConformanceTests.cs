@@ -20,19 +20,15 @@ namespace System.Memory.Tests
 
         protected override Task<Stream?> CreateReadWriteStreamCore(byte[]? initialData)
         {
-            if (initialData is null)
-            {
-                return Task.FromResult<Stream?>(null);
-            }
-
-            int length = initialData.Length == 0 ? 1024 : initialData.Length;
+            int dataLength = initialData?.Length ?? 0;
+            int length = dataLength == 0 ? 64 * 1024 : dataLength;
             var manager = new System.Buffers.NativeMemoryManager(length);
             manager.GetSpan().Clear();
 
             var inner = new WritableMemoryStream(manager.Memory);
-            if (initialData.Length != 0)
+            if (dataLength != 0)
             {
-                inner.Write(initialData, 0, initialData.Length);
+                inner.Write(initialData!, 0, dataLength);
                 inner.Position = 0;
             }
 
