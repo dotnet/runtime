@@ -3799,7 +3799,7 @@ public:
     PTR_DictionaryLayout GetDictLayoutRaw()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pDictLayout;
+        return VolatileLoad(&m_pDictLayout);
     }
 
     PTR_MethodDesc IMD_GetWrappedMethodDesc()
