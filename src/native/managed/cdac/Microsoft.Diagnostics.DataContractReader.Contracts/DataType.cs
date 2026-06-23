@@ -80,6 +80,7 @@ public enum DataType
     StressMsgHeader,
     Object,
     ContinuationObject,
+    AsyncResumeInfo,
     NativeObjectWrapperObject,
     ManagedObjectWrapperHolderObject,
     ManagedObjectWrapperLayout,

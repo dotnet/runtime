@@ -7494,6 +7494,13 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = call_intrins (ctx, INTRINS_LOG, args, dname);
 			break;
 		}
+		case OP_LOGF: {
+			LLVMValueRef args [1];
+
+			args [0] = convert (ctx, lhs, LLVMFloatType ());
+			values [ins->dreg] = call_intrins (ctx, INTRINS_LOGF, args, dname);
+			break;
+		}
 		case OP_TRUNC: {
 			LLVMValueRef args [1];
 
@@ -7697,6 +7704,32 @@ MONO_RESTORE_WARNING
 			case OP_FMIN: iid = INTRINS_MINIMUM; break;
 			case OP_RMAX: iid = INTRINS_MAXIMUMF; break;
 			case OP_RMIN: iid = INTRINS_MINIMUMF; break;
+			default: g_assert_not_reached (); break;
+			}
+			values [ins->dreg] = call_intrins (ctx, iid, args, dname);
+			break;
+		}
+
+		case OP_FMINNUM:
+		case OP_FMAXNUM:
+		case OP_RMINNUM:
+		case OP_RMAXNUM: {
+			/*
+			 * IEEE 754-2008 minNum/maxNum (NaN-suppressing). Maps directly to
+			 * llvm.minnum/maxnum, which is what `float.MinNumber` /
+			 * `double.MinNumber` (and the Max variants, surfaced via
+			 * INumber<TSelf> on the primitive Single/Double/Half types) specify.
+			 * On AArch64 this lowers to a single fminnm/fmaxnm instruction.
+			 */
+			gboolean is_r4 = ins->opcode == OP_RMINNUM || ins->opcode == OP_RMAXNUM;
+			LLVMTypeRef t = is_r4 ? LLVMFloatType () : LLVMDoubleType ();
+			LLVMValueRef args [2] = { convert (ctx, lhs, t), convert (ctx, rhs, t) };
+			IntrinsicId iid;
+			switch (ins->opcode) {
+			case OP_FMAXNUM: iid = INTRINS_MAXNUM; break;
+			case OP_FMINNUM: iid = INTRINS_MINNUM; break;
+			case OP_RMAXNUM: iid = INTRINS_MAXNUMF; break;
+			case OP_RMINNUM: iid = INTRINS_MINNUMF; break;
 			default: g_assert_not_reached (); break;
 			}
 			values [ins->dreg] = call_intrins (ctx, iid, args, dname);

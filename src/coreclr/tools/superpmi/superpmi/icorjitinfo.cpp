@@ -1202,6 +1202,11 @@ void MyICJI::getWasmBaseGlobals(CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
     jitInstance->mc->cr->AddCall("getWasmBaseGlobals");
     jitInstance->mc->repGetWasmBaseGlobals(pBaseGlobalsOut);
 }
+CORINFO_METHOD_HANDLE MyICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg)
+{
+    jitInstance->mc->cr->AddCall("getAwaitReturnCall");
+    return jitInstance->mc->repGetAwaitReturnCall(callerHandle, instArg);
+}
 
 /*********************************************************************************/
 //

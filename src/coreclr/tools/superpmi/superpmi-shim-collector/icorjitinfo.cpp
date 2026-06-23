@@ -1388,6 +1388,13 @@ void interceptor_ICJI::getWasmBaseGlobals(CORINFO_WASM_BASE_GLOBALS* pBaseGlobal
     original_ICorJitInfo->getWasmBaseGlobals(pBaseGlobalsOut);
     mc->recGetWasmBaseGlobals(pBaseGlobalsOut);
 }
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg)
+{
+    mc->cr->AddCall("getAwaitReturnCall");
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitReturnCall(callerHandle, instArg);
+    mc->recGetAwaitReturnCall(callerHandle, instArg, result);
+    return result;
+}
 
 /*********************************************************************************/
 //

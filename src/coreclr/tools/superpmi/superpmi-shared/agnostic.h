@@ -30,6 +30,39 @@ struct Agnostic_CORINFO_SIG_INFO
     DWORD     token;
 };
 
+struct Agnostic_CORINFO_CONST_LOOKUP
+{
+    DWORD     accessType;
+    DWORDLONG handle; // actually a union of two pointer sized things
+};
+
+struct Agnostic_CORINFO_LOOKUP_KIND
+{
+    DWORD needsRuntimeLookup;
+    DWORD runtimeLookupKind;
+};
+
+struct Agnostic_CORINFO_RUNTIME_LOOKUP
+{
+    DWORDLONG                     signature;
+    DWORD                         helper;
+    DWORD                         indirections;
+    DWORD                         testForNull;
+    WORD                          sizeOffset;
+    DWORDLONG                     offsets[CORINFO_MAXINDIRECTIONS];
+    DWORD                         indirectFirstOffset;
+    DWORD                         indirectSecondOffset;
+    Agnostic_CORINFO_CONST_LOOKUP helperEntryPoint;
+};
+
+struct Agnostic_CORINFO_LOOKUP
+{
+    Agnostic_CORINFO_LOOKUP_KIND    lookupKind;
+    Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup; // This and constLookup actually a union, but with different
+                                                   // layouts.. :-| copy the right one based on lookupKinds value
+    Agnostic_CORINFO_CONST_LOOKUP constLookup;
+};
+
 struct Agnostic_CORINFO_METHOD_INFO
 {
     DWORDLONG                 ftn;
@@ -215,6 +248,12 @@ struct Agnostic_CORINFO_WASM_BASE_GLOBALS
     DWORDLONG tableBase;
 };
 
+struct Agnostic_GetAwaitReturnCallResult
+{
+    DWORDLONG methodHnd;
+    Agnostic_CORINFO_LOOKUP instArg;
+};
+
 struct Agnostic_GetOSRInfo
 {
     DWORD index;
@@ -272,43 +311,10 @@ struct Agnostic_CORINFO_HELPER_DESC
     Agnostic_CORINFO_HELPER_ARG args[CORINFO_ACCESS_ALLOWED_MAX_ARGS];
 };
 
-struct Agnostic_CORINFO_CONST_LOOKUP
-{
-    DWORD     accessType;
-    DWORDLONG handle; // actually a union of two pointer sized things
-};
-
 struct Agnostic_GetHelperFtn
 {
     Agnostic_CORINFO_CONST_LOOKUP helperLookup;
     DWORDLONG                     helperMethod;
-};
-
-struct Agnostic_CORINFO_LOOKUP_KIND
-{
-    DWORD needsRuntimeLookup;
-    DWORD runtimeLookupKind;
-};
-
-struct Agnostic_CORINFO_RUNTIME_LOOKUP
-{
-    DWORDLONG                     signature;
-    DWORD                         helper;
-    DWORD                         indirections;
-    DWORD                         testForNull;
-    WORD                          sizeOffset;
-    DWORDLONG                     offsets[CORINFO_MAXINDIRECTIONS];
-    DWORD                         indirectFirstOffset;
-    DWORD                         indirectSecondOffset;
-    Agnostic_CORINFO_CONST_LOOKUP helperEntryPoint;
-};
-
-struct Agnostic_CORINFO_LOOKUP
-{
-    Agnostic_CORINFO_LOOKUP_KIND    lookupKind;
-    Agnostic_CORINFO_RUNTIME_LOOKUP runtimeLookup; // This and constLookup actually a union, but with different
-                                                   // layouts.. :-| copy the right one based on lookupKinds value
-    Agnostic_CORINFO_CONST_LOOKUP constLookup;
 };
 
 struct Agnostic_CORINFO_FIELD_INFO
