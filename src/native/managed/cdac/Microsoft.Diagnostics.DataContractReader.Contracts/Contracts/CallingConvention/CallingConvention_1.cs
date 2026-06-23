@@ -46,6 +46,22 @@ internal sealed class CallingConvention_1 : ICallingConvention
         if (runtimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.X86)
             return 0;
 
+        try
+        {
+            return GetCbStackPopCore(methodDesc, runtimeInfo);
+        }
+        catch
+        {
+            // Match the encoder's general behavior: any failure to compute
+            // produces a conservative zero, and the cdacstress framework
+            // reports the resulting mismatch as a [ARG_FAIL] rather than
+            // crashing the stress run.
+            return 0;
+        }
+    }
+
+    private uint GetCbStackPopCore(MethodDescHandle methodDesc, IRuntimeInfo runtimeInfo)
+    {
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         MethodSignature<TypeHandle> methodSig = DecodeMethodSignature(rts, methodDesc);
 

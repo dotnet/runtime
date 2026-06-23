@@ -1477,8 +1477,9 @@ static void FormatSlotLocation(int pos, int byteOffset, char* buf, size_t bufLen
 }
 
 // Decode a GCRefMap blob into an offset->token map (sparse) plus the
-// max pos seen. Skips x86's stack-pop prefix entirely -- the cDAC encoder
-// currently bails on x86, so blobs we compare here never carry one.
+// max pos seen. On x86 we consume the leading WriteStackPop prefix into
+// `StackPop` so the remaining bitstream is the token stream proper, matching
+// the runtime's GCInfoDecoder.ReadStackPop()-then-ReadToken() ordering.
 struct DecodedBlob
 {
     static const int MaxSlots = 64;
@@ -1486,16 +1487,24 @@ struct DecodedBlob
     int Tok[MaxSlots];
     int Count;
     int MaxPos;
+    int StackPop;   // x86 only; 0 on other arches and on x86 VarArgs
 };
 
-static void DecodeBlob(const BYTE* blob, int len, DecodedBlob& out)
+static void DecodeBlob(const BYTE* blob, int len, DecodedBlob& out, bool isX86)
 {
     out.Count = 0;
     out.MaxPos = -1;
+    out.StackPop = 0;
     if (blob == nullptr || len == 0)
         return;
 
     GCRefMapDecoder decoder(const_cast<BYTE*>(blob));
+#ifdef TARGET_X86
+    if (isX86)
+        out.StackPop = (int)decoder.ReadStackPop();
+#else
+    (void)isX86;
+#endif
     while (!decoder.AtEnd() && out.Count < DecodedBlob::MaxSlots)
     {
         int beforePos = decoder.CurrentPos();
@@ -1553,9 +1562,15 @@ static void LogArgIteratorMismatch(MethodDesc* pMD, CLRDATA_ADDRESS mdAddr,
                                    const BYTE* rtBlob, int rtLen,
                                    const BYTE* cdacBlob, int cdacLen)
 {
+#ifdef TARGET_X86
+    const bool isX86 = true;
+#else
+    const bool isX86 = false;
+#endif
+
     DecodedBlob rt, cdac;
-    DecodeBlob(rtBlob, rtLen, rt);
-    DecodeBlob(cdacBlob, cdacLen, cdac);
+    DecodeBlob(rtBlob, rtLen, rt, isX86);
+    DecodeBlob(cdacBlob, cdacLen, cdac, isX86);
 
     int maxPos = rt.MaxPos > cdac.MaxPos ? rt.MaxPos : cdac.MaxPos;
     if (maxPos < 0) maxPos = 0;
@@ -1568,6 +1583,11 @@ static void LogArgIteratorMismatch(MethodDesc* pMD, CLRDATA_ADDRESS mdAddr,
         (unsigned long long)mdAddr, frameName, rtLen, cdacLen, methodName);
     CDAC_LOG("    RT:   %s\n", rtHex);
     CDAC_LOG("    cDAC: %s\n", cdacHex);
+    if (isX86)
+    {
+        const char* popDiff = (rt.StackPop != cdac.StackPop) ? " <-- DIFF" : "";
+        CDAC_LOG("    stack_pop  RT=%d  cDAC=%d%s\n", rt.StackPop, cdac.StackPop, popDiff);
+    }
     CDAC_LOG("    pos  location  RT token       cDAC token       diff\n");
 
     for (int pos = 0; pos <= maxPos; pos++)
