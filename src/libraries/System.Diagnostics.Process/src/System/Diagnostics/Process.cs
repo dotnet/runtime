@@ -1189,19 +1189,19 @@ namespace System.Diagnostics
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
 
-            return StartCore(StartInfo, callback: null, state: default(object));
+            return StartCore(StartInfo, callback: null);
         }
 
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        internal bool StartCore<TState>(ProcessStartInfo startInfo,
+        internal bool StartCore(ProcessStartInfo startInfo,
 #if TARGET_WINDOWS
-            Func<WindowsProcessStartArguments, TState, IntPtr>?
+            Func<WindowsProcessStartArguments, IntPtr>?
 #else
-            Func<UnixProcessStartArguments, TState, int>?
+            Func<UnixProcessStartArguments, int>?
 #endif
-            callback, TState state)
+            callback)
         {
             startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
             _startInfo = startInfo;
@@ -1297,7 +1297,7 @@ namespace System.Diagnostics
                     ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
                 }
 
-                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles, callback, state))
+                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles, callback))
                 {
                     return false;
                 }

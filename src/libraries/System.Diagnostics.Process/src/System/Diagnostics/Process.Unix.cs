@@ -358,17 +358,17 @@ namespace System.Diagnostics
             return new SafeProcessHandle(_waitStateHolder!.IncrementRefCount());
         }
 
-        private bool StartCore<TState>(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, Func<UnixProcessStartArguments, TState, int>? callback, TState state)
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, Func<UnixProcessStartArguments, int>? callback)
         {
             ProcessWaitState.Holder? waitStateHolder = null;
 
             SafeProcessHandle startedProcess = callback is null
                 ? SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, out waitStateHolder)
-                : SafeProcessHandle.StartWithCallback(startInfo, stdinHandle!, stdoutHandle!, stderrHandle!, callback, state, out waitStateHolder);
+                : SafeProcessHandle.StartWithCallback(startInfo, stdinHandle!, stdoutHandle!, stderrHandle!, callback, out waitStateHolder);
 
             Debug.Assert(!startedProcess.IsInvalid);
 
-            _waitStateHolder = waitStateHolder!.IncrementRefCount();
+            _waitStateHolder = waitStateHolder!.IncrementRefCount(); // SafeProcessHandle has its own copy of the wait state holder, so we need to increment the ref count for our copy.
 
             SetProcessHandle(startedProcess);
             SetProcessId(startedProcess.ProcessId);

@@ -112,7 +112,7 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                process.StartCore(startInfo, static (args, cb) => cb(args), state: callback);
+                process.StartCore(startInfo, callback);
             }
             catch
             {

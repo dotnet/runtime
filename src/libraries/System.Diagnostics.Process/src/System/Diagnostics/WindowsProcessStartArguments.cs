@@ -61,21 +61,21 @@ namespace System.Runtime.InteropServices
         /// Starts a new process by preparing all necessary arguments (standard handles, command line, environment)
         /// and then invoking the user-supplied <paramref name="callback"/> to perform the actual process creation system call.
         /// The callback receives a <see cref="WindowsProcessStartArguments"/> instance with the prepared data and must return an
-        /// <see cref="IntPtr"/> representing the handle of the created process.
+        /// <see cref="nint"/> representing the handle of the created process.
         /// </summary>
         /// <param name="startInfo">The <see cref="ProcessStartInfo"/> that contains the information used to start the process.</param>
         /// <param name="callback">
         /// A function that receives the prepared <see cref="WindowsProcessStartArguments"/> and creates the process using any system call of the user's choice.
-        /// The callback must return a valid process handle (<see cref="IntPtr"/>) for the newly created process.
+        /// The callback must return a valid process handle (<see cref="nint"/>) for the newly created process.
         /// The memory referenced by pointer properties in <see cref="WindowsProcessStartArguments"/> is only valid for the duration of the callback.
         /// The callback is invoked while an internal process-start lock is held; calling System.Diagnostics.Process APIs that start processes from within the callback may deadlock or throw.
         /// </param>
         /// <returns>A new <see cref="Process"/> instance associated with the started process.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="startInfo"/> or <paramref name="callback"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentException">The <see cref="IntPtr"/> returned by the callback is invalid.</exception>
+        /// <exception cref="ArgumentException">The <see cref="nint"/> returned by the callback is invalid.</exception>
         /// <exception cref="InvalidOperationException"><see cref="ProcessStartInfo.UseShellExecute"/> is set to <see langword="true"/>.</exception>
         [SupportedOSPlatform("windows")]
-        public static Process Start(ProcessStartInfo startInfo, Func<WindowsProcessStartArguments, IntPtr> callback)
+        public static Process Start(ProcessStartInfo startInfo, Func<WindowsProcessStartArguments, nint> callback)
         {
 #if !TARGET_WINDOWS
             throw new PlatformNotSupportedException();
@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                process.StartCore(startInfo, static (args, cb) => cb(args), state: callback);
+                process.StartCore(startInfo, callback);
             }
             catch
             {

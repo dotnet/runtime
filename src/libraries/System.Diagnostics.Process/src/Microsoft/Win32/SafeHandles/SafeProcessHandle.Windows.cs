@@ -412,12 +412,13 @@ namespace Microsoft.Win32.SafeHandles
             return procSH;
         }
 
-        internal static unsafe SafeProcessHandle StartWithCallback<TState>(ProcessStartInfo startInfo, SafeFileHandle stdinHandle, SafeFileHandle stdoutHandle, SafeFileHandle stderrHandle,
-            Func<WindowsProcessStartArguments, TState, IntPtr> callback, TState state)
+        internal static unsafe SafeProcessHandle StartWithCallback(ProcessStartInfo startInfo, SafeFileHandle stdinHandle, SafeFileHandle stdoutHandle, SafeFileHandle stderrHandle,
+            Func<WindowsProcessStartArguments, IntPtr> callback)
         {
             ValueStringBuilder commandLine = new(stackalloc char[256]);
             ProcessUtils.BuildCommandLine(startInfo, ref commandLine);
             commandLine.NullTerminate();
+            SafeProcessHandle procSH = new SafeProcessHandle();
 
             string? environmentBlock = null;
             if (startInfo._environmentVariables != null)
@@ -451,14 +452,20 @@ namespace Microsoft.Win32.SafeHandles
                     args.Arguments = commandLinePtr;
                     args.EnvironmentVariables = environmentBlockPtr;
 
-                    IntPtr processHandle = callback(args, state);
-                    if (processHandle == IntPtr.Zero || processHandle == (IntPtr)(-1))
+                    IntPtr processHandle = callback(args);
+                    if (IsInvalidHandle(processHandle))
                     {
-                        throw new ArgumentException(SR.Argument_InvalidHandle, nameof(callback));
+                        throw new ArgumentException(null, nameof(callback));
                     }
 
-                    return new SafeProcessHandle(processHandle, ownsHandle: true);
+                    Marshal.InitHandle(procSH, processHandle);
+                    return procSH;
                 }
+            }
+            catch
+            {
+                procSH.Dispose();
+                throw;
             }
             finally
             {
