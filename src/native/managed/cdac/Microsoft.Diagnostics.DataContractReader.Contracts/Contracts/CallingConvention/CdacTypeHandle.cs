@@ -135,10 +135,61 @@ internal readonly struct CdacTypeHandle : ITypeHandle
 
     public bool IsTrivialPointerSizedStruct()
     {
-        // TODO(x86): Implement for x86 register passing.
-        // A trivial pointer-sized struct (exactly pointer-size, one field, no GC refs)
-        // can be passed in a register on x86. See crossgen2 TypeHandle.IsTrivialPointerSizedStruct.
-        throw new NotImplementedException("Trivial pointer-sized struct detection for x86 is not yet implemented.");
+        // Only meaningful on x86 -- this controls whether a value-type arg
+        // can be passed in a register. Outside x86 (where structs always go
+        // through other paths) we return false so callers ignore us.
+        if (_arch != RuntimeInfoArchitecture.X86 || _typeHandle.IsNull || !Rts.IsValueType(_typeHandle))
+            return false;
+
+        // Must be exactly pointer-size (4 bytes on x86).
+        if (GetSize() != PointerSize)
+            return false;
+
+        // Walk instance fields: exactly one, and that field must itself be a
+        // pointer-sized primitive (IntPtr/UIntPtr/I/U/Ptr/FnPtr) or another
+        // trivial pointer-sized struct. Mirrors crossgen2's
+        // TypeHandle.IsTrivialPointerSizedStruct (ILCompiler.ReadyToRun).
+        TargetPointer? singleFieldType = null;
+        foreach (TargetPointer fieldDesc in Rts.GetFieldDescList(_typeHandle))
+        {
+            if (Rts.IsFieldDescStatic(fieldDesc))
+                continue;
+
+            if (singleFieldType.HasValue)
+                return false;   // more than one instance field
+
+            singleFieldType = fieldDesc;
+        }
+
+        if (!singleFieldType.HasValue)
+            return false;
+
+        CdacCorElementType fieldType = Rts.GetFieldDescType(singleFieldType.Value);
+        switch (fieldType)
+        {
+            case CdacCorElementType.I:
+            case CdacCorElementType.U:
+            case CdacCorElementType.I4:
+            case CdacCorElementType.U4:
+            case CdacCorElementType.Ptr:
+            case CdacCorElementType.FnPtr:
+                // On x86 pointer-size == 4 bytes, so I4/U4 fit too. Covers
+                // enums whose underlying type is Int32/UInt32.
+                return true;
+
+            case CdacCorElementType.ValueType:
+                // Recurse: if the wrapped struct is itself a trivial
+                // pointer-sized struct, we are too. cDAC's GetFieldDescType
+                // doesn't directly hand us the nested TypeHandle, so we
+                // can't follow this chain without more API. Conservative
+                // fallback: report false. The relevant runtime cases
+                // (e.g. IntPtr inside a single-field struct) collapse to
+                // the primitive checks above for most reachable types.
+                return false;
+
+            default:
+                return false;
+        }
     }
 
     // Only used by ArgIterator on WASM32 for stack alignment of value types.
