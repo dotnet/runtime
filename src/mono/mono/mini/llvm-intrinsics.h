@@ -64,6 +64,19 @@ INTRINS_OVR(CEIL, ceil, Generic, LLVMDoubleType ())
 INTRINS_OVR(CEILF, ceil, Generic, LLVMFloatType ())
 INTRINS_OVR(FMA, fma, Generic, LLVMDoubleType ())
 INTRINS_OVR(FMAF, fma, Generic, LLVMFloatType ())
+	/*
+	 * IEEE 754-2019 minimum/maximum (NaN-propagating). Used for scalar OP_FMIN/OP_FMAX/
+	 * OP_RMIN/OP_RMAX. We avoid the older fcmp+select lowering because (a) it has
+	 * asymmetric NaN semantics (Min(NaN,x)=NaN but Min(x,NaN)=x), violating
+	 * Math.Min/Math.Max (and the MathF.Min/MathF.Max forwarders) spec, and (b) on
+	 * AArch64 the backend folds it to fminnm/fmaxnm (IEEE 754-2008 minNum/maxNum),
+	 * which suppresses NaN entirely and miscompiles the System.Half software
+	 * conversion path under LLVM 23.
+	 */
+INTRINS_OVR(MINIMUM, minimum, Generic, LLVMDoubleType ())
+INTRINS_OVR(MINIMUMF, minimum, Generic, LLVMFloatType ())
+INTRINS_OVR(MAXIMUM, maximum, Generic, LLVMDoubleType ())
+INTRINS_OVR(MAXIMUMF, maximum, Generic, LLVMFloatType ())
 	/* This isn't an intrinsic, instead llvm seems to special case it by name */
 INTRINS_OVR(FABS, fabs, Generic, LLVMDoubleType ())
 INTRINS_OVR(ABSF, fabs, Generic, LLVMFloatType ())

@@ -10,6 +10,8 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using Xunit;
 
+// Test template for CreateWhileWriteAfterRead* and CreateWhileReadAfterWrite* in SVE2
+
 namespace {Namespace}
 {
     public static partial class Program
@@ -17,7 +19,7 @@ namespace {Namespace}
         [Fact]
         public static void {TestName}()
         {
-            var test = new CreateWhileRWMaskTest__{TestName}();
+            var test = new CreateWhileDependencyMaskTest__{TestName}();
 
             if (test.IsSupported)
             {
@@ -27,8 +29,12 @@ namespace {Namespace}
                 // Validates calling via reflection works
                 test.RunReflectionScenario();
 
-                // Validates that an offset of one element produces a single-true mask
+                // Validates when op2 is one element after op1
                 test.RunOffsetByOneScenario();
+
+                // Validate when op2 is one element before op1:
+                // WHILERW returns a single-true mask; WHILEWR returns an all-true mask.
+                test.RunReverseOffsetByOneScenario();
             }
             else
             {
@@ -43,7 +49,7 @@ namespace {Namespace}
         }
     }
 
-    public sealed unsafe class CreateWhileRWMaskTest__{TestName}
+    public sealed unsafe class CreateWhileDependencyMaskTest__{TestName}
     {
         public bool IsSupported => {Isa}.IsSupported;
 
@@ -89,6 +95,44 @@ namespace {Namespace}
             }
 
             ValidateElementsEqual(mask, 1, false);
+        }
+
+        public void RunReverseOffsetByOneScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReverseOffsetByOneScenario));
+
+            {Op1BaseType}* ptr = stackalloc {Op1BaseType}[{RetVectorType}<{RetBaseType}>.Count + 1];
+            {RetVectorType}<{RetBaseType}> mask = {Isa}.{Method}(ptr + 1, ptr);
+
+            /*
+            for op1 = op2 + 1, WHILEWR creates an all true mask.  WHILERW creates a mask of true, then all false.
+            WHILEWR:
+                constant integer diff = (operand2 - operand1) DIV (esize DIV 8);
+                for e = 0 to elements-1
+                    if diff <= 0 || e < diff then
+                        Elem[result, e, psize] = ZeroExtend('1', psize);
+            WHILERW:
+                constant integer diff = Abs(operand2 - operand1) DIV (esize DIV 8);
+                for e = 0 to elements-1
+                    if diff == 0 || e < diff then
+                        Elem[result, e, psize] = ZeroExtend('1', psize);
+            */
+            if ({IsWriteAfterRead})
+            {
+                ValidateElementsEqual(mask, 0, true);
+            }
+            else
+            {
+                if (mask.GetElement(0) == 0)
+                {
+                    TestLibrary.TestFramework.LogInformation(
+                        $"{nameof({Isa})}.{nameof({Isa}.{Method})}(ptr+1, ptr): Expected element 0 to be true.");
+                    Succeeded = false;
+                    return;
+                }
+
+                ValidateElementsEqual(mask, 1, false);
+            }
         }
 
         private void ValidateElementsEqual({RetVectorType}<{RetBaseType}> mask, int startIndex, bool expectedVal, [CallerMemberName] string method = "")
