@@ -77,6 +77,10 @@ internal static class CallingConventionGCRefMapBuilder
             {
                 token = arg.IsValueTypeThis ? GCRefMapToken.Interior : GCRefMapToken.Ref;
             }
+            else if (arg.IsVASigCookie)
+            {
+                token = GCRefMapToken.VASigCookie;
+            }
             else if (arg.IsParamType)
             {
                 // Resolve InstArgMethodDesc vs InstArgMethodTable on demand

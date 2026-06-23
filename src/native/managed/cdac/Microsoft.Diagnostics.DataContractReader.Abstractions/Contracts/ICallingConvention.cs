@@ -29,6 +29,16 @@ public readonly struct ArgumentLocation
     /// <summary>True if this slot holds a generic instantiation parameter (MethodTable* or MethodDesc*).</summary>
     public bool IsParamType { get; init; }
 
+    /// <summary>
+    /// True if this slot holds the implicit VASigCookie pointer for a
+    /// vararg (<c>__arglist</c>) method. Mirrors the runtime's
+    /// <c>FakeGcScanRoots</c> emission at <c>argit.GetVASigCookieOffset()</c>:
+    /// when set, the GCRefMap encoder should emit a <c>VASigCookie</c>
+    /// token here and stop reporting fixed arguments (the variadic tail
+    /// is reported through the cookie at GC time).
+    /// </summary>
+    public bool IsVASigCookie { get; init; }
+
     /// <summary>True if this argument is a struct passed by reference (e.g., large struct on AMD64).</summary>
     public bool IsPassedByRef { get; init; }
 

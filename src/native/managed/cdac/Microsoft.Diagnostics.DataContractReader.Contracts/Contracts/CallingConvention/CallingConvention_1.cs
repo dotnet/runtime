@@ -154,10 +154,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // outermost wrapper isn't in the loader's available-type-params list.
         ParamTypeInfo[] paramInfo = DecodeParamTypeInfo(rts, methodDesc, methodSig.ParameterTypes.Length);
 
-        if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
-        {
-            throw new NotImplementedException("VarArgs calling convention is not yet supported by the cDAC.");
-        }
+        bool isVarArg = methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs;
 
         bool hasThis = methodSig.Header.IsInstance;
         bool requiresInstArg = false;
@@ -187,7 +184,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
             : CallingConventions.ManagedStatic;
 
         ArgIteratorData argIteratorData = new ArgIteratorData(
-            hasThis, isVarArg: false, parameterTypes, returnType);
+            hasThis, isVarArg: isVarArg, parameterTypes, returnType);
 
         bool isWindows = runtimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows;
 
@@ -236,6 +233,20 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 Offset = argit.GetAsyncContinuationArgOffset(),
                 ElementType = CdacCorElementType.Object,
             };
+        }
+
+        // VarArgs: mirror the runtime's FakeGcScanRoots short-circuit -- emit
+        // the VASigCookie slot and stop. The variadic tail is reported via
+        // the cookie's signature at GC scan time, not via this contract.
+        if (isVarArg)
+        {
+            yield return new ArgumentLocation
+            {
+                Offset = argit.GetVASigCookieOffset(),
+                ElementType = CdacCorElementType.I,
+                IsVASigCookie = true,
+            };
+            yield break;
         }
 
         int argIndex = 0;
