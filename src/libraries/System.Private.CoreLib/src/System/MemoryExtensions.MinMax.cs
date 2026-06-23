@@ -29,7 +29,7 @@ namespace System
             if (typeof(T) == typeof(sbyte)) return MinMaxInteger<T, sbyte, MinCalc<sbyte>>(span);
             if (typeof(T) == typeof(ushort)) return MinMaxInteger<T, ushort, MinCalc<ushort>>(span);
             if (typeof(T) == typeof(short)) return MinMaxInteger<T, short, MinCalc<short>>(span);
-            if (typeof(T) == typeof(char)) return MinMaxInteger<T, char, MinCalc<char>>(span);
+            if (typeof(T) == typeof(char)) return MinMaxInteger<T, ushort, MinCalc<ushort>>(span);
             if (typeof(T) == typeof(uint)) return MinMaxInteger<T, uint, MinCalc<uint>>(span);
             if (typeof(T) == typeof(int)) return MinMaxInteger<T, int, MinCalc<int>>(span);
             if (typeof(T) == typeof(ulong)) return MinMaxInteger<T, ulong, MinCalc<ulong>>(span);
@@ -82,7 +82,7 @@ namespace System
             if (typeof(T) == typeof(sbyte)) return MinMaxInteger<T, sbyte, MaxCalc<sbyte>>(span);
             if (typeof(T) == typeof(ushort)) return MinMaxInteger<T, ushort, MaxCalc<ushort>>(span);
             if (typeof(T) == typeof(short)) return MinMaxInteger<T, short, MaxCalc<short>>(span);
-            if (typeof(T) == typeof(char)) return MinMaxInteger<T, char, MaxCalc<char>>(span);
+            if (typeof(T) == typeof(char)) return MinMaxInteger<T, ushort, MaxCalc<ushort>>(span);
             if (typeof(T) == typeof(uint)) return MinMaxInteger<T, uint, MaxCalc<uint>>(span);
             if (typeof(T) == typeof(int)) return MinMaxInteger<T, int, MaxCalc<int>>(span);
             if (typeof(T) == typeof(ulong)) return MinMaxInteger<T, ulong, MaxCalc<ulong>>(span);
@@ -223,7 +223,7 @@ namespace System
         private static TOuter MinMaxInteger<TOuter, TInner, TMinMax>(this ReadOnlySpan<TOuter> span)
             where TInner : struct, IBinaryInteger<TInner>
             where TMinMax : IMinMaxCalc<TInner> =>
-            (TOuter)(object)MinMaxInteger<TInner, TMinMax>(Unsafe.BitCast<ReadOnlySpan<TOuter>, ReadOnlySpan<TInner>>(span));
+            Unsafe.BitCast<TInner, TOuter>(MinMaxInteger<TInner, TMinMax>(Unsafe.BitCast<ReadOnlySpan<TOuter>, ReadOnlySpan<TInner>>(span)));
 
         private static T MinMaxInteger<T, TMinMax>(this ReadOnlySpan<T> span)
             where T : struct, IBinaryInteger<T>
