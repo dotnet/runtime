@@ -1050,7 +1050,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      WasmBase
     { FIRST_NI_PackedSimd, LAST_NI_PackedSimd },                //      PackedSimd
     { FIRST_NI_Vector128,  LAST_NI_Vector128 },                 //      Vector128
-    // TODO-WASM: Add PackedSimd intrinsic ranges
 #else
 #error Unsupported platform
 #endif
