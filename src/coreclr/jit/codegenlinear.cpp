@@ -842,7 +842,14 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
             }
 
 #if defined(TARGET_WASM)
-            // For wasm the last instruction in a function or funclet must be end.
+            // For wasm, every BBJ_THROW must be followed by `unreachable` so the
+            // wasm validator treats the subsequent stack as polymorphic; otherwise
+            // a normal-flow fall-through through this block would fail validation
+            // (the throw helper is a regular call from the validator's perspective).
+            //
+            GetEmitter()->emitIns(INS_unreachable);
+
+            // The last instruction in a wasm function or funclet must be end.
             //
             if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
             {
