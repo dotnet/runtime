@@ -695,7 +695,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             PolymorphicTypeWithExtensionDataConflictingPropertyName value = new PolymorphicTypeWithExtensionDataConflictingPropertyName.Derived();
 
-            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(PolymorphicTypeWithIgnoredConflictingPropertyName));
+            JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeof(PolymorphicTypeWithExtensionDataConflictingPropertyName));
             Assert.NotNull(typeInfo);
 
             string json = await Serializer.SerializeWrapper(value);
