@@ -357,7 +357,7 @@ namespace System.Text.Json.Serialization.Tests
             await TestMultiContextDeserialization<List<TValue>>(json, expectedValues, expectedExceptionType: null, contexts, options, listEqualityComparer);
         }
 
-        private class GenericPoco<T>
+        internal class GenericPoco<T>
         {
             public T Property { get; set; }
         }
