@@ -1294,7 +1294,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     LoaderAllocator *pLoaderAllocator = pTargetMethod->GetLoaderAllocator();
 
     if (pLoaderAllocator->IsCollectible())
-        (*pRefThis)->SetMethodBase(pLoaderAllocator->GetExposedObject());
+        (*pRefThis)->SetHelperObject(pLoaderAllocator->GetExposedObject());
 }
 
 // Marshals a delegate to a unmanaged callback.
@@ -1709,7 +1709,7 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
         methodArgCount++; // count 'this'
 
     if (pMeth->GetLoaderAllocator()->IsCollectible())
-        refThis->SetMethodBase(pMeth->GetLoaderAllocator()->GetExposedObject());
+        refThis->SetHelperObject(pMeth->GetLoaderAllocator()->GetExposedObject());
 
     // Open delegates.
     if (invokeArgCount == methodArgCount)
@@ -1823,11 +1823,8 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         // this is one of the following:
         // - multicast - _invocationList is Array && _invocationCount != 0
         // - unamanaged ftn ptr - _invocationList == NULL && _invocationCount == -1
-        // - wrapper delegate - _invocationList is Delegate && _invocationCount != NULL
         // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
-        //                    or _invocationList points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Wrapper Delegate)
-        // in the wrapper delegate case we want to unwrap and return the method desc of the inner delegate
-        // in the other cases we return the method desc for the invoke
+        //                    or _invocationList points to a LoaderAllocator/DynamicResolver
         innerDel = (DELEGATEREF) thisDel->GetInvocationList();
         bool fOpenVirtualDelegate = false;
 
@@ -1872,47 +1869,6 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
 
     _ASSERTE(pMethodHandle);
     return pMethodHandle;
-}
-
-OBJECTREF COMDelegate::GetTargetObject(OBJECTREF obj)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF targetObject = NULL;
-
-    DELEGATEREF thisDel = (DELEGATEREF) obj;
-    OBJECTREF innerDel = NULL;
-
-    if (thisDel->GetInvocationCount() != 0)
-    {
-        // this is one of the following:
-        // - multicast
-        // - unmanaged ftn ptr
-        // - wrapper delegate
-        // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
-        //                    or _invocationList points to a LoaderAllocator/DynamicResolver (inner open virtual delegate of a Wrapper Delegate)
-        // in the wrapper delegate case we want to unwrap and return the object of the inner delegate
-        innerDel = (DELEGATEREF) thisDel->GetInvocationList();
-        if (innerDel != NULL)
-        {
-            MethodTable *pMT = innerDel->GetMethodTable();
-            if (pMT->IsDelegate())
-            {
-                targetObject = GetTargetObject(innerDel);
-            }
-        }
-    }
-
-    if (targetObject == NULL)
-        targetObject = thisDel->GetTarget();
-
-    return targetObject;
 }
 
 BOOL COMDelegate::IsTrueMulticastDelegate(OBJECTREF delegate)
@@ -2634,7 +2590,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     LoaderAllocator *pTargetMethodLoaderAllocator = pTargetMethod->GetLoaderAllocator();
     BOOL isCollectible = pTargetMethodLoaderAllocator->IsCollectible();
     // A method that may be instantiated over a collectible type, and is static will require a delegate
-    // that has the _methodBase field filled in with the LoaderAllocator of the collectible assembly
+    // that has the _helperObject field filled in with the LoaderAllocator of the collectible assembly
     // associated with the instantiation.
     BOOL fMaybeCollectibleAndStatic = FALSE;
 
@@ -2706,13 +2662,13 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // Delegate invoke arg count == 1 + target method arg count - 1, 4, 5
     //
     // 1        - CtorClosed (or CtorRTClosed for value-type instance targets needing runtime lookup)
-    // 4        - CtorClosedStatic
-    // 5        - Retbuf static closed form (not differentiated on this fast path; see TODO below)
     // 2, 6     - CtorOpened
     // 3        - CtorVirtualDispatch
+    // 4        - CtorClosedStatic
+    // 5        - Retbuf static closed form (not differentiated on this fast path; see TODO below)
     // Collectible delegates use the corresponding CtorCollectible* variants.
     //
-    // With collectible types, we need to fill the _methodBase field in with a value that represents the LoaderAllocator of the target method
+    // With collectible types, we need to fill the _helperObject field in with a value that represents the LoaderAllocator of the target method
     // if the delegate is not a closed instance delegate.
     //
     // There are two techniques that will work for this.

@@ -7315,9 +7315,11 @@ static BYTE* DebugInfoStoreNew(void * pData, size_t cBytes)
     return new (nothrow) BYTE[cBytes];
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, OUT DacDbiArrayList<AsyncLocalData>* pAsyncLocals)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW;
+
+    _ASSERTE(fpCallback != NULL);
 
     HRESULT hr = S_OK;
     EX_TRY
@@ -7370,13 +7372,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAsyncLocals(VMPTR_MethodDesc v
         }
 
         UINT32 varCount = asyncSuspensionPoints[state].NumContinuationVars;
-        pAsyncLocals->Alloc(varCount);
 
         _ASSERTE(varBeginIndex + varCount <= cAsyncVars);
         for (UINT32 i = 0; i < varCount; i++)
         {
-            (*pAsyncLocals)[i].offset = asyncVars[varBeginIndex + i].Offset;
-            (*pAsyncLocals)[i].ilVarNum = asyncVars[varBeginIndex + i].VarNumber;
+            AsyncLocalData local;
+            local.offset   = asyncVars[varBeginIndex + i].Offset;
+            local.ilVarNum = asyncVars[varBeginIndex + i].VarNumber;
+            fpCallback(&local, pUserData);
         }
     }
     EX_CATCH_HRESULT(hr);

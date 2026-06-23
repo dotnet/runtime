@@ -261,6 +261,10 @@ export async function fetchSatelliteAssemblies(culturesToLoad: string[]): Promis
     await Promise.all(promises);
 }
 
+function lazyAssetFileName(virtualPath: string): string {
+    return virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
+}
+
 export async function fetchLazyAssembly(assemblyNameToLoad: string): Promise<boolean> {
     const lazyAssemblies = loaderConfig.resources?.lazyAssembly;
     if (!lazyAssemblies) {
@@ -273,12 +277,17 @@ export async function fetchLazyAssembly(assemblyNameToLoad: string): Promise<boo
     else if (assemblyNameToLoad.endsWith(".wasm"))
         assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 5);
 
+    if (loadedLazyAssemblies.has(assemblyNameWithoutExtension)) {
+        return false;
+    }
+
     const assemblyNameToLoadDll = assemblyNameWithoutExtension + ".dll";
     const assemblyNameToLoadWasm = assemblyNameWithoutExtension + ".wasm";
 
     let dllAsset: AssemblyAsset | null = null;
     for (const asset of lazyAssemblies) {
-        if (asset.virtualPath === assemblyNameToLoadDll || asset.virtualPath === assemblyNameToLoadWasm) {
+        const fileName = lazyAssetFileName(asset.virtualPath);
+        if (fileName === assemblyNameToLoadDll || fileName === assemblyNameToLoadWasm) {
             dllAsset = asset;
             break;
         }
@@ -288,12 +297,8 @@ export async function fetchLazyAssembly(assemblyNameToLoad: string): Promise<boo
         throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
     }
 
-    if (loadedLazyAssemblies.has(dllAsset.virtualPath)) {
-        return false;
-    }
-
     await fetchAssembly(dllAsset);
-    loadedLazyAssemblies.add(dllAsset.virtualPath);
+    loadedLazyAssemblies.add(assemblyNameWithoutExtension);
 
     if (loaderConfig.debugLevel !== 0) {
         const pdbNameToLoad = assemblyNameWithoutExtension + ".pdb";
@@ -301,7 +306,7 @@ export async function fetchLazyAssembly(assemblyNameToLoad: string): Promise<boo
         let pdbAssetToLoad: AssemblyAsset | undefined;
         if (pdbAssets) {
             for (const pdbAsset of pdbAssets) {
-                if (pdbAsset.virtualPath === pdbNameToLoad) {
+                if (lazyAssetFileName(pdbAsset.virtualPath) === pdbNameToLoad) {
                     pdbAssetToLoad = pdbAsset;
                     break;
                 }
@@ -309,7 +314,7 @@ export async function fetchLazyAssembly(assemblyNameToLoad: string): Promise<boo
         }
         if (!pdbAssetToLoad) {
             for (const lazyAsset of lazyAssemblies) {
-                if (lazyAsset.virtualPath === pdbNameToLoad) {
+                if (lazyAssetFileName(lazyAsset.virtualPath) === pdbNameToLoad) {
                     pdbAssetToLoad = lazyAsset as AssemblyAsset;
                     break;
                 }
