@@ -384,15 +384,12 @@ internal class RFLogging
                     psi.UseShellExecute = false;
                     psi.RedirectStandardOutput = true;
 
-                    Process p = Process.Start(psi);
-                    p.StandardOutput.ReadToEnd();
-                    p.WaitForExit();
-                    if (p.ExitCode != 0)
+                    ProcessTextOutput result = Process.RunAndCaptureText(psi);
+                    if (result.ExitStatus.ExitCode != 0)
                     {
-                        string msg = String.Format("cscript.exe " + Environment.ExpandEnvironmentVariables("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a UPDATE_RECORD -s RUNNING\r\nWARNING: Status update did not return success!"), p.ExitCode);
+                        string msg = String.Format("cscript.exe " + Environment.ExpandEnvironmentVariables("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a UPDATE_RECORD -s RUNNING\r\nWARNING: Status update did not return success!"), result.ExitStatus.ExitCode);
                         WriteToInstrumentationLog(null, LoggingLevels.UrtFrameworks, msg);
                     }
-                    p.Dispose();
                 }
                 else if (!_noStatusWarningDisplayed)
                 {
