@@ -848,20 +848,6 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     // "Stack overflow.\n" plus what the stack walk produces.
     StoreCrashContext(COR_E_STACKOVERFLOW, W("Stack overflow."), pExceptionInfo, nullptr, nullptr);
 
-    // Invoke the user's fatal error handler first. If SkipDefaultHandler,
-    // skip all output and crash dump.
-    {
-        UINT_PTR soAddress = pExceptionInfo->ContextRecord ? GetIP(pExceptionInfo->ContextRecord) : 0;
-        if (InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress, pExceptionInfo))
-        {
-            // SkipDefaultHandler — skip Watson and crash dump, proceed to exit.
-            SafeExitProcess(COR_E_STACKOVERFLOW, SCA_TerminateProcessWhenShutdownComplete);
-            UNREACHABLE();
-        }
-    }
-
-    // RunDefaultHandler — write crash info to stderr and proceed with default handling.
-
     FaultingExceptionFrame fef;
     if (pExceptionInfo->ContextRecord)
     {
@@ -953,6 +939,19 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
                        pExceptionInfo->ExceptionRecord ? pExceptionInfo->ExceptionRecord->ExceptionCode : 0,
                        COR_E_STACKOVERFLOW,
                        GetClrInstanceId());
+    }
+
+    // Invoke the user's fatal error handler after stack trace but before Watson.
+    // For SO, stderr output cannot be suppressed (the stack is too limited to
+    // invoke the handler earlier), but SkipDefaultHandler still skips Watson/crash dump.
+    {
+        UINT_PTR soAddress = pExceptionInfo->ContextRecord ? GetIP(pExceptionInfo->ContextRecord) : 0;
+        if (InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress, pExceptionInfo))
+        {
+            // SkipDefaultHandler — skip Watson and crash dump, proceed to exit.
+            SafeExitProcess(COR_E_STACKOVERFLOW, SCA_TerminateProcessWhenShutdownComplete);
+            UNREACHABLE();
+        }
     }
 
     if (!fSkipDebugger)
