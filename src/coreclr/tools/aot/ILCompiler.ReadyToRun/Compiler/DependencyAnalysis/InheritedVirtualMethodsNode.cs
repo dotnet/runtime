@@ -11,7 +11,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// <summary>
     /// Type discovery node for virtual dispatch dependency analysis.
     ///
-    /// For GVMs: Marked InterestingForDynamicDependencyAnalysis so that GVMDependenciesNode
+    /// For GVMs: Marked InterestingForDynamicDependencyAnalysis when the type
+    /// has generic virtual method slots in its hierarchy so that GVMDependenciesNode
     /// can iterate on these type nodes to discover new generic virtual method targets.
     ///
     /// For non-GVMs: Has conditional static dependencies that compile virtual method
@@ -21,17 +22,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class InheritedVirtualMethodsNode : DependencyNodeCore<NodeFactory>
     {
         private readonly TypeDesc _type;
+        private readonly bool _interestingForDynamicDependencyAnalysis;
 
         public InheritedVirtualMethodsNode(TypeDesc type)
         {
             Debug.Assert(type.IsDefType && !type.IsInterface);
             Debug.Assert(!type.IsGenericDefinition);
             _type = type;
+            _interestingForDynamicDependencyAnalysis = TypeHasGVMSlots(type);
         }
 
         public TypeDesc Type => _type;
 
-        public override bool InterestingForDynamicDependencyAnalysis => true;
+        public override bool InterestingForDynamicDependencyAnalysis => _interestingForDynamicDependencyAnalysis;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
@@ -130,6 +133,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             return result;
+        }
+
+        private static bool TypeHasGVMSlots(TypeDesc type)
+        {
+            TypeDesc currentType = type;
+            while (currentType != null)
+            {
+                foreach (MethodDesc method in currentType.GetVirtualMethods())
+                {
+                    if (method.HasInstantiation)
+                        return true;
+                }
+                currentType = currentType.BaseType;
+            }
+
+            return false;
         }
 
         private static bool HasNonCanonicalInstantiationArguments(TypeDesc type)
