@@ -37,27 +37,25 @@ namespace Tracing.UserEvents.Tests.Common
             checkTracefsStartInfo.RedirectStandardOutput = true;
             checkTracefsStartInfo.RedirectStandardError = true;
 
-            using Process checkTracefs = new() { StartInfo = checkTracefsStartInfo };
-            checkTracefs.OutputDataReceived += (_, e) =>
+            ProcessTextOutput result = Process.RunAndCaptureText(checkTracefsStartInfo);
+            foreach (string rawLine in result.StandardOutput.Split('\n'))
             {
-                if (!string.IsNullOrEmpty(e.Data))
+                string line = rawLine.TrimEnd('\r');
+                if (!string.IsNullOrEmpty(line))
                 {
-                    Console.WriteLine($"[tracefs-check] {e.Data}");
+                    Console.WriteLine($"[tracefs-check] {line}");
                 }
-            };
-            checkTracefs.ErrorDataReceived += (_, e) =>
+            }
+            foreach (string rawLine in result.StandardError.Split('\n'))
             {
-                if (!string.IsNullOrEmpty(e.Data))
+                string line = rawLine.TrimEnd('\r');
+                if (!string.IsNullOrEmpty(line))
                 {
-                    Console.Error.WriteLine($"[tracefs-check] {e.Data}");
+                    Console.Error.WriteLine($"[tracefs-check] {line}");
                 }
-            };
+            }
 
-            checkTracefs.Start();
-            checkTracefs.BeginOutputReadLine();
-            checkTracefs.BeginErrorReadLine();
-            checkTracefs.WaitForExit();
-            if (checkTracefs.ExitCode == 0)
+            if (result.ExitStatus.ExitCode == 0)
             {
                 return true;
             }
@@ -75,27 +73,25 @@ namespace Tracing.UserEvents.Tests.Common
             checkUserEventsDataStartInfo.RedirectStandardOutput = true;
             checkUserEventsDataStartInfo.RedirectStandardError = true;
 
-            using Process checkUserEventsData = new() { StartInfo = checkUserEventsDataStartInfo };
-            checkUserEventsData.OutputDataReceived += (_, e) =>
+            ProcessTextOutput result = Process.RunAndCaptureText(checkUserEventsDataStartInfo);
+            foreach (string rawLine in result.StandardOutput.Split('\n'))
             {
-                if (!string.IsNullOrEmpty(e.Data))
+                string line = rawLine.TrimEnd('\r');
+                if (!string.IsNullOrEmpty(line))
                 {
-                    Console.WriteLine($"[user-events-check] {e.Data}");
+                    Console.WriteLine($"[user-events-check] {line}");
                 }
-            };
-            checkUserEventsData.ErrorDataReceived += (_, e) =>
+            }
+            foreach (string rawLine in result.StandardError.Split('\n'))
             {
-                if (!string.IsNullOrEmpty(e.Data))
+                string line = rawLine.TrimEnd('\r');
+                if (!string.IsNullOrEmpty(line))
                 {
-                    Console.Error.WriteLine($"[user-events-check] {e.Data}");
+                    Console.Error.WriteLine($"[user-events-check] {line}");
                 }
-            };
+            }
 
-            checkUserEventsData.Start();
-            checkUserEventsData.BeginOutputReadLine();
-            checkUserEventsData.BeginErrorReadLine();
-            checkUserEventsData.WaitForExit();
-            if (checkUserEventsData.ExitCode == 0)
+            if (result.ExitStatus.ExitCode == 0)
             {
                 return true;
             }
@@ -113,27 +109,10 @@ namespace Tracing.UserEvents.Tests.Common
             lddStartInfo.RedirectStandardOutput = true;
             lddStartInfo.RedirectStandardError = true;
 
-            using Process lddProcess = new() { StartInfo = lddStartInfo };
-            string? detectedVersionLine = null;
-
-            lddProcess.OutputDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data) && detectedVersionLine is null)
-                {
-                    detectedVersionLine = e.Data;
-                }
-            };
-            lddProcess.ErrorDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrEmpty(e.Data))
-                {
-                    Console.Error.WriteLine($"[ldd] {e.Data}");
-                }
-            };
-
+            ProcessTextOutput result;
             try
             {
-                lddProcess.Start();
+                result = Process.RunAndCaptureText(lddStartInfo);
             }
             catch (Exception ex)
             {
@@ -141,13 +120,29 @@ namespace Tracing.UserEvents.Tests.Common
                 return false;
             }
 
-            lddProcess.BeginOutputReadLine();
-            lddProcess.BeginErrorReadLine();
-            lddProcess.WaitForExit();
-
-            if (lddProcess.ExitCode != 0)
+            foreach (string rawLine in result.StandardError.Split('\n'))
             {
-                Console.WriteLine($"'ldd --version' exited with code {lddProcess.ExitCode}.");
+                string line = rawLine.TrimEnd('\r');
+                if (!string.IsNullOrEmpty(line))
+                {
+                    Console.Error.WriteLine($"[ldd] {line}");
+                }
+            }
+
+            string? detectedVersionLine = null;
+            foreach (string rawLine in result.StandardOutput.Split('\n'))
+            {
+                string line = rawLine.TrimEnd('\r');
+                if (!string.IsNullOrEmpty(line))
+                {
+                    detectedVersionLine = line;
+                    break;
+                }
+            }
+
+            if (result.ExitStatus.ExitCode != 0)
+            {
+                Console.WriteLine($"'ldd --version' exited with code {result.ExitStatus.ExitCode}.");
                 return false;
             }
 
