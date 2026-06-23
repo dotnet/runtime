@@ -243,9 +243,14 @@
                                  Condition="$(_CoreCLRRuntimePackAssemblyNames.Contains(';%(FileName)%(Extension);'))" />
     </ItemGroup>
 
-    <!-- Version-based resolution (parity with SDK publish/desktop): keep the higher AssemblyVersion. -->
+    <!-- Version-based resolution (parity with SDK publish/desktop): keep the higher AssemblyVersion.
+         PreferredPackages mirrors the SDK publish call (_HandlePackageFileConflictsForPublish) so that an
+         exact AssemblyVersion+FileVersion tie is broken the same way publish breaks it (preferring the
+         framework package) instead of being left to the downstream first-wins dedup. The property is
+         populated by ResolveTargetingPackAssets, which runs as part of our ResolveReferences dependency. -->
     <ResolvePackageFileConflicts Condition="'@(_CoreCLRConflictCandidate)' != '' and Exists('$(MicrosoftNETBuildTasksAssembly)')"
-                                 ReferenceCopyLocalPaths="@(_CoreCLRConflictCandidate)">
+                                 ReferenceCopyLocalPaths="@(_CoreCLRConflictCandidate)"
+                                 PreferredPackages="$(PackageConflictPreferredPackages)">
       <Output TaskParameter="ReferenceCopyLocalPathsWithoutConflicts" ItemName="_CoreCLRConflictWinners" />
     </ResolvePackageFileConflicts>
     <ItemGroup Condition="'@(_CoreCLRConflictCandidate)' != '' and Exists('$(MicrosoftNETBuildTasksAssembly)')">
