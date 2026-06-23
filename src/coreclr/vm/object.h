@@ -2124,6 +2124,7 @@ class GenericCacheStruct
 class ContinuationObject : public Object
 {
     friend class CoreLibBinder;
+    friend struct ::cdac_data<ContinuationObject>;
 
     public:
     CorInfoContinuationFlags GetFlags() const
@@ -2234,6 +2235,14 @@ private:
     void* ResumeInfo;
     int32_t Flags;
     int32_t State;
+};
+
+template<>
+struct cdac_data<ContinuationObject>
+{
+    static constexpr size_t Next = offsetof(ContinuationObject, Next);
+    static constexpr size_t ResumeInfo = offsetof(ContinuationObject, ResumeInfo);
+    static constexpr size_t State = offsetof(ContinuationObject, State);
 };
 
 // This class corresponds to Exception on the managed side.
