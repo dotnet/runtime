@@ -147,6 +147,7 @@ namespace System
 
                     if (value is not null)
                     {
+                        i++;
                         break;
                     }
                 }
