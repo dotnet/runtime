@@ -4150,8 +4150,10 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
     // side effect in that case. A value-based proof (e.g. a constant non-zero divisor)
     // holds everywhere, so such a divide stays freely movable and is not pinned.
     const bool byZeroNeedsPin = op2IsNotZero && !op2->IsNeverZero();
-    const bool overflowNeedsPin =
-        (op1IsNotNegative || op2IsNotNegative) && !op1->IsNeverNegative(this) && !op2->IsNeverNegative(this);
+    // Overflow (ArithmeticException) is only possible for signed div/mod, so only those need
+    // pinning for an assertion-based no-overflow proof.
+    const bool overflowNeedsPin = tree->OperIs(GT_DIV, GT_MOD) && (op1IsNotNegative || op2IsNotNegative) &&
+                                  !op1->IsNeverNegative(this) && !op2->IsNeverNegative(this);
     if (byZeroNeedsPin || overflowNeedsPin)
     {
         tree->SetHasOrderingSideEffect();
