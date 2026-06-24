@@ -146,8 +146,8 @@ async function instantiateWasmWorker (
     const instance = new WebAssembly.Instance(Module.wasmModule!, imports);
     Module.wasmModule = null;
 
-    preRunWorker();
     successCallback(instance, undefined);
+    preRunWorker();
 }
 
 
