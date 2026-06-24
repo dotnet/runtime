@@ -743,9 +743,6 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_5_jmp () cil managed {
-		// Some platforms might not be able to AOT tail calls
-		.custom instance void class [TestDriver]CategoryAttribute::'.ctor'(string) =  (01 00 08 21 46 55 4C 4C 41 4F 54 00 00 ) // ...!FULLAOT..
-
 		ldc.i4.1
 		ldc.i4.2
 		call int32 Tests::jmp2 (int32, int32)
