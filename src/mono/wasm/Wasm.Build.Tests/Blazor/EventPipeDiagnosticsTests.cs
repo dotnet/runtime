@@ -30,11 +30,13 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
     [Fact]
     [TestCategory("native-mono")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/129584", typeof(BuildTestBase), nameof(BuildTestBase.IsMonoRuntime))]
     public Task BlazorEventPipeTestWithCpuSamplesAOT() => BlazorEventPipeTestWithCpuSamples(Configuration.Release, aot: true);
 
     [Theory]
     [InlineData(Configuration.Debug, false)]
     [InlineData(Configuration.Release, false)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/129584", typeof(BuildTestBase), nameof(BuildTestBase.IsMonoRuntime))]
     public async Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
     {
         string extraProperties = @"
