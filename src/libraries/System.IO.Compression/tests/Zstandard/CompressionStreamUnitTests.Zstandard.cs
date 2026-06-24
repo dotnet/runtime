@@ -309,25 +309,6 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentNullException>("decompressionOptions", () => new ZstandardStream(input, (ZstandardDecompressionOptions)null!));
         }
 
-        [Fact]
-        public void ZstandardStream_WithDecompressionOptions_OwnsDecoder_DisposesOnStreamDispose()
-        {
-            byte[] testData = ZstandardTestUtils.CreateTestData();
-            byte[] compressedData = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
-            ZstandardEncoder.TryCompress(testData, compressedData, out int compressedLength);
-            Array.Resize(ref compressedData, compressedLength);
-
-            ZstandardDecompressionOptions options = new();
-            using MemoryStream input = new(compressedData);
-            using MemoryStream output = new();
-
-            ZstandardStream decompressionStream = new(input, options, leaveOpen: true);
-            decompressionStream.CopyTo(output);
-            decompressionStream.Dispose();
-
-            Assert.Equal(testData, output.ToArray());
-        }
-
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

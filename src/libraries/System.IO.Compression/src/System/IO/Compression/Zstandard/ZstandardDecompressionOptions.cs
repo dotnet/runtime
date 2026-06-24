@@ -8,10 +8,6 @@ namespace System.IO.Compression
     [System.Runtime.Versioning.UnsupportedOSPlatform("wasi")]
     public sealed class ZstandardDecompressionOptions
     {
-        /// <summary>Initializes a new instance of the <see cref="ZstandardDecompressionOptions"/> class.</summary>
-        public ZstandardDecompressionOptions()
-        {
-        }
 
         /// <summary>Gets or sets the maximum allowed window size when decompressing payloads, expressed as base 2 logarithm.</summary>
         /// <value>The maximum window size for decompression, expressed as base 2 logarithm.</value>
