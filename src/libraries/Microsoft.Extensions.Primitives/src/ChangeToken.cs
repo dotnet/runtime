@@ -247,9 +247,7 @@ namespace Microsoft.Extensions.Primitives
                 {
                     // The consumer is invoked synchronously here, so that synchronous exceptions from it are propagated
                     // to the code that triggers the change token, just like the sync overload does.
-                    Task consumerTask = _changeTokenConsumer(State);
-
-                    if (consumerTask.Status == TaskStatus.RanToCompletion)
+                    Task consumerTask = _changeTokenConsumer(State) ?? throw new InvalidOperationException("The task returned by changeTokenConsumer must not be null.");
                     {
                         // The common case where the consumer completes synchronously: re-register without allocations.
                         RegisterChangeTokenCallback(token);
