@@ -99,9 +99,9 @@ public interface IGCInfo : IContract
     uint GetSizeOfStackParameterArea(IGCInfoHandle handle) => throw new NotImplementedException();
     uint GetCalleePoppedArgumentsSize(IGCInfoHandle handle) => throw new NotImplementedException();
     IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle) => throw new NotImplementedException();
+    IReadOnlyList<uint> GetSafePoints(IGCInfoHandle handle) => throw new NotImplementedException();
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options) => throw new NotImplementedException();
     GCInfoHeader GetHeader(IGCInfoHandle handle) => throw new NotImplementedException();
-    IReadOnlyList<uint> GetSafePoints(IGCInfoHandle handle) => throw new NotImplementedException();
     IReadOnlyList<GCSlotLifetime> GetSlotLifetimes(IGCInfoHandle handle) => throw new NotImplementedException();
 }
 

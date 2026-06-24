@@ -1305,19 +1305,12 @@ public struct SOSGCInfoHeader
 }
 
 [StructLayout(LayoutKind.Sequential)]
-public struct SOSGCRegisterLifetime
+public struct SOSGCSlotLifetime
 {
     public uint BeginOffset;
     public uint EndOffset;
+    public int IsRegister;
     public uint RegisterNumber;
-    public uint GcFlags;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-public struct SOSGCStackSlotLifetime
-{
-    public uint BeginOffset;
-    public uint EndOffset;
     public int SpOffset;
     public uint BaseRegister;
     public uint GcFlags;
@@ -1345,16 +1338,9 @@ public unsafe partial interface ISOSDacInterface18
         uint* pNeeded);
 
     [PreserveSig]
-    int GetGCInfoRegisterLifetimes(
+    int GetGCInfoSlotLifetimes(
         ClrDataAddress ip,
         uint count,
-        [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSGCRegisterLifetime[]? lifetimes,
-        uint* pNeeded);
-
-    [PreserveSig]
-    int GetGCInfoStackSlotLifetimes(
-        ClrDataAddress ip,
-        uint count,
-        [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSGCStackSlotLifetime[]? lifetimes,
+        [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSGCSlotLifetime[]? lifetimes,
         uint* pNeeded);
 }

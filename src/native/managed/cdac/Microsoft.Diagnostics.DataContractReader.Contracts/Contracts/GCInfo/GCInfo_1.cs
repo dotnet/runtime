@@ -52,6 +52,12 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
         return handle.GetInterruptibleRanges();
     }
 
+    IReadOnlyList<uint> IGCInfo.GetSafePoints(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetSafePoints();
+    }
+
     IReadOnlyList<LiveSlot> IGCInfo.EnumerateLiveSlots(IGCInfoHandle gcInfoHandle, uint instructionOffset, GcSlotEnumerationOptions options)
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
@@ -62,12 +68,6 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
     {
         IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
         return handle.GetHeader();
-    }
-
-    IReadOnlyList<uint> IGCInfo.GetSafePoints(IGCInfoHandle gcInfoHandle)
-    {
-        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
-        return handle.GetSafePoints();
     }
 
     IReadOnlyList<GCSlotLifetime> IGCInfo.GetSlotLifetimes(IGCInfoHandle gcInfoHandle)

@@ -694,22 +694,16 @@ typedef struct _SOSGCInfoHeader
     unsigned int GenericsInstContextKind;
 } SOSGCInfoHeader;
 
-typedef struct _SOSGCRegisterLifetime
+typedef struct _SOSGCSlotLifetime
 {
     unsigned int BeginOffset;
     unsigned int EndOffset;
+    int          IsRegister;
     unsigned int RegisterNumber;
-    unsigned int GcFlags;
-} SOSGCRegisterLifetime;
-
-typedef struct _SOSGCStackSlotLifetime
-{
-    unsigned int BeginOffset;
-    unsigned int EndOffset;
     int          SpOffset;
     unsigned int BaseRegister;
     unsigned int GcFlags;
-} SOSGCStackSlotLifetime;
+} SOSGCSlotLifetime;
 
 cpp_quote("#endif //_SOS_GCInfoData")
 
@@ -736,15 +730,9 @@ interface ISOSDacInterface18 : IUnknown
         [out, size_is(count), length_is(*pNeeded)] unsigned int* offsets,
         [out] ULONG* pNeeded);
 
-    HRESULT GetGCInfoRegisterLifetimes(
+    HRESULT GetGCInfoSlotLifetimes(
         [in]  CLRDATA_ADDRESS ip,
         [in]  ULONG count,
-        [out, size_is(count), length_is(*pNeeded)] SOSGCRegisterLifetime* lifetimes,
-        [out] ULONG* pNeeded);
-
-    HRESULT GetGCInfoStackSlotLifetimes(
-        [in]  CLRDATA_ADDRESS ip,
-        [in]  ULONG count,
-        [out, size_is(count), length_is(*pNeeded)] SOSGCStackSlotLifetime* lifetimes,
+        [out, size_is(count), length_is(*pNeeded)] SOSGCSlotLifetime* lifetimes,
         [out] ULONG* pNeeded);
 }

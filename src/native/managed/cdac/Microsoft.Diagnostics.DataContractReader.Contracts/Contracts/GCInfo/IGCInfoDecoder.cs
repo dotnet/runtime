@@ -18,8 +18,8 @@ internal interface IGCInfoDecoder : IGCInfoHandle
     uint GetCalleePoppedArgumentsSize() => 0;
 
     IReadOnlyList<InterruptibleRange> GetInterruptibleRanges();
+    IReadOnlyList<uint> GetSafePoints();
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(uint instructionOffset, GcSlotEnumerationOptions options);
     GCInfoHeader GetHeader();
-    IReadOnlyList<uint> GetSafePoints();
     IReadOnlyList<GCSlotLifetime> GetSlotLifetimes();
 }

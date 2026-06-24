@@ -130,6 +130,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     private uint _numSafePoints;
     private uint _numInterruptibleRanges;
     private List<InterruptibleRange> _interruptibleRanges = [];
+    private List<uint> _safePoints = [];
     private int _safePointBitOffset;
 
     /* Slot Table Fields */
@@ -333,11 +334,16 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private IEnumerable<DecodePoints> DecodeSafePoints()
     {
-        // Save the position of the safe point data for FindSafePoint
         _safePointBitOffset = _bitOffset;
-        // skip over safe point data
         uint numBitsPerOffset = CeilOfLog2(TTraits.NormalizeCodeOffset(_codeLength));
-        _bitOffset += (int)(numBitsPerOffset * _numSafePoints);
+
+        _safePoints = new List<uint>((int)_numSafePoints);
+        for (uint i = 0; i < _numSafePoints; i++)
+        {
+            uint offset = TTraits.DenormalizeCodeOffset((uint)_reader.ReadBits((int)numBitsPerOffset, ref _bitOffset));
+            _safePoints.Add(offset);
+        }
+
         yield break;
     }
 
@@ -531,6 +537,12 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         return _interruptibleRanges;
     }
 
+    public IReadOnlyList<uint> GetSafePoints()
+    {
+        EnsureDecodedTo(DecodePoints.InterruptibleRanges);
+        return _safePoints;
+    }
+
     public GCInfoHeader GetHeader()
     {
         EnsureDecodedTo(DecodePoints.ReversePInvoke);
@@ -568,25 +580,6 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             PSPSym: pspSym,
             GenericsInstContext: genericsInstContext,
             GenericsInstContextKind: genericsContextKind);
-    }
-
-    public IReadOnlyList<uint> GetSafePoints()
-    {
-        EnsureDecodedTo(DecodePoints.InterruptibleRanges);
-
-        List<uint> safePoints = new((int)_numSafePoints);
-        int bitOffset = _safePointBitOffset;
-        uint numBitsPerOffset = CeilOfLog2(TTraits.NormalizeCodeOffset(_codeLength));
-        for (uint i = 0; i < _numSafePoints; i++)
-        {
-            uint offset = TTraits.DenormalizeCodeOffset((uint)_reader.ReadBits((int)numBitsPerOffset, ref bitOffset));
-            if (_gcVersion < 4)
-                offset++;
-
-            safePoints.Add(offset);
-        }
-
-        return safePoints;
     }
 
     public IReadOnlyList<GCSlotLifetime> GetSlotLifetimes()
@@ -1098,19 +1091,14 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     {
         EnsureDecodedTo(DecodePoints.InterruptibleRanges);
 
-        uint normBreakOffset = TTraits.NormalizeCodeOffset(codeOffset);
-        uint numBitsPerOffset = CeilOfLog2(TTraits.NormalizeCodeOffset(_codeLength));
-
         // TODO(stackref): The native FindSafePoint uses binary search (NarrowSafePointSearch)
         // when numSafePoints > 32. This is a performance optimization only — no correctness impact.
         // Linear scan through safe point offsets from the saved position
-        int scanOffset = _safePointBitOffset;
-        for (uint i = 0; i < _numSafePoints; i++)
+        for (uint i = 0; i < _safePoints.Count; i++)
         {
-            uint spOffset = (uint)_reader.ReadBits((int)numBitsPerOffset, ref scanOffset);
-            if (spOffset == normBreakOffset)
+            if (_safePoints[(int)i] == codeOffset)
                 return i;
-            if (spOffset > normBreakOffset)
+            if (_safePoints[(int)i] > codeOffset)
                 break;
         }
 
