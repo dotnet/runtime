@@ -437,7 +437,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.Equal(1, invocations);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DisposingFromAnotherThreadWhileConsumerExecutingSuppressesReRegistration(bool useAsyncConsumer)
