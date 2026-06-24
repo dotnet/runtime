@@ -844,7 +844,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // and the signature return type are both the same TYP_SIMD.
 
             retNode = impSIMDPopStack();
-            SetOpLclRelatedToSIMDIntrinsic(retNode);
             assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
             break;
         }
@@ -939,7 +938,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // and the signature return type are both the same TYP_SIMD.
 
                     retNode = impSIMDPopStack();
-                    SetOpLclRelatedToSIMDIntrinsic(retNode);
                     assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
                     break;
                 }
@@ -3547,11 +3545,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
 
-            SetOpLclRelatedToSIMDIntrinsic(op1);
-            SetOpLclRelatedToSIMDIntrinsic(op2);
-            SetOpLclRelatedToSIMDIntrinsic(op3);
-            SetOpLclRelatedToSIMDIntrinsic(op4);
-            SetOpLclRelatedToSIMDIntrinsic(op5);
             retNode = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic,
                                                                     simdBaseType, simdSize, op1, op2, op3, op4, op5);
             break;

@@ -1678,7 +1678,7 @@ bool ReadyToRunInfo::MayHaveCustomAttribute(WellKnownAttribute attribute, mdToke
             s_wellKnownAttributeHashes[(DWORD)attribute] = wellKnownHash = ComputeNameHashCode(GetWellKnownAttributeName(attribute));
         }
 
-        hash = CombineTwoValuesIntoHash(wellKnownHash, token);
+        hash = CombineTwoValuesIntoHash<xxHashVersionResilientTraits>(wellKnownHash, token);
         fingerprint = hash >> 16;
     }
 

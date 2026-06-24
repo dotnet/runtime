@@ -119,6 +119,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0062`__ | XSLT Script blocks are not supported. |
 |  __`SYSLIB0063`__ | This constructor has been deprecated and argument bool isConnected does not have any effect. Use NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle) instead. |
 |  __`SYSLIB0064`__ | RSACryptoServiceProvider.Encrypt and RSACryptoServiceProvider.Decrypt methods that take a Boolean are obsolete. Use the overload that accepts RSAEncryptionPadding instead. |
+|  __`SYSLIB0065`__ | Setting AsnEncodedData.RawData is obsolete. Use CopyFrom instead. |
 
 ## Analyzer Warnings
 
