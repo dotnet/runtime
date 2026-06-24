@@ -7750,6 +7750,10 @@ CEEInfo::getMethodInfo(
     else if (ilFtn->IsIL() || ilFtn->IsDynamicMethod())
     {
         // IL methods with no IL header indicate there is no implementation defined in metadata.
+        // NOTE: P/Invoke methods have marshalling IL but it is generally not
+        // profitable to inline it. The IsIL check above returns false for them
+        // and thus we will not inline them.
+        // P/Invokes that don't require marshalling can still be inlined directly by the JIT.
         getMethodInfoWorker(ftn, ilFtn, NULL, methInfo, context);
         result = true;
     }
