@@ -4486,4 +4486,7 @@
   <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
     <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on the decimal type.</value>
   </data>
+  <data name="InvalidOperation_NoElements" xml:space="preserve">
+    <value>Sequence contains no elements.</value>
+  </data>
 </root>
