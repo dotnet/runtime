@@ -552,8 +552,12 @@ public class XUnitLogChecker
         };
 
         outputWriter.WriteLine($"Invoking: {startInfo.FileName} {startInfo.Arguments}");
-        ProcessTextOutput result = Process.RunAndCaptureText(startInfo, TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_MS));
-        if (result.ExitStatus.Canceled)
+        ProcessTextOutput result;
+        try
+        {
+            result = Process.RunAndCaptureText(startInfo, TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_MS));
+        }
+        catch (TimeoutException)
         {
             outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
             return false;

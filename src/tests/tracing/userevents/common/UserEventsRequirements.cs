@@ -37,25 +37,28 @@ namespace Tracing.UserEvents.Tests.Common
             checkTracefsStartInfo.RedirectStandardOutput = true;
             checkTracefsStartInfo.RedirectStandardError = true;
 
-            ProcessTextOutput result = Process.RunAndCaptureText(checkTracefsStartInfo);
-            foreach (string rawLine in result.StandardOutput.Split('\n'))
+            using Process process = Process.Start(checkTracefsStartInfo);
+            foreach (ProcessOutputLine line in process.ReadAllLines())
             {
-                string line = rawLine.TrimEnd('\r');
-                if (!string.IsNullOrEmpty(line))
+                if (string.IsNullOrEmpty(line.Content))
                 {
-                    Console.WriteLine($"[tracefs-check] {line}");
+                    continue;
                 }
-            }
-            foreach (string rawLine in result.StandardError.Split('\n'))
-            {
-                string line = rawLine.TrimEnd('\r');
-                if (!string.IsNullOrEmpty(line))
+
+                if (line.StandardError)
                 {
-                    Console.Error.WriteLine($"[tracefs-check] {line}");
+                    Console.Error.WriteLine($"[tracefs-check] {line.Content}");
+                }
+                else
+                {
+                    Console.WriteLine($"[tracefs-check] {line.Content}");
                 }
             }
 
-            if (result.ExitStatus.ExitCode == 0)
+            // A process can close its std handles but keep running.
+            process.WaitForExit();
+
+            if (process.ExitCode == 0)
             {
                 return true;
             }
@@ -73,25 +76,28 @@ namespace Tracing.UserEvents.Tests.Common
             checkUserEventsDataStartInfo.RedirectStandardOutput = true;
             checkUserEventsDataStartInfo.RedirectStandardError = true;
 
-            ProcessTextOutput result = Process.RunAndCaptureText(checkUserEventsDataStartInfo);
-            foreach (string rawLine in result.StandardOutput.Split('\n'))
+            using Process process = Process.Start(checkUserEventsDataStartInfo);
+            foreach (ProcessOutputLine line in process.ReadAllLines())
             {
-                string line = rawLine.TrimEnd('\r');
-                if (!string.IsNullOrEmpty(line))
+                if (string.IsNullOrEmpty(line.Content))
                 {
-                    Console.WriteLine($"[user-events-check] {line}");
+                    continue;
                 }
-            }
-            foreach (string rawLine in result.StandardError.Split('\n'))
-            {
-                string line = rawLine.TrimEnd('\r');
-                if (!string.IsNullOrEmpty(line))
+
+                if (line.StandardError)
                 {
-                    Console.Error.WriteLine($"[user-events-check] {line}");
+                    Console.Error.WriteLine($"[user-events-check] {line.Content}");
+                }
+                else
+                {
+                    Console.WriteLine($"[user-events-check] {line.Content}");
                 }
             }
 
-            if (result.ExitStatus.ExitCode == 0)
+            // A process can close its std handles but keep running.
+            process.WaitForExit();
+
+            if (process.ExitCode == 0)
             {
                 return true;
             }

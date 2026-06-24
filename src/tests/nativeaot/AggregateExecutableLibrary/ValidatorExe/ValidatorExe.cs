@@ -16,9 +16,9 @@ ProcessTextOutput result = Process.RunAndCaptureText(new ProcessStartInfo(helloE
 });
 
 string output = result.StandardOutput.Trim();
-string error = result.StandardError.Trim();
 if (result.ExitStatus.ExitCode != 0 || output != "Hello from HelloExe")
 {
+    string error = result.StandardError.Trim();
     Console.Error.WriteLine($"Unexpected HelloExe result. Exit code: {result.ExitStatus.ExitCode}; output: '{output}'; error: '{error}'");
     return 1;
 }

@@ -107,11 +107,6 @@ namespace Profiler.Tests
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
 
-            foreach (string key in Environment.GetEnvironmentVariables().Keys)
-            {
-                startInfo.EnvironmentVariables[key] = Environment.GetEnvironmentVariable(key);
-            }
-
             foreach (string key in envVars.Keys)
             {
                 startInfo.EnvironmentVariables[key] = envVars[key];

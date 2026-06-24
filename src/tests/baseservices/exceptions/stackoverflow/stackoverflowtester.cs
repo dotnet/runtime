@@ -25,13 +25,18 @@ namespace TestStackOverflow
             startInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0");
             startInfo.Environment.Add("DOTNET_LogStackOverflowExit", "1");
 
-            ProcessTextOutput result = Process.RunAndCaptureText(startInfo);
+            using Process testProcess = Process.Start(startInfo);
 
             List<string> lines = new List<string>();
             bool endOfStackTrace = false;
-            foreach (string rawLine in result.StandardError.Split('\n'))
+            foreach (ProcessOutputLine line in testProcess.ReadAllLines())
             {
-                string data = rawLine.TrimEnd('\r');
+                if (!line.StandardError)
+                {
+                    continue;
+                }
+
+                string data = line.Content;
                 Console.WriteLine($"\"{data}\"");
                 if (!endOfStackTrace && !string.IsNullOrEmpty(data))
                 {
@@ -51,6 +56,9 @@ namespace TestStackOverflow
                 }
             }
 
+            // A process can close its std handles but keep running.
+            testProcess.WaitForExit();
+
             stderrLines = lines;
 
             int[] expectedExitCodes;
@@ -63,7 +71,7 @@ namespace TestStackOverflow
                 expectedExitCodes = new int[] { unchecked((int)0xC00000FD), unchecked((int)0x800703E9) };
             }
 
-            if (!Array.Exists(expectedExitCodes, code => result.ExitStatus.ExitCode == code))
+            if (!Array.Exists(expectedExitCodes, code => testProcess.ExitCode == code))
             {
                 string separator = string.Empty;
                 StringBuilder expectedListBuilder = new StringBuilder();
@@ -71,7 +79,7 @@ namespace TestStackOverflow
                     expectedListBuilder.Append($"{separator}0x{code:X8}");
                     separator = " or ";
                 });
-                throw new Exception($"Exit code: 0x{result.ExitStatus.ExitCode:X8}, expected {expectedListBuilder.ToString()}");
+                throw new Exception($"Exit code: 0x{testProcess.ExitCode:X8}, expected {expectedListBuilder.ToString()}");
             }
 
             if (lines[0] != "Stack overflow.")
