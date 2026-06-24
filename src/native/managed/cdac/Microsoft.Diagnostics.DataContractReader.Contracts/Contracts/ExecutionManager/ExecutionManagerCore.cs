@@ -216,6 +216,11 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     }
     CodeBlockHandle? IExecutionManager.GetCodeBlockHandle(TargetCodePointer ip)
     {
+        if (_target.Contracts.PlatformMetadata.GetCodePointerFlags().HasFlag(CodePointerFlags.HasArm64PtrAuth))
+        {
+            ip = CodePointerUtils.CodePointerFromAddress(ip.AsTargetPointer, _target);
+        }
+
         TargetPointer key = ip.AsTargetPointer; // FIXME: thumb bit. It's harmless (we potentialy have 2 cache entries per IP), but we should fix it
         if (_codeInfos.ContainsKey(key))
         {

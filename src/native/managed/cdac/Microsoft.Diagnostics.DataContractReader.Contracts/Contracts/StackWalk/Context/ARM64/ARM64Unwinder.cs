@@ -162,6 +162,7 @@ internal class ARM64Unwinder(Target target)
         // behavior.
         //
         bool finalPcFromLr = true;
+        bool isReturnAddressSigned = false;
 
         //
         // Fetch the header word from the .xdata blob
@@ -763,12 +764,7 @@ internal class ARM64Unwinder(Target target)
                     return false;
                 }
 
-                // TODO-PAC: Enable processing PAC-enabled return address
-                // context.Lr &= 0x0000FFFFFFFFFFFF;
-
-                //
-                // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.
-                //
+                isReturnAddressSigned = true;
             }
 
             //
@@ -819,7 +815,9 @@ internal class ARM64Unwinder(Target target)
             //
             if (finalPcFromLr)
             {
-                context.Pc = context.Lr;
+                context.Pc = isReturnAddressSigned
+                    ? CodePointerUtils.AddressFromCodePointer(new TargetCodePointer(context.Lr), _target).Value
+                    : context.Lr;
             }
         }
 
@@ -975,7 +973,7 @@ internal class ARM64Unwinder(Target target)
 
             case 0xec:  // MSFT_OP_CLEAR_UNWOUND_TO_CALL
                 context.ContextFlags &= (uint)~ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL;
-                context.Pc = context.Lr;
+                context.Pc = CodePointerUtils.AddressFromCodePointer(new TargetCodePointer(context.Lr), _target).Value;
                 break;
 
             default:
