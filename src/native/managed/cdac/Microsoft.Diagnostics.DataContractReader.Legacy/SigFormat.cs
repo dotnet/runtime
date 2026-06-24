@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -18,8 +18,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
             string? memberName,
             string? className,
             string? namespaceName,
-            ReadOnlySpan<TypeHandle> typeInstantiation,
-            ReadOnlySpan<TypeHandle> methodInstantiation,
+            ReadOnlySpan<ITypeHandle> typeInstantiation,
+            ReadOnlySpan<ITypeHandle> methodInstantiation,
             bool CStringParmsOnly)
         {
             fixed (byte* pSignature = signature)
@@ -36,8 +36,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
             string? memberName,
             string? className,
             string? namespaceName,
-            ReadOnlySpan<TypeHandle> typeInstantiation,
-            ReadOnlySpan<TypeHandle> methodInstantiation,
+            ReadOnlySpan<ITypeHandle> typeInstantiation,
+            ReadOnlySpan<ITypeHandle> methodInstantiation,
             bool CStringParmsOnly)
         {
             SignatureHeader header = signature.ReadSignatureHeader();
@@ -95,8 +95,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
         private static unsafe void AddTypeString(Target target,
             StringBuilder stringBuilder,
             ref BlobReader signature,
-            ReadOnlySpan<TypeHandle> typeInstantiation,
-            ReadOnlySpan<TypeHandle> methodInstantiation,
+            ReadOnlySpan<ITypeHandle> typeInstantiation,
+            ReadOnlySpan<ITypeHandle> methodInstantiation,
             MetadataReader? metadata)
         {
             string _namespace;
@@ -157,7 +157,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     case CorElementType.Internal:
                         TargetPointer typeHandlePointer = target.ReadPointerFromSpan(signature.ReadBytes(target.PointerSize));
                         IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
-                        TypeHandle th = runtimeTypeSystem.GetTypeHandle(typeHandlePointer);
+                        ITypeHandle th = runtimeTypeSystem.GetTypeHandle(typeHandlePointer);
                         switch (runtimeTypeSystem.GetSignatureCorElementType(th))
                         {
                             case CorElementType.FnPtr:
@@ -308,7 +308,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
             }
         }
 
-        private static void AddType(Target target, StringBuilder stringBuilder, TypeHandle typeHandle)
+        private static void AddType(Target target, StringBuilder stringBuilder, ITypeHandle typeHandle)
         {
             IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
 
@@ -358,7 +358,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     }
                     stringBuilder.Append(name);
 
-                    ReadOnlySpan<TypeHandle> instantiation = runtimeTypeSystem.GetInstantiation(typeHandle);
+                    ReadOnlySpan<ITypeHandle> instantiation = runtimeTypeSystem.GetInstantiation(typeHandle);
                     if (instantiation.Length > 0)
                     {
                         stringBuilder.Append('<');
@@ -414,7 +414,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     return;
 
                 case CorElementType.FnPtr:
-                    runtimeTypeSystem.IsFunctionPointer(typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv);
+                    runtimeTypeSystem.IsFunctionPointer(typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv);
                     SignatureHeader header = new SignatureHeader((byte)callConv);
                     AddType(target, stringBuilder, retAndArgTypes[0]);
                     stringBuilder.Append(" (");

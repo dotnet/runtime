@@ -7,17 +7,17 @@ namespace Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 
 internal static class ExtensionMethods
 {
-    public static bool IsTypeDesc(this TypeHandle type)
+    public static bool IsTypeDesc(this ITypeHandle type)
     {
         return type.Address != 0 && ((ulong)type.Address & (ulong)RuntimeTypeSystem_1.TypeHandleBits.ValidMask) == (ulong)RuntimeTypeSystem_1.TypeHandleBits.TypeDesc;
     }
 
-    public static bool IsMethodTable(this TypeHandle type)
+    public static bool IsMethodTable(this ITypeHandle type)
     {
         return type.Address != 0 && ((ulong)type.Address & (ulong)RuntimeTypeSystem_1.TypeHandleBits.ValidMask) == (ulong)RuntimeTypeSystem_1.TypeHandleBits.MethodTable;
     }
 
-    public static TargetPointer TypeDescAddress(this TypeHandle type)
+    public static TargetPointer TypeDescAddress(this ITypeHandle type)
     {
         if (!type.IsTypeDesc())
             return 0;

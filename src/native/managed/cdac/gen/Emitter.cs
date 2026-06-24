@@ -12,10 +12,10 @@ internal static class Emitter
     // Generated files declare a file-scoped namespace inside
     // Microsoft.Diagnostics.DataContractReader.* so these short names resolve
     // via parent-namespace lookup. The using directives below cover
-    // TypeHandle (in ...Contracts) explicitly.
+    // ITypeHandle (in ...Contracts) explicitly.
     private const string Target = "Target";
     private const string TargetPointer = "TargetPointer";
-    private const string TypeHandleType = "TypeHandle";
+    private const string ITypeHandleType = "ITypeHandle";
     private const string IDataInterface = "IData";
 
     private const string RootNamespace = "Microsoft.Diagnostics.DataContractReader";
@@ -51,7 +51,7 @@ internal static class Emitter
         sb.AppendLine($"partial class {model.ClassName}");
         sb.AppendLine("{");
 
-        // Emit a static _typeNames array for LayoutSet.Resolve and TypeHandle resolution.
+        // Emit a static _typeNames array for LayoutSet.Resolve and ITypeHandle resolution.
         if (model.Names.Count > 0)
         {
             string namesLiteral = NamesArrayLiteral(model.Names);
@@ -59,10 +59,10 @@ internal static class Emitter
             sb.AppendLine();
         }
 
-        // The class advertises a managed identity (TypeHandle) when HasTypeHandle is set.
+        // The class advertises a managed identity (ITypeHandle) when HasTypeHandle is set.
         if (model.HasTypeHandle)
         {
-            sb.AppendLine($"    public static {TypeHandleType} TypeHandle({Target} target)");
+            sb.AppendLine($"    public static {ITypeHandleType} ITypeHandle({Target} target)");
             sb.AppendLine($"        => TypeNameResolver.GetTypeHandle(target, _typeNames);");
             sb.AppendLine();
         }

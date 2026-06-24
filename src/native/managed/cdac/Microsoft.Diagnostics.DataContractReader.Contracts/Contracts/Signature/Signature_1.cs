@@ -18,7 +18,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal sealed class Signature_1 : ISignature
 {
     private readonly Target _target;
-    private readonly Dictionary<ModuleHandle, SignatureTypeProvider<TypeHandle>> _thProviders = [];
+    private readonly Dictionary<ModuleHandle, SignatureTypeProvider<ITypeHandle>> _thProviders = [];
 
     internal Signature_1(Target target)
     {
@@ -30,25 +30,25 @@ internal sealed class Signature_1 : ISignature
         _thProviders.Clear();
     }
 
-    private SignatureTypeProvider<TypeHandle> GetTypeHandleProvider(ModuleHandle moduleHandle)
+    private SignatureTypeProvider<ITypeHandle> GetTypeHandleProvider(ModuleHandle moduleHandle)
     {
-        if (_thProviders.TryGetValue(moduleHandle, out SignatureTypeProvider<TypeHandle>? thProvider))
+        if (_thProviders.TryGetValue(moduleHandle, out SignatureTypeProvider<ITypeHandle>? thProvider))
         {
             return thProvider;
         }
 
-        SignatureTypeProvider<TypeHandle> newProvider = new(_target, moduleHandle);
+        SignatureTypeProvider<ITypeHandle> newProvider = new(_target, moduleHandle);
         _thProviders[moduleHandle] = newProvider;
         return newProvider;
     }
 
-    TypeHandle ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx)
+    ITypeHandle ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, ITypeHandle ctx)
     {
-        SignatureTypeProvider<TypeHandle> provider = GetTypeHandleProvider(moduleHandle);
+        SignatureTypeProvider<ITypeHandle> provider = GetTypeHandleProvider(moduleHandle);
         MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
 
         BlobReader blobReader = mdReader.GetBlobReader(blobHandle);
-        RuntimeSignatureDecoder<TypeHandle, TypeHandle> decoder = new(provider, _target, mdReader, ctx);
+        RuntimeSignatureDecoder<ITypeHandle, ITypeHandle> decoder = new(provider, _target, mdReader, ctx);
         return decoder.DecodeFieldSignature(ref blobReader);
     }
 

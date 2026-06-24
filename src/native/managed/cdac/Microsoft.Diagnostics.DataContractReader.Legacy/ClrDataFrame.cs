@@ -429,7 +429,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
 
         TargetPointer mtAddr = rts.GetMethodTable(mdh);
-        TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
+        ITypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
         TargetPointer modulePtr = rts.GetModule(typeHandle);
         moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
 
@@ -742,7 +742,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             try
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                ReadOnlySpan<TypeHandle> methodInst = rts.GetGenericMethodInstantiation(mdh);
+                ReadOnlySpan<ITypeHandle> methodInst = rts.GetGenericMethodInstantiation(mdh);
                 return ResolveGenericParam(rts, methodInst[index]);
             }
             catch (System.Exception) { return ((uint)ClrDataValueFlag.DEFAULT, -1); }
@@ -754,14 +754,14 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 TargetPointer mtAddr = rts.GetMethodTable(mdh);
-                TypeHandle declaringType = rts.GetTypeHandle(mtAddr);
-                ReadOnlySpan<TypeHandle> typeInst = rts.GetInstantiation(declaringType);
+                ITypeHandle declaringType = rts.GetTypeHandle(mtAddr);
+                ReadOnlySpan<ITypeHandle> typeInst = rts.GetInstantiation(declaringType);
                 return ResolveGenericParam(rts, typeInst[index]);
             }
             catch (System.Exception) { return ((uint)ClrDataValueFlag.DEFAULT, -1); }
         }
 
-        private static (uint Flags, int Size) ResolveGenericParam(IRuntimeTypeSystem rts, TypeHandle resolvedType)
+        private static (uint Flags, int Size) ResolveGenericParam(IRuntimeTypeSystem rts, ITypeHandle resolvedType)
         {
             CorElementType elementType = rts.GetSignatureCorElementType(resolvedType);
             (uint flags, int size) = MapCorElementTypeToFlags(elementType);

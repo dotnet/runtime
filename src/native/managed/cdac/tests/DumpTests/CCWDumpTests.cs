@@ -94,10 +94,10 @@ public class CCWDumpTests : DumpTestBase
                 if (iface.MethodTable == TargetPointer.Null)
                     continue;
 
-                // Verify the MethodTable is readable by resolving it to a TypeHandle.
-                TypeHandle typeHandle = rts.GetTypeHandle(iface.MethodTable);
+                // Verify the MethodTable is readable by resolving it to a ITypeHandle.
+                ITypeHandle typeHandle = rts.GetTypeHandle(iface.MethodTable);
                 Assert.False(typeHandle.IsNull,
-                    $"Expected non-null TypeHandle for MethodTable 0x{iface.MethodTable:X} in CCW 0x{ccwPtr:X}");
+                    $"Expected non-null ITypeHandle for MethodTable 0x{iface.MethodTable:X} in CCW 0x{ccwPtr:X}");
                 Assert.True(rts.GetBaseSize(typeHandle) > 0,
                     $"Expected positive base size for MethodTable 0x{iface.MethodTable:X} in CCW 0x{ccwPtr:X}");
             }
