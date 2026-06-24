@@ -834,19 +834,31 @@ def copy_artifacts_to_dump_folder(assembly_name, base_dirname, diff_dirname):
     if not dump_folder:
         return
 
+    # assembly_name is loaded from JSON; keep it as a simple file name to avoid path traversal.
+    if ('/' in assembly_name) or ('\\' in assembly_name):
+        print('Unexpected assembly name "{0}"; skipping dump copy'.format(assembly_name))
+        return
+
     ni_filename = add_ni_extension(assembly_name + '.dll')
+
     try:
         os.makedirs(dump_folder, exist_ok=True)
-        for label, source_dirname in [('base', base_dirname), ('diff', diff_dirname)]:
-            source_filename = os.path.join(source_dirname, ni_filename)
-            if os.path.isfile(source_filename):
-                destination_filename = os.path.join(dump_folder, '{0}_{1}'.format(label, ni_filename))
-                shutil.copy2(source_filename, destination_filename)
-                print('Copied crossgen output "{0}" to dump file "{1}"'.format(source_filename, destination_filename))
-            else:
-                print('Crossgen output "{0}" was not found; cannot copy it to the dump folder'.format(source_filename))
     except OSError as ex:
-        print('Failed to copy crossgen artifacts for "{0}" to dump folder "{1}": {2}'.format(assembly_name, dump_folder, ex))
+        print('Failed to create dump folder "{0}": {1}'.format(dump_folder, ex))
+        return
+
+    for label, source_dirname in [('base', base_dirname), ('diff', diff_dirname)]:
+        source_filename = os.path.join(source_dirname, ni_filename)
+        if not os.path.isfile(source_filename):
+            print('Crossgen output "{0}" was not found; cannot copy it to the dump folder'.format(source_filename))
+            continue
+
+        destination_filename = os.path.join(dump_folder, '{0}_{1}'.format(label, ni_filename))
+        try:
+            shutil.copy2(source_filename, destination_filename)
+            print('Copied crossgen output "{0}" to dump file "{1}"'.format(source_filename, destination_filename))
+        except OSError as ex:
+            print('Failed to copy crossgen output "{0}" to dump file "{1}": {2}'.format(source_filename, destination_filename, ex))
 
 def compare_results(args):
     """
