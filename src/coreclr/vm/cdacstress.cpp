@@ -353,17 +353,11 @@ static bool IsCdacStressVerboseEnabled()
     return (s_cdacStressLevel & CDACSTRESS_VERBOSE) != 0;
 }
 
-// Sub-check: cDAC GetStackReferences vs runtime GC root oracle. This is the
-// original cdacstress comparison; gating it on a bit lets users enable
-// only the cheaper ArgIterator sub-check if desired.
 static bool IsCdacStressGcRefsEnabled()
 {
     return (s_cdacStressLevel & CDACSTRESS_GCREFS) != 0;
 }
 
-// Sub-check: cDAC CallingConvention.EnumerateArguments vs runtime
-// ComputeCallRefMap. Runs inside VerifyAtStressPoint at every fired trigger
-// when CDACSTRESS_ARGITER is set.
 static bool IsCdacStressArgIterEnabled()
 {
     return (s_cdacStressLevel & CDACSTRESS_ARGITER) != 0;
@@ -1330,23 +1324,14 @@ static bool IsDeferredFrame(CLRDATA_ADDRESS source, const CLRDATA_ADDRESS* defer
 }
 
 //-----------------------------------------------------------------------------
-// ArgIterator sub-trigger: compare CallingConvention.EnumerateArguments
-// (via the cDAC port) against the runtime's own ComputeCallRefMap for every
-// MD on a transition Frame in the active thread's frame chain.
-//
-// Phase 1 (this file): plumbing only. The cDAC handler returns E_NOTIMPL for
-// every MD, so every verification logs [ARG_SKIP]. This validates the
-// Request channel and frame iteration without touching the port itself.
+// ArgIterator sub-check: compare the cDAC's encoded GCRefMap blob against
+// the runtime's ComputeCallRefMap output, byte-for-byte, for every MD on a
+// transition Frame on the active thread.
 //-----------------------------------------------------------------------------
 
-// Per-MD dedup: each MD is verified at most once per process. The set grows
-// monotonically; bound is the number of distinct MDs that ever hit a
-// transition Frame -- in practice <10K even for long-running stress sessions.
-// Protected by s_cdacLock, which the caller (VerifyAtStressPoint) already holds.
-// (Forward-declared near the other static state above so Shutdown can free it.)
+// Per-MD dedup. Protected by s_cdacLock (held by VerifyAtStressPoint).
 
 // Resolve a MethodDesc address to a human-readable name via the cDAC.
-// Returns "<unknown>" on failure. Buffer must be at least 1 byte.
 static void ResolveMethodNameFromMD(CLRDATA_ADDRESS mdAddr, char* buf, int bufLen)
 {
     if (bufLen <= 0)
@@ -1519,7 +1504,6 @@ static void DecodeBlob(const BYTE* blob, int len, DecodedBlob& out, bool isX86)
 #endif
     while (!decoder.AtEnd() && out.Count < DecodedBlob::MaxSlots)
     {
-        int beforePos = decoder.CurrentPos();
         int token = decoder.ReadToken();
         int afterPos = decoder.CurrentPos();
 
@@ -1620,9 +1604,7 @@ static void LogArgIteratorMismatch(MethodDesc* pMD, CLRDATA_ADDRESS mdAddr,
 
 // Verify ArgIterator output for a single MD. Computes the runtime oracle
 // blob (via ComputeCallRefMap), asks the cDAC for the same blob via the
-// private Request opcode, and compares byte-for-byte. Phase 2: the cDAC
-// handler still returns E_NOTIMPL for every MD, so the comparison code
-// path runs only for any MDs the cDAC opts in to in Phase 3+.
+// private Request opcode, and compares byte-for-byte.
 static void VerifyArgIteratorForMD(MethodDesc* pMD, FrameIdentifier frameId)
 {
     char methodName[256];
@@ -1631,12 +1613,18 @@ static void VerifyArgIteratorForMD(MethodDesc* pMD, FrameIdentifier frameId)
     if (frameName == nullptr)
         frameName = "<unknown>";
 
-    // 1. Runtime oracle. Exercised for every MD we see (Phase 2 validation:
-    //    proves ComputeCallRefMap is safe to call for any frame's MD without
-    //    crashing). If the runtime itself can't classify this MD there's
+    // Stack-allocated buffer for both the runtime oracle blob and the cDAC
+    // first-attempt response. Typical blobs are 1-4 bytes, so 64 covers
+    // nearly every signature in one call. The cDAC side falls back to a
+    // heap buffer via the ERROR_INSUFFICIENT_BUFFER two-call pattern below
+    // when an outlier exceeds it; for the runtime oracle, an overflow
+    // surfaces as an ARG_SKIP ("runtime-blob-too-large").
+    const int kStackBufSize = 64;
+
+    // 1. Runtime oracle. If the runtime itself can't classify this MD there's
     //    nothing for the cDAC to be wrong about, so silently skip --
     //    counted as ARG_SKIP for visibility in stats.
-    BYTE rtBlob[ARRAY_SIZE(((DacStressArgGCRefMapResponse*)0)->Blob)];
+    BYTE rtBlob[kStackBufSize];
     int rtLen = ComputeRuntimeArgGCRefMap(pMD, rtBlob, (int)sizeof(rtBlob));
     if (rtLen < 0)
     {
@@ -1647,35 +1635,65 @@ static void VerifyArgIteratorForMD(MethodDesc* pMD, FrameIdentifier frameId)
         return;
     }
 
-    // 2. cDAC side via the private Request opcode.
-    DacStressArgGCRefMapRequest req = {};
-    req.MethodDesc = (CLRDATA_ADDRESS)(LONG_PTR)pMD;
+    // 2. cDAC side via the private Request opcode. outBuffer is unused;
+    //    the request descriptor carries an [in,out] buffer descriptor that
+    //    the handler writes through. Two-call shape: try the stack guess
+    //    first; if it's too small, the handler returns
+    //    ERROR_INSUFFICIENT_BUFFER with cbFilled = needed size, and we retry
+    //    with a heap buffer.
+    BYTE stackBuf[kStackBufSize];
 
-    DacStressArgGCRefMapResponse resp = {};
+    DacStressArgGCRefMapRequest req = {};
+    req.MethodDesc    = (CLRDATA_ADDRESS)(LONG_PTR)pMD;
+    req.BlobBuffer    = (CLRDATA_ADDRESS)(LONG_PTR)stackBuf;
+    req.BlobBufferLen = sizeof(stackBuf);
+
     HRESULT cdacHr = s_cdacProcess->Request(
         DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP,
         sizeof(req), (BYTE*)&req,
-        sizeof(resp), (BYTE*)&resp);
+        0, nullptr);
 
-    if (cdacHr == E_NOTIMPL || resp.Hr == E_NOTIMPL || resp.Hr == S_FALSE)
+    const BYTE* cdacBlob = stackBuf;
+    NewArrayHolder<BYTE> heapBuf;
+    if (cdacHr == HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
+    {
+        ULONG32 need = req.cbNeeded;
+        heapBuf = new (nothrow) BYTE[need];
+        if (heapBuf == nullptr)
+        {
+            InterlockedIncrement(&s_argIterSkip);
+            CDAC_LOG("[ARG_SKIP] MD=0x%llx frame=%s reason=oom-retry-buffer rtBlobSize=%d %s\n",
+                (unsigned long long)req.MethodDesc, frameName, rtLen, methodName);
+            return;
+        }
+        req.BlobBuffer    = (CLRDATA_ADDRESS)(LONG_PTR)(BYTE*)heapBuf;
+        req.BlobBufferLen = need;
+        cdacHr = s_cdacProcess->Request(
+            DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP,
+            sizeof(req), (BYTE*)&req,
+            0, nullptr);
+        cdacBlob = heapBuf;
+    }
+
+    if (cdacHr == E_NOTIMPL)
     {
         InterlockedIncrement(&s_argIterSkip);
         CDAC_LOG("[ARG_SKIP] MD=0x%llx frame=%s reason=0x%08x rtBlobSize=%d %s\n",
             (unsigned long long)req.MethodDesc, frameName,
-            (unsigned int)(FAILED(cdacHr) ? cdacHr : resp.Hr), rtLen, methodName);
+            (unsigned int)cdacHr, rtLen, methodName);
         return;
     }
-    if (FAILED(cdacHr) || FAILED(resp.Hr))
+    if (FAILED(cdacHr))
     {
         InterlockedIncrement(&s_argIterError);
-        CDAC_LOG("[ARG_ERROR] MD=0x%llx frame=%s cdacHr=0x%08x respHr=0x%08x %s\n",
+        CDAC_LOG("[ARG_ERROR] MD=0x%llx frame=%s cdacHr=0x%08x %s\n",
             (unsigned long long)req.MethodDesc, frameName,
-            (unsigned int)cdacHr, (unsigned int)resp.Hr, methodName);
+            (unsigned int)cdacHr, methodName);
         return;
     }
 
     // 3. Byte-for-byte comparison.
-    if ((int)resp.BlobSize == rtLen && memcmp(resp.Blob, rtBlob, rtLen) == 0)
+    if ((int)req.cbFilled == rtLen && memcmp(cdacBlob, rtBlob, rtLen) == 0)
     {
         InterlockedIncrement(&s_argIterPass);
         CDAC_LOG("[ARG_PASS] MD=0x%llx frame=%s blobSize=%d %s\n",
@@ -1685,7 +1703,7 @@ static void VerifyArgIteratorForMD(MethodDesc* pMD, FrameIdentifier frameId)
 
     InterlockedIncrement(&s_argIterFail);
     LogArgIteratorMismatch(pMD, req.MethodDesc, frameName, methodName,
-                           rtBlob, rtLen, resp.Blob, (int)resp.BlobSize);
+                           rtBlob, rtLen, cdacBlob, (int)req.cbFilled);
 }
 
 static void VerifyArgIteratorOnStack(Thread* pThread)

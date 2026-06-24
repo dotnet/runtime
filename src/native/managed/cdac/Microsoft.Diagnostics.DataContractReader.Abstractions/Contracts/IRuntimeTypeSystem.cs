@@ -149,9 +149,7 @@ public interface IRuntimeTypeSystem : IContract
     bool IsObjRef(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
-    // True if the MethodTable represents a value type that may contain managed
-    // pointers (Span<T>, ReadOnlySpan<T>, etc.). Such types cannot be boxed
-    // and require ByRefPointerOffsetsReporter-style GC scanning of their fields.
+    // True if MethodTable represents a byreflike value (Span<T>, ReadOnlySpan<T>, etc.).
     bool IsByRefLike(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     bool RequiresAlign8(TypeHandle typeHandle) => throw new NotImplementedException();

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
@@ -796,69 +797,85 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         return hr;
     }
 
-    // Layout of DacStressArgGCRefMapRequest from src/coreclr/inc/dacprivate.h.
-    private const int DacStressArgGCRefMapRequestSize = 8;       // CLRDATA_ADDRESS MethodDesc
-    // Layout of DacStressArgGCRefMapResponse from the same header.
-    private const int DacStressArgGCRefMapResponseSize = 4 + 4 + 252;
-    private const int DacStressArgGCRefMapMaxBlob = 252;
+    // Mirrors DacStressArgGCRefMapRequest in src/coreclr/inc/dacprivate.h.
+    // The caller (vm/cdacstress.cpp) hands us an [in,out] descriptor with the
+    // MethodDesc plus a destination buffer; we write the blob there and
+    // populate cbFilled / cbNeeded. The COM `outBuffer` channel is unused.
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DacStressArgGCRefMapRequest
+    {
+        public ulong MethodDesc;
+        public ulong BlobBuffer;
+        public uint  BlobBufferLen;
+        public uint  cbFilled;
+        public uint  cbNeeded;
+    }
+
+    // HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER).
+    private const int HResultErrorInsufficientBuffer = unchecked((int)0x8007007A);
 
     // Handler for the cdacstress ArgIterator sub-check (cdacstress.cpp).
     // Reads a MethodDesc address from `inBuffer`, asks the CallingConvention
-    // contract to encode the argument GCRefMap blob, and writes the response.
-    // Returns E_NOTIMPL inside the response payload for any MD the contract
-    // cannot yet encode so the stress harness buckets it as [ARG_SKIP]
-    // rather than [ARG_FAIL].
+    // contract to encode the argument GCRefMap blob, and writes it into the
+    // caller-allocated destination carried by the request descriptor.
     private int HandleComputeArgGCRefMap(uint inSize, byte* inBuffer, uint outSize, byte* outBuffer)
     {
-        if (inSize < DacStressArgGCRefMapRequestSize || inBuffer is null)
+        // outSize/outBuffer are unused: the wire format carries the
+        // [in,out] descriptor (MethodDesc + caller-allocated blob buffer)
+        // through inBuffer, and there is no COM out-channel payload.
+        _ = outSize;
+        _ = outBuffer;
+
+        if (inBuffer is null || inSize < (uint)Unsafe.SizeOf<DacStressArgGCRefMapRequest>())
             return HResults.E_INVALIDARG;
-        if (outSize < DacStressArgGCRefMapResponseSize || outBuffer is null)
-            return HResults.E_INVALIDARG;
 
-        ClrDataAddress mdAddr = new ClrDataAddress(*(ulong*)inBuffer);
+        // Alignment-safe view of the [in,out] descriptor. The cDAC ABI hands
+        // us a `byte*` from a COM marshaller with no guaranteed alignment, so
+        // field reads/writes go through Unsafe.ReadUnaligned / WriteUnaligned.
+        DacStressArgGCRefMapRequest req = Unsafe.ReadUnaligned<DacStressArgGCRefMapRequest>(inBuffer);
 
-        // Zero the response so any unset trailing bytes are deterministic.
-        new Span<byte>(outBuffer, (int)DacStressArgGCRefMapResponseSize).Clear();
-
-        int respHr;
-        int blobLen = 0;
+        byte[] blob;
+        bool encoded;
         try
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            MethodDescHandle mdh = rts.GetMethodDescHandle(mdAddr.ToTargetPointer(_target));
-            byte[]? blob = _target.Contracts.CallingConvention.TryComputeArgGCRefMapBlob(mdh);
-            if (blob is null)
-            {
-                // Encoder declined to encode this MD (e.g. x86, or by-value
-                // struct with GC pointers we haven't taught it yet).
-                respHr = HResults.E_NOTIMPL;
-            }
-            else if (blob.Length > DacStressArgGCRefMapMaxBlob)
-            {
-                // Blob exceeded the fixed response window. Treat as skip.
-                respHr = HResults.S_FALSE;
-            }
-            else
-            {
-                blobLen = blob.Length;
-                if (blobLen > 0)
-                    new Span<byte>(blob).CopyTo(new Span<byte>(outBuffer + 8, blobLen));
-                respHr = HResults.S_OK;
-            }
+            MethodDescHandle mdh = rts.GetMethodDescHandle(
+                new ClrDataAddress(req.MethodDesc).ToTargetPointer(_target));
+            encoded = _target.Contracts.CallingConvention.TryComputeArgGCRefMapBlob(mdh, out blob);
         }
         catch
         {
             // Distinct from E_NOTIMPL so a stress log makes "encoder threw"
             // visible as an error bucket separate from "encoder declined".
-            respHr = HResults.E_FAIL;
-            blobLen = 0;
+            req.cbFilled = 0;
+            req.cbNeeded = 0;
+            Unsafe.WriteUnaligned(inBuffer, req);
+            return HResults.E_FAIL;
         }
 
-        // Wire format: { HRESULT Hr; uint BlobSize; byte[252] Blob; }
-        *(int*)outBuffer = respHr;
-        *(int*)(outBuffer + 4) = blobLen;
+        if (!encoded)
+        {
+            // Encoder declined to encode this MD (e.g. an unported ABI path).
+            req.cbFilled = 0;
+            req.cbNeeded = 0;
+            Unsafe.WriteUnaligned(inBuffer, req);
+            return HResults.E_NOTIMPL;
+        }
 
-        // Whole-call HRESULT: S_OK means "transport succeeded; check Hr in the payload".
+        uint needed = (uint)blob.Length;
+        req.cbNeeded = needed;
+
+        if (req.BlobBuffer == 0 || req.BlobBufferLen < needed)
+        {
+            req.cbFilled = 0;
+            Unsafe.WriteUnaligned(inBuffer, req);
+            return HResultErrorInsufficientBuffer;
+        }
+
+        byte* dest = (byte*)(nuint)req.BlobBuffer;
+        blob.AsSpan().CopyTo(new Span<byte>(dest, (int)req.BlobBufferLen));
+        req.cbFilled = needed;
+        Unsafe.WriteUnaligned(inBuffer, req);
         return HResults.S_OK;
     }
 

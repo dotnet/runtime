@@ -5,11 +5,6 @@
 // utilized by the JIT on that platform). The caller enumerates each argument of a signature in turn, and is
 // provided with information mapping that argument into registers and/or stack locations.
 
-// Suppress analyzer warnings for crossgen2 code style when file-linked into cDAC
-#pragma warning disable SA1028 // Code should not contain trailing whitespace
-#pragma warning disable SA1206 // Modifier order
-#pragma warning disable CA1822 // Mark members as static
-
 using System;
 using System.Diagnostics;
 
@@ -107,7 +102,7 @@ namespace Internal.CallingConvention
 
         public abstract int OffsetOfFloatArgumentRegisters { get; }
 
-        public bool IsFloatArgumentRegisterOffset(int offset) => offset < 0;
+        public virtual bool IsFloatArgumentRegisterOffset(int offset) => offset < 0;
 
         public abstract int EnregisteredParamTypeMaxSize { get; }
 
@@ -183,7 +178,7 @@ namespace Internal.CallingConvention
         /// to calling it for the "real" arguments. Pass in a typ of ELEMENT_TYPE_CLASS.
         /// </summary>
         /// <param name="pNumRegistersUsed">
-        /// keeps track of the number of argument registers assigned previously. 
+        /// keeps track of the number of argument registers assigned previously.
         /// The caller should initialize this variable to 0 - then each call will update it.
         /// </param>
         /// <param name="typ">parameter type</param>
@@ -230,7 +225,7 @@ namespace Internal.CallingConvention
             return false;
         }
 
-        private bool IsTrivialPointerSizedStruct(ITypeHandle thArgType)
+        private static bool IsTrivialPointerSizedStruct(ITypeHandle thArgType)
         {
             return thArgType.IsTrivialPointerSizedStruct();
         }
@@ -252,7 +247,7 @@ namespace Internal.CallingConvention
 
         /// <summary>
         /// Check whether an arg is automatically switched to passing by reference.
-        /// Note that this overload does not handle varargs. This method only works for 
+        /// Note that this overload does not handle varargs. This method only works for
         /// valuetypes - true value types, primitives, enums and TypedReference.
         /// The method is only overridden to do something meaningful on X64, ARM64 and WASM.
         /// </summary>
@@ -500,7 +495,7 @@ namespace Internal.CallingConvention
             // Callee-saved registers, return address
             public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + PointerSize;
             public override int OffsetOfArgumentRegisters => SizeOfTransitionBlock;
-            // CALLDESCR_FPARGREGS is not set for Amd64 on 
+            // CALLDESCR_FPARGREGS is not set for Amd64 on
             public override int OffsetOfFloatArgumentRegisters => 0;
             public override int EnregisteredParamTypeMaxSize => 8;
             public override int EnregisteredReturnTypeIntegerMaxSize => 8;
@@ -561,7 +556,7 @@ namespace Internal.CallingConvention
 
         private class Arm32ElTransitionBlock : Arm32TransitionBlock
         {
-            public new static TransitionBlock Instance = new Arm32ElTransitionBlock();
+            public static new TransitionBlock Instance = new Arm32ElTransitionBlock();
 
             public override bool IsArmhfABI => false;
             public override bool IsArmelABI => true;
@@ -610,7 +605,7 @@ namespace Internal.CallingConvention
 
         private sealed class AppleArm64TransitionBlock : Arm64TransitionBlock
         {
-            public new static TransitionBlock Instance = new AppleArm64TransitionBlock();
+            public static new TransitionBlock Instance = new AppleArm64TransitionBlock();
             public override bool IsAppleArm64ABI => true;
 
             public sealed override int StackElemSize(int parmSize, bool isValueType = false, bool isFloatHfa = false)
@@ -713,7 +708,6 @@ namespace Internal.CallingConvention
                 int stackSlotSize = 8;
                 return ALIGN_UP(parmSize, stackSlotSize);
             }
-            
         }
 
         private class Wasm32TransitionBlock : TransitionBlock

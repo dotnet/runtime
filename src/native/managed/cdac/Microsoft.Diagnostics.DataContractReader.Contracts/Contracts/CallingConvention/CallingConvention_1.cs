@@ -26,30 +26,42 @@ internal sealed class CallingConvention_1 : ICallingConvention
         _target = target;
     }
 
-    public byte[]? TryComputeArgGCRefMapBlob(MethodDescHandle methodDesc)
+    public bool TryComputeArgGCRefMapBlob(MethodDescHandle methodDesc, out byte[] blob)
     {
         try
         {
-            return CallingConventionGCRefMapBuilder.TryBuild(_target, methodDesc);
+            byte[]? result = ComputeArgGCRefMapBlobCore(methodDesc);
+            if (result is null)
+            {
+                blob = [];
+                return false;
+            }
+            blob = result;
+            return true;
         }
         catch (NotImplementedException)
         {
-            // Encoder declined to encode this MD: an unported ABI path
-            // in the shared ArgIterator, a missing TransitionBlock helper,
-            // an explicit `throw new NotImplementedException(...)` in this
-            // contract, or any deeper NIE that surfaced through lazy
-            // enumeration. The outer SOSDacImpl handler maps null to
-            // E_NOTIMPL which the stress harness logs as [ARG_SKIP].
+            // Wraps the whole encoder so any unported code path -- shared
+            // ArgIterator hitting an ABI it doesn't model, a missing
+            // TransitionBlock helper, an explicit `throw new
+            // NotImplementedException(...)` -- becomes a clean "decline"
+            // (false return). The outer SOSDacImpl handler maps that to
+            // E_NOTIMPL which the stress harness buckets as [ARG_SKIP].
+            // Other exception types propagate to the handler's own catch
+            // so they show up as E_FAIL -> [ARG_ERROR] -- genuine bugs we
+            // don't want to silently hide.
             //
-            // Other exception types deliberately propagate to the
-            // handler's own catch so they show up as E_FAIL ->
-            // [ARG_ERROR] -- those are genuine bugs we don't want to
-            // silently hide behind an acknowledged-gap signal.
-            return null;
+            // Lazy enumeration of EnumerateArguments is the most common
+            // spot for an NIE because MoveNext'ing through it evaluates
+            // the shared ArgIterator's arch-specific paths only when
+            // iterated, which is why a try/catch around just the initial
+            // call isn't enough.
+            blob = [];
+            return false;
         }
     }
 
-    public uint GetCbStackPop(MethodDescHandle methodDesc)
+    internal uint GetCbStackPop(MethodDescHandle methodDesc)
     {
         IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
         if (runtimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.X86)
@@ -147,7 +159,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         public TypeHandle OpenGenericType { get; init; }
     }
 
-    public IEnumerable<ArgumentLocation> EnumerateArguments(MethodDescHandle methodDesc)
+    internal IEnumerable<ArgumentLocation> EnumerateArguments(MethodDescHandle methodDesc)
     {
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
@@ -586,7 +598,25 @@ internal sealed class CallingConvention_1 : ICallingConvention
     // type parameters) and MVAR (method's type parameters) by pulling the
     // appropriate field out of the MethodSigContext. Overrides the base
     // implementations, which only handle one direction.
-    internal sealed class MethodAndTypeContextProvider : SignatureTypeProvider<MethodSigContext>
+    // Specialization that resolves generic parameters via the
+    // MethodSigContext (open generic MD + owning TypeHandle) instead of
+    // requiring the context to be exactly a MethodDescHandle or TypeHandle.
+    //
+    // The base SignatureTypeProvider<T> deliberately keeps its
+    // GetGenericMethodParameter / GetGenericTypeParameter non-virtual to
+    // avoid breaking downstream derived types (an override would change
+    // the dispatch shape they shipped against). To still route the
+    // signature decoder through this class's specialized lookups, we
+    // re-implement the IRuntimeSignatureTypeProvider interface here:
+    // hiding the base's methods with `new` and explicitly re-declaring
+    // the interface in the type's base list causes the C# compiler to
+    // emit a MethodImpl that rewires the interface slots to the
+    // derived members. Result: through-interface dispatch (which is
+    // how RuntimeSignatureDecoder calls them) lands on this class's
+    // methods without making the base virtual.
+    internal sealed class MethodAndTypeContextProvider
+        : SignatureTypeProvider<MethodSigContext>,
+          IRuntimeSignatureTypeProvider<TypeHandle, MethodSigContext>
     {
         private readonly IRuntimeTypeSystem _rts;
 
@@ -596,10 +626,440 @@ internal sealed class CallingConvention_1 : ICallingConvention
             _rts = rts;
         }
 
-        public override TypeHandle GetGenericMethodParameter(MethodSigContext context, int index)
+        public new TypeHandle GetGenericMethodParameter(MethodSigContext context, int index)
             => _rts.GetGenericMethodInstantiation(context.Method)[index];
 
-        public override TypeHandle GetGenericTypeParameter(MethodSigContext context, int index)
+        public new TypeHandle GetGenericTypeParameter(MethodSigContext context, int index)
             => _rts.GetInstantiation(context.OwningType)[index];
+    }
+
+    // =====================================================================
+    // GCRefMap blob encoder. Produces byte-for-byte the same output as the
+    // runtime's ComputeCallRefMap (frames.cpp) via the shared ArgIterator
+    // walk above. Used by the cdacstress ArgIterator sub-check.
+    // =====================================================================
+
+    private const int MaxGCRefMapBlobLength = 252;
+    private const int MaxByRefLikeRecursionDepth = 16;
+
+    private byte[]? ComputeArgGCRefMapBlobCore(MethodDescHandle methodDesc)
+    {
+        IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
+        RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
+        bool isX86 = arch is RuntimeInfoArchitecture.X86;
+
+        int pointerSize = _target.PointerSize;
+
+        SortedDictionary<int, GCRefMapToken> tokens = new();
+        IEnumerable<ArgumentLocation> args = EnumerateArguments(methodDesc);
+
+        GenericContextLoc ctxLoc = GenericContextLoc.None;
+
+        foreach (ArgumentLocation arg in args)
+        {
+            GCRefMapToken token;
+            if (arg.IsThis)
+            {
+                token = arg.IsValueTypeThis ? GCRefMapToken.Interior : GCRefMapToken.Ref;
+            }
+            else if (arg.IsVASigCookie)
+            {
+                token = GCRefMapToken.VASigCookie;
+            }
+            else if (arg.IsParamType)
+            {
+                // Resolve InstArgMethodDesc vs InstArgMethodTable on demand
+                // (cheaper than caching when most methods aren't generic).
+                if (ctxLoc == GenericContextLoc.None)
+                    ctxLoc = SafeGetGenericContextLoc(rts, methodDesc);
+
+                token = ctxLoc switch
+                {
+                    GenericContextLoc.InstArgMethodDesc => GCRefMapToken.MethodParam,
+                    GenericContextLoc.InstArgMethodTable => GCRefMapToken.TypeParam,
+                    _ => GCRefMapToken.Skip,
+                };
+                if (token == GCRefMapToken.Skip)
+                    continue;
+            }
+            else
+            {
+                switch ((CorElementType)arg.ElementType)
+                {
+                    case CorElementType.Class:
+                    case CorElementType.String:
+                    case CorElementType.Object:
+                    case CorElementType.Array:
+                    case CorElementType.SzArray:
+                        token = GCRefMapToken.Ref;
+                        break;
+
+                    case CorElementType.Byref:
+                        token = GCRefMapToken.Interior;
+                        break;
+
+                    case CorElementType.ValueType:
+                        if (arg.IsPassedByRef)
+                        {
+                            token = GCRefMapToken.Interior;
+                        }
+                        else
+                        {
+                            bool emitted = false;
+
+                            if (arg.IsByRefLikeStruct)
+                            {
+                                // ByRefLike value type (Span<T>, ReadOnlySpan<T>,
+                                // ByteRef, any ref struct). Mirrors the runtime's
+                                // ByRefPointerOffsetsReporter (siginfo.cpp): walk
+                                // the type's instance fields and emit INTERIOR
+                                // for each ELEMENT_TYPE_BYREF field at its
+                                // in-struct offset. ELEMENT_TYPE_PTR / IntPtr /
+                                // void* fields are explicitly NOT reported
+                                // (so QCallTypeHandle, ObjectHandleOnStack,
+                                // StringHandleOnStack contribute nothing).
+                                //
+                                // For uncached generic instantiations (Span<int>
+                                // whose closed MT isn't loaded), the field
+                                // layout lives on the open generic (Span<T>).
+                                // The byref/ptr distinction is preserved at the
+                                // FieldDesc level regardless of which T closes
+                                // the type.
+                                TypeHandle probe = arg.TypeHandle;
+                                if (probe.Address == TargetPointer.Null)
+                                    probe = arg.OpenGenericType;
+                                if (probe.Address != TargetPointer.Null)
+                                {
+                                    EmitByRefLikeInterior(rts, probe, arg.Offset, tokens);
+                                }
+                                emitted = true;
+                            }
+
+                            if (rts.ContainsGCPointers(arg.TypeHandle))
+                            {
+                                // By-value struct with embedded GC pointers: emit one
+                                // Ref token per pointer slot inside the struct. Mirrors
+                                // the runtime's ReportPointersFromValueTypeArg
+                                // (siginfo.cpp). The GCDesc series Offset is relative
+                                // to a boxed object's start (including the leading MT
+                                // pointer); subtract pointerSize to translate to the
+                                // unboxed in-frame layout.
+                                int structFieldStart = arg.Offset - pointerSize;
+                                foreach ((uint seriesOffset, uint seriesSize) in rts.GetGCDescSeries(arg.TypeHandle))
+                                {
+                                    int seriesBase = structFieldStart + (int)seriesOffset;
+                                    for (int subOff = 0; subOff < (int)seriesSize; subOff += pointerSize)
+                                    {
+                                        tokens[seriesBase + subOff] = GCRefMapToken.Ref;
+                                    }
+                                }
+                                emitted = true;
+                            }
+
+                            if (!emitted)
+                                continue;
+                            continue;
+                        }
+                        break;
+
+                    default:
+                        continue;
+                }
+            }
+
+            tokens[arg.Offset] = token;
+        }
+
+        // No GC-significant arguments. On non-x86 the empty blob is just the
+        // pending byte flush. On x86 it still carries the WriteStackPop prefix,
+        // so emit that first.
+        if (tokens.Count == 0)
+        {
+            if (!isX86)
+                return EmptyGCRefMapBlob();
+            GCRefMapEncoder enc0 = default;
+            enc0.WriteStackPop(GetCbStackPop(methodDesc) / (uint)pointerSize);
+            return enc0.Flush();
+        }
+
+        // Walk positions 0..maxPos and look up each one's offset in the token
+        // map. This is necessary on x86 because pos-order and offset-order
+        // diverge there (argument registers occupy the highest offsets but
+        // the lowest positions). On non-x86 the mapping is monotonic so we
+        // could iterate the offset map directly, but using OffsetFromGCRefMapPos
+        // for both keeps the code path uniform.
+        TransitionBlock tb = BuildTransitionBlock(runtimeInfo);
+
+        // For x86 we need to know how many slot positions exist (we'd otherwise
+        // miss high-pos register slots when the offset map's max is on the
+        // stack). Walk every recorded offset and compute its position; for x86
+        // OffsetFromGCRefMapPos is bijective so the inverse is well-defined.
+        int maxPos = -1;
+        foreach (int offset in tokens.Keys)
+        {
+            int pos = GCRefMapPosFromOffset(tb, offset, isX86, pointerSize);
+            if (pos < 0)
+                return null;  // alignment / out-of-range -- conservative skip
+            if (pos > maxPos) maxPos = pos;
+        }
+
+        GCRefMapEncoder enc = default;
+        if (isX86)
+            enc.WriteStackPop(GetCbStackPop(methodDesc) / (uint)pointerSize);
+
+        for (int pos = 0; pos <= maxPos; pos++)
+        {
+            int offset = tb.OffsetFromGCRefMapPos(pos);
+            if (tokens.TryGetValue(offset, out GCRefMapToken token) && token != GCRefMapToken.Skip)
+            {
+                enc.WriteToken((uint)pos, (byte)token);
+                if (enc.Length > MaxGCRefMapBlobLength)
+                    return null;
+            }
+        }
+        return enc.Flush();
+    }
+
+    // Inverse of TransitionBlock.OffsetFromGCRefMapPos. On non-x86 the mapping
+    // is offset = first + pos*ptr, so pos = (offset - first) / ptr. On x86 the
+    // first NumArgumentRegisters positions are argument registers laid out at
+    // OffsetOfArgumentRegisters + ARGUMENTREGISTERS_SIZE - (pos+1)*ptr; the
+    // remaining positions are stack args at OffsetOfArgs + (pos - n)*ptr.
+    // Returns -1 on misalignment.
+    private static int GCRefMapPosFromOffset(TransitionBlock tb, int offset, bool isX86, int pointerSize)
+    {
+        if (!isX86)
+        {
+            int delta = offset - tb.OffsetOfFirstGCRefMapSlot;
+            if (delta < 0 || delta % pointerSize != 0) return -1;
+            return delta / pointerSize;
+        }
+
+        // x86: arg registers come first in pos order, then stack args.
+        int argRegBase = tb.OffsetOfArgumentRegisters;
+        int argRegEnd = argRegBase + tb.NumArgumentRegisters * pointerSize;
+        if (offset >= argRegBase && offset < argRegEnd)
+        {
+            int delta = offset - argRegBase;
+            if (delta % pointerSize != 0) return -1;
+            // Reverse: pos = NumArgumentRegisters - 1 - (delta / ptr)
+            return tb.NumArgumentRegisters - 1 - (delta / pointerSize);
+        }
+        if (offset >= tb.OffsetOfArgs)
+        {
+            int delta = offset - tb.OffsetOfArgs;
+            if (delta % pointerSize != 0) return -1;
+            return tb.NumArgumentRegisters + (delta / pointerSize);
+        }
+        return -1;
+    }
+
+    private static GenericContextLoc SafeGetGenericContextLoc(IRuntimeTypeSystem rts, MethodDescHandle md)
+    {
+        try
+        {
+            return rts.GetGenericContextLoc(md);
+        }
+        catch
+        {
+            return GenericContextLoc.None;
+        }
+    }
+
+    // Mirror of runtime ByRefPointerOffsetsReporter (siginfo.cpp): walk the
+    // instance fields of a ByRefLike value type and emit one INTERIOR token
+    // per ELEMENT_TYPE_BYREF field at its offset within the unboxed struct
+    // (so absolute offset is baseOffset + fieldOffset). Recurses into nested
+    // ByRefLike value-type fields. ELEMENT_TYPE_PTR / IntPtr / void* fields
+    // are deliberately skipped to match runtime behavior for QCall-style
+    // handle wrappers.
+    private static void EmitByRefLikeInterior(
+        IRuntimeTypeSystem rts,
+        TypeHandle byRefLikeType,
+        int baseOffset,
+        SortedDictionary<int, GCRefMapToken> tokens)
+    {
+        // Bound recursion just in case the data is corrupt / cycles in a dump.
+        EmitByRefLikeInteriorRecursive(rts, byRefLikeType, baseOffset, tokens, depth: 0);
+    }
+
+    private static void EmitByRefLikeInteriorRecursive(
+        IRuntimeTypeSystem rts,
+        TypeHandle byRefLikeType,
+        int baseOffset,
+        SortedDictionary<int, GCRefMapToken> tokens,
+        int depth)
+    {
+        if (depth > MaxByRefLikeRecursionDepth)
+            return;
+        if (byRefLikeType.Address == TargetPointer.Null)
+            return;
+
+        IEnumerable<TargetPointer> fieldDescs;
+        try
+        {
+            fieldDescs = rts.GetFieldDescList(byRefLikeType);
+        }
+        catch
+        {
+            return;
+        }
+
+        foreach (TargetPointer fdPtr in fieldDescs)
+        {
+            bool isStatic;
+            CorElementType fieldType;
+            uint fieldOffset;
+            try
+            {
+                isStatic = rts.IsFieldDescStatic(fdPtr);
+                if (isStatic)
+                    continue;
+                fieldType = rts.GetFieldDescType(fdPtr);
+                fieldOffset = rts.GetFieldDescOffset(fdPtr, fieldDef: null);
+            }
+            catch
+            {
+                continue;
+            }
+
+            int absOffset = baseOffset + (int)fieldOffset;
+
+            if (fieldType == CorElementType.Byref)
+            {
+                tokens[absOffset] = GCRefMapToken.Interior;
+            }
+            else if (fieldType == CorElementType.ValueType)
+            {
+                // Nested value-type field. Recurse only if the field's own
+                // MethodTable is ByRefLike (matches runtime Find(FieldDesc*)
+                // in ByRefPointerOffsetsReporter).
+                TypeHandle nested = rts.GetFieldDescApproxTypeHandle(fdPtr);
+                if (nested.Address == TargetPointer.Null)
+                    continue;
+                bool nestedByRefLike;
+                try { nestedByRefLike = rts.IsByRefLike(nested); }
+                catch { continue; }
+                if (!nestedByRefLike)
+                    continue;
+                EmitByRefLikeInteriorRecursive(rts, nested, absOffset, tokens, depth + 1);
+            }
+        }
+    }
+
+    private static byte[] EmptyGCRefMapBlob()
+    {
+        GCRefMapEncoder enc = default;
+        return enc.Flush();
+    }
+
+    // Bit-stream encoder mirroring native GCRefMapBuilder (inc/gcrefmap.h).
+    // Every encoding rule -- AppendBit's 7-bit chunks with high-bit
+    // continuation, WriteToken's delta encoding, Flush's final byte --
+    // matches byte-for-byte.
+    private struct GCRefMapEncoder
+    {
+        private int _pendingByte;
+        private int _bits;
+        private uint _pos;
+        private List<byte> _bytes;
+
+        public int Length => _bytes?.Count ?? 0;
+
+        private void AppendBit(uint bit)
+        {
+            _bytes ??= new List<byte>(8);
+            if (bit != 0)
+            {
+                while (_bits >= 7)
+                {
+                    _bytes.Add((byte)(_pendingByte | 0x80));
+                    _pendingByte = 0;
+                    _bits -= 7;
+                }
+                _pendingByte |= 1 << _bits;
+            }
+            _bits++;
+        }
+
+        private void AppendTwoBit(uint bits)
+        {
+            AppendBit(bits & 1);
+            AppendBit(bits >> 1);
+        }
+
+        private void AppendInt(uint val)
+        {
+            do
+            {
+                AppendBit(val & 1);
+                AppendBit((val >> 1) & 1);
+                AppendBit((val >> 2) & 1);
+                val >>= 3;
+                AppendBit(val != 0 ? 1u : 0u);
+            }
+            while (val != 0);
+        }
+
+        // x86-only prefix: encode the callee-popped stack-byte count in
+        // pointer-size units before any tokens. Mirrors native
+        // GCRefMapBuilder::WriteStackPop (inc/gcrefmap.h). Must be called
+        // before the first WriteToken.
+        public void WriteStackPop(uint stackPop)
+        {
+            if (stackPop < 3)
+            {
+                AppendTwoBit(stackPop);
+            }
+            else
+            {
+                AppendTwoBit(3);
+                AppendInt(stackPop - 3);
+            }
+        }
+
+        public void WriteToken(uint pos, uint token)
+        {
+            uint posDelta = pos - _pos;
+            _pos = pos + 1;
+
+            if (posDelta != 0)
+            {
+                if (posDelta < 4)
+                {
+                    while (posDelta > 0)
+                    {
+                        AppendTwoBit(0);
+                        posDelta--;
+                    }
+                }
+                else
+                {
+                    AppendTwoBit(3);
+                    AppendInt((posDelta - 4) << 1);
+                }
+            }
+
+            if (token < 3)
+            {
+                AppendTwoBit(token);
+            }
+            else
+            {
+                AppendTwoBit(3);
+                AppendInt(((token - 3) << 1) | 1);
+            }
+        }
+
+        public byte[] Flush()
+        {
+            _bytes ??= new List<byte>(1);
+            if ((_pendingByte & 0x7F) != 0 || _pos == 0)
+                _bytes.Add((byte)(_pendingByte & 0x7F));
+
+            return _bytes.ToArray();
+        }
     }
 }

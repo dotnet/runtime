@@ -331,107 +331,14 @@ internal class GcScanner
     /// Matches native TransitionFrame::PromoteCallerStack (frames.cpp:1494).
     /// </summary>
     /// <remarks>
-    /// Uses <see cref="ICallingConvention.EnumerateArguments"/> to walk the method
-    /// signature and report each GC-significant argument slot. Paths the calling
-    /// convention contract has not implemented yet (e.g., VarArgs, SystemV struct
-    /// in registers) surface as <see cref="NotImplementedException"/>; callers fall
-    /// back to <see cref="GcScanContext.RecordDeferredFrame"/> so the stress harness
-    /// buckets the diff as a known issue rather than a real cDAC bug.
+    /// Not yet ported. Every call records a deferred frame so the stress harness
+    /// buckets the resulting cDAC-vs-runtime diff at this frame as a known issue
+    /// rather than a real cDAC bug. Will be replaced with a real port once the
+    /// signature- and ArgIterator-based ref enumeration lands.
     /// </remarks>
-    private void PromoteCallerStack(TargetPointer frameAddress, GcScanContext scanContext)
+    private static void PromoteCallerStack(TargetPointer frameAddress, GcScanContext scanContext)
     {
-        Data.FramedMethodFrame fmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frameAddress);
-        TargetPointer methodDescPtr = fmf.MethodDescPtr;
-        if (methodDescPtr == TargetPointer.Null)
-            return;
-
-        TargetPointer transitionBlock = fmf.TransitionBlockPtr;
-
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        ICallingConvention cc = _target.Contracts.CallingConvention;
-        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
-
-        IEnumerable<ArgumentLocation> args;
-        try
-        {
-            args = cc.EnumerateArguments(mdh);
-        }
-        catch (NotImplementedException)
-        {
-            scanContext.RecordDeferredFrame(frameAddress);
-            return;
-        }
-
-        foreach (ArgumentLocation arg in args)
-        {
-            TargetPointer slotAddress = transitionBlock + (ulong)arg.Offset;
-
-            if (arg.IsParamType)
-            {
-                // Generic instantiation arg -- not a GC reference itself but may need pinning
-                scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
-                continue;
-            }
-
-            if (arg.IsThis)
-            {
-                GcScanFlags thisFlags = arg.IsValueTypeThis ? GcScanFlags.GC_CALL_INTERIOR : GcScanFlags.None;
-                scanContext.GCReportCallback(slotAddress, thisFlags);
-                continue;
-            }
-
-            switch ((CorElementType)arg.ElementType)
-            {
-                case CorElementType.Class:
-                case CorElementType.String:
-                case CorElementType.Object:
-                case CorElementType.Array:
-                case CorElementType.SzArray:
-                    scanContext.GCReportCallback(slotAddress, GcScanFlags.None);
-                    break;
-
-                case CorElementType.Byref:
-                    scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
-                    break;
-
-                case CorElementType.ValueType:
-                    if (arg.IsPassedByRef)
-                    {
-                        scanContext.GCReportCallback(slotAddress, GcScanFlags.GC_CALL_INTERIOR);
-                    }
-                    else
-                    {
-                        ReportPointersFromValueType(rts, arg.TypeHandle, slotAddress, scanContext);
-                    }
-                    break;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Report GC references within an unboxed value type using GCDesc series.
-    /// Port of native ReportPointersFromValueType (siginfo.cpp).
-    /// </summary>
-    private void ReportPointersFromValueType(
-        IRuntimeTypeSystem rts, TypeHandle typeHandle, TargetPointer baseAddress, GcScanContext scanContext)
-    {
-        if (!rts.ContainsGCPointers(typeHandle))
-            return;
-
-        int pointerSize = _target.PointerSize;
-
-        foreach ((uint seriesOffset, uint seriesSize) in rts.GetGCDescSeries(typeHandle))
-        {
-            // GCDesc offset includes the MethodTable pointer; subtract it for unboxed layout.
-            int fieldOffset = (int)seriesOffset - pointerSize;
-            int runBytes = (int)seriesSize;
-
-            for (int off = 0; off < runBytes; off += pointerSize)
-            {
-                TargetPointer refAddr = baseAddress + (ulong)(fieldOffset + off);
-                scanContext.GCReportCallback(refAddr, GcScanFlags.None);
-            }
-        }
+        scanContext.RecordDeferredFrame(frameAddress);
     }
 
     private TargetPointer AddressFromGCRefMapPos(Data.TransitionBlock tb, int pos)

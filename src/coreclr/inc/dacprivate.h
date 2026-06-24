@@ -65,6 +65,7 @@ enum
     DACSTACKPRIV_REQUEST_FRAME_DATA = 0xf0000000
 };
 
+#ifdef CDAC_STRESS
 // Private requests for the cDAC stress harness.
 enum
 {
@@ -72,25 +73,23 @@ enum
     DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP = 0xf2000001
 };
 
-// Wire format for DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP.
-//
-// The runtime sends a MethodDesc address to the cDAC; the cDAC computes the
-// CallRefMap byte blob for that MD via its ArgIterator port and returns it
-// in `Blob`. `Hr` is S_OK on success, S_FALSE if the signature is unsupported
-// (treated as a skip), or a failure HRESULT (E_NOTIMPL for unported paths).
-// The fixed 252-byte blob covers any pathological signature -- typical blobs
-// are 1-4 bytes.
+// In/out request descriptor for DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP.
+// outBuffer is unused; the caller-allocated blob destination + size are
+// carried by this struct, and the handler writes cbFilled in place.
+//   S_OK                                    blob fit; cbFilled bytes written to *BlobBuffer.
+//   HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)  cbFilled = required size; *BlobBuffer untouched.
+//   E_NOTIMPL                               encoder declined this MD (bucketed as ARG_SKIP).
+//   E_FAIL                                  encoder threw (bucketed as ARG_ERROR).
+//   E_INVALIDARG                            bad inBuffer.
 struct DacStressArgGCRefMapRequest
 {
-    CLRDATA_ADDRESS MethodDesc;
+    CLRDATA_ADDRESS MethodDesc;     // [in]
+    CLRDATA_ADDRESS BlobBuffer;     // [in]  caller-allocated destination (in-proc pointer)
+    ULONG32         BlobBufferLen;  // [in]  capacity at BlobBuffer
+    ULONG32         cbFilled;       // [out] bytes actually written to *BlobBuffer
+    ULONG32         cbNeeded;       // [out] total bytes the blob requires
 };
-
-struct DacStressArgGCRefMapResponse
-{
-    HRESULT Hr;
-    ULONG32 BlobSize;
-    BYTE    Blob[252];
-};
+#endif // CDAC_STRESS
 
 enum DacpObjectType { OBJ_STRING=0,OBJ_FREE,OBJ_OBJECT,OBJ_ARRAY,OBJ_OTHER };
 struct MSLAYOUT DacpObjectData

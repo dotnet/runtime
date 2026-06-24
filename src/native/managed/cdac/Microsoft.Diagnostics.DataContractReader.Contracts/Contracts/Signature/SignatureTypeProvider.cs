@@ -37,7 +37,7 @@ public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<TypeHandle
     public TypeHandle GetGenericInstantiation(TypeHandle genericType, ImmutableArray<TypeHandle> typeArguments)
         => _runtimeTypeSystem.GetConstructedType(genericType, CorElementType.GenericInst, 0, typeArguments);
 
-    public virtual TypeHandle GetGenericMethodParameter(T context, int index)
+    public TypeHandle GetGenericMethodParameter(T context, int index)
     {
         if (typeof(T) == typeof(MethodDescHandle))
         {
@@ -46,7 +46,7 @@ public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<TypeHandle
         }
         throw new NotSupportedException();
     }
-    public virtual TypeHandle GetGenericTypeParameter(T context, int index)
+    public TypeHandle GetGenericTypeParameter(T context, int index)
     {
         TypeHandle typeContext;
         if (typeof(T) == typeof(TypeHandle))
