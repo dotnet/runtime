@@ -345,11 +345,6 @@ typedef struct {
 	int byte_arg_size;
 	guint8 pass_empty_struct : 1; // Set in scenarios when empty structs needs to be represented as argument.
 	guint8 is_signed : 1;
-	// Set for a <=16 byte all-integer vtype that is passed on the stack (storage == ArgOnStack)
-	// only because a field straddles the 8-byte eightbyte boundary, which the JIT cannot place in
-	// a register pair. The LLVM backend has no such limitation, so get_llvm_call_info () passes it
-	// in two integer registers instead. See add_valuetype ().
-	guint8 llvm_inreg_straddle : 1;
 } ArgInfo;
 
 struct CallInfo {
