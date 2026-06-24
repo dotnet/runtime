@@ -8871,6 +8871,10 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             isUnboxingStubOfInstantiatingStub = true;
         }
     }
+    else if (pDevirtMD->IsInstantiatingStub())
+    {
+        pInstArgMD = pDevirtMD->GetWrappedMethodDesc();
+    }
 
     if (pInstArgMD->RequiresInstMethodDescArg())
     {
