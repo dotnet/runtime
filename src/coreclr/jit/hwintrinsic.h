@@ -1041,6 +1041,45 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_Scalable) != 0;
     }
 
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    static bool IsSveCreateTrueMask(NamedIntrinsic id)
+    {
+        switch (id)
+        {
+            case NI_Sve_CreateTrueMaskByte:
+            case NI_Sve_CreateTrueMaskDouble:
+            case NI_Sve_CreateTrueMaskInt16:
+            case NI_Sve_CreateTrueMaskInt32:
+            case NI_Sve_CreateTrueMaskInt64:
+            case NI_Sve_CreateTrueMaskSByte:
+            case NI_Sve_CreateTrueMaskSingle:
+            case NI_Sve_CreateTrueMaskUInt16:
+            case NI_Sve_CreateTrueMaskUInt32:
+            case NI_Sve_CreateTrueMaskUInt64:
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    static bool IsSveBreakMask(NamedIntrinsic id)
+    {
+        switch (id)
+        {
+            case NI_Sve_CreateBreakAfterMask:
+            case NI_Sve_CreateBreakAfterPropagateMask:
+            case NI_Sve_CreateBreakBeforeMask:
+            case NI_Sve_CreateBreakBeforePropagateMask:
+            case NI_Sve_CreateBreakPropagateMask:
+                return true;
+
+            default:
+                return false;
+        }
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
     static bool IsLowMaskedOperation(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags                = lookupFlags(id);

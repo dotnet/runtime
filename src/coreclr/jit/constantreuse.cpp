@@ -2,67 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
-#include "constantmaskreuse.h"
+#include "constantreuse.h"
 
 #if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
 
-namespace ConstantMaskReuse
+namespace ConstantReuse
 {
-
-//-----------------------------------------------------------------------------
-// IsSveCreateTrueMask: Check if an intrinsic creates an SVE true mask.
-//
-// Arguments:
-//    intrinsic - The intrinsic to check
-//
-// Return Value:
-//    True if the intrinsic is an SVE CreateTrueMask intrinsic.
-//
-bool IsSveCreateTrueMask(NamedIntrinsic intrinsic)
-{
-    switch (intrinsic)
-    {
-        case NI_Sve_CreateTrueMaskByte:
-        case NI_Sve_CreateTrueMaskDouble:
-        case NI_Sve_CreateTrueMaskInt16:
-        case NI_Sve_CreateTrueMaskInt32:
-        case NI_Sve_CreateTrueMaskInt64:
-        case NI_Sve_CreateTrueMaskSByte:
-        case NI_Sve_CreateTrueMaskSingle:
-        case NI_Sve_CreateTrueMaskUInt16:
-        case NI_Sve_CreateTrueMaskUInt32:
-        case NI_Sve_CreateTrueMaskUInt64:
-            return true;
-
-        default:
-            return false;
-    }
-}
-
-//-----------------------------------------------------------------------------
-// IsSveBreakMask: Check if an intrinsic creates an SVE break mask.
-//
-// Arguments:
-//    intrinsic - The intrinsic to check
-//
-// Return Value:
-//    True if the intrinsic is an SVE break-mask intrinsic.
-//
-bool IsSveBreakMask(NamedIntrinsic intrinsic)
-{
-    switch (intrinsic)
-    {
-        case NI_Sve_CreateBreakAfterMask:
-        case NI_Sve_CreateBreakAfterPropagateMask:
-        case NI_Sve_CreateBreakBeforeMask:
-        case NI_Sve_CreateBreakBeforePropagateMask:
-        case NI_Sve_CreateBreakPropagateMask:
-            return true;
-
-        default:
-            return false;
-    }
-}
 
 //-----------------------------------------------------------------------------
 // TryGetSvePTrueOpt: Get the SVE ptrue arrangement for a SIMD base type.
@@ -134,7 +79,7 @@ struct ConstantMaskCandidateUse
 #endif
 };
 
-struct ConstantMaskReuseGroup
+struct ConstantReuseGroup
 {
     ConstantMaskCandidate candidate;
     unsigned              count;
@@ -198,7 +143,7 @@ static const char* CandidateUserName(GenTree* user)
 static void DumpConstantMaskCandidates(Compiler*                             compiler,
                                        BasicBlock*                           block,
                                        ArrayStack<ConstantMaskCandidateUse>& candidates,
-                                       ArrayStack<ConstantMaskReuseGroup>&   groups)
+                                       ArrayStack<ConstantReuseGroup>&       groups)
 {
     if (!compiler->verbose)
     {
@@ -210,7 +155,7 @@ static void DumpConstantMaskCandidates(Compiler*                             com
     for (int i = 0; i < candidates.Height(); i++)
     {
         ConstantMaskCandidateUse& candidateUse = candidates.BottomRef(i);
-        ConstantMaskReuseGroup&   group        = groups.BottomRef(candidateUse.groupIndex);
+        ConstantReuseGroup&       group        = groups.BottomRef(candidateUse.groupIndex);
         GenTree*                  user         = candidateUse.user;
         const unsigned            userId       = (user != nullptr) ? Compiler::dspTreeID(user) : 0;
 
@@ -226,7 +171,7 @@ static void DumpConstantMaskCandidates(Compiler*                             com
 
     for (int i = 0; i < groups.Height(); i++)
     {
-        ConstantMaskReuseGroup& group = groups.BottomRef(i);
+        ConstantReuseGroup& group = groups.BottomRef(i);
         JITDUMP("  group %d key ", i);
         DumpConstantMaskCandidateKey(compiler, group.candidate);
         JITDUMP(" count=%u %s\n", group.count, group.clean ? "clean" : "blocked");
@@ -305,7 +250,7 @@ bool TryGetConstantMaskCandidate(GenTree* node, ConstantMaskCandidate* candidate
         return true;
     }
 
-    if (IsSveCreateTrueMask(intrinsicId))
+    if (HWIntrinsicInfo::IsSveCreateTrueMask(intrinsicId))
     {
         GenTree* patternOp = hwintrinsic->Op(1);
         if ((patternOp == nullptr) || !patternOp->IsCnsIntOrI())
@@ -406,7 +351,7 @@ bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block)
 
     LIR::Range& range = LIR::AsRange(block);
 
-    ArrayStack<ConstantMaskReuseGroup>   groups(compiler->getAllocator(CMK_ArrayStack));
+    ArrayStack<ConstantReuseGroup>       groups(compiler->getAllocator(CMK_ArrayStack));
     ArrayStack<ConstantMaskCandidateUse> candidates(compiler->getAllocator(CMK_ArrayStack));
 
     // First pass: count exact-match candidates in this block. If any candidate
@@ -430,11 +375,11 @@ bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block)
             canReuse = false;
         }
 
-        ConstantMaskReuseGroup* group      = nullptr;
-        int                     groupIndex = -1;
+        ConstantReuseGroup* group      = nullptr;
+        int                 groupIndex = -1;
         for (int i = 0; i < groups.Height(); i++)
         {
-            ConstantMaskReuseGroup& current = groups.BottomRef(i);
+            ConstantReuseGroup& current = groups.BottomRef(i);
             if (sameCandidateKey(current.candidate, candidate))
             {
                 group      = &current;
@@ -445,8 +390,8 @@ bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block)
 
         if (group == nullptr)
         {
-            groupIndex                      = groups.Height();
-            ConstantMaskReuseGroup newGroup = {candidate, 0, canReuse, BAD_VAR_NUM};
+            groupIndex                  = groups.Height();
+            ConstantReuseGroup newGroup = {candidate, 0, canReuse, BAD_VAR_NUM};
             groups.Push(newGroup);
             group = &groups.TopRef();
         }
@@ -482,7 +427,7 @@ bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block)
     for (int i = 0; i < candidates.Height(); i++)
     {
         ConstantMaskCandidateUse& candidateUse = candidates.BottomRef(i);
-        ConstantMaskReuseGroup&   group        = groups.BottomRef(candidateUse.groupIndex);
+        ConstantReuseGroup&       group        = groups.BottomRef(candidateUse.groupIndex);
         GenTree*                  node         = candidateUse.node;
 
         if (!group.clean || (group.count <= 1))
@@ -533,17 +478,17 @@ bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block)
     return madeChanges;
 }
 
-} // namespace ConstantMaskReuse
+} // namespace ConstantReuse
 
 #endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
 
 //------------------------------------------------------------------------
-// fgOptimizeConstantMaskReuse: Run the target-specific constant mask reuse phase.
+// fgOptimizeConstantReuse: Run the target-specific, post-lowering LIR constant reuse phase.
 //
 // Returns:
 //    PhaseStatus indicating whether the IR was changed.
 //
-PhaseStatus Compiler::fgOptimizeConstantMaskReuse()
+PhaseStatus Compiler::fgOptimizeConstantReuse()
 {
 #if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
     bool madeChanges = false;
@@ -552,7 +497,7 @@ PhaseStatus Compiler::fgOptimizeConstantMaskReuse()
     {
         compCurBB = block;
 
-        madeChanges |= ConstantMaskReuse::ReuseConstantMaskCandidates(this, block);
+        madeChanges |= ConstantReuse::ReuseConstantMaskCandidates(this, block);
 
         assert(LIR::AsRange(block).CheckLIR(this, true));
     }

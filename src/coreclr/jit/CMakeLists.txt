@@ -110,6 +110,7 @@ set( JIT_SOURCES
   codegencommon.cpp
   codegenlinear.cpp
   compiler.cpp
+  constantreuse.cpp
   copyprop.cpp
   debuginfo.cpp
   disasm.cpp
@@ -168,7 +169,6 @@ set( JIT_SOURCES
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
-  constantmaskreuse.cpp
   promotion.cpp
   promotiondecomposition.cpp
   promotionliveness.cpp
@@ -339,7 +339,7 @@ set( JIT_HEADERS
   compilerbitsettraits.hpp
   compmemkind.h
   compphases.h
-  constantmaskreuse.h
+  constantreuse.h
   handlekinds.h
   dataflow.h
   debuginfo.h

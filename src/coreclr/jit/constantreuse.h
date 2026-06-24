@@ -5,7 +5,7 @@
 
 #if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
 
-namespace ConstantMaskReuse
+namespace ConstantReuse
 {
 
 constexpr int PFalseReusePattern = -1;
@@ -18,14 +18,12 @@ struct ConstantMaskCandidate
     int     pattern;
 };
 
-bool IsSveCreateTrueMask(NamedIntrinsic intrinsic);
-bool IsSveBreakMask(NamedIntrinsic intrinsic);
 int  PTrueReusePattern(SveMaskPattern pattern);
 bool TryGetSvePTrueOpt(var_types baseType, insOpts* opt);
 bool TryGetConstantMaskCandidate(GenTree* node, ConstantMaskCandidate* candidate);
 bool CanReuseConstantMaskCandidate(GenTree* node);
 bool ReuseConstantMaskCandidates(Compiler* compiler, BasicBlock* block);
 
-} // namespace ConstantMaskReuse
+} // namespace ConstantReuse
 
 #endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
