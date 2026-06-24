@@ -242,16 +242,10 @@ namespace System.Buffers
         }
 
         private static bool TryGetSingleRange<T>(ReadOnlySpan<T> values, out T minInclusive, out T maxInclusive)
-            where T : struct, INumber<T>, IMinMaxValue<T>
+            where T : struct, INumber<T>
         {
-            T min = T.MaxValue;
-            T max = T.MinValue;
-
-            foreach (T value in values)
-            {
-                min = T.Min(min, value);
-                max = T.Max(max, value);
-            }
+            T min = values.Min();
+            T max = values.Max();
 
             minInclusive = min;
             maxInclusive = max;
