@@ -342,8 +342,7 @@ namespace System.Runtime.Loader
                 return originalLocation;
             }
 
-            // A callback that returns null falls back to the original location, since Assembly.Location is non-nullable.
-            return locationOverride(assembly, originalLocation) ?? originalLocation;
+            return locationOverride(assembly, originalLocation);
         }
 
         // Custom AssemblyLoadContext implementations can override this
