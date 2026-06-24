@@ -44,7 +44,7 @@ cached mapping table).
 | runtime-coreclr r2r-extra | Sun + Mon 02:00 UTC | |
 | runtime-interpreter | Mon-Wed-Fri 13:00 UTC | |
 | runtime-libraries-interpreter | Mon-Wed-Fri 13:00 UTC | |
-| runtime-nativeaot-outerloop | 2x daily 9:00, 21:00 UTC | |
+| runtime-nativeaot-outerloop | 2x daily 09:00, 21:00 UTC | |
 | runtime-diagnostics | Daily | |
 | runtime-coreclr outerloop | Daily | |
 
