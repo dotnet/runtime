@@ -19,6 +19,8 @@ namespace System.Text.Json
         // and exclude characters that need to be escaped by adding a backslash: '\n', '\r', '\t', '\\', '\b', '\f'
         //
         // non-zero = allowed, 0 = disallowed
+        // This exactly matches the set used by JavaScriptEncoder.Default.
+        // SearchValues instances below also represent the same ASCII set, validated to match in the debug static ctor below.
         public const int LastAsciiCharacter = 0x7F;
         private static ReadOnlySpan<byte> AllowList => // byte.MaxValue + 1
         [
@@ -68,6 +70,7 @@ namespace System.Text.Json
 #if NET
         // The characters allowed by AllowList, used to vectorize the default (no custom encoder) escaping
         // scan directly instead of routing through System.Text.Encodings.Web.
+        // Validated to match the AllowList and JavaScriptEncoder.Default in the static ctor above.
         private static readonly SearchValues<byte> s_allowedBytes = SearchValues.Create(
             " !#$%()*,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{|}~"u8);
         private static readonly SearchValues<char> s_allowedChars = SearchValues.Create(
