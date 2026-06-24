@@ -8913,7 +8913,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (!info->instParamLookup.lookupKind.needsRuntimeLookup)
         {
-            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pInstantiatedMD;
+            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstantiatedMD;
             info->instParamLookup.constLookup.accessType = IAT_VALUE;
         }
     }
