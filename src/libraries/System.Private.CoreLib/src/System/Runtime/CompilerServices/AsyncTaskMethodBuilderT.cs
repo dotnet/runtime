@@ -442,7 +442,6 @@ namespace System.Runtime.CompilerServices
                 nextContinuation = null;
                 return false;
             }
-
         }
 
         /// <summary>Gets the <see cref="Task{TResult}"/> for this builder.</summary>
@@ -510,10 +509,7 @@ namespace System.Runtime.CompilerServices
 
             if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
             {
-                if (AsyncInstrumentation.IsEnabled.CompleteAsyncMethod(AsyncInstrumentation.ActiveFlags))
-                {
-                    AsyncStateMachineDispatcherInfo.CompleteAsyncMethod();
-                }
+                AsyncStateMachineDispatcherInfo.CompleteAsyncMethod(AsyncInstrumentation.ActiveFlags);
             }
 
             if (TplEventSource.Log.IsEnabled())
@@ -548,10 +544,7 @@ namespace System.Runtime.CompilerServices
 
             if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
             {
-                if (AsyncInstrumentation.IsEnabled.UnwindAsyncException(AsyncInstrumentation.ActiveFlags))
-                {
-                    AsyncStateMachineDispatcherInfo.UnwindAsyncFrame();
-                }
+                AsyncStateMachineDispatcherInfo.UnwindAsyncFrame(AsyncInstrumentation.ActiveFlags);
             }
 
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.
