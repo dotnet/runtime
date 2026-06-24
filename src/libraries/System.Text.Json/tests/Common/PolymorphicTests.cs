@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -548,11 +549,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<MyThingDictionary>("""{"":{}}"""));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task AnonymousType()
         {
-            // Anonymous types are unspeakable and cannot be registered with the source generator; validated under reflection only.
-            if (Serializer.IsSourceGeneratedSerializer) return;
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                throw new SkipTestException("Anonymous types are unspeakable and cannot be registered with the source generator.");
+            }
+
             const string Expected = """{"x":1,"y":true}""";
             var value = new { x = 1, y = true };
 

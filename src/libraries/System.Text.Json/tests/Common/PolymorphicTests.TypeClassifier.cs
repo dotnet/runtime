@@ -1349,8 +1349,6 @@ namespace System.Text.Json.Serialization.Tests
 
         #endregion
 
-        #region Generation parity (folded from source-gen suite)
-
         [Fact]
         public void PolymorphismOptions_AreGenerated()
         {
@@ -1430,8 +1428,6 @@ namespace System.Text.Json.Serialization.Tests
             OpenGenericDerived<string> d = Assert.IsType<OpenGenericDerived<string>>(result);
             Assert.Equal("hello", d.Extra);
         }
-
-        #endregion
 
         #region Helpers
 
