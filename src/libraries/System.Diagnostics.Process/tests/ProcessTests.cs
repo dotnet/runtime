@@ -10,6 +10,7 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -34,6 +35,7 @@ namespace System.Diagnostics.Tests
         {
             public static volatile bool WasFinalized;
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public static void CreateAndRelease()
             {
                 new FinalizingProcess();
@@ -282,6 +284,97 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        private static bool IsNotNanoServerAndRemoteExecutorSupported =>
+            PlatformDetection.IsNotWindowsNanoServer &&
+            RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(typeof(ProcessTests), nameof(IsNotNanoServerAndRemoteExecutorSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126936", TestPlatforms.Windows)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void StartDetached_GrandchildSurvivesSignalingParent(bool enable)
+        {
+            // Verify that a grandchild started with StartDetached=true survives terminating signal sent to the child's
+            // process group, whereas a non-detached grandchild (which inherits the child's process group) is killed.
+            int grandchildPid = -1;
+
+            // Start the child in its own group/session (process group leader) so killing the group
+            // targets only the child's process group, not the test runner's process group.
+            ProcessStartInfo childStartInfo = new()
+            {
+                RedirectStandardOutput = true,
+            };
+
+            if (OperatingSystem.IsWindows())
+            {
+                // We need to be able to send the signal to the child process group.
+                childStartInfo.CreateNewProcessGroup = true;
+            }
+            else
+            {
+                childStartInfo.StartDetached = true;
+            }
+
+            using (RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(static (arg) =>
+            {
+                using RemoteInvokeHandle grandchildHandle = RemoteExecutor.Invoke(
+                    static () => { Thread.Sleep(Timeout.Infinite); return RemoteExecutor.SuccessExitCode; },
+                    new RemoteInvokeOptions { Start = false, CheckExitCode = false });
+
+                grandchildHandle.Process.StartInfo.StartDetached = bool.Parse(arg);
+                grandchildHandle.Process.Start();
+
+                Console.WriteLine(grandchildHandle.Process.Id);
+
+                // Transfer ownership.
+                grandchildHandle.Process = null;
+
+                // Keep the child alive so the test can kill the process group.
+                Thread.Sleep(Timeout.Infinite);
+
+                return RemoteExecutor.SuccessExitCode;
+            },
+            enable.ToString(),
+            new RemoteInvokeOptions { StartInfo = childStartInfo, CheckExitCode = false }))
+            {
+                string pidLine = childHandle.Process.StandardOutput.ReadLine();
+                Assert.True(int.TryParse(pidLine, out grandchildPid), $"Could not parse grandchild PID from: '{pidLine}'");
+
+                // Obtain a Process instance before the child is killed to avoid PID reuse issues.
+                using Process grandchild = Process.GetProcessById(grandchildPid);
+
+                try
+                {
+                    Assert.False(grandchild.HasExited);
+
+                    // Kill the child's entire process group
+                    PosixSignal signal = OperatingSystem.IsWindows() ? PosixSignal.SIGQUIT : PosixSignal.SIGKILL;
+                    SendSignal(signal, childHandle.Process, entireProcessGroup: true);
+
+                    Assert.True(childHandle.Process.WaitForExit(WaitInMS));
+                    // Use shorter wait time when the process is expected to survive
+                    Assert.Equal(enable, !grandchild.WaitForExit(enable ? 300 : WaitInMS));
+                }
+                finally
+                {
+                    grandchild.Kill();
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void StartDetached_StartsAndExitsSuccessfully()
+        {
+            // Simple smoke test: a process started with StartDetached=true should run and exit normally.
+            RemoteInvokeOptions options = new()
+            {
+                StartInfo = new ProcessStartInfo { StartDetached = true }
+            };
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () => RemoteExecutor.SuccessExitCode, options);
+            Assert.True(handle.Process.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, handle.Process.ExitCode);
+        }
+
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(-2)]
         [InlineData((long)int.MaxValue + 1)]
@@ -289,6 +382,23 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
             Assert.Throws<ArgumentOutOfRangeException>("timeout", () => _process.WaitForExit(TimeSpan.FromMilliseconds(milliseconds)));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(-2)]
+        [InlineData(-10)]
+        [InlineData(int.MinValue)]
+        public void TestWaitForExitInt_Validation(int milliseconds)
+        {
+            Process process = CreateDefaultProcess();
+            try
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("milliseconds", () => process.WaitForExit(milliseconds));
+            }
+            finally
+            {
+                process.Kill();
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -777,7 +887,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsOpenBSD || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -825,7 +935,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsOpenBSD || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -1189,7 +1299,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "getting/setting affinity not supported on OSX and BSD")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.OpenBSD, "getting/setting affinity not supported on OSX and BSD")]
         public void TestProcessorAffinity()
         {
             CreateDefaultProcess();
@@ -1356,23 +1466,15 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestGetProcessById()
-        {
-            CreateDefaultProcess();
-
-            Process p = Process.GetProcessById(_process.Id);
-            Assert.Equal(_process.Id, p.Id);
-            Assert.Equal(_process.ProcessName, p.ProcessName);
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetProcessById_KilledProcess_ThrowsArgumentException()
         {
             Process process = CreateDefaultProcess();
-            var handle = process.SafeHandle;
+            SafeProcessHandle handle = process.SafeHandle;
             int processId = process.Id;
+
             process.Kill();
             process.WaitForExit(WaitInMS);
+
             Assert.Throws<ArgumentException>(() => Process.GetProcessById(processId));
             GC.KeepAlive(handle);
         }
@@ -2409,7 +2511,13 @@ namespace System.Diagnostics.Tests
             string sleepCommandPathFileName = Path.Combine(TestDirectory, LongProcessName);
             File.Copy(sleepPath, sleepCommandPathFileName);
 
-            using (Process px = Process.Start(sleepCommandPathFileName, "600"))
+            using SafeFileHandle nullHandle = File.OpenNullHandle();
+            ProcessStartInfo psi = new(sleepCommandPathFileName, "600")
+            {
+                StandardOutputHandle = nullHandle,
+                StandardErrorHandle= nullHandle
+            };
+            using (Process px = Process.Start(psi))
             {
                 // Reading of long process names is flaky during process startup and shutdown.
                 // Wait a bit to skip over the period where the ProcessName is not reliable.
@@ -2422,7 +2530,7 @@ namespace System.Diagnostics.Tests
                 }
                 finally
                 {
-                    px.Kill();
+                    px.Kill(entireProcessTree: true);
                     px.WaitForExit();
                 }
             }

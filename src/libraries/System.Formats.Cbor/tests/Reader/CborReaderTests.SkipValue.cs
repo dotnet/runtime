@@ -270,7 +270,7 @@ namespace System.Formats.Cbor.Tests
             encoding.AsSpan(0, depth).Fill(0x81); // array of length 1
             encoding[depth] = 0;
 
-            var reader = new CborReader(encoding);
+            var reader = new CborReader(encoding, new CborReaderOptions { MaxDepth = depth });
 
             reader.SkipValue();
             Assert.Equal(CborReaderState.Finished, reader.PeekState());

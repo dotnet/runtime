@@ -9,6 +9,7 @@
     <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
     <!-- Disable on Mono which does not support runtime-async. -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="helper/helper.csproj" />

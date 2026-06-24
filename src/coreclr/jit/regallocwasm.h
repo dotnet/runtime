@@ -131,6 +131,7 @@ public:
 
     bool isRegCandidate(LclVarDsc* varDsc);
     bool isContainableMemoryOp(GenTree* node);
+    void checkForDNER(unsigned lclNum, LclVarDsc* varDsc);
 
 private:
     LIR::Range& CurrentRange();

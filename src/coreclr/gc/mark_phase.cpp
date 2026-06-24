@@ -1,6 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
+#ifdef MULTIPLE_HEAPS
+gc_heap* seg_mapping_table_heap_of_gc (uint8_t* o);
+#endif //MULTIPLE_HEAPS
+
 inline
 size_t clear_special_bits (uint8_t* node)
 {
@@ -98,24 +112,6 @@ size_t gc_heap::deque_pinned_plug ()
 }
 
 inline
-mark* gc_heap::pinned_plug_of (size_t bos)
-{
-    return &mark_stack_array [ bos ];
-}
-
-inline
-mark* gc_heap::oldest_pin ()
-{
-    return pinned_plug_of (mark_stack_bos);
-}
-
-inline
-BOOL gc_heap::pinned_plug_que_empty_p ()
-{
-    return (mark_stack_bos == mark_stack_tos);
-}
-
-inline
 mark* gc_heap::before_oldest_pin()
 {
     if (mark_stack_bos >= 1)
@@ -143,18 +139,21 @@ void gc_heap::make_mark_stack (mark* arr)
 #endif //MH_SC_MARK
 }
 
-#ifdef BACKGROUND_GC
-inline
-size_t& gc_heap::bpromoted_bytes(int thread)
+gc_heap* gc_heap::heap_of_gc (uint8_t* o)
 {
 #ifdef MULTIPLE_HEAPS
-    return g_bpromoted [thread*16];
+    if (o == 0)
+        return g_heaps [0];
+
+    gc_heap* hp = seg_mapping_table_heap_of_gc (o);
+    return (hp ? hp : g_heaps[0]);
 #else //MULTIPLE_HEAPS
-    UNREFERENCED_PARAMETER(thread);
-    return g_bpromoted;
+    UNREFERENCED_PARAMETER(o);
+    return __this;
 #endif //MULTIPLE_HEAPS
 }
 
+#ifdef BACKGROUND_GC
 void gc_heap::make_background_mark_stack (uint8_t** arr)
 {
     background_mark_stack_array = arr;
@@ -170,33 +169,9 @@ void gc_heap::make_c_mark_list (uint8_t** arr)
 }
 
 inline
-unsigned int gc_heap::mark_array_marked(uint8_t* add)
-{
-    return mark_array [mark_word_of (add)] & (1 << mark_bit_bit_of (add));
-}
-
-inline
 BOOL gc_heap::is_mark_bit_set (uint8_t* add)
 {
     return (mark_array [mark_word_of (add)] & (1 << mark_bit_bit_of (add)));
-}
-
-inline
-void gc_heap::mark_array_set_marked (uint8_t* add)
-{
-    size_t index = mark_word_of (add);
-    uint32_t val = (1 << mark_bit_bit_of (add));
-#ifdef MULTIPLE_HEAPS
-    Interlocked::Or (&(mark_array [index]), val);
-#else
-    mark_array [index] |= val;
-#endif
-}
-
-inline
-void gc_heap::mark_array_clear_marked (uint8_t* add)
-{
-    mark_array [mark_word_of (add)] &= ~(1 << mark_bit_bit_of (add));
 }
 
 #ifdef FEATURE_BASICFREEZE
@@ -273,7 +248,7 @@ static size_t target_mark_count_for_heap (size_t total_mark_count, int heap_coun
 NOINLINE
 uint8_t** gc_heap::equalize_mark_lists (size_t total_mark_list_size)
 {
-    size_t local_mark_count[MAX_SUPPORTED_CPUS];
+    size_t local_mark_count[MAX_SUPPORTED_HEAPS];
     size_t total_mark_count = 0;
 
     // compute mark count per heap into a local array
@@ -674,9 +649,9 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
     int source_number = (size_t)heap_number;
 #endif //USE_REGIONS
 
-    uint8_t** source[MAX_SUPPORTED_CPUS];
-    uint8_t** source_end[MAX_SUPPORTED_CPUS];
-    int source_heap[MAX_SUPPORTED_CPUS];
+    uint8_t** source[MAX_SUPPORTED_HEAPS];
+    uint8_t** source_end[MAX_SUPPORTED_HEAPS];
+    int source_heap[MAX_SUPPORTED_HEAPS];
     int source_count = 0;
 
     for (int i = 0; i < n_heaps; i++)
@@ -687,7 +662,7 @@ void gc_heap::merge_mark_lists (size_t total_mark_list_size)
             source[source_count] = heap->mark_list_piece_start[source_number];
             source_end[source_count] = heap->mark_list_piece_end[source_number];
             source_heap[source_count] = i;
-            if (source_count < MAX_SUPPORTED_CPUS)
+            if (source_count < MAX_SUPPORTED_HEAPS)
                 source_count++;
         }
     }
@@ -920,17 +895,6 @@ void gc_heap::grow_mark_list ()
 #ifdef BACKGROUND_GC
 #ifdef FEATURE_BASICFREEZE
 inline
-void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
-{
-    uint8_t* range_beg = 0;
-    uint8_t* range_end = 0;
-    if (bgc_mark_array_range (seg, FALSE, &range_beg, &range_end))
-    {
-        clear_mark_array (range_beg, align_on_mark_word (range_end));
-    }
-}
-
-inline
 void gc_heap::seg_set_mark_array_bits_soh (heap_segment* seg)
 {
     uint8_t* range_beg = 0;
@@ -1011,59 +975,6 @@ void gc_heap::bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 
 #endif //BACKGROUND_GC
 
-inline
-BOOL gc_heap::is_mark_set (uint8_t* o)
-{
-    return marked (o);
-}
-
-inline
-size_t gc_heap::get_promoted_bytes()
-{
-#ifdef USE_REGIONS
-    if (!survived_per_region)
-    {
-        dprintf (REGIONS_LOG, ("no space to store promoted bytes"));
-        return 0;
-    }
-
-    dprintf (3, ("h%d getting surv", heap_number));
-    size_t promoted = 0;
-    for (size_t i = 0; i < region_count; i++)
-    {
-        if (survived_per_region[i] > 0)
-        {
-            heap_segment* region = get_region_at_index (i);
-            dprintf (REGIONS_LOG, ("h%d region[%zd] %p(g%d)(%s) surv: %zd(%p)",
-                heap_number, i,
-                heap_segment_mem (region),
-                heap_segment_gen_num (region),
-                (heap_segment_loh_p (region) ? "LOH" : (heap_segment_poh_p (region) ? "POH" :"SOH")),
-                survived_per_region[i],
-                &survived_per_region[i]));
-
-            promoted += survived_per_region[i];
-        }
-    }
-
-#ifdef _DEBUG
-    dprintf (REGIONS_LOG, ("h%d global recorded %zd, regions recorded %zd",
-        heap_number, promoted_bytes (heap_number), promoted));
-    assert (promoted_bytes (heap_number) == promoted);
-#endif //_DEBUG
-
-    return promoted;
-
-#else //USE_REGIONS
-
-#ifdef MULTIPLE_HEAPS
-    return g_promoted [heap_number*16];
-#else //MULTIPLE_HEAPS
-    return g_promoted;
-#endif //MULTIPLE_HEAPS
-#endif //USE_REGIONS
-}
-
 #ifdef USE_REGIONS
 void gc_heap::sync_promoted_bytes()
 {
@@ -1141,7 +1052,7 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
         //  compute total promoted bytes per gen
         size_t total_surv = 0;
         size_t max_surv_per_heap = 0;
-        size_t surv_per_heap[MAX_SUPPORTED_CPUS];
+        size_t surv_per_heap[MAX_SUPPORTED_HEAPS];
         for (int i = 0; i < n_heaps; i++)
         {
             surv_per_heap[i] = 0;
@@ -1282,7 +1193,7 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
             surplus_regions_by_size_class[size_class] = region;
         }
 
-        int next_heap_in_size_class[MAX_SUPPORTED_CPUS];
+        int next_heap_in_size_class[MAX_SUPPORTED_HEAPS];
         int heaps_by_deficit_size_class[NUM_SIZE_CLASSES];
         for (int i = 0; i < NUM_SIZE_CLASSES; i++)
         {
@@ -1476,24 +1387,6 @@ BOOL gc_heap::gc_mark1 (uint8_t* o)
 #endif //USE_REGIONS && _DEBUG
     return marked;
 }
-
-#ifdef USE_REGIONS
-inline bool gc_heap::is_in_gc_range (uint8_t* o)
-{
-#ifdef FEATURE_BASICFREEZE
-    // we may have frozen objects in read only segments
-    // outside of the reserved address range of the gc heap
-    assert (((g_gc_lowest_address <= o) && (o < g_gc_highest_address)) ||
-        (o == nullptr) || (ro_segment_lookup (o) != nullptr));
-#else //FEATURE_BASICFREEZE
-    // without frozen objects, every non-null pointer must be
-    // within the heap
-    assert ((o == nullptr) || (g_gc_lowest_address <= o) && (o < g_gc_highest_address));
-#endif //FEATURE_BASICFREEZE
-    return ((gc_low <= o) && (o < gc_high));
-}
-
-#endif //USE_REGIONS
 
 inline
 BOOL gc_heap::gc_mark (uint8_t* o, uint8_t* low, uint8_t* high, int condemned_gen)
@@ -2871,24 +2764,6 @@ void gc_heap::fire_mark_event (int root_type, size_t& current_promoted_bytes, si
 #endif // FEATURE_EVENT_TRACE
 }
 
-#ifdef FEATURE_EVENT_TRACE
-inline
-void gc_heap::record_mark_time (uint64_t& mark_time,
-                                uint64_t& current_mark_time,
-                                uint64_t& last_mark_time)
-{
-    if (informational_event_enabled_p)
-    {
-        current_mark_time = GetHighPrecisionTimeStamp();
-        mark_time = limit_time_to_uint32 (current_mark_time - last_mark_time);
-        dprintf (3, ("%zd - %zd = %zd",
-            current_mark_time, last_mark_time, (current_mark_time - last_mark_time)));
-        last_mark_time = current_mark_time;
-    }
-}
-
-#endif //FEATURE_EVENT_TRACE
-
 void gc_heap::mark_phase (int condemned_gen_number)
 {
     assert (settings.concurrent == FALSE);
@@ -3597,22 +3472,6 @@ void gc_heap::mark_phase (int condemned_gen_number)
     dprintf(2,("---- End of mark phase ----"));
 }
 
-inline
-void gc_heap::pin_object (uint8_t* o, uint8_t** ppObject)
-{
-    dprintf (3, ("Pinning %zx->%zx", (size_t)ppObject, (size_t)o));
-    set_pinned (o);
-
-#ifdef FEATURE_EVENT_TRACE
-    if(EVENT_ENABLED(PinObjectAtGCTime))
-    {
-        fire_etw_pin_object_event(o, ppObject);
-    }
-#endif // FEATURE_EVENT_TRACE
-
-    num_pinned_objects++;
-}
-
 size_t gc_heap::get_total_pinned_objects()
 {
 #ifdef MULTIPLE_HEAPS
@@ -3722,95 +3581,6 @@ void gc_heap::grow_mark_list_piece()
 }
 
 #endif //USE_REGIONS
-
-// For regions -
-// n_gen means it's pointing into the condemned regions so it's incremented
-// if the child object's region is <= condemned_gen.
-// cg_pointers_found means it's pointing into a lower generation so it's incremented
-// if the child object's region is < current_gen.
-inline void
-gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
-                                    size_t& cg_pointers_found,
-                                    card_fn fn, uint8_t* nhigh,
-                                    uint8_t* next_boundary,
-                                    int condemned_gen,
-                                    // generation of the parent object
-                                    int current_gen
-                                    CARD_MARKING_STEALING_ARG(gc_heap* hpt))
-{
-#if defined(FEATURE_CARD_MARKING_STEALING) && defined(MULTIPLE_HEAPS)
-    int thread = hpt->heap_number;
-#else
-    THREAD_FROM_HEAP;
-#ifdef MULTIPLE_HEAPS
-    gc_heap* hpt = this;
-#endif //MULTIPLE_HEAPS
-#endif //FEATURE_CARD_MARKING_STEALING && MULTIPLE_HEAPS
-
-#ifdef USE_REGIONS
-    assert (nhigh == 0);
-    assert (next_boundary == 0);
-    uint8_t* child_object = *poo;
-    if ((child_object < ephemeral_low) || (ephemeral_high <= child_object))
-        return;
-
-    int child_object_gen = get_region_gen_num (child_object);
-    int saved_child_object_gen = child_object_gen;
-    uint8_t* saved_child_object = child_object;
-
-    if (child_object_gen <= condemned_gen)
-    {
-        n_gen++;
-        call_fn(hpt,fn) (poo THREAD_NUMBER_ARG);
-    }
-
-    if (fn == &gc_heap::relocate_address)
-    {
-        child_object_gen = get_region_plan_gen_num (*poo);
-    }
-
-    if (child_object_gen < current_gen)
-    {
-        cg_pointers_found++;
-        dprintf (4, ("cg pointer %zx found, %zd so far",
-                        (size_t)*poo, cg_pointers_found ));
-    }
-#else //USE_REGIONS
-    assert (condemned_gen == -1);
-    if ((gc_low <= *poo) && (gc_high > *poo))
-    {
-        n_gen++;
-        call_fn(hpt,fn) (poo THREAD_NUMBER_ARG);
-    }
-#ifdef MULTIPLE_HEAPS
-    else if (*poo)
-    {
-        gc_heap* hp = heap_of_gc (*poo);
-        if (hp != this)
-        {
-            if ((hp->gc_low <= *poo) &&
-                (hp->gc_high > *poo))
-            {
-                n_gen++;
-                call_fn(hpt,fn) (poo THREAD_NUMBER_ARG);
-            }
-            if ((fn == &gc_heap::relocate_address) ||
-                ((hp->ephemeral_low <= *poo) &&
-                 (hp->ephemeral_high > *poo)))
-            {
-                cg_pointers_found++;
-            }
-        }
-    }
-#endif //MULTIPLE_HEAPS
-    if ((next_boundary <= *poo) && (nhigh > *poo))
-    {
-        cg_pointers_found ++;
-        dprintf (4, ("cg pointer %zx found, %zd so far",
-                     (size_t)*poo, cg_pointers_found ));
-    }
-#endif //USE_REGIONS
-}
 
 void gc_heap::mark_through_cards_for_segments (card_fn fn, BOOL relocating CARD_MARKING_STEALING_ARG(gc_heap* hpt))
 {
@@ -4202,3 +3972,5 @@ go_through_refs:
             n_gen, n_eph, n_card_set, total_cards_cleared, generation_skip_ratio));
     }
 }
+
+} // namespace SVR/WKS

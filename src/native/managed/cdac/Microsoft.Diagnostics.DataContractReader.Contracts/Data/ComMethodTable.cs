@@ -3,17 +3,9 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ComMethodTable : IData<ComMethodTable>
+[CdacType(nameof(DataType.ComMethodTable))]
+internal sealed partial class ComMethodTable : IData<ComMethodTable>
 {
-    static ComMethodTable IData<ComMethodTable>.Create(Target target, TargetPointer address) => new ComMethodTable(target, address);
-    public ComMethodTable(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ComMethodTable);
-
-        Flags = target.ReadNUInt(address + (ulong)type.Fields[nameof(Flags)].Offset);
-        MethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(MethodTable)].Offset);
-    }
-
-    public TargetNUInt Flags { get; init; }
-    public TargetPointer MethodTable { get; init; }
+    [Field] public TargetNUInt Flags { get; }
+    [Field] public TargetPointer MethodTable { get; }
 }

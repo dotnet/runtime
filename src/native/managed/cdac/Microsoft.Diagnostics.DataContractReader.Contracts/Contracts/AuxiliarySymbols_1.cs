@@ -31,7 +31,7 @@ internal readonly struct AuxiliarySymbols_1 : IAuxiliarySymbols
             TargetPointer entryAddr = helperArrayPtr + (ulong)(i * entrySize);
             Data.AuxiliarySymbolInfo entry = _target.ProcessedData.GetOrAdd<Data.AuxiliarySymbolInfo>(entryAddr);
 
-            if (entry.Address == codePointer)
+            if (entry.CodeAddress == codePointer)
             {
                 if (entry.Name != TargetPointer.Null)
                 {

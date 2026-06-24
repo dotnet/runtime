@@ -249,7 +249,7 @@ public:
 };
 
 // Use the SigParser type to handle bounds checks safely
-bool AddVersionResilientHashCodeForInstruction(ILInstructionParser *parser, xxHash *hash)
+bool AddVersionResilientHashCodeForInstruction(ILInstructionParser *parser, xxHashVersionResilient *hash)
 {
     uint16_t opcodeValue;
     BYTE firstByte;
@@ -388,7 +388,7 @@ bool GetVersionResilientILCodeHashCode(MethodDesc *pMD, int* hashCode, unsigned*
     bool initLocals;
     SigParser localSig;
 
-    xxHash hashILData;
+    xxHashVersionResilient hashILData;
 
     if (pMD->IsDynamicMethod())
     {

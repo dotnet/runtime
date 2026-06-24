@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 class NoGCRegionLockHolder
 {
 public:
@@ -14,6 +24,42 @@ public:
         leave_spin_lock_noinstru(&g_no_gc_lock);
     }
 };
+
+inline
+CObjectHeader* gc_heap::allocate (size_t jsize, alloc_context* acontext, uint32_t flags)
+{
+    size_t size = Align (jsize);
+    assert (size >= Align (min_obj_size));
+    {
+    retry:
+        uint8_t*  result = acontext->alloc_ptr;
+        acontext->alloc_ptr+=size;
+        if (acontext->alloc_ptr <= acontext->alloc_limit)
+        {
+            CObjectHeader* obj = (CObjectHeader*)result;
+            assert (obj != 0);
+            return obj;
+        }
+        else
+        {
+            acontext->alloc_ptr -= size;
+
+#ifdef _MSC_VER
+#pragma inline_depth(0)
+#endif //_MSC_VER
+
+            if (! allocate_more_space (acontext, size, flags, 0))
+                return 0;
+
+#ifdef _MSC_VER
+#pragma inline_depth(20)
+#endif //_MSC_VER
+
+            goto retry;
+        }
+    }
+}
+
 void GCHeap::Shutdown()
 {
     // This does not work for standalone GC on Windows because windows closed the file
@@ -198,6 +244,12 @@ HRESULT GCHeap::Initialize()
 #else //!MULTIPLE_HEAPS
     GCConfig::SetServerGC(true);
     AffinitySet config_affinity_set;
+    if (!config_affinity_set.Initialize(GCToOSInterface::GetMaxProcessorCount()))
+    {
+        log_init_error_to_host ("Failed to initialize affinity set for GC heap affinity configuration");
+        return E_OUTOFMEMORY;
+    }
+
     GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
 
     uintptr_t config_affinity_mask = static_cast<uintptr_t>(GCConfig::GetGCHeapAffinitizeMask());
@@ -240,7 +292,7 @@ HRESULT GCHeap::Initialize()
 
     nhp = ((nhp_from_config == 0) ? g_num_active_processors : nhp_from_config);
 
-    nhp = min (nhp, (uint32_t)MAX_SUPPORTED_CPUS);
+    nhp = min (nhp, (uint32_t)MAX_SUPPORTED_HEAPS);
 
     gc_heap::gc_thread_no_affinitize_p = (gc_heap::heap_hard_limit ?
         !affinity_config_specified_p : (GCConfig::GetNoAffinitize() != 0));
@@ -269,7 +321,7 @@ HRESULT GCHeap::Initialize()
     {
         return CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT;
     }
-    GCConfig::SetGCLargePages(gc_heap::use_large_pages_p);
+    GCConfig::SetGCLargePages(gc_heap::use_large_pages_p ? (gc_heap::large_pages_emulation_mode_p ? 2 : 1) : 0);
 
 #ifdef USE_REGIONS
     gc_heap::regions_range = (size_t)GCConfig::GetGCRegionRange();
@@ -532,7 +584,11 @@ HRESULT GCHeap::Initialize()
         }
     }
 
-    heap_select::init_numa_node_to_heap_map (nhp);
+    if (!heap_select::init_numa_node_to_heap_map (nhp))
+    {
+        log_init_error_to_host ("Initialization of NUMA node to heap map failed");
+        return E_OUTOFMEMORY;
+    }
 
     // If we have more active processors than heaps we still want to initialize some of the
     // mapping for the rest of the active processors because user threads can still run on
@@ -1044,16 +1100,22 @@ void GCHeap::Promote(Object** ppObject, ScanContext* sc, uint32_t flags)
 
     uint8_t* o = (uint8_t*)*ppObject;
 
-    if (!gc_heap::is_in_find_object_range (o))
-    {
-        return;
-    }
-
 #ifdef DEBUG_DestroyedHandleValue
     // we can race with destroy handle during concurrent scan
     if (o == (uint8_t*)DEBUG_DestroyedHandleValue)
         return;
 #endif //DEBUG_DestroyedHandleValue
+
+    if (!gc_heap::is_in_find_object_range (o))
+    {
+#ifdef _DEBUG
+        if ((o != NULL) && !(flags & GC_CALL_INTERIOR))
+        {
+            ((CObjectHeader*)o)->Validate();
+        }
+#endif //_DEBUG
+        return;
+    }
 
     HEAP_FROM_THREAD;
 
@@ -2736,3 +2798,5 @@ int GCHeap::RefreshMemoryLimit()
 {
     return gc_heap::refresh_memory_limit();
 }
+
+} // namespace SVR/WKS

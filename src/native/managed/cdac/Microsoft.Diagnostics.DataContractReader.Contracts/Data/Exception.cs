@@ -3,31 +3,30 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class Exception : IData<Exception>
+[CdacType(nameof(DataType.Exception), "System.Exception")]
+internal sealed partial class Exception : IData<Exception>
 {
-    static Exception IData<Exception>.Create(Target target, TargetPointer address)
-        => new Exception(target, address);
+    [Field("_message")]
+    public TargetPointer Message { get; }
 
-    public Exception(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.Exception);
+    [Field("_innerException")]
+    public TargetPointer InnerException { get; }
 
-        Message = target.ReadPointer(address + (ulong)type.Fields["_message"].Offset);
-        InnerException = target.ReadPointer(address + (ulong)type.Fields["_innerException"].Offset);
-        StackTrace = target.ReadPointer(address + (ulong)type.Fields["_stackTrace"].Offset);
-        WatsonBuckets = target.ReadPointer(address + (ulong)type.Fields["_watsonBuckets"].Offset);
-        StackTraceString = target.ReadPointer(address + (ulong)type.Fields["_stackTraceString"].Offset);
-        RemoteStackTraceString = target.ReadPointer(address + (ulong)type.Fields["_remoteStackTraceString"].Offset);
-        HResult = target.Read<int>(address + (ulong)type.Fields["_HResult"].Offset);
-        XCode = target.Read<int>(address + (ulong)type.Fields["_xcode"].Offset);
-    }
+    [Field("_stackTrace")]
+    public TargetPointer StackTrace { get; }
 
-    public TargetPointer Message { get; init; }
-    public TargetPointer InnerException { get; init; }
-    public TargetPointer StackTrace { get; init; }
-    public TargetPointer WatsonBuckets { get; init; }
-    public TargetPointer StackTraceString { get; init; }
-    public TargetPointer RemoteStackTraceString { get; init; }
-    public int HResult { get; init; }
-    public int XCode { get; init; }
+    [Field("_watsonBuckets")]
+    public TargetPointer WatsonBuckets { get; }
+
+    [Field("_stackTraceString")]
+    public TargetPointer StackTraceString { get; }
+
+    [Field("_remoteStackTraceString")]
+    public TargetPointer RemoteStackTraceString { get; }
+
+    [Field("_HResult")]
+    public int HResult { get; }
+
+    [Field("_xcode")]
+    public int XCode { get; }
 }

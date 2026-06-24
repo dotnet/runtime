@@ -415,7 +415,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(size->isContained());
 
         // If amount is zero then return null in regCnt
-        size_t amount = size->AsIntCon()->gtIconVal;
+        size_t amount = size->AsIntCon()->IconValue();
         if (amount == 0)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, regCnt);
@@ -454,7 +454,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     if (size->IsCnsIntOrI())
     {
         // 'amount' is the total number of bytes to localloc to properly STACK_ALIGN
-        target_size_t amount = (target_size_t)size->AsIntCon()->gtIconVal;
+        target_size_t amount = (target_size_t)size->AsIntCon()->IconValue();
         amount               = AlignUp(amount, STACK_ALIGN);
 
         // For small allocations we will generate up to four push instructions (either 2 or 4, exactly,
@@ -644,6 +644,17 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genNonLocalJmp: Not supported for arm32.
+//
+// Parameters:
+//   tree - the GT_NONLOCAL_JMP node
+//
+void CodeGen::genNonLocalJmp(GenTreeUnOp* tree)
+{
+    NYI_ARM("GT_NONLOCAL_JMP is not supported on arm32");
+}
+
+//------------------------------------------------------------------------
 // genJumpTable: emits the table and an instruction to get the address of the first element
 //
 void CodeGen::genJumpTable(GenTree* treeNode)
@@ -670,6 +681,17 @@ void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genFtnEntry: Not supported for arm32.
+//
+// Parameters:
+//   treeNode - the GT_FTN_ENTRY node
+//
+void CodeGen::genFtnEntry(GenTree* treeNode)
+{
+    NYI_ARM("GT_FTN_ENTRY is not supported on arm32");
+}
+
+//------------------------------------------------------------------------
 // genGetInsForOper: Return instruction encoding of the operation tree.
 //
 instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
@@ -693,9 +715,12 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_MUL:
             ins = INS_MUL;
             break;
-#if !defined(USE_HELPERS_FOR_INT_DIV)
+#if !USE_HELPERS_FOR_INT_DIV
         case GT_DIV:
             ins = INS_sdiv;
+            break;
+        case GT_UDIV:
+            ins = INS_udiv;
             break;
 #endif // !USE_HELPERS_FOR_INT_DIV
         case GT_LSH:
@@ -787,128 +812,6 @@ void CodeGen::genCodeForNegNot(GenTreeOp* tree)
     }
 
     genProduceReg(tree);
-}
-
-// Generate code for CpObj nodes which copy structs that have interleaved
-// GC pointers.
-// For this case we'll generate a sequence of loads/stores in the case of struct
-// slots that don't contain GC pointers.  The generated code will look like:
-// ldr tempReg, [R13, #8]
-// str tempReg, [R14, #8]
-//
-// In the case of a GC-Pointer we'll call the ByRef write barrier helper
-// who happens to use the same registers as the previous call to maintain
-// the same register requirements and register killsets:
-// bl CORINFO_HELP_ASSIGN_BYREF
-//
-// So finally an example would look like this:
-// ldr tempReg, [R13, #8]
-// str tempReg, [R14, #8]
-// bl CORINFO_HELP_ASSIGN_BYREF
-// ldr tempReg, [R13, #8]
-// str tempReg, [R14, #8]
-// bl CORINFO_HELP_ASSIGN_BYREF
-// ldr tempReg, [R13, #8]
-// str tempReg, [R14, #8]
-void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
-{
-    GenTree*  dstAddr       = cpObjNode->Addr();
-    GenTree*  source        = cpObjNode->Data();
-    var_types srcAddrType   = TYP_BYREF;
-    bool      sourceIsLocal = false;
-    regNumber dstReg        = REG_NA;
-    regNumber srcReg        = REG_NA;
-
-    assert(source->isContained());
-    if (source->OperIs(GT_IND))
-    {
-        GenTree* srcAddr = source->gtGetOp1();
-        assert(!srcAddr->isContained());
-        srcAddrType = srcAddr->TypeGet();
-    }
-    else
-    {
-        noway_assert(source->IsLocal());
-        sourceIsLocal = true;
-    }
-
-    bool dstOnStack = cpObjNode->IsAddressNotOnHeap(m_compiler);
-
-#ifdef DEBUG
-    assert(!dstAddr->isContained());
-
-    // This GenTree node has data about GC pointers, this means we're dealing
-    // with CpObj.
-    assert(cpObjNode->GetLayout()->HasGCPtr());
-#endif // DEBUG
-
-    // Consume the operands and get them into the right registers.
-    // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
-    genConsumeBlockOp(cpObjNode, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_SRC_BYREF, REG_NA);
-    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC_BYREF, srcAddrType);
-    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
-
-    // Temp register used to perform the sequence of loads and stores.
-    regNumber tmpReg = internalRegisters.Extract(cpObjNode);
-    assert(genIsValidIntReg(tmpReg));
-
-    if (cpObjNode->IsVolatile())
-    {
-        // issue a full memory barrier before & after a volatile CpObj operation
-        instGen_MemoryBarrier();
-    }
-
-    emitter*     emit   = GetEmitter();
-    ClassLayout* layout = cpObjNode->GetLayout();
-    unsigned     slots  = layout->GetSlotCount();
-
-    // If we can prove it's on the stack we don't need to use the write barrier.
-    if (dstOnStack)
-    {
-        for (unsigned i = 0; i < slots; ++i)
-        {
-            emitAttr attr = emitTypeSize(layout->GetGCPtrType(i));
-
-            emit->emitIns_R_R_I(INS_ldr, attr, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
-                                INS_FLAGS_DONT_CARE, INS_OPTS_LDST_POST_INC);
-            emit->emitIns_R_R_I(INS_str, attr, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
-                                INS_FLAGS_DONT_CARE, INS_OPTS_LDST_POST_INC);
-        }
-    }
-    else
-    {
-        unsigned gcPtrCount = layout->GetGCPtrCount();
-
-        unsigned i = 0;
-        while (i < slots)
-        {
-            if (!layout->IsGCPtr(i))
-            {
-                emit->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
-                                    INS_FLAGS_DONT_CARE, INS_OPTS_LDST_POST_INC);
-                emit->emitIns_R_R_I(INS_str, EA_PTRSIZE, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
-                                    INS_FLAGS_DONT_CARE, INS_OPTS_LDST_POST_INC);
-            }
-            else
-            {
-                genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
-                gcPtrCount--;
-            }
-            ++i;
-        }
-        assert(gcPtrCount == 0);
-    }
-
-    if (cpObjNode->IsVolatile())
-    {
-        // issue a full memory barrier before & after a volatile CpObj operation
-        instGen_MemoryBarrier();
-    }
-
-    // Clear the gcInfo for registers of source and dest.
-    // While we normally update GC info prior to the last instruction that uses them,
-    // these actually live into the helper call.
-    gcInfo.gcMarkRegSetNpt(RBM_WRITE_BARRIER_SRC_BYREF | RBM_WRITE_BARRIER_DST_BYREF);
 }
 
 //------------------------------------------------------------------------
@@ -1166,7 +1069,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
     // on float/double args.
     noway_assert(tree->OperIs(GT_DIV) || !varTypeIsFloating(tree));
 
-#if defined(USE_HELPERS_FOR_INT_DIV)
+#if USE_HELPERS_FOR_INT_DIV
     noway_assert(!varTypeIsIntOrI(tree));
 #endif // USE_HELPERS_FOR_INT_DIV
 
@@ -1197,9 +1100,37 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
         emit->emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
     }
-    else // an signed integer divide operation
+    else // an integer divide operation
     {
-        // TODO-ARM-Bug: handle zero division exception.
+        // Generate the required runtime checks for the integer divide.
+        ExceptionSetFlags exSetFlags = tree->OperExceptions(m_compiler);
+
+        // (AnyVal / 0) => DivideByZeroException
+        if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+        {
+            if (src2->IsIntegralConst(0))
+            {
+                // We unconditionally throw a divide by zero exception
+                genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
+
+                // We still need to call genProduceReg
+                genProduceReg(tree);
+
+                return;
+            }
+            else
+            {
+                // Check whether the divisor is zero and, if so, branch to the throw helper
+                emit->emitIns_R_I(INS_cmp, attr, src2->GetRegNum(), 0);
+                genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
+            }
+        }
+
+        // (MinInt / -1) => ArithmeticException
+        if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+        {
+            genCodeForDivModOverflowCheck(tree);
+        }
 
         emit->emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
     }
@@ -1854,6 +1785,15 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #endif // PROFILING_SUPPORTED
 
 //------------------------------------------------------------------------
+// genOSRHandleTier0CalleeSavedRegistersAndFrame:
+//   Not called for arm without OSR support.
+//
+void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
+{
+    unreached();
+}
+
+//------------------------------------------------------------------------
 // genEstablishFramePointer: Set up the frame pointer by adding an offset to the stack pointer.
 //
 // Arguments:
@@ -2371,7 +2311,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
  *  Generates code for an EH funclet epilog.
  */
 
-void CodeGen::genFuncletEpilog()
+void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
 {
 #ifdef DEBUG
     if (verbose)
@@ -2457,6 +2397,10 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         unsigned  saveRegsSize    = saveRegsCount * REGSIZE_BYTES; // bytes of regs we're saving
         unsigned  saveSizeWithPSP = saveRegsSize + REGSIZE_BYTES /* PSP sym */;
         if (m_compiler->lvaMonAcquired != BAD_VAR_NUM)
+        {
+            saveSizeWithPSP += TARGET_POINTER_SIZE;
+        }
+        if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
         {
             saveSizeWithPSP += TARGET_POINTER_SIZE;
         }
@@ -2628,9 +2572,11 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     }
     else
     {
+        BasicBlock* loopHead = genCreateTempLabel();
+        genDefineInlineTempLabel(loopHead);
         GetEmitter()->emitIns_R_I(INS_stm, EA_PTRSIZE, rAddr, stmImm); // zero stack slots
         GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, rCnt, 1, INS_FLAGS_SET);
-        GetEmitter()->emitIns_J(INS_bhi, NULL, -3);
+        GetEmitter()->emitIns_ShortJ(INS_bhi, loopHead);
         uCntBytes %= REGSIZE_BYTES * 2;
     }
 

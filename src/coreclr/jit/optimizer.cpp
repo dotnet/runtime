@@ -356,8 +356,9 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
     assert(ppTest != nullptr);
     assert(ppIncr != nullptr);
 
-    // Check if last two statements in the loop body are the increment of the iterator
-    // and the loop termination test.
+    // The loop termination test is expected to be the last statement of the exiting
+    // block. The increment of the iterator is expected somewhere earlier in the
+    // same block; we scan backward from the test to find an IV-shaped update.
     noway_assert(cond->firstStmt() != nullptr);
     Statement* testStmt = cond->lastStmt();
     noway_assert(testStmt != nullptr && testStmt->GetNextStmt() == nullptr);
@@ -368,24 +369,87 @@ bool Compiler::optExtractTestIncr(BasicBlock* cond, GenTree** ppTest, GenTree** 
         testStmt = newTestStmt;
     }
 
-    // Check if we have the incr stmt before the test stmt, if we don't,
-    // check if incr is part of the loop "header".
-    Statement* incrStmt = testStmt->GetPrevStmt();
-
-    // If we've added profile instrumentation, we may need to skip past a BB counter update.
+    // Walk backward from the test statement looking for a candidate IV increment
+    // of the form 'v = v op c'. For each such candidate, verify it is suitable:
+    //   - the iterator local is not address-exposed (our intervening-read check
+    //     would not see indirect accesses, and AnalyzeIteration rejects
+    //     address-exposed IVs anyway);
+    //   - the test actually reads the iterator (otherwise this is an unrelated
+    //     update that happens to be IV-shaped);
+    //   - no statement strictly between the candidate and the test reads the
+    //     iterator. Such statements would execute with the post-increment value,
+    //     violating the AnalyzeIteration invariant that no loop body IR observes
+    //     the post-increment value except the test. Stores are not checked here:
+    //     AnalyzeIteration's VisitDefs already rejects any def of iterVar in the
+    //     loop other than the picked increment. If the test block is in a try
+    //     region, treat any intervening statement that may throw as if it were
+    //     an intervening read, since an EH handler could observe the
+    //     post-increment value.
+    // On any rejection, continue scanning backward; only fail when no candidate
+    // in the block satisfies all checks. A budget bounds the combined work of
+    // the outer scan and the inner intervening-read scan to avoid pathological
+    // O(N^2) behavior in blocks with many IV-shaped statements.
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (incrStmt != nullptr) &&
-        incrStmt->GetRootNode()->IsBlockProfileUpdate())
+    Statement*   incrStmt  = nullptr;
+    unsigned     iterVar   = BAD_VAR_NUM;
+    Statement*   firstStmt = cond->firstStmt();
+    const bool   condInTry = cond->hasTryIndex();
+    unsigned int budget    = 100;
+    if (testStmt != firstStmt)
     {
-        incrStmt = incrStmt->GetPrevStmt();
+        for (Statement* s = testStmt->GetPrevStmt();; s = s->GetPrevStmt())
+        {
+            if (budget-- == 0)
+            {
+                JITDUMP("optExtractTestIncr: budget exhausted in " FMT_BB "\n", cond->bbNum);
+                return false;
+            }
+
+            unsigned candVar = optIsLoopIncrTree(s->GetRootNode());
+            if (candVar != BAD_VAR_NUM)
+            {
+                if (!lvaGetDesc(candVar)->IsAddressExposed() && gtTreeHasLocalRead(testStmt->GetRootNode(), candVar))
+                {
+                    bool intermediateUse = false;
+                    for (Statement* t = s->GetNextStmt(); t != testStmt; t = t->GetNextStmt())
+                    {
+                        assert(t != nullptr);
+                        if (budget-- == 0)
+                        {
+                            JITDUMP("optExtractTestIncr: budget exhausted in " FMT_BB "\n", cond->bbNum);
+                            return false;
+                        }
+                        GenTree* root = t->GetRootNode();
+                        if (gtTreeHasLocalRead(root, candVar) || (condInTry && ((root->gtFlags & GTF_EXCEPT) != 0)))
+                        {
+                            intermediateUse = true;
+                            break;
+                        }
+                    }
+
+                    if (!intermediateUse)
+                    {
+                        incrStmt = s;
+                        iterVar  = candVar;
+                        break;
+                    }
+                }
+            }
+
+            if (s == firstStmt)
+            {
+                break;
+            }
+        }
     }
 
-    if (incrStmt == nullptr || (optIsLoopIncrTree(incrStmt->GetRootNode()) == BAD_VAR_NUM))
+    if (incrStmt == nullptr)
     {
         return false;
     }
 
     assert(testStmt != incrStmt);
+    assert(iterVar != BAD_VAR_NUM);
 
     *ppTest = testStmt->GetRootNode();
     *ppIncr = incrStmt->GetRootNode();
@@ -1386,7 +1450,7 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
         !incr->AsOp()->gtOp1->OperIs(GT_LCL_VAR) ||
         (incr->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() != lvar) ||
         !incr->AsOp()->gtOp2->OperIs(GT_CNS_INT) ||
-        (incr->AsOp()->gtOp2->AsIntCon()->gtIconVal != iterInc) ||
+        (incr->AsOp()->gtOp2->AsIntCon()->IconValue() != iterInc) ||
 
         (iterInfo.TestBlock->lastStmt()->GetRootNode()->gtGetOp1() != iterInfo.TestTree))
     {
@@ -1840,14 +1904,54 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     // There may be multiple exits, and one of the other exits may also be a
     // latch. That latch could be preferable to leave (for example because it
-    // is an IV test).
-    NaturalLoopIterInfo iterInfo;
-    if (loop->AnalyzeIteration(&iterInfo) &&
-        (iterInfo.TestBlock->TrueTargetIs(loop->GetHeader()) != iterInfo.TestBlock->FalseTargetIs(loop->GetHeader())))
-    {
-        // Test block is both a latch and exit, so the loop is already inverted in a preferable way.
-        JITDUMP("No loop-inversion for " FMT_LP " since it is already inverted (with an IV test)\n", loop->GetIndex());
+    // is an IV test). The general BBJ_COND-latch-that-exits check below
+    // subsumes the IV-test case.
+
+    // If the loop is already bottom-tested (has a BBJ_COND latch that exits the loop),
+    // there is no need to invert. Also handle the canonical multi-backedge case, where
+    // optCanonicalizeBackedges has installed a BBJ_ALWAYS latch whose in-loop predecessors
+    // are the original bottom tests.
+    //
+    auto isExitingCondLatch = [&](BasicBlock* block) -> bool {
+        if ((block == condBlock) || !block->KindIs(BBJ_COND))
+        {
+            return false;
+        }
+        for (FlowEdge* const exitEdge : loop->ExitEdges())
+        {
+            if (exitEdge->getSourceBlock() == block)
+            {
+                return true;
+            }
+        }
         return false;
+    };
+
+    for (FlowEdge* const backEdge : loop->BackEdges())
+    {
+        BasicBlock* const latch = backEdge->getSourceBlock();
+
+        if (isExitingCondLatch(latch))
+        {
+            JITDUMP("No loop-inversion for " FMT_LP "; latch " FMT_BB " already makes it bottom-tested\n",
+                    loop->GetIndex(), latch->bbNum);
+            return false;
+        }
+
+        if (latch->KindIs(BBJ_ALWAYS) && latch->isEmpty())
+        {
+            for (FlowEdge* const predEdge : latch->PredEdges())
+            {
+                BasicBlock* const pred = predEdge->getSourceBlock();
+                if (loop->ContainsBlock(pred) && isExitingCondLatch(pred))
+                {
+                    JITDUMP("No loop-inversion for " FMT_LP "; predecessor " FMT_BB " of canonical latch " FMT_BB
+                            " already makes it bottom-tested\n",
+                            loop->GetIndex(), pred->bbNum, latch->bbNum);
+                    return false;
+                }
+            }
+        }
     }
 
     JITDUMP("Condition in block " FMT_BB " of loop " FMT_LP " is a candidate for duplication to invert the loop\n",
@@ -1891,43 +1995,66 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     // Check if loop is small enough to consider for inversion.
     // Large loops are less likely to benefit from inversion.
-    const int invertSizeLimit = JitConfig.JitLoopInversionSizeLimit();
+    bool      mightBenefitFromCloning = false;
+    const int invertSizeLimit         = JitConfig.JitLoopInversionSizeLimit();
     if (invertSizeLimit >= 0)
     {
-        const int cloneSizeLimit          = JitConfig.JitCloneLoopsSizeLimit();
-        bool      mightBenefitFromCloning = false;
-        unsigned  loopSize                = 0;
+        const int      cloneSizeLimit       = JitConfig.JitCloneLoopsSizeLimit();
+        const unsigned sizeLimit            = (unsigned)max(invertSizeLimit, cloneSizeLimit);
+        unsigned       loopSize             = 0;
+        bool           loopHasBoundsCheck   = false;
+        bool           nestedHasBoundsCheck = false;
 
-        // Loops with bounds checks can benefit from cloning, which depends on inversion running.
-        // Thus, we will try to proceed with inversion for slightly oversize loops if they show potential for cloning.
-        auto countNode = [&mightBenefitFromCloning, &loopSize](GenTree* tree) -> unsigned {
-            mightBenefitFromCloning |= tree->OperIs(GT_BOUNDS_CHECK);
-            loopSize++;
-            return 1;
-        };
+        // Only relax the size cap when this loop's own body has bounds checks AND no nested
+        // loop does. If any nested loop has its own bounds checks, it will be inverted+cloned
+        // independently to eliminate them; inverting (and subsequently cloning) this larger
+        // outer loop on top of that duplicates the entire nested body and disrupts downstream
+        // LICM/CSE on sibling code (see Benchstone.BenchF.InvMt).
+        //
+        loop->VisitLoopBlocks([&, this](BasicBlock* block) -> BasicBlockVisit {
+            bool inNestedLoop = false;
+            for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
+            {
+                if (child->ContainsBlock(block))
+                {
+                    inNestedLoop = true;
+                    break;
+                }
+            }
+            bool* const boundsCheckFlag = inNestedLoop ? &nestedHasBoundsCheck : &loopHasBoundsCheck;
 
-        optLoopComplexityExceeds(loop, (unsigned)max(invertSizeLimit, cloneSizeLimit), countNode);
+            const unsigned slack    = sizeLimit > loopSize ? (sizeLimit - loopSize) : 0;
+            const bool     exceeded = block->ComplexityExceeds(this, slack, [&](GenTree* tree) -> unsigned {
+                if (tree->OperIs(GT_BOUNDS_CHECK))
+                {
+                    *boundsCheckFlag = true;
+                }
+                loopSize++;
+                return 1;
+            });
+            return exceeded ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
+        });
+
+        mightBenefitFromCloning = loopHasBoundsCheck || nestedHasBoundsCheck;
+
         if (loopSize > (unsigned)invertSizeLimit)
         {
-            // Don't try to invert oversize loops if they don't show cloning potential,
-            // or if they're too big to be cloned anyway.
             JITDUMP(FMT_LP " exceeds inversion size limit of %d\n", loop->GetIndex(), invertSizeLimit);
-            const bool tooBigToClone = (cloneSizeLimit >= 0) && (loopSize > (unsigned)cloneSizeLimit);
-            if (!mightBenefitFromCloning || tooBigToClone)
+            if (!mightBenefitFromCloning)
             {
-                JITDUMP("No inversion for " FMT_LP ": %s\n", loop->GetIndex(),
-                        tooBigToClone ? "too big to clone" : "unlikely to benefit from cloning");
+                JITDUMP("No inversion for " FMT_LP ": unlikely to benefit from cloning\n", loop->GetIndex());
+                return false;
+            }
+            if (nestedHasBoundsCheck)
+            {
+                JITDUMP("No inversion for " FMT_LP
+                        ": nested loops have their own bounds checks; they will be inverted independently\n",
+                        loop->GetIndex());
                 return false;
             }
 
-            // If the loop shows cloning potential, tolerate some excess size.
-            const unsigned liberalInvertSizeLimit = (unsigned)(invertSizeLimit * 1.25);
-            if (loopSize > liberalInvertSizeLimit)
-            {
-                JITDUMP(FMT_LP " might benefit from cloning, but is too large to invert.\n", loop->GetIndex());
-                return false;
-            }
-
+            // Defer further size-based rejection to estDupCostSz below and to the cloning
+            // phase's own size budget.
             JITDUMP(FMT_LP " might benefit from cloning. Continuing.\n", loop->GetIndex());
         }
     }
@@ -1963,7 +2090,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     bool costIsTooHigh = (estDupCostSz > maxDupCostSz);
 
-    OptInvertCountTreeInfoType optInvertTotalInfo = {};
+    OptInvertCountTreeInfoType optInvertTotalInfo         = {};
+    bool                       hasSplitIVTestAndIncrement = false;
     if (costIsTooHigh)
     {
         // If we already know that the cost is acceptable, then don't waste time walking the tree
@@ -1974,6 +2102,34 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         // be executed on every loop iteration.
         //
         // If the condition has array.Length operations, also boost, as they are likely to be CSE'd.
+        //
+        // Also boost if the IV increment happens in a backedge source block.
+
+        if (mightBenefitFromCloning)
+        {
+            for (FlowEdge* const backEdge : loop->BackEdges())
+            {
+                BasicBlock* const latchBlock = backEdge->getSourceBlock();
+                if (latchBlock == condBlock)
+                {
+                    continue;
+                }
+
+                for (Statement* const stmt : latchBlock->Statements())
+                {
+                    if (optIsLoopIncrTree(stmt->GetRootNode()) != BAD_VAR_NUM)
+                    {
+                        hasSplitIVTestAndIncrement = true;
+                        break;
+                    }
+                }
+
+                if (hasSplitIVTestAndIncrement)
+                {
+                    break;
+                }
+            }
+        }
 
         for (int i = 0; i < duplicatedBlocks.Height() && costIsTooHigh; i++)
         {
@@ -1986,14 +2142,15 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
                 optInvertTotalInfo.sharedStaticHelperCount += optInvertInfo.sharedStaticHelperCount;
                 optInvertTotalInfo.arrayLengthCount += optInvertInfo.arrayLengthCount;
 
-                if ((optInvertInfo.sharedStaticHelperCount > 0) || (optInvertInfo.arrayLengthCount > 0))
+                if ((optInvertInfo.sharedStaticHelperCount > 0) || (optInvertInfo.arrayLengthCount > 0) ||
+                    hasSplitIVTestAndIncrement)
                 {
                     // Calculate a new maximum cost. We might be able to early exit.
 
                     unsigned newMaxDupCostSz =
                         maxDupCostSz +
                         24 * min(optInvertTotalInfo.sharedStaticHelperCount, (int)(loopIterations + 1.5)) +
-                        8 * optInvertTotalInfo.arrayLengthCount;
+                        8 * optInvertTotalInfo.arrayLengthCount + (hasSplitIVTestAndIncrement ? 24 : 0);
 
                     // Is the cost too high now?
                     costIsTooHigh = (estDupCostSz > newMaxDupCostSz);
@@ -2016,12 +2173,13 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     {
         // Note that `optInvertTotalInfo.sharedStaticHelperCount = 0` means either there were zero helpers, or the
         // tree walk to count them was not done.
-        printf(
-            "\nDuplication of loop condition [%06u] is %s, because the cost of duplication (%i) is %s than %i,"
-            "\n   loopIterations = %7.3f, optInvertTotalInfo.sharedStaticHelperCount >= %d, haveProfileWeights = %s\n",
-            dspTreeID(condBlock->lastStmt()->GetRootNode()), costIsTooHigh ? "not done" : "performed", estDupCostSz,
-            costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, loopIterations,
-            optInvertTotalInfo.sharedStaticHelperCount, dspBool(haveProfileWeights));
+        printf("\nDuplication of loop condition [%06u] is %s, because the cost of duplication (%i) is %s than %i,"
+               "\n   loopIterations = %7.3f, optInvertTotalInfo.sharedStaticHelperCount >= %d,"
+               " hasSplitIVTestAndIncrement = %s, haveProfileWeights = %s\n",
+               dspTreeID(condBlock->lastStmt()->GetRootNode()), costIsTooHigh ? "not done" : "performed", estDupCostSz,
+               costIsTooHigh ? "greater" : "less or equal", maxDupCostSz, loopIterations,
+               optInvertTotalInfo.sharedStaticHelperCount, dspBool(hasSplitIVTestAndIncrement),
+               dspBool(haveProfileWeights));
     }
 #endif
 
@@ -2379,6 +2537,17 @@ bool Compiler::optCanonicalizeLoops()
     for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
     {
         changed |= optCreatePreheader(loop);
+    }
+
+    // After preheader creation, canonicalize backedges so that every loop has
+    // at most one backedge. Running this before exit canonicalization avoids
+    // operating on stale BackEdges lists that exit canonicalization can
+    // invalidate (e.g., when an inner-loop exit is also an outer-loop
+    // backedge).
+    //
+    for (FlowGraphNaturalLoop* loop : m_loops->InReversePostOrder())
+    {
+        changed |= optCanonicalizeBackedges(loop);
     }
 
     // At this point we've created preheaders. That means we are working with
@@ -2822,6 +2991,112 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
 }
 
 //-----------------------------------------------------------------------------
+// optCanonicalizeBackedges: If a loop has more than one backedge, redirect all
+// backedge sources through a single new "latch" block that branches to the
+// loop header.
+//
+// Parameters:
+//   loop - The loop
+//
+// Returns:
+//   True if a new latch block was created.
+//
+bool Compiler::optCanonicalizeBackedges(FlowGraphNaturalLoop* loop)
+{
+    if (loop->BackEdges().size() <= 1)
+    {
+        return false;
+    }
+
+    BasicBlock* const header = loop->GetHeader();
+
+    // Determine the EH region for the latch. Mirror the logic in
+    // optCreatePreheader: if every backedge source is within the header's
+    // try region, the latch can live in the same try region as the header;
+    // otherwise it must live in the header's true enclosing try region (which
+    // is only legal when the header itself is a try-region entry, since that
+    // is the only way the original out-of-region backedges could be legal).
+    //
+    unsigned latchEHRegion        = EHblkDsc::NO_ENCLOSING_INDEX;
+    bool     inSameRegionAsHeader = true;
+    if (header->hasTryIndex())
+    {
+        latchEHRegion = header->getTryIndex();
+        for (FlowEdge* const backEdge : loop->BackEdges())
+        {
+            BasicBlock* const source = backEdge->getSourceBlock();
+            if (!bbInTryRegions(latchEHRegion, source))
+            {
+                latchEHRegion        = ehTrueEnclosingTryIndex(latchEHRegion);
+                inSameRegionAsHeader = false;
+                break;
+            }
+        }
+    }
+
+    if (!inSameRegionAsHeader && !bbIsTryBeg(header))
+    {
+        // The original out-of-region backedges can only have been legal if the
+        // header was a try-region entry. If it is not, something is unusual;
+        // skip canonicalization rather than risk introducing illegal edges.
+        //
+        JITDUMP("Skip backedge canonicalization for " FMT_LP ": header " FMT_BB
+                " is not a try entry but has backedge sources outside its try region\n",
+                loop->GetIndex(), header->bbNum);
+        return false;
+    }
+
+    // Snapshot the backedge sources before any redirection mutates the
+    // predecessor lists.
+    //
+    ArrayStack<BasicBlock*> sources(getAllocator(CMK_LoopOpt));
+    for (FlowEdge* const backEdge : loop->BackEdges())
+    {
+        sources.Push(backEdge->getSourceBlock());
+    }
+
+    // Create the latch in the appropriate EH region. For the same-region case,
+    // fgNewBBinRegion will place the latch within the header's region (after
+    // the region's entry block, if the header is the entry). For the
+    // enclosing-region case, place the latch physically before the header and
+    // let fgSetEHRegionForNewPreheaderOrExit recognize that the header is a
+    // try-region entry and assign the latch to the enclosing region.
+    //
+    BasicBlock* latch;
+    if (inSameRegionAsHeader)
+    {
+        latch = fgNewBBinRegion(BBJ_ALWAYS, header);
+    }
+    else
+    {
+        latch = fgNewBBbefore(BBJ_ALWAYS, header, /* extendRegion */ false);
+        fgSetEHRegionForNewPreheaderOrExit(latch);
+    }
+    latch->SetFlags(BBF_INTERNAL);
+    latch->bbCodeOffs = header->bbCodeOffs;
+
+    FlowEdge* const newEdge = fgAddRefPred(header, latch);
+    latch->SetTargetEdge(newEdge);
+
+    JITDUMP("Created new latch " FMT_BB " for " FMT_LP " in %s EH region to merge %u backedges\n", latch->bbNum,
+            loop->GetIndex(), inSameRegionAsHeader ? "header's" : "header's enclosing", (unsigned)sources.Height());
+
+    // Redirect each backedge through the new latch.
+    //
+    for (int i = 0; i < sources.Height(); i++)
+    {
+        BasicBlock* const source = sources.Bottom(i);
+        JITDUMP("  Backedge " FMT_BB " -> " FMT_BB " becomes " FMT_BB " -> " FMT_BB "\n", source->bbNum, header->bbNum,
+                source->bbNum, latch->bbNum);
+        fgReplaceJumpTarget(source, header, latch);
+    }
+
+    optSetWeightForPreheaderOrExit(loop, latch);
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
 // optSetWeightForPreheaderOrExit: Set the weight of a newly created preheader
 // or exit, after it has been added to the flowgraph.
 //
@@ -2940,8 +3215,14 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
             case GT_CNS_INT:
 
+                // Do not narrow relocatable handle constants.
+                if (tree->AsIntCon()->ImmedValNeedsReloc(this))
+                {
+                    return false;
+                }
+
                 ssize_t ival;
-                ival = tree->AsIntCon()->gtIconVal;
+                ival = tree->AsIntCon()->IconValue();
                 ssize_t imask;
                 imask = 0;
 
@@ -2979,8 +3260,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 #ifdef TARGET_64BIT
                 if (doit)
                 {
-                    tree->gtType                = TYP_INT;
-                    tree->AsIntCon()->gtIconVal = (int)ival;
+                    tree->gtType = TYP_INT;
+                    tree->AsIntCon()->SetIconValue((int)ival);
 
                     fgUpdateConstTreeValueNumber(tree);
                 }
@@ -3168,14 +3449,27 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 }
 #endif
 
-                if ((tree->CastToType() != srct) || tree->gtOverflow())
+                // We are called recursively to push a narrowing cast down through `tree`.
+                // In this GT_CAST case, `tree` is an inner cast whose result feeds the outer
+                // narrowing operation; `srct` is that result type (the inner cast's TypeGet)
+                // and `dstt` is the type we are narrowing to.
+                //
+                // We recognize the pattern (simplified):
+                //     CAST<dstt <- srct>( CAST<srct <- op1>(op1) )       e.g. (int)(long)x
+                // and below rewrite the inner cast to int<->int so the chain folds away.
+                //
+                // CastToType carries signedness independently of tree->TypeGet() (e.g.
+                // CAST_LONG <- ULONG <- uint has CastToType=ULONG while tree->TypeGet()==LONG).
+                // Use genActualType on both sides of the compare so an unsigned-widening inner
+                // cast still matches a LONG `srct`.
+                if ((genActualType(tree->CastToType()) != genActualType(srct)) || tree->gtOverflow())
                 {
                     return false;
                 }
 
                 if (varTypeIsInt(op1) && varTypeIsInt(dstt) && tree->TypeIs(TYP_LONG))
                 {
-                    // We have a CAST that converts into to long while dstt is int.
+                    // We have a CAST that converts int to long while dstt is int.
                     // so we can just convert the cast to int -> int and someone will clean it up.
                     if (doit)
                     {
@@ -4366,8 +4660,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                         if (op1->OperIs(GT_CALL))
                         {
                             GenTreeCall* call = op1->AsCall();
-                            if (call->IsHelperCall() &&
-                                s_helperCallProperties.MayRunCctor(eeGetHelperNum(call->gtCallMethHnd)))
+                            if (call->IsHelperCall() && s_helperCallProperties.MayRunCctor(call->GetHelperNum()))
                             {
                                 // Hoisting the comma is ok because it would hoist the initialization along
                                 // with the static field reference.
@@ -4419,7 +4712,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     }
                     else
                     {
-                        CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+                        CorInfoHelpFunc helpFunc = call->GetHelperNum();
                         if (!s_helperCallProperties.IsPure(helpFunc))
                         {
                             INDEBUG(failReason = "impure helper call";)
@@ -4500,7 +4793,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     }
                     else
                     {
-                        CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+                        CorInfoHelpFunc helpFunc = call->GetHelperNum();
                         if (s_helperCallProperties.MutatesHeap(helpFunc))
                         {
                             m_canHoistSideEffects = false;
@@ -4760,9 +5053,9 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
     VNMemoryPhiDef memoryPhiDef;
     if (vnStore->GetVNFunc(vn, &funcApp))
     {
-        if (funcApp.m_func == VNF_MemOpaque)
+        if (funcApp.FuncIs(VNF_MemOpaque))
         {
-            const unsigned loopIndex = funcApp.m_args[0];
+            const unsigned loopIndex = funcApp.GetArg(0);
 
             // Check for the special "ambiguous" loop index.
             // This is considered variant in every loop.
@@ -4784,17 +5077,17 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
         }
         else
         {
-            for (unsigned i = 0; i < funcApp.m_arity; i++)
+            for (unsigned i = 0; i < funcApp.GetArity(); i++)
             {
                 // 4th arg of mapStore identifies the loop where the store happens.
                 //
-                if (funcApp.m_func == VNF_MapStore)
+                if (funcApp.FuncIs(VNF_MapStore))
                 {
-                    assert(funcApp.m_arity == 4);
+                    assert(funcApp.GetArity() == 4);
 
                     if (i == 3)
                     {
-                        const unsigned loopIndex = funcApp.m_args[3];
+                        const unsigned loopIndex = funcApp.GetArg(3);
                         assert((loopIndex == ValueNumStore::NoLoop) || (loopIndex < m_loops->NumLoops()));
                         if (loopIndex == ValueNumStore::NoLoop)
                         {
@@ -4812,7 +5105,7 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, FlowGraphNaturalLoop* loop, VNS
                 // TODO-CQ: We need to either make sure that *all* VN functions
                 // always take VN args, or else have a list of arg positions to exempt, as implicitly
                 // constant.
-                if (!optVNIsLoopInvariant(funcApp.m_args[i], loop, loopVnInvariantCache))
+                if (!optVNIsLoopInvariant(funcApp.GetArg(i), loop, loopVnInvariantCache))
                 {
                     res = false;
                     break;
@@ -5078,11 +5371,11 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                                 lvaTable[argLcl->GetLclNum()].GetPerSsaData(argLcl->GetSsaNum())->m_vnPair.GetLiberal();
                             VNFuncApp funcApp;
                             if (argVN != ValueNumStore::NoVN && vnStore->GetVNFunc(argVN, &funcApp) &&
-                                funcApp.m_func == VNF_PtrToArrElem)
+                                funcApp.FuncIs(VNF_PtrToArrElem))
                             {
-                                assert(vnStore->IsVNHandle(funcApp.m_args[0]));
+                                assert(vnStore->IsVNHandle(funcApp.GetArg(0)));
                                 CORINFO_CLASS_HANDLE elemType =
-                                    CORINFO_CLASS_HANDLE(vnStore->ConstantValue<size_t>(funcApp.m_args[0]));
+                                    CORINFO_CLASS_HANDLE(vnStore->ConstantValue<size_t>(funcApp.GetArg(0)));
                                 AddModifiedElemTypeAllContainingLoops(mostNestedLoop, elemType);
                                 // Don't set memoryHavoc for GcHeap below.  Do set memoryHavoc for ByrefExposed
                                 // (conservatively assuming that a byref may alias the array element)
@@ -5183,7 +5476,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
 
                     if (call->IsHelperCall())
                     {
-                        CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+                        CorInfoHelpFunc helpFunc = call->GetHelperNum();
                         if (s_helperCallProperties.MutatesHeap(helpFunc))
                         {
                             memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
@@ -5666,7 +5959,7 @@ void Compiler::optRemoveRedundantZeroInits()
                         }
 
                         if (!removedExplicitZeroInit && isEntire &&
-                            (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->lvLiveInOutOfHndlr)))
+                            (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->IsLiveInOutOfHandler())))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
                             // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME but that is not a gc-safe point.

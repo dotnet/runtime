@@ -253,7 +253,7 @@ namespace System
             Debug.Assert(!stringToEscape.IsEmpty && !noEscape.Contains(stringToEscape[0]));
 
             // Allocate enough stack space to hold any Rune's UTF8 encoding.
-            Span<byte> utf8Bytes = stackalloc byte[4];
+            Span<byte> utf8Bytes = [0, 0, 0, 0];
 
             while (!stringToEscape.IsEmpty)
             {

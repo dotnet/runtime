@@ -1634,6 +1634,10 @@ namespace System.Text.Json.Serialization.Tests
                     options.Converters.Add(new JsonStringEnumConverter());
                     options.Converters.Add(new ConverterForInt32());
                 }
+                else if (propertyType == typeof(IList<JsonTypeClassifierFactory>))
+                {
+                    options.TypeClassifiers.Add(new SampleClassifierForCopyTest());
+                }
                 else if (propertyType == typeof(JavaScriptEncoder))
                 {
                     options.Encoder = JavaScriptEncoder.Default;
@@ -2152,6 +2156,13 @@ namespace System.Text.Json.Serialization.Tests
             
             options.DefaultBufferSize = 8192;
             Assert.Equal(8192, options.DefaultBufferSize);
+        }
+
+        private sealed class SampleClassifierForCopyTest : JsonTypeClassifierFactory
+        {
+            public override bool CanClassify(JsonTypeClassifierContext context) => false;
+            public override JsonTypeClassifier CreateJsonClassifier(JsonTypeClassifierContext context, JsonSerializerOptions options) =>
+                throw new NotSupportedException();
         }
     }
 }

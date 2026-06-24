@@ -138,7 +138,9 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
         }
         else
         {
-            TargetCodePointer startAddress = executionManager.GetStartAddress(info.Value);
+            TargetCodePointer startAddress = CodePointerUtils.CodePointerFromAddress(
+                executionManager.GetStartAddress(info.Value),
+                _target);
             return GetSpecificNativeCodeVersion(rts, md, startAddress);
         }
     }
@@ -412,6 +414,23 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
     bool ICodeVersions.HasDefaultIL(ILCodeVersionHandle iLCodeVersionHandle)
     {
         return iLCodeVersionHandle.IsExplicit ? AsNode(iLCodeVersionHandle).ILAddress == TargetPointer.Null : true;
+    }
+
+    bool ICodeVersions.TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHandle, out uint mapEntryCount, out TargetPointer mapEntries)
+    {
+        mapEntryCount = 0;
+        mapEntries = TargetPointer.Null;
+
+        // ILCodeVersion::GetInstrumentedILMap returns NULL for synthetic versions
+        if (!ilCodeVersionHandle.IsExplicit)
+        {
+            return false;
+        }
+
+        Data.InstrumentedILOffsetMapping mapping = AsNode(ilCodeVersionHandle).InstrumentedILMap;
+        mapEntryCount = mapping.Count;
+        mapEntries = mapping.Map;
+        return true;
     }
 
     OptimizationTier ICodeVersions.GetOptimizationTier(NativeCodeVersionHandle codeVersionHandle)

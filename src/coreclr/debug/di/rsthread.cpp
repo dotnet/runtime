@@ -80,7 +80,7 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
     m_fFloatStateValid(false),
     m_floatStackTop(0),
     m_fException(false),
-    m_EnCRemapFunctionIP(NULL),
+    m_EnCRemapFunctionIP(0),
     m_userState(kInvalidUserState),
     m_hCachedThread(INVALID_HANDLE_VALUE),
     m_hCachedOutOfProcThread(INVALID_HANDLE_VALUE)
@@ -1340,7 +1340,7 @@ void CordbThread::MarkStackFramesDirty()
     // Clear the stashed EnC remap IP address if any
     // This is important to ensure we don't try to write into LS memory which is no longer
     // being used to hold the remap IP.
-    m_EnCRemapFunctionIP = NULL;
+    m_EnCRemapFunctionIP = 0;
 
     m_fContextFresh = false;        // invalidate the cached active CONTEXT
     m_vmLeftSideContext = VMPTR_CONTEXT::NullPtr(); // set the LS pointer to the active CONTEXT to NULL
@@ -1412,13 +1412,13 @@ HRESULT CordbThread::FindFrame(ICorDebugFrame ** ppFrame, FramePointer fp)
         ICorDebugFrame * pIFrame = pSSW->GetFrame(i);
         CordbFrame * pCFrame = CordbFrame::GetCordbFrameFromInterface(pIFrame);
 
-#if defined(HOST_64BIT)
-        // On 64-bit we can simply compare the FramePointer.
+#if !defined(TARGET_X86)
+        // Compare the FramePointer to determine if the frame matches
         if (pCFrame->GetFramePointer() == fp)
-#else  // !HOST_64BIT
-        // On other platforms, we need to do a more elaborate check.
+#else
+        // On x86 we need to do a more elaborate check.  The reason is that on x86, the FramePointer is always the same as the value of EBP, so we can just check if the input FramePointer is contained in the frame.  However, on other platforms, the FramePointer may not be the same as the value of RSP, so we need to check if the input FramePointer is the same as the one of the frame.
         if (pCFrame->IsContainedInFrame(fp))
-#endif // HOST_64BIT
+#endif
         {
             *ppFrame = pIFrame;
             (*ppFrame)->AddRef();
@@ -1621,7 +1621,6 @@ const bool SetIP_fNative = FALSE;
 //    fCanSetIPOnly - TRUE if only to do the setip command and not refresh stacks as well.
 //    debuggerModule - LS token to the debugger module.
 //    mdMethod - Metadata token for the method.
-//    nativeCodeJITInfoToken - LS token to the DebuggerJitInfo for the method.
 //    offset - Offset within the method to set the IP to.
 //    fIsIl - Is this an IL offset?
 //
@@ -1639,8 +1638,8 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    VMPTR_DomainAssembly vmDomainAssembly = pNativeCode->GetModule()->m_vmDomainAssembly;
-    _ASSERTE(!vmDomainAssembly.IsNull());
+    VMPTR_Assembly vmAssembly = pNativeCode->GetModule()->m_vmAssembly;
+    _ASSERTE(!vmAssembly.IsNull());
 
     // If this thread is stopped due to an exception, never allow SetIP
     if (HasException())
@@ -1652,7 +1651,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
     GetProcess()->InitIPCEvent(&event, DB_IPCE_SET_IP, true, GetAppDomain()->GetADToken());
     event.SetIP.fCanSetIPOnly = fCanSetIPOnly;
     event.SetIP.vmThreadToken = m_vmThreadToken;
-    event.SetIP.vmDomainAssembly = vmDomainAssembly;
+    event.SetIP.vmAssembly = vmAssembly;
     event.SetIP.mdMethod = pNativeCode->GetMetadataToken();
     event.SetIP.vmMethodDesc = pNativeCode->GetVMNativeCodeMethodDescToken();
     event.SetIP.startAddress = pNativeCode->GetAddress();
@@ -1664,7 +1663,7 @@ HRESULT CordbThread::SetIP(bool fCanSetIPOnly,
         "mod:0x%x  MethodDef:0x%x offset:0x%x  il?:0x%x\n",
          GetCurrentThreadId(),
          VmPtrToCookie(m_vmThreadToken),
-         VmPtrToCookie(vmDomainAssembly),
+         VmPtrToCookie(vmAssembly),
          pNativeCode->GetMetadataToken(),
          offset,
          fIsIL));
@@ -2184,7 +2183,7 @@ HRESULT CordbThread::InterceptCurrentException(ICorDebugFrame * pFrame)
             GetProcess()->InitIPCEvent(&event, DB_IPCE_INTERCEPT_EXCEPTION, true, VMPTR_AppDomain::NullPtr());
 
             event.InterceptException.vmThreadToken = m_vmThreadToken;
-            event.InterceptException.frameToken  = pRealFrame->GetFramePointer();
+            event.InterceptException.frameToken  = PTR_TO_CORDB_ADDRESS(pRealFrame->GetFramePointer().GetSPValue());
 
             hr = GetProcess()->m_cordb->SendIPCEvent(GetProcess(), &event, sizeof(DebuggerIPCEvent));
 
@@ -2288,7 +2287,7 @@ HRESULT CordbThread::CreateStackWalk(ICorDebugStackWalk ** ppStackWalk)
 //
 
 // static
-void CordbThread::GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * pFrameData,
+void CordbThread::GetActiveInternalFramesCallback(const Debugger_STRData * pFrameData,
                                                   void *                 pUserData)
 {
     // Retrieve the CordbThread.
@@ -2297,15 +2296,10 @@ void CordbThread::GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * p
     INTERNAL_DAC_CALLBACK(pThis->GetProcess());
 
     // Make sure we are getting invoked for internal frames.
-    _ASSERTE(pFrameData->eType == DebuggerIPCE_STRData::cStubFrame);
+    _ASSERTE(pFrameData->eType == Debugger_STRData::cStubFrame);
 
     // Look up the CordbAppDomain.
-    CordbAppDomain * pAppDomain = NULL;
-    VMPTR_AppDomain vmCurrentAppDomain = pFrameData->vmCurrentAppDomainToken;
-    if (!vmCurrentAppDomain.IsNull())
-    {
-        pAppDomain = pThis->GetProcess()->LookupOrCreateAppDomain(vmCurrentAppDomain);
-    }
+    CordbAppDomain * pAppDomain = pThis->GetProcess()->GetAppDomain();
 
     // Create a CordbInternalFrame.
     CordbInternalFrame * pInternalFrame = new CordbInternalFrame(pThis,
@@ -2514,12 +2508,12 @@ HRESULT CordbThread::SetRemapIP(SIZE_T offset)
     }
 
     // Write the value of the remap offset into the left side
-    HRESULT hr = GetProcess()->SafeWriteStruct(PTR_TO_CORDB_ADDRESS(m_EnCRemapFunctionIP), &offset);
+    HRESULT hr = GetProcess()->SafeWriteStruct(m_EnCRemapFunctionIP, &offset);
 
     // Prevent SetRemapIP from being called twice for the same RemapOpportunity
     // If we don't get any calls to RemapFunction, this member will be cleared in
     // code:CordbThread::MarkStackFramesDirty when Continue is called
-    m_EnCRemapFunctionIP = NULL;
+    m_EnCRemapFunctionIP = 0;
 
     return hr;
 }
@@ -4773,6 +4767,27 @@ bool CordbFrame::IsContainedInFrame(FramePointer fp)
 
     CORDB_ADDRESS sp  = PTR_TO_CORDB_ADDRESS(fp.GetSPValue());
 
+#if defined(TARGET_X86)
+    // On x86, the runtime sends CallerSP - sizeof(TADDR) as the frame pointer
+    // for exception notifications (see GetSpForDiagnosticReporting). Since this
+    // does not account for the stack parameter size, we adjust for it here.
+    if (sp > stackEnd)
+    {
+        CordbNativeFrame * pNativeFrame = GetAsNativeFrame();
+        if (pNativeFrame != NULL)
+        {
+            CORDB_ADDRESS codeAddr = pNativeFrame->GetNativeCode()->GetAddress();
+            ULONG32 stackParamSize = 0;
+            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
+            if (SUCCEEDED(pDAC->GetStackParameterSize(codeAddr + m_ip, &stackParamSize))
+                && stackParamSize > 0)
+            {
+                sp -= stackParamSize;
+            }
+        }
+    }
+#endif // TARGET_X86
+
     if ((stackStart <= sp) && (sp <= stackEnd))
     {
         return true;
@@ -5054,7 +5069,7 @@ HRESULT CordbValueEnum::Next(ULONG celt, ICorDebugValue *values[], ULONG *pceltF
 CordbInternalFrame::CordbInternalFrame(CordbThread *          pThread,
                                        FramePointer           fp,
                                        CordbAppDomain *       pCurrentAppDomain,
-                                       const DebuggerIPCE_STRData * pData)
+                                       const Debugger_STRData * pData)
   : CordbFrame(pThread, fp, 0, pCurrentAppDomain)
 {
     CONTRACTL
@@ -5070,10 +5085,9 @@ CordbInternalFrame::CordbInternalFrame(CordbThread *          pThread,
     // Some internal frames may not have a Function associated w/ them.
     if (!IsNilToken(m_funcMetadataToken))
     {
-        // Find the module of the function.  Note that this module isn't necessarily in the same domain as our frame.
-        // FuncEval frames can point to methods they are going to invoke in another domain.
+        // Find the module of the function.
         CordbModule * pModule = NULL;
-        pModule = GetProcess()->LookupOrCreateModule(pData->stubFrame.vmDomainAssembly);
+        pModule = pCurrentAppDomain->LookupOrCreateModule(pData->stubFrame.vmAssembly);
         _ASSERTE(pModule != NULL);
 
         //
@@ -5450,9 +5464,9 @@ CordbMiscFrame::CordbMiscFrame()
 }
 
 // the real constructor which stores the funclet-related information in the CordbMiscFrame
-CordbMiscFrame::CordbMiscFrame(DebuggerIPCE_JITFuncData * pJITFuncData)
+CordbMiscFrame::CordbMiscFrame(Debugger_JITFuncData * pJITFuncData)
 {
-    this->parentIP       = pJITFuncData->parentNativeOffset;
+    this->parentIP       = (SIZE_T)pJITFuncData->parentNativeOffset;
     this->fpParentOrSelf = pJITFuncData->fpParentOrSelf;
     this->fIsFilterFunclet = (pJITFuncData->fIsFilterFrame == TRUE);
 }
@@ -5468,13 +5482,11 @@ CordbNativeFrame::CordbNativeFrame(CordbThread *        pThread,
                                    SIZE_T               ip,
                                    DebuggerREGDISPLAY * pDRD,
                                    TADDR                taAmbientESP,
-                                   bool                 fQuicklyUnwound,
                                    CordbAppDomain *     pCurrentAppDomain,
                                    CordbMiscFrame *     pMisc /*= NULL*/,
                                    DT_CONTEXT *         pContext /*= NULL*/)
   : CordbFrame(pThread, fp, ip, pCurrentAppDomain),
     m_rd(*pDRD),
-    m_quicklyUnwound(fQuicklyUnwound),
     m_JITILFrame(NULL),
     m_nativeCode(pNativeCode), // implicit InternalAddRef
     m_taAmbientESP(taAmbientESP)
@@ -5839,7 +5851,7 @@ HRESULT CordbNativeFrame::GetRegisterSet(ICorDebugRegisterSet **ppRegisters)
         RSInitHolder<CordbRegisterSet> pRegisterSet(new CordbRegisterSet(&m_rd,
                                                                          m_pThread,
                                                                          IsLeafFrame(),
-                                                                         m_quicklyUnwound));
+                                                                         false));
 
         pRegisterSet.TransferOwnershipExternal(ppRegisters);
     }
@@ -5923,9 +5935,7 @@ HRESULT CordbNativeFrame::IsMatchingParentFrame(ICorDebugNativeFrame2 * pPotenti
         {
             FramePointer fpParent  = this->m_misc.fpParentOrSelf;
             FramePointer fpToCheck = pFrameToCheck->m_misc.fpParentOrSelf;
-
-            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
-            IfFailThrow(pDAC->IsMatchingParentFrame(fpToCheck, fpParent, pIsParent));
+            *pIsParent = (fpParent == fpToCheck);
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -7648,15 +7658,16 @@ void CordbJITILFrame::LoadGenericArgs()
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
 
     UINT32 cGenericClassTypeParams = 0;
-    DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> rgGenericTypeParams;
+    CallbackAccumulator<DebuggerIPCE_ExpandedTypeData> acc;
 
-    IfFailThrow(pDAC->GetMethodDescParams(GetCurrentAppDomain()->GetADToken(),
-                              m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
+    IfFailThrow(pDAC->EnumerateMethodDescParams(m_nativeFrame->GetNativeCode()->GetVMNativeCodeMethodDescToken(),
                               m_frameParamsToken,
                               &cGenericClassTypeParams,
-                              &rgGenericTypeParams));
+                              &CallbackAccumulator<DebuggerIPCE_ExpandedTypeData>::PushCallback,
+                              &acc));
+    IfFailThrow(acc.hrError);
 
-    UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
+    UINT32 cTotalGenericTypeParams = (UINT32)acc.items.Size();
 
     NewInterfaceArrayHolder<CordbType> ppGenericArgs(
         new CordbType *[cTotalGenericTypeParams](),
@@ -7667,7 +7678,7 @@ void CordbJITILFrame::LoadGenericArgs()
         // creates a CordbType object for the generic argument
         CordbType *newType;
         IfFailThrow(CordbType::TypeDataToType(GetCurrentAppDomain(),
-                                              &(rgGenericTypeParams[i]),
+                                              &(acc.items[i]),
                                               &newType));
 
         // We add a ref as the instantiation will be stored away in the
@@ -8801,23 +8812,23 @@ HRESULT CordbJITILFrame::GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDeb
     pCode->LoadNativeInfo();
 
     ULONG32 count = 0;
-    IfFailRet(pCode->GetReturnValueLiveOffsetImpl(&m_genericArgs, ILoffset, 0, &count, NULL));
+    IfFailRet(pCode->GetReturnValueVariableHomes(&m_genericArgs, ILoffset, 0, &count, NULL));
 
-    NewArrayHolder<ULONG32> offsets(new ULONG32[count]);
-    IfFailRet(pCode->GetReturnValueLiveOffsetImpl(&m_genericArgs, ILoffset, count, &count, offsets));
+    NewArrayHolder<const ICorDebugInfo::NativeVarInfo *> varInfos(new const ICorDebugInfo::NativeVarInfo *[count]);
+    IfFailRet(pCode->GetReturnValueVariableHomes(&m_genericArgs, ILoffset, count, &count, varInfos));
 
-    bool found = false;
+    const ICorDebugInfo::NativeVarInfo *pReturnVarInfo = NULL;
     ULONG32 currentOffset = m_nativeFrame->GetIPOffset();
     for (ULONG32 i = 0; i < count; ++i)
     {
-        if (currentOffset == offsets[i])
+        if (currentOffset == varInfos[i]->startOffset)
         {
-            found = true;
+            pReturnVarInfo = varInfos[i];
             break;
         }
     }
 
-    if (!found)
+    if (pReturnVarInfo == NULL)
         return E_UNEXPECTED;
 
     // Get the signatures and mdToken for the callee.
@@ -8826,69 +8837,13 @@ HRESULT CordbJITILFrame::GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDeb
     IfFailRet(pCode->GetCallSignature(ILoffset, &targetClass, &mdFunction, methodSig, genericSig));
     IfFailRet(CordbNativeCode::SkipToReturn(methodSig));
 
-
-
-
     // Create the Instantiation, type and then return value
     NewArrayHolder<CordbType*> types;
     Instantiation inst;
     CordbType *pType = 0;
     IfFailRet(BuildInstantiationForCallsite(GetModule(), types, inst, &m_genericArgs, targetClass, genericSig));
     IfFailRet(CordbType::SigToType(GetModule(), &methodSig, &inst, &pType));
-    return GetReturnValueForType(pType, ppReturnValue);
-}
-
-
-HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue **ppReturnValue)
-{
-
-
-#if defined(TARGET_X86)
-    const CorDebugRegister floatRegister = REGISTER_X86_FPSTACK_0;
-#elif defined(TARGET_AMD64)
-    const CorDebugRegister floatRegister = REGISTER_AMD64_XMM0;
-#elif  defined(TARGET_ARM64)
-    const CorDebugRegister floatRegister = REGISTER_ARM64_V0;
-#elif  defined(TARGET_ARM)
-    const CorDebugRegister floatRegister = REGISTER_ARM_D0;
-#elif  defined(TARGET_LOONGARCH64)
-    const CorDebugRegister floatRegister = REGISTER_LOONGARCH64_F0;
-#elif  defined(TARGET_RISCV64)
-    const CorDebugRegister floatRegister = REGISTER_RISCV64_F0;
-#endif
-
-#if defined(TARGET_X86)
-    const CorDebugRegister ptrRegister = REGISTER_X86_EAX;
-    const CorDebugRegister ptrHighWordRegister = REGISTER_X86_EDX;
-#elif defined(TARGET_AMD64)
-    const CorDebugRegister ptrRegister = REGISTER_AMD64_RAX;
-#elif  defined(TARGET_ARM64)
-    const CorDebugRegister ptrRegister = REGISTER_ARM64_X0;
-#elif  defined(TARGET_ARM)
-    const CorDebugRegister ptrRegister = REGISTER_ARM_R0;
-    const CorDebugRegister ptrHighWordRegister = REGISTER_ARM_R1;
-#elif  defined(TARGET_LOONGARCH64)
-    const CorDebugRegister ptrRegister = REGISTER_LOONGARCH64_A0;
-#elif  defined(TARGET_RISCV64)
-    const CorDebugRegister ptrRegister = REGISTER_RISCV64_A0;
-#endif
-
-    CorElementType corReturnType = pType->GetElementType();
-    switch (corReturnType)
-    {
-    default:
-        return m_nativeFrame->GetLocalRegisterValue(ptrRegister, pType, ppReturnValue);
-
-    case ELEMENT_TYPE_R4:
-    case ELEMENT_TYPE_R8:
-        return m_nativeFrame->GetLocalFloatingPointValue(floatRegister, pType, ppReturnValue);
-
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-    case ELEMENT_TYPE_I8:
-    case ELEMENT_TYPE_U8:
-        return m_nativeFrame->GetLocalDoubleRegisterValue(ptrHighWordRegister, ptrRegister, pType, ppReturnValue);
-#endif
-    }
+    return GetNativeVariable(pType, pReturnVarInfo, ppReturnValue);
 }
 
 HRESULT CordbJITILFrame::EnumerateLocalVariablesEx(ILCodeKind flags, ICorDebugValueEnum **ppValueEnum)
@@ -9084,7 +9039,7 @@ CordbEval::CordbEval(CordbThread *pThread)
       m_complete(false),
       m_successful(false),
       m_aborted(false),
-      m_resultAddr(NULL),
+      m_resultAddr((CORDB_ADDRESS)0),
       m_evalDuringException(false)
 {
     m_vmObjectHandle = VMPTR_OBJECTHANDLE::NullPtr();
@@ -9262,12 +9217,12 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
 
     pValue->GetAddress(&addr);
 
-    argData->argAddr = CORDB_ADDRESS_TO_PTR(addr);
+    argData->argAddr = addr;
     argData->argElementType = ty;
 
     argData->argIsHandleValue = false;
     argData->argIsLiteral = false;
-    argData->fullArgType = NULL;
+    argData->fullArgType = (CORDB_ADDRESS)0;
     argData->fullArgTypeNodeCount = 0;
 
     // We have to have knowledge of our value implementation here,
@@ -9296,7 +9251,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
                 // buffer area so the left side can get it.
                 CordbReferenceValue *rv;
                 rv = static_cast<CordbReferenceValue*>(pValue);
-                argData->argIsLiteral = rv->CopyLiteralData(argData->argLiteralData);
+                argData->argIsLiteral = rv->CopyLiteralData(reinterpret_cast<BYTE *>(argData->argLiteralData));
                 if (rv->GetValueHome())
                 {
                     rv->GetValueHome()->CopyToIPCEType(&(argData->argHome));
@@ -9340,7 +9295,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
             void *buffer = NULL;
             IfFailRet(m_thread->GetProcess()->GetAndWriteRemoteBuffer(m_thread->GetAppDomain(), bufferSize, bufferFrom, &buffer));
 
-            argData->fullArgType = buffer;
+            argData->fullArgType = (CORDB_ADDRESS)buffer;
             argData->fullArgTypeNodeCount = fullArgTypeNodeCount;
             // Is it enregistered?
             if ((addr == (CORDB_ADDRESS)NULL) && (pVCObjVal->GetValueHome() != NULL))
@@ -9359,7 +9314,7 @@ HRESULT CordbEval::GatherArgInfo(ICorDebugValue *pValue,
         // Is this a literal value? If, we'll copy the data to the
         // buffer area so the left side can get it.
         CordbGenericValue *gv = (CordbGenericValue*)pValue;
-        argData->argIsLiteral = gv->CopyLiteralData(argData->argLiteralData);
+        argData->argIsLiteral = gv->CopyLiteralData(reinterpret_cast<BYTE *>(argData->argLiteralData));
         // Is it enregistered?
         if ((addr == (CORDB_ADDRESS)NULL) && (gv->GetValueHome() != NULL))
         {
@@ -9788,7 +9743,7 @@ HRESULT CordbEval::CallParameterizedFunction(ICorDebugFunction *pFunction,
         event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
         event.FuncEval.funcEvalType = m_evalType;
         event.FuncEval.funcMetadataToken = m_function->GetMetadataToken();
-        event.FuncEval.vmDomainAssembly = m_function->GetModule()->GetRuntimeDomainAssembly();
+        event.FuncEval.vmAssembly = m_function->GetModule()->GetRuntimeAssembly();
         event.FuncEval.funcEvalKey = hFuncEval.Ptr();
         event.FuncEval.argCount = nArgs;
         event.FuncEval.genericArgsCount = nTypeArgs;
@@ -9971,7 +9926,7 @@ HRESULT CordbEval::NewParameterizedObject(ICorDebugFunction * pConstructor,
     event.FuncEval.vmThreadToken = m_thread->m_vmThreadToken;
     event.FuncEval.funcEvalType = m_evalType;
     event.FuncEval.funcMetadataToken = m_function->GetMetadataToken();
-    event.FuncEval.vmDomainAssembly = m_function->GetModule()->GetRuntimeDomainAssembly();
+    event.FuncEval.vmAssembly = m_function->GetModule()->GetRuntimeAssembly();
     event.FuncEval.funcEvalKey = hFuncEval.Ptr();
     event.FuncEval.argCount = nArgs;
     event.FuncEval.genericArgsCount = nTypeArgs;
@@ -10072,7 +10027,7 @@ HRESULT CordbEval::NewParameterizedObjectNoConstructor(ICorDebugClass * pClass,
     event.FuncEval.funcEvalType = m_evalType;
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = (mdTypeDef)m_class->m_id;
-    event.FuncEval.vmDomainAssembly = m_class->GetModule()->GetRuntimeDomainAssembly();
+    event.FuncEval.vmAssembly = m_class->GetModule()->GetRuntimeAssembly();
     event.FuncEval.funcEvalKey = hFuncEval.Ptr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = nTypeArgs;
@@ -10148,7 +10103,9 @@ HRESULT CordbEval::NewStringWithLength(LPCWSTR wszString, UINT iLength)
 
 
     // Length of the string? Don't account for null as COMString::NewString is length-based
-    SIZE_T cbString = iLength * sizeof(WCHAR);
+    if (iLength > UINT_MAX / sizeof(WCHAR))
+        return E_INVALIDARG;
+    UINT cbString = (UINT)(iLength * sizeof(WCHAR));
 
     // Remember that we're doing a func eval for a new string.
     m_function = NULL;
@@ -10167,7 +10124,7 @@ HRESULT CordbEval::NewStringWithLength(LPCWSTR wszString, UINT iLength)
     // Note: no function or module here...
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = mdTypeDefNil;
-    event.FuncEval.vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+    event.FuncEval.vmAssembly = VMPTR_Assembly::NullPtr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = 0;
     event.FuncEval.genericArgsNodeCount = 0;
@@ -10284,7 +10241,7 @@ HRESULT CordbEval::NewParameterizedArray(ICorDebugType * pElementType,
     // Note: no function or module here...
     event.FuncEval.funcMetadataToken = mdMethodDefNil;
     event.FuncEval.funcClassMetadataToken = mdTypeDefNil;
-    event.FuncEval.vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
+    event.FuncEval.vmAssembly = VMPTR_Assembly::NullPtr();
     event.FuncEval.argCount = 0;
     event.FuncEval.genericArgsCount = 1;
 
@@ -10454,7 +10411,7 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
             // @dbgtodo  funceval - push this up
             RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
-            pAppDomain = m_thread->GetProcess()->LookupOrCreateAppDomain(m_resultAppDomainToken);
+            pAppDomain = m_thread->GetProcess()->GetAppDomain();
         }
         else
         {
@@ -10976,15 +10933,28 @@ HRESULT CordbAsyncFrame::Init()
         GetProcess()->GetContinueNeuterList()->Add(GetProcess(), this);
 
         // Initialize module and appdomain
-        VMPTR_DomainAssembly vmDomainAssembly;
-        IfFailThrow(GetProcess()->GetDAC()->GetDomainAssemblyFromModule(m_vmModule, &vmDomainAssembly));
-        CordbModule* pModule = GetProcess()->LookupOrCreateModule(vmDomainAssembly);
-        m_pAppDomain.Assign(pModule->GetAppDomain());
+        CordbAppDomain *pAppDomain = GetProcess()->GetAppDomain();
+        CordbModule* pModule = pAppDomain->LookupOrCreateModule(VMPTR_Assembly::NullPtr(), m_vmModule);
+        m_pAppDomain.Assign(pAppDomain);
 
         // LookupOrCreateNativeCode is marked INTERNAL_SYNC_API_ENTRY and requires the StopGoLock.
         m_pCode.Assign(pModule->LookupOrCreateNativeCode(m_methodDef, m_vmMethodDesc, m_pCodeStart));
         m_pCode->LoadNativeInfo();
-        IfFailThrow(GetProcess()->GetDAC()->GetAsyncLocals(m_vmMethodDesc, m_pCodeStart, m_state, &m_asyncVars));
+
+        {
+            CallbackAccumulator<AsyncLocalData> acc;
+            IfFailThrow(GetProcess()->GetDAC()->EnumerateAsyncLocals(
+                m_vmMethodDesc, m_pCodeStart, m_state,
+                &CallbackAccumulator<AsyncLocalData>::PushCallback,
+                &acc));
+            IfFailThrow(acc.hrError);
+
+            SIZE_T cLocals = acc.items.Size();
+            for (SIZE_T i = 0; i < cLocals; i++)
+            {
+                m_asyncVars.Push(acc.items[i]);
+            }
+        }
 
         // Initialize function and IL code
         m_pFunction.Assign(m_pCode->GetFunction());
@@ -11026,7 +10996,6 @@ void CordbAsyncFrame::Neuter()
         return;
 
     m_pCode.Clear();
-    m_asyncVars.Dealloc();
     m_pAppDomain.Clear();
 
     m_pFunction.Clear();
@@ -11247,7 +11216,7 @@ HRESULT CordbAsyncFrame::GetArgument(DWORD dwIndex, ICorDebugValue ** ppValue)
         CordbType * pType;
         LoadGenericArgs();
         m_pCode->GetArgumentType(dwIndex, &m_genericArgs, &pType);
-        for (unsigned int i = 0; i < m_asyncVars.Count(); i++)
+        for (unsigned int i = 0; i < m_asyncVars.Size(); i++)
         {
             if (m_asyncVars[i].ilVarNum == dwIndex)
             {
@@ -11426,7 +11395,7 @@ HRESULT CordbAsyncFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
 #endif // FEATURE_CODE_VERSIONING
 
         IfFailThrow(pActiveCode->GetLocalVariableType(dwIndex, &m_genericArgs, &pType));
-        for (unsigned int i = 0 ; i < m_asyncVars.Count(); i++)
+        for (unsigned int i = 0 ; i < m_asyncVars.Size(); i++)
         {
             if (m_asyncVars[i].ilVarNum == dwIndex+argCount)
             {
@@ -11510,7 +11479,7 @@ void CordbAsyncFrame::LoadGenericArgs()
     IDacDbiInterface * pDAC = GetProcess()->GetDAC();
 
     UINT32 cGenericClassTypeParams = 0;
-    DacDbiArrayList<DebuggerIPCE_ExpandedTypeData> rgGenericTypeParams;
+    CallbackAccumulator<DebuggerIPCE_ExpandedTypeData> acc;
 
     UINT32 genericArgIndex;
     HRESULT result = pDAC->GetGenericArgTokenIndex(
@@ -11521,12 +11490,18 @@ void CordbAsyncFrame::LoadGenericArgs()
     CORDB_ADDRESS genericTypeParam = 0;
     if (result == S_OK)
     {
-        for (unsigned int i = 0 ; i < m_asyncVars.Count(); i++)
+        for (unsigned int i = 0 ; i < m_asyncVars.Size(); i++)
         {
             if (m_asyncVars[i].ilVarNum == genericArgIndex)
             {
-
-                HRESULT hr = GetProcess()->SafeReadStruct(m_continuationAddress + m_asyncVars[i].offset, &genericTypeParam);
+                // Read a target-pointer-sized value. CORDB_ADDRESS is always 8 bytes (ULONG64),
+                // but on x86 targets the generic arg field is only a 4-byte pointer. Using
+                // SIZE_T (which is pointer-sized for the DBI build, matching the target here)
+                // avoids reading adjacent memory. This mirrors how CordbJITILFrame::Init()
+                // reads the raw token via GetRegisterOrStackValue (which returns SIZE_T).
+                SIZE_T rawToken = 0;
+                HRESULT hr = GetProcess()->SafeReadStruct(m_continuationAddress + m_asyncVars[i].offset, &rawToken);
+                genericTypeParam = (CORDB_ADDRESS)rawToken;
                 IfFailThrow(hr);
                 break;
             }
@@ -11536,13 +11511,14 @@ void CordbAsyncFrame::LoadGenericArgs()
         genericTypeParam = resolvedToken;
     }
 
-    IfFailThrow(pDAC->GetMethodDescParams(m_pAppDomain->GetADToken(),
-                              m_vmMethodDesc,
+    IfFailThrow(pDAC->EnumerateMethodDescParams(m_vmMethodDesc,
                               genericTypeParam,
                               &cGenericClassTypeParams,
-                              &rgGenericTypeParams));
+                              &CallbackAccumulator<DebuggerIPCE_ExpandedTypeData>::PushCallback,
+                              &acc));
+    IfFailThrow(acc.hrError);
 
-    UINT32 cTotalGenericTypeParams = rgGenericTypeParams.Count();
+    UINT32 cTotalGenericTypeParams = (UINT32)acc.items.Size();
 
     NewInterfaceArrayHolder<CordbType> ppGenericArgs(
         new CordbType *[cTotalGenericTypeParams](),
@@ -11553,7 +11529,7 @@ void CordbAsyncFrame::LoadGenericArgs()
         // creates a CordbType object for the generic argument
         CordbType *newType;
         IfFailThrow(CordbType::TypeDataToType(m_pAppDomain,
-                                              &(rgGenericTypeParams[i]),
+                                              &(acc.items[i]),
                                               &newType));
 
         // We add a ref as the instantiation will be stored away in the

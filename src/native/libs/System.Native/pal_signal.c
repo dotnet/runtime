@@ -69,21 +69,31 @@ static bool IsSaSigInfo(struct sigaction* action)
 static bool IsSigDfl(struct sigaction* action)
 {
     assert(action);
+    bool isDefault;
     // macOS can return sigaction with SIG_DFL and SA_SIGINFO.
     // SA_SIGINFO means we should use sa_sigaction, but here we want to check sa_handler.
     // So we ignore SA_SIGINFO when sa_sigaction and sa_handler are at the same address.
-    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
-            action->sa_handler == SIG_DFL;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wstrict-prototypes"
+    isDefault = (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+                action->sa_handler == SIG_DFL;
+#pragma clang diagnostic pop
+    return isDefault;
 }
 
 static bool IsSigIgn(struct sigaction* action)
 {
     assert(action);
-    return (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
-            action->sa_handler == SIG_IGN;
+    bool isIgnored;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wstrict-prototypes"
+    isIgnored = (&action->sa_handler == (void*)&action->sa_sigaction || !IsSaSigInfo(action)) &&
+                action->sa_handler == SIG_IGN;
+#pragma clang diagnostic pop
+    return isIgnored;
 }
 
-static bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
+bool TryConvertSignalCodeToPosixSignal(int signalCode, PosixSignal* posixSignal)
 {
     assert(posixSignal != NULL);
 
@@ -239,7 +249,7 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
             else
             {
                 assert(origHandler->sa_handler);
-                origHandler->sa_handler(sig);
+                ((void (*)(int))origHandler->sa_handler)(sig);
             }
 
         }

@@ -75,6 +75,7 @@
     <PlatformManifestFileEntry Include="System.Private.Xml.Linq.dll" />
     <!-- Platform-Native Composite R2R images -->
     <PlatformManifestFileEntry Include="Microsoft.NETCore.App.r2r.dylib" />
+    <PlatformManifestFileEntry Include="Microsoft.NETCore.App.Runtime.CoreCLR.r2r.dylib" />
     <!-- Native libraries -->
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.dylib" IsNative="true" />
@@ -108,6 +109,7 @@
     <PlatformManifestFileEntry Include="libcoreclr.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr_static.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcoreclr_gen_static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="clrgc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.dylib" IsNative="true" />
@@ -121,9 +123,9 @@
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="clrjit.pgd" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.dylib" IsNative="true" />
-    <PlatformManifestFileEntry Condition="('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')" Include="clrinterpreter.dll" IsNative="true" />
-    <PlatformManifestFileEntry Condition="('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'riscv64' or '$(TargetArchitecture)' == 'loongarch64')" Include="libclrinterpreter.so" IsNative="true" />
-    <PlatformManifestFileEntry Condition="('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')" Include="libclrinterpreter.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Condition="(('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') or '$(FeatureInterpreter)' == 'true') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')" Include="clrinterpreter.dll" IsNative="true" />
+    <PlatformManifestFileEntry Condition="(('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') or '$(FeatureInterpreter)' == 'true') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'riscv64' or '$(TargetArchitecture)' == 'loongarch64')" Include="libclrinterpreter.so" IsNative="true" />
+    <PlatformManifestFileEntry Condition="(('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') or '$(FeatureInterpreter)' == 'true') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')" Include="libclrinterpreter.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscordaccore.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.dylib" IsNative="true" />
@@ -270,12 +272,14 @@
     <PlatformManifestFileEntry Include="libgcinfo_unix_wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libminipal.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libnativeresourcestring.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libBrowserHost.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libBrowserHost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="libBrowserHost.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.Browser.Utils.js" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.Browser.Utils.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.Browser.js" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.Browser.js.map" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.Browser.extpost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Runtime.InteropServices.JavaScript.Native.js" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Runtime.InteropServices.JavaScript.Native.js.map" IsNative="true" />
     <!-- wasi specific -->

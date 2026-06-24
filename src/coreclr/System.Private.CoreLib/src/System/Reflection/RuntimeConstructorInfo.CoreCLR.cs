@@ -159,7 +159,6 @@ namespace System.Reflection
 
         #region MemberInfo Overrides
         public override string Name => RuntimeMethodHandle.GetName(this);
-        public override MemberTypes MemberType => MemberTypes.Constructor;
 
         public override Type? DeclaringType => m_reflectedTypeCache.IsGlobal ? null : m_declaringType;
 
