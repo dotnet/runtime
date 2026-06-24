@@ -387,7 +387,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
                     // debugger if it can find the metadata elsewhere.
                     // If this was live debugging, we should have just gotten the memory contents.
                     // Thus this code is for dump debugging, when you don't have the metadata in the dump.
-                    pMDII = LookupMetaDataFromDebugger(vmPEAssembly, pModule);
+                    pMDII = LookupMetaDataFromDebugger(pModule);
                 }
                 return pMDII;
             }
@@ -398,9 +398,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
 }
 
 
-IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
-    VMPTR_PEAssembly vmPEAssembly,
-    CordbModule * pModule)
+IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(CordbModule * pModule)
 {
     DWORD dwImageTimeStamp = 0;
     DWORD dwImageSize = 0;
@@ -409,7 +407,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
 
     // First, see if the debugger can locate the exact metadata we want.
     BOOL _metaDataFileInfoResult;
-    IfFailThrow(this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, &dwImageTimeStamp, &dwImageSize, &filePath, &_metaDataFileInfoResult));
+    IfFailThrow(this->GetDAC()->GetModuleMetaDataFileInfo(pModule->GetRuntimeModule(), &dwImageTimeStamp, &dwImageSize, &filePath, &_metaDataFileInfoResult));
     if (_metaDataFileInfoResult)
     {
         _ASSERTE(filePath.IsSet());

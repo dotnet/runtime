@@ -230,7 +230,20 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
-            string path = loader.GetPath(handle);
+            string path = string.Empty;
+            try
+            {
+                path = loader.GetPath(handle);
+            }
+            catch (VirtualReadException)
+            {
+                path = loader.GetFileName(handle);
+            }
+
+            if (string.IsNullOrEmpty(path))
+            {
+                path = loader.GetFileName(handle);
+            }
             if (string.IsNullOrEmpty(path))
             {
                 *pResult = Interop.BOOL.FALSE;
@@ -3868,8 +3881,71 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, Interop.BOOL* pResult)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwTimeStamp, dwImageSize, pStrFilename, pResult) : HResults.E_NOTIMPL;
+    public int GetModuleMetaDataFileInfo(ulong vmModule, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, Interop.BOOL* pResult)
+    {
+        int hr = HResults.S_OK;
+        string path = string.Empty;
+        try
+        {
+            if (dwTimeStamp is null || dwImageSize is null || pStrFilename == 0 || pResult is null)
+                throw new NullReferenceException("One or more parameters are null");
+            *pResult = Interop.BOOL.FALSE;
+            *dwTimeStamp = 0;
+            *dwImageSize = 0;
+            if (vmModule == 0)
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(vmModule);
+            bool result = loader.GetFileHeadersInfo(moduleHandle, out uint timeStamp, out uint imageSize);
+            if (result)
+            {
+                *dwTimeStamp = timeStamp;
+                *dwImageSize = imageSize;
+            }
+            try
+            {
+                path = loader.GetPath(moduleHandle);
+            }
+            catch (VirtualReadException)
+            {
+                path = loader.GetFileName(moduleHandle);
+            }
+            if (string.IsNullOrEmpty(path))
+            {
+                path = loader.GetFileName(moduleHandle);
+            }
+            hr = StringHolderAssignCopy(pStrFilename, path);
+            *pResult = result ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacy is not null)
+        {
+            uint timeStampLocal;
+            uint imageSizeLocal;
+            Interop.BOOL resultLocal;
+            using var legacyHolder = new NativeStringHolder();
+            int hrLocal = _legacy.GetModuleMetaDataFileInfo(vmModule, &timeStampLocal, &imageSizeLocal, legacyHolder.Ptr, &resultLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pResult == resultLocal, $"GetModuleMetaDataFileInfo result mismatch - cDAC: {*pResult}, DAC: {resultLocal}");
+                if (*pResult == Interop.BOOL.TRUE)
+                {
+                    Debug.Assert(*dwTimeStamp == timeStampLocal, $"GetModuleMetaDataFileInfo timestamp mismatch - cDAC: {*dwTimeStamp}, DAC: {timeStampLocal}");
+                    Debug.Assert(*dwImageSize == imageSizeLocal, $"GetModuleMetaDataFileInfo image size mismatch - cDAC: {*dwImageSize}, DAC: {imageSizeLocal}");
+                    Debug.Assert(
+                        string.Equals(path, legacyHolder.Value, System.StringComparison.Ordinal),
+                        $"GetModuleMetaDataFileInfo path mismatch - cDAC: '{path}', DAC: '{legacyHolder.Value}'");
+                }
+            }
+        }
+#endif
+        return hr;
+    }
 
     public int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult)
         => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.IsThreadSuspendedOrHijacked(vmThread, pResult) : HResults.E_NOTIMPL;

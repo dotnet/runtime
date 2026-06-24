@@ -693,7 +693,7 @@ public unsafe partial interface IDacDbiInterface
     int GetAttachStateFlags(int* pRetVal);
 
     [PreserveSig]
-    int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, Interop.BOOL* pResult);
+    int GetModuleMetaDataFileInfo(ulong vmModule, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, Interop.BOOL* pResult);
 
     [PreserveSig]
     int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult);
