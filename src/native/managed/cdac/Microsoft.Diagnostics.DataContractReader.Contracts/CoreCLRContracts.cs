@@ -46,6 +46,8 @@ public static class CoreCLRContracts
 
         registry.Register<IPlatformMetadata>("c1", static t => new PlatformMetadata_1(t));
 
+        registry.Register<IFeatureFlags>("c1", static t => new FeatureFlags_1(t));
+
         registry.Register<IPrecodeStubs>("c1", static t => new PrecodeStubs_1(t));
         registry.Register<IPrecodeStubs>("c2", static t => new PrecodeStubs_2(t));
         registry.Register<IPrecodeStubs>("c3", static t => new PrecodeStubs_3(t));

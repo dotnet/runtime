@@ -111,6 +111,13 @@ public struct DacDbiExceptionCallStackData
 }
 
 [StructLayout(LayoutKind.Sequential)]
+public struct AsyncLocalData
+{
+    public uint Offset;
+    public uint IlVarNum;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct COR_HEAPINFO
 {
     public Interop.BOOL areGCStructuresValid;
@@ -311,6 +318,20 @@ public struct DebuggerIPCE_ExpandedTypeData
 public unsafe struct ArgInfoList
 {
     public DebuggerIPCE_BasicTypeData* m_pList;
+    public int m_nEntries;
+}
+
+[StructLayout(LayoutKind.Sequential, Size = 48)]
+public struct DebuggerIPCE_TypeArgData
+{
+    public DebuggerIPCE_ExpandedTypeData data;
+    public uint numTypeArgs; // Portable<UINT>
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct TypeInfoList
+{
+    public DebuggerIPCE_TypeArgData* m_pList;
     public int m_nEntries;
 }
 
@@ -595,7 +616,7 @@ public unsafe partial interface IDacDbiInterface
     int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal);
 
     [PreserveSig]
-    int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal);
+    int GetApproxTypeHandle(TypeInfoList* pTypeData, ulong* pRetVal);
 
     [PreserveSig]
     int GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData* pTypeData, ArgInfoList* pArgInfo, ulong* pVmTypeHandle);
@@ -768,7 +789,8 @@ public unsafe partial interface IDacDbiInterface
     int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState);
 
     [PreserveSig]
-    int GetAsyncLocals(ulong vmMethod, ulong codeAddr, uint state, nint pAsyncLocals);
+    int EnumerateAsyncLocals(ulong vmMethod, ulong codeAddr, uint state,
+        delegate* unmanaged<AsyncLocalData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);

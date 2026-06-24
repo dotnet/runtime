@@ -195,7 +195,15 @@ CDAC_TYPE_END(String)
 
 CDAC_TYPE_BEGIN(ContinuationObject)
 CDAC_TYPE_SIZE(sizeof(ContinuationObject))
+CDAC_TYPE_FIELD(ContinuationObject, T_POINTER, Next, cdac_data<ContinuationObject>::Next)
+CDAC_TYPE_FIELD(ContinuationObject, T_POINTER, ResumeInfo, cdac_data<ContinuationObject>::ResumeInfo)
+CDAC_TYPE_FIELD(ContinuationObject, T_INT32, State, cdac_data<ContinuationObject>::State)
 CDAC_TYPE_END(ContinuationObject)
+
+CDAC_TYPE_BEGIN(AsyncResumeInfo)
+CDAC_TYPE_INDETERMINATE(AsyncResumeInfo)
+CDAC_TYPE_FIELD(AsyncResumeInfo, T_POINTER, DiagnosticIP, offsetof(CORINFO_AsyncResumeInfo, DiagnosticIP))
+CDAC_TYPE_END(AsyncResumeInfo)
 
 CDAC_TYPE_BEGIN(Array)
 CDAC_TYPE_SIZE(sizeof(ArrayBase))
@@ -1590,33 +1598,21 @@ CDAC_GLOBAL(MethodDescTokenRemainderBitCount, T_UINT8, METHOD_TOKEN_REMAINDER_BI
 
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL(FeatureCOMInterop, T_UINT8, 1)
-#else
-CDAC_GLOBAL(FeatureCOMInterop, T_UINT8, 0)
 #endif
 #if FEATURE_COMWRAPPERS
 CDAC_GLOBAL(FeatureComWrappers, T_UINT8, 1)
-#else
-CDAC_GLOBAL(FeatureComWrappers, T_UINT8, 0)
 #endif
 #if FEATURE_OBJCMARSHAL
 CDAC_GLOBAL(FeatureObjCMarshal, T_UINT8, 1)
-#else
-CDAC_GLOBAL(FeatureObjCMarshal, T_UINT8, 0)
 #endif
 #if FEATURE_JAVAMARSHAL
 CDAC_GLOBAL(FeatureJavaMarshal, T_UINT8, 1)
-#else
-CDAC_GLOBAL(FeatureJavaMarshal, T_UINT8, 0)
 #endif
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 CDAC_GLOBAL(FeatureOnStackReplacement, T_UINT8, 1)
-#else
-CDAC_GLOBAL(FeatureOnStackReplacement, T_UINT8, 0)
 #endif // FEATURE_ON_STACK_REPLACEMENT
 #ifdef FEATURE_WEBCIL
 CDAC_GLOBAL(FeatureWebcil, T_UINT8, 1)
-#else
-CDAC_GLOBAL(FeatureWebcil, T_UINT8, 0)
 #endif
 // See Object::GetGCSafeMethodTable
 #ifdef TARGET_64BIT
@@ -1626,8 +1622,6 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, T_UINT8, 1 | 1 << 1)
 #endif //TARGET_64BIT
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL(FeaturePortableEntrypoints, T_UINT8, 1)
-#else
-CDAC_GLOBAL(FeaturePortableEntrypoints, T_UINT8, 0)
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 CDAC_GLOBAL(SOSBreakingChangeVersion, T_UINT8, SOS_BREAKING_CHANGE_VERSION)
 CDAC_GLOBAL(RecommendedReaderVersion, T_UINT32, CDAC_RECOMMENDED_READER_VERSION)
@@ -1754,6 +1748,7 @@ CDAC_GLOBAL_CONTRACT(Notifications, c1)
 CDAC_GLOBAL_CONTRACT(ObjectiveCMarshal, c1)
 #endif // FEATURE_OBJCMARSHAL
 CDAC_GLOBAL_CONTRACT(Object, c1)
+CDAC_GLOBAL_CONTRACT(FeatureFlags, c1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, c1)
 CDAC_GLOBAL_CONTRACT(PrecodeStubs, c3)
 #ifdef PROFILING_SUPPORTED
