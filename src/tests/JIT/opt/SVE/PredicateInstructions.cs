@@ -199,7 +199,7 @@ public class PredicateInstructions
     {
         //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
         //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
-        //ARM64-NOT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
+        //ARM64-NOT: {{^ *}}cmp
         //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
         fixed (float* ptr = values)
         {
@@ -213,7 +213,7 @@ public class PredicateInstructions
     {
         //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
         //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
-        //ARM64-NOT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
+        //ARM64-NOT: {{^ *}}cmp
         //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
         fixed (float* ptr = values)
         {
@@ -227,7 +227,7 @@ public class PredicateInstructions
     {
         //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
         //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
-        //ARM64-NOT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
+        //ARM64-NOT: {{^ *}}cmp
         //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
         fixed (float* ptr = values)
         {
@@ -242,7 +242,7 @@ public class PredicateInstructions
     {
         //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
         //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
-        //ARM64-NOT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
+        //ARM64-NOT: {{^ *}}cmp
         //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
         fixed (float* ptr = values)
         {
@@ -256,10 +256,10 @@ public class PredicateInstructions
     {
         //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.s, {{w[0-9]+}}, {{w[0-9]+}}
         //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
-        //ARM64-NOT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
+        //ARM64-NOT: {{^ *}}cmp
         //ARM64-FULL-LINE: ld1w { {{z[0-9]+}}.s }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
         //ARM64-NOT: mov {{z[0-9]+}}.s, {{p[0-9]+}}/z, #1
-        //ARM64-NOT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
+        //ARM64-NOT: {{^ *}}cmp
         //ARM64-FULL-LINE: st1w { {{z[0-9]+}}.s }, {{p[0-9]+}}, [{{x[0-9]+}}]
         fixed (float* inputPtr = input, outputPtr = output)
         {
@@ -283,7 +283,7 @@ public class PredicateInstructions
     {
         //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
         //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
-        //ARM64-NOT: cmpne {{p[0-9]+}}.d, {{p[0-9]+}}/z, {{z[0-9]+}}.d, #0
+        //ARM64-NOT: {{^ *}}cmp
         //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
         fixed (double* ptr = values)
         {
@@ -297,7 +297,7 @@ public class PredicateInstructions
     {
         //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
         //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
-        //ARM64-NOT: cmpne {{p[0-9]+}}.d, {{p[0-9]+}}/z, {{z[0-9]+}}.d, #0
+        //ARM64-NOT: {{^ *}}cmp
         //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
         fixed (double* ptr = values)
         {
@@ -311,7 +311,7 @@ public class PredicateInstructions
     {
         //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
         //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
-        //ARM64-NOT: cmpne {{p[0-9]+}}.d, {{p[0-9]+}}/z, {{z[0-9]+}}.d, #0
+        //ARM64-NOT: {{^ *}}cmp
         //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
         fixed (double* ptr = values)
         {
@@ -326,7 +326,7 @@ public class PredicateInstructions
     {
         //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
         //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
-        //ARM64-NOT: cmpne {{p[0-9]+}}.d, {{p[0-9]+}}/z, {{z[0-9]+}}.d, #0
+        //ARM64-NOT: {{^ *}}cmp
         //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
         fixed (double* ptr = values)
         {
@@ -340,10 +340,10 @@ public class PredicateInstructions
     {
         //ARM64-FULL-LINE: whilelt {{p[0-9]+}}.d, {{w[0-9]+}}, {{w[0-9]+}}
         //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
-        //ARM64-NOT: cmpne {{p[0-9]+}}.d, {{p[0-9]+}}/z, {{z[0-9]+}}.d, #0
+        //ARM64-NOT: {{^ *}}cmp
         //ARM64-FULL-LINE: ld1d { {{z[0-9]+}}.d }, {{p[0-9]+}}/z, [{{x[0-9]+}}]
         //ARM64-NOT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
-        //ARM64-NOT: cmpne {{p[0-9]+}}.d, {{p[0-9]+}}/z, {{z[0-9]+}}.d, #0
+        //ARM64-NOT: {{^ *}}cmp
         //ARM64-FULL-LINE: st1d { {{z[0-9]+}}.d }, {{p[0-9]+}}, [{{x[0-9]+}}]
         fixed (double* inputPtr = input, outputPtr = output)
         {
