@@ -192,6 +192,8 @@ namespace System.Formats.Tar
         private async ValueTask ReadFileFromDiskAndWriteToArchiveStreamAsEntryCoreAsync<TAdapter>(string fullPath, string entryName, FileOptions fileOptions, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             TarEntry entry = ConstructEntryForWriting(fullPath, entryName, fileOptions);
 
             await WriteEntryCoreAsync<TAdapter>(entry, cancellationToken).ConfigureAwait(false);
