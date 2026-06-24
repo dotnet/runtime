@@ -1426,6 +1426,407 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
     }
 }
 
+#if defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS) && defined(FEATURE_MASKED_HW_INTRINSICS)
+//------------------------------------------------------------------------
+// TryGetMaskFromZeroOrOneVector:
+//   Return true if every element in the constant vector is either 0 or 1
+//   and create the corresponding mask.
+//
+template <typename TSimd, typename TBase>
+static bool TryGetMaskFromZeroOrOneVector(TSimd arg, simdmask_t* mask)
+{
+    uint64_t rawMask = 0;
+    uint32_t count   = sizeof(TSimd) / sizeof(TBase);
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        TBase element;
+        memcpy(&element, &arg.u8[i * sizeof(TBase)], sizeof(TBase));
+
+        if (element == static_cast<TBase>(0))
+        {
+            continue;
+        }
+        if (element != static_cast<TBase>(1))
+        {
+            return false;
+        }
+
+        rawMask |= (static_cast<uint64_t>(1) << (i * sizeof(TBase)));
+    }
+
+    memcpy(&mask->u8[0], &rawMask, sizeof(uint64_t));
+    return true;
+}
+
+//------------------------------------------------------------------------
+// TryGetMaskFromInvertedZeroOrOneVector:
+//   Return true if every element in the constant vector is the bitwise
+//   inverse of either 0 or 1 and create the mask represented by the original
+//   0/1 values.
+//
+template <typename TSimd, typename TBase>
+static bool TryGetMaskFromInvertedZeroOrOneVector(TSimd arg, simdmask_t* mask)
+{
+    uint64_t rawMask = 0;
+    uint32_t count   = sizeof(TSimd) / sizeof(TBase);
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        TBase element;
+        memcpy(&element, &arg.u8[i * sizeof(TBase)], sizeof(TBase));
+
+        if (element == static_cast<TBase>(~static_cast<TBase>(0)))
+        {
+            continue;
+        }
+        if (element != static_cast<TBase>(~static_cast<TBase>(1)))
+        {
+            return false;
+        }
+
+        rawMask |= (static_cast<uint64_t>(1) << (i * sizeof(TBase)));
+    }
+
+    memcpy(&mask->u8[0], &rawMask, sizeof(uint64_t));
+    return true;
+}
+
+//------------------------------------------------------------------------
+// TryGetMaskFromZeroOrOneVector:
+//   Type-dispatch wrapper for TryGetMaskFromZeroOrOneVector<TSimd, TBase>.
+//
+template <typename TSimd>
+static bool TryGetMaskFromZeroOrOneVector(var_types baseType, TSimd arg, simdmask_t* mask)
+{
+    switch (baseType)
+    {
+        case TYP_INT:
+        case TYP_UINT:
+            return TryGetMaskFromZeroOrOneVector<TSimd, uint32_t>(arg, mask);
+
+        case TYP_LONG:
+        case TYP_ULONG:
+            return TryGetMaskFromZeroOrOneVector<TSimd, uint64_t>(arg, mask);
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+            return TryGetMaskFromZeroOrOneVector<TSimd, uint8_t>(arg, mask);
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+            return TryGetMaskFromZeroOrOneVector<TSimd, uint16_t>(arg, mask);
+
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
+// TryGetMaskFromInvertedZeroOrOneVector:
+//   Type-dispatch wrapper for TryGetMaskFromInvertedZeroOrOneVector<TSimd, TBase>.
+//
+template <typename TSimd>
+static bool TryGetMaskFromInvertedZeroOrOneVector(var_types baseType, TSimd arg, simdmask_t* mask)
+{
+    switch (baseType)
+    {
+        case TYP_INT:
+        case TYP_UINT:
+            return TryGetMaskFromInvertedZeroOrOneVector<TSimd, uint32_t>(arg, mask);
+
+        case TYP_LONG:
+        case TYP_ULONG:
+            return TryGetMaskFromInvertedZeroOrOneVector<TSimd, uint64_t>(arg, mask);
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+            return TryGetMaskFromInvertedZeroOrOneVector<TSimd, uint8_t>(arg, mask);
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+            return TryGetMaskFromInvertedZeroOrOneVector<TSimd, uint16_t>(arg, mask);
+
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
+// TryGetMaskFromZeroOrOneVector:
+//   Return true if "op" is a vector constant containing only 0/1 elements
+//   and create the corresponding mask.
+//
+static bool TryGetMaskFromZeroOrOneVector(GenTree* op, var_types baseType, simdmask_t* mask)
+{
+    if (!op->IsCnsVec() || op->IsVectorZero())
+    {
+        return false;
+    }
+
+    switch (op->TypeGet())
+    {
+        case TYP_SIMD8:
+            return TryGetMaskFromZeroOrOneVector(baseType, op->AsVecCon()->gtSimd8Val, mask);
+
+        case TYP_SIMD12:
+            return TryGetMaskFromZeroOrOneVector(baseType, op->AsVecCon()->gtSimd12Val, mask);
+
+        case TYP_SIMD16:
+            return TryGetMaskFromZeroOrOneVector(baseType, op->AsVecCon()->gtSimd16Val, mask);
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// TryGetMaskFromInvertedZeroOrOneVector:
+//   Return true if "op" is a vector constant containing only bitwise-not
+//   0/1 elements and create the mask represented by the original values.
+//
+static bool TryGetMaskFromInvertedZeroOrOneVector(GenTree* op, var_types baseType, simdmask_t* mask)
+{
+    if (!op->IsCnsVec())
+    {
+        return false;
+    }
+
+    switch (op->TypeGet())
+    {
+        case TYP_SIMD8:
+            return TryGetMaskFromInvertedZeroOrOneVector(baseType, op->AsVecCon()->gtSimd8Val, mask);
+
+        case TYP_SIMD12:
+            return TryGetMaskFromInvertedZeroOrOneVector(baseType, op->AsVecCon()->gtSimd12Val, mask);
+
+        case TYP_SIMD16:
+            return TryGetMaskFromInvertedZeroOrOneVector(baseType, op->AsVecCon()->gtSimd16Val, mask);
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// IsSveMaskOperand:
+//   Return true if "op" can be represented directly as an SVE predicate.
+//
+static bool IsSveMaskOperand(GenTree* op, var_types baseType)
+{
+    simdmask_t mask;
+    return op->OperIsConvertMaskToVector() || varTypeIsMask(op) || op->IsVectorZero() ||
+           TryGetMaskFromZeroOrOneVector(op, baseType, &mask);
+}
+
+//------------------------------------------------------------------------
+// ConvertSveMaskOperandToMask:
+//   Convert a mask-shaped vector operand to its SVE predicate representation.
+//
+static GenTree* ConvertSveMaskOperandToMask(
+    LIR::Range& blockRange, Compiler* compiler, GenTreeHWIntrinsic* insertionPoint, GenTree* op, var_types baseType)
+{
+    if (varTypeIsMask(op))
+    {
+        return op;
+    }
+
+    if (op->OperIsConvertMaskToVector())
+    {
+        GenTree* mask = op->AsHWIntrinsic()->Op(1);
+        blockRange.Remove(op);
+        return mask;
+    }
+
+    if (op->IsVectorZero())
+    {
+        GenTree* mask = compiler->gtNewSimdFalseMaskByteNode();
+        blockRange.InsertBefore(insertionPoint, mask);
+        blockRange.Remove(op);
+        return mask;
+    }
+
+    simdmask_t maskVal;
+    if (TryGetMaskFromZeroOrOneVector(op, baseType, &maskVal))
+    {
+        GenTreeMskCon* mask = compiler->gtNewMskConNode(TYP_MASK);
+        mask->gtSimdMaskVal = maskVal;
+        blockRange.InsertBefore(insertionPoint, mask);
+        blockRange.Remove(op);
+        return mask;
+    }
+
+    unreached();
+}
+
+//------------------------------------------------------------------------
+// ConvertInvertedSveMaskConstantToMask:
+//   Convert a bitwise-not 0/1 vector constant to the predicate represented
+//   by the original 0/1 values.
+//
+static GenTree* ConvertInvertedSveMaskConstantToMask(
+    LIR::Range& blockRange, Compiler* compiler, GenTreeHWIntrinsic* insertionPoint, GenTree* op, var_types baseType)
+{
+    simdmask_t maskVal;
+    bool       converted = TryGetMaskFromInvertedZeroOrOneVector(op, baseType, &maskVal);
+    assert(converted);
+
+    GenTreeMskCon* mask = compiler->gtNewMskConNode(TYP_MASK);
+    mask->gtSimdMaskVal = maskVal;
+    blockRange.InsertBefore(insertionPoint, mask);
+    blockRange.Remove(op);
+    return mask;
+}
+#endif // TARGET_ARM64 && FEATURE_HW_INTRINSICS && FEATURE_MASKED_HW_INTRINSICS
+
+#if defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS) && defined(FEATURE_MASKED_HW_INTRINSICS)
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerSveConvertVectorToMask: Removes redundant vector-to-mask conversions.
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+//  Returns:
+//     Next node to lower if the conversion was removed; nullptr otherwise.
+//
+GenTree* Lowering::TryLowerSveConvertVectorToMask(GenTreeHWIntrinsic* node)
+{
+    assert(node->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask));
+    assert(node->GetOperandCount() == 2);
+
+    GenTree* op2 = node->Op(2);
+    if (!varTypeIsMask(op2))
+    {
+        return nullptr;
+    }
+
+    LIR::Use use;
+    GenTree* next = node->gtNext;
+
+    if (BlockRange().TryGetUse(node, &use))
+    {
+        use.ReplaceWith(op2);
+    }
+    else
+    {
+        node->SetUnusedValue();
+    }
+
+    BlockRange().Remove(node->Op(1));
+    BlockRange().Remove(node);
+    return next;
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerSvePredicateBitwiseClear: Lower SVE mask-shaped vector ANDs to predicate BIC.
+//
+//  Arguments:
+//     node        - The hardware intrinsic node.
+//     intrinsicId - The current intrinsic id, updated if the node is transformed.
+//     oper        - The current intrinsic operation, updated if the node is transformed.
+//
+//  Returns:
+//     True if SVE predicate lowering handled the node.
+//
+bool Lowering::TryLowerSvePredicateBitwiseClear(GenTreeHWIntrinsic* node, NamedIntrinsic* intrinsicId, genTreeOps* oper)
+{
+    assert(*oper == GT_AND);
+
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+
+    GenTreeHWIntrinsic* notNode  = nullptr;
+    var_types           nodeType = node->TypeGet();
+    unsigned            simdSize = node->GetSimdSize();
+
+    auto convertResultToVectorIfNeeded = [this, node, nodeType, simdSize]() {
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use) && !use.User()->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
+        {
+            GenTree* convert =
+                m_compiler->gtNewSimdCvtMaskToVectorNode(nodeType, node, node->GetSimdBaseType(), simdSize);
+            BlockRange().InsertAfter(node, convert);
+            use.ReplaceWith(convert);
+        }
+    };
+
+    if (op2->OperIsHWIntrinsic())
+    {
+        GenTreeHWIntrinsic* op2Intrin = op2->AsHWIntrinsic();
+
+        bool       op2IsScalar = false;
+        genTreeOps op2Oper     = op2Intrin->GetOperForHWIntrinsicId(&op2IsScalar);
+
+        if ((op2Oper == GT_NOT) && !op2IsScalar)
+        {
+            notNode = op2Intrin;
+            op2     = op2Intrin->Op(1);
+        }
+    }
+
+    if ((notNode == nullptr) && op1->OperIsHWIntrinsic())
+    {
+        GenTreeHWIntrinsic* op1Intrin = op1->AsHWIntrinsic();
+
+        bool       op1IsScalar = false;
+        genTreeOps op1Oper     = op1Intrin->GetOperForHWIntrinsicId(&op1IsScalar);
+
+        if ((op1Oper == GT_NOT) && !op1IsScalar)
+        {
+            notNode = op1Intrin;
+            op1     = op1Intrin->Op(1);
+            std::swap(op1, op2);
+        }
+    }
+
+    if ((notNode != nullptr) && IsSveMaskOperand(op1, node->GetSimdBaseType()) &&
+        IsSveMaskOperand(op2, node->GetSimdBaseType()))
+    {
+        op1 = ConvertSveMaskOperandToMask(BlockRange(), m_compiler, node, op1, node->GetSimdBaseType());
+        op2 = ConvertSveMaskOperandToMask(BlockRange(), m_compiler, node, op2, node->GetSimdBaseType());
+        BlockRange().Remove(notNode);
+
+        node->ResetHWIntrinsicId(NI_Sve_BitwiseClear_Predicates, op1, op2);
+        node->gtType = TYP_MASK;
+        *intrinsicId = NI_Sve_BitwiseClear_Predicates;
+        *oper        = GT_AND_NOT;
+        convertResultToVectorIfNeeded();
+        return true;
+    }
+
+    simdmask_t maskVal;
+    if (IsSveMaskOperand(op1, node->GetSimdBaseType()) &&
+        TryGetMaskFromInvertedZeroOrOneVector(op2, node->GetSimdBaseType(), &maskVal))
+    {
+        op1 = ConvertSveMaskOperandToMask(BlockRange(), m_compiler, node, op1, node->GetSimdBaseType());
+        op2 = ConvertInvertedSveMaskConstantToMask(BlockRange(), m_compiler, node, op2, node->GetSimdBaseType());
+
+        node->ResetHWIntrinsicId(NI_Sve_BitwiseClear_Predicates, op1, op2);
+        node->gtType = TYP_MASK;
+        *intrinsicId = NI_Sve_BitwiseClear_Predicates;
+        *oper        = GT_AND_NOT;
+        convertResultToVectorIfNeeded();
+        return true;
+    }
+
+    if (IsSveMaskOperand(op2, node->GetSimdBaseType()) &&
+        TryGetMaskFromInvertedZeroOrOneVector(op1, node->GetSimdBaseType(), &maskVal))
+    {
+        op2 = ConvertSveMaskOperandToMask(BlockRange(), m_compiler, node, op2, node->GetSimdBaseType());
+        op1 = ConvertInvertedSveMaskConstantToMask(BlockRange(), m_compiler, node, op1, node->GetSimdBaseType());
+
+        node->ResetHWIntrinsicId(NI_Sve_BitwiseClear_Predicates, op2, op1);
+        node->gtType = TYP_MASK;
+        *intrinsicId = NI_Sve_BitwiseClear_Predicates;
+        *oper        = GT_AND_NOT;
+        convertResultToVectorIfNeeded();
+        return true;
+    }
+
+    return true;
+}
+#endif // TARGET_ARM64 && FEATURE_HW_INTRINSICS && FEATURE_MASKED_HW_INTRINSICS
+
 //----------------------------------------------------------------------------------------------
 // Lowering::LowerHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
 //
@@ -1457,13 +1858,20 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             //
             // We want to similarly handle (~op1 | op2) and (op1 | ~op2)
 
-            // TODO-SVE: Add scalable length support
-            assert(node->gtType == TYP_SIMD16 || node->gtType == TYP_SIMD8);
-
             bool transform = false;
+
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+            if ((oper == GT_AND) && TryLowerSvePredicateBitwiseClear(node, &intrinsicId, &oper))
+            {
+                break;
+            }
+#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
 
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
+
+            // TODO-SVE: Add scalable length support for vector AND_NOT/OR_NOT.
+            assert(node->gtType == TYP_SIMD16 || node->gtType == TYP_SIMD8);
 
             if (op2->OperIsHWIntrinsic())
             {
@@ -1529,6 +1937,18 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicId)
     {
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+        case NI_Sve_ConvertVectorToMask:
+        {
+            GenTree* next = TryLowerSveConvertVectorToMask(node);
+            if (next != nullptr)
+            {
+                return next;
+            }
+            break;
+        }
+#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
+
         case NI_Vector64_Create:
         case NI_Vector128_Create:
         case NI_Vector64_CreateScalar:
@@ -1880,6 +2300,18 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         }
 
         // Wrap a conditional select around the embedded mask operation
+        //
+        // Predicate AND/BIC can use their first operand as the governing predicate:
+        //
+        //   and Pd.b, Pn/z, Pn.b, Pm.b == Pn & Pm
+        //   bic Pd.b, Pn/z, Pn.b, Pm.b == Pn & ~Pm
+        //
+        // so they do not need an extra all-true mask.
+        if ((intrinsicId == NI_Sve_And_Predicates) || (intrinsicId == NI_Sve_BitwiseClear_Predicates))
+        {
+            ContainCheckHWIntrinsic(node);
+            return node->gtNext;
+        }
 
         unsigned  simdSize = node->GetSimdSize();
         var_types simdType = Compiler::getSIMDTypeForSize(simdSize);

@@ -34166,6 +34166,158 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 //    folded expression if it could be folded, else the original tree
 //
 #if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
+//------------------------------------------------------------------------
+// TryConvertZeroOrOneVectorToMask:
+//   Convert a constant vector whose elements are all 0 or 1 to the
+//   corresponding SVE mask constant.
+//
+// Notes:
+//   ConvertMaskToVector materializes SVE predicates as vectors containing
+//   element values 0 or 1. If such a vector is still constant at this point,
+//   it can be used as a mask operand without first generating vector code and
+//   then comparing the vector back to zero.
+//
+template <typename TSimd, typename TBase>
+static bool TryConvertZeroOrOneVectorToMask(simdmask_t* result, TSimd arg)
+{
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+    uint64_t mask  = 0;
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        TBase element;
+        memcpy(&element, &arg.u8[i * sizeof(TBase)], sizeof(TBase));
+
+        if (element == static_cast<TBase>(0))
+        {
+            continue;
+        }
+
+        if (element != static_cast<TBase>(1))
+        {
+            return false;
+        }
+
+        mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
+    }
+
+    memcpy(&result->u8[0], &mask, sizeof(uint64_t));
+    return true;
+}
+
+//------------------------------------------------------------------------
+// TryConvertZeroOrOneVectorToMask:
+//   Type-dispatch wrapper for TryConvertZeroOrOneVectorToMask<TSimd, TBase>.
+//
+template <typename TSimd>
+static bool TryConvertZeroOrOneVectorToMask(var_types baseType, simdmask_t* result, TSimd arg)
+{
+    switch (baseType)
+    {
+        case TYP_INT:
+        case TYP_UINT:
+            return TryConvertZeroOrOneVectorToMask<TSimd, uint32_t>(result, arg);
+
+        case TYP_LONG:
+        case TYP_ULONG:
+            return TryConvertZeroOrOneVectorToMask<TSimd, uint64_t>(result, arg);
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+            return TryConvertZeroOrOneVectorToMask<TSimd, uint8_t>(result, arg);
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+            return TryConvertZeroOrOneVectorToMask<TSimd, uint16_t>(result, arg);
+
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
+// TryGetMaskFromZeroOrOneVector:
+//   Try to recognize a constant 0/1 vector as an SVE mask constant.
+//
+// Return Value:
+//   True if "op" is a non-zero constant vector with only 0/1 element values.
+//   False otherwise.
+//
+static bool TryGetMaskFromZeroOrOneVector(GenTree* op, var_types baseType, simdmask_t* mask)
+{
+    if (!op->IsCnsVec() || op->IsVectorZero())
+    {
+        return false;
+    }
+
+    bool converted = false;
+
+    switch (op->TypeGet())
+    {
+        case TYP_SIMD8:
+            converted = TryConvertZeroOrOneVectorToMask(baseType, mask, op->AsVecCon()->gtSimd8Val);
+            break;
+
+        case TYP_SIMD12:
+            converted = TryConvertZeroOrOneVectorToMask(baseType, mask, op->AsVecCon()->gtSimd12Val);
+            break;
+
+        case TYP_SIMD16:
+            converted = TryConvertZeroOrOneVectorToMask(baseType, mask, op->AsVecCon()->gtSimd16Val);
+            break;
+
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+            converted = TryConvertZeroOrOneVectorToMask(baseType, mask, op->AsVecCon()->gtSimd32Val);
+            break;
+
+        case TYP_SIMD64:
+            converted = TryConvertZeroOrOneVectorToMask(baseType, mask, op->AsVecCon()->gtSimd64Val);
+            break;
+#endif // TARGET_XARCH
+
+        default:
+            unreached();
+    }
+
+    return converted;
+}
+
+//------------------------------------------------------------------------
+// TryCreateMaskFromZeroOrOneVector:
+//   Create a GT_CNS_MSK node from a constant 0/1 vector, if possible.
+//
+static GenTreeMskCon* TryCreateMaskFromZeroOrOneVector(Compiler* compiler, GenTree* op, var_types baseType)
+{
+    simdmask_t mask;
+
+    if (!TryGetMaskFromZeroOrOneVector(op, baseType, &mask))
+    {
+        return nullptr;
+    }
+
+    GenTreeMskCon* mskCon = compiler->gtNewMskConNode(TYP_MASK);
+    mskCon->gtSimdMaskVal = mask;
+    return mskCon;
+}
+
+//------------------------------------------------------------------------
+// IsAllMaskVariantOperand:
+//   Return true if "op" can participate directly in an all-mask SVE intrinsic.
+//
+// Notes:
+//   Besides real mask nodes and ConvertMaskToVector nodes, this includes
+//   vector zero and constant vectors containing only 0/1 element values.
+//
+static bool IsAllMaskVariantOperand(GenTree* op, var_types baseType)
+{
+    simdmask_t mask;
+    return op->OperIsConvertMaskToVector() || varTypeIsMask(op) || op->IsVectorZero() ||
+           TryGetMaskFromZeroOrOneVector(op, baseType, &mask);
+}
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
+
 GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
     assert(!optValnumCSE_phase);
@@ -34439,13 +34591,19 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         if (ni == NI_Sve_ConditionalSelect)
         {
             assert(varTypeIsMask(op1));
-            canFold = (op2->OperIsConvertMaskToVector() && op3->OperIsConvertMaskToVector());
+
+            // ConditionalSelect has a mask condition and two vector values.
+            // If both values are mask-shaped, fold to the predicate "sel"
+            // variant rather than materializing vectors and converting back.
+            canFold = (IsAllMaskVariantOperand(op2, simdBaseType) && IsAllMaskVariantOperand(op3, simdBaseType));
         }
         else
         {
             for (size_t i = 1; i <= opCount && canFold; i++)
             {
-                canFold &= tree->Op(i)->OperIsConvertMaskToVector();
+                // Fold SVE intrinsics such as And/Or/Xor/ZipLow to their
+                // all-mask variants when every operand is mask-shaped.
+                canFold &= IsAllMaskVariantOperand(tree->Op(i), simdBaseType);
             }
         }
 
@@ -34463,6 +34621,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 {
                     // Replace the vector of zeroes with a mask of zeroes.
                     tree->Op(i) = gtNewSimdFalseMaskByteNode();
+                    tree->Op(i)->SetMorphed(this);
+                }
+                else if (tree->Op(i)->IsCnsVec())
+                {
+                    tree->Op(i) = TryCreateMaskFromZeroOrOneVector(this, tree->Op(i), simdBaseType);
+                    assert(tree->Op(i) != nullptr);
                     tree->Op(i)->SetMorphed(this);
                 }
                 assert(varTypeIsMask(tree->Op(i)));

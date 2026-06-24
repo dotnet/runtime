@@ -39,6 +39,12 @@ public class PredicateInstructions
 
             UnzipEvenZipLowMask(vecs, vecs);
             TransposeEvenAndMask(vecs, vecs, vecs);
+            AndMaskWithOnes(vecs, vecs);
+            OrMaskWithOnes(vecs, vecs);
+            XorMaskWithOnes(vecs, vecs);
+            BitwiseClearMaskWithOnes(vecs, vecs);
+            ZipLowMaskWithOnes(vecs, vecs);
+            ConditionalSelectMaskWithOnes(vecs, vecs);
 
         }
     }
@@ -178,5 +184,90 @@ public class PredicateInstructions
                     Sve.CreateTrueMaskInt16(),
                     Sve.And(Sve.CompareGreaterThan(a, b), Sve.CompareEqual(a, b)),
                     Sve.CompareLessThan(a, b)));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> AndMaskWithOnes(Vector<short> a, Vector<short> b)
+    {
+        // Verify that a constant vector with all element values set to one is
+        // recognized as mask-shaped and folded to a predicate AND.
+        //ARM64-FULL-LINE: cmpgt {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-NOT: mov {{z[0-9]+}}.h, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: and {{z[0-9]+}}.h, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-NOT: cmpne {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, #0
+        //ARM64-FULL-LINE: and {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        return Sve.CreateBreakAfterMask(Sve.And(Sve.CompareGreaterThan(a, b), Vector.Create<short>(1)),
+                                        Sve.CreateFalseMaskInt16());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> OrMaskWithOnes(Vector<short> a, Vector<short> b)
+    {
+        // Verify that the all-mask fold also handles predicate OR.
+        //ARM64-FULL-LINE: cmpgt {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-NOT: mov {{z[0-9]+}}.h, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: orr {{z[0-9]+}}.h, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-NOT: cmpne {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, #0
+        //ARM64-FULL-LINE: orr {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        return Sve.CreateBreakAfterMask(Sve.Or(Sve.CompareGreaterThan(a, b), Vector.Create<short>(1)),
+                                        Sve.CreateFalseMaskInt16());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> XorMaskWithOnes(Vector<short> a, Vector<short> b)
+    {
+        // Verify that the all-mask fold also handles predicate EOR.
+        //ARM64-FULL-LINE: cmpgt {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-NOT: mov {{z[0-9]+}}.h, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: eor {{z[0-9]+}}.h, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-NOT: cmpne {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, #0
+        //ARM64-FULL-LINE: eor {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        return Sve.CreateBreakAfterMask(Sve.Xor(Sve.CompareGreaterThan(a, b), Vector.Create<short>(1)),
+                                        Sve.CreateFalseMaskInt16());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> BitwiseClearMaskWithOnes(Vector<short> a, Vector<short> b)
+    {
+        // BitwiseClear normally imports as AND(NOT(...)); this verifies that
+        // mask-shaped inputs are recognized in lowering and recovered as predicate BIC.
+        //ARM64-FULL-LINE: cmpgt {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-NOT: mov {{z[0-9]+}}.h, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: bic {{z[0-9]+}}.h, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-NOT: cmpne {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, #0
+        //ARM64-FULL-LINE: {{bic .*}}
+        // {{p[0-9]+}}.b, {{p[0-9]+}}/z, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        return Sve.CreateBreakAfterMask(Sve.BitwiseClear(Sve.CompareGreaterThan(a, b), Vector.Create<short>(1)),
+                                        Sve.CreateFalseMaskInt16());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> ZipLowMaskWithOnes(Vector<short> a, Vector<short> b)
+    {
+        // Verify that non-logical all-mask operations also accept 0/1 vector
+        // constants as mask-shaped operands.
+        //ARM64-FULL-LINE: cmpgt {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-NOT: mov {{z[0-9]+}}.h, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: zip1 {{z[0-9]+}}.h, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-NOT: cmpne {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, #0
+        //ARM64-FULL-LINE: zip1 {{p[0-9]+}}.h, {{p[0-9]+}}.h, {{p[0-9]+}}.h
+        return Sve.CreateBreakAfterMask(Sve.ZipLow(Sve.CompareGreaterThan(a, b), Vector.Create<short>(1)),
+                                        Sve.CreateFalseMaskInt16());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<short> ConditionalSelectMaskWithOnes(Vector<short> a, Vector<short> b)
+    {
+        // ConditionalSelect has a predicate condition plus two value operands;
+        // verify that a 0/1 vector value operand can fold to predicate SEL.
+        //ARM64-FULL-LINE: cmpgt {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-FULL-LINE: cmpeq {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-NOT: mov {{z[0-9]+}}.h, {{p[0-9]+}}/z, #1
+        //ARM64-NOT: sel {{z[0-9]+}}.h, {{p[0-9]+}}, {{z[0-9]+}}.h, {{z[0-9]+}}.h
+        //ARM64-NOT: cmpne {{p[0-9]+}}.h, {{p[0-9]+}}/z, {{z[0-9]+}}.h, #0
+        //ARM64-FULL-LINE: sel {{p[0-9]+}}.b, {{p[0-9]+}}, {{p[0-9]+}}.b, {{p[0-9]+}}.b
+        return Sve.CreateBreakAfterMask(
+            Sve.ConditionalSelect(Sve.CompareGreaterThan(a, b), Vector.Create<short>(1), Sve.CompareEqual(a, b)),
+            Sve.CreateFalseMaskInt16());
     }
 }
