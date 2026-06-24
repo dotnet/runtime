@@ -10940,7 +10940,21 @@ HRESULT CordbAsyncFrame::Init()
         // LookupOrCreateNativeCode is marked INTERNAL_SYNC_API_ENTRY and requires the StopGoLock.
         m_pCode.Assign(pModule->LookupOrCreateNativeCode(m_methodDef, m_vmMethodDesc, m_pCodeStart));
         m_pCode->LoadNativeInfo();
-        IfFailThrow(GetProcess()->GetDAC()->GetAsyncLocals(m_vmMethodDesc, m_pCodeStart, m_state, &m_asyncVars));
+
+        {
+            CallbackAccumulator<AsyncLocalData> acc;
+            IfFailThrow(GetProcess()->GetDAC()->EnumerateAsyncLocals(
+                m_vmMethodDesc, m_pCodeStart, m_state,
+                &CallbackAccumulator<AsyncLocalData>::PushCallback,
+                &acc));
+            IfFailThrow(acc.hrError);
+
+            SIZE_T cLocals = acc.items.Size();
+            for (SIZE_T i = 0; i < cLocals; i++)
+            {
+                m_asyncVars.Push(acc.items[i]);
+            }
+        }
 
         // Initialize function and IL code
         m_pFunction.Assign(m_pCode->GetFunction());
@@ -10982,7 +10996,6 @@ void CordbAsyncFrame::Neuter()
         return;
 
     m_pCode.Clear();
-    m_asyncVars.Dealloc();
     m_pAppDomain.Clear();
 
     m_pFunction.Clear();
@@ -11203,7 +11216,7 @@ HRESULT CordbAsyncFrame::GetArgument(DWORD dwIndex, ICorDebugValue ** ppValue)
         CordbType * pType;
         LoadGenericArgs();
         m_pCode->GetArgumentType(dwIndex, &m_genericArgs, &pType);
-        for (unsigned int i = 0; i < m_asyncVars.Count(); i++)
+        for (unsigned int i = 0; i < m_asyncVars.Size(); i++)
         {
             if (m_asyncVars[i].ilVarNum == dwIndex)
             {
@@ -11382,7 +11395,7 @@ HRESULT CordbAsyncFrame::GetLocalVariableEx(ILCodeKind flags, DWORD dwIndex, ICo
 #endif // FEATURE_CODE_VERSIONING
 
         IfFailThrow(pActiveCode->GetLocalVariableType(dwIndex, &m_genericArgs, &pType));
-        for (unsigned int i = 0 ; i < m_asyncVars.Count(); i++)
+        for (unsigned int i = 0 ; i < m_asyncVars.Size(); i++)
         {
             if (m_asyncVars[i].ilVarNum == dwIndex+argCount)
             {
@@ -11477,7 +11490,7 @@ void CordbAsyncFrame::LoadGenericArgs()
     CORDB_ADDRESS genericTypeParam = 0;
     if (result == S_OK)
     {
-        for (unsigned int i = 0 ; i < m_asyncVars.Count(); i++)
+        for (unsigned int i = 0 ; i < m_asyncVars.Size(); i++)
         {
             if (m_asyncVars[i].ilVarNum == genericArgIndex)
             {

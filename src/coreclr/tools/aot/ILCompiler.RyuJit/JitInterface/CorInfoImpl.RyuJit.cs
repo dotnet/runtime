@@ -15,6 +15,7 @@ using Internal.TypeSystem.Ecma;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using System.Runtime.CompilerServices;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
@@ -275,6 +276,11 @@ namespace Internal.JitInterface
 
         private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle, ref CORINFO_LOOKUP lookup)
         {
+            ComputeLookup(pResolvedToken.tokenContext != contextFromMethodBeingCompiled(), entity, helperId, callerHandle, ref lookup);
+        }
+
+        private void ComputeLookup(bool isInlining, object entity, ReadyToRunHelperId helperId, MethodDesc callerHandle, ref CORINFO_LOOKUP lookup)
+        {
             Debug.Assert(callerHandle != null);
 
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
@@ -292,7 +298,7 @@ namespace Internal.JitInterface
                     // currently do it for an inline. This is not a big issue because ReadyToRun helpers
                     // in optimized code only happen in special build configurations (such as
                     // `-O --noscan` or multimodule build).
-                    if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
+                    if (isInlining)
                     {
                         lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
                         return;

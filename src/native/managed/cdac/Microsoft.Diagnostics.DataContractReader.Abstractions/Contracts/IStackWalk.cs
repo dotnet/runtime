@@ -97,7 +97,7 @@ public interface IStackWalk : IContract
     string GetFrameName(TargetPointer frameIdentifier) => throw new NotImplementedException();
     TargetPointer GetMethodDescPtr(TargetPointer framePtr) => throw new NotImplementedException();
     TargetPointer GetMethodDescPtr(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
-    TargetPointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    TargetCodePointer GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
     IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer) => throw new NotImplementedException();
     bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress) => throw new NotImplementedException();
     DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress) => throw new NotImplementedException();
