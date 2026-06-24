@@ -1619,10 +1619,10 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
         return false;
     }
 
-    // The base address of an indirection can be a SIMD value for certain implicit indirs,
-    // e.g. the SVE GatherVector API (a vector of addresses). Such VNs are never known to be
-    // non-null here, and the offset-peeling logic below only applies to pointer-like VNs.
-    if ((TypeOfVN(vn) != TYP_I_IMPL) && (TypeOfVN(vn) != TYP_REF) && (TypeOfVN(vn) != TYP_BYREF))
+    // The base address of an indirection can be a SIMD value (e.g. SVE GatherVector, a vector
+    // of addresses), which is never known non-null here. Assert added in #129447.
+    var_types vnType = TypeOfVN(vn);
+    if ((vnType != TYP_I_IMPL) && (vnType != TYP_REF) && (vnType != TYP_BYREF))
     {
         return false;
     }
