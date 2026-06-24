@@ -293,7 +293,7 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_SysLog) // System.Private.CoreLib
     DllImportEntry(SystemNative_UTimensat) // System.Private.CoreLib
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
-    DllImportEntry(SystemNative_Write) // System.Console, System.Private.Core
+    DllImportEntry(SystemNative_Write) // System.Console, System.Private.CoreLib
     DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
 };
 
