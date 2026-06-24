@@ -3360,8 +3360,11 @@ SWITCH_OPCODE:
                                 if (!pChildFrame)
                                 {
                                     pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
-                                    pChildFrame->pNext = NULL;
-                                    pFrame->pNext = pChildFrame;
+                                    // We make sure that a new frame can't be seen with invalid ip/next when a stack
+                                    // overflow is triggered at a location outside of our control.
+                                    VolatileStoreWithoutBarrier(&pChildFrame->ip, (const int32_t*)nullptr);
+                                    VolatileStoreWithoutBarrier(&pChildFrame->pNext, (InterpMethodContextFrame*)nullptr);
+                                    VolatileStoreWithoutBarrier(&pFrame->pNext, pChildFrame);
                                 }
                                 pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, LOCAL_VAR_ADDR(callArgsOffset, int8_t));
                                 pFrame = pChildFrame;
@@ -3463,8 +3466,11 @@ CALL_INTERP_METHOD:
                             if (!pChildFrame)
                             {
                                 pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
-                                pChildFrame->pNext = NULL;
-                                pFrame->pNext = pChildFrame;
+                                // We make sure that a new frame can't be seen with invalid ip/next when a stack
+                                // overflow is triggered at a location outside of our control.
+                                VolatileStoreWithoutBarrier(&pChildFrame->ip, (const int32_t*)nullptr);
+                                VolatileStoreWithoutBarrier(&pChildFrame->pNext, (InterpMethodContextFrame*)nullptr);
+                                VolatileStoreWithoutBarrier(&pFrame->pNext, pChildFrame);
                             }
                             pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, callArgsAddress);
                             pFrame = pChildFrame;
@@ -4296,8 +4302,11 @@ do                                                                      \
                         if (!pChildFrame)
                         {
                             pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
-                            pChildFrame->pNext = NULL;
-                            pFrame->pNext = pChildFrame;
+                            // We make sure that a new frame can't be seen with invalid ip/next when a stack
+                            // overflow is triggered at a location outside of our control.
+                            VolatileStoreWithoutBarrier(&pChildFrame->ip, (const int32_t*)nullptr);
+                            VolatileStoreWithoutBarrier(&pChildFrame->pNext, (InterpMethodContextFrame*)nullptr);
+                            VolatileStoreWithoutBarrier(&pFrame->pNext, pChildFrame);
                         }
                         // Set the frame to the same values as the caller frame.
                         pChildFrame->ReInit(pFrame, pFrame->startIp, pFrame->pRetVal, pFrame->pStack);
