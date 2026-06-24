@@ -593,7 +593,7 @@ namespace System.IO.Compression
 
             byte[] testData = ZstandardTestUtils.CreateTestData(100);
             byte[] compressed = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
-            ZstandardEncoder.TryCompress(testData, compressed, out int compressedLength);
+            Assert.True(ZstandardEncoder.TryCompress(testData, compressed, out int compressedLength));
 
             byte[] decompressed = new byte[testData.Length];
             OperationStatus status = decoder.Decompress(compressed.AsSpan(0, compressedLength), decompressed, out _, out int bytesWritten);
@@ -612,7 +612,7 @@ namespace System.IO.Compression
             // Compress with dictionary
             using ZstandardEncoder encoder = new(dictionary);
             byte[] compressed = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
-            encoder.Compress(testData, compressed, out _, out int compressedLength, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, encoder.Compress(testData, compressed, out _, out int compressedLength, isFinalBlock: true));
 
             // Decompress with ZstandardDecompressionOptions containing the dictionary
             ZstandardDecompressionOptions options = new() { Dictionary = dictionary };

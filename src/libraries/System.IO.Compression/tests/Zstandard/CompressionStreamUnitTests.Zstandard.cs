@@ -287,7 +287,7 @@ namespace System.IO.Compression
         {
             byte[] testData = ZstandardTestUtils.CreateTestData();
             byte[] compressedData = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
-            ZstandardEncoder.TryCompress(testData, compressedData, out int compressedLength);
+            Assert.True(ZstandardEncoder.TryCompress(testData, compressedData, out int compressedLength));
             Array.Resize(ref compressedData, compressedLength);
 
             ZstandardDecompressionOptions options = new();
@@ -348,7 +348,7 @@ namespace System.IO.Compression
         {
             byte[] testData = ZstandardTestUtils.CreateTestData();
             byte[] compressedData = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
-            ZstandardEncoder.TryCompress(testData, compressedData, out int compressedLength);
+            Assert.True(ZstandardEncoder.TryCompress(testData, compressedData, out int compressedLength));
             Array.Resize(ref compressedData, compressedLength);
 
             ZstandardDecompressionOptions options = new();
