@@ -1611,7 +1611,11 @@ namespace System.Threading.Tasks
         internal static readonly Task<VoidTaskResult> s_cachedCompleted = new Task<VoidTaskResult>(false, default, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
 
         /// <summary>Gets a task that's already been completed successfully.</summary>
-        public static Task CompletedTask => s_cachedCompleted;
+        public static Task CompletedTask
+        {
+            [Intrinsic]
+            get => s_cachedCompleted;
+        }
 
         /// <summary>
         /// Provides an event that can be used to wait for completion.
@@ -5541,6 +5545,7 @@ namespace System.Threading.Tasks
         /// <param name="result">The result to store into the completed task.</param>
         /// <returns>The successfully completed task.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
+        [Intrinsic]
         public static unsafe Task<TResult> FromResult<TResult>(TResult result)
         {
             // The goal of this function is to be give back a cached task if possible, or to otherwise give back a new task.

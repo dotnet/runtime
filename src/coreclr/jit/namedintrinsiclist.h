@@ -167,6 +167,14 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_MemoryBarrier,
 
     NI_System_Threading_Tasks_Task_ConfigureAwait,
+    NI_System_Threading_Tasks_Task_FromResult,
+    NI_System_Threading_Tasks_Task_get_CompletedTask,
+
+    NI_System_Threading_Tasks_ValueTask_FromResult,
+    NI_System_Threading_Tasks_ValueTask_get_CompletedTask,
+    NI_System_Threading_Tasks_ValueTask__ctor,
+
+    NI_System_Threading_Tasks_ValueTask_1__ctor,
 
     // These two are special marker IDs so that we still get the inlining profitability boost
     NI_System_Numerics_Intrinsic,

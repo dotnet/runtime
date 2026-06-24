@@ -13172,6 +13172,10 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
     {
         ilName = "TypeCtx";
     }
+    else if (ilNum == (unsigned)ICorDebugInfo::ASYNC_CONTINUATION_ILNUM)
+    {
+        ilName = "AsyncCont";
+    }
     else if (ilNum == (unsigned)ICorDebugInfo::UNKNOWN_ILNUM)
     {
         if (lclNumIsTrueCSE(lclNum))

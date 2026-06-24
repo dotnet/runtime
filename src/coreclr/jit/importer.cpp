@@ -9091,7 +9091,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (isAwait)
                     {
                         _impResolveToken(CORINFO_TOKENKIND_Await);
-                        if (resolvedToken.hMethod == nullptr)
+                        if (resolvedToken.hMethod == NO_METHOD_HANDLE)
                         {
                             // This can happen in cases when the Task-returning method is not a runtime Async
                             // function. For example "T M1<T>(T arg) => arg" when called with a Task argument.
@@ -11316,11 +11316,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         {
             return false;
         }
-
-        if (info.compRetType == TYP_VOID)
-        {
-            impAppendTree(impPopStack().val, CHECK_SPILL_ALL, impCurStmtDI);
-        }
     }
 
     if (info.compRetType != TYP_VOID)
@@ -11689,6 +11684,11 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 //
 bool Compiler::impWrapTopOfStackInAwait()
 {
+    if (impFoldAwaitedTopOfStack())
+    {
+        return true;
+    }
+
     CORINFO_LOOKUP        instArgLookup;
     CORINFO_METHOD_HANDLE awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, &instArgLookup);
 
@@ -11778,8 +11778,137 @@ bool Compiler::impWrapTopOfStackInAwait()
 
     awaitCall->SetIsAsync(asyncInfo);
 
-    impPushOnStack(toPush, makeTypeInfo(awaitSig.retType, awaitSig.retTypeClass));
+    if (info.compRetType == TYP_VOID)
+    {
+        impAppendTree(toPush, CHECK_SPILL_ALL, impCurStmtDI);
+    }
+    else
+    {
+        impPushOnStack(toPush, makeTypeInfo(awaitSig.retType, awaitSig.retTypeClass));
+    }
     return true;
+}
+
+//------------------------------------------------------------------------
+// impFoldAwaitedTopOfStack:
+//   Fold a few patterns where introducing a call to AsyncHelpers.TransparentAwaitWithResult is unnecessary.
+//
+// Returns:
+//   True if the top of stack was folded and pushed on the stack.
+//
+// Remarks:
+//   In async versions this folds these cases:
+//
+//   - return new ValueTask() (like ValueTask.CompletedTask)
+//   - return default (ValueTask.CompletedTask)
+//   - return new ValueTask<T>(value) (like ValueTask.FromResult)
+//
+//   We cannot represent these values as async variants, so we cannot fold them
+//   in the simple intrinsic path where other cases like Task.FromResult and
+//   ValueTask.FromResult are folded.
+//
+bool Compiler::impFoldAwaitedTopOfStack()
+{
+    if (!opts.Tier0OptimizationEnabled())
+    {
+        return false;
+    }
+
+    GenTree* value = impStackTop().val;
+    if (!value->OperIsScalarLocal())
+    {
+        return false;
+    }
+
+    GenTreeLclVarCommon* valueLcl = value->AsLclVarCommon();
+
+    Statement* lastStmt = impLastStmt;
+    if (lastStmt == nullptr)
+    {
+        return false;
+    }
+
+    GenTree* lastTree = lastStmt->GetRootNode();
+    // Look for a valueTask = 0 init, for "new ValueTask()" and "default" cases.
+    if (lastTree->OperIs(GT_STORE_LCL_VAR))
+    {
+        GenTreeLclVarCommon* storeLcl = lastTree->AsLclVarCommon();
+        if (storeLcl->GetLclNum() != valueLcl->GetLclNum())
+        {
+            return false;
+        }
+
+        if (!storeLcl->Data()->IsIntegralConst(0))
+        {
+            return false;
+        }
+
+        impPopStack();
+        if (info.compRetType == TYP_VOID)
+        {
+            lastTree->gtBashToNOP();
+        }
+        else if (info.compRetType != TYP_STRUCT)
+        {
+            impPushOnStack(gtNewZeroConNode(info.compRetType), typeInfo(info.compRetType));
+            lastTree->gtBashToNOP();
+        }
+        else
+        {
+            unsigned returnLcl = lvaGrabTemp(true DEBUGARG("Return temp"));
+            lvaSetStruct(returnLcl, info.compMethodInfo->args.retTypeClass, false);
+            // Reuse the ValueTask zeroing
+            lastTree->AsLclVar()->SetLclNum(returnLcl);
+            impPushOnStack(gtNewLclVarNode(returnLcl), typeInfo(TYP_STRUCT));
+        }
+
+        JITDUMP("Optimized \"return new ValueTask() to return default\n");
+        return true;
+    }
+    else if (lastTree->IsCall() &&
+             lastTree->AsCall()->IsSpecialIntrinsic(this, NI_System_Threading_Tasks_ValueTask_1__ctor))
+    {
+        CallArg* thisArg = lastTree->AsCall()->gtArgs.GetThisArg();
+        if (!thisArg->GetNode()->OperIs(GT_LCL_ADDR) ||
+            (thisArg->GetNode()->AsLclVarCommon()->GetLclNum() != valueLcl->GetLclNum()))
+        {
+            return false;
+        }
+
+        CORINFO_SIG_INFO sig;
+        info.compCompHnd->getMethodSig(lastTree->AsCall()->gtCallMethHnd, &sig);
+
+        if (sig.numArgs != 1)
+        {
+            return false;
+        }
+
+        assert((sig.sigInst.classInstCount == 1) && (sig.sigInst.methInstCount == 0));
+        CORINFO_CLASS_HANDLE paramClass = info.compCompHnd->getArgClass(&sig, sig.args);
+        if (paramClass != sig.sigInst.classInst[0])
+        {
+            return false;
+        }
+
+        CallArg* valueArg = lastTree->AsCall()->gtArgs.GetUserArgByIndex(1);
+        GenTree* value    = valueArg->GetNode();
+
+        if (varTypeIsSmall(valueArg->GetSignatureType()) && fgCastNeeded(value, valueArg->GetSignatureType()))
+        {
+            value = gtNewCastNode(TYP_INT, value, false, valueArg->GetSignatureType());
+        }
+
+        StackEntry se = impPopStack();
+        impPushOnStack(value, se.seTypeInfo);
+        JITDUMP("Optimized \"return new ValueTask(value) to return value directly:\n");
+        DISPTREE(value);
+
+        // Finally remove the old constructor call, which is unneeded.
+        lastTree->gtBashToNOP();
+        return true;
+    }
+
+    return false;
 }
 
 #ifdef DEBUG
