@@ -220,9 +220,14 @@
       <!-- Resolve the runtime pack dir the same way the WebAssembly SDK does (Browser.targets): prefer
            the property, fall back to the ResolvedRuntimePack metadata (WBT/Helix-created projects leave
            the property empty). Normalize once (full path + trailing slash) so the StartsWith checks
-           below reliably match %(FullPath), which uses native separators. The path/name comparisons
-           use OrdinalIgnoreCase so a casing difference between the property and the enumerated item
-           paths (common on case-insensitive filesystems) cannot silently misclassify a copy. -->
+           below reliably match %(FullPath), which uses native separators. All comparisons use the
+           OrdinalIgnoreCase StringComparison so a casing difference between the property and the
+           enumerated item paths (common on case-insensitive filesystems) cannot silently misclassify a
+           copy. Path membership uses StartsWith(string, StringComparison); name membership uses
+           IndexOf(string, StringComparison) with the "!= -1" test kept OUTSIDE the $() (MSBuild's
+           property-function expander returns the int index but rejects a trailing comparison operator
+           inside the $(), which is the MSB4184 trap). Both overloads exist on .NET Framework MSBuild;
+           the Contains(string, StringComparison) overload does not, so it is avoided. -->
       <_CoreCLRRuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_CoreCLRRuntimePackDir>
       <_CoreCLRRuntimePackDir Condition="'$(_CoreCLRRuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_CoreCLRRuntimePackDir>
       <_CoreCLRRuntimePackDir Condition="'$(_CoreCLRRuntimePackDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_CoreCLRRuntimePackDir)'))</_CoreCLRRuntimePackDir>
@@ -235,15 +240,17 @@
                                    Condition="'%(Extension)' == '.dll' and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)', System.StringComparison.OrdinalIgnoreCase))" />
     </ItemGroup>
     <PropertyGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
+      <!-- ;-delimited name lists wrapped in leading/trailing ';' so an IndexOf of ';name;' below is an
+           exact whole-name membership test (never a substring of a longer name). -->
       <_CoreCLRAppLocalAssemblyNames>;@(_CoreCLRAppLocalAssembly->'%(FileName)%(Extension)');</_CoreCLRAppLocalAssemblyNames>
       <_CoreCLRRuntimePackAssemblyNames>;@(_CoreCLRRuntimePackAssembly->'%(FileName)%(Extension)');</_CoreCLRRuntimePackAssemblyNames>
     </PropertyGroup>
     <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
       <!-- The conflict set: copies of the same file name present in BOTH the runtime pack and app-local. -->
       <_CoreCLRConflictCandidate Include="@(_CoreCLRRuntimePackAssembly)"
-                                 Condition="$(_CoreCLRAppLocalAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase) != -1)" />
+                                 Condition="$(_CoreCLRAppLocalAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase)) != -1" />
       <_CoreCLRConflictCandidate Include="@(_CoreCLRAppLocalAssembly)"
-                                 Condition="$(_CoreCLRRuntimePackAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase) != -1)" />
+                                 Condition="$(_CoreCLRRuntimePackAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase)) != -1" />
     </ItemGroup>
 
     <!-- Version-based resolution (parity with SDK publish/desktop): keep the higher AssemblyVersion.
@@ -266,7 +273,7 @@
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
                                Condition="'%(Extension)' == '.dll'
                                           and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)', System.StringComparison.OrdinalIgnoreCase))
-                                          and $(_CoreCLRAppLocalAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase) != -1)" />
+                                          and $(_CoreCLRAppLocalAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase)) != -1" />
     </ItemGroup>
   </Target>
 
