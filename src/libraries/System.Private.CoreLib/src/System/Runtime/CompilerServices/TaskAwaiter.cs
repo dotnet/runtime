@@ -194,6 +194,23 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(stateMachineBox != null);
 
+            if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+            {
+                if (task is not IAsyncStateMachineBox)
+                {
+                    stateMachineBox = AsyncStateMachineDispatcherInfo.CreateDispatcher(stateMachineBox);
+                }
+                else if (continueOnCapturedContext)
+                {
+                    bool customSyncContext = SynchronizationContext.Current is SynchronizationContext syncCtx && syncCtx.GetType() != typeof(SynchronizationContext);
+                    bool customTaskScheduler = TaskScheduler.InternalCurrent is TaskScheduler scheduler && scheduler != TaskScheduler.Default;
+                    if (customSyncContext || customTaskScheduler)
+                    {
+                        stateMachineBox = AsyncStateMachineDispatcherInfo.CreateDispatcher(stateMachineBox);
+                    }
+                }
+            }
+
             // If TaskWait* ETW events are enabled, trace a beginning event for this await
             // and set up an ending event to be traced when the asynchronous await completes.
             if (TplEventSource.Log.IsEnabled() || Task.s_asyncDebuggingEnabled)

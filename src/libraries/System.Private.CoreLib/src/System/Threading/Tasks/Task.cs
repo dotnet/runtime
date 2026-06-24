@@ -7224,6 +7224,8 @@ namespace System.Threading.Tasks
             return new UnwrapPromise<TResult>(outerTask, lookForOce);
         }
 
+        internal object? ContinuationForDiagnostics => m_continuationObject != this ? m_continuationObject : null;
+
         internal virtual Delegate[]? GetDelegateContinuationsForDebugger()
         {
             // Avoid an infinite loop by making sure the continuation object is not a reference to istelf.
