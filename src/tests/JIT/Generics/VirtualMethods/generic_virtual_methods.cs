@@ -216,11 +216,11 @@ internal class RuntimeLookupDelegateGenericVirtual
     {
         var test1 = new Base();
         test1.Foo<List<T>>();
-        Assert.Contains(typeof(List<List<List<List<T>>>>), s_list1);
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list1);
 
         var test2 = new DerivedClassNoImpl();
         ((IBase)test2).Foo<List<T>>();
-        Assert.Contains(typeof(List<List<List<List<T>>>>), s_list2);
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list2);
 
         var test3 = new DerivedClass();
         Delegate m1 = test3.Foo<List<T>>();
