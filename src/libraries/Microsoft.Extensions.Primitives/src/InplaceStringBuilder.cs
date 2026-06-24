@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (capacity < 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
+                throw new ArgumentOutOfRangeException(nameof(capacity));
             }
 
             _capacity = capacity;
@@ -44,13 +44,13 @@ namespace Microsoft.Extensions.Primitives
             {
                 if (value < 0)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
                 // _offset > 0 indicates writing state
                 if (_offset > 0)
                 {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Capacity_CannotChangeAfterWriteStarted);
+                    throw new InvalidOperationException(SR.Capacity_CannotChangeAfterWriteStarted);
                 }
 
                 _capacity = value;
@@ -63,10 +63,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="value">The string to append.</param>
         public void Append(string? value)
         {
-            if (value == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             Append(value, 0, value.Length);
         }
@@ -118,7 +115,7 @@ namespace Microsoft.Extensions.Primitives
 
             if (_offset >= Capacity)
             {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Capacity_NotEnough, 1, Capacity - _offset);
+                throw new InvalidOperationException(SR.Format(SR.Capacity_NotEnough, 1, Capacity - _offset));
             }
 
             fixed (char* destination = _value)
@@ -135,7 +132,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (Capacity != _offset)
             {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Capacity_NotUsedEntirely, Capacity, _offset);
+                throw new InvalidOperationException(SR.Format(SR.Capacity_NotUsedEntirely, Capacity, _offset));
             }
 
             return _value;
@@ -148,19 +145,16 @@ namespace Microsoft.Extensions.Primitives
 
         private void ThrowValidationError(string? value, int offset, int count)
         {
-            if (value == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             if (offset < 0 || value.Length - offset < count)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.offset);
+                throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
             if (Capacity - _offset < count)
             {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.Capacity_NotEnough, value.Length, Capacity - _offset);
+                throw new InvalidOperationException(SR.Format(SR.Capacity_NotEnough, value.Length, Capacity - _offset));
             }
         }
     }

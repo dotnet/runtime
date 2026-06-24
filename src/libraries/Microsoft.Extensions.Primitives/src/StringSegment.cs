@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 if ((uint)index >= (uint)Length)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                    ThrowArgumentOutOfRangeException(nameof(index));
                 }
 
                 Debug.Assert(Buffer is not null);
@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || start < 0)
             {
-                ThrowInvalidArguments(start, Length - start, ExceptionArgument.start);
+                ThrowInvalidArguments(start, Length - start, nameof(start));
             }
 
             return Buffer.AsSpan(Offset + start, Length - start);
@@ -152,7 +152,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || start < 0 || length < 0 || (uint)(start + length) > (uint)Length)
             {
-                ThrowInvalidArguments(start, length, ExceptionArgument.start);
+                ThrowInvalidArguments(start, length, nameof(start));
             }
 
             return Buffer.AsSpan(Offset + start, length);
@@ -330,10 +330,7 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool StartsWith(string text, StringComparison comparisonType)
         {
-            if (text == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
-            }
+            ArgumentNullException.ThrowIfNull(text);
 
             if (!HasValue)
             {
@@ -356,10 +353,7 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool EndsWith(string text, StringComparison comparisonType)
         {
-            if (text == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
-            }
+            ArgumentNullException.ThrowIfNull(text);
 
             if (!HasValue)
             {
@@ -399,7 +393,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
-                ThrowInvalidArguments(offset, length, ExceptionArgument.offset);
+                ThrowInvalidArguments(offset, length, nameof(offset));
             }
 
             return Buffer.Substring(Offset + offset, length);
@@ -432,7 +426,7 @@ namespace Microsoft.Extensions.Primitives
         {
             if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
-                ThrowInvalidArguments(offset, length, ExceptionArgument.offset);
+                ThrowInvalidArguments(offset, length, nameof(offset));
             }
 
             return new StringSegment(Buffer, Offset + offset, length);
@@ -459,12 +453,12 @@ namespace Microsoft.Extensions.Primitives
             {
                 if ((uint)start > (uint)Length)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                    ThrowArgumentOutOfRangeException(nameof(start));
                 }
 
                 if ((uint)count > (uint)(Length - start))
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
+                    ThrowArgumentOutOfRangeException(nameof(count));
                 }
 
                 index = AsSpan(start, count).IndexOf(c);
@@ -522,12 +516,12 @@ namespace Microsoft.Extensions.Primitives
             {
                 if ((uint)startIndex > (uint)Length)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                    ThrowArgumentOutOfRangeException(nameof(startIndex));
                 }
 
                 if ((uint)count > (uint)(Length - startIndex))
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
+                    ThrowArgumentOutOfRangeException(nameof(count));
                 }
 
                 index = Buffer.IndexOfAny(anyOf, Offset + startIndex, count);
@@ -667,9 +661,15 @@ namespace Microsoft.Extensions.Primitives
             // Single comparison to check if comparisonType is within [CurrentCulture .. OrdinalIgnoreCase]
             if ((uint)comparisonType > (uint)StringComparison.OrdinalIgnoreCase)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.comparisonType);
+                ThrowArgumentOutOfRangeException(nameof(comparisonType));
             }
         }
+
+        // Methods that do no return (i.e. throw) are not inlined, keeping the throw out of
+        // the (often inlined) caller's body.
+        [DoesNotReturn]
+        private static void ThrowArgumentOutOfRangeException(string paramName) =>
+            throw new ArgumentOutOfRangeException(paramName);
 
         // Methods that do no return (i.e. throw) are not inlined
         // https://github.com/dotnet/coreclr/pull/6103
@@ -683,25 +683,25 @@ namespace Microsoft.Extensions.Primitives
             {
                 if (buffer == null)
                 {
-                    return ThrowHelper.GetArgumentNullException(ExceptionArgument.buffer);
+                    return new ArgumentNullException(nameof(buffer));
                 }
 
                 if (offset < 0)
                 {
-                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.offset);
+                    return new ArgumentOutOfRangeException(nameof(offset));
                 }
 
                 if (length < 0)
                 {
-                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.length);
+                    return new ArgumentOutOfRangeException(nameof(length));
                 }
 
-                return ThrowHelper.GetArgumentException(ExceptionResource.Argument_InvalidOffsetLength);
+                return new ArgumentException(SR.Argument_InvalidOffsetLength);
             }
         }
 
         [DoesNotReturn]
-        private void ThrowInvalidArguments(int offset, int length, ExceptionArgument offsetOrStart)
+        private void ThrowInvalidArguments(int offset, int length, string offsetOrStart)
         {
             throw GetInvalidArgumentsException(HasValue);
 
@@ -709,20 +709,20 @@ namespace Microsoft.Extensions.Primitives
             {
                 if (!hasValue)
                 {
-                    return ThrowHelper.GetArgumentOutOfRangeException(offsetOrStart);
+                    return new ArgumentOutOfRangeException(offsetOrStart);
                 }
 
                 if (offset < 0)
                 {
-                    return ThrowHelper.GetArgumentOutOfRangeException(offsetOrStart);
+                    return new ArgumentOutOfRangeException(offsetOrStart);
                 }
 
                 if (length < 0)
                 {
-                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.length);
+                    return new ArgumentOutOfRangeException(nameof(length));
                 }
 
-                return ThrowHelper.GetArgumentException(ExceptionResource.Argument_InvalidOffsetLengthStringSegment);
+                return new ArgumentException(SR.Argument_InvalidOffsetLengthStringSegment);
             }
         }
     }
