@@ -28,6 +28,7 @@
     <Compile Include="System\Buffers\ReadOnlySequence.cs" />
     <Compile Include="System\Buffers\ReadOnlySequenceDebugView.cs" />
     <Compile Include="System\Buffers\ReadOnlySequenceSegment.cs" />
+    <Compile Include="System\Buffers\ReadOnlySequenceStream.cs" />
     <Compile Include="System\Buffers\ReadOnlySequence.Helpers.cs" />
     <Compile Include="System\Buffers\SequenceReader.cs" />
     <Compile Include="System\Buffers\SequenceReader.Search.cs" />
@@ -40,6 +41,8 @@
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs"
              Link="Common\System\Buffers\ArrayBufferWriter.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\CachedCompletedInt32Task.cs"
+             Link="Common\System\Threading\Tasks\CachedCompletedInt32Task.cs" />
   </ItemGroup>
 
   <ItemGroup>
