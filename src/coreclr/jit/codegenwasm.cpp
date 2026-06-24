@@ -3587,6 +3587,29 @@ void CodeGen::genCallFinally(BasicBlock* block)
         {
             GetEmitter()->emitIns(INS_end);
         }
+
+        return;
+    }
+
+    // After call_indirect returns, control falls through to the next wasm instruction.
+    // The paired BBJ_CALLFINALLYRET has no code emitted (see genCodeForBlock), so the
+    // CALLFINALLYRET's continuation must be reached either by fall-through (when it's
+    // the next block in linear order) or by an explicit branch emitted here.
+    //
+    // This is wasm-specific: other targets rely on the native `call`/`ret` to land at
+    // the instruction after the call, and the JIT layout places the CALLFINALLYRET's
+    // continuation immediately after. On wasm the layout may place the continuation
+    // elsewhere (e.g. a loop header reached via back-edge, as produced by a leave from
+    // a catch handler that targets a label outside its enclosing try-finally).
+    //
+    assert(block->isBBCallFinallyPair());
+    BasicBlock* const callFinallyRet = block->Next();
+    assert(callFinallyRet->KindIs(BBJ_CALLFINALLYRET));
+    BasicBlock* const continuation = callFinallyRet->GetTarget();
+
+    if (continuation->bbPreorderNum != callFinallyRet->bbPreorderNum + 1)
+    {
+        inst_JMP(EJ_jmp, continuation);
     }
 }
 
