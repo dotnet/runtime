@@ -708,36 +708,26 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	fields = (StructFieldInfo*)fields_array->data;
 	nfields = fields_array->len;
 
-	{
-		gboolean has_straddling_field = FALSE;
-		gboolean has_float_field = FALSE;
-		for (i = 0; i < nfields; ++i) {
-			MonoType *ftype = mini_get_underlying_type (fields [i].type);
-			if (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8)
-				has_float_field = TRUE;
-			if ((fields [i].offset < 8) && (fields [i].offset + fields [i].size) > 8)
-				has_straddling_field = TRUE;
-		}
-		if (has_straddling_field) {
-			pass_on_stack = TRUE;
+	for (i = 0; i < nfields; ++i) {
+		if ((fields [i].offset < 8) && (fields [i].offset + fields [i].size) > 8) {
 			/*
-			 * A <=16 byte all-integer vtype only ends up on the stack here because a field crosses
-			 * the 8-byte eightbyte boundary, which the (non-LLVM) JIT cannot place in a register
-			 * pair. The LLVM backend has no such restriction, so record that it may pass the value
-			 * in two integer registers. This keeps the calling convention identical to a
-			 * fully-flattened instantiation of the same layout, which matters for gshared /
-			 * partially-shared generic code: a partially-shared caller sees the value type as an
-			 * opaque type parameter (one straddling field) while the concrete callee sees the
-			 * flattened layout. Without this they disagree on the calling convention, and recent
-			 * LLVM lowers the byval form onto the stack while the callee reads it from registers.
-			 *
-			 * This only applies to managed calls. For P/Invoke the calling convention must follow
-			 * the native ABI as implemented by the byval/stack path, so leave llvm_inreg_straddle
-			 * unset for pinvoke signatures (the value keeps the ArgOnStack -> LLVMArgVtypeByVal
-			 * lowering it had before this change).
+			 * A field crosses the 8-byte eightbyte boundary. For P/Invoke calls (and for returns
+			 * or structs larger than 16 bytes) such a value must be passed on the stack to follow
+			 * the native ABI. For a managed call of a <=16 byte vtype we keep it in registers
+			 * instead: the value is split into (at most) two integer eightbytes purely by total
+			 * size (see the !sig->pinvoke classification below), which is layout independent. That
+			 * makes a partially-shared caller -- which sees the vtype as an opaque type parameter
+			 * with a single straddling field -- agree with a concrete callee that sees the
+			 * flattened layout. If the value were forced onto the stack here the two would disagree
+			 * on the calling convention (recent LLVM lowers the byval form onto the stack while the
+			 * concrete callee reads the value from registers), corrupting it. This is safe for the
+			 * GC: object references in a <=16 byte managed vtype are always 8-byte aligned (the type
+			 * loader rejects misaligned or overlapped references), so an eightbyte never splits a
+			 * managed pointer and conservative scanning still finds every reference.
 			 */
-			if (!is_return && size <= 16 && !has_float_field && !sig->pinvoke)
-				ainfo->llvm_inreg_straddle = 1;
+			if (sig->pinvoke || is_return || size > 16)
+				pass_on_stack = TRUE;
+			break;
 		}
 	}
 
@@ -2454,20 +2444,10 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			linfo->args [i].storage = LLVMArgNormal;
 			break;
 		case ArgOnStack:
-			if (MONO_TYPE_ISSTRUCT (t)) {
-				if (ainfo->llvm_inreg_straddle) {
-					/* See add_valuetype (): pass the straddling vtype in two integer registers
-					 * rather than as a byval struct, so the calling convention matches a
-					 * fully-flattened instantiation of the same layout. */
-					linfo->args [i].storage = LLVMArgVtypeInReg;
-					linfo->args [i].pair_storage [0] = LLVMArgInIReg;
-					linfo->args [i].pair_storage [1] = (ainfo->arg_size > 8) ? LLVMArgInIReg : LLVMArgNone;
-				} else {
-					linfo->args [i].storage = LLVMArgVtypeByVal;
-				}
-			} else {
+			if (MONO_TYPE_ISSTRUCT (t))
+				linfo->args [i].storage = LLVMArgVtypeByVal;
+			else
 				linfo->args [i].storage = LLVMArgNormal;
-			}
 			break;
 		case ArgValuetypeInReg:
 			if (sig->pinvoke &&
