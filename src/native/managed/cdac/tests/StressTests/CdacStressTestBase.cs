@@ -53,7 +53,7 @@ public abstract class CdacStressTestBase
     /// (DOTNET_CdacStress=0x101) and returns the parsed results. Convenience
     /// shim around <see cref="RunStressAsync"/>.
     /// </summary>
-    internal Task<CdacStressResults> RunGCStressAsync(string debuggeeName, int timeoutSeconds = 300)
+    internal Task<CdacStressResults> RunGCRefStressAsync(string debuggeeName, int timeoutSeconds = 300)
         => RunStressAsync(debuggeeName, StressMode.GcRefs, timeoutSeconds);
 
     /// <summary>

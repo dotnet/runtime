@@ -64,27 +64,13 @@ public class BasicStressTests : CdacStressTestBase
     public static IEnumerable<object[]> WindowsOnlyDebuggees =>
     [
         ["PInvoke"],
-    ];
-
-    /// <summary>
-    /// Debuggees that exercise the CLI native varargs calling convention
-    /// (<c>__arglist</c>). The JIT only supports this convention on
-    /// Windows x86 / x64 / ARM64 -- see
-    /// <c>src/coreclr/jit/target.h::compFeatureVarArg</c>. Tests gate
-    /// on both OS=Windows and architecture != ARM32. Additionally,
-    /// these debuggees run under the ARGITER sub-check only: the cDAC
-    /// <c>GetStackReferences</c> doesn't yet walk the VASigCookie
-    /// signature blob, so GCREFS reports false failures on vararg
-    /// frames.
-    /// </summary>
-    public static IEnumerable<object[]> VarArgsDebuggees =>
-    [
         ["VarArgs"],
     ];
 
+
     [ConditionalTheory]
     [MemberData(nameof(Debuggees))]
-    public async Task GCStress_AllVerificationsPass(string debuggeeName)
+    public async Task GCRefStress_AllVerificationsPass(string debuggeeName)
     {
         // The GCREFS sub-check has only been validated on architectures where
         // the cDAC GC root enumeration is at parity with the runtime. x86 has
@@ -92,20 +78,20 @@ public class BasicStressTests : CdacStressTestBase
         if (GetTargetArchitecture() == Architecture.X86)
             throw new SkipTestException("GCREFS stress is not yet validated on x86 (ARGITER stress runs there instead)");
 
-        CdacStressResults results = await RunGCStressAsync(debuggeeName);
+        CdacStressResults results = await RunGCRefStressAsync(debuggeeName);
         AssertAllPassed(results, debuggeeName);
     }
 
     [ConditionalTheory]
     [MemberData(nameof(WindowsOnlyDebuggees))]
-    public async Task GCStress_WindowsOnly_AllVerificationsPass(string debuggeeName)
+    public async Task GCRefStress_WindowsOnly_AllVerificationsPass(string debuggeeName)
     {
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             throw new SkipTestException("P/Invoke debuggee uses kernel32.dll (Windows only)");
         if (GetTargetArchitecture() == Architecture.X86)
             throw new SkipTestException("GCREFS stress is not yet validated on x86");
 
-        CdacStressResults results = await RunGCStressAsync(debuggeeName);
+        CdacStressResults results = await RunGCRefStressAsync(debuggeeName);
         AssertAllPassed(results, debuggeeName);
     }
 
@@ -117,22 +103,6 @@ public class BasicStressTests : CdacStressTestBase
         // only. Other architectures hit known gaps that need follow-up
         // work (SystemV-AMD64 / ARM64 struct-in-register classification,
         // arm32 ABI port). Skip there until those land.
-        if (!IsArgIterValidatedTarget())
-            throw new SkipTestException(ArgIterValidatedTargetReason);
-
-        CdacStressResults results = await RunArgIterStressAsync(debuggeeName);
-        AssertAllArgIterPassed(results, debuggeeName);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(VarArgsDebuggees))]
-    public async Task ArgIterStress_VarArgs_AllVerificationsPass(string debuggeeName)
-    {
-        // VarArgs additionally requires the CLI vararg / __arglist
-        // calling convention, which compFeatureVarArg (target.h) gates
-        // to Windows non-ARM32. Combined with the PR's overall scope
-        // (windows-x86 / windows-x64 only), the effective matrix here
-        // is the same as ArgIterStress_AllVerificationsPass.
         if (!IsArgIterValidatedTarget())
             throw new SkipTestException(ArgIterValidatedTargetReason);
 
