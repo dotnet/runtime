@@ -9418,6 +9418,20 @@ calli_end:
 			MonoInst *vtable_arg = NULL;
 
 			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+			/*
+			 * In AOT mode, a type-load failure while resolving the constructor (e.g. an
+			 * invalid covariant override on the declaring type) should turn the method
+			 * into one that throws TypeLoadException at runtime, matching the JIT
+			 * behavior, instead of aborting compilation. Aborting would exclude the
+			 * method from the AOT image, and calling it under full-AOT would surface a
+			 * confusing 'JIT compile while running in aot-only mode' error instead.
+			 */
+			if (cfg->compile_aot && !is_ok (cfg->error) && mono_error_get_error_code (cfg->error) == MONO_ERROR_TYPE_LOAD) {
+				clear_cfg_error (cfg);
+				INLINE_FAILURE ("type load error");
+				method_make_alwaysthrow_typeloadfailure (cfg, cmethod ? cmethod->klass : NULL);
+				goto all_bbs_done;
+			}
 			CHECK_CFG_ERROR;
 
 			fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, cfg->error);
@@ -9425,8 +9439,20 @@ calli_end:
 
 			mono_save_token_info (cfg, image, token, cmethod);
 
-			if (mono_class_has_failure (cmethod->klass) || !mono_class_init_internal (cmethod->klass))
-				TYPE_LOAD_ERROR (cmethod->klass);
+			if (mono_class_has_failure (cmethod->klass) || !mono_class_init_internal (cmethod->klass)) {
+				if (!cfg->compile_aot)
+					TYPE_LOAD_ERROR (cmethod->klass);
+				/*
+				 * In AOT mode, rather than aborting compilation of the whole method
+				 * (which would exclude it from the AOT image and make a full-AOT call
+				 * site throw a confusing 'JIT compile while running in aot-only mode'
+				 * error), turn the method into one that throws the TypeLoadException at
+				 * runtime, matching the JIT behavior.
+				 */
+				INLINE_FAILURE ("type load error");
+				method_make_alwaysthrow_typeloadfailure (cfg, cmethod->klass);
+				goto all_bbs_done;
+			}
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
 
@@ -10176,9 +10202,14 @@ calli_end:
 				if (!field || CLASS_HAS_FAILURE (klass)) {
 						HANDLE_TYPELOAD_ERROR (cfg, klass);
 
-						// Reached only in AOT. Cannot turn a token into a class. We silence the compilation error
-						// and generate a runtime exception.
-						if (cfg->error->error_code == MONO_ERROR_BAD_IMAGE)
+						/*
+						 * Reached only in AOT. After lowering the field resolution failure into a runtime
+						 * throw, consume the expected recoverable metadata errors as well. Memberref field
+						 * resolution can report MissingField/BadImage directly through cfg->error without
+						 * setting cfg->exception_type, and leaving one of those live lets an accepted inline
+						 * trip the inline_method () cfg->error assert later on.
+						 */
+						if (cfg->error->error_code == MONO_ERROR_BAD_IMAGE || cfg->error->error_code == MONO_ERROR_MISSING_FIELD)
 							clear_cfg_error (cfg);
 
 						// We need to push a dummy value onto the stack, respecting the intended type.
