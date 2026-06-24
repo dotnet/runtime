@@ -1619,8 +1619,8 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
         return false;
     }
 
-    // The base address of an indirection can be a SIMD value (e.g. SVE GatherVector, a vector
-    // of addresses), which is never known non-null here. Assert added in #129447.
+    // Ignore corner cases like a SIMD value - SIMD could be a base address of an indirection
+    // (e.g. SVE GatherVector, a vector of addresses).
     var_types vnType = TypeOfVN(vn);
     if ((vnType != TYP_I_IMPL) && (vnType != TYP_REF) && (vnType != TYP_BYREF))
     {
