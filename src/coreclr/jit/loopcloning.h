@@ -1041,10 +1041,13 @@ struct LoopCloneContext
     void                 SetLoopIterInfo(unsigned loopNum, NaturalLoopIterInfo* info);
 
     // Evaluate conditions into a JTRUE stmt and put it in a new block after `insertAfter`.
+    // `totalCondsInChain` is the combined cond block count across all calls for one cloning op,
+    // used to make the chain's cumulative fast-path probability match `fastPathWeightScaleFactor`.
     BasicBlock* CondToStmtInBlock(Compiler*                          comp,
                                   JitExpandArrayStack<LC_Condition>& conds,
                                   BasicBlock*                        slowHead,
-                                  BasicBlock*                        insertAfter);
+                                  BasicBlock*                        insertAfter,
+                                  unsigned                           totalCondsInChain);
 
     // Get all the optimization information for loop "loopNum"; this information is held in "optInfo" array.
     // If NULL this allocates the optInfo[loopNum] array for "loopNum".

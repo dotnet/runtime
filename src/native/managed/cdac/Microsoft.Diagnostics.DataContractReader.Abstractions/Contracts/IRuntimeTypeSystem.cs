@@ -99,6 +99,16 @@ public enum GenericContextLoc
     ThisPtr,
 }
 
+public enum WellKnownMethodTable
+{
+    Object,
+    String,
+    Array,
+    Exception,
+    Free,
+    Canon,
+}
+
 
 public interface IRuntimeTypeSystem : IContract
 {
@@ -133,7 +143,11 @@ public interface IRuntimeTypeSystem : IContract
     // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
     bool IsObject(TypeHandle typeHandle) => throw new NotImplementedException();
     bool IsString(TypeHandle typeHandle) => throw new NotImplementedException();
-    bool IsObjRef(TypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the CorElementType represents a GC-collectable object reference.
+    bool IsCorElementTypeObjRef(CorElementType elementType) => throw new NotImplementedException();
+    // Returns the address of one of the runtime's well-known singleton MethodTables,
+    // or TargetPointer.Null if the runtime has not yet initialized that global.
+    TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
     bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
