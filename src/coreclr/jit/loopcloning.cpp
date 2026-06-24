@@ -1568,6 +1568,9 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
 
     if (iterInfo->HasMDArrayBoundedRangeLoop)
     {
+        // The IV starts at the lower bound of some dimension of an MD array. If the IV
+        // indexes other arrays, require that source lower bound to be zero so the dimension
+        // length also describes the maximum IV value.
         bool requireBoundedRangeLowerBoundZero = false;
         for (unsigned i = 0; i < optInfos->Size(); ++i)
         {
@@ -1681,6 +1684,8 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
                 if (!iterInfo->HasMDArrayBoundedRangeLoop || (iterInfo->BoundedRangeArrLcl != mdArrInfo->arrLcl) ||
                     (iterInfo->BoundedRangeDim != mdArrInfo->dim) || (iterInfo->BoundedRangeRank != mdArrInfo->rank))
                 {
+                    // The actual MD check uses origIdx - lowerBound, not origIdx.
+                    // Require zero lower bound unless the loop already iterates this range.
                     LC_Array lowerBound(LC_Array::MdArray, mdIndex, (int)mdArrInfo->dim, LC_Array::LowerBound);
                     lowerBound.mdRank = mdArrInfo->rank;
                     LC_Condition lowerBoundIsZero(GT_EQ, LC_Expr(LC_Ident::CreateArrAccess(lowerBound)),
