@@ -410,8 +410,15 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
 // Return Value:
 //    None
 //
+//
 // Writer abstraction for crash info output. Allows EmitCrashInfo to target
 // either stderr (default) or a user-provided fatal error log callback.
+//
+// Uses the public FatalErrorHandling.h header for shared type definitions.
+//
+
+#include <public/FatalErrorHandling.h>
+
 struct CrashInfoWriter
 {
     void (*WriteA)(const char* pszString, void* context);
@@ -429,19 +436,18 @@ static void StdErrWriteW(const WCHAR* pwzString, void* /*context*/)
     PrintToStdErrW(pwzString);
 }
 
+// State passed through the CrashInfoWriter context pointer to forward
+// crash output to the user's FatalErrorLogAction callback.
+struct CallbackState { FatalErrorLogAction pfnLogAction; void* userContext; };
+
 static void CallbackWriteA(const char* pszString, void* context)
 {
-    // Forward UTF-8 directly to the user's FatalErrorLogAction callback.
-    // context points to a struct holding {pfnLogAction, userContext}.
-    struct CallbackState { void (*pfnLogAction)(const char*, void*); void* userContext; };
     CallbackState* state = static_cast<CallbackState*>(context);
     state->pfnLogAction(pszString, state->userContext);
 }
 
 static void CallbackWriteW(const WCHAR* pwzString, void* context)
 {
-    // Convert wide string to UTF-8 and forward to the user's callback.
-    struct CallbackState { void (*pfnLogAction)(const char*, void*); void* userContext; };
     CallbackState* state = static_cast<CallbackState*>(context);
     MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pUtf8, pwzString, CP_UTF8);
     state->pfnLogAction(pUtf8, state->userContext);
@@ -722,10 +728,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
 
 //
 // Fatal error handler invocation support.
-// Uses the public FatalErrorHandling.h header for shared type definitions.
 //
-
-#include <public/FatalErrorHandling.h>
 
 using FatalErrorHandlerFunc = int (DOTNET_CALLCONV *)(int hresult, void* errorData);
 
@@ -755,8 +758,7 @@ static void DOTNET_CALLCONV GetFatalErrorLogCallback(FatalErrorInfo* errorData, 
         return;
 
     // Build a callback writer that streams crash info as UTF-8 to the user's callback.
-    struct CallbackState { void (*pfnLogAction)(const char*, void*); void* userContext; };
-    CallbackState state = { reinterpret_cast<void(*)(const char*, void*)>(pfnLogAction), userContext };
+    CallbackState state = { pfnLogAction, userContext };
     CrashInfoWriter writer = { CallbackWriteA, CallbackWriteW, &state };
     EmitCrashInfo(writer, s_crashExitCode, s_crashMessage, s_crashExceptionInfo, s_crashErrorSource, s_crashExceptionString);
 }
@@ -949,7 +951,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         if (InvokeFatalErrorHandler(COR_E_STACKOVERFLOW, soAddress, pExceptionInfo))
         {
             // SkipDefaultHandler — skip Watson and crash dump, proceed to exit.
-            SafeExitProcess(COR_E_STACKOVERFLOW, SCA_TerminateProcessWhenShutdownComplete);
+            SafeExitProcess(COR_E_STACKOVERFLOW, SCA_ExitProcessWhenShutdownComplete);
             UNREACHABLE();
         }
     }
@@ -1101,7 +1103,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         if (InvokeFatalErrorHandler(exitCode, address, pExceptionInfo))
         {
             // SkipDefaultHandler — suppress crash output and crash dump, proceed to exit.
-            SafeExitProcess(exitCode, SCA_TerminateProcessWhenShutdownComplete);
+            SafeExitProcess(exitCode, SCA_ExitProcessWhenShutdownComplete);
         }
 
         // RunDefaultHandler — write crash info to stderr and proceed with

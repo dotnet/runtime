@@ -94,28 +94,41 @@ namespace System
             if (s_crashLogFragmentCount == 0 || pfnLogAction == null)
                 return;
 
-            // Use a stack buffer for UTF-8 encoding. Large strings are sent in
-            // multiple chunks — the header documents that pfnLogAction may be
-            // called multiple times with fragments.
-            const int ChunkSize = 1024;
-            byte* buffer = stackalloc byte[ChunkSize];
-
-            for (int i = 0; i < s_crashLogFragmentCount; i++)
+            try
             {
-                string? fragment = s_crashLogFragments[i];
-                if (string.IsNullOrEmpty(fragment))
-                    continue;
+                // Use a stack buffer for UTF-8 encoding. Large strings are sent in
+                // multiple chunks — the header documents that pfnLogAction may be
+                // called multiple times with fragments.
+                const int ChunkSize = 1024;
+                Span<byte> buffer = stackalloc byte[ChunkSize];
 
-                ReadOnlySpan<char> remaining = fragment.AsSpan();
-                while (remaining.Length > 0)
+                Encoder encoder = Encoding.UTF8.GetEncoder();
+                for (int i = 0; i < s_crashLogFragmentCount; i++)
                 {
-                    // Reserve 1 byte for null terminator.
-                    Span<byte> dest = new Span<byte>(buffer, ChunkSize - 1);
-                    Encoding.UTF8.GetEncoder().Convert(remaining, dest, flush: true, out int charsUsed, out int bytesUsed, out _);
-                    buffer[bytesUsed] = 0;
-                    pfnLogAction(buffer, userContext);
-                    remaining = remaining.Slice(charsUsed);
+                    string? fragment = s_crashLogFragments[i];
+                    if (string.IsNullOrEmpty(fragment))
+                        continue;
+
+                    ReadOnlySpan<char> remaining = fragment.AsSpan();
+                    while (remaining.Length > 0)
+                    {
+                        // Reserve last byte for null terminator.
+                        encoder.Convert(remaining, buffer[..^1], flush: true, out int charsUsed, out int bytesUsed, out _);
+                        buffer[bytesUsed] = 0;
+                        fixed (byte* pBuffer = buffer)
+                        {
+                            pfnLogAction(pBuffer, userContext);
+                        }
+                        remaining = remaining.Slice(charsUsed);
+                    }
+
+                    encoder.Reset();
                 }
+            }
+            catch
+            {
+                // This is called during fatal error handling — swallow any exceptions
+                // (e.g., OOM) to avoid crashing during log retrieval.
             }
         }
 
