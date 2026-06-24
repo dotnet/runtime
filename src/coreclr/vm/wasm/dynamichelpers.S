@@ -327,3 +327,45 @@ DynamicHelper_GenericDictionaryLookup_Method_3:
         i32.load        0xC                                                                     // Load the last indirection (offset sizeof(TADDR) * 3)
         return
         end_function
+
+
+.functype       DynamicHelper_GenericDictionaryLookup_Class_UseHelper (i32, i32, i32) -> (i32)
+.section        .text.DynamicHelper_GenericDictionaryLookup_Class_UseHelper,"",@
+.hidden         DynamicHelper_GenericDictionaryLookup_Class_UseHelper
+.globl          DynamicHelper_GenericDictionaryLookup_Class_UseHelper
+.type           DynamicHelper_GenericDictionaryLookup_Class_UseHelper,@function
+DynamicHelper_GenericDictionaryLookup_Class_UseHelper:
+        .functype       DynamicHelper_GenericDictionaryLookup_Class_UseHelper (i32, i32, i32) -> (i32)
+        local.get       0                                                                       // Load the stack pointer
+        local.get       1                                                                       // Load the GenericContext
+        local.get       2                                                                       // Load the GenericDictionaryDynamicHelperStubData parameter
+        i32.load        OFFSETOF__GenericDictionaryDynamicHelperStubData_PortableEntryPoint__HandleArgs
+        i32.const       0
+        i32.load        g_pClassWithSlotAndModule
+        local.tee       2
+        local.get       2
+        i32.load        0
+        call_indirect    __indirect_function_table, (i32, i32, i32, i32) -> (i32)
+        return
+        end_function
+
+
+.functype       DynamicHelper_GenericDictionaryLookup_Method_UseHelper (i32, i32, i32) -> (i32)
+.section        .text.DynamicHelper_GenericDictionaryLookup_Method_UseHelper,"",@
+.hidden         DynamicHelper_GenericDictionaryLookup_Method_UseHelper
+.globl          DynamicHelper_GenericDictionaryLookup_Method_UseHelper
+.type           DynamicHelper_GenericDictionaryLookup_Method_UseHelper,@function
+DynamicHelper_GenericDictionaryLookup_Method_UseHelper:
+        .functype       DynamicHelper_GenericDictionaryLookup_Method_UseHelper (i32, i32, i32) -> (i32)
+        local.get       0                                                                       // Load the stack pointer
+        local.get       1                                                                       // Load the GenericContext
+        local.get       2                                                                       // Load the GenericDictionaryDynamicHelperStubData parameter
+        i32.load        OFFSETOF__GenericDictionaryDynamicHelperStubData_PortableEntryPoint__HandleArgs
+        i32.const       0
+        i32.load        g_pMethodWithSlotAndModule
+        local.tee       2
+        local.get       2
+        i32.load        0
+        call_indirect    __indirect_function_table, (i32, i32, i32, i32) -> (i32)
+        return
+        end_function

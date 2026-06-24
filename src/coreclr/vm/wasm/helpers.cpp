@@ -472,6 +472,8 @@ extern "C" void DynamicHelper_GenericDictionaryLookup_Method_0();
 extern "C" void DynamicHelper_GenericDictionaryLookup_Method_1();
 extern "C" void DynamicHelper_GenericDictionaryLookup_Method_2();
 extern "C" void DynamicHelper_GenericDictionaryLookup_Method_3();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class_UseHelper();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method_UseHelper();
 #include "readytoruninfo.h"
 #include "jitinterface.h"
 #include "loaderallocator.hpp"
@@ -494,15 +496,34 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     PCODE helper = (PCODE)NULL;
     if (pLookup->indirections == CORINFO_USEHELPER)
     {
-        ThrowHR(COR_E_NOTSUPPORTED);
-        /*
         GenericHandleArgs * pArgs = (GenericHandleArgs *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(GenericHandleArgs))));
         pArgs->dictionaryIndexAndSlot = dictionaryIndexAndSlot;
         pArgs->signature = pLookup->signature;
         pArgs->module = (CORINFO_MODULE_HANDLE)pModule;
-        PCODE result = EmitDynamicHelperWithArg(pAllocator, &amTracker, (TADDR)pArgs, helperAddress);
+
+        PCODE helperFunc;
+        if (helperAddress == g_pClassWithSlotAndModule)
+        {
+            helperFunc = (PCODE)DynamicHelper_GenericDictionaryLookup_Class_UseHelper;
+        }
+        else
+        {
+            _ASSERTE(helperAddress == g_pMethodWithSlotAndModule);
+            helperFunc = (PCODE)DynamicHelper_GenericDictionaryLookup_Method_UseHelper;
+        }
+
+        // The UseHelper stubs only ever read the HandleArgs field of the stub data, but the rest of the
+        // structure is zero-initialized for consistency with the other stubs.
+        GenericDictionaryDynamicHelperStubData dictLookupData = {0};
+        dictLookupData.HandleArgs = pArgs;
+
+        GenericDictionaryDynamicHelperStubData_PortableEntryPoint *pDictLookupData = (GenericDictionaryDynamicHelperStubData_PortableEntryPoint *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(GenericDictionaryDynamicHelperStubData_PortableEntryPoint))));
+        pDictLookupData->stubData = dictLookupData;
+        pDictLookupData->HelperFunctionTableIndex = helperFunc;
+
+        PCODE result = (PCODE)pDictLookupData;
         amTracker.SuppressRelease();
-        return result;*/
+        return result;
     }
     else
     {
