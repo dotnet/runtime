@@ -216,15 +216,15 @@ internal class RuntimeLookupDelegateGenericVirtual
         var test = new Base();
         test.Foo<List<T>>();
 
-        var test2 = new Derived();
+        var test2 = new DerivedClass();
         Delegate m1 = test2.Foo<List<T>>();
         Delegate m2 = test2.Foo<List<List<T>>>;
         Assert.Equal(m1, m2);
 
-        IBase foo = new DerivedStruct();
-        Delegate d = foo.Foo<List<T>>();
-        MethodInfo expected = typeof(DerivedStruct).GetMethod(nameof(DerivedStruct.Foo))!.MakeGenericMethod(typeof(List<T>));
-        Assert.Equal(expected, d.Method);
+        IBase test3 = new DerivedStruct();
+        Delegate m3 = test3.Foo<List<T>>();
+        Delegate m4 = test3.Foo<List<List<T>>>;
+        Assert.Equal(m3.Method, m4.Method);
     }
 }
 
@@ -241,7 +241,7 @@ internal class Base
     }
 }
 
-internal class Derived : Base
+internal class DerivedClass : Base
 {
     public override Delegate Foo<U1>()
     {
@@ -251,14 +251,17 @@ internal class Derived : Base
 
 internal interface IBase
 {
-    Delegate Foo<U>();
+    public virtual Delegate Foo<U>()
+    {
+        return Foo<U>;
+    }
 }
 
 internal struct DerivedStruct : IBase
 {
     public Delegate Foo<U>()
     {
-        return Foo<U>;
+        return Foo<List<U>>;
     }
 }
 
