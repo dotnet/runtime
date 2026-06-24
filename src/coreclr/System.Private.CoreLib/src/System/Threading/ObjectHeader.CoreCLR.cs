@@ -226,7 +226,7 @@ namespace System.Threading
                 Thread.SpinWait(i);
             }
 
-            // lock is thin, but owned by somebody else
+            // the lock is thin, but owned by somebody else
             return HeaderLockResult.Failure;
         }
 
@@ -244,7 +244,7 @@ namespace System.Threading
                 while (true)
                 {
                     int oldBits = *pHeader;
-                    // is the lock fat or becoming fat?
+                    // is the lock thin?
                     if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) == 0)
                     {
                         // In CoreCLR, the managed ID is set by the runtime, thus we do not
@@ -270,7 +270,7 @@ namespace System.Threading
                         }
                     }
 
-                    // Thin-lock layout but we are NOT the owner -> let the slow path throw.
+                    // do slow path.
                     break;
                 }
             }

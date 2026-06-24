@@ -343,20 +343,20 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe int TryAcquireUncommon(object obj, int currentThreadID, bool isOneShot)
         {
-            if (currentThreadID == 0)
-                currentThreadID = Environment.CurrentManagedThreadId;
-
-            // Thread IDs that don't fit in the thin-lock field cannot use thin locks. This check is
-            // deferred to here (rather than at entry) because it is unusual to be true.
-            if (currentThreadID > SBLK_MASK_LOCK_THREADID)
-                return GetSyncIndex(obj);
-
             // A one-shot acquire does not spin while the lock is owned by another thread, but it still
             // retries the rare CAS failures below where the lock is not owned by somebody else: a caller
             // that knows the lock is unowned expects a one-shot acquire to succeed.
             // Lock.IsSingleProcessor is lazily initialized at the first contended acquire; until then it
             // is false and we assume a multicore machine.
             int retries = isOneShot || Lock.IsSingleProcessor ? 0 : 16;
+
+            if (currentThreadID == 0)
+                currentThreadID = ManagedThreadId.Current;
+
+            // A thin lock can only store a thread id that fits in the thread-id field.
+            // This check is deferred to here (rather than at entry) because it is unusual to be true.
+            if (currentThreadID > SBLK_MASK_LOCK_THREADID)
+                return GetSyncIndex(obj);
 
             // retry when the lock is owned by somebody else.
             // this loop will spinwait between iterations.
@@ -421,15 +421,13 @@ namespace System.Threading
                     }
                 }
 
-                if (retries != 0)
-                {
-                    // spin a bit before retrying (1 spinwait is roughly 35 nsec)
-                    // the object is not pinned here
-                    Thread.SpinWaitInternal(i);
-                }
+                // lock is thin, but owned by somebody else.
+                // spin a bit before retrying (1 spinwait is roughly 35 nsec)
+                // the object is not pinned here
+                Thread.SpinWaitInternal(i);
             }
 
-            // owned by somebody else
+            // the lock is thin, but owned by somebody else
             return 0;
         }
 
@@ -437,10 +435,6 @@ namespace System.Threading
         public static unsafe void Release(object obj)
         {
             Debug.Assert(obj != null);
-
-            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
-            // transform uninitialized ID into -1, so it will not match any possible lock owner
-            currentThreadID |= (currentThreadID - 1) >> 31;
 
             Lock fatLock;
             fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
@@ -452,24 +446,30 @@ namespace System.Threading
                 while (true)
                 {
                     int oldBits = *pHeader;
-
-                    // if we own the lock
-                    if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID &&
-                        (oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) == 0)
+                    // is the lock thin?
+                    if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)) == 0)
                     {
-                        // decrement count or release entirely.
-                        int newBits = (oldBits & SBLK_MASK_LOCK_RECLEVEL) != 0 ?
-                            oldBits - SBLK_LOCK_RECLEVEL_INC :
-                            oldBits & ~SBLK_MASK_LOCK_THREADID;
+                        int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+                        // transform uninitialized ID into -1, so it will not match any possible lock owner
+                        currentThreadID |= (currentThreadID - 1) >> 31;
 
-                        if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
+                        // do we own the thin lock?
+                        if ((oldBits & SBLK_MASK_LOCK_THREADID) == currentThreadID)
                         {
-                            return;
-                        }
+                            // decrement count or release entirely.
+                            int newBits = (oldBits & SBLK_MASK_LOCK_RECLEVEL) != 0 ?
+                                oldBits - SBLK_LOCK_RECLEVEL_INC :
+                                oldBits & ~SBLK_MASK_LOCK_THREADID;
 
-                        // rare contention on owned lock,
-                        // we still own the lock, try again
-                        continue;
+                            if (Interlocked.CompareExchange(pHeader, newBits, oldBits) == oldBits)
+                            {
+                                return;
+                            }
+
+                            // rare contention on owned lock,
+                            // we still own the lock, try again
+                            continue;
+                        }
                     }
 
                     if (!GetSyncEntryIndex(oldBits, out int syncIndex))
@@ -478,12 +478,13 @@ namespace System.Threading
                         throw new SynchronizationLockException();
                     }
 
+                    // Get the fat lock. Must be done while still pinning the obj.
                     fatLock = SyncTable.GetLockObject(syncIndex);
                     break;
                 }
             }
 
-            fatLock.Exit(currentThreadID);
+            fatLock.Exit();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
