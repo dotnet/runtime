@@ -534,6 +534,108 @@ public class Program
         return AdvSimd.Arm64.CompareGreaterThanOrEqualScalar(left, Vector64<long>.Zero);
     }
 
+    // CompareLessThan
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<float> AdvSimd_CompareLessThan_Vector64_Single_Zero(Vector64<float> left)
+    {
+        // ARM64-FULL-LINE: fcmlt v0.2s, v0.2s, #0.0
+        return AdvSimd.CompareLessThan(left, Vector64<float>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<float> AdvSimd_CompareLessThan_Vector128_Single_Zero(Vector128<float> left)
+    {
+        // ARM64-FULL-LINE: fcmlt v0.4s, v0.4s, #0.0
+        return AdvSimd.CompareLessThan(left, Vector128<float>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<int> AdvSimd_CompareLessThan_Vector128_Int32_Zero(Vector128<int> left)
+    {
+        // ARM64-FULL-LINE: cmlt v0.4s, v0.4s, #0
+        return AdvSimd.CompareLessThan(left, Vector128<int>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<double> AdvSimd_Arm64_CompareLessThan_Vector128_Double_Zero(Vector128<double> left)
+    {
+        // ARM64-FULL-LINE: fcmlt v0.2d, v0.2d, #0.0
+        return AdvSimd.Arm64.CompareLessThan(left, Vector128<double>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<long> AdvSimd_Arm64_CompareLessThan_Vector128_Int64_Zero(Vector128<long> left)
+    {
+        // ARM64-FULL-LINE: cmlt v0.2d, v0.2d, #0
+        return AdvSimd.Arm64.CompareLessThan(left, Vector128<long>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<double> AdvSimd_Arm64_CompareLessThanScalar_Vector64_Double_Zero(Vector64<double> left)
+    {
+        // ARM64-FULL-LINE: fcmlt d0, d0, #0.0
+        return AdvSimd.Arm64.CompareLessThanScalar(left, Vector64<double>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<long> AdvSimd_Arm64_CompareLessThanScalar_Vector64_Int64_Zero(Vector64<long> left)
+    {
+        // ARM64-FULL-LINE: cmlt d0, d0, #0
+        return AdvSimd.Arm64.CompareLessThanScalar(left, Vector64<long>.Zero);
+    }
+
+    // CompareLessThanOrEqual
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<float> AdvSimd_CompareLessThanOrEqual_Vector64_Single_Zero(Vector64<float> left)
+    {
+        // ARM64-FULL-LINE: fcmle v0.2s, v0.2s, #0.0
+        return AdvSimd.CompareLessThanOrEqual(left, Vector64<float>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<float> AdvSimd_CompareLessThanOrEqual_Vector128_Single_Zero(Vector128<float> left)
+    {
+        // ARM64-FULL-LINE: fcmle v0.4s, v0.4s, #0.0
+        return AdvSimd.CompareLessThanOrEqual(left, Vector128<float>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<int> AdvSimd_CompareLessThanOrEqual_Vector128_Int32_Zero(Vector128<int> left)
+    {
+        // ARM64-FULL-LINE: cmle v0.4s, v0.4s, #0
+        return AdvSimd.CompareLessThanOrEqual(left, Vector128<int>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<double> AdvSimd_Arm64_CompareLessThanOrEqual_Vector128_Double_Zero(Vector128<double> left)
+    {
+        // ARM64-FULL-LINE: fcmle v0.2d, v0.2d, #0.0
+        return AdvSimd.Arm64.CompareLessThanOrEqual(left, Vector128<double>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<long> AdvSimd_Arm64_CompareLessThanOrEqual_Vector128_Int64_Zero(Vector128<long> left)
+    {
+        // ARM64-FULL-LINE: cmle v0.2d, v0.2d, #0
+        return AdvSimd.Arm64.CompareLessThanOrEqual(left, Vector128<long>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<double> AdvSimd_Arm64_CompareLessThanOrEqualScalar_Vector64_Double_Zero(Vector64<double> left)
+    {
+        // ARM64-FULL-LINE: fcmle d0, d0, #0.0
+        return AdvSimd.Arm64.CompareLessThanOrEqualScalar(left, Vector64<double>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<long> AdvSimd_Arm64_CompareLessThanOrEqualScalar_Vector64_Int64_Zero(Vector64<long> left)
+    {
+        // ARM64-FULL-LINE: cmle d0, d0, #0
+        return AdvSimd.Arm64.CompareLessThanOrEqualScalar(left, Vector64<long>.Zero);
+    }
+
     // Validation
 
     unsafe static bool ValidateResult_Vector64<T>(Vector64<T> result, T expectedElementValue) where T : unmanaged
@@ -788,6 +890,50 @@ public class Program
 
         // End CompareGreaterThanOrEqual Tests
 
+        // Begin CompareLessThan Tests
+
+        if (!ValidateResult_Vector64<float>(AdvSimd_CompareLessThan_Vector64_Single_Zero(Vector64.Create(-1f)), Single.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector64<float>(AdvSimd_CompareLessThan_Vector64_Single_Zero(Vector64<float>.One), 0f))
+            result = -1;
+
+        if (!ValidateResult_Vector128<float>(AdvSimd_CompareLessThan_Vector128_Single_Zero(Vector128.Create(-1f)), Single.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector128<float>(AdvSimd_CompareLessThan_Vector128_Single_Zero(Vector128<float>.One), 0f))
+            result = -1;
+
+        if (!ValidateResult_Vector128<int>(AdvSimd_CompareLessThan_Vector128_Int32_Zero(Vector128.Create(-1)), -1))
+            result = -1;
+
+        if (!ValidateResult_Vector128<int>(AdvSimd_CompareLessThan_Vector128_Int32_Zero(Vector128<int>.One), 0))
+            result = -1;
+
+        // End CompareLessThan Tests
+
+        // Begin CompareLessThanOrEqual Tests
+
+        if (!ValidateResult_Vector64<float>(AdvSimd_CompareLessThanOrEqual_Vector64_Single_Zero(Vector64<float>.Zero), Single.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector64<float>(AdvSimd_CompareLessThanOrEqual_Vector64_Single_Zero(Vector64<float>.One), 0f))
+            result = -1;
+
+        if (!ValidateResult_Vector128<float>(AdvSimd_CompareLessThanOrEqual_Vector128_Single_Zero(Vector128<float>.Zero), Single.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector128<float>(AdvSimd_CompareLessThanOrEqual_Vector128_Single_Zero(Vector128<float>.One), 0f))
+            result = -1;
+
+        if (!ValidateResult_Vector128<int>(AdvSimd_CompareLessThanOrEqual_Vector128_Int32_Zero(Vector128<int>.Zero), -1))
+            result = -1;
+
+        if (!ValidateResult_Vector128<int>(AdvSimd_CompareLessThanOrEqual_Vector128_Int32_Zero(Vector128<int>.One), 0))
+            result = -1;
+
+        // End CompareLessThanOrEqual Tests
+
         return result;
     }
 
@@ -883,6 +1029,70 @@ public class Program
             result = -1;
 
         // End CompareEqual Tests
+
+        // Begin CompareLessThan Tests
+
+        // Vector128
+
+        if (!ValidateResult_Vector128<double>(AdvSimd_Arm64_CompareLessThan_Vector128_Double_Zero(Vector128.Create(-1.0)), Double.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector128<double>(AdvSimd_Arm64_CompareLessThan_Vector128_Double_Zero(Vector128<double>.One), 0.0))
+            result = -1;
+
+        if (!ValidateResult_Vector128<long>(AdvSimd_Arm64_CompareLessThan_Vector128_Int64_Zero(Vector128.Create(-1L)), -1L))
+            result = -1;
+
+        if (!ValidateResult_Vector128<long>(AdvSimd_Arm64_CompareLessThan_Vector128_Int64_Zero(Vector128<long>.One), 0L))
+            result = -1;
+
+        // Vector64 (scalar)
+
+        if (!ValidateResult_Vector64<double>(AdvSimd_Arm64_CompareLessThanScalar_Vector64_Double_Zero(Vector64.CreateScalar(-1.0)), Vector64.CreateScalar(Double.NaN)))
+            result = -1;
+
+        if (!ValidateResult_Vector64<double>(AdvSimd_Arm64_CompareLessThanScalar_Vector64_Double_Zero(Vector64.CreateScalar(1.0)), 0.0))
+            result = -1;
+
+        if (!ValidateResult_Vector64<long>(AdvSimd_Arm64_CompareLessThanScalar_Vector64_Int64_Zero(Vector64.CreateScalar(-1L)), Vector64.CreateScalar(-1L)))
+            result = -1;
+
+        if (!ValidateResult_Vector64<long>(AdvSimd_Arm64_CompareLessThanScalar_Vector64_Int64_Zero(Vector64.CreateScalar(1L)), 0L))
+            result = -1;
+
+        // End CompareLessThan Tests
+
+        // Begin CompareLessThanOrEqual Tests
+
+        // Vector128
+
+        if (!ValidateResult_Vector128<double>(AdvSimd_Arm64_CompareLessThanOrEqual_Vector128_Double_Zero(Vector128<double>.Zero), Double.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector128<double>(AdvSimd_Arm64_CompareLessThanOrEqual_Vector128_Double_Zero(Vector128<double>.One), 0.0))
+            result = -1;
+
+        if (!ValidateResult_Vector128<long>(AdvSimd_Arm64_CompareLessThanOrEqual_Vector128_Int64_Zero(Vector128<long>.Zero), -1L))
+            result = -1;
+
+        if (!ValidateResult_Vector128<long>(AdvSimd_Arm64_CompareLessThanOrEqual_Vector128_Int64_Zero(Vector128<long>.One), 0L))
+            result = -1;
+
+        // Vector64 (scalar)
+
+        if (!ValidateResult_Vector64<double>(AdvSimd_Arm64_CompareLessThanOrEqualScalar_Vector64_Double_Zero(Vector64<double>.Zero), Vector64.CreateScalar(Double.NaN)))
+            result = -1;
+
+        if (!ValidateResult_Vector64<double>(AdvSimd_Arm64_CompareLessThanOrEqualScalar_Vector64_Double_Zero(Vector64.CreateScalar(1.0)), 0.0))
+            result = -1;
+
+        if (!ValidateResult_Vector64<long>(AdvSimd_Arm64_CompareLessThanOrEqualScalar_Vector64_Int64_Zero(Vector64<long>.Zero), Vector64.CreateScalar(-1L)))
+            result = -1;
+
+        if (!ValidateResult_Vector64<long>(AdvSimd_Arm64_CompareLessThanOrEqualScalar_Vector64_Int64_Zero(Vector64.CreateScalar(1L)), 0L))
+            result = -1;
+
+        // End CompareLessThanOrEqual Tests
 
         return result;
     }
