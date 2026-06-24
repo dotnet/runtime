@@ -38,5 +38,18 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
         retBuff = &pCallDescrData->returnValue;
     }
 
-    ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argsSize, retBuff, (PCODE)&CallDescrWorkerInternal);
+    if (targetIp == NULL)
+    {
+        // The target has no interpreter code because it is R2R (native Wasm) compiled.
+        // Dispatch to the native entry point via the interpreter-to-R2R thunk, mirroring
+        // ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex. Calling the
+        // interpreter with a NULL target would not execute the method and would leave the
+        // return buffer aliasing the incoming arguments.
+        ManagedMethodParam param = { pMethod, args, (int8_t*)retBuff, (PCODE)NULL, NULL };
+        InvokeManagedMethod(&param);
+    }
+    else
+    {
+        ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argsSize, retBuff, (PCODE)&CallDescrWorkerInternal);
+    }
 }
