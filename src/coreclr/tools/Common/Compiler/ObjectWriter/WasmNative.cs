@@ -165,6 +165,30 @@ namespace ILCompiler.ObjectWriter
         public override int EncodeRelocations(Span<Relocation> buffer) => 0;
     }
 
+    public class WasmTagImportType : WasmImportType
+    {
+        // Exception tag attribute: 0 means an exception tag.
+        private const byte ExceptionAttribute = 0x00;
+
+        private readonly int _typeIndex;
+
+        public WasmTagImportType(int typeIndex) : base(WasmExternalKind.Tag)
+        {
+            _typeIndex = typeIndex;
+        }
+
+        public override int Encode(Span<byte> buffer)
+        {
+            buffer[0] = ExceptionAttribute;
+
+            return 1 + DwarfHelper.WriteULEB128(buffer.Slice(1), (ulong)_typeIndex);
+        }
+
+        public override int EncodeSize() => 1 + (int)DwarfHelper.SizeOfULEB128((ulong)_typeIndex);
+        public override int EncodeRelocationCount() => 0;
+        public override int EncodeRelocations(Span<Relocation> buffer) => 0;
+    }
+
     public class WasmImport : IWasmEncodable
     {
         public readonly string Module;

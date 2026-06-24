@@ -1503,7 +1503,12 @@ void EEJitManager::SetCpuInfo()
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
 
 #if defined(FEATURE_INTERPRETER)
-    if (maxVectorTBitWidth != 128 && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
+#if defined(FEATURE_DYNAMIC_CODE_COMPILED)
+    bool interpreterOnly = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3;
+#else
+    bool interpreterOnly = true;
+#endif
+    if (maxVectorTBitWidth != 128 && interpreterOnly)
     {
         // Disable larger Vector<T> sizes when interpreter is enabled
         maxVectorTBitWidth = 128;
@@ -1872,14 +1877,6 @@ void EEJitManager::SetCpuInfo()
     // because Vector512.IsHardwareAccelerated returns false due to config or automatic throttling.
 
     uint32_t preferredVectorBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PreferredVectorBitWidth) / 128) * 128;
-
-#ifdef FEATURE_INTERPRETER
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
-    {
-        // Disable larger Vector<T> sizes when interpreter is enabled, and not compiling S.P.Corelib
-        preferredVectorBitWidth = 128;
-    }
-#endif
 
     if ((preferredVectorBitWidth == 0) && throttleVector512)
     {
@@ -6047,6 +6044,69 @@ TADDR ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(DWORD functionInd
         return pR2RInfo->GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(pRuntimeFunction);
     } while (true);
 }
+
+TADDR ExecutionManager::GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (!ExecutionManager::IsVirtualIP((PCODE)virtualIP))
+    {
+        return 0;
+    }
+
+    VirtualIPRangeSection* pSection = FindVirtualIPRangeSection(virtualIP);
+    if (pSection == nullptr)
+    {
+        return 0;
+    }
+
+    Module* pModule = pSection->rangeSection._pR2RModule;
+    ReadyToRunInfo* pR2RInfo = pModule->GetReadyToRunInfo();
+    DWORD runtimeFunctionCount = pR2RInfo->GetRuntimeFunctionCount();
+    if (runtimeFunctionCount == 0)
+    {
+        return 0;
+    }
+
+    TADDR minVirtualIP = pR2RInfo->GetMinVirtualIP();
+    if (virtualIP < minVirtualIP)
+    {
+        return 0;
+    }
+
+    TADDR localVirtualIP = virtualIP - minVirtualIP;
+    if (localVirtualIP > UINT32_MAX)
+    {
+        return 0;
+    }
+
+    DWORD localVirtualIP32 = (DWORD)localVirtualIP;
+    PTR_RUNTIME_FUNCTION pRuntimeFunctions = pR2RInfo->GetRuntimeFunctions();
+
+    // Find the function entry with the greatest BeginAddress <= localVirtualIP.
+    DWORD low = 0;
+    DWORD high = runtimeFunctionCount;
+    while (low + 1 < high)
+    {
+        DWORD mid = low + ((high - low) / 2);
+        DWORD beginAddress = RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + mid);
+        if (beginAddress <= localVirtualIP32)
+        {
+            low = mid;
+        }
+        else
+        {
+            high = mid;
+        }
+    }
+
+    if (RUNTIME_FUNCTION__BeginAddress(pRuntimeFunctions + low) > localVirtualIP32)
+    {
+        return 0;
+    }
+
+    return pR2RInfo->GetMinFunctionTableIndex() + low;
+}
 #endif // TARGET_WASM
 
 // Deletes a single range starting at pStartRange
@@ -6906,6 +6966,16 @@ PTR_EXCEPTION_CLAUSE_TOKEN ReadyToRunJitManager::GetNextEHClause(EH_CLAUSE_ENUME
     pEHClauseOut->Flags = pClause->Flags;
     pEHClauseOut->FilterOffset = pClause->FilterOffset;
 
+#ifdef TARGET_WASM
+    // Wasm Virtual IPs are encoded with half their virtual IP value
+    pEHClauseOut->TryStartPC *= 2;
+    pEHClauseOut->TryEndPC *= 2;
+    pEHClauseOut->HandlerStartPC *= 2;
+    pEHClauseOut->HandlerEndPC *= 2;
+    if (pEHClauseOut->Flags & COR_ILEXCEPTION_CLAUSE_FILTER)
+        pEHClauseOut->FilterOffset *= 2;
+#endif
+
     return dac_cast<PTR_EXCEPTION_CLAUSE_TOKEN>(pClause);
 }
 
@@ -7367,8 +7437,8 @@ BOOL ReadyToRunJitManager::IsFilterFunclet(EECodeInfo * pCodeInfo)
     if (!pCodeInfo->IsFunclet())
         return FALSE;
 
-#ifdef TARGET_X86
-    // x86 doesn't use personality routines in unwind data, so we have to fallback to
+#if defined(TARGET_X86) || defined(TARGET_WASM)
+    // x86 and wasm don't use personality routines in unwind data, so we have to fallback to
     // the slow implementation
     return IJitManager::IsFilterFunclet(pCodeInfo);
 #else

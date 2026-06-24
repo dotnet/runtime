@@ -107,6 +107,7 @@ namespace System.Security.Cryptography
             }
 
             [MemberNotNull(nameof(_rawData))]
+            [Obsolete(Obsoletions.AsnEncodedDataRawDataSetterMessage, DiagnosticId = Obsoletions.AsnEncodedDataRawDataSetterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
@@ -134,7 +135,8 @@ namespace System.Security.Cryptography
         private void Reset(Oid? oid, byte[] rawData)
         {
             this.Oid = oid;
-            this.RawData = rawData;
+            ArgumentNullException.ThrowIfNull(rawData, "value"); // Use "value" as param name for compat.
+            _rawData = rawData.CloneByteArray();
         }
 
         [MemberNotNull(nameof(_rawData))]

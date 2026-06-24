@@ -9,6 +9,7 @@
 
 .assembly 'b143840' {}
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .class private auto ansi beforefieldinit ExternalClass
        extends [mscorlib]System.Object
 {
@@ -44,6 +45,10 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+      string('https://github.com/dotnet/runtime/issues/129508')
+      int32(0x2) // Mono
+    }
     .entrypoint
     .maxstack  3
     .locals init (class [System.Threading.Thread]System.Threading.Thread V_0,

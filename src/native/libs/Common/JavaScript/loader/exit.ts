@@ -114,6 +114,9 @@ export function exit(exitCode: number, reason: any): void {
                 dotnetBrowserUtilsExports.abortBackgroundTimers();
             }
             unregisterExit();
+            if (runtimeState.creatingRuntime) {
+                dotnetLogger.info(`Aborting startup, reason: ${reason}`);
+            }
             if (!alreadySilent) {
                 if (runtimeState.onExitListeners.length === 0 && !runtimeState.dotnetReady) {
                     dotnetLogger.error("Exiting during runtime startup: ", message);
@@ -130,7 +133,6 @@ export function exit(exitCode: number, reason: any): void {
                 }
             }
             if (runtimeState.creatingRuntime) {
-                dotnetLogger.info(`Aborting startup, reason: ${reason}`);
                 dotnetLoaderExports.abortStartup(reason);
             }
         } catch (err) {
