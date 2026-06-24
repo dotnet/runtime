@@ -608,6 +608,10 @@ namespace System.Net.Http.Functional.Tests
                     VerifyParent = false
                 };
 
+                // Synchronize client and server: server waits for client to finish req1 assertions before reading req2.
+                // This prevents a race where the server tries to read req2 before the client sends it.
+                TaskCompletionSource req1AssertionsDone = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
                     async uri =>
                     {
@@ -694,6 +698,9 @@ namespace System.Net.Http.Functional.Tests
                         ActivityAssert.HasTag(conn, "server.port", uri.Port);
                         ActivityAssert.HasTag(conn, "url.scheme", useTls ? "https" : "http");
 
+                        // Signal the server to read the second request now that all req1 assertions have passed.
+                        req1AssertionsDone.SetResult();
+
                         // The second request should reuse the first connection, connection_setup and wait_for_connection should not be recorded again.
                         await client.SendAsync(CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true));
                         requestRecorder.VerifyActivityRecorded(2);
@@ -712,6 +719,11 @@ namespace System.Net.Http.Functional.Tests
                             await connection.ReadRequestDataAsync();
                             await connection.SendResponseAsync(HttpStatusCode.OK);
                             connection.CompleteRequestProcessing();
+
+                            // Wait for the client to finish asserting the first request before reading the second.
+                            // This prevents a race where a client assertion failure closes the connection before
+                            // the second request is sent, causing a spurious server-side EOF exception.
+                            await req1AssertionsDone.Task;
 
                             await connection.ReadRequestDataAsync();
                             await connection.SendResponseAsync(HttpStatusCode.OK);
