@@ -329,7 +329,6 @@ struct cdac_data<PEImage>
     // The loaded PEImageLayout is m_pLayouts[IMAGE_LOADED]
     static constexpr size_t LoadedImageLayout = offsetof(PEImage, m_pLayouts) + sizeof(PTR_PEImageLayout);
     static constexpr size_t ProbeExtensionResult = offsetof(PEImage, m_probeExtensionResult);
-    static constexpr size_t ModuleFileNameHint = offsetof(PEImage, m_sModuleFileNameHintUsedByDac) + cdac_data<SString>::Buffer;
 };
 
 struct PEImageHolderTraits final

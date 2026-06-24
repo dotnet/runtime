@@ -73,7 +73,6 @@ typedef DPTR(class SString) PTR_SString;
 class EMPTY_BASES SString : private SBuffer
 {
     friend struct _DacGlobals;
-    friend struct ::cdac_data<SString>;
 
 private:
     enum Representation
@@ -894,12 +893,6 @@ typedef InlineSString<2 * 260> LongPathString;
 
 #define FAULTS_UNLESS_BOTH_NORMALIZED(s, stmt) \
     if (IsNormalized() && s.IsNormalized()) FORBID_FAULT; else INJECT_FAULT(stmt)
-
-template<>
-struct cdac_data<SString>
-{
-    static constexpr size_t Buffer = offsetof(SString, m_buffer);
-};
 
 // ================================================================================
 // Inline definitions

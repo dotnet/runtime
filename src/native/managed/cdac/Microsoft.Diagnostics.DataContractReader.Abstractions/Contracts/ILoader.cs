@@ -111,7 +111,7 @@ public interface ILoader : IContract
     ModuleFlags GetFlags(ModuleHandle handle) => throw new NotImplementedException();
     bool IsReadyToRun(ModuleHandle handle) => throw new NotImplementedException();
     string GetSimpleName(ModuleHandle handle) => throw new NotImplementedException();
-    string GetPath(ModuleHandle handle, bool fallbackToHint = false) => throw new NotImplementedException();
+    string GetPath(ModuleHandle handle) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
     bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize) => throw new NotImplementedException();
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();

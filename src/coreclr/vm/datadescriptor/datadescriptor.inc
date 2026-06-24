@@ -406,7 +406,6 @@ CDAC_TYPE_BEGIN(PEImage)
 CDAC_TYPE_INDETERMINATE(PEImage)
 CDAC_TYPE_FIELD(PEImage, T_POINTER, LoadedImageLayout, cdac_data<PEImage>::LoadedImageLayout)
 CDAC_TYPE_FIELD(PEImage, TYPE(ProbeExtensionResult), ProbeExtensionResult, cdac_data<PEImage>::ProbeExtensionResult)
-CDAC_TYPE_FIELD(PEImage, T_POINTER, ModuleFileNameHint, cdac_data<PEImage>::ModuleFileNameHint)
 CDAC_TYPE_END(PEImage)
 
 CDAC_TYPE_BEGIN(PEImageLayout)

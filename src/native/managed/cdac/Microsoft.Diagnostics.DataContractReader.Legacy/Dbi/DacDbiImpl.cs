@@ -228,7 +228,20 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             Contracts.ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle handle = loader.GetModuleHandleFromModulePtr(new TargetPointer(vmModule));
-            string path = loader.GetPath(handle, true);
+            string path = string.Empty;
+            try
+            {
+                path = loader.GetPath(handle);
+            }
+            catch (VirtualReadException)
+            {
+                path = loader.GetFileName(handle);
+            }
+
+            if (string.IsNullOrEmpty(path))
+            {
+                path = loader.GetFileName(handle);
+            }
             if (string.IsNullOrEmpty(path))
             {
                 *pResult = Interop.BOOL.FALSE;
@@ -3419,7 +3432,18 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 *dwTimeStamp = timeStamp;
                 *dwImageSize = imageSize;
             }
-            path = loader.GetPath(moduleHandle, true);
+            try
+            {
+                path = loader.GetPath(moduleHandle);
+            }
+            catch (VirtualReadException)
+            {
+                path = loader.GetFileName(moduleHandle);
+            }
+            if (string.IsNullOrEmpty(path))
+            {
+                path = loader.GetFileName(moduleHandle);
+            }
             hr = StringHolderAssignCopy(pStrFilename, path);
             *pResult = result ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }

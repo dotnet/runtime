@@ -455,23 +455,12 @@ internal readonly struct Loader_1 : ILoader
             : string.Empty;
     }
 
-    string ILoader.GetPath(ModuleHandle handle, bool fallbackToHint)
+    string ILoader.GetPath(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        string path = string.Empty;
-        try
-        {
-            path = module.Path != TargetPointer.Null ? _target.ReadUtf16String(module.Path) : string.Empty;
-        }
-        catch (VirtualReadException)
-        {
-            // Ignore virtual read exceptions
-        }
-
-        if (fallbackToHint && string.IsNullOrEmpty(path) && TryGetPEImage(handle, out Data.PEImage? peImage) && peImage.ModuleFileNameHint != TargetPointer.Null)
-            path = _target.ReadUtf16String(peImage.ModuleFileNameHint);
-
-        return path;
+        return module.Path != TargetPointer.Null
+            ? _target.ReadUtf16String(module.Path)
+            : string.Empty;
     }
 
     string ILoader.GetFileName(ModuleHandle handle)
@@ -490,7 +479,13 @@ internal readonly struct Loader_1 : ILoader
         if (!TryGetPEImage(handle, out Data.PEImage? peImage))
             return false;
 
+        if (peImage.LoadedImageLayout == TargetPointer.Null)
+            return false; // no loaded image layout
+
         Data.PEImageLayout peImageLayout = _target.ProcessedData.GetOrAdd<Data.PEImageLayout>(peImage.LoadedImageLayout);
+
+        if (peImageLayout.Format == (uint)ImageFormat.Webcil)
+            return false; // Webcil images do not have NT headers
 
         TargetPointer ntHeadersPtr = FindNTHeaders(peImageLayout);
         Data.ImageNTHeaders ntHeaders = _target.ProcessedData.GetOrAdd<Data.ImageNTHeaders>(ntHeadersPtr);

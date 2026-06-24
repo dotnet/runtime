@@ -96,7 +96,7 @@ bool IsProbeExtensionResultValid(ModuleHandle handle);
 ModuleFlags GetFlags(ModuleHandle handle);
 bool IsReadyToRun(ModuleHandle handle);
 string GetSimpleName(ModuleHandle handle);
-string GetPath(ModuleHandle handle, bool fallbackToHint = false);
+string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
 bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
@@ -646,31 +646,11 @@ string GetSimpleName(ModuleHandle handle)
     return // convert to string, throw on invalid UTF-8
 }
 
-string GetPath(ModuleHandle handle, bool fallbackToHint = false)
+string GetPath(ModuleHandle handle)
 {
     TargetPointer pathStart = target.ReadPointer(handle.Address + /* Module::Path offset */);
-    string path = pathStart != TargetPointer.Null
-        ? /* Read<char> from target starting at pathStart until null terminator */
-        : string.Empty;
-
-    // For in-memory modules the path is empty; optionally fall back to the
-    // PEImage's diagnostic file name hint (reached through the Module's PEAssembly).
-    if (fallbackToHint && string.IsNullOrEmpty(path))
-    {
-        TargetPointer peAssemblyPtr = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
-        if (peAssemblyPtr != TargetPointer.Null)
-        {
-            TargetPointer peImagePtr = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
-            if (peImagePtr != TargetPointer.Null)
-            {
-                TargetPointer hintPtr = target.ReadPointer(peImagePtr + /* PEImage::ModuleFileNameHint offset */);
-                if (hintPtr != TargetPointer.Null)
-                    path = target.ReadUtf16String(hintPtr);
-            }
-        }
-    }
-
-    return path;
+    char[] path = // Read<char> from target starting at pathStart until null terminator
+    return new string(path);
 }
 
 string GetFileName(ModuleHandle handle)
@@ -685,20 +665,8 @@ bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageS
     timeStamp = 0;
     imageSize = 0;
 
-    // Resolve the PEImage through the Module's PEAssembly.
-    TargetPointer peAssemblyPtr = target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
-    if (peAssemblyPtr == TargetPointer.Null)
+    if (!TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out _, out _))
         return false;
-
-    TargetPointer peImagePtr = target.ReadPointer(peAssemblyPtr + /* PEAssembly::PEImage offset */);
-    if (peImagePtr == TargetPointer.Null)
-        return false;
-
-    TargetPointer layoutPtr = target.ReadPointer(peImagePtr + /* PEImage::LoadedImageLayout offset */);
-    if (layoutPtr == TargetPointer.Null)
-        return false;
-
-    TargetPointer baseAddress = target.ReadPointer(layoutPtr + /* PEImageLayout::Base offset */);
     TargetPointer ntHeadersPtr = baseAddress + // offset to NT headers
     timeStamp = // read from NT header
     imageSize = // read from NT header
