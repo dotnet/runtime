@@ -14,6 +14,7 @@ import { collectMetrics } from "./dotnet-counters";
 import { collectGcDump } from "./dotnet-gcdump";
 import { collectCpuSamples } from "./dotnet-cpu-profiler";
 import { connectDSRouter, ds_rt_websocket_close, ds_rt_websocket_create, ds_rt_websocket_poll, ds_rt_websocket_recv, ds_rt_websocket_send, initializeDS } from "./diagnostic-server";
+import { ds_rt_browser_performance_measure } from "./browser-profiler";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -33,6 +34,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         ds_rt_websocket_poll,
         ds_rt_websocket_recv,
         ds_rt_websocket_close,
+        ds_rt_browser_performance_measure,
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
 
@@ -56,6 +58,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             map.ds_rt_websocket_poll,
             map.ds_rt_websocket_recv,
             map.ds_rt_websocket_close,
+            map.ds_rt_browser_performance_measure,
         ];
     }
 }

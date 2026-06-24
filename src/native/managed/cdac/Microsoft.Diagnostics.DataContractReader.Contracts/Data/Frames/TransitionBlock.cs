@@ -3,28 +3,23 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class TransitionBlock : IData<TransitionBlock>
+[CdacType(nameof(DataType.TransitionBlock))]
+internal partial class TransitionBlock : IData<TransitionBlock>
 {
-    static TransitionBlock IData<TransitionBlock>.Create(Target target, TargetPointer address)
-        => new TransitionBlock(target, address);
+    [Field] public TargetCodePointer ReturnAddress { get; }
 
-    public TransitionBlock(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.TransitionBlock);
-        ReturnAddress = target.ReadPointerField(address, type, nameof(ReturnAddress));
-        CalleeSavedRegisters = address + (ulong)type.Fields[nameof(CalleeSavedRegisters)].Offset;
-
-        if (type.Fields.ContainsKey(nameof(ArgumentRegisters)))
-        {
-            ArgumentRegisters = address + (ulong)type.Fields[nameof(ArgumentRegisters)].Offset;
-        }
-    }
-
-    public TargetPointer ReturnAddress { get; }
+    [FieldAddress]
     public TargetPointer CalleeSavedRegisters { get; }
 
     /// <summary>
-    /// Only available on ARM targets.
+    /// Address of the argument registers area within this TransitionBlock.
     /// </summary>
-    public TargetPointer? ArgumentRegisters { get; }
+    [FieldAddress]
+    public TargetPointer ArgumentRegisters { get; }
+
+    /// <summary>
+    /// Address of the first slot covered by the GCRefMap within this TransitionBlock.
+    /// </summary>
+    [FieldAddress]
+    public TargetPointer FirstGCRefMapSlot { get; }
 }

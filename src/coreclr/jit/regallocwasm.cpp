@@ -170,7 +170,27 @@ void WasmRegAlloc::IdentifyCandidates()
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
         varDsc->SetRegNum(REG_STK);
 
-        if (isRegCandidate(varDsc))
+        checkForDNER(lclNum, varDsc);
+
+        bool varIsRegCandidate = isRegCandidate(varDsc);
+
+        // Wasm RA currently does not support EH write-thru, so any local live in or out
+        // of a handler must be located only on the stack.
+        if (varDsc->lvTracked && varDsc->IsLiveInOutOfHandler())
+        {
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+            varIsRegCandidate = false;
+        }
+        // We also need to ensure that any GC refs are not stored in wasm locals until we have support for
+        // spilling them to the stack before calls.
+        // TODO-WASM: Add support for spilling GC refs in order to relax this second restriction.
+        if (varTypeIsGC(varDsc->lvType))
+        {
+            m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
+            varIsRegCandidate = false;
+        }
+
+        if (varIsRegCandidate)
         {
             JITDUMP("RA candidate: V%02u\n", lclNum);
             InitializeCandidate(varDsc);
@@ -413,6 +433,14 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 {
     switch (node->OperGet())
     {
+        case GT_NULLCHECK:
+            if (node->gtGetOp1()->gtLIRFlags & LIR::Flags::MultiplyUsed)
+            {
+                ConsumeTemporaryRegForOperand(node->gtGetOp1()
+                                                  DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
+            }
+            break;
+
         case GT_LCL_VAR:
             CollectReferencesForLclVar(node->AsLclVar());
             break;
@@ -468,6 +496,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 
         case GT_INDEX_ADDR:
             CollectReferencesForIndexAddr(node->AsIndexAddr());
+            break;
+
+        case GT_CKFINITE:
+            ConsumeTemporaryRegForOperand(node->gtGetOp1() DEBUGARG("ckfinite finiteness check"));
             break;
 
         default:
@@ -542,6 +574,29 @@ void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
     if (thisArg != nullptr)
     {
         ConsumeTemporaryRegForOperand(thisArg->GetNode() DEBUGARG("call this argument"));
+    }
+
+    // For a fast tail call, wrap the SP arg with ADD(SP, FRAME_SIZE) so codegen
+    // undoes the prolog's SP adjustment and the callee sees the incoming SP.
+    // The arg has been rewritten to GT_PHYSREG above (args are visited before the call).
+    if (callNode->IsFastTailCall())
+    {
+        CallArg* const spArg = callNode->gtArgs.FindWellKnownArg(WellKnownArg::WasmShadowStackPointer);
+        if (spArg != nullptr)
+        {
+            GenTree* const physReg = spArg->GetNode();
+            assert(physReg != nullptr);
+            assert(physReg->OperIs(GT_PHYSREG));
+            assert(physReg->AsPhysReg()->gtSrcReg == m_perFuncletData[m_currentFunclet]->m_spReg);
+            // Fast tail calls from funclets are not supported.
+            assert(m_currentFunclet == ROOT_FUNC_IDX);
+
+            GenTree* const frameSize = new (m_compiler, GT_FRAME_SIZE) GenTree(GT_FRAME_SIZE, TYP_I_IMPL);
+            GenTree* const spAdjust  = m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, physReg, frameSize);
+
+            CurrentRange().InsertAfter(physReg, frameSize, spAdjust);
+            spArg->NodeRef() = spAdjust;
+        }
     }
 }
 
@@ -907,7 +962,7 @@ void WasmRegAlloc::ResolveReferences()
                             indexBase              = max(indexBase, argIndex + 1);
 
                             LclVarDsc* argVarDsc = m_compiler->lvaGetDesc(argLclNum);
-                            if ((argVarDsc->GetRegNum() == argReg) || (data->m_spReg == argReg))
+                            if ((argVarDsc->GetRegNum() == argReg) || (argLclNum == m_compiler->lvaWasmSpArg))
                             {
                                 assert(abiInfo.HasExactlyOneRegisterSegment());
                                 virtToPhysRegMap[static_cast<unsigned>(argType)].DeclaredCount--;
@@ -1137,6 +1192,16 @@ void WasmRegAlloc::ResolveReferences()
             {
                 decls->push_back({type, physRegs.DeclaredCount});
             }
+        }
+
+        // Allocate the per-funclet exnref local used to relay caught exceptions
+        // from the catch_ref landing to any throw_ref rethrow site in this function.
+        //
+        if (m_compiler->lvaWasmResumeIP != BAD_VAR_NUM)
+        {
+            assert(funcInfo->funWasmExnRefLocalIndex == UINT_MAX);
+            funcInfo->funWasmExnRefLocalIndex = indexBase;
+            decls->push_back({WasmValueType::ExnRef, 1});
         }
     }
 

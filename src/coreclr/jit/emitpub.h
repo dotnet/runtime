@@ -43,10 +43,9 @@ unsigned emitGetEpilogCnt();
 template <typename Callback>
 bool emitGenNoGCLst(Callback& cb, bool skipMainPrologsAndEpilogs = false);
 
-void     emitBegProlog();
-unsigned emitGetPrologOffsetEstimate();
-void     emitMarkPrologEnd();
-void     emitEndProlog();
+void emitBegProlog();
+void emitMarkPrologEnd();
+void emitEndProlog();
 
 void emitCreatePlaceholderIG(insGroupPlaceholderType igType,
                              BasicBlock*             igBB,
@@ -67,6 +66,7 @@ unsigned emitCurOffset();
 unsigned emitSpecifiedOffset(unsigned insCount, unsigned igSize);
 
 UNATIVE_OFFSET emitCodeOffset(void* blockPtr, unsigned codeOffs);
+UNATIVE_OFFSET emitGetCurrentCodeOffsetFrom(insGroup* ig);
 
 #ifdef DEBUG
 const char* emitOffsetToLabel(unsigned offs);

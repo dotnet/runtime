@@ -65,7 +65,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal bool VerifyCurrentHash(ReadOnlySpan<byte> hash)
+        internal unsafe bool VerifyCurrentHash(ReadOnlySpan<byte> hash)
         {
             Debug.Assert(!hash.IsEmpty);
 
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal bool VerifyHashAndReset(ReadOnlySpan<byte> hash)
+        internal unsafe bool VerifyHashAndReset(ReadOnlySpan<byte> hash)
         {
             Debug.Assert(!hash.IsEmpty);
 

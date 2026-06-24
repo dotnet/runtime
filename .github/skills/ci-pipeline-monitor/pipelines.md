@@ -36,6 +36,11 @@ cached mapping table).
 | runtime-coreclr pgo | |
 | runtime-coreclr libraries-pgo | |
 | runtime-coreclr pgostress | |
+| runtime-coreclr jit-cfg | Sat-Sun 22:00 UTC | Control flow guard. |
+| runtime-coreclr crossgen2 | Daily | Crossgen2 R2R + comparison tests. |
+| runtime-coreclr crossgen2 outerloop | Daily | Crossgen2 outerloop R2R tests. |
+| runtime-coreclr crossgen2-composite | Daily | Crossgen2 composite R2R tests. |
+| runtime-coreclr crossgen2-composite gcstress | Weekends | Crossgen2 composite with GC stress. |
 
 ## Cached Definition ID Mapping
 
@@ -62,6 +67,11 @@ entries via the AzDO Definitions API, and adds new rows here.
 | runtime-coreclr libraries-pgo | 145 | |
 | runtime-coreclr superpmi-replay | 150 | |
 | runtime-coreclr superpmi-asmdiffs-checked-release | 153 | |
+| runtime-coreclr jit-cfg | 155 | |
+| runtime-coreclr crossgen2 | 124 | |
+| runtime-coreclr crossgen2 outerloop | 134 | |
+| runtime-coreclr crossgen2-composite | 136 | |
+| runtime-coreclr crossgen2-composite gcstress | 141 | |
 | runtime-coreclr jitstress-random | 159 | |
 | runtime-coreclr libraries-jitstress-random | 160 | |
 | runtime-coreclr pgostress | 230 | |

@@ -3,6 +3,7 @@
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -14,6 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class DacDbiDebuggerDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "BasicThreads";
+    protected override string DumpType => "full";
 
     private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
 

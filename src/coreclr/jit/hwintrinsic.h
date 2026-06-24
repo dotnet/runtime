@@ -69,10 +69,32 @@ enum HWIntrinsicCategory : uint8_t
     // - have to be addressed specially
     HW_Category_Special
 };
+#elif defined(TARGET_WASM)
+enum HWIntrinsicCategory : uint8_t
+{
+    // Operations which operate on one or more SIMD values
+    HW_Category_SIMD,
+
+    // Intrinsics which take an immediate value, generally a lane index
+    HW_Category_IMM,
+
+    // Never used on Wasm, but defined for consistency with other platforms
+    HW_Category_Scalar,
+
+    // SIMD memory access intrinsics
+    HW_Category_MemoryLoad,
+    HW_Category_MemoryStore,
+
+    // Helper intrinsics which do not directly correspond to a instruction
+    HW_Category_Helper,
+
+    // Intrinsics which need special handling
+    HW_Category_Special
+};
 #else
 #error Unsupported platform
 #endif
-enum HWIntrinsicFlag : unsigned int
+enum HWIntrinsicFlag : uint64_t
 {
     HW_Flag_NoFlag = 0,
 
@@ -238,6 +260,11 @@ enum HWIntrinsicFlag : unsigned int
     // operations into mask operations when the intrinsic is operating on mask vectors (mainly bitwise operations).
     HW_Flag_HasAllMaskVariant = 0x4000000,
 
+#elif defined(TARGET_WASM)
+    // The intrinsic supports some sort of containment analysis
+    HW_Flag_SupportsContainment   = 0x400,
+    HW_Flag_ReturnsPerElementMask = 0x800,
+    // TODO-WASM: Add WASM-specific flags as needed.
 #else
 #error Unsupported platform
 #endif
@@ -258,6 +285,12 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_FmaIntrinsic = 0x40000000,
 
     HW_Flag_CanBenefitFromConstantProp = 0x80000000,
+
+    // The intrinsic returns a boolean (TYP_INT range [0, 1]).
+    HW_Flag_ReturnsBoolean = 0x100000000,
+
+    // The intrinsic extracts and returns a scalar value of the SIMD base type.
+    HW_Flag_ReturnsScalarT = 0x200000000,
 };
 
 #if defined(TARGET_XARCH)
@@ -511,11 +544,11 @@ struct TernaryLogicInfo
 
 struct HWIntrinsicInfo
 {
-    // 32-bit: 36-bytes (36 + 0 trailing padding)
-    // 64-bit: 40-bytes (40 + 0 trailing padding)
+    // 32-bit: 40-bytes (40 + 0 trailing padding)
+    // 64-bit: 48-bytes (48 + 0 trailing padding)
 
     const char*         name;     // 4 or 8-bytes
-    HWIntrinsicFlag     flags;    // 4-bytes
+    HWIntrinsicFlag     flags;    // 8-bytes
     NamedIntrinsic      id;       // 2-bytes
     uint16_t            ins[10];  // 10 * 2-bytes
     uint8_t             isa;      // 1-byte
@@ -532,7 +565,8 @@ struct HWIntrinsicInfo
                                    const char*       className,
                                    const char*       methodName,
                                    const char*       innerEnclosingClassName,
-                                   const char*       outerEnclosingClassName);
+                                   const char*       outerEnclosingClassName,
+                                   bool              isXplatIntrinsic);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
 
@@ -541,6 +575,8 @@ struct HWIntrinsicInfo
 #elif defined(TARGET_ARM64)
     static void lookupImmBounds(
         NamedIntrinsic intrinsic, int simdSize, var_types baseType, int immNumber, int* lowerBound, int* upperBound);
+#elif defined(TARGET_WASM)
+    static int lookupImmUpperBound(NamedIntrinsic intrinsic, var_types baseType);
 #else
 #error Unsupported platform
 #endif
@@ -683,7 +719,7 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
 #if defined(TARGET_XARCH)
         return (flags & HW_Flag_MaybeCommutative) != 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
         return false;
 #else
 #error Unsupported platform
@@ -701,7 +737,7 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
 #if defined(TARGET_XARCH)
         return (flags & HW_Flag_NoContainment) == 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
         return (flags & HW_Flag_SupportsContainment) != 0;
 #else
 #error Unsupported platform
@@ -711,11 +747,23 @@ struct HWIntrinsicInfo
     static bool ReturnsPerElementMask(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_WASM)
         return (flags & HW_Flag_ReturnsPerElementMask) != 0;
 #else
 #error Unsupported platform
 #endif
+    }
+
+    static bool ReturnsBoolean(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_ReturnsBoolean) != 0;
+    }
+
+    static bool ReturnsScalarT(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_ReturnsScalarT) != 0;
     }
 
 #if defined(TARGET_XARCH)
@@ -809,6 +857,9 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_NoRMWSemantics) == 0;
 #elif defined(TARGET_ARM64)
         return (flags & HW_Flag_HasRMWSemantics) != 0;
+#elif defined(TARGET_WASM)
+        // WASM doesn't have Read/Modify/Write semantics
+        return false;
 #else
 #error Unsupported platform
 #endif
@@ -897,6 +948,7 @@ struct HWIntrinsicInfo
 
 #ifdef TARGET_XARCH
             case NI_X86Base_DivRem:
+            case NI_X86Base_X64_BigMul:
             case NI_X86Base_X64_DivRem:
                 return 2;
 #endif // TARGET_XARCH
@@ -1020,7 +1072,7 @@ struct HWIntrinsicInfo
 #if defined(TARGET_ARM64)
         const HWIntrinsicFlag flags = lookupFlags(id);
         return ((flags & HW_Flag_HasImmediateOperand) != 0);
-#elif defined(TARGET_XARCH)
+#elif defined(TARGET_XARCH) || defined(TARGET_WASM)
         return lookupCategory(id) == HW_Category_IMM;
 #else
         return false;

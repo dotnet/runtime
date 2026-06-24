@@ -613,6 +613,7 @@ vector<T, Allocator>& vector<T, Allocator>::operator=(vector<T, Allocator>&& vec
 template <typename T, typename Allocator>
 typename vector<T, Allocator>::reference vector<T, Allocator>::operator[](size_type n)
 {
+    assert(n >= 0 && n < m_nSize);
     return m_pArray[n];
 }
 
@@ -620,6 +621,7 @@ template <typename T, typename Allocator>
 typename vector<T, Allocator>::const_reference
     vector<T, Allocator>::operator[](size_type n) const
 {
+    assert(n >= 0 && n < m_nSize);
     return m_pArray[n];
 }
 

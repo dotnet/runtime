@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -40,7 +41,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
 
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(Target);
         ctx.FillFromBuffer(contextBuffer);
-        Assert.NotEqual(TargetPointer.Null, ctx.InstructionPointer);
+        Assert.NotEqual(TargetCodePointer.Null, ctx.InstructionPointer);
     }
 
     [ConditionalTheory]
@@ -62,7 +63,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         }
 
         uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(Target).AllContextFlags;
-        byte[] contractContext = Target.Contracts.Thread.GetContext(crashingThread.ThreadAddress, ThreadContextSource.Debugger, allFlags);
+        byte[] contractContext = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.Debugger, allFlags);
 
         IPlatformAgnosticContext dbiCtx = IPlatformAgnosticContext.GetContextForPlatform(Target);
         IPlatformAgnosticContext contractCtx = IPlatformAgnosticContext.GetContextForPlatform(Target);
@@ -84,7 +85,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
         uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(Target).AllContextFlags;
-        byte[] leafContext = Target.Contracts.Thread.GetContext(crashingThread.ThreadAddress, ThreadContextSource.None, allFlags);
+        byte[] leafContext = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags);
 
         Interop.BOOL result;
         fixed (byte* pContext = leafContext)
@@ -107,15 +108,15 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
         uint allFlags = IPlatformAgnosticContext.GetContextForPlatform(Target).AllContextFlags;
-        byte[] leafContext = Target.Contracts.Thread.GetContext(crashingThread.ThreadAddress, ThreadContextSource.None, allFlags);
+        byte[] leafContext = Target.Contracts.StackWalk.GetContext(crashingThread, ThreadContextSource.None, allFlags);
         IPlatformAgnosticContext leafCtx = IPlatformAgnosticContext.GetContextForPlatform(Target);
         leafCtx.FillFromBuffer(leafContext);
 
         IStackWalk sw = Target.Contracts.StackWalk;
 
         // Find a frame whose SP+IP differs from the leaf context
-        byte[]? nonLeafContext = sw.CreateStackWalk(crashingThread)
-            .Select(sw.GetRawContext)
+        byte[]? nonLeafContext = DumpTestStackWalker.LegacyVisibleFrames(sw, crashingThread)
+            .Select(h => sw.GetRawContext(h))
             .FirstOrDefault(ctx =>
             {
                 IPlatformAgnosticContext frameCtx = IPlatformAgnosticContext.GetContextForPlatform(Target);

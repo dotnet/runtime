@@ -76,7 +76,7 @@ namespace System.Xml.Xsl.Runtime
         protected const int MaxAlphabeticValue = int.MaxValue;     // Maximum value that can be represented
         private const int MaxAlphabeticLength = 7;                // Number of letters needed to represent the maximum value
 
-        public static void ConvertToAlphabetic(StringBuilder sb, double val, char firstChar, int totalChars)
+        public static unsafe void ConvertToAlphabetic(StringBuilder sb, double val, char firstChar, int totalChars)
         {
             Debug.Assert(1 <= val && val <= MaxAlphabeticValue);
             Debug.Assert(Math.Pow(totalChars, MaxAlphabeticLength) >= MaxAlphabeticValue);

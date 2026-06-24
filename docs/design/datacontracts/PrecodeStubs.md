@@ -7,6 +7,15 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
 ```csharp
     // Gets a pointer to the MethodDesc for a given stub entrypoint
     TargetPointer GetMethodDescFromStubAddress(TargetCodePointer entryPoint);
+
+    // Given an interior address within a precode stub and the kind of stub (StubPrecode or FixupPrecode),
+    // computes the entry point of the precode.
+    TargetPointer GetPrecodeEntryPointFromInteriorAddress(TargetCodePointer interiorAddress, bool isFixupPrecode);
+
+    // If the code pointer is an interpreter precode, returns the actual interpreter
+    // code address (ByteCodeAddr). Otherwise returns the original address unchanged.
+    // Mirrors GetInterpreterCodeFromInterpreterPrecodeIfPresent in native code (precode.cpp).
+    TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(TargetCodePointer entryPoint);
 ```
 
 ## Version 1, 2, and 3
@@ -40,6 +49,10 @@ Data descriptors used:
 | StubPrecodeData | Type | precise sort of stub precode |
 | FixupPrecodeData | MethodDesc | pointer to the MethodDesc associated with this fixup precode |
 | ThisPtrRetBufPrecodeData | MethodDesc | pointer to the MethodDesc associated with the ThisPtrRetBufPrecode (Version 2 only) |
+| InterpreterPrecodeData | ByteCodeAddr | pointer to the `InterpByteCodeStart` for the interpreter bytecode (Version 3 only) |
+| InterpreterPrecodeData | Type | precode sort byte identifying this as an interpreter precode (Version 3 only) |
+| InterpByteCodeStart | Method | pointer to the `InterpMethod` associated with the bytecode |
+| InterpMethod | MethodDesc | pointer to the MethodDesc for the interpreted method |
 
 arm32 note: the `CodePointerToInstrPointerMask` is used to convert IP values that may include an arm Thumb bit (for example extracted from disassembling a call instruction or from a snapshot of the registers) into an address.  On other architectures applying the mask is a no-op.
 
@@ -259,6 +272,22 @@ After the initial precode type is determined, for stub precodes a refined precod
         }
     }
 
+    // Version 3 only: resolves MethodDesc for interpreter precodes by following
+    // the InterpreterPrecodeData -> InterpByteCodeStart -> InterpMethod -> MethodDesc chain.
+    internal sealed class InterpreterPrecode : ValidPrecode
+    {
+        internal InterpreterPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.Interpreter) { }
+
+        internal override TargetPointer GetMethodDesc(Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+        {
+            TargetPointer dataAddr = InstrPointer + precodeMachineDescriptor.StubCodePageSize;
+            Data.InterpreterPrecodeData precodeData = target.ProcessedData.GetOrAdd<Data.InterpreterPrecodeData>(dataAddr);
+            Data.InterpByteCodeStart byteCodeStart = target.ProcessedData.GetOrAdd<Data.InterpByteCodeStart>(precodeData.ByteCodeAddr);
+            Data.InterpMethod interpMethod = target.ProcessedData.GetOrAdd<Data.InterpMethod>(byteCodeStart.Method);
+            return interpMethod.MethodDesc;
+        }
+    }
+
     internal TargetPointer CodePointerReadableInstrPointer(TargetCodePointer codePointer)
     {
         // Mask off the thumb bit, if we're on arm32, to get the actual instruction pointer
@@ -282,6 +311,8 @@ After the initial precode type is determined, for stub precodes a refined precod
                     return new PInvokeImportPrecode(instrPointer);
                 case KnownPrecodeType.ThisPtrRetBuf:
                     return new ThisPtrRetBufPrecode(instrPointer);
+                case KnownPrecodeType.Interpreter:
+                    return new InterpreterPrecode(instrPointer);
                 default:
                     break;
             }
@@ -294,5 +325,61 @@ After the initial precode type is determined, for stub precodes a refined precod
         ValidPrecode precode = GetPrecodeFromEntryPoint(entryPoint);
 
         return precode.GetMethodDesc(_target, MachineDescriptor);
+    }
+
+    // Returns the interpreter bytecode address if the entry point is an interpreter precode,
+    // otherwise returns the original entry point unchanged.
+    // This method never throws - on any failure, the original address is returned.
+    TargetCodePointer IPrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(TargetCodePointer entryPoint)
+    {
+        try
+        {
+            TargetPointer instrPointer = CodePointerReadableInstrPointer(entryPoint);
+            if (!IsAlignedInstrPointer(instrPointer))
+                return entryPoint;
+
+            if (TryGetKnownPrecodeType(instrPointer) is not KnownPrecodeType.Interpreter)
+                return entryPoint;
+
+            TargetPointer dataAddr = instrPointer + MachineDescriptor.StubCodePageSize;
+            Data.InterpreterPrecodeData precodeData = // read InterpreterPrecodeData at dataAddr
+            if (precodeData.ByteCodeAddr == TargetPointer.Null)
+                return entryPoint;
+
+            return new TargetCodePointer(precodeData.ByteCodeAddr);
+        }
+        catch
+        {
+            return entryPoint;
+        }
+    }
+```
+
+### `GetPrecodeEntryPointFromInteriorAddress`
+
+Given an interior address within a precode stub and the kind of stub (StubPrecode or FixupPrecode),
+computes the entry point of the precode.
+
+```csharp
+    TargetPointer IPrecodeStubs.GetPrecodeEntryPointFromInteriorAddress(TargetCodePointer interiorAddress, bool isFixupPrecode)
+    {
+        TargetPointer instrPointer = CodePointerReadableInstrPointer(interiorAddress);
+
+        uint stubSize;
+        if (isFixupPrecode)
+        {
+            stubSize = MachineDescriptor.FixupStubPrecodeSize;
+        }
+        else
+        {
+            stubSize = MachineDescriptor.StubPrecodeSize;
+        }
+
+        ulong pageMask = MachineDescriptor.StubCodePageSize - 1;
+        ulong pageBase = instrPointer.Value & ~pageMask;
+        ulong offset = instrPointer.Value - pageBase;
+        ulong entryPointAddress = pageBase + (offset / stubSize) * stubSize;
+
+        return new TargetPointer(entryPointAddress);
     }
 ```
