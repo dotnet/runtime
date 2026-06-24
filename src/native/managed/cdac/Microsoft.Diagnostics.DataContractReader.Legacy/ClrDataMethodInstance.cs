@@ -63,7 +63,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 }
 
                 TargetPointer mtAddr = rts.GetMethodTable(_methodDesc);
-                TypeHandle mainMT = rts.GetTypeHandle(mtAddr);
+                ITypeHandle mainMT = rts.GetTypeHandle(mtAddr);
                 TargetPointer module = rts.GetModule(mainMT);
                 mod.Interface = new ClrDataModule(module, _target, legacyMod);
             }

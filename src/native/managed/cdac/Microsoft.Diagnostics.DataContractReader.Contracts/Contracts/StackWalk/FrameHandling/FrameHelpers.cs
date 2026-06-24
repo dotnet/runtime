@@ -116,7 +116,7 @@ internal sealed class FrameHelpers
                 else if (stubDispatchFrame.RepresentativeMTPtr != TargetPointer.Null)
                 {
                     IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
-                    TypeHandle mtHandle = rtsContract.GetTypeHandle(stubDispatchFrame.RepresentativeMTPtr);
+                    ITypeHandle mtHandle = rtsContract.GetTypeHandle(stubDispatchFrame.RepresentativeMTPtr);
                     return rtsContract.GetMethodDescForSlot(mtHandle, (ushort)stubDispatchFrame.RepresentativeSlot);
                 }
                 else

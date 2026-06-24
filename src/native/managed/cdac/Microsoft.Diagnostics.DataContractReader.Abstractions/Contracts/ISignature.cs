@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 public interface ISignature : IContract
 {
     static string IContract.Name { get; } = nameof(Signature);
-    TypeHandle DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, TypeHandle ctx) => throw new NotImplementedException();
+    ITypeHandle DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, ITypeHandle ctx) => throw new NotImplementedException();
     TargetPointer GetVarArgArgsBase(TargetPointer vaSigCookieAddr) => throw new NotImplementedException();
     void GetVarArgSignature(TargetPointer vaSigCookieAddr, out TargetPointer signatureAddress, out uint signatureLength) => throw new NotImplementedException();
 }

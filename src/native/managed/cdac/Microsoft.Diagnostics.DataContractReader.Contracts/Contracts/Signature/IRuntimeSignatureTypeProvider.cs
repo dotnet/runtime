@@ -21,13 +21,13 @@ public interface IRuntimeSignatureTypeProvider<TType, TGenericContext>
 {
     /// <summary>
     /// Classify an <c>ELEMENT_TYPE_INTERNAL</c> (0x21) type by resolving the
-    /// embedded TypeHandle pointer via the target's runtime type system.
+    /// embedded ITypeHandle pointer via the target's runtime type system.
     /// </summary>
     TType GetInternalType(TargetPointer typeHandlePointer);
 
     /// <summary>
     /// Classify an <c>ELEMENT_TYPE_CMOD_INTERNAL</c> (0x22) custom modifier by
-    /// resolving the embedded TypeHandle pointer via the target's runtime type system.
+    /// resolving the embedded ITypeHandle pointer via the target's runtime type system.
     /// </summary>
     TType GetInternalModifiedType(TargetPointer typeHandlePointer, TType unmodifiedType, bool isRequired);
 }

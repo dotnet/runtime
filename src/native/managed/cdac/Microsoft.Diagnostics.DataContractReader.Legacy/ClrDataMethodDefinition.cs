@@ -45,7 +45,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     {
         IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
         TargetPointer mtAddr = rts.GetMethodTable(md);
-        TypeHandle mt = rts.GetTypeHandle(mtAddr);
+        ITypeHandle mt = rts.GetTypeHandle(mtAddr);
 
         return !rts.GetInstantiation(mt).IsEmpty;
     }

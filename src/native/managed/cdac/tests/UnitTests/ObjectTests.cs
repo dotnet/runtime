@@ -295,7 +295,7 @@ public unsafe class ObjectTests
             },
             builder => {
                 var mockRts = new Mock<IRuntimeTypeSystem>();
-                TypeHandle handle = new TypeHandle(TestMethodTableAddress);
+                ITypeHandle handle = new ITypeHandle(TestMethodTableAddress);
                 mockRts.Setup(r => r.GetTypeHandle(TestMethodTableAddress)).Returns(handle);
                 mockRts.Setup(r => r.GetModule(handle)).Returns(TargetPointer.Null);
 
@@ -343,7 +343,7 @@ public unsafe class ObjectTests
             },
             builder => {
                 var mockRts = new Mock<IRuntimeTypeSystem>();
-                TypeHandle handle = new TypeHandle(TestMethodTableAddress);
+                ITypeHandle handle = new ITypeHandle(TestMethodTableAddress);
                 mockRts.Setup(r => r.GetTypeHandle(TestMethodTableAddress)).Returns(handle);
                 mockRts.Setup(r => r.GetModule(handle)).Returns(TargetPointer.Null);
 

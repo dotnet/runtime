@@ -298,7 +298,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             }
         }
 
-        private IEnumerable<Contracts.TypeHandle> IterateTypeParams(Contracts.ModuleHandle moduleHandle)
+        private IEnumerable<Contracts.ITypeHandle> IterateTypeParams(Contracts.ModuleHandle moduleHandle)
         {
             IEnumerable<TargetPointer> typeParams = _loader.GetAvailableTypeParams(moduleHandle);
 
@@ -345,7 +345,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             }
 
             TargetPointer mtAddr = _rts.GetMethodTable(mainMD);
-            TypeHandle mainMT = _rts.GetTypeHandle(mtAddr);
+            ITypeHandle mainMT = _rts.GetTypeHandle(mtAddr);
             TargetPointer mainModule = _rts.GetModule(mainMT);
             uint mainMTToken = _rts.GetTypeDefToken(mainMT);
             uint mainMDToken = _rts.GetMethodToken(mainMD);
@@ -359,7 +359,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 {
                     foreach (MethodDescHandle methodDesc in IterateMethodInstantiations(moduleHandle))
                     {
-                        TypeHandle methodTypeHandle = _rts.GetTypeHandle(_rts.GetMethodTable(methodDesc));
+                        ITypeHandle methodTypeHandle = _rts.GetTypeHandle(_rts.GetMethodTable(methodDesc));
 
                         if (mainModule != _rts.GetModule(methodTypeHandle)) continue;
                         if (mainMDToken != _rts.GetMethodToken(methodDesc)) continue;
@@ -382,7 +382,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 {
                     if (HasClassInstantiation(mainMD))
                     {
-                        foreach (Contracts.TypeHandle typeParam in IterateTypeParams(moduleHandle))
+                        foreach (Contracts.ITypeHandle typeParam in IterateTypeParams(moduleHandle))
                         {
                             uint typeParamToken = _rts.GetTypeDefToken(typeParam);
 
@@ -396,7 +396,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                             if (mainModule != _rts.GetModule(typeParam)) continue;
 
                             TargetPointer cmt = _rts.GetCanonicalMethodTable(typeParam);
-                            TypeHandle cmtHandle = _rts.GetTypeHandle(cmt);
+                            ITypeHandle cmtHandle = _rts.GetTypeHandle(cmt);
 
                             TargetPointer methodDescAddr = _rts.GetMethodDescForSlot(cmtHandle, slotNum);
                             if (methodDescAddr == TargetPointer.Null) continue;
@@ -425,7 +425,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
             TargetPointer mtAddr = rts.GetMethodTable(md);
-            TypeHandle mt = rts.GetTypeHandle(mtAddr);
+            ITypeHandle mt = rts.GetTypeHandle(mtAddr);
             return !rts.GetInstantiation(mt).IsEmpty;
         }
 

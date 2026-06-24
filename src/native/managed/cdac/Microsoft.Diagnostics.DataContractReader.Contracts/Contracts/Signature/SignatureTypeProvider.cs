@@ -10,7 +10,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
-public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<TypeHandle, T>
+public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<ITypeHandle, T>
 {
     private readonly Target _target;
     private readonly Contracts.ModuleHandle _moduleHandle;
@@ -25,19 +25,19 @@ public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<TypeHandle
         _runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
     }
 
-    public TypeHandle GetArrayType(TypeHandle elementType, ArrayShape shape)
+    public ITypeHandle GetArrayType(ITypeHandle elementType, ArrayShape shape)
         => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Array, shape.Rank, []);
 
-    public TypeHandle GetByReferenceType(TypeHandle elementType)
+    public ITypeHandle GetByReferenceType(ITypeHandle elementType)
         => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Byref, 0, []);
 
-    public TypeHandle GetFunctionPointerType(MethodSignature<TypeHandle> signature)
+    public ITypeHandle GetFunctionPointerType(MethodSignature<ITypeHandle> signature)
         => GetPrimitiveType(PrimitiveTypeCode.IntPtr);
 
-    public TypeHandle GetGenericInstantiation(TypeHandle genericType, ImmutableArray<TypeHandle> typeArguments)
+    public ITypeHandle GetGenericInstantiation(ITypeHandle genericType, ImmutableArray<ITypeHandle> typeArguments)
         => _runtimeTypeSystem.GetConstructedType(genericType, CorElementType.GenericInst, 0, typeArguments);
 
-    public TypeHandle GetGenericMethodParameter(T context, int index)
+    public ITypeHandle GetGenericMethodParameter(T context, int index)
     {
         if (typeof(T) == typeof(MethodDescHandle))
         {
@@ -46,55 +46,55 @@ public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<TypeHandle
         }
         throw new NotSupportedException();
     }
-    public TypeHandle GetGenericTypeParameter(T context, int index)
+    public ITypeHandle GetGenericTypeParameter(T context, int index)
     {
-        TypeHandle typeContext;
-        if (typeof(T) == typeof(TypeHandle))
+        ITypeHandle typeContext;
+        if (typeof(T) == typeof(ITypeHandle))
         {
-            typeContext = (TypeHandle)(object)context!;
+            typeContext = (ITypeHandle)(object)context!;
             return _runtimeTypeSystem.GetInstantiation(typeContext)[index];
         }
         throw new NotImplementedException();
     }
-    public TypeHandle GetModifiedType(TypeHandle modifier, TypeHandle unmodifiedType, bool isRequired)
+    public ITypeHandle GetModifiedType(ITypeHandle modifier, ITypeHandle unmodifiedType, bool isRequired)
         => unmodifiedType;
 
-    public TypeHandle GetPinnedType(TypeHandle elementType)
+    public ITypeHandle GetPinnedType(ITypeHandle elementType)
         => elementType;
 
-    public TypeHandle GetPointerType(TypeHandle elementType)
+    public ITypeHandle GetPointerType(ITypeHandle elementType)
         => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.Ptr, 0, []);
 
-    public TypeHandle GetPrimitiveType(PrimitiveTypeCode typeCode)
+    public ITypeHandle GetPrimitiveType(PrimitiveTypeCode typeCode)
         => _runtimeTypeSystem.GetPrimitiveType((CorElementType)typeCode);
 
-    public TypeHandle GetSZArrayType(TypeHandle elementType)
+    public ITypeHandle GetSZArrayType(ITypeHandle elementType)
         => _runtimeTypeSystem.GetConstructedType(elementType, CorElementType.SzArray, 1, []);
 
-    public TypeHandle GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
+    public ITypeHandle GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
     {
         int token = MetadataTokens.GetToken((EntityHandle)handle);
         TargetPointer typeDefToMethodTable = _loader.GetLookupTables(_moduleHandle).TypeDefToMethodTable;
         TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(typeDefToMethodTable, (uint)token, out _);
-        return typeHandlePtr == TargetPointer.Null ? new TypeHandle(TargetPointer.Null) : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
+        return typeHandlePtr == TargetPointer.Null ? new ITypeHandle(TargetPointer.Null) : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
     }
 
-    public TypeHandle GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
+    public ITypeHandle GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
     {
         int token = MetadataTokens.GetToken((EntityHandle)handle);
         TargetPointer typeRefToMethodTable = _loader.GetLookupTables(_moduleHandle).TypeRefToMethodTable;
         TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(typeRefToMethodTable, (uint)token, out _);
-        return typeHandlePtr == TargetPointer.Null ? new TypeHandle(TargetPointer.Null) : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
+        return typeHandlePtr == TargetPointer.Null ? new ITypeHandle(TargetPointer.Null) : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
     }
 
-    public TypeHandle GetTypeFromSpecification(MetadataReader reader, T context, TypeSpecificationHandle handle, byte rawTypeKind)
+    public ITypeHandle GetTypeFromSpecification(MetadataReader reader, T context, TypeSpecificationHandle handle, byte rawTypeKind)
         => throw new NotImplementedException();
 
-    public TypeHandle GetInternalType(TargetPointer typeHandlePointer)
+    public ITypeHandle GetInternalType(TargetPointer typeHandlePointer)
         => typeHandlePointer == TargetPointer.Null
-            ? new TypeHandle(TargetPointer.Null)
+            ? new ITypeHandle(TargetPointer.Null)
             : _runtimeTypeSystem.GetTypeHandle(typeHandlePointer);
 
-    public TypeHandle GetInternalModifiedType(TargetPointer typeHandlePointer, TypeHandle unmodifiedType, bool isRequired)
+    public ITypeHandle GetInternalModifiedType(TargetPointer typeHandlePointer, ITypeHandle unmodifiedType, bool isRequired)
         => unmodifiedType;
 }

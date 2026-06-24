@@ -26,7 +26,7 @@ internal readonly struct RuntimeMutableTypeSystem_1 : IRuntimeMutableTypeSystem
         return offset == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetNewEnc);
     }
 
-    IEnumerable<TargetPointer> IRuntimeMutableTypeSystem.EnumerateAddedFieldDescs(TypeHandle typeHandle, bool staticFields)
+    IEnumerable<TargetPointer> IRuntimeMutableTypeSystem.EnumerateAddedFieldDescs(ITypeHandle typeHandle, bool staticFields)
     {
         // Only MethodTable type handles can have EnC-added fields. TypeDescs (TypeVar, FnPtr, etc.) cannot.
         if (!typeHandle.IsMethodTable())

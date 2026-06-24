@@ -45,8 +45,8 @@ public class RuntimeMutableTypeSystemTests
         ModuleFlags flags)
     {
         var rts = new Mock<IRuntimeTypeSystem>();
-        rts.Setup(r => r.GetTypeHandle(mtPtr)).Returns(new TypeHandle(mtPtr));
-        rts.Setup(r => r.GetModule(It.Is<TypeHandle>(th => th.Address == mtPtr))).Returns(modulePtr);
+        rts.Setup(r => r.GetTypeHandle(mtPtr)).Returns(new ITypeHandle(mtPtr));
+        rts.Setup(r => r.GetModule(It.Is<ITypeHandle>(th => th.Address == mtPtr))).Returns(modulePtr);
 
         var loader = new Mock<ILoader>();
         Contracts.ModuleHandle moduleHandle = new Contracts.ModuleHandle(modulePtr);
@@ -72,7 +72,7 @@ public class RuntimeMutableTypeSystemTests
         IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
         Assert.NotNull(contract);
 
-        TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(tdPtr);
+        ITypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(tdPtr);
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: false));
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: true));
     }
@@ -92,7 +92,7 @@ public class RuntimeMutableTypeSystemTests
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
         IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
-        TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
+        ITypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: false));
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: true));
     }
@@ -112,7 +112,7 @@ public class RuntimeMutableTypeSystemTests
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
         IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
-        TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(otherMt);
+        ITypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(otherMt);
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: false));
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: true));
     }
@@ -129,7 +129,7 @@ public class RuntimeMutableTypeSystemTests
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
         IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
-        TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
+        ITypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: false));
         Assert.Empty(contract.EnumerateAddedFieldDescs(th, staticFields: true));
     }
@@ -149,7 +149,7 @@ public class RuntimeMutableTypeSystemTests
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
         IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
-        TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
+        ITypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
 
         // FieldDesc is the address of the FieldDesc subfield within each element.
         ulong fieldDescOffset = (ulong)builder.AddedFieldElementLayout.GetField("FieldDesc").Offset;
@@ -174,7 +174,7 @@ public class RuntimeMutableTypeSystemTests
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
         IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
-        TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
+        ITypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
 
         ulong fieldDescOffset = (ulong)builder.AddedFieldElementLayout.GetField("FieldDesc").Offset;
         ulong[] expected = staticElems.Select(e => e.Address + fieldDescOffset).ToArray();
@@ -199,7 +199,7 @@ public class RuntimeMutableTypeSystemTests
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
         IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
-        TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
+        ITypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
 
         ulong fieldDescOffset = (ulong)builder.AddedFieldElementLayout.GetField("FieldDesc").Offset;
         Assert.Equal(
@@ -227,7 +227,7 @@ public class RuntimeMutableTypeSystemTests
         TestPlaceholderTarget target = CreateTarget(arch, builder, rts, loader);
 
         IRuntimeMutableTypeSystem contract = target.Contracts.RuntimeMutableTypeSystem;
-        TypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
+        ITypeHandle th = target.Contracts.RuntimeTypeSystem.GetTypeHandle(mtPtr);
 
         ulong fieldDescOffset = (ulong)builder.AddedFieldElementLayout.GetField("FieldDesc").Offset;
         ulong[] expected = instanceElems.Select(e => e.Address + fieldDescOffset).ToArray();

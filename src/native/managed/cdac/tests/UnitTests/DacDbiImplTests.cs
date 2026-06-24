@@ -321,8 +321,8 @@ public unsafe class DacDbiImplTests
         mockRts.Setup(r => r.GetWellKnownMethodTable(WellKnownMethodTable.Exception)).Returns(exceptionMT);
         if (intermediateMTs.Length == 0 && !isException)
         {
-            mockRts.Setup(r => r.GetTypeHandle(objectMT)).Returns(new TypeHandle(objectMT));
-            mockRts.Setup(r => r.GetParentMethodTable(new TypeHandle(objectMT))).Returns(TargetPointer.Null);
+            mockRts.Setup(r => r.GetTypeHandle(objectMT)).Returns(new ITypeHandle(objectMT));
+            mockRts.Setup(r => r.GetParentMethodTable(new ITypeHandle(objectMT))).Returns(TargetPointer.Null);
         }
         for (int i = 0; i < intermediateMTs.Length; i++)
         {
@@ -331,8 +331,8 @@ public unsafe class DacDbiImplTests
                 ? intermediateMTs[i + 1]
                 : isException ? exceptionMT : TargetPointer.Null;
 
-            mockRts.Setup(r => r.GetTypeHandle(current)).Returns(new TypeHandle(current));
-            mockRts.Setup(r => r.GetParentMethodTable(new TypeHandle(current))).Returns(parent);
+            mockRts.Setup(r => r.GetTypeHandle(current)).Returns(new ITypeHandle(current));
+            mockRts.Setup(r => r.GetParentMethodTable(new ITypeHandle(current))).Returns(parent);
         }
 
         var (dacDbi, _) = CreateDacDbiWithExceptionMT(arch, mockObject, mockRts);

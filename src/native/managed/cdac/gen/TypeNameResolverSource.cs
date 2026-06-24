@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DataGenerator;
 /// <summary>
 /// Source for the <c>TypeNameResolver</c> helper emitted into each consuming
 /// assembly via <c>RegisterSourceOutput</c> (gated by CompilationProvider to
-/// avoid duplicate symbols). Resolves TypeHandle, static field addresses, and
+/// avoid duplicate symbols). Resolves ITypeHandle, static field addresses, and
 /// thread-static field addresses across a cascade of candidate type names.
 /// </summary>
 internal static class TypeNameResolverSource
@@ -26,15 +26,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Generated;
 
 internal static class TypeNameResolver
 {
-    public static TypeHandle GetTypeHandle(Target target, string[] names)
+    public static ITypeHandle GetTypeHandle(Target target, string[] names)
     {
         foreach (string name in names)
         {
-            if (target.Contracts.ManagedTypeSource.TryGetTypeHandle(name, out TypeHandle th))
+            if (target.Contracts.ManagedTypeSource.TryGetTypeHandle(name, out ITypeHandle th))
                 return th;
         }
         throw new InvalidOperationException(
-            $"No managed type resolved for TypeHandle (names=[{string.Join(",", names)}]).");
+            $"No managed type resolved for ITypeHandle (names=[{string.Join(",", names)}]).");
     }
 
     public static TargetPointer GetStaticFieldAddress(Target target, string[] names, string fieldName)
