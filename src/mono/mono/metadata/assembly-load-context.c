@@ -12,7 +12,6 @@
 #include "mono/metadata/mono-debug.h"
 #include "mono/utils/mono-error-internals.h"
 #include "mono/utils/mono-logger-internals.h"
-#include "mono/utils/mono-tls.h"
 
 GENERATE_GET_CLASS_WITH_CACHE (assembly_load_context, "System.Runtime.Loader", "AssemblyLoadContext");
 static GENERATE_GET_CLASS_WITH_CACHE (assembly, "System.Reflection", "Assembly");
@@ -22,14 +21,6 @@ static MonoAssemblyLoadContext *default_alc;
 static MonoCoopMutex alc_list_lock; /* Used when accessing 'alcs' */
 /* Protected by alc_list_lock */
 static GSList *loaded_assemblies;
-
-/*
- * Per-thread list of "alc:resolve_method:assembly_name" keys currently being resolved via a
- * managed ALC resolve hook. Used to break re-entrant resolution: invoking a managed hook
- * (e.g. MonoResolveUsingLoad) may need to JIT-compile methods, and under full-AOT that
- * compilation may re-trigger resolution of the same assembly, causing unbounded recursion.
- */
-static MonoNativeTlsKey alc_resolve_in_progress_tls_id;
 
 static inline void
 alcs_lock (void)
@@ -88,7 +79,6 @@ void
 mono_alcs_init (void)
 {
 	mono_coop_mutex_init (&alc_list_lock);
-	mono_native_tls_alloc (&alc_resolve_in_progress_tls_id, NULL);
 
 	default_alc = mono_alc_create (FALSE);
 	default_alc->gchandle = mono_gchandle_new_internal (NULL, FALSE);
@@ -487,37 +477,13 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 {
 	MonoAssembly *result = NULL;
 	char* aname_str = NULL;
-	char *resolve_key = NULL;
-	GSList *in_progress;
 
 	if (mono_runtime_get_no_exec ())
 		return NULL;
 
-	aname_str = mono_stringify_assembly_name (aname);
-
-	/*
-	 * Invoking a managed resolve hook can re-enter assembly resolution for the same
-	 * assembly: constructing the AssemblyName inside the hook parses the name using a
-	 * generic method, and under full-AOT JIT-compiling that method can itself trigger
-	 * resolution of the same assembly -> unbounded recursion -> stack overflow.
-	 * Guard against re-entering the same hook for the same name on the same ALC on the
-	 * current thread (mirrors the TLS recursion guard in mono_class_setup_fields). The key
-	 * includes the ALC instance because resolve_method is a single cached MonoMethod shared
-	 * by all ALCs, so keying on it alone would wrongly suppress a legitimate nested resolve
-	 * of the same name on a different ALC.
-	 */
-	resolve_key = g_strdup_printf ("%p:%p:%s", (gpointer)alc, (gpointer)resolve_method, aname_str);
-	in_progress = (GSList *)mono_native_tls_get_value (alc_resolve_in_progress_tls_id);
-	if (g_slist_find_custom (in_progress, resolve_key, (GCompareFunc)strcmp)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Skipping re-entrant ALC resolve for '%s'.", aname_str);
-		g_free (resolve_key);
-		g_free (aname_str);
-		return NULL;
-	}
-	in_progress = g_slist_prepend (in_progress, resolve_key);
-	mono_native_tls_set_value (alc_resolve_in_progress_tls_id, in_progress);
-
 	HANDLE_FUNCTION_ENTER ();
+
+	aname_str = mono_stringify_assembly_name (aname);
 
 	MonoStringHandle aname_obj = mono_string_new_handle (aname_str, error);
 	goto_if_nok (error, leave);
@@ -534,10 +500,6 @@ invoke_resolve_method (MonoMethod *resolve_method, MonoAssemblyLoadContext *alc,
 		result = MONO_HANDLE_GETVAL (assm, assembly);
 
 leave:
-	in_progress = (GSList *)mono_native_tls_get_value (alc_resolve_in_progress_tls_id);
-	in_progress = g_slist_remove (in_progress, resolve_key);
-	mono_native_tls_set_value (alc_resolve_in_progress_tls_id, in_progress);
-	g_free (resolve_key);
 	g_free (aname_str);
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
