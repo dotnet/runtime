@@ -8,18 +8,32 @@ using System.Collections.Immutable;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-// an opaque handle to a type handle.  See IMetadata.GetMethodTableData
-public readonly struct ITypeHandle
+/// <summary>
+/// An opaque handle to a runtime type. May represent a loaded type (backed by a
+/// target-process MethodTable or TypeDesc address) or a synthetic type fabricated
+/// by the reader for unloaded constructed types.
+/// </summary>
+public interface ITypeHandle : IEquatable<ITypeHandle>
 {
-    // TODO-Layering: These members should be accessible only to contract implementations.
-    public ITypeHandle(TargetPointer address)
-    {
-        Address = address;
-    }
+    TargetPointer Address { get; }
+    bool IsNull { get; }
+    bool IsSynthetic { get; }
+    static ITypeHandle Null { get; } = NullTypeHandle.Instance;
+}
 
-    public TargetPointer Address { get; }
-
-    public bool IsNull => Address == 0;
+/// <summary>
+/// Singleton ITypeHandle representing the absence of a type.
+/// </summary>
+public sealed class NullTypeHandle : ITypeHandle
+{
+    public static readonly NullTypeHandle Instance = new();
+    private NullTypeHandle() { }
+    public TargetPointer Address => TargetPointer.Null;
+    public bool IsNull => true;
+    public bool IsSynthetic => false;
+    public bool Equals(ITypeHandle? other) => other is not null && other.IsNull && !other.IsSynthetic;
+    public override bool Equals(object? obj) => obj is ITypeHandle th && Equals(th);
+    public override int GetHashCode() => 0;
 }
 
 public enum CorElementType
@@ -184,7 +198,7 @@ public interface IRuntimeTypeSystem : IContract
     TargetPointer GetNonGCThreadStaticsBasePointer(ITypeHandle typeHandle, TargetPointer threadPtr) => throw new NotImplementedException();
 
 
-    ReadOnlySpan<ITypeHandle> GetInstantiation(ITypeHandle typeHandle) => throw new NotImplementedException();
+    ITypeHandle[] GetInstantiation(ITypeHandle typeHandle) => throw new NotImplementedException();
     public bool IsClassInited(ITypeHandle typeHandle) => throw new NotImplementedException();
     public bool IsInitError(ITypeHandle typeHandle) => throw new NotImplementedException();
     bool IsGenericTypeDefinition(ITypeHandle typeHandle) => throw new NotImplementedException();
@@ -216,9 +230,10 @@ public interface IRuntimeTypeSystem : IContract
     ITypeHandle GetConstructedType(ITypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default) => throw new NotImplementedException();
     ITypeHandle GetPrimitiveType(CorElementType typeCode) => throw new NotImplementedException();
     bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
-    bool IsFunctionPointer(ITypeHandle typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv) => throw new NotImplementedException();
+    bool IsFunctionPointer(ITypeHandle typeHandle, out ITypeHandle[] retAndArgTypes, out SignatureCallingConvention callConv) => throw new NotImplementedException();
     bool IsPointer(ITypeHandle typeHandle) => throw new NotImplementedException();
     bool IsTypeDesc(ITypeHandle typeHandle) => throw new NotImplementedException();
+    bool IsSynthetic(ITypeHandle typeHandle) => typeHandle.IsSynthetic;
     TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef) => throw new NotImplementedException();
     // Returns null if the ITypeHandle is not a class/struct/generic variable
     #endregion ITypeHandle inspection APIs
@@ -229,7 +244,7 @@ public interface IRuntimeTypeSystem : IContract
 
     // Return true for an uninstantiated generic method
     bool IsGenericMethodDefinition(MethodDescHandle methodDesc) => throw new NotImplementedException();
-    ReadOnlySpan<ITypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDesc) => throw new NotImplementedException();
+    ITypeHandle[] GetGenericMethodInstantiation(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDescHandle) => throw new NotImplementedException();
 

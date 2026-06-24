@@ -59,15 +59,15 @@ public struct TypeNameBuilder
 
     public static void AppendMethodInternal(Target target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, TypeNameFormat format)
     {
-        AppendMethodImpl(target, stringBuilder, method, default, format);
+        AppendMethodImpl(target, stringBuilder, method, Array.Empty<ITypeHandle>(), format);
     }
 
-    public static void AppendMethodImpl(Target target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, ReadOnlySpan<ITypeHandle> typeInstantiation, TypeNameFormat format)
+    public static void AppendMethodImpl(Target target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, ITypeHandle[] typeInstantiation, TypeNameFormat format)
     {
         IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
         ILoader loader = target.Contracts.Loader;
         string methodName;
-        ITypeHandle th = default;
+        ITypeHandle th = ITypeHandle.Null;
         Contracts.ModuleHandle module = default;
 
         bool isNoMetadataMethod = runtimeTypeSystem.IsNoMetadataMethod(method, out methodName);
@@ -126,7 +126,7 @@ public struct TypeNameBuilder
             stringBuilder.Append(reader.GetString(methodDef.Name));
         }
 
-        ReadOnlySpan<ITypeHandle> genericMethodInstantiation = runtimeTypeSystem.GetGenericMethodInstantiation(method);
+        ITypeHandle[] genericMethodInstantiation = runtimeTypeSystem.GetGenericMethodInstantiation(method);
         if (genericMethodInstantiation.Length > 0 && !runtimeTypeSystem.IsGenericMethodDefinition(method))
         {
             AppendInst(target, stringBuilder, genericMethodInstantiation, format);
@@ -146,11 +146,11 @@ public struct TypeNameBuilder
                 }
             }
 
-            ReadOnlySpan<ITypeHandle> typeInstantiationSigFormat = default;
+            ITypeHandle[] typeInstantiationSigFormat = Array.Empty<ITypeHandle>();
             if (!th.IsNull)
             {
                 typeInstantiationSigFormat = runtimeTypeSystem.GetInstantiation(th);
-                if (typeInstantiationSigFormat.IsEmpty && runtimeTypeSystem.IsArray(th, out _))
+                if (typeInstantiationSigFormat.Length == 0 && runtimeTypeSystem.IsArray(th, out _))
                 {
                     // For arrays, fill in the instantiation with the element type handle
                     // See MethodTable::GetArrayInstantiation for coreclr equivalent
@@ -190,16 +190,16 @@ public struct TypeNameBuilder
 
     public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.ITypeHandle typeHandle, TypeNameFormat format)
     {
-        AppendType(target, stringBuilder, typeHandle, default, format);
+        AppendType(target, stringBuilder, typeHandle, Array.Empty<ITypeHandle>(), format);
     }
 
-    public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.ITypeHandle typeHandle, ReadOnlySpan<ITypeHandle> typeInstantiation, TypeNameFormat format)
+    public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.ITypeHandle typeHandle, ITypeHandle[] typeInstantiation, TypeNameFormat format)
     {
         TypeNameBuilder builder = new(stringBuilder, target, format);
         AppendTypeCore(ref builder, typeHandle, typeInstantiation, format);
     }
 
-    private static void AppendTypeCore(ref TypeNameBuilder tnb, Contracts.ITypeHandle typeHandle, ReadOnlySpan<Contracts.ITypeHandle> instantiation, TypeNameFormat format)
+    private static void AppendTypeCore(ref TypeNameBuilder tnb, Contracts.ITypeHandle typeHandle, Contracts.ITypeHandle[] instantiation, TypeNameFormat format)
     {
         bool toString = format.HasFlag(TypeNameFormat.FormatNamespace) && !format.HasFlag(TypeNameFormat.FormatFullInst) && !format.HasFlag(TypeNameFormat.FormatAssembly);
 
@@ -216,7 +216,7 @@ public struct TypeNameBuilder
                 if (elemType != Contracts.CorElementType.ValueType)
                 {
                     typeSystemContract.IsArray(typeHandle, out uint rank);
-                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), default(ReadOnlySpan<Contracts.ITypeHandle>), (TypeNameFormat)(format & ~TypeNameFormat.FormatAssembly));
+                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), Array.Empty<Contracts.ITypeHandle>(), (TypeNameFormat)(format & ~TypeNameFormat.FormatAssembly));
                     AppendParamTypeQualifier(ref tnb, elemType, rank);
                 }
                 else
@@ -245,7 +245,7 @@ public struct TypeNameBuilder
                 tnb.AddName(reader.GetString(genericParam.Name));
                 format &= ~TypeNameFormat.FormatAssembly;
             }
-            else if (typeSystemContract.IsFunctionPointer(typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv))
+            else if (typeSystemContract.IsFunctionPointer(typeHandle, out ITypeHandle[] retAndArgTypes, out SignatureCallingConvention callConv))
             {
                 if (format.HasFlag(TypeNameFormat.FormatNamespace))
                 {
@@ -303,7 +303,7 @@ public struct TypeNameBuilder
 
                 if (format.HasFlag(TypeNameFormat.FormatNamespace) || format.HasFlag(TypeNameFormat.FormatAssembly))
                 {
-                    ReadOnlySpan<ITypeHandle> instantiationSpan = typeSystemContract.GetInstantiation(typeHandle);
+                    ITypeHandle[] instantiationSpan = typeSystemContract.GetInstantiation(typeHandle);
 
                     if ((instantiationSpan.Length > 0) && (!typeSystemContract.IsGenericTypeDefinition(typeHandle) || toString))
                     {
@@ -333,13 +333,13 @@ public struct TypeNameBuilder
     // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
     // and enclose each parameter in square brackets to disambiguate the commas
     // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
-    private static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<ITypeHandle> inst, TypeNameFormat format)
+    private static void AppendInst(Target target, StringBuilder stringBuilder, ITypeHandle[] inst, TypeNameFormat format)
     {
         TypeNameBuilder tnb = new(stringBuilder, target, format, initialStateIsName: true);
         AppendInst(ref tnb, inst, format);
     }
 
-    private static void AppendInst(ref TypeNameBuilder tnb, ReadOnlySpan<ITypeHandle> inst, TypeNameFormat format)
+    private static void AppendInst(ref TypeNameBuilder tnb, ITypeHandle[] inst, TypeNameFormat format)
     {
         tnb.OpenGenericArguments();
         foreach (ITypeHandle arg in inst)
@@ -347,11 +347,11 @@ public struct TypeNameBuilder
             tnb.OpenGenericArgument();
             if (format.HasFlag(TypeNameFormat.FormatFullInst) && !tnb.Target.Contracts.RuntimeTypeSystem.IsGenericVariable(arg, out _, out _))
             {
-                AppendTypeCore(ref tnb, arg, default, format | TypeNameFormat.FormatNamespace | TypeNameFormat.FormatAssembly);
+                AppendTypeCore(ref tnb, arg, Array.Empty<Contracts.ITypeHandle>(), format | TypeNameFormat.FormatNamespace | TypeNameFormat.FormatAssembly);
             }
             else
             {
-                AppendTypeCore(ref tnb, arg, default, format & (TypeNameFormat.FormatNamespace | TypeNameFormat.FormatAngleBrackets));
+                AppendTypeCore(ref tnb, arg, Array.Empty<Contracts.ITypeHandle>(), format & (TypeNameFormat.FormatNamespace | TypeNameFormat.FormatAngleBrackets));
             }
             tnb.CloseGenericArgument();
         }

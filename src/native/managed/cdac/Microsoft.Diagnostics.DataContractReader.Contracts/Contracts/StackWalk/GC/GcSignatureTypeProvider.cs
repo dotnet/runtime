@@ -87,7 +87,7 @@ internal sealed class GcSignatureTypeProvider
     {
         try
         {
-            ReadOnlySpan<ITypeHandle> instantiation = _target.Contracts.RuntimeTypeSystem.GetGenericMethodInstantiation(genericContext.MethodContext);
+            ITypeHandle[] instantiation = _target.Contracts.RuntimeTypeSystem.GetGenericMethodInstantiation(genericContext.MethodContext);
             if ((uint)index >= (uint)instantiation.Length)
                 return GcTypeKind.Ref;
             return ClassifyTypeHandle(instantiation[index]);
@@ -117,7 +117,7 @@ internal sealed class GcSignatureTypeProvider
                 return ClassifyTypeHandle(rts.GetTypeParam(classCtx));
             }
 
-            ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(classCtx);
+            ITypeHandle[] instantiation = rts.GetInstantiation(classCtx);
             if ((uint)index >= (uint)instantiation.Length)
                 return GcTypeKind.Ref;
             return ClassifyTypeHandle(instantiation[index]);

@@ -115,7 +115,7 @@ internal static class MockExtensions
 
     public static void AddMethodTable(this Mock<IRuntimeTypeSystem> mock, MockCodeVersions builder, CodeVersionsMockMethodTable methodTable)
     {
-        ITypeHandle handle = new ITypeHandle(methodTable.Address);
+        ITypeHandle handle = new TargetTypeHandle(methodTable.Address);
         mock.Setup(r => r.GetTypeHandle(methodTable.Address)).Returns<TargetPointer>(address =>
         {
             // this is not quite accurate on 32 bit architectures, but it's good enough for testing

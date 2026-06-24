@@ -108,7 +108,7 @@ public class DacDbiExactTypeHandleDumpTests : DumpTestBase
             return one;
         }
 
-        ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+        ITypeHandle[] instantiation = rts.GetInstantiation(typeHandle);
         if (instantiation.Length == 0)
             return Array.Empty<DebuggerIPCE_BasicTypeData>();
 

@@ -18,8 +18,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
             string? memberName,
             string? className,
             string? namespaceName,
-            ReadOnlySpan<ITypeHandle> typeInstantiation,
-            ReadOnlySpan<ITypeHandle> methodInstantiation,
+            ITypeHandle[] typeInstantiation,
+            ITypeHandle[] methodInstantiation,
             bool CStringParmsOnly)
         {
             fixed (byte* pSignature = signature)
@@ -36,8 +36,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
             string? memberName,
             string? className,
             string? namespaceName,
-            ReadOnlySpan<ITypeHandle> typeInstantiation,
-            ReadOnlySpan<ITypeHandle> methodInstantiation,
+            ITypeHandle[] typeInstantiation,
+            ITypeHandle[] methodInstantiation,
             bool CStringParmsOnly)
         {
             SignatureHeader header = signature.ReadSignatureHeader();
@@ -95,8 +95,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
         private static unsafe void AddTypeString(Target target,
             StringBuilder stringBuilder,
             ref BlobReader signature,
-            ReadOnlySpan<ITypeHandle> typeInstantiation,
-            ReadOnlySpan<ITypeHandle> methodInstantiation,
+            ITypeHandle[] typeInstantiation,
+            ITypeHandle[] methodInstantiation,
             MetadataReader? metadata)
         {
             string _namespace;
@@ -358,7 +358,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     }
                     stringBuilder.Append(name);
 
-                    ReadOnlySpan<ITypeHandle> instantiation = runtimeTypeSystem.GetInstantiation(typeHandle);
+                    ITypeHandle[] instantiation = runtimeTypeSystem.GetInstantiation(typeHandle);
                     if (instantiation.Length > 0)
                     {
                         stringBuilder.Append('<');
@@ -414,7 +414,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy
                     return;
 
                 case CorElementType.FnPtr:
-                    runtimeTypeSystem.IsFunctionPointer(typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv);
+                    runtimeTypeSystem.IsFunctionPointer(typeHandle, out ITypeHandle[] retAndArgTypes, out SignatureCallingConvention callConv);
                     SignatureHeader header = new SignatureHeader((byte)callConv);
                     AddType(target, stringBuilder, retAndArgTypes[0]);
                     stringBuilder.Append(" (");

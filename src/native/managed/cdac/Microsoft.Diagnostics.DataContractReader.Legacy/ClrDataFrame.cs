@@ -745,7 +745,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             try
             {
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                ReadOnlySpan<ITypeHandle> methodInst = rts.GetGenericMethodInstantiation(mdh);
+                ITypeHandle[] methodInst = rts.GetGenericMethodInstantiation(mdh);
                 return ResolveGenericParam(rts, methodInst[index]);
             }
             catch (System.Exception) { return ((uint)ClrDataValueFlag.DEFAULT, -1); }
@@ -758,7 +758,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 TargetPointer mtAddr = rts.GetMethodTable(mdh);
                 ITypeHandle declaringType = rts.GetTypeHandle(mtAddr);
-                ReadOnlySpan<ITypeHandle> typeInst = rts.GetInstantiation(declaringType);
+                ITypeHandle[] typeInst = rts.GetInstantiation(declaringType);
                 return ResolveGenericParam(rts, typeInst[index]);
             }
             catch (System.Exception) { return ((uint)ClrDataValueFlag.DEFAULT, -1); }

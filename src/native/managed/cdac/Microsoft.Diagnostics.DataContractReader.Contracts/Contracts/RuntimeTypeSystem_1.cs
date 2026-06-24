@@ -474,14 +474,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         // if we already validated this address, return a handle
         if (_methodTables.ContainsKey(typeHandlePointer))
         {
-            return new ITypeHandle(typeHandlePointer);
+            return new TargetTypeHandle(typeHandlePointer);
         }
 
         // Check for a TypeDesc
         if (addressLowBits == TypeHandleBits.TypeDesc)
         {
             // This is a TypeDesc
-            return new ITypeHandle(typeHandlePointer);
+            return new TargetTypeHandle(typeHandlePointer);
         }
 
         TargetPointer methodTablePointer = typeHandlePointer;
@@ -492,7 +492,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             // we already cached the data, we must have validated the address, create the representation struct for our use
             MethodTable trustedMethodTable = new MethodTable(methodTableData);
             _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTable);
-            return new ITypeHandle(methodTablePointer);
+            return new TargetTypeHandle(methodTablePointer);
         }
 
         // If it's the free object method table, we trust it to be valid
@@ -501,7 +501,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             Data.MethodTable freeObjectMethodTableData = _target.ProcessedData.GetOrAdd<Data.MethodTable>(methodTablePointer);
             MethodTable trustedMethodTable = new MethodTable(freeObjectMethodTableData);
             _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTable);
-            return new ITypeHandle(methodTablePointer);
+            return new TargetTypeHandle(methodTablePointer);
         }
 
         // Otherwse, get ready to validate
@@ -513,7 +513,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         Data.MethodTable trustedMethodTableData = _target.ProcessedData.GetOrAdd<Data.MethodTable>(methodTablePointer);
         MethodTable trustedMethodTableF = new MethodTable(trustedMethodTableData);
         _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTableF);
-        return new ITypeHandle(methodTablePointer);
+        return new TargetTypeHandle(methodTablePointer);
     }
     public TargetPointer GetModule(ITypeHandle typeHandle)
     {
@@ -798,14 +798,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return dynamicStaticsInfo.NonGCStatics;
     }
 
-    public ReadOnlySpan<ITypeHandle> GetInstantiation(ITypeHandle typeHandle)
+    public ITypeHandle[] GetInstantiation(ITypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
-            return default;
+            return global::System.Array.Empty<ITypeHandle>();
 
         MethodTable methodTable = _methodTables[typeHandle.Address];
         if (!methodTable.Flags.HasInstantiation)
-            return default;
+            return global::System.Array.Empty<ITypeHandle>();
 
         return _target.ProcessedData.GetOrAdd<TypeInstantiation>(typeHandle.Address).TypeHandles;
     }
@@ -872,7 +872,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
             else if (type == CorElementType.FnPtr)
             {
-                _ = IsFunctionPointer(typeHandle, out ReadOnlySpan<ITypeHandle> signatureTypeArgs, out _);
+                _ = IsFunctionPointer(typeHandle, out ITypeHandle[] signatureTypeArgs, out _);
                 foreach (ITypeHandle sigTypeArg in signatureTypeArgs)
                 {
                     if (ContainsGenericVariables(sigTypeArg))
@@ -1053,7 +1053,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private bool GenericInstantiationMatch(ITypeHandle genericType, ITypeHandle potentialMatch, ImmutableArray<ITypeHandle> typeArguments)
     {
-        ReadOnlySpan<ITypeHandle> instantiation = GetInstantiation(potentialMatch);
+        ITypeHandle[] instantiation = GetInstantiation(potentialMatch);
         if (instantiation.Length != typeArguments.Length)
             return false;
 
@@ -1083,7 +1083,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private bool FnPtrMatch(ITypeHandle candidate, ImmutableArray<ITypeHandle> retAndArgTypes, SignatureCallingConvention callConv)
     {
-        if (!IsFunctionPointer(candidate, out ReadOnlySpan<ITypeHandle> candidateRetAndArgs, out SignatureCallingConvention candidateCallConv))
+        if (!IsFunctionPointer(candidate, out ITypeHandle[] candidateRetAndArgs, out SignatureCallingConvention candidateCallConv))
             return false;
         if (candidateCallConv != callConv)
             return false;
@@ -1114,9 +1114,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     ITypeHandle IRuntimeTypeSystem.GetConstructedType(ITypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<ITypeHandle> typeArguments, SignatureCallingConvention callConv)
     {
-        if (typeHandle.Address == TargetPointer.Null && corElementType != CorElementType.FnPtr)
-            return new ITypeHandle(TargetPointer.Null);
-        if (_typeHandles.TryGetValue(new TypeKey(typeHandle, corElementType, rank, typeArguments, callConv), out ITypeHandle existing))
+        if (typeHandle.IsNull && corElementType != CorElementType.FnPtr)
+            return ITypeHandle.Null;
+        if (_typeHandles.TryGetValue(new TypeKey(typeHandle, corElementType, rank, typeArguments, callConv), out ITypeHandle? existing) && existing is not null)
             return existing;
         ILoader loaderContract = _target.Contracts.Loader;
         TargetPointer loaderModule;
@@ -1152,7 +1152,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 return potentialMatch;
             }
         }
-        return new ITypeHandle(TargetPointer.Null);
+        return ITypeHandle.Null;
     }
 
     // Mirrors the native algorithm
@@ -1233,9 +1233,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return false;
     }
 
-    public bool IsFunctionPointer(ITypeHandle typeHandle, out ReadOnlySpan<ITypeHandle> retAndArgTypes, out SignatureCallingConvention callConv)
+    public bool IsFunctionPointer(ITypeHandle typeHandle, out ITypeHandle[] retAndArgTypes, out SignatureCallingConvention callConv)
     {
-        retAndArgTypes = default;
+        retAndArgTypes = global::System.Array.Empty<ITypeHandle>();
         callConv = default;
 
         if (!typeHandle.IsTypeDesc())
@@ -1381,12 +1381,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return AsInstantiatedMethodDesc(methodDesc).IsGenericMethodDefinition;
     }
 
-    public ReadOnlySpan<ITypeHandle> GetGenericMethodInstantiation(MethodDescHandle methodDescHandle)
+    public ITypeHandle[] GetGenericMethodInstantiation(MethodDescHandle methodDescHandle)
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
 
         if (methodDesc.Classification != MethodClassification.Instantiated)
-            return default;
+            return global::System.Array.Empty<ITypeHandle>();
 
         return AsInstantiatedMethodDesc(methodDesc).Instantiation;
     }

@@ -2541,7 +2541,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 #endif
 
-    public int ITypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    public int TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed, ulong vmTypeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
         int hr = HResults.S_OK;
         try
@@ -2558,7 +2558,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         if (_legacy is not null)
         {
             DebuggerIPCE_ExpandedTypeData dataLocal;
-            int hrLocal = _legacy.ITypeHandleToExpandedTypeInfo(boxed, vmTypeHandle, &dataLocal);
+            int hrLocal = _legacy.TypeHandleToExpandedTypeInfo(boxed, vmTypeHandle, &dataLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
@@ -2735,7 +2735,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         try
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            ITypeHandle th = default;
+            ITypeHandle th = ITypeHandle.Null;
             CorElementType et = (CorElementType)ReadLittleEndian(pTypeData->elementType);
             switch (et)
             {
@@ -2886,7 +2886,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
         // Non-default calling conventions are not supported.
         // Currently passes callConv=0 to match native DAC.
-        return rts.GetConstructedType(default, CorElementType.FnPtr, 0, builder.MoveToImmutable());
+        return rts.GetConstructedType(ITypeHandle.Null, CorElementType.FnPtr, 0, builder.MoveToImmutable());
     }
 
     public int EnumerateMethodDescParams(ulong vmMethodDesc, ulong genericsToken, uint* pcGenericClassTypeParams,
@@ -2970,10 +2970,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             TargetPointer specMethodMtPtr = rts.GetMethodTable(pSpecificMethod);
             ITypeHandle thSpecMethodMt = rts.GetTypeHandle(specMethodMtPtr);
             ITypeHandle thMatchingParent = GetMethodTableMatchingParentClass(rts, thSpecificClass, thSpecMethodMt);
-            ReadOnlySpan<ITypeHandle> classInst = thMatchingParent.IsNull
-                ? ReadOnlySpan<ITypeHandle>.Empty
+            ITypeHandle[] classInst = thMatchingParent.IsNull
+                ? Array.Empty<ITypeHandle>()
                 : rts.GetInstantiation(thMatchingParent);
-            ReadOnlySpan<ITypeHandle> methodInst = rts.GetGenericMethodInstantiation(pSpecificMethod);
+            ITypeHandle[] methodInst = rts.GetGenericMethodInstantiation(pSpecificMethod);
 
             cClassParams = (uint)classInst.Length;
             *pcGenericClassTypeParams = cClassParams;
@@ -3241,7 +3241,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             ITypeHandle typeHandle = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
-            ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+            ITypeHandle[] instantiation = rts.GetInstantiation(typeHandle);
 
             DebuggerIPCE_ExpandedTypeData entry;
             for (int i = 0; i < instantiation.Length; i++)
@@ -3699,7 +3699,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             *pObjTypeData = default;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             // verify the object reference is readable and has a valid MethodTable
-            ITypeHandle th = default;
+            ITypeHandle th = ITypeHandle.Null;
             try
             {
                 TargetPointer mt = _target.Contracts.Object.GetMethodTableAddress(objectAddress);
@@ -5649,10 +5649,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             prev = current.Address;
             current = rts.GetTypeHandle(next);
         }
-        return default;
+        return ITypeHandle.Null;
     }
 
-    // Shared core implementation for ITypeHandleToExpandedTypeInfo and GetObjectExpandedTypeInfo.
+    // Shared core implementation for TypeHandleToExpandedTypeInfo and GetObjectExpandedTypeInfo.
     private void ITypeHandleToExpandedTypeInfoImpl(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, ITypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
         *pTypeInfo = default;
@@ -5761,7 +5761,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         Contracts.ILoader loader = _target.Contracts.Loader;
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
 
-        ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+        ITypeHandle[] instantiation = rts.GetInstantiation(typeHandle);
         if (instantiation.Length > 0)
         {
             // Generic instantiation — set the type handle so the debugger can fetch type arguments
@@ -5817,7 +5817,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 Contracts.ILoader loader = _target.Contracts.Loader;
                 Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
 
-                ReadOnlySpan<ITypeHandle> instantiation = rts.GetInstantiation(typeHandle);
+                ITypeHandle[] instantiation = rts.GetInstantiation(typeHandle);
                 if (instantiation.Length > 0)
                 {
                     WriteLittleEndian(ref typeInfo.vmTypeHandle, typeHandle.Address.Value);
