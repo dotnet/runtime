@@ -1361,6 +1361,24 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
     _ASSERTE(pMD != NULL);
     _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
 
+    // Prefer R2R-compiled native code. An UnmanagedCallersOnly method compiled by crossgen2 is emitted
+    // with the native (unmanaged) calling convention, so its R2R code is itself the directly-callable
+    // unmanaged entrypoint. Resolve the method's code first and, if it has native (R2R) code, return that
+    // entrypoint directly. The g_ReverseThunks interpreter fallback below is only required for methods
+    // that are executed by the interpreter (no native code), and is intentionally unused for R2R methods.
+    PCODE entryPoint = pMD->GetPortableEntryPoint();
+    if (!PortableEntryPoint::HasNativeEntryPoint(entryPoint) && pMD->GetInterpreterCode() == NULL)
+    {
+        // The method has not been prepared yet. Run the prestub so that any R2R native code (or, for
+        // interpreted methods, the interpreter byte code) is published into the portable entrypoint.
+        GCX_PREEMP();
+        (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+    }
+    if (PortableEntryPoint::HasNativeEntryPoint(entryPoint))
+    {
+        return PortableEntryPoint::GetActualCode(entryPoint);
+    }
+
     const ReverseThunkMapValue* value = LookupThunk(pMD);
     if (value == NULL)
     {
