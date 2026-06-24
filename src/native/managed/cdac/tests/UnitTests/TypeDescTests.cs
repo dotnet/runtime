@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection.Metadata;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -161,7 +162,7 @@ public class TypeDescTests
             // Function pointer
             IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
             ITypeHandle handle = rts.GetTypeHandle(GetTypeDescHandlePointer(funcPtr));
-            bool res = rts.IsFunctionPointer(handle, out ReadOnlySpan<ITypeHandle> actualRetAndArgTypes, out SignatureCallingConvention actualCallConv);
+            bool res = rts.IsFunctionPointer(handle, out ImmutableArray<ITypeHandle> actualRetAndArgTypes, out SignatureCallingConvention actualCallConv);
             Assert.True(res);
             Assert.Equal(callConv, (byte)actualCallConv);
             Assert.Equal(retAndArgTypesHandle.Length, actualRetAndArgTypes.Length);

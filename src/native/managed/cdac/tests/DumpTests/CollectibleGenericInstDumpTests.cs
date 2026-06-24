@@ -34,14 +34,14 @@ public class CollectibleGenericInstDumpTests : DumpTestBase
         // Find the List<CollectibleArg> instance rooted by the debuggee. It is the
         // single-argument generic instantiation whose loader module differs from its
         // definition module — the signature of a type argument from a collectible ALC.
-        TypeHandle constructed = default;
+        ITypeHandle constructed = ITypeHandle.Null;
         foreach (HandleData handle in gc.GetHandles([HandleType.Strong]))
         {
             TargetPointer objAddr = Target.ReadPointer(handle.Handle);
             if (objAddr == TargetPointer.Null)
                 continue;
 
-            TypeHandle candidate = rts.GetTypeHandle(objectContract.GetMethodTableAddress(objAddr));
+            ITypeHandle candidate = rts.GetTypeHandle(objectContract.GetMethodTableAddress(objAddr));
             if (rts.GetInstantiation(candidate).Length == 1 &&
                 rts.GetModule(candidate) != rts.GetLoaderModule(candidate) &&
                 rts.IsCollectible(candidate))
@@ -57,16 +57,16 @@ public class CollectibleGenericInstDumpTests : DumpTestBase
         // collectible argument's module, distinct from its (CoreLib) definition module.
         Assert.NotEqual(rts.GetModule(constructed), rts.GetLoaderModule(constructed));
 
-        TypeHandle typeArgument = rts.GetInstantiation(constructed)[0];
+        ITypeHandle typeArgument = rts.GetInstantiation(constructed)[0];
 
         // The open List<> definition lives in CoreLib; look it up by name.
-        TypeHandle listDefinition = Target.Contracts.ManagedTypeSource.GetTypeHandle(
+        ITypeHandle listDefinition = Target.Contracts.ManagedTypeSource.GetTypeHandle(
             "System.Collections.Generic.List`1");
         Assert.NotEqual(TargetPointer.Null, listDefinition.Address);
 
         // Reconstruct the instantiation. This must search the collectible argument's
         // loader module — searching the definition's module (CoreLib) returns null.
-        TypeHandle resolved = rts.GetConstructedType(
+        ITypeHandle resolved = rts.GetConstructedType(
             listDefinition,
             CorElementType.GenericInst,
             0,

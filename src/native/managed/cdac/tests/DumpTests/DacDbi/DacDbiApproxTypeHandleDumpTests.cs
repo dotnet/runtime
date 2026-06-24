@@ -51,7 +51,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         TargetPointer canonMtPtr = Target.ReadPointer(Target.ReadGlobalPointer(Constants.Globals.CanonMethodTable));
-        TypeHandle canonTh = rts.GetTypeHandle(canonMtPtr);
+        ITypeHandle canonTh = rts.GetTypeHandle(canonMtPtr);
 
         HandleType[] handleKinds =
         [
@@ -81,14 +81,14 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
     /// and assert the resulting <c>vmTypeHandle</c> equals the expected canonicalized
     /// MethodTable for the object's type.
     /// </summary>
-    private unsafe void AssertRoundTrip(DacDbiImpl dbi, IRuntimeTypeSystem rts, TypeHandle canonTh, ulong objAddr)
+    private unsafe void AssertRoundTrip(DacDbiImpl dbi, IRuntimeTypeSystem rts, ITypeHandle canonTh, ulong objAddr)
     {
         TargetPointer expectedMT = Target.Contracts.Object.GetMethodTableAddress(new TargetPointer(objAddr));
-        TypeHandle expectedTh = rts.GetTypeHandle(expectedMT);
+        ITypeHandle expectedTh = rts.GetTypeHandle(expectedMT);
 
         // Build the expected canonicalized handle from the exact type. Mirrors the rules
         // applied by TypeDataWalk on the cDAC side.
-        TypeHandle expectedApproxTh = ApproxTopLevel(dbi, rts, canonTh, expectedTh);
+        ITypeHandle expectedApproxTh = ApproxTopLevel(dbi, rts, canonTh, expectedTh);
         if (expectedApproxTh.IsNull)
             return; // If the approximation rules collapse this type to null, skip the round-trip assertion.
 
@@ -121,7 +121,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
     //   anything else     -> 0
     // ----------------------------------------------------------------------------------------
 
-    private static int CountTypeNodes(IRuntimeTypeSystem rts, TypeHandle th)
+    private static int CountTypeNodes(IRuntimeTypeSystem rts, ITypeHandle th)
     {
         CorElementType et = GetElementType(rts, th);
         switch (et)
@@ -136,7 +136,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
             case CorElementType.ValueType:
                 {
                     int total = 1;
-                    foreach (TypeHandle arg in rts.GetInstantiation(th))
+                    foreach (ITypeHandle arg in rts.GetInstantiation(th))
                         total += CountTypeNodes(rts, arg);
                     return total;
                 }
@@ -146,7 +146,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
         }
     }
 
-    private static unsafe void FillTypeNodes(DacDbiImpl dbi, IRuntimeTypeSystem rts, TypeHandle th, DebuggerIPCE_TypeArgData* nodes, ref int idx)
+    private static unsafe void FillTypeNodes(DacDbiImpl dbi, IRuntimeTypeSystem rts, ITypeHandle th, DebuggerIPCE_TypeArgData* nodes, ref int idx)
     {
         int self = idx++;
         DebuggerIPCE_TypeArgData* pSelf = &nodes[self];
@@ -170,7 +170,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
             case CorElementType.Class:
             case CorElementType.ValueType:
                 {
-                    ReadOnlySpan<TypeHandle> inst = rts.GetInstantiation(th);
+                    ImmutableArray<ITypeHandle> inst = rts.GetInstantiation(th);
                     uint numTypeArgs = (uint)inst.Length;
                     pSelf->numTypeArgs = BitConverter.IsLittleEndian ? numTypeArgs : System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(numTypeArgs);
                     for (int i = 0; i < inst.Length; i++)
@@ -193,7 +193,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
     // ApproxTypeArg. Array / Ptr / Byref preserve the outer shape; the inner type goes through
     // ApproxTypeArg. Anything else collapses to the primitive type for its element type
     // (e.g. System.Object, System.String, primitives).
-    private TypeHandle ApproxTopLevel(DacDbiImpl dbi, IRuntimeTypeSystem rts, TypeHandle canonTh, TypeHandle th)
+    private ITypeHandle ApproxTopLevel(DacDbiImpl dbi, IRuntimeTypeSystem rts, ITypeHandle canonTh, ITypeHandle th)
     {
         CorElementType et = GetElementType(rts, th);
         switch (et)
@@ -201,16 +201,16 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
             case CorElementType.Array:
             case CorElementType.SzArray:
                 {
-                    TypeHandle elem = ApproxTypeArg(dbi, rts, canonTh, rts.GetTypeParam(th));
+                    ITypeHandle elem = ApproxTypeArg(dbi, rts, canonTh, rts.GetTypeParam(th));
                     rts.IsArray(th, out uint rank);
-                    return rts.GetConstructedType(elem, et, (int)rank, ImmutableArray<TypeHandle>.Empty);
+                    return rts.GetConstructedType(elem, et, (int)rank, ImmutableArray<ITypeHandle>.Empty);
                 }
 
             case CorElementType.Ptr:
             case CorElementType.Byref:
                 {
-                    TypeHandle referent = ApproxTypeArg(dbi, rts, canonTh, rts.GetTypeParam(th));
-                    return rts.GetConstructedType(referent, et, 0, ImmutableArray<TypeHandle>.Empty);
+                    ITypeHandle referent = ApproxTypeArg(dbi, rts, canonTh, rts.GetTypeParam(th));
+                    return rts.GetConstructedType(referent, et, 0, ImmutableArray<ITypeHandle>.Empty);
                 }
 
             case CorElementType.Class:
@@ -224,16 +224,16 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
 
     // Arg context: Class collapses to __Canon (its children skipped); ValueType is recursively
     // approximated; Ptr preserves shape; obj-ref primitives (Class/Object/String/SzArray/Array)
-    // collapse to __Canon; primitives map to their primitive TypeHandle.
-    private TypeHandle ApproxTypeArg(DacDbiImpl dbi, IRuntimeTypeSystem rts, TypeHandle canonTh, TypeHandle th)
+    // collapse to __Canon; primitives map to their primitive ITypeHandle.
+    private ITypeHandle ApproxTypeArg(DacDbiImpl dbi, IRuntimeTypeSystem rts, ITypeHandle canonTh, ITypeHandle th)
     {
         CorElementType et = GetElementType(rts, th);
         switch (et)
         {
             case CorElementType.Ptr:
                 {
-                    TypeHandle referent = ApproxTypeArg(dbi, rts, canonTh, rts.GetTypeParam(th));
-                    return rts.GetConstructedType(referent, et, 0, ImmutableArray<TypeHandle>.Empty);
+                    ITypeHandle referent = ApproxTypeArg(dbi, rts, canonTh, rts.GetTypeParam(th));
+                    return rts.GetConstructedType(referent, et, 0, ImmutableArray<ITypeHandle>.Empty);
                 }
 
             case CorElementType.Class:
@@ -255,7 +255,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
     // Non-generic types return early — the production walker takes the
     // <c>nTypeArgs == 0</c> branch and returns the typeDef directly, which equals the type's
     // own MT for a non-generic type.
-    private TypeHandle InstantiationApprox(DacDbiImpl dbi, IRuntimeTypeSystem rts, TypeHandle canonTh, TypeHandle th)
+    private ITypeHandle InstantiationApprox(DacDbiImpl dbi, IRuntimeTypeSystem rts, ITypeHandle canonTh, ITypeHandle th)
     {
         // Mirror DacDbiImpl.FillClassTypeInfo: upcast continuation-without-metadata types to
         // their parent before resolving module / typeDef token. Otherwise the synthesized token
@@ -268,7 +268,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
                 th = rts.GetTypeHandle(parentMT);
         }
 
-        ReadOnlySpan<TypeHandle> inst = rts.GetInstantiation(th);
+        ImmutableArray<ITypeHandle> inst = rts.GetInstantiation(th);
         if (inst.Length == 0)
             return th;
 
@@ -280,16 +280,16 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
         ulong vmAssembly = loader.GetAssembly(moduleHandle).Value;
         uint metadataToken = rts.GetTypeDefToken(th);
 
-        TypeHandle typeDef = dbi.TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
+        ITypeHandle typeDef = dbi.TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
         if (typeDef.IsNull)
-            return default;
+            return ITypeHandle.Null;
 
-        ImmutableArray<TypeHandle>.Builder builder = ImmutableArray.CreateBuilder<TypeHandle>(inst.Length);
+        ImmutableArray<ITypeHandle>.Builder builder = ImmutableArray.CreateBuilder<ITypeHandle>(inst.Length);
         for (int i = 0; i < inst.Length; i++)
         {
-            TypeHandle approxArg = ApproxTypeArg(dbi, rts, canonTh, inst[i]);
+            ITypeHandle approxArg = ApproxTypeArg(dbi, rts, canonTh, inst[i]);
             if (approxArg.IsNull)
-                return default;
+                return ITypeHandle.Null;
             builder.Add(approxArg);
         }
 
@@ -298,7 +298,7 @@ public class DacDbiApproxTypeHandleDumpTests : DumpTestBase
 
     // Same element-type mapping DacDbiImpl uses (System.String -> E_T_STRING, System.Object ->
     // E_T_OBJECT, else GetSignatureCorElementType).
-    private static CorElementType GetElementType(IRuntimeTypeSystem rts, TypeHandle th)
+    private static CorElementType GetElementType(IRuntimeTypeSystem rts, ITypeHandle th)
     {
         if (th.IsNull)
             return CorElementType.Void;

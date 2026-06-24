@@ -45,7 +45,7 @@ public class RuntimeMutableTypeSystemTests
         ModuleFlags flags)
     {
         var rts = new Mock<IRuntimeTypeSystem>();
-        rts.Setup(r => r.GetTypeHandle(mtPtr)).Returns(new ITypeHandle(mtPtr));
+        rts.Setup(r => r.GetTypeHandle(mtPtr)).Returns(new TargetTypeHandle(mtPtr));
         rts.Setup(r => r.GetModule(It.Is<ITypeHandle>(th => th.Address == mtPtr))).Returns(modulePtr);
 
         var loader = new Mock<ILoader>();

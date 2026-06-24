@@ -6,36 +6,37 @@ using System.Diagnostics;
 using Internal.CallingConvention;
 using Internal.JitInterface;
 
+using CdacITypeHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ITypeHandle;
 using CdacCorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorElementType;
 using SharedCorElementType = Internal.CorConstants.CorElementType;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 /// <summary>
-/// Adapts cDAC's IRuntimeTypeSystem + TypeHandle to the shared <see cref="ITypeHandle"/>
+/// Adapts cDAC's IRuntimeTypeSystem + ITypeHandle to the shared <see cref="ITypeHandle"/>
 /// interface used by ArgIterator for calling-convention computation.
 /// </summary>
-internal readonly struct CdacTypeHandle : ITypeHandle
+internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
 {
-    private readonly TypeHandle _typeHandle;
+    private readonly CdacITypeHandle _typeHandle;
     private readonly Target _target;
 
     // Outermost ELEMENT_TYPE_* wrapper (PTR / BYREF / SZARRAY / ARRAY / etc.)
     // recorded out-of-band by the signature wrapper provider in
     // CallingConvention_1.ParamMetadataProvider. Used when the underlying
-    // TypeHandle would be null (the runtime hasn't cached the constructed
+    // ITypeHandle would be null (the runtime hasn't cached the constructed
     // form), in which case Rts.GetSignatureCorElementType would return 0 and
     // ArgIterator would fail to classify the arg for stack-size accounting.
     // `default` (the enum's 0 value, which CorElementType doesn't name) means
     // "no override; ask Rts".
     private readonly CdacCorElementType _kindOverride;
 
-    public CdacTypeHandle(TypeHandle typeHandle, Target target)
+    public CdacTypeHandle(CdacITypeHandle typeHandle, Target target)
         : this(typeHandle, target, kindOverride: default)
     {
     }
 
-    public CdacTypeHandle(TypeHandle typeHandle, Target target, CdacCorElementType kindOverride)
+    public CdacTypeHandle(CdacITypeHandle typeHandle, Target target, CdacCorElementType kindOverride)
     {
         _typeHandle = typeHandle;
         _target = target;
@@ -62,7 +63,7 @@ internal readonly struct CdacTypeHandle : ITypeHandle
         // Constructed pointer/array/byref args always occupy one TADDR slot
         // in the transition block (the actual pointee is reached via the
         // pointer value, not stored inline). When _kindOverride is set, the
-        // underlying TypeHandle may be null (uncached PTR), so GetBaseSize
+        // underlying ITypeHandle may be null (uncached PTR), so GetBaseSize
         // would fault.
         if (_kindOverride is CdacCorElementType.Ptr
                           or CdacCorElementType.Byref
@@ -92,7 +93,7 @@ internal readonly struct CdacTypeHandle : ITypeHandle
             return (SharedCorElementType)0;
 
         // Mirror the runtime's MetaSig::PeekArgNormalized -- for value types
-        // it resolves the closed TypeHandle and returns
+        // it resolves the closed ITypeHandle and returns
         // MethodTable::GetInternalCorElementType, which collapses enums to
         // their underlying primitive (byte enum -> U1, int enum -> I4, ...).
         // The shared ArgIterator's x86 IsArgumentInRegister relies on this
@@ -184,7 +185,7 @@ internal readonly struct CdacTypeHandle : ITypeHandle
         // Walk instance fields: exactly one, and that field must itself be a
         // pointer-sized primitive (IntPtr/UIntPtr/I/U/Ptr/FnPtr) or another
         // trivial pointer-sized struct. Mirrors crossgen2's
-        // TypeHandle.IsTrivialPointerSizedStruct (ILCompiler.ReadyToRun).
+        // ITypeHandle.IsTrivialPointerSizedStruct (ILCompiler.ReadyToRun).
         TargetPointer? singleFieldType = null;
         foreach (TargetPointer fieldDesc in Rts.GetFieldDescList(_typeHandle))
         {
@@ -216,9 +217,9 @@ internal readonly struct CdacTypeHandle : ITypeHandle
             case CdacCorElementType.ValueType:
                 // Recurse: if the wrapped struct is itself a trivial
                 // pointer-sized struct, we are too. Resolve the field's
-                // TypeHandle via the field's metadata signature and
+                // ITypeHandle via the field's metadata signature and
                 // re-run IsTrivialPointerSizedStruct on it.
-                TypeHandle nested = Rts.GetFieldDescApproxTypeHandle(singleFieldType.Value);
+                CdacITypeHandle nested = Rts.GetFieldDescApproxTypeHandle(singleFieldType.Value);
                 if (nested.IsNull)
                     return false;
                 return new CdacTypeHandle(nested, _target).IsTrivialPointerSizedStruct();

@@ -91,12 +91,16 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
     public bool TryGetTypeHandle(string fullyQualifiedName, out ITypeHandle typeHandle)
     {
-        if (_typeHandleCache.TryGetValue(fullyQualifiedName, out typeHandle))
+        if (_typeHandleCache.TryGetValue(fullyQualifiedName, out var cached))
+        {
+            typeHandle = cached;
             return !typeHandle.IsNull;
+        }
 
         if (!TryResolveType(fullyQualifiedName, out typeHandle, out _, out _))
         {
-            _typeHandleCache[fullyQualifiedName] = new ITypeHandle(TargetPointer.Null);
+            typeHandle = ITypeHandle.Null;
+            _typeHandleCache[fullyQualifiedName] = ITypeHandle.Null;
             return false;
         }
 
@@ -248,7 +252,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
     private bool TryResolveType(string managedFqName, out ITypeHandle th, [NotNullWhen(true)] out MetadataReader? mdReader, out TypeDefinition typeDef)
     {
-        th = new ITypeHandle(TargetPointer.Null);
+        th = ITypeHandle.Null;
         typeDef = default;
 
         ILoader loader = _target.Contracts.Loader;

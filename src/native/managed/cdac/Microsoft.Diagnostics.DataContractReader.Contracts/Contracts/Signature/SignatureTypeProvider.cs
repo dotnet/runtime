@@ -76,7 +76,7 @@ public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<ITypeHandl
         int token = MetadataTokens.GetToken((EntityHandle)handle);
         TargetPointer typeDefToMethodTable = _loader.GetLookupTables(_moduleHandle).TypeDefToMethodTable;
         TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(typeDefToMethodTable, (uint)token, out _);
-        return typeHandlePtr == TargetPointer.Null ? new ITypeHandle(TargetPointer.Null) : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
+        return typeHandlePtr == TargetPointer.Null ? ITypeHandle.Null : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
     }
 
     public ITypeHandle GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
@@ -84,7 +84,7 @@ public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<ITypeHandl
         int token = MetadataTokens.GetToken((EntityHandle)handle);
         TargetPointer typeRefToMethodTable = _loader.GetLookupTables(_moduleHandle).TypeRefToMethodTable;
         TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(typeRefToMethodTable, (uint)token, out _);
-        return typeHandlePtr == TargetPointer.Null ? new ITypeHandle(TargetPointer.Null) : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
+        return typeHandlePtr == TargetPointer.Null ? ITypeHandle.Null : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
     }
 
     public ITypeHandle GetTypeFromSpecification(MetadataReader reader, T context, TypeSpecificationHandle handle, byte rawTypeKind)
@@ -92,7 +92,7 @@ public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<ITypeHandl
 
     public ITypeHandle GetInternalType(TargetPointer typeHandlePointer)
         => typeHandlePointer == TargetPointer.Null
-            ? new ITypeHandle(TargetPointer.Null)
+            ? ITypeHandle.Null
             : _runtimeTypeSystem.GetTypeHandle(typeHandlePointer);
 
     public ITypeHandle GetInternalModifiedType(TargetPointer typeHandlePointer, ITypeHandle unmodifiedType, bool isRequired)

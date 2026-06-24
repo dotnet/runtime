@@ -58,7 +58,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
     // Per-parameter metadata captured at signature-decode time. We track this
     // out-of-band because the standard SignatureTypeProvider collapses
     // ELEMENT_TYPE_BYREF, _PTR, _SZARRAY, and _ARRAY into the underlying type
-    // (or a null TypeHandle when the runtime hasn't cached the constructed
+    // (or a null ITypeHandle when the runtime hasn't cached the constructed
     // form), making the top-level element type unrecoverable from
     // methodSig.ParameterTypes alone.
     private readonly struct ParamTypeInfo
@@ -69,14 +69,14 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // Outermost element type of the parameter signature, if known
         // (Byref / Ptr / SzArray / Array). The enum's zero value (default)
         // means "no constructed-type wrapper -- caller should fall back to
-        // GetSignatureCorElementType on the underlying TypeHandle".
+        // GetSignatureCorElementType on the underlying ITypeHandle".
         public CdacCorElementType OutermostKind { get; init; }
 
         // For generic-instantiation parameters, the open generic type
         // (e.g. Span<T> for a Span<int> arg). Used by the encoder when the
-        // constructed TypeHandle is null (uncached) to fall back to
+        // constructed ITypeHandle is null (uncached) to fall back to
         // attributes of the open type (IsByRefLike, etc.).
-        public TypeHandle OpenGenericType { get; init; }
+        public ITypeHandle OpenGenericType { get; init; }
     }
 
     private ArgumentLayout GetArgumentLayout(MethodDescHandle methodDesc)
@@ -84,13 +84,13 @@ internal sealed class CallingConvention_1 : ICallingConvention
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
 
-        MethodSignature<TypeHandle> methodSig = DecodeMethodSignature(rts, methodDesc);
+        MethodSignature<ITypeHandle> methodSig = DecodeMethodSignature(rts, methodDesc);
 
         // Re-decode the same signature with a wrapper provider to learn each
         // parameter's outermost element type (Byref / Ptr / SzArray / Array)
         // and whether it's wrapped in ELEMENT_TYPE_BYREF. The standard
         // SignatureTypeProvider hides these wrappers (returning a null
-        // TypeHandle when GetConstructedType isn't cached), so without this
+        // ITypeHandle when GetConstructedType isn't cached), so without this
         // out-of-band metadata the encoder would silently drop any arg whose
         // outermost wrapper isn't in the loader's available-type-params list.
         ParamTypeInfo[] paramInfo = DecodeParamTypeInfo(rts, methodDesc, methodSig.ParameterTypes.Length);
@@ -148,7 +148,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         if (hasThis)
         {
             TargetPointer methodTablePtr = rts.GetMethodTable(methodDesc);
-            TypeHandle owningType = rts.GetTypeHandle(methodTablePtr);
+            ITypeHandle owningType = rts.GetTypeHandle(methodTablePtr);
             bool isValueTypeThis = rts.IsValueType(owningType) && !rts.IsUnboxingStub(methodDesc);
 
             arguments.Add(new ArgumentLocation
@@ -250,13 +250,13 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 // token per managed-pointer field inside the unboxed struct
                 // via ByRefPointerOffsetsReporter, in addition to any REF
                 // tokens from GCDesc. For constructed generic instantiations
-                // (Span<int>) the closed TypeHandle may be uncached/null, so
+                // (Span<int>) the closed ITypeHandle may be uncached/null, so
                 // we fall back to the open generic type captured during
                 // signature decoding.
                 bool isByRefLikeStruct = false;
                 if (elemType == CdacCorElementType.ValueType && !passedByRef)
                 {
-                    TypeHandle probe = methodSig.ParameterTypes[argIndex];
+                    ITypeHandle probe = methodSig.ParameterTypes[argIndex];
                     if (probe.Address == TargetPointer.Null)
                         probe = paramInfo[argIndex].OpenGenericType;
                     if (probe.Address != TargetPointer.Null)
@@ -287,11 +287,11 @@ internal sealed class CallingConvention_1 : ICallingConvention
         return new ArgumentLayout(arguments, cbStackPop);
     }
 
-    private MethodSignature<TypeHandle> DecodeMethodSignature(
+    private MethodSignature<ITypeHandle> DecodeMethodSignature(
         IRuntimeTypeSystem rts, MethodDescHandle methodDesc)
     {
         TargetPointer methodTablePtr = rts.GetMethodTable(methodDesc);
-        TypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
+        ITypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
         TargetPointer modulePtr = rts.GetModule(typeHandle);
 
         ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
@@ -305,7 +305,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // NotSupportedException for whichever side it wasn't parameterized on.
         MethodSigContext context = new(methodDesc, typeHandle);
         MethodAndTypeContextProvider provider = new(_target, moduleHandle, rts);
-        RuntimeSignatureDecoder<TypeHandle, MethodSigContext> decoder = new(
+        RuntimeSignatureDecoder<ITypeHandle, MethodSigContext> decoder = new(
             provider, _target, mdReader, context);
 
         if (!rts.TryGetMethodSignature(methodDesc, out ReadOnlySpan<byte> methodSig))
@@ -333,7 +333,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
             return Array.Empty<ParamTypeInfo>();
 
         TargetPointer methodTablePtr = rts.GetMethodTable(methodDesc);
-        TypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
+        ITypeHandle typeHandle = rts.GetTypeHandle(methodTablePtr);
         TargetPointer modulePtr = rts.GetModule(typeHandle);
 
         ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
@@ -414,13 +414,13 @@ internal sealed class CallingConvention_1 : ICallingConvention
     }
 
     // Result type produced by ParamMetadataProvider. Carries the underlying
-    // TypeHandle (resolved by the inner provider when possible) plus the
+    // ITypeHandle (resolved by the inner provider when possible) plus the
     // outermost element type and an IsByRef flag, both of which the standard
     // SignatureTypeProvider would otherwise drop on the floor when the runtime
     // hasn't cached the constructed-type instantiation.
     private readonly struct TrackedType
     {
-        public TypeHandle Underlying { get; init; }
+        public ITypeHandle Underlying { get; init; }
         public bool IsByRef { get; init; }
         // The outermost ELEMENT_TYPE_* wrapper applied to this signature.
         // The enum's zero value (default) means "no constructed-type wrapper;
@@ -429,14 +429,14 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // For generic instantiations: the open generic type before
         // GetConstructedType collapsed it. Lets the encoder inspect
         // attributes (IsByRefLike, etc.) even when the constructed
-        // TypeHandle isn't cached.
-        public TypeHandle OpenGeneric { get; init; }
+        // ITypeHandle isn't cached.
+        public ITypeHandle OpenGeneric { get; init; }
     }
 
     // ISignatureTypeProvider wrapper that records the outermost
     // ELEMENT_TYPE_* wrapper (BYREF / PTR / SZARRAY / ARRAY) on each parameter
     // so the caller can recover that information even when the standard
-    // SignatureTypeProvider would have returned a null TypeHandle from
+    // SignatureTypeProvider would have returned a null ITypeHandle from
     // GetConstructedType. Used only by DecodeParamTypeInfo. The generic
     // context is a MethodDescHandle so both ELEMENT_TYPE_VAR and _MVAR can be
     // resolved by the inner MethodGenericContextProvider.
@@ -456,7 +456,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         // know to fall back to GetSignatureCorElementType on Underlying. The
         // constructed-type overrides (ByRef/Ptr/SzArray/Array) set
         // OutermostKind explicitly.
-        private static TrackedType Wrap(TypeHandle th)
+        private static TrackedType Wrap(ITypeHandle th)
             => new() { Underlying = th };
 
         public TrackedType GetByReferenceType(TrackedType elementType)
@@ -480,10 +480,10 @@ internal sealed class CallingConvention_1 : ICallingConvention
 
         public TrackedType GetGenericInstantiation(TrackedType genericType, ImmutableArray<TrackedType> typeArguments)
         {
-            ImmutableArray<TypeHandle>.Builder builder = ImmutableArray.CreateBuilder<TypeHandle>(typeArguments.Length);
+            ImmutableArray<ITypeHandle>.Builder builder = ImmutableArray.CreateBuilder<ITypeHandle>(typeArguments.Length);
             for (int i = 0; i < typeArguments.Length; i++)
                 builder.Add(typeArguments[i].Underlying);
-            TypeHandle constructed = _inner.GetGenericInstantiation(genericType.Underlying, builder.ToImmutable());
+            ITypeHandle constructed = _inner.GetGenericInstantiation(genericType.Underlying, builder.ToImmutable());
 
             // GetConstructedType returns null when the runtime hasn't cached
             // this exact instantiation. Recover the would-be top-level kind
@@ -539,15 +539,15 @@ internal sealed class CallingConvention_1 : ICallingConvention
     // ELEMENT_TYPE_VAR resolution). The existing SignatureTypeProvider<T>
     // only resolves one or the other depending on T -- since a method
     // signature can reference both kinds of type parameters, we need both.
-    internal readonly record struct MethodSigContext(MethodDescHandle Method, TypeHandle OwningType);
+    internal readonly record struct MethodSigContext(MethodDescHandle Method, ITypeHandle OwningType);
 
     // SignatureTypeProvider variant that resolves both VAR (owning type's
     // type parameters) and MVAR (method's type parameters) by pulling the
     // appropriate field out of the MethodSigContext. Overrides the base
     // implementations, which only handle one direction.
     // Specialization that resolves generic parameters via the
-    // MethodSigContext (open generic MD + owning TypeHandle) instead of
-    // requiring the context to be exactly a MethodDescHandle or TypeHandle.
+    // MethodSigContext (open generic MD + owning ITypeHandle) instead of
+    // requiring the context to be exactly a MethodDescHandle or ITypeHandle.
     //
     // The base SignatureTypeProvider<T> deliberately keeps its
     // GetGenericMethodParameter / GetGenericTypeParameter non-virtual to
@@ -563,7 +563,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
     // methods without making the base virtual.
     internal sealed class MethodAndTypeContextProvider
         : SignatureTypeProvider<MethodSigContext>,
-          IRuntimeSignatureTypeProvider<TypeHandle, MethodSigContext>
+          IRuntimeSignatureTypeProvider<ITypeHandle, MethodSigContext>
     {
         private readonly IRuntimeTypeSystem _rts;
 
@@ -573,10 +573,10 @@ internal sealed class CallingConvention_1 : ICallingConvention
             _rts = rts;
         }
 
-        public new TypeHandle GetGenericMethodParameter(MethodSigContext context, int index)
+        public new ITypeHandle GetGenericMethodParameter(MethodSigContext context, int index)
             => _rts.GetGenericMethodInstantiation(context.Method)[index];
 
-        public new TypeHandle GetGenericTypeParameter(MethodSigContext context, int index)
+        public new ITypeHandle GetGenericTypeParameter(MethodSigContext context, int index)
             => _rts.GetInstantiation(context.OwningType)[index];
     }
 
@@ -702,7 +702,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
                                 // The byref/ptr distinction is preserved at the
                                 // FieldDesc level regardless of which T closes
                                 // the type.
-                                TypeHandle probe = arg.TypeHandle;
+                                ITypeHandle probe = arg.TypeHandle;
                                 if (probe.Address == TargetPointer.Null)
                                     probe = arg.OpenGenericType;
                                 if (probe.Address != TargetPointer.Null)
@@ -851,7 +851,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
     // handle wrappers.
     private static void EmitByRefLikeInterior(
         IRuntimeTypeSystem rts,
-        TypeHandle byRefLikeType,
+        ITypeHandle byRefLikeType,
         int baseOffset,
         SortedDictionary<int, GCRefMapToken> tokens)
     {
@@ -861,7 +861,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
 
     private static void EmitByRefLikeInteriorRecursive(
         IRuntimeTypeSystem rts,
-        TypeHandle byRefLikeType,
+        ITypeHandle byRefLikeType,
         int baseOffset,
         SortedDictionary<int, GCRefMapToken> tokens,
         int depth)
@@ -910,7 +910,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 // Nested value-type field. Recurse only if the field's own
                 // MethodTable is ByRefLike (matches runtime Find(FieldDesc*)
                 // in ByRefPointerOffsetsReporter).
-                TypeHandle nested = rts.GetFieldDescApproxTypeHandle(fdPtr);
+                ITypeHandle nested = rts.GetFieldDescApproxTypeHandle(fdPtr);
                 if (nested.Address == TargetPointer.Null)
                     continue;
                 bool nestedByRefLike;

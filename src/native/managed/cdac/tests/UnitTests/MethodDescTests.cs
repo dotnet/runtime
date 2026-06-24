@@ -395,7 +395,7 @@ public class MethodDescTests
             MethodDescHandle handle = rts.GetMethodDescHandle(genericMethodDef);
             Assert.NotEqual(TargetPointer.Null, handle.Address);
             Assert.True(rts.IsGenericMethodDefinition(handle));
-            ReadOnlySpan<ITypeHandle> instantiation = rts.GetGenericMethodInstantiation(handle);
+            var instantiation = rts.GetGenericMethodInstantiation(handle);
             Assert.Equal(0, instantiation.Length);
         }
 
@@ -403,7 +403,7 @@ public class MethodDescTests
             MethodDescHandle handle = rts.GetMethodDescHandle(genericWithInst);
             Assert.NotEqual(TargetPointer.Null, handle.Address);
             Assert.True(rts.IsGenericMethodDefinition(handle));
-            ReadOnlySpan<ITypeHandle> instantiation = rts.GetGenericMethodInstantiation(handle);
+            var instantiation = rts.GetGenericMethodInstantiation(handle);
             Assert.Equal(typeArgsRawAddrs.Length, instantiation.Length);
             for (int i = 0; i < typeArgsRawAddrs.Length; i++)
             {

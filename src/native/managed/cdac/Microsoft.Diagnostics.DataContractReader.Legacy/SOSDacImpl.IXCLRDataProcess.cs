@@ -426,7 +426,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 
             TargetPointer mtAddr = rts.GetMethodTable(md);
             ITypeHandle mt = rts.GetTypeHandle(mtAddr);
-            return !rts.GetInstantiation(mt).IsEmpty;
+            return rts.GetInstantiation(mt).Length > 0;
         }
 
         private bool HasMethodInstantiation(MethodDescHandle md)
@@ -434,7 +434,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
             if (rts.IsGenericMethodDefinition(md)) return true;
-            return !rts.GetGenericMethodInstantiation(md).IsEmpty;
+            return rts.GetGenericMethodInstantiation(md).Length > 0;
         }
     }
 

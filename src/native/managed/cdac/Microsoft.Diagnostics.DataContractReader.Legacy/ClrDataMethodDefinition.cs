@@ -47,7 +47,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         TargetPointer mtAddr = rts.GetMethodTable(md);
         ITypeHandle mt = rts.GetTypeHandle(mtAddr);
 
-        return !rts.GetInstantiation(mt).IsEmpty;
+        return rts.GetInstantiation(mt).Length > 0;
     }
 
     private static bool HasMethodInstantiation(Target target, MethodDescHandle md)
@@ -56,7 +56,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         if (rts.IsGenericMethodDefinition(md))
             return true;
 
-        return !rts.GetGenericMethodInstantiation(md).IsEmpty;
+        return rts.GetGenericMethodInstantiation(md).Length > 0;
     }
 
     private static bool HasClassOrMethodInstantiation(Target target, MethodDescHandle md)

@@ -199,14 +199,14 @@ public class ExceptionTests
                     Name = "CombinedPtrArray",
                 });
 
-                ITypeHandle combinedHandle = new(CombinedArrayMTAddr);
+                ITypeHandle combinedHandle = new TargetTypeHandle(CombinedArrayMTAddr);
                 objectMock.Setup(o => o.GetMethodTableAddress(CombinedArrayAddr)).Returns(CombinedArrayMTAddr);
                 rtsMock.Setup(r => r.GetTypeHandle(CombinedArrayMTAddr)).Returns(combinedHandle);
                 rtsMock.Setup(r => r.ContainsGCPointers(combinedHandle)).Returns(true);
             }
             else
             {
-                ITypeHandle i1Handle = new(StackTraceMTAddr);
+                ITypeHandle i1Handle = new TargetTypeHandle(StackTraceMTAddr);
                 objectMock.Setup(o => o.GetMethodTableAddress(StackTraceObjectAddr)).Returns(StackTraceMTAddr);
                 rtsMock.Setup(r => r.GetTypeHandle(StackTraceMTAddr)).Returns(i1Handle);
                 rtsMock.Setup(r => r.ContainsGCPointers(i1Handle)).Returns(false);
