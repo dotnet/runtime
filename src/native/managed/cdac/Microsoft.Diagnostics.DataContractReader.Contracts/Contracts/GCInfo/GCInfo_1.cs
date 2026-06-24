@@ -58,6 +58,24 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
         return handle.EnumerateLiveSlots(instructionOffset, options);
     }
 
+    GCInfoHeader IGCInfo.GetHeader(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetHeader();
+    }
+
+    IReadOnlyList<uint> IGCInfo.GetSafePoints(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetSafePoints();
+    }
+
+    IReadOnlyList<GCSlotLifetime> IGCInfo.GetSlotLifetimes(IGCInfoHandle gcInfoHandle)
+    {
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetSlotLifetimes();
+    }
+
     private static IGCInfoDecoder AssertCorrectHandle(IGCInfoHandle gcInfoHandle)
     {
         if (gcInfoHandle is not IGCInfoDecoder handle)

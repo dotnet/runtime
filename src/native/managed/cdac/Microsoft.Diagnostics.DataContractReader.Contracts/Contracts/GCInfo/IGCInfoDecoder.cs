@@ -19,4 +19,7 @@ internal interface IGCInfoDecoder : IGCInfoHandle
 
     IReadOnlyList<InterruptibleRange> GetInterruptibleRanges();
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(uint instructionOffset, GcSlotEnumerationOptions options);
+    GCInfoHeader GetHeader();
+    IReadOnlyList<uint> GetSafePoints();
+    IReadOnlyList<GCSlotLifetime> GetSlotLifetimes();
 }
