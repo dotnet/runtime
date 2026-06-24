@@ -330,13 +330,15 @@ namespace System.Text.Json.Serialization.Tests
                         async () =>
                         {
                             JsonNode jsonNode = await Serializer.DeserializeWrapper<JsonNode>(wrappedJson, options);
-                            JsonSerializer.Deserialize<TValue>(jsonNode[key], options);
+                            JsonTypeInfo<TValue> typeInfo = Serializer.GetTypeInfo<TValue>(options);
+                            JsonSerializer.Deserialize(jsonNode[key], typeInfo);
                         });
                 }
                 else
                 {
                     JsonNode jsonNode = await Serializer.DeserializeWrapper<JsonNode>(wrappedJson, options);
-                    TValue value = JsonSerializer.Deserialize<TValue>(jsonNode[key], options);
+                    JsonTypeInfo<TValue> typeInfo = Serializer.GetTypeInfo<TValue>(options);
+                    TValue value = JsonSerializer.Deserialize(jsonNode[key], typeInfo);
                     Assert.Equal(expectedValue, value, equalityComparer);
                 }
             }

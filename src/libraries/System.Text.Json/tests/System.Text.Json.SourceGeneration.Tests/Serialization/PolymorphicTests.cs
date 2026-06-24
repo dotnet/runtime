@@ -237,6 +237,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(List<PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass>))]
         [JsonSerializable(typeof(Dictionary<string, PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass>))]
         [JsonSerializable(typeof(OpenGenericBase_DuplicateDerivedRegistrations<int>))]
+        [JsonSerializable(typeof(UsaCustomer))]
+        [JsonSerializable(typeof(PolymorphicTests.MyClass))]
+        [JsonSerializable(typeof(PolymorphicTests.MyThingCollection))]
+        [JsonSerializable(typeof(PolymorphicTests.MyThingDictionary))]
         internal sealed partial class PolymorphicTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -478,6 +482,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(List<PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass>))]
         [JsonSerializable(typeof(Dictionary<string, PolymorphicClass_WithDerivedPolymorphicClass.DerivedClass>))]
         [JsonSerializable(typeof(OpenGenericBase_DuplicateDerivedRegistrations<int>))]
+        [JsonSerializable(typeof(UsaCustomer))]
+        [JsonSerializable(typeof(PolymorphicTests.MyClass))]
+        [JsonSerializable(typeof(PolymorphicTests.MyThingCollection))]
+        [JsonSerializable(typeof(PolymorphicTests.MyThingDictionary))]
         internal sealed partial class PolymorphicTestsContext_Default : JsonSerializerContext
         {
         }

@@ -40,16 +40,16 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void ReadPrimitivesFail()
+        public async Task ReadPrimitivesFail()
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<object>(@""));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<object>(@"a"));
+            await Assert.ThrowsAnyAsync<JsonException>(() => Serializer.DeserializeWrapper<object>(@""));
+            await Assert.ThrowsAnyAsync<JsonException>(() => Serializer.DeserializeWrapper<object>(@"a"));
         }
 
         [Fact]
-        public void ParseUntyped()
+        public async Task ParseUntyped()
         {
-            object obj = JsonSerializer.Deserialize<object>("""
+            object obj = await Serializer.DeserializeWrapper<object>("""
                 "hello"
                 """);
             Assert.IsType<JsonElement>(obj);
@@ -57,15 +57,15 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonValueKind.String, element.ValueKind);
             Assert.Equal("hello", element.GetString());
 
-            obj = JsonSerializer.Deserialize<object>(@"true");
+            obj = await Serializer.DeserializeWrapper<object>(@"true");
             element = (JsonElement)obj;
             Assert.Equal(JsonValueKind.True, element.ValueKind);
             Assert.True(element.GetBoolean());
 
-            obj = JsonSerializer.Deserialize<object>(@"null");
+            obj = await Serializer.DeserializeWrapper<object>(@"null");
             Assert.Null(obj);
 
-            obj = JsonSerializer.Deserialize<object>("[]");
+            obj = await Serializer.DeserializeWrapper<object>("[]");
             element = (JsonElement)obj;
             Assert.Equal(JsonValueKind.Array, element.ValueKind);
         }
@@ -453,7 +453,7 @@ namespace System.Text.Json.Serialization.Tests
             customer.Verify();
 
             string json = await Serializer.SerializeWrapper(customer);
-            Customer deserializedCustomer = JsonSerializer.Deserialize<Customer>(json);
+            Customer deserializedCustomer = await Serializer.DeserializeWrapper<Customer>(json);
             deserializedCustomer.Verify();
         }
 
@@ -469,7 +469,7 @@ namespace System.Text.Json.Serialization.Tests
             // Generic inference used <TValue> = <Person>
             string json = await Serializer.SerializeWrapper(person);
 
-            Customer deserializedCustomer = JsonSerializer.Deserialize<Customer>(json);
+            Customer deserializedCustomer = await Serializer.DeserializeWrapper<Customer>(json);
 
             // We only serialized the Person base class, so the Customer fields should be default.
             Assert.Equal(typeof(Customer), deserializedCustomer.GetType());
@@ -488,7 +488,7 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = await Serializer.SerializeWrapper(person, person.GetType());
 
-            Customer deserializedCustomer = JsonSerializer.Deserialize<Customer>(json);
+            Customer deserializedCustomer = await Serializer.DeserializeWrapper<Customer>(json);
 
             // We serialized the Customer
             Assert.Equal(typeof(Customer), deserializedCustomer.GetType());
@@ -510,7 +510,7 @@ namespace System.Text.Json.Serialization.Tests
             // Generic inference used <TValue> = <Customer>
             string json = await Serializer.SerializeWrapper(customer);
 
-            UsaCustomer deserializedCustomer = JsonSerializer.Deserialize<UsaCustomer>(json);
+            UsaCustomer deserializedCustomer = await Serializer.DeserializeWrapper<UsaCustomer>(json);
 
             // We only serialized the Customer base class
             Assert.Equal(typeof(UsaCustomer), deserializedCustomer.GetType());
@@ -519,34 +519,34 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void PolymorphicInterface_NotSupported()
+        public async Task PolymorphicInterface_NotSupported()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<MyClass>("""{ "Value": "A value", "Thing": { "Number": 123 } }"""));
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<MyClass>("""{ "Value": "A value", "Thing": { "Number": 123 } }"""));
         }
 
         [Fact]
-        public void GenericListOfInterface_WithInvalidJson_ThrowsJsonException()
+        public async Task GenericListOfInterface_WithInvalidJson_ThrowsJsonException()
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<MyThingCollection>("false"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<MyThingCollection>("{}"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<MyThingCollection>("false"));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<MyThingCollection>("{}"));
         }
 
         [Fact]
-        public void GenericListOfInterface_WithValidJson_ThrowsNotSupportedException()
+        public async Task GenericListOfInterface_WithValidJson_ThrowsNotSupportedException()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<MyThingCollection>("[{}]"));
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<MyThingCollection>("[{}]"));
         }
 
         [Fact]
-        public void GenericDictionaryOfInterface_WithInvalidJson_ThrowsJsonException()
+        public async Task GenericDictionaryOfInterface_WithInvalidJson_ThrowsJsonException()
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<MyThingDictionary>("""{"":1}"""));
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<MyThingDictionary>("""{"":1}"""));
         }
 
         [Fact]
-        public void GenericDictionaryOfInterface_WithValidJson_ThrowsNotSupportedException()
+        public async Task GenericDictionaryOfInterface_WithValidJson_ThrowsNotSupportedException()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<MyThingDictionary>("""{"":{}}"""));
+            await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<MyThingDictionary>("""{"":{}}"""));
         }
 
         [ConditionalFact]
@@ -600,29 +600,29 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("[1,2,3]", json);
         }
 
-        class MyClass
+        internal class MyClass
         {
             public string Value { get; set; }
             public IThing Thing { get; set; }
         }
 
-        interface IThing
+        internal interface IThing
         {
             int Number { get; set; }
         }
 
-        class MyThing : IThing
+        internal class MyThing : IThing
         {
             public int Number { get; set; }
         }
 
-        class MyDerivedThing : MyThing
+        internal class MyDerivedThing : MyThing
         {
         }
 
-        class MyThingCollection : List<IThing> { }
+        internal class MyThingCollection : List<IThing> { }
 
-        class MyThingDictionary : Dictionary<string, IThing> { }
+        internal class MyThingDictionary : Dictionary<string, IThing> { }
 
         [Theory]
         [InlineData(typeof(PolymorphicTypeWithConflictingPropertyNameAtBase), typeof(PolymorphicTypeWithConflictingPropertyNameAtBase.Derived))]
