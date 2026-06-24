@@ -170,7 +170,7 @@ namespace
         transitionBlock.args[0] = arg0;
         static_assert(offsetof(decltype(transitionBlock), args) == sizeof(TransitionBlock), "Args array must be at a TransitionBlock offset from the start of the block");
 
-        int64_t result = NULL;
+        int64_t result = 0;
         ExecuteInterpretedMethodWithArgs_PortableEntryPoint(portableEntrypoint, &transitionBlock.block, sizeof(transitionBlock.args), (int8_t*)&result);
         return result;
     }
