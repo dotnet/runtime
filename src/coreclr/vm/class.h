@@ -1518,7 +1518,7 @@ public:
     {
         SUPPORTS_DAC;
         WRAPPER_NO_CONTRACT;
-        return HasOptionalFields() ? GetOptionalFields()->m_pDictLayout : NULL;
+        return HasOptionalFields() ? VolatileLoad(&GetOptionalFields()->m_pDictLayout) : NULL;
     }
 
     void SetDictionaryLayout(PTR_DictionaryLayout pLayout)
@@ -1526,7 +1526,7 @@ public:
         SUPPORTS_DAC;
         WRAPPER_NO_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_pDictLayout = pLayout;
+        VolatileStore(&GetOptionalFields()->m_pDictLayout, pLayout);
     }
 
 #ifndef DACCESS_COMPILE

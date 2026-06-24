@@ -166,7 +166,7 @@ namespace System
 
         // This method will combine this delegate with the passed delegate
         //    to form a new delegate.
-        protected sealed override Delegate CombineImpl(Delegate? follow)
+        internal new Delegate CombineImpl(Delegate? follow)
         {
             if (follow is null)
                 return this;
@@ -284,21 +284,21 @@ namespace System
         //    look at the invocation list.)  If this is found we remove it from
         //    this list and return a new delegate.  If its not found a copy of the
         //    current list is returned.
-        protected sealed override Delegate? RemoveImpl(Delegate value)
+        internal new Delegate? RemoveImpl(Delegate? value)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
             //
             MulticastDelegate? v = value as MulticastDelegate;
-
             if (v == null)
                 return this;
+
             if (v._invocationList is not object[])
             {
                 if (_invocationList is not object[] invocationList)
                 {
                     // they are both not real Multicast
-                    if (Equals(value))
+                    if (Equals(v))
                         return null;
                 }
                 else
@@ -306,7 +306,7 @@ namespace System
                     int invocationCount = (int)_invocationCount;
                     for (int i = invocationCount; --i >= 0;)
                     {
-                        if (value.Equals(invocationList[i]))
+                        if (v.Equals(invocationList[i]))
                         {
                             if (invocationCount == 2)
                             {
@@ -356,7 +356,7 @@ namespace System
         }
 
         // This method returns the Invocation list of this multicast delegate.
-        public sealed override Delegate[] GetInvocationList()
+        internal new Delegate[] GetInvocationList()
         {
             Delegate[] del;
             if (_invocationList is not object[] invocationList)
