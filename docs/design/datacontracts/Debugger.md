@@ -29,6 +29,7 @@ TargetPointer GetDebuggerControlBlockAddress();
 void EnableGCNotificationEvents(bool fEnable);
 HijackKind GetHijackKind(TargetCodePointer controlPC);
 TargetPointer GetHijackAddress();
+void PlaceExceptionHijackWorkerArguments(byte[] context, ref TargetPointer sp, ReadOnlySpan<TargetNUInt> args);
 ```
 
 ## Version 1
@@ -209,5 +210,11 @@ TargetPointer GetHijackAddress()
     uint stride = // Size of one MemoryRange entry
     TargetPointer entryAddress = rgHijack + (ulong)(UnhandledExceptionHijackIndex * stride);
     return target.ReadPointer(entryAddress + /* MemoryRange::StartAddress offset */);
+}
+
+void PlaceExceptionHijackWorkerArguments(byte[] context, ref TargetPointer sp, ReadOnlySpan<TargetNUInt> args)
+{
+    // Places the arguments to ExceptionHijackWorker as dictated by the native ABI.
+    // Mutates stack pointer and context as necessary.
 }
 ```

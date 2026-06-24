@@ -787,8 +787,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (pRemoteContextAddr is not null)
                 *pRemoteContextAddr = espContext.Value;
 
-            // Set up the arguments for the hijack worker:
-            //   void ExceptionHijackWorker(CONTEXT* pContext, EXCEPTION_RECORD* pRecord, EHijackReason reason, void* pData)
             ReadOnlySpan<TargetNUInt> args =
             [
                 new TargetNUInt(espContext.Value),
@@ -796,7 +794,9 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 new TargetNUInt((uint)reason),
                 new TargetNUInt((ulong)pUserData),
             ];
-            IntegerArgPlacer.PlaceArgs(_target, ctx, ref sp, args);
+            byte[] ctxBytes = ctx.GetBytes();
+            _target.Contracts.Debugger.PlaceExceptionHijackWorkerArguments(ctxBytes, ref sp, args);
+            ctx.FillFromBuffer(ctxBytes);
 
             ctx.StackPointer = sp;
             ctx.InstructionPointer = new TargetCodePointer(pfnHijackFunction.Value);
