@@ -10377,7 +10377,12 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
+#if defined(TARGET_WASM)
+                    // WASM lowers MaxNative to a NaN-propagating max instruction.
+                    res = FloatingPointUtils::maximum(arg0Val, arg1Val);
+#else
+                    res = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
+#endif
                     break;
                 }
 
@@ -10385,7 +10390,12 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
-                    res            = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
+#if defined(TARGET_WASM)
+                    // WASM lowers MinNative to a NaN-propagating min instruction.
+                    res = FloatingPointUtils::minimum(arg0Val, arg1Val);
+#else
+                    res = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
+#endif
                     break;
                 }
 #endif // TARGET_RISCV64 || TARGET_WASM
@@ -10419,7 +10429,12 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
+#if defined(TARGET_WASM)
+                    // WASM lowers MaxNative to a NaN-propagating max instruction.
+                    res = FloatingPointUtils::maximum(arg0Val, arg1Val);
+#else
+                    res = FloatingPointUtils::maximumNumber(arg0Val, arg1Val);
+#endif
                     break;
                 }
 
@@ -10427,7 +10442,12 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
-                    res           = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
+#if defined(TARGET_WASM)
+                    // WASM lowers MinNative to a NaN-propagating min instruction.
+                    res = FloatingPointUtils::minimum(arg0Val, arg1Val);
+#else
+                    res = FloatingPointUtils::minimumNumber(arg0Val, arg1Val);
+#endif
                     break;
                 }
 #endif // TARGET_RISCV64 || TARGET_WASM
@@ -10517,11 +10537,21 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
 
 #if defined(TARGET_RISCV64) || defined(TARGET_WASM)
             case NI_System_Math_MaxNative:
+#if defined(TARGET_WASM)
+                // WASM lowers MaxNative to a NaN-propagating max instruction.
+                vnf = VNF_Max;
+#else
                 vnf = VNF_MaxNumber;
+#endif
                 break;
 
             case NI_System_Math_MinNative:
+#if defined(TARGET_WASM)
+                // WASM lowers MinNative to a NaN-propagating min instruction.
+                vnf = VNF_Min;
+#else
                 vnf = VNF_MinNumber;
+#endif
                 break;
 #endif // TARGET_RISCV64 || TARGET_WASM
 
