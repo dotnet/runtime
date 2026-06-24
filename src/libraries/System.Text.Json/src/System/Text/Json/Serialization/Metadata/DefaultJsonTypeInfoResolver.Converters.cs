@@ -33,6 +33,8 @@ namespace System.Text.Json.Serialization.Metadata
                 new IAsyncEnumerableConverterFactory(),
                 // IEnumerable should always be second to last since they can convert any IEnumerable.
                 new IEnumerableConverterFactory(),
+                // Union converter should be before Object since it converts [JsonUnion] types.
+                new JsonUnionConverterFactory(),
                 // Object should always be last since it converts any type.
                 new ObjectConverterFactory()
             ];
@@ -45,6 +47,10 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Use a dictionary for simple converters.
             // When adding to this, update NumberOfSimpleConverters above.
+            //
+            // When adding/removing a built-in converter here, also update
+            // gen/JsonSourceGenerator.Parser.cs::GetSupportedJsonValueTypes so the union
+            // ambiguity diagnostic (SYSLIB1227) agrees with JsonTypeInfo.BuildUnionValueTypeMap.
             Add(JsonMetadataServices.BooleanConverter);
             Add(JsonMetadataServices.ByteConverter);
             Add(JsonMetadataServices.ByteArrayConverter);

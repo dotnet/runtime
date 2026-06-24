@@ -465,7 +465,7 @@ namespace System.IO.Tests
 
         public static IEnumerable<object[]> FilterTypes()
         {
-            foreach (NotifyFilters filter in Enum.GetValues(typeof(NotifyFilters)))
+            foreach (NotifyFilters filter in Enum.GetValues<NotifyFilters>())
                 yield return new object[] { filter };
         }
 

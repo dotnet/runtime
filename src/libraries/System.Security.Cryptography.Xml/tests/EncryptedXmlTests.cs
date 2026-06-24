@@ -1410,6 +1410,25 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(1, encKey.ReferenceList.Count);
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Throws NullReferenceException on .NET Framework")]
+        public static void DecryptDocument_RetrievalMethodWithoutUri_ThrowsCryptographicException()
+        {
+            const string xml =
+                "<root>" +
+                "<EncryptedData xmlns=\"http://www.w3.org/2001/04/xmlenc#\">" +
+                "<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\">" +
+                "<RetrievalMethod/>" +
+                "</KeyInfo>" +
+                "<CipherData><CipherValue>AA==</CipherValue></CipherData>" +
+                "</EncryptedData>" +
+                "</root>";
+
+            var doc = new XmlDocument { XmlResolver = null };
+            doc.LoadXml(xml);
+            Assert.Throws<CryptographicException>(() => new EncryptedXml(doc).DecryptDocument());
+        }
+
 #if NET
         [Fact]
         public static void EncryptedXml_RecursiveKey_Default()
@@ -1500,7 +1519,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void EncryptedKey_InfiniteLoopXsltTransform()
         {
             using RSA rsa = RSA.Create(2048);
@@ -1566,7 +1585,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal("The specified cryptographic transform is not supported.", ex.Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void EncryptedXml_BillionLaughsXsltTransform()
         {
             XmlDocument doc = new();

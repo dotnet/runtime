@@ -117,7 +117,7 @@ void PortableEntryPoint::Init(MethodDesc* pMD)
     _pActualCode = NULL;
     _pMD = pMD;
     _pInterpreterData = NULL;
-    _flags = kNone;
+    _flags = kPrefersInterpreterEntryPoint;
     INDEBUG(_canary = CANARY_VALUE);
 }
 
@@ -132,7 +132,18 @@ void PortableEntryPoint::Init(void* nativeEntryPoint)
     INDEBUG(_canary = CANARY_VALUE);
 }
 
-void PortableEntryPoint::Init(void* nativeEntryPoint, MethodDesc* pMD)
+void PortableEntryPoint::Init_WithInterpreterThunk(void* nativeEntryPoint, MethodDesc* pMD)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    _pActualCode = nativeEntryPoint;
+    _pMD = pMD;
+    _pInterpreterData = NULL;
+    _flags = kPrefersInterpreterEntryPoint;
+    INDEBUG(_canary = CANARY_VALUE);
+}
+
+void PortableEntryPoint::Init_WithNativeCode(void* nativeEntryPoint, MethodDesc* pMD)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pMD != NULL);
@@ -238,8 +249,15 @@ void FlushCacheForDynamicMappedStub(void* code, SIZE_T size)
 BOOL DoesSlotCallPrestub(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(!"DoesSlotCallPrestub is not supported with Portable EntryPoints");
+#ifdef TARGET_WASM
+    /* On WASM slots never directly call the prestub. Instead we have the R2R to interpreter thunks
+       which serve as the PreStub, but the characteristics are slightly different, and it appears this
+       isn't necessary. */
     return FALSE;
+#else
+    _ASSERTE(!"DoesSlotCallPrestub is not yet implemented for non-WASM portable entrypoints");
+    return FALSE;
+#endif
 }
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS

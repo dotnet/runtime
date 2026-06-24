@@ -48,7 +48,6 @@ namespace System.Threading
         // Points to the next-most-recent blocking info for the thread
         private ThreadBlockingInfo* _next; // may be used by debuggers
 
-        [RequiresUnsafe]
         private void Push(void* objectPtr, ObjectKind objectKind, int timeoutMs)
         {
             Debug.Assert(objectPtr != null);
@@ -87,11 +86,9 @@ namespace System.Threading
                     case ObjectKind.Lock:
                         return ((Lock)Unsafe.AsRef<object>(_objectPtr)).OwningManagedThreadId;
 
-#if !MONO
                     case ObjectKind.Condition:
                         Debug.Assert(_objectKind == ObjectKind.Condition);
                         return ((Condition)Unsafe.AsRef<object>(_objectPtr)).AssociatedLock.OwningManagedThreadId;
-#endif
 
                     default:
                         throw new UnreachableException();
@@ -108,9 +105,7 @@ namespace System.Threading
             public Scope(Lock lockObj, int timeoutMs) : this(lockObj, ObjectKind.Lock, timeoutMs) { }
 #pragma warning restore CS9216
 
-#if !MONO
             public Scope(Condition condition, int timeoutMs) : this(condition, ObjectKind.Condition, timeoutMs) { }
-#endif
 
             private Scope(object obj, ObjectKind objectKind, int timeoutMs)
             {

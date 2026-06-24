@@ -421,6 +421,16 @@ struct RangeOps
         {
             result.uLimit = Limit(Limit::keConstant, r1.UpperLimit().GetConstant() >> r2.LowerLimit().GetConstant());
         }
+
+        // For RSZ by N >= 1, result is in [0, UINT_MAX >> N] regardless of r1's signedness.
+        // When r1 isn't proven non-negative, the bound above is unsound (negative r1 reinterprets
+        // as large unsigned), so override with the type-based bound.
+        if (logical && (r2.LowerLimit().GetConstant() >= 1) &&
+            !(r1.LowerLimit().IsConstant() && (r1.LowerLimit().GetConstant() >= 0)))
+        {
+            result.lLimit = Limit(Limit::keConstant, 0);
+            result.uLimit = Limit(Limit::keConstant, (int)(UINT32_MAX >> r2.LowerLimit().GetConstant()));
+        }
         return result;
     }
 
@@ -433,19 +443,39 @@ struct RangeOps
 
     static Range Or(const Range& r1, const Range& r2)
     {
-        // For OR we require both operands to be constant to produce a constant result.
-        // No useful information can be derived if only one operand is constant.
+        // For OR we require both operands to be non-negative constant ranges.
         //
         // Example: [0..3] | [1..255] = [1..255]
         //          [X..Y] | [1..255] = [unknown..unknown]
         //
-        return ApplyRangeOp(r1, r2, [](const Limit& a, const Limit& b) {
-            if (a.IsConstant() && b.IsConstant() && (a.GetConstant() >= 0) && (b.GetConstant() >= 0))
-            {
-                return Limit(Limit::keConstant, a.GetConstant() | b.GetConstant());
-            }
-            return Limit(Limit::keUnknown);
-        });
+        if (!r1.IsConstantRange() || !r2.IsConstantRange())
+        {
+            return Range(Limit(Limit::keUnknown));
+        }
+
+        const int r1lo = r1.LowerLimit().GetConstant();
+        const int r1hi = r1.UpperLimit().GetConstant();
+        const int r2lo = r2.LowerLimit().GetConstant();
+        const int r2hi = r2.UpperLimit().GetConstant();
+
+        if ((r1lo < 0) || (r2lo < 0))
+        {
+            return Range(Limit(Limit::keUnknown));
+        }
+
+        // a | b >= max(a, b), so max(r1lo, r2lo) is a sound lower bound.
+        const int lo = max(r1lo, r2lo);
+
+        // a | b cannot set any bit above the most-significant set bit of max(r1hi, r2hi), so it is
+        // bounded above by that value with all lower bits filled in (smallest 2^k - 1 >= the max).
+        int hi = max(r1hi, r2hi);
+        hi |= hi >> 1;
+        hi |= hi >> 2;
+        hi |= hi >> 4;
+        hi |= hi >> 8;
+        hi |= hi >> 16;
+
+        return Range(Limit(Limit::keConstant, lo), Limit(Limit::keConstant, hi));
     }
 
     static Range And(const Range& r1, const Range& r2)
@@ -489,6 +519,31 @@ struct RangeOps
             return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, r2ConstVal - 1));
         }
         return Range(Limit(Limit::keUnknown));
+    }
+
+    static Range UnsignedDivide(const Range& r1, const Range& r2)
+    {
+        // We only handle constant ranges for both operands.
+        if (!r1.IsConstantRange() || !r2.IsConstantRange())
+        {
+            return Range(Limit(Limit::keUnknown));
+        }
+
+        const int numLo = r1.LowerLimit().GetConstant();
+        const int numHi = r1.UpperLimit().GetConstant();
+        const int divLo = r2.LowerLimit().GetConstant();
+        const int divHi = r2.UpperLimit().GetConstant();
+
+        // Require a non-negative dividend and a strictly-positive divisor so that the signed
+        // [lo..hi] bounds coincide with their unsigned interpretation (and no division by zero).
+        if ((numLo < 0) || (divLo <= 0))
+        {
+            return Range(Limit(Limit::keUnknown));
+        }
+
+        // (uint)x / (uint)y is maximized by the largest dividend over the smallest divisor and
+        // minimized by the smallest dividend over the largest divisor.
+        return Range(Limit(Limit::keConstant, numLo / divHi), Limit(Limit::keConstant, numHi / divLo));
     }
 
     // Given two ranges "r1" and "r2", do a Phi merge. If "monIncreasing" is true,
@@ -561,22 +616,26 @@ struct RangeOps
         // and we have to be careful by not masking possible overflows.
 
         // Widen Upper Limit => Max(k, ($bnd + n)) yields ($bnd + n),
-        // This is correct if k >= 0 and n >= k, since $bnd always >= 0
+        // This is correct if n >= k, since $bnd always >= 0 (so $bnd + n >= n >= k).
         // ($bnd + n) could overflow, but the result ($bnd + n) also
         // preserves the overflow.
         //
-        if (r1hi.IsConstant() && r1hi.GetConstant() >= 0 && r2hi.IsBinOpArray() &&
-            r2hi.GetConstant() >= r1hi.GetConstant())
+        if (r1hi.IsConstant() && r2hi.IsBinOpArray() && r2hi.GetConstant() >= r1hi.GetConstant())
         {
             result.uLimit = r2hi;
         }
-        if (r2hi.IsConstant() && r2hi.GetConstant() >= 0 && r1hi.IsBinOpArray() &&
-            r1hi.GetConstant() >= r2hi.GetConstant())
+        if (r2hi.IsConstant() && r1hi.IsBinOpArray() && r1hi.GetConstant() >= r2hi.GetConstant())
         {
             result.uLimit = r1hi;
         }
 
         // Rule: <$bnd + cns1, ...> U <cns2, ...> = <min(cns1, cns2), ...> when cns1 <= 0
+        //
+        // $bnd is always >= 0, so when cns1 <= 0 the expression ($bnd + cns1) cannot overflow and
+        // its smallest value is exactly cns1, making min(cns1, cns2) a sound lower bound. We must
+        // keep the cns1 <= 0 guard: for cns1 > 0, ($bnd + cns1) can overflow (e.g. a Span length is
+        // bounded by INT_MAX, so $bnd + 1 may wrap to INT_MIN), which would make the collapsed
+        // constant an unsound (too-high) lower bound.
         //
         // Example: <$bnd - 3, ...> U <0, ...> = <-3, ...>
         //
@@ -759,22 +818,33 @@ public:
     // Constructor
     RangeCheck(Compiler* pCompiler);
 
+    void SetBudget(int budget)
+    {
+        m_nVisitBudget = budget;
+    }
+
     // Entry point to optimize range checks in the method. Assumes value numbering
     // and assertion prop phases are completed.
     bool OptimizeRangeChecks();
 
-    bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
+    bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, ValueNum preferredBoundVN = ValueNumStore::NoVN);
 
     // Cheaper version of TryGetRange that is based only on incoming assertions.
-    static Range GetRangeFromAssertions(Compiler* comp, ValueNum num, ASSERT_VALARG_TP assertions, int budget = 10);
+    static Range GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_VALARG_TP assertions, int budget = 10);
 
     // Compute the range from the given type
     static Range GetRangeFromType(var_types type);
 
 private:
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
+
+    // Cheaper version of TryGetRange that is based only on incoming assertions.
+    static Range GetRangeFromAssertionsWorker(Compiler*                        comp,
+                                              ValueNum                         num,
+                                              ASSERT_VALARG_TP                 assertions,
+                                              int                              budget,
+                                              ValueNumStore::SmallValueNumSet* visited);
 
     int GetArrLength(ValueNum vn);
 
@@ -820,6 +890,18 @@ private:
                                     Range*           pRange,
                                     bool             canUseCheckedBounds = true);
 
+    // Internal worker used by GetRangeFromAssertionsWorker: same as the public overload
+    // but threads a recursion budget and visited set so that VN-to-VN assertions can be
+    // resolved by recursing into GetRangeFromAssertionsWorker without unbounded work.
+    static void MergeEdgeAssertionsWorker(Compiler*                        comp,
+                                          ValueNum                         num,
+                                          ValueNum                         preferredBoundVN,
+                                          ASSERT_VALARG_TP                 assertions,
+                                          Range*                           pRange,
+                                          bool                             canUseCheckedBounds,
+                                          int                              budget,
+                                          ValueNumStore::SmallValueNumSet* visited);
+
     // The maximum possible value of the given "limit". If such a value could not be determined
     // return "false". For example: CORINFO_Array_MaxLength for array length.
     bool GetLimitMax(Limit& limit, int* pMax);
@@ -841,8 +923,6 @@ private:
     bool DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl, const Range& range);
 
     // Does the current "expr", which is a use, involve a definition that overflows.
-    bool DoesOverflow(BasicBlock* block, GenTree* tree, const Range& range);
-
     bool ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range);
 
     // Widen the range by first checking if the induction variable is monotonically increasing.
@@ -865,11 +945,6 @@ private:
 
     // When we have this bound and a constant, we prefer to use this bound (if set)
     ValueNum m_preferredBound;
-
-    // Get the cached overflow values.
-    OverflowMap* GetOverflowMap();
-    void         ClearOverflowMap();
-    OverflowMap* m_pOverflowMap;
 
     // Get the cached range values.
     RangeMap* GetRangeMap();

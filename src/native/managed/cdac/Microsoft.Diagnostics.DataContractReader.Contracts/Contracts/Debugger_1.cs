@@ -5,6 +5,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Debugger_1 : IDebugger
 {
+    private enum DebuggerControlFlag_1 : uint
+    {
+        PendingAttach = 0x0100,
+        Attached = 0x0200,
+    }
+    private const uint UnhandledExceptionHijackIndex = 0;
+
     private readonly Target _target;
 
     internal Debugger_1(Target target)
@@ -31,10 +38,7 @@ internal readonly struct Debugger_1 : IDebugger
             return false;
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
-        if (debugger.LeftSideInitialized == 0)
-            return false;
-
-        data = new DebuggerData(debugger.Defines, debugger.MDStructuresVersion);
+        data = new DebuggerData(debugger.LeftSideInitialized != 0, debugger.Defines, debugger.MDStructuresVersion);
         return true;
     }
 
@@ -42,6 +46,27 @@ internal readonly struct Debugger_1 : IDebugger
     {
         TargetPointer addr = _target.ReadGlobalPointer(Constants.Globals.CLRJitAttachState);
         return (int)_target.Read<uint>(addr.Value);
+    }
+
+    void IDebugger.MarkDebuggerAttachPending()
+    {
+        TargetPointer addr = _target.ReadGlobalPointer(Constants.Globals.CORDebuggerControlFlags);
+        uint currentFlags = _target.Read<uint>(addr.Value);
+        _target.Write<uint>(addr.Value, currentFlags | (uint)DebuggerControlFlag_1.PendingAttach);
+    }
+
+    void IDebugger.MarkDebuggerAttached(bool fAttached)
+    {
+        TargetPointer addr = _target.ReadGlobalPointer(Constants.Globals.CORDebuggerControlFlags);
+        uint currentFlags = _target.Read<uint>(addr.Value);
+        if (fAttached)
+        {
+            _target.Write<uint>(addr.Value, currentFlags | (uint)DebuggerControlFlag_1.Attached);
+        }
+        else
+        {
+            _target.Write<uint>(addr.Value, currentFlags & ~((uint)DebuggerControlFlag_1.Attached | (uint)DebuggerControlFlag_1.PendingAttach));
+        }
     }
 
     bool IDebugger.MetadataUpdatesApplied()
@@ -59,7 +84,7 @@ internal readonly struct Debugger_1 : IDebugger
             return;
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
-        debugger.SetField(_target, nameof(Data.Debugger.RSRequestedSync), 1);
+        debugger.WriteRSRequestedSync(1);
     }
 
     void IDebugger.SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC)
@@ -68,7 +93,7 @@ internal readonly struct Debugger_1 : IDebugger
             return;
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
-        debugger.SetField(_target, nameof(Data.Debugger.SendExceptionsOutsideOfJMC), sendExceptionsOutsideOfJMC ? 1 : 0);
+        debugger.WriteSendExceptionsOutsideOfJMC(sendExceptionsOutsideOfJMC ? 1 : 0);
     }
 
     TargetPointer IDebugger.GetDebuggerControlBlockAddress()
@@ -91,6 +116,37 @@ internal readonly struct Debugger_1 : IDebugger
             return;
 
         Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
-        debugger.SetField(_target, nameof(Data.Debugger.GCNotificationEventsEnabled), fEnable ? 1 : 0);
+        debugger.WriteGCNotificationEventsEnabled(fEnable ? 1 : 0);
+    }
+
+    HijackKind IDebugger.GetHijackKind(TargetCodePointer controlPC)
+    {
+        if (!TryGetDebuggerAddress(out TargetPointer debuggerAddress))
+            return HijackKind.None;
+
+        Data.Debugger debugger = _target.ProcessedData.GetOrAdd<Data.Debugger>(debuggerAddress);
+        if (debugger.RgHijackFunction == TargetPointer.Null)
+            return HijackKind.None;
+
+        uint maxHijackFunctions = _target.ReadGlobal<uint>(Constants.Globals.MaxHijackFunctions);
+        if (maxHijackFunctions == 0)
+            return HijackKind.None;
+
+        Target.TypeInfo memoryRangeTypeInfo = _target.GetTypeInfo(DataType.MemoryRange);
+        uint stride = memoryRangeTypeInfo.Size!.Value;
+
+        for (uint i = 0; i < maxHijackFunctions; i++)
+        {
+            TargetPointer entryAddress = debugger.RgHijackFunction + (ulong)(i * stride);
+            Data.MemoryRange entry = _target.ProcessedData.GetOrAdd<Data.MemoryRange>(entryAddress);
+
+            ulong start = entry.StartAddress.Value;
+            ulong end = start + entry.Size.Value;
+            if (controlPC.Value >= start && controlPC.Value < end)
+            {
+                return i == UnhandledExceptionHijackIndex ? HijackKind.UnhandledException : HijackKind.Other;
+            }
+        }
+        return HijackKind.None;
     }
 }

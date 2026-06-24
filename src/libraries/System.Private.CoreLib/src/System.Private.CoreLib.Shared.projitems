@@ -530,6 +530,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\MatchCasing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\MatchType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\MemoryStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\ReadOnlyMemoryStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\StringStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\WritableMemoryStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathTooLongException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PinnedBufferMemoryStream.cs" />
@@ -836,6 +839,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncMethodBuilderAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncMethodBuilderCore.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncStateMachineAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncStateMachineDiagnostics.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncTaskMethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncTaskMethodBuilderT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncValueTaskMethodBuilder.cs" />
@@ -894,6 +898,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InterpolatedStringHandlerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InterpolatedStringHandlerArgumentAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\DefaultInterpolatedStringHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsClosedTypeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsUnmanagedAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IteratorStateMachineAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ITuple.cs" />
@@ -942,6 +947,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\UnionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ValueTaskAwaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\YieldAwaitable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncProfiler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncProfilerEventSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncStateMachineDispatcher.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\Cer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\Consistency.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ConstrainedExecution\CriticalFinalizerObject.cs" />
@@ -1264,11 +1272,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ApartmentState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AsyncLocal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AutoResetEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Backoff.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CancellationToken.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CancellationTokenRegistration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CancellationTokenSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\CompressedStack.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Condition.cs" Condition="'$(FeatureMono)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Condition.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\StackCrawlMark.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventResetMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.cs" />
@@ -1282,8 +1291,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Lock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LockRecursionException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLock.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelSpinWaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelSpinWaiter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelThreadBlocker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ManualResetEvent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ManualResetEventSlim.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Monitor.cs" />
@@ -1302,7 +1312,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SynchronizationContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SynchronizationLockException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\AsyncCausalityTracerConstants.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\CachedCompletedInt32Task.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\CachedCompletedInt32Task.cs"
+             Link="Common\System\Threading\Tasks\CachedCompletedInt32Task.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\ConfigureAwaitOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\Task_T.cs" />
@@ -1554,6 +1565,9 @@
     </Compile>
     <Compile Include="$(LibrariesProjectRoot)System.Reflection.Metadata\src\System\Reflection\Metadata\TypeNameParserHelpers.cs">
       <Link>Common\System\Reflection\Metadata\TypeNameParserHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs">
+      <Link>Common\System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
       <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
@@ -2172,6 +2186,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualQuery_Ptr.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.VirtualQuery_Ptr.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Mincore\Interop.WaitOnAddress.cs">
+      <Link>Common\Interop\Windows\Mincore\Interop.WaitOnAddress.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs</Link>
     </Compile>
@@ -2353,6 +2370,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\DeferredDisposableLifetime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.WindowsThreadPool.cs" />
@@ -2452,6 +2470,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FTruncate.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.FTruncate.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Futex.cs" Condition="'$(TargetsLinux)' == 'true'">
+      <Link>Common\Interop\Unix\System.Native\Interop.Futex.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetCpuUtilization.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.GetCpuUtilization.cs</Link>
@@ -2687,6 +2708,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\RuntimeInformation.Unix.cs" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Unix.cs" Condition="'$(TargetsLinux)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Unix.cs" Condition="'$(FeaturePortableTimer)' == 'true'" />
@@ -2710,7 +2732,8 @@
       <Link>Common\Interop\Unix\System.Native\Interop.GetSid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs" Condition="'$(TargetsFreeBSD)' == 'true'" Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
-    <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.Sysctl.cs" Condition="'$(TargetsFreeBSD)' == 'true'" Link="Common\Interop\BSD\System.Native\Interop.Sysctl.cs" />
+    <Compile Include="$(CommonPath)Interop\OpenBSD\Interop.Process.GetProcInfo.cs" Condition="'$(TargetsOpenBSD)' == 'true'" Link="Common\Interop\OpenBSD\Interop.Process.GetProcInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.Sysctl.cs" Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsOpenBSD)' == 'true'" Link="Common\Interop\BSD\System.Native\Interop.Sysctl.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs" Condition="'$(TargetsLinux)' == 'true'" Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
     <Compile Include="$(CommonPath)System\IO\StringParser.cs" Condition="'$(TargetsLinux)' == 'true'" Link="Common\System\IO\StringParser.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.GetProcessInfoById.cs" Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true'" Link="Common\Interop\OSX\Interop.libproc.GetProcessInfoById.cs" />
@@ -2718,6 +2741,7 @@
     <Compile Include="$(CommonPath)Interop\Linux\os-release\Interop.OSReleaseFile.cs" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.FreeBSD.cs" Condition="'$(TargetsFreeBSD)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OpenBSD.cs" Condition="'$(TargetsOpenBSD)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Linux.cs" Condition="'$(TargetsLinux)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.OSX.cs" Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.iOS.cs" Condition="'$(IsiOSLike)' == 'true'" />
@@ -2887,8 +2911,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Unix.cs" Condition="'$(TargetsWindows)' != 'true' and '$(TargetsBrowser)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PortableThreadPool.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Portable.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
@@ -2897,7 +2919,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Portable.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolCallbackWrapper.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Backoff.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.PlatformNotSupported.cs" />
@@ -2984,8 +3005,9 @@
   <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiEventLoop.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPoll.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.imports.wasi.clocks.v0_2_0.MonotonicClockInterop.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.imports.wasi.io.v0_2_0.IPoll.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.imports.wasi.io.v0_2_0.PollInterop.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.Imports.wasi.clocks.v0_2_8.IMonotonicClockImports.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.Imports.wasi.clocks.v0_2_8.MonotonicClockImportsInterop.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.Imports.wasi.io.v0_2_8.IPollImports.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Wasi\WasiPollWorld.wit.Imports.wasi.io.v0_2_8.PollImportsInterop.cs" />
   </ItemGroup>
 </Project>

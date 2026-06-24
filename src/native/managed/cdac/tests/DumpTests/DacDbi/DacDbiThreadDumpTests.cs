@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -17,6 +18,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class DacDbiThreadDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "BasicThreads";
+    protected override string DumpType => "full";
 
     private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
 
@@ -32,7 +34,7 @@ public class DacDbiThreadDumpTests : DumpTestBase
 
         int dbiCount = 0;
         delegate* unmanaged<ulong, nint, void> callback = &CountThreadCallback;
-        int hr = dbi.EnumerateThreads((nint)callback, (nint)(&dbiCount));
+        int hr = dbi.EnumerateThreads(callback, (nint)(&dbiCount));
         Assert.Equal(System.HResults.S_OK, hr);
 
         int expectedCount = 0;
@@ -242,6 +244,35 @@ public class DacDbiThreadDumpTests : DumpTestBase
         }
 
         Assert.True(foundException, "Expected at least one thread to have a current exception in the FailFast dump.");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void GetPartialUserState_CrossValidateWithContract(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+
+        IThread threadContract = Target.Contracts.Thread;
+        ThreadStoreData storeData = threadContract.GetThreadStoreData();
+
+        TargetPointer current = storeData.FirstThread;
+        while (current != TargetPointer.Null)
+        {
+            CorDebugUserState userState;
+            int hr = dbi.GetPartialUserState(current, &userState);
+            Assert.Equal(System.HResults.S_OK, hr);
+
+            ThreadData data = threadContract.GetThreadData(current);
+
+            Assert.Equal((data.State & ThreadState.Background) != 0, userState.HasFlag(CorDebugUserState.USER_BACKGROUND));
+            Assert.Equal((data.State & ThreadState.Unstarted) != 0, userState.HasFlag(CorDebugUserState.USER_UNSTARTED));
+            Assert.Equal((data.State & ThreadState.Stopped) != 0, userState.HasFlag(CorDebugUserState.USER_STOPPED));
+            Assert.Equal((data.State & ThreadState.WaitSleepJoin) != 0, userState.HasFlag(CorDebugUserState.USER_WAIT_SLEEP_JOIN));
+            Assert.Equal((data.State & ThreadState.ThreadPoolWorker) != 0, userState.HasFlag(CorDebugUserState.USER_THREADPOOL));
+
+            current = data.NextThread;
+        }
     }
 
     [UnmanagedCallersOnly]

@@ -20,6 +20,10 @@
 #include "virtualcallstub.h"
 #include "typestring.h"
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "inproccrashreporter.h"
+#endif
+
 #ifndef TARGET_UNIX
 #include "dwreport.h"
 #endif // !TARGET_UNIX
@@ -1849,7 +1853,7 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread, IJitManager *pJitManager, const ME
     CONTRACTL_END;
 
     // if don't have a throwable the aren't processing an exception
-    if (IsHandleNullUnchecked(pThread->GetThrowableAsHandle()))
+    if (pThread->IsThrowableNull())
         return FALSE;
 
     EH_CLAUSE_ENUMERATOR pEnumState;
@@ -2123,10 +2127,10 @@ VOID DECLSPEC_NORETURN __fastcall PropagateExceptionThroughNativeFrames(Object *
     }
     CONTRACTL_END;
 
+#ifdef TARGET_WASM
     // On WASM, the exception needs to keep propagating until it reaches the target frame. On other platforms,
     // this is ensured by unwinding stack up to the target frame before propagating the exception. This
     // difference is due to the fact that on WASM we don't have native stack unwinding support.
-#ifdef TARGET_WASM
     struct Param
     {
         Object *exceptionObj;
@@ -2546,42 +2550,7 @@ OBJECTREF StackTraceInfo::GetKeepAliveObject(MethodDesc* pMethod)
 }
 
 //
-// Append stack frame to an exception stack trace - handle version.
-//
-void StackTraceInfo::AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        NOTHROW;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END
-
-    Thread *pThread = GetThread();
-    MethodTable* pMT = ObjectFromHandle(hThrowable)->GetMethodTable();
-    _ASSERTE(IsException(pMT));
-
-    PTR_ThreadExceptionState pCurTES = pThread->GetExceptionState();
-    // Check if the flag indicating foreign exception raise has been setup or not,
-    // and then reset it so that subsequent processing of managed frames proceeds
-    // normally.
-    BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
-    pCurTES->ResetRaisingForeignException();
-
-    LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
-
-    // Do not save stacktrace to preallocated exception.  These are shared.
-    if (CLRException::IsPreallocatedExceptionHandle(hThrowable))
-    {
-        return;
-    }
-
-    AppendElementImpl(ObjectFromHandle(hThrowable), currentIP, currentSP, pFunc, pCf, pThread, fRaisingForeignException);
-}
-
-//
-// Append stack frame to an exception stack trace - objectref version for runtime-async stack frames.
+// Append stack frame to an exception stack trace
 //
 void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf)
 {
@@ -2597,25 +2566,25 @@ void StackTraceInfo::AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UIN
     MethodTable* pMT = pThrowable->GetMethodTable();
     _ASSERTE(IsException(pMT));
 
+    PTR_ThreadExceptionState pCurTES = pThread->GetExceptionState();
+    // Check if the flag indicating foreign exception raise has been setup or not,
+    // and then reset it so that subsequent processing of managed frames proceeds
+    // normally.
+    BOOL fRaisingForeignException = pCurTES->IsRaisingForeignException();
+    pCurTES->ResetRaisingForeignException();
+
     LOG((LF_EH, LL_INFO10000, "StackTraceInfo::AppendElement IP = %p, SP = %p, %s::%s\n", currentIP, currentSP, pFunc ? pFunc->m_pszDebugClassName : "", pFunc ? pFunc->m_pszDebugMethodName : "" ));
-    AppendElementImpl(pThrowable, currentIP, currentSP, pFunc, pCf, pThread, FALSE /* fRaisingForeignException */);
-}
 
-//
-// Append stack frame to an exception stack trace.
-//
-void StackTraceInfo::AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf, Thread* pThread, BOOL fRaisingForeignException)
-{
-    CONTRACTL
+    // Do not save stacktrace to preallocated exception.  These are shared.
+    if (CLRException::IsPreallocatedExceptionObject(pThrowable))
     {
-        GC_TRIGGERS;
-        NOTHROW;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END
-
-    if ((pFunc != NULL && pFunc->IsDiagnosticsHidden()))
         return;
+    }
+
+    if (pFunc != NULL && (pFunc->IsDiagnosticsHidden() || pFunc == g_pEnvironmentCallEntryPointMethodDesc))
+    {
+        return;
+    }
 
     struct
     {
@@ -2651,8 +2620,13 @@ void StackTraceInfo::AppendElementImpl(OBJECTREF pThrowable, UINT_PTR currentIP,
         }
         else if (!pCf->HasFaulted() && stackTraceElem.ip != 0)
         {
-            stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
-            stackTraceElem.flags |= STEF_IP_ADJUSTED;
+#ifdef TARGET_WASM
+            if (!ExecutionManager::IsVirtualIP(stackTraceElem.ip))
+#endif
+            {
+                stackTraceElem.ip -= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+                stackTraceElem.flags |= STEF_IP_ADJUSTED;
+            }
         }
     }
     else
@@ -3516,6 +3490,13 @@ bool GenerateDump(
 
 void CrashDumpAndTerminateProcess(UINT exitCode)
 {
+#ifdef FEATURE_INPROC_CRASHREPORT
+    if (exitCode == COR_E_STACKOVERFLOW)
+    {
+        InProcCrashReportSetCrashKind(InProcCrashReportCrashKind::StackOverflow);
+    }
+#endif
+
 #ifdef HOST_WINDOWS
     CreateCrashDumpIfEnabled(exitCode == COR_E_STACKOVERFLOW);
 #endif
@@ -5299,7 +5280,6 @@ EXTERN_C void JIT_StackProbe_End();
 #ifndef TARGET_X86
 EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_CheckedWriteBarrier_End();
-EXTERN_C void JIT_ByRefWriteBarrier_End();
 #endif // TARGET_X86
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
@@ -5365,11 +5345,6 @@ EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
 #endif
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
-
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
-#endif
 
 static uintptr_t writeBarrierAVLocations[] =
 {
@@ -5390,10 +5365,6 @@ static uintptr_t writeBarrierAVLocations[] =
     (uintptr_t)&RhpCheckedAssignRefESIAVLocation,
     (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
     (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
-#endif
-    (uintptr_t)&RhpByRefAssignRefAVLocation1,
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-    (uintptr_t)&RhpByRefAssignRefAVLocation2,
 #endif
 };
 
@@ -5423,7 +5394,6 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
 #ifndef TARGET_X86
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
-    CHECK_RANGE(JIT_ByRefWriteBarrier)
 #if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     CHECK_RANGE(JIT_StackProbe)
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
@@ -5645,7 +5615,16 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
         }
     }
 
-    GCPROTECT_BEGIN(exInfo.m_exception);
+#if defined(HOST_WINDOWS) && defined(HOST_AMD64)
+    TADDR ssp = GetSSP(pContext);
+#else
+    TADDR ssp = 0;
+#endif
+
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(fef.GetExceptionContext(), ssp);
+    // m_exception is GC-reported via ExInfo chain scanning in ScanStackRoots.
+    // Do NOT also GCPROTECT it - reporting the same location twice corrupts
+    // the GC's relocation logic (see clr-code-guide.md §2.1.5).
     UnmanagedCallersOnlyCaller throwHwEx(METHOD__EH__RH_THROWHW_EX);
 
     pThread->IncPreventAbort();
@@ -5654,8 +5633,8 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     throwHwEx.InvokeDirect(exceptionCode, &exInfo);
 
     DispatchExSecondPass(&exInfo);
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT;
 
-    GCPROTECT_END();
     UNREACHABLE();
 }
 
@@ -6721,48 +6700,12 @@ VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFra
     }
 }
 
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-size_t GetSSPForFrameOnCurrentStack(TADDR ip);
-#endif // HOST_AMD64 && HOST_WINDOWS
-
 #ifdef FEATURE_INTERPRETER
 void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP)
 {
     throw ResumeAfterCatchException(resumeSP, resumeIP);
 }
 
-VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    CONTEXT context;
-    ClrCaptureContext(&context);
-
-    // Unwind to the caller of the Ex.RhThrowEx / Ex.RhThrowHwEx
-    Thread::VirtualUnwindToFirstManagedCallFrame(&context);
-
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    size_t targetSSP = GetSSPForFrameOnCurrentStack(GetIP(&context));
-#else
-    size_t targetSSP = 0;
-#endif
-
-    // Skip all managed frames upto a native frame
-    while (ExecutionManager::IsManagedCode(GetIP(&context)))
-    {
-        Thread::VirtualUnwindCallFrame(&context);
-#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-        if (targetSSP != 0)
-        {
-            targetSSP += sizeof(size_t);
-        }
-#endif
-    }
-
-    ExecuteFunctionBelowContext((PCODE)ThrowResumeAfterCatchException, &context, targetSSP, resumeSP, resumeIP);
-}
 #endif // FEATURE_INTERPRETER
 
 thread_local DWORD t_dwCurrentExceptionCode;
@@ -10384,7 +10327,6 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->SP = ::GetSP(&m_Context);
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
 
 #ifndef DACCESS_COMPILE
@@ -10799,7 +10741,8 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     {
         m_Context.InterpreterSP = pTransitionBlock->m_StackPointer;
         m_Context.InterpreterFP = 0;
-        m_Context.InterpreterIP = 0;
+        m_Context.InterpreterIP = GetWasmVirtualIPFromStackPointer(pTransitionBlock->m_StackPointer);
+        m_ReturnAddress = m_Context.InterpreterIP;
         m_Context.InterpreterWalkFramePointer = 0;
     }
 }

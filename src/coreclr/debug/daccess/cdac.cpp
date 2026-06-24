@@ -78,6 +78,28 @@ namespace
 
         return S_OK;
     }
+
+    int AllocVirtualCallback(uint32_t size, uint64_t* allocatedAddress, void* context)
+    {
+        ICorDebugDataTarget* target = reinterpret_cast<ICorDebugDataTarget*>(context);
+        ICLRDataTarget2* target2 = nullptr;
+        HRESULT hr = target->QueryInterface(__uuidof(ICLRDataTarget2), (void**)&target2);
+        if (FAILED(hr))
+        {
+            *allocatedAddress = 0;
+            return hr;
+        }
+
+        CLRDATA_ADDRESS addr = 0;
+        hr = target2->AllocVirtual(0, size, MEM_COMMIT, PAGE_READWRITE, &addr);
+        target2->Release();
+        *allocatedAddress = addr;
+        if (FAILED(hr))
+        {
+            *allocatedAddress = 0;
+        }
+        return hr;
+    }
 }
 
 CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown* legacyImpl)
@@ -89,8 +111,15 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown
     decltype(&cdac_reader_init) init = reinterpret_cast<decltype(&cdac_reader_init)>(::GetProcAddress(cdacLib, "cdac_reader_init"));
     _ASSERTE(init != nullptr);
 
+    // Check if the target supports memory allocation (ICLRDataTarget2)
+    ICLRDataTarget2* target2 = nullptr;
+    auto allocCallback = (target->QueryInterface(__uuidof(ICLRDataTarget2), (void**)&target2) == S_OK)
+        ? &AllocVirtualCallback : nullptr;
+    if (target2 != nullptr)
+        target2->Release();
+
     intptr_t handle;
-    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContext, target, &handle) != 0)
+    if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContext, allocCallback, target, &handle) != 0)
     {
         ::FreeLibrary(cdacLib);
         return {};

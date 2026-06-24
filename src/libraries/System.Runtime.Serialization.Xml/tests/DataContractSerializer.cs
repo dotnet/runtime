@@ -20,7 +20,9 @@ using System.Xml.Schema;
 using Xunit;
 using System.Runtime.Serialization.Tests;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
+using System.Threading;
 
 public static partial class DataContractSerializerTests
 {
@@ -4214,10 +4216,12 @@ public static partial class DataContractSerializerTests
         for (int i = 0; i < myFamily.Members.Length; ++i)
         {
             Assert.Equal(myFamily.Members[i].Name, newFamily.Members[i].Name);
+            Assert.Equal(myFamily.Members[i].Age, newFamily.Members[i].Age);
         }
     }
 
     [Fact]
+    [SkipOnPlatform(TestPlatforms.Wasi, "/tmp is not preopened in the wasmtime '--dir .' sandbox, so temp files cannot be created.")]
     public static void DCS_FileStreamSurrogate()
     {
         using (var testFile = TempFile.Create())
@@ -4567,20 +4571,48 @@ public static partial class DataContractSerializerTests
     // Random OSR might cause a stack overflow on Windows x64
     private static bool IsNotWindowsRandomOSR => !PlatformDetection.IsWindows || (Environment.GetEnvironmentVariable("DOTNET_JitRandomOnStackReplacement") == null);
 
+    // DCS_DeeplyLinkedData runs the test body on a worker thread for stack-size control,
+    // so it requires multithreading support in addition to the OSR guard.
+    private static bool IsDeeplyLinkedDataSupported => IsNotWindowsRandomOSR && PlatformDetection.IsMultithreadingSupported;
+
     [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
-    [ConditionalFact(typeof(DataContractSerializerTests), nameof(IsNotWindowsRandomOSR))]
+    [ConditionalFact(typeof(DataContractSerializerTests), nameof(IsDeeplyLinkedDataSupported))]
     public static void DCS_DeeplyLinkedData()
     {
-        TypeWithLinkedProperty head = new TypeWithLinkedProperty();
-        TypeWithLinkedProperty cur = head;
-        for (int i = 0; i < 513; i++)
+        // The serializer recurses through dynamic-code paths roughly once per linked node.
+        // Default thread stacks on some platforms (notably Apple mobile) are not large enough
+        // for ~513 frames of dynamic-method-driven recursion, so run the body on a worker
+        // thread with an explicit 16 MB stack to keep the test platform-portable. 16 MB
+        // matches the maxStackSize used elsewhere in System.Threading.Thread tests.
+        const int StackSize = 16 * 1024 * 1024;
+        ExceptionDispatchInfo edi = null;
+        Thread t = new Thread(() =>
         {
-            cur.Child = new TypeWithLinkedProperty();
-            cur = cur.Child;
-        }
-        cur.Children = new List<TypeWithLinkedProperty> { new TypeWithLinkedProperty() };
-        TypeWithLinkedProperty actual = DataContractSerializerHelper.SerializeAndDeserialize(head, baseline: null, skipStringCompare: true);
-        Assert.NotNull(actual);
+            try
+            {
+                TypeWithLinkedProperty head = new TypeWithLinkedProperty();
+                TypeWithLinkedProperty cur = head;
+                for (int i = 0; i < 513; i++)
+                {
+                    cur.Child = new TypeWithLinkedProperty();
+                    cur = cur.Child;
+                }
+                cur.Children = new List<TypeWithLinkedProperty> { new TypeWithLinkedProperty() };
+                TypeWithLinkedProperty actual = DataContractSerializerHelper.SerializeAndDeserialize(head, baseline: null, skipStringCompare: true);
+                Assert.NotNull(actual);
+            }
+            catch (Exception ex)
+            {
+                edi = ExceptionDispatchInfo.Capture(ex);
+            }
+        }, StackSize)
+        {
+            IsBackground = true,
+        };
+        t.Start();
+        // Bounded join so a runtime-side deadlock can't hang the entire Helix work item.
+        Assert.True(t.Join(TimeSpan.FromMinutes(2)), "DCS_DeeplyLinkedData worker thread did not complete within timeout.");
+        edi?.Throw();
     }
 
     [Fact]
@@ -4603,6 +4635,28 @@ public static partial class DataContractSerializerTests
         XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(ms, new System.Xml.XmlDictionaryReaderQuotas() { MaxStringContentLength = maxStringContentLength });
 
         Assert.Throws<System.Runtime.Serialization.SerializationException>(() => { dcs.ReadObject(reader); });
+    }
+
+    [Theory]
+    [InlineData("<s:")]
+    [InlineData("<s:1")]
+    public static void DCS_ReadObject_MalformedPrefix_InvalidLocalName_ThrowsSerializationException(string malformedElement)
+    {
+        var serializer = new DataContractSerializer(typeof(MalformedPrefixObject));
+
+        SerializationException ex = Assert.Throws<SerializationException>(() => serializer.ReadObject(CreateMalformedPrefixStream(malformedElement)));
+        Assert.IsType<XmlException>(ex.InnerException);
+    }
+
+    private static MemoryStream CreateMalformedPrefixStream(string malformedElement)
+    {
+        string xml = $@"<Program.Obj xmlns=""http://schemas.datacontract.org/2004/07/CoreFX.Fuzz"">{malformedElement}";
+        return new MemoryStream(Encoding.UTF8.GetBytes(xml));
+    }
+
+    [DataContract(Name = "Program.Obj", Namespace = "http://schemas.datacontract.org/2004/07/CoreFX.Fuzz")]
+    private sealed class MalformedPrefixObject
+    {
     }
 
     private static T DeserializeString<T>(string stringToDeserialize, bool shouldReportDeserializationExceptions = true, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null)

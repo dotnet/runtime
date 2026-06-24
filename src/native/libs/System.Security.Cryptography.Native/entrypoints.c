@@ -26,6 +26,7 @@
 #include "pal_evp_pkey_rsa.h"
 #include "pal_evp_pkey_ml_dsa.h"
 #include "pal_evp_pkey_slh_dsa.h"
+#include "pal_evp_pkey_x25519.h"
 #include "pal_hmac.h"
 #include "pal_ocsp.h"
 #include "pal_pkcs7.h"
@@ -46,8 +47,11 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_BigNumToBinary)
     DllImportEntry(CryptoNative_BioCtrlPending)
     DllImportEntry(CryptoNative_BioDestroy)
+    DllImportEntry(CryptoNative_BioDrainSpill)
+    DllImportEntry(CryptoNative_BioGetWriteResult)
     DllImportEntry(CryptoNative_BioGets)
     DllImportEntry(CryptoNative_BioNewFile)
+    DllImportEntry(CryptoNative_BioNewManagedSpan)
     DllImportEntry(CryptoNative_BioRead)
     DllImportEntry(CryptoNative_BioSeek)
     DllImportEntry(CryptoNative_BioTell)
@@ -189,6 +193,11 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EvpPKeyGetEcKeyParameters)
     DllImportEntry(CryptoNative_EvpPKeyGetEcGroupNid)
     DllImportEntry(CryptoNative_EvpPKeyGetEcCurveParameters)
+    DllImportEntry(CryptoNative_EvpPKeyCreateByEcParameters)
+    DllImportEntry(CryptoNative_EvpPKeyCreateByEcExplicitParameters)
+    DllImportEntry(CryptoNative_EvpPKeyGenerateByEcCurveOid)
+    DllImportEntry(CryptoNative_EvpPKeyEcHasExplicitEncoding)
+    DllImportEntry(CryptoNative_EvpPKeyGetEcKeySize)
     DllImportEntry(CryptoNative_EvpRC2Cbc)
     DllImportEntry(CryptoNative_EvpRC2Ecb)
     DllImportEntry(CryptoNative_EvpSha1)
@@ -378,7 +387,9 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslAddExtraChainCert)
     DllImportEntry(CryptoNative_SslAddClientCAs)
     DllImportEntry(CryptoNative_SslDestroy)
-    DllImportEntry(CryptoNative_SslDoHandshake)
+    DllImportEntry(CryptoNative_SslHandshake)
+    DllImportEntry(CryptoNative_SslEncrypt)
+    DllImportEntry(CryptoNative_SslDecrypt)
     DllImportEntry(CryptoNative_SslGetClientCAList)
     DllImportEntry(CryptoNative_SslGetCurrentCipherId)
     DllImportEntry(CryptoNative_SslGetData)
@@ -420,6 +431,14 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslV2_3Method)
     DllImportEntry(CryptoNative_SslWrite)
     DllImportEntry(CryptoNative_Tls13Supported)
+    DllImportEntry(CryptoNative_X25519Available)
+    DllImportEntry(CryptoNative_X25519DeriveSecretAgreementWithBytes)
+    DllImportEntry(CryptoNative_X25519ExportPrivateKey)
+    DllImportEntry(CryptoNative_X25519ExportPublicKey)
+    DllImportEntry(CryptoNative_X25519GenerateKey)
+    DllImportEntry(CryptoNative_X25519ImportPrivateKey)
+    DllImportEntry(CryptoNative_X25519ImportPublicKey)
+    DllImportEntry(CryptoNative_X25519IsValidHandle)
     DllImportEntry(CryptoNative_X509DecodeOcspToExpiration)
     DllImportEntry(CryptoNative_X509Duplicate)
     DllImportEntry(CryptoNative_SslGet0AlpnSelected)

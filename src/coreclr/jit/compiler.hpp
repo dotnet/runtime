@@ -141,12 +141,12 @@ inline unsigned genLog2(uint64_t value)
     return BitOperations::BitScanForward(value);
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__OpenBSD__)
 inline unsigned genLog2(size_t value)
 {
     return genLog2((uint64_t)value);
 }
-#endif // __APPLE__
+#endif // __APPLE__ || __OpenBSD__
 
 // Given an unsigned 64-bit value, returns the lower 32-bits in unsigned format
 //
@@ -1973,8 +1973,8 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     switch (oper)
     {
         case GT_CNS_INT:
-            AsIntCon()->gtFieldSeq = nullptr;
-            INDEBUG(AsIntCon()->gtTargetHandle = 0);
+            AsIntCon()->SetFieldSeq(nullptr);
+            INDEBUG(AsIntCon()->SetTargetHandle(0));
             break;
 #if defined(TARGET_ARM)
         case GT_MUL_LONG:
@@ -2101,7 +2101,8 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
             }
 
             AsIntCon()->SetIconValue(static_cast<ssize_t>(value));
-            AsIntCon()->gtFieldSeq = nullptr;
+            AsIntCon()->SetFieldSeq(nullptr);
+            AsIntCon()->SetCompileTimeHandle(0);
             break;
 
 #if !defined(TARGET_64BIT)
@@ -2616,7 +2617,7 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     if (genericsContextIsThis)
     {
         const bool mustKeep      = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
-        const bool hasPatchpoint = doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints();
+        const bool hasPatchpoint = doesMethodHavePatchpoints();
 
         if (lvaGenericsContextInUse || mustKeep || hasPatchpoint)
         {
@@ -2656,7 +2657,7 @@ inline bool Compiler::lvaReportParamTypeArg()
 
         // Methoods that have patchpoints always report context as live
         //
-        if (doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints())
+        if (doesMethodHavePatchpoints())
         {
             return true;
         }
@@ -2721,6 +2722,7 @@ inline
     bool fConservative = false;
     if (varNum >= 0)
     {
+        assert(!lvaIsUnknownSizeLocal(varNum));
         LclVarDsc* varDsc          = lvaGetDesc(varNum);
         bool       isPrespilledArg = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
@@ -2772,13 +2774,8 @@ inline
         FPbased = isFramePointerUsed();
         if (lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT)
         {
-            TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
-            // The temp might be in use, since this might be during code generation.
-            if (tmpDsc == nullptr)
-            {
-                tmpDsc = codeGen->regSet.tmpFindNum(varNum, RegSet::TEMP_USAGE_USED);
-            }
-            assert(tmpDsc != nullptr);
+            TempDsc* tmpDsc = codeGen->regSet.tmpGetNum(varNum);
+            assert(!varTypeHasUnknownSize(tmpDsc->tdTempType()));
             varOffset = tmpDsc->tdTempOffs();
         }
         else
@@ -2972,7 +2969,7 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
     assert(ILargNum < info.compILargsCount);
 
 #if defined(TARGET_WASM)
-    if (ILargNum >= lvaWasmSpArg)
+    if ((ILargNum >= lvaWasmSpArg) && (lvaWasmSpArg != BAD_VAR_NUM) && lvaGetDesc(lvaWasmSpArg)->lvIsParam)
     {
         ILargNum++;
         assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
@@ -3447,14 +3444,34 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-/* static */ inline unsigned RegSet::tmpSlot(unsigned size)
+/* static */ inline unsigned RegSet::tmpSlot(var_types type)
 {
-    noway_assert(size >= sizeof(int));
-    noway_assert(size <= TEMP_MAX_SIZE);
-    assert((size % sizeof(int)) == 0);
-
-    assert(size < UINT32_MAX);
-    return size / sizeof(int) - 1;
+    unsigned slot = UINT32_MAX;
+    switch (type)
+    {
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
+        // Special slots are allocated for TYP_SIMD and TYP_MASK, because they
+        // have unknown size and therefore can't share slots with other types.
+        case TYP_SIMD:
+            slot = TEMP_SLOT_COUNT - 1;
+            break;
+        case TYP_MASK:
+            slot = TEMP_SLOT_COUNT - 2;
+            break;
+#endif
+        default:
+        {
+            assert(!varTypeHasUnknownSize(type));
+            unsigned size = genTypeSize(type);
+            noway_assert(size >= sizeof(int));
+            noway_assert(size <= TEMP_MAX_SIZE);
+            assert((size % sizeof(int)) == 0);
+            slot = size / sizeof(int) - 1;
+        }
+        break;
+    }
+    assert(slot < TEMP_SLOT_COUNT);
+    return slot;
 }
 
 /*****************************************************************************
@@ -4337,6 +4354,11 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         // Below conditions guarantee block initialization, which will initialize
         // all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
         // changes, these conditions need to be updated.
+#ifdef TARGET_WASM
+        // On WASM the prolog always uses a single memory.fill to zero any
+        // locals that need initialization, regardless of size.
+        return false;
+#else // !TARGET_WASM
         unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 #ifdef TARGET_64BIT
 #if defined(TARGET_AMD64)
@@ -4352,6 +4374,7 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
         {
             return false;
         }
+#endif // !TARGET_WASM
     }
 
     return !info.compInitMem || (varDsc->lvIsTemp && !varDsc->HasGCPtr());
@@ -4394,93 +4417,56 @@ GenTree::VisitResult GenTree::VisitOperands(TVisitor visitor)
 template <typename TVisitor>
 GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
 {
+    if (OperIsLeaf())
+    {
+        return VisitResult::Continue;
+    }
+
+    if (OperIsBinary())
+    {
+        GenTreeOp* op = AsOp();
+
+        if (op->gtOp1 != nullptr)
+        {
+            RETURN_IF_ABORT(visitor(&op->gtOp1));
+        }
+        else
+        {
+            assert(NullOp1Legal());
+        }
+
+        // We can have null op1 and non-null op2 for some nodes, such as GT_LEA
+
+        if (op->gtOp2 != nullptr)
+        {
+            return visitor(&op->gtOp2);
+        }
+        else
+        {
+            assert(NullOp2Legal());
+        }
+        return VisitResult::Continue;
+    }
+
+    if (OperIsUnary())
+    {
+        GenTreeUnOp* unOp = AsUnOp();
+
+        if (unOp->gtOp1 != nullptr)
+        {
+            return visitor(&unOp->gtOp1);
+        }
+        else
+        {
+            assert(NullOp1Legal());
+        }
+        return VisitResult::Continue;
+    }
+
+    assert(OperIsSpecial());
+
     switch (OperGet())
     {
-        // Leaf nodes
-        case GT_LCL_VAR:
-        case GT_LCL_FLD:
-        case GT_LCL_ADDR:
-        case GT_CATCH_ARG:
-        case GT_ASYNC_CONTINUATION:
-        case GT_ASYNC_RESUME_INFO:
-        case GT_LABEL:
-        case GT_FTN_ADDR:
-        case GT_RET_EXPR:
-        case GT_CNS_INT:
-        case GT_CNS_LNG:
-        case GT_CNS_DBL:
-        case GT_CNS_STR:
-#if defined(FEATURE_SIMD)
-        case GT_CNS_VEC:
-#endif // FEATURE_SIMD
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        case GT_CNS_MSK:
-#endif // FEATURE_MASKED_HW_INTRINSICS
-        case GT_MEMORYBARRIER:
-        case GT_JMP:
-        case GT_JCC:
-        case GT_SETCC:
-        case GT_NO_OP:
-        case GT_START_NONGC:
-        case GT_START_PREEMPTGC:
-        case GT_PROF_HOOK:
-        case GT_PHI_ARG:
-        case GT_JMPTABLE:
-        case GT_PHYSREG:
-        case GT_IL_OFFSET:
-        case GT_RECORD_ASYNC_RESUME:
-        case GT_NOP:
-        case GT_SWIFT_ERROR:
-        case GT_GCPOLL:
-        case GT_WASM_THROW_REF:
-        case GT_WASM_JEXCEPT:
-            return VisitResult::Continue;
-
-            // Unary operators with an optional operand
-        case GT_FIELD_ADDR:
-        case GT_RETURN:
-        case GT_RETFILT:
-            if (this->AsUnOp()->gtOp1 == nullptr)
-            {
-                return VisitResult::Continue;
-            }
-            FALLTHROUGH;
-
-            // Standard unary operators
-        case GT_STORE_LCL_VAR:
-        case GT_STORE_LCL_FLD:
-        case GT_NOT:
-        case GT_NEG:
-        case GT_BSWAP:
-        case GT_BSWAP16:
-        case GT_COPY:
-        case GT_RELOAD:
-        case GT_ARR_LENGTH:
-        case GT_MDARR_LENGTH:
-        case GT_MDARR_LOWER_BOUND:
-        case GT_CAST:
-        case GT_BITCAST:
-        case GT_CKFINITE:
-        case GT_LCLHEAP:
-        case GT_IND:
-        case GT_BLK:
-        case GT_BOX:
-        case GT_ALLOCOBJ:
-        case GT_INIT_VAL:
-        case GT_RUNTIMELOOKUP:
-        case GT_ARR_ADDR:
-        case GT_JTRUE:
-        case GT_SWITCH:
-        case GT_NULLCHECK:
-        case GT_PUTARG_REG:
-        case GT_PUTARG_STK:
-        case GT_RETURNTRAP:
-        case GT_KEEPALIVE:
-        case GT_INC_SATURATE:
-        case GT_RETURN_SUSPEND:
-            return visitor(&this->AsUnOp()->gtOp1);
-
-            // Variadic nodes
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
             for (GenTree** use : this->AsMultiOp()->UseEdges())
@@ -4488,9 +4474,8 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
                 RETURN_IF_ABORT(visitor(use));
             }
             return VisitResult::Continue;
-#endif // defined(FEATURE_HW_INTRINSICS)
+#endif
 
-            // Special nodes
         case GT_PHI:
             for (GenTreePhi::Use& use : AsPhi()->Uses())
             {
@@ -4552,19 +4537,11 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
             return visitor(&cond->gtOp2);
         }
 
-        // Binary nodes
         default:
-            assert(this->OperIsBinary());
-            if (AsOp()->gtOp1 != nullptr)
-            {
-                RETURN_IF_ABORT(visitor(&AsOp()->gtOp1));
-            }
-
-            if (AsOp()->gtOp2 != nullptr)
-            {
-                return visitor(&AsOp()->gtOp2);
-            }
+        {
+            assert(!"unhandled special node");
             return VisitResult::Continue;
+        }
     }
 }
 
@@ -4604,7 +4581,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
         {
             unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
 
-            bool isEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
+            bool isEntire = comp->IsEntireAccess(lclAddr->GetLclNum(), lclAddr->GetLclOffs(), ValueSize(storeSize));
 
             return visitor(LocalDef(lclAddr, isEntire, lclAddr->GetLclOffs(), ValueSize(storeSize)));
         }
@@ -5611,9 +5588,30 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
         BitVecOps::AddElemD(&traits, actualPreds, pred->bbNum);
     }
 
+    // Fast opportunistic check: a block is considered unreachable if it has no normal
+    // preds and isn't the entry block. Note that bbPreds excludes EH flow, so
+    // handler-begin blocks may have no normal preds yet still be reachable via
+    // exception flow; conservatively treat them as reachable.
+    //
+    auto isUnreachableBlock = [this](BasicBlock* block) -> bool {
+        return (block->bbPreds == nullptr) && (block != fgFirstBB) && !bbIsHandlerBeg(block);
+    };
+
     for (GenTreePhi::Use& use : node->Data()->AsPhi()->Uses())
     {
         GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
+
+        // Ignore phi-args coming from unreachable blocks.
+        if (isUnreachableBlock(phiArg->gtPredBB))
+        {
+            JITDUMP("... optVisitReachingAssertions in " FMT_BB ": phi-pred " FMT_BB " is unreachable, ignoring\n",
+                    ssaDef->GetBlock()->bbNum, phiArg->gtPredBB->bbNum);
+
+            // Mark as visited so the coverage check below doesn't fail if this block is
+            // still listed in ssaDef's pred list.
+            BitVecOps::AddElemD(&traits, visitedBlocks, phiArg->gtPredBB->bbNum);
+            continue;
+        }
 
         if (!BitVecOps::IsMember(&traits, actualPreds, phiArg->gtPredBB->bbNum))
         {
@@ -5626,8 +5624,13 @@ Compiler::AssertVisit Compiler::optVisitReachingAssertions(ValueNum vn, TAssertV
             return AssertVisit::Abort;
         }
 
-        const ValueNum phiArgVN   = vnStore->VNConservativeNormalValue(phiArg->gtVNPair);
-        ASSERT_TP      assertions = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
+        // fgValueNumberPhiDef may leave gtVNPair as NoVN when it refuses to back-patch
+        // a loop-varying SSA-def VN into the phi-arg slot (a hygiene constraint for general
+        // gtVNPair consumers that does not apply here, since we hand the VN to the visitor
+        // together with this edge's assertion set and never write it back into any tree).
+        LclSsaVarDsc* phiArgSsaDef = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum());
+        ValueNum      phiArgVN     = vnStore->VNConservativeNormalValue(phiArgSsaDef->m_vnPair);
+        ASSERT_TP     assertions   = optGetEdgeAssertions(ssaDef->GetBlock(), phiArg->gtPredBB);
         if (argVisitor(phiArgVN, assertions) == AssertVisit::Abort)
         {
             // The visitor wants to abort the walk.

@@ -38,7 +38,12 @@ public struct X86Context : IPlatformContext
     }
 
     public readonly uint Size => 0x2cc;
-    public readonly uint DefaultContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
+
+    public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
+
+    public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
+
+    public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
 
     public readonly int StackPointerRegister => 4;
 
@@ -47,7 +52,7 @@ public struct X86Context : IPlatformContext
         readonly get => new(Esp);
         set => Esp = (uint)value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Eip);
         set => Eip = (uint)value.Value;
@@ -57,6 +62,8 @@ public struct X86Context : IPlatformContext
         readonly get => new(Ebp);
         set => Ebp = (uint)value.Value;
     }
+
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
 
     public void Unwind(Target target)
     {

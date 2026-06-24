@@ -1053,7 +1053,7 @@ void InitThreadManager()
     // All patched helpers should fit into one page.
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart > (ptrdiff_t)0);
-    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
+    _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)minipal_getpagesize());
 
     if (IsWriteBarrierCopyEnabled())
     {
@@ -1104,16 +1104,12 @@ void InitThreadManager()
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
         SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), "JIT_CheckedWriteBarrier");
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
-        SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), "JIT_ByRefWriteBarrier");
-        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
-        // On AMD64 the Checked/ByRef variants of the helpers jump through an indirection
-        // to the patched barrier, but are not part of the patched set of helpers.
+        // On AMD64 the Checked variant of the helper jumps through an indirection
+        // to the patched barrier, but is not part of the patched set of helpers.
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, (void*)JIT_CheckedWriteBarrier);
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, (void*)JIT_ByRefWriteBarrier);
 #endif // TARGET_AMD64
 
     }
@@ -1189,7 +1185,7 @@ Thread::Thread()
     CONTRACTL_END;
 
     m_pFrame                = FRAME_TOP;
-    m_pGCFrame              = GCFRAME_TOP;
+    m_pGCFrame              = NULL;
 
     m_fPreemptiveGCDisabled = 0;
 
@@ -1231,6 +1227,7 @@ Thread::Thread()
     m_ExternalRefCount = 1;
     m_State = TS_Unstarted;
     m_StateNC = TSNC_Unknown;
+    m_DebuggerControlledThreadState = DCTS_None;
 
     // It can't be a LongWeakHandle because we zero stuff out of the exposed
     // object as it is finalized.  At that point, calls to GetCurrentThread()
@@ -1290,11 +1287,9 @@ Thread::Thread()
     m_fHasDeadThreadBeenConsideredForGCTrigger = false;
     m_TraceCallCount = 0;
     m_ThrewControlForThread = 0;
-    m_ThreadTasks = (ThreadTasks)0;
 
-    // The state and the tasks must be 32-bit aligned for atomicity to be guaranteed.
+    // The state must be 32-bit aligned for atomicity to be guaranteed.
     _ASSERTE((((size_t) &m_State) & 3) == 0);
-    _ASSERTE((((size_t) &m_ThreadTasks) & 3) == 0);
 
     // On all callbacks, call the trap code, which we now have
     // wired to cause a GC.  Thus we will do a GC on all Transition Frame Transitions (and more).
@@ -1622,8 +1617,7 @@ BOOL Thread::HasStarted()
     {
         if (__pException != NULL)
         {
-            __pException.SuppressRelease();
-            m_pExceptionDuringStartup = __pException;
+            m_pExceptionDuringStartup = __pException.Detach();
         }
         res = FALSE;
     }
@@ -1926,11 +1920,11 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     }
 
 #ifndef TARGET_UNIX // the PAL does its own adjustments as necessary
-    if (sizeToCommitOrReserve != 0 && sizeToCommitOrReserve <= GetOsPageSize())
+    if (sizeToCommitOrReserve != 0 && sizeToCommitOrReserve <= minipal_getpagesize())
     {
         // On Windows, passing a value that is <= one page size bizarrely causes the OS to use the default stack size instead of
         // a minimum, which is undesirable. This adjustment fixes that issue to use a minimum stack size (typically 64 KB).
-        sizeToCommitOrReserve = GetOsPageSize() + 1;
+        sizeToCommitOrReserve = minipal_getpagesize() + 1;
     }
 #endif // !TARGET_UNIX
 
@@ -2992,7 +2986,7 @@ void Thread::UserInterrupt(ThreadInterruptMode mode)
     InterlockedOr(&m_UserInterrupt, mode);
 
     if (HasValidThreadHandle() &&
-        HasThreadState (TS_Interruptible))
+        HasThreadState (TS_WaitSleepJoin))
     {
         HANDLE handle = GetThreadHandle();
         if (handle != INVALID_HANDLE_VALUE)
@@ -3221,12 +3215,12 @@ OBJECTREF Thread::SafeSetLastThrownObject(OBJECTREF throwable)
 }
 
 //
-// This is a nice wrapper for SetThrowable and SetLastThrownObject, which catches any exceptions caused by not
-// being able to create the handle for the throwable, and sets the throwable to the preallocated out of memory
-// exception instead. It also updates the last thrown object, which is always updated when the throwable is
-// updated.
+// This is a nice wrapper for updating the last thrown object handle, which catches any exceptions caused by not
+// being able to create the handle for the throwable, and falls back to the preallocated out of memory exception
+// for the last thrown object instead. The throwable itself is stored directly in ExInfo::m_exception by managed
+// EH code, so this helper only updates the last thrown object state.
 //
-OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptionState::SetThrowableErrorChecking stecFlags),
+OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable,
                                     BOOL isUnhandled)
 {
     CONTRACTL
@@ -3242,11 +3236,8 @@ OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptio
 
     EX_TRY
     {
-        // Try to set the throwable.
-        SetThrowable(throwable DEBUG_ARG(stecFlags));
-
-        // Now, if the last thrown object is different, go ahead and update it. This makes sure that we re-throw
-        // the right object when we rethrow.
+        // The exception object is stored directly in ExInfo::m_exception by managed EH code,
+        // so we only need to update the last thrown object handle here.
         if (LastThrownObject() != throwable)
         {
             SetLastThrownObject(throwable);
@@ -3259,12 +3250,9 @@ OBJECTREF Thread::SafeSetThrowables(OBJECTREF throwable DEBUG_ARG(ThreadExceptio
     }
     EX_CATCH
     {
-        // If either set didn't work, then set both throwables to the preallocated OOM exception, and return that
-        // object instead of the original throwable.
+        // If we can't create a handle, set the last thrown object to the preallocated OOM exception.
         ret = CLRException::GetPreallocatedOutOfMemoryException();
 
-        // Neither of these will throw because we're setting with a preallocated exception.
-        SetThrowable(ret DEBUG_ARG(stecFlags));
         SetLastThrownObject(ret, isUnhandled);
     }
     EX_END_CATCH
@@ -3326,22 +3314,17 @@ void Thread::SafeUpdateLastThrownObject(void)
     }
     CONTRACTL_END;
 
-    OBJECTHANDLE hThrowable = GetThrowableAsHandle();
+    OBJECTREF throwable = GetExceptionState()->GetThrowable();
 
-    if (hThrowable != NULL)
+    if (throwable != NULL)
     {
         EX_TRY
         {
-            IGCHandleManager *pHandleTable = GCHandleUtilities::GetGCHandleManager();
-
-            // Creating a duplicate handle here ensures that the AD of the last thrown object
-            // matches the domain of the current throwable.
-            OBJECTHANDLE duplicateHandle = pHandleTable->CreateDuplicateHandle(hThrowable);
-            SetLastThrownObjectHandle(duplicateHandle);
+            SetLastThrownObject(throwable);
         }
         EX_CATCH
         {
-            // If we can't create a duplicate handle, we set both throwables to the preallocated OOM exception.
+            // If we can't create a handle, set the last thrown object to the preallocated OOM exception.
             SafeSetThrowables(CLRException::GetPreallocatedOutOfMemoryException());
         }
         EX_END_CATCH
@@ -3941,7 +3924,6 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     CONTRACTL_END;
 
     BOOL    found;
-    Thread *ret;
 
 #if 0 // This assert is not valid when failing to create background GC thread.
       // Main GC thread holds the TS lock.
@@ -3951,9 +3933,8 @@ BOOL ThreadStore::RemoveThread(Thread *target)
     _ASSERTE(s_pThreadStore->m_Crst.GetEnterCount() > 0 ||
              IsAtProcessExit());
     _ASSERTE(s_pThreadStore->DbgFindThread(target));
-    ret = s_pThreadStore->m_ThreadList.FindAndRemove(target);
-    _ASSERTE(ret && ret == target);
-    found = (ret != NULL);
+    found = s_pThreadStore->m_ThreadList.FindAndRemove(target);
+    _ASSERTE(found);
 
     if (found)
     {
@@ -4476,7 +4457,7 @@ void Thread::HandleThreadInterrupt ()
     }
     if ((m_UserInterrupt & TI_Interrupt) != 0)
     {
-        ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
+        ResetThreadState ((ThreadState)(TS_Interrupted | TS_WaitSleepJoin));
         InterlockedAnd (&m_UserInterrupt, ~TI_Interrupt);
 
         COMPlusThrow(kThreadInterruptedException);
@@ -4484,7 +4465,7 @@ void Thread::HandleThreadInterrupt ()
 }
 
 #ifdef _DEBUG
-#define MAXSTACKBYTES (2 * GetOsPageSize())
+#define MAXSTACKBYTES (2 * minipal_getpagesize())
 void CleanStackForFastGCStress ()
 {
     CONTRACTL {
@@ -5060,7 +5041,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
         INDEBUG(EXTRA_PAGES += 1);
 
         int ThreadGuardPages = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadGuardPages, EXTRA_PAGES);
-        uGuardSize += (ThreadGuardPages * GetOsPageSize());
+        uGuardSize += (ThreadGuardPages * minipal_getpagesize());
 
         LOG((LF_EH, LL_INFO10000, "STACKOVERFLOW: setting thread stack guarantee to 0x%x\n", uGuardSize));
 
@@ -5101,14 +5082,14 @@ UINT_PTR Thread::GetLastNormalStackAddress(UINT_PTR StackLimit)
     UINT_PTR cbStackGuarantee = GetStackGuarantee();
 
     // Here we take the "hard guard region size", the "stack guarantee" and the "fault page" and add them
-    // all together.  Note that the "fault page" is the reason for the extra GetOsPageSize() below.  The OS
+    // all together.  Note that the "fault page" is the reason for the extra minipal_getpagesize() below.  The OS
     // will guarantee us a certain amount of stack remaining after a stack overflow.  This is called the
     // "stack guarantee".  But to do this, it has to fault on the page before that region as the app is
     // allowed to fault at the very end of that page.  So, as a result, the last normal stack address is
     // one page sooner.
     return StackLimit + (cbStackGuarantee
 #ifndef TARGET_UNIX
-            + GetOsPageSize()
+            + minipal_getpagesize()
 #endif // !TARGET_UNIX
             + HARD_GUARD_REGION_SIZE);
 }
@@ -5207,7 +5188,7 @@ static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 
         UINT_PTR uRegionSize = uStartOfNextRegion - uStartOfThisRegion;
 
-        LOG((LF_EH, LL_INFO1000, "0x%p -> 0x%p (%d pg)  ", uStartOfThisRegion, uStartOfNextRegion - 1, uRegionSize / GetOsPageSize()));
+        LOG((LF_EH, LL_INFO1000, "0x%p -> 0x%p (%d pg)  ", uStartOfThisRegion, uStartOfNextRegion - 1, (int)(uRegionSize / minipal_getpagesize())));
         DebugLogMBIFlags(meminfo.State, meminfo.Protect);
         LOG((LF_EH, LL_INFO1000, "\n"));
 
@@ -5245,7 +5226,7 @@ void Thread::DebugLogStackMBIs()
     UINT_PTR uStackSize         = uStackBase - uStackLimit;
 
     LOG((LF_EH, LL_INFO1000, "----------------------------------------------------------------------\n"));
-    LOG((LF_EH, LL_INFO1000, "Stack Snapshot 0x%p -> 0x%p (%d pg)\n", uStackLimit, uStackBase, uStackSize / GetOsPageSize()));
+    LOG((LF_EH, LL_INFO1000, "Stack Snapshot 0x%p -> 0x%p (%d pg)\n", uStackLimit, uStackBase, (int)(uStackSize / minipal_getpagesize())));
     if (pThread)
     {
         LOG((LF_EH, LL_INFO1000, "Last normal addr: 0x%p\n", pThread->GetLastNormalStackAddress()));
@@ -5500,13 +5481,13 @@ VOID Thread::RestoreGuardPage()
     // to change the size of the guard region, we'll just go ahead and protect the next page down from where we are
     // now. The guard page will get pushed forward again, just like normal, until the next stack overflow.
         approxStackPointer   = (UINT_PTR)GetCurrentSP();
-        guardPageBase        = (UINT_PTR)ALIGN_DOWN(approxStackPointer, GetOsPageSize()) - GetOsPageSize();
+        guardPageBase        = (UINT_PTR)ALIGN_DOWN(approxStackPointer, minipal_getpagesize()) - minipal_getpagesize();
 
         // OS uses soft guard page to update the stack info in TEB.  If our guard page is not beyond the current stack, the TEB
         // will not be updated, and then OS's check of stack during exception will fail.
         if (approxStackPointer >= guardPageBase)
         {
-            guardPageBase -= GetOsPageSize();
+            guardPageBase -= minipal_getpagesize();
         }
     // If we're currently "too close" to the page we want to mark as a guard then the call to VirtualProtect to set
     // PAGE_GUARD will fail, but it won't return an error. Therefore, we protect the page, then query it to make
@@ -5536,7 +5517,7 @@ VOID Thread::RestoreGuardPage()
             }
             else
             {
-                guardPageBase -= GetOsPageSize();
+                guardPageBase -= minipal_getpagesize();
             }
         }
     }
@@ -6577,7 +6558,7 @@ InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -6585,6 +6566,13 @@ InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
     if (m_pInterpThreadContext == nullptr)
     {
         m_pInterpThreadContext = new InterpThreadContext();
+
+#ifdef DEBUGGING_SUPPORTED
+        if (CORDebuggerAttached() && g_pDebugInterface != NULL)
+        {
+            g_pDebugInterface->SendCreateThreadAtInterpreterEntry(this);
+        }
+#endif // DEBUGGING_SUPPORTED
     }
 
     return m_pInterpThreadContext;
@@ -6693,6 +6681,7 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         {
             bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
 
+            INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pPFrame);
             INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
             INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
@@ -6700,12 +6689,16 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
             UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         }
         EX_CATCH
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-            _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
+            // ohThrowable can be NULL when we've caught the ResumeAfterCatchException
+            if (ohThrowable != NULL)
+            {
+                StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
+            }
             EX_RETHROW;
         }
         EX_END_CATCH
@@ -6771,7 +6764,7 @@ PTR_GCFrame Thread::GetGCFrame()
     {
         void* curSP;
         curSP = (void *)GetCurrentSP();
-        _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
+        _ASSERTE((m_pGCFrame == NULL) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
     }
 #endif
 
@@ -6786,10 +6779,6 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
 
     DAC_ENUM_DTHIS();
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
-    }
 
     if (m_debuggerFilterContext.IsValid())
     {
@@ -6875,11 +6864,6 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
             return;
         }
         DacGetThreadContext(this, &context);
-    }
-
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
     }
 
     FillRegDisplay(&regDisp, &context);
