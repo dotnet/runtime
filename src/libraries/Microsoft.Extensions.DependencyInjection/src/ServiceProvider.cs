@@ -330,7 +330,22 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             public List<ServiceDescriptor> ServiceDescriptors => new List<ServiceDescriptor>(_serviceProvider.Root.RootProvider.CallSiteFactory.Descriptors);
-            public List<object> Disposables => new List<object>(_serviceProvider.Root.Disposables);
+            public List<object> Disposables
+            {
+                get
+                {
+                    IList<object?> source = _serviceProvider.Root.Disposables;
+                    var result = new List<object>(source.Count);
+                    for (int i = 0; i < source.Count; i++)
+                    {
+                        if (source[i] is object item)
+                        {
+                            result.Add(item);
+                        }
+                    }
+                    return result;
+                }
+            }
             public bool Disposed => _serviceProvider.Root.Disposed;
             public bool IsScope => !_serviceProvider.Root.IsRootScope;
         }
