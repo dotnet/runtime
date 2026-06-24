@@ -2432,7 +2432,8 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenT
 
                 if (user->Op(1)->IsTrueMask(user->GetSimdBaseType()) && user->Op(3)->IsVectorZero())
                 {
-                    // When all lanes are active, falseOp is irrelevant and the embedded operation can write back to op1.
+                    // When all lanes are active, falseOp is irrelevant and the embedded operation can write back to
+                    // op1.
                     delayFreeOp = intrinsicTree->Op(1);
                 }
                 else
