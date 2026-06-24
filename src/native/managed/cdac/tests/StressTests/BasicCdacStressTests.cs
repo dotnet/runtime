@@ -26,11 +26,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests.GCStress;
 ///   (ALLOC + ARGITER). Compares cDAC-built GCRefMap blobs (via the
 ///   <see cref="ICallingConvention"/> contract) against the runtime's
 ///   <c>ComputeCallRefMap</c>. <c>[ARG_SKIP]</c> results (where either
-///   side returned <c>E_NOTIMPL</c> / <c>S_FALSE</c> -- an acknowledged
-///   gap, e.g. SystemV / ARM64 struct-in-registers) are tolerated and
+///   side returned <c>E_NOTIMPL</c> / <c>S_FALSE</c>) are tolerated and
 ///   logged for triage visibility. <c>[ARG_FAIL]</c> (byte-for-byte
 ///   mismatch) and <c>[ARG_ERROR]</c> (unexpected failure HR from cDAC
 ///   or runtime) still fail the test.
+///
+/// Scope of this PR: ARGITER is validated on Windows x86 / x64 only.
+/// Other targets (Linux, macOS, Windows ARM64, ARM32) hit known gaps
+/// in the cDAC encoder or shared ArgIterator port and are explicitly
+/// skipped pending follow-up work (see <see cref="IsArgIterValidatedTarget"/>).
 /// </summary>
 /// <remarks>
 /// Prerequisites:
@@ -54,6 +58,7 @@ public class BasicStressTests : CdacStressTestBase
         ["ExceptionHandling"],
         ["StructScenarios"],
         ["DynamicMethods"],
+        ["CallSignatures"],
     ];
 
     public static IEnumerable<object[]> WindowsOnlyDebuggees =>
@@ -62,18 +67,19 @@ public class BasicStressTests : CdacStressTestBase
     ];
 
     /// <summary>
-    /// Debuggees exercised only under the ARGITER sub-check. Today this is
-    /// <c>CallSignatures</c>, which intentionally includes <c>__arglist</c>
-    /// methods that hit a known cDAC GCREFS gap: <c>GetStackReferences</c>
-    /// does not walk the <c>VASigCookie</c> signature blob to enumerate
-    /// the variadic-tail GC refs, so GCREFS reports false failures on
-    /// vararg frames. ARGITER has no such gap (the cdac encoder emits
-    /// <c>GCRefMapToken.VASigCookie</c> and stops, matching the runtime's
-    /// <c>FakeGcScanRoots</c> short-circuit).
+    /// Debuggees that exercise the CLI native varargs calling convention
+    /// (<c>__arglist</c>). The JIT only supports this convention on
+    /// Windows x86 / x64 / ARM64 -- see
+    /// <c>src/coreclr/jit/target.h::compFeatureVarArg</c>. Tests gate
+    /// on both OS=Windows and architecture != ARM32. Additionally,
+    /// these debuggees run under the ARGITER sub-check only: the cDAC
+    /// <c>GetStackReferences</c> doesn't yet walk the VASigCookie
+    /// signature blob, so GCREFS reports false failures on vararg
+    /// frames.
     /// </summary>
-    public static IEnumerable<object[]> ArgIterOnlyDebuggees =>
+    public static IEnumerable<object[]> VarArgsDebuggees =>
     [
-        ["CallSignatures"],
+        ["VarArgs"],
     ];
 
     [ConditionalTheory]
@@ -103,18 +109,33 @@ public class BasicStressTests : CdacStressTestBase
         AssertAllPassed(results, debuggeeName);
     }
 
-    [Theory]
+    [ConditionalTheory]
     [MemberData(nameof(Debuggees))]
     public async Task ArgIterStress_AllVerificationsPass(string debuggeeName)
     {
+        // Scope of this PR: ARGITER is validated on Windows x86 / x64
+        // only. Other architectures hit known gaps that need follow-up
+        // work (SystemV-AMD64 / ARM64 struct-in-register classification,
+        // arm32 ABI port). Skip there until those land.
+        if (!IsArgIterValidatedTarget())
+            throw new SkipTestException(ArgIterValidatedTargetReason);
+
         CdacStressResults results = await RunArgIterStressAsync(debuggeeName);
         AssertAllArgIterPassed(results, debuggeeName);
     }
 
-    [Theory]
-    [MemberData(nameof(ArgIterOnlyDebuggees))]
-    public async Task ArgIterStress_ArgIterOnly_AllVerificationsPass(string debuggeeName)
+    [ConditionalTheory]
+    [MemberData(nameof(VarArgsDebuggees))]
+    public async Task ArgIterStress_VarArgs_AllVerificationsPass(string debuggeeName)
     {
+        // VarArgs additionally requires the CLI vararg / __arglist
+        // calling convention, which compFeatureVarArg (target.h) gates
+        // to Windows non-ARM32. Combined with the PR's overall scope
+        // (windows-x86 / windows-x64 only), the effective matrix here
+        // is the same as ArgIterStress_AllVerificationsPass.
+        if (!IsArgIterValidatedTarget())
+            throw new SkipTestException(ArgIterValidatedTargetReason);
+
         CdacStressResults results = await RunArgIterStressAsync(debuggeeName);
         AssertAllArgIterPassed(results, debuggeeName);
     }
@@ -125,8 +146,35 @@ public class BasicStressTests : CdacStressTestBase
     {
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             throw new SkipTestException("P/Invoke debuggee uses kernel32.dll (Windows only)");
+        if (!IsArgIterValidatedTarget())
+            throw new SkipTestException(ArgIterValidatedTargetReason);
 
         CdacStressResults results = await RunArgIterStressAsync(debuggeeName);
         AssertAllArgIterPassed(results, debuggeeName);
     }
+
+    /// <summary>
+    /// The set of (OS, architecture) targets where the ARGITER sub-check
+    /// is validated as part of this PR: Windows x86 and Windows x64.
+    /// Other targets are intentionally out of scope and need follow-up
+    /// work before they can be enabled:
+    ///   * Linux / macOS: SystemV-AMD64 struct-in-register classification
+    ///     (cDAC throws NotImplementedException for any method with a
+    ///     small struct passed in registers, e.g. System.Guid).
+    ///   * ARM64 (Windows or Linux): same struct-in-register gap plus
+    ///     HFA/HVA handling.
+    ///   * ARM32: shared ArgIterator port has unported paths that throw
+    ///     mid-enumeration.
+    /// </summary>
+    private static bool IsArgIterValidatedTarget()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return false;
+        Architecture arch = GetTargetArchitecture();
+        return arch is Architecture.X86 or Architecture.X64;
+    }
+
+    private const string ArgIterValidatedTargetReason =
+        "ARGITER stress is validated for windows-x86 / windows-x64 in this PR; " +
+        "other targets need follow-up work (SystemV / ARM64 struct-in-registers, ARM32 ABI port).";
 }

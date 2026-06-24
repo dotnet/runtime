@@ -815,7 +815,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         if (outSize < DacStressArgGCRefMapResponseSize || outBuffer is null)
             return HResults.E_INVALIDARG;
 
-        ulong mdAddr = *(ulong*)inBuffer;
+        ClrDataAddress mdAddr = new ClrDataAddress(*(ulong*)inBuffer);
 
         // Zero the response so any unset trailing bytes are deterministic.
         new Span<byte>(outBuffer, (int)DacStressArgGCRefMapResponseSize).Clear();
@@ -825,7 +825,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         try
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            MethodDescHandle mdh = rts.GetMethodDescHandle(new TargetPointer(mdAddr));
+            MethodDescHandle mdh = rts.GetMethodDescHandle(mdAddr.ToTargetPointer(_target));
             byte[]? blob = _target.Contracts.CallingConvention.TryComputeArgGCRefMapBlob(mdh);
             if (blob is null)
             {
