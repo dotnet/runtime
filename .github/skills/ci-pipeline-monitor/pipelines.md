@@ -60,22 +60,21 @@ entries via the AzDO Definitions API, and adds new rows here.
 | runtime-coreclr jitstressregs-x86 | 117 | |
 | runtime-coreclr libraries-jitstressregs | 118 | |
 | runtime-coreclr libraries-jitstress2-jitstressregs | 119 | |
+| runtime-coreclr crossgen2 | 124 | |
+| runtime-coreclr crossgen2 outerloop | 134 | |
+| runtime-coreclr crossgen2-composite | 136 | |
 | runtime-jit-experimental | 137 | |
 | runtime-coreclr libraries-jitstress | 138 | |
 | runtime-coreclr ilasm | 140 | |
+| runtime-coreclr crossgen2-composite gcstress | 141 | |
 | runtime-coreclr pgo | 144 | |
 | runtime-coreclr libraries-pgo | 145 | |
 | runtime-coreclr superpmi-replay | 150 | |
 | runtime-coreclr superpmi-asmdiffs-checked-release | 153 | |
 | runtime-coreclr jit-cfg | 155 | |
-| runtime-coreclr crossgen2 | 124 | |
-| runtime-coreclr crossgen2 outerloop | 134 | |
-| runtime-coreclr crossgen2-composite | 136 | |
-| runtime-coreclr crossgen2-composite gcstress | 141 | |
 | runtime-coreclr jitstress-random | 159 | |
 | runtime-coreclr libraries-jitstress-random | 160 | |
 | runtime-coreclr pgostress | 230 | |
 | runtime-coreclr jitstress-isas-avx512 | 235 | |
 | runtime-coreclr superpmi-collect | — | **Private — skip** |
 | runtime-coreclr jitrollingbuild | — | **Private — skip** |
-
