@@ -391,6 +391,14 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="-exported_symbols_list /dev/null" Condition="'$(OutputType)' == 'exe' and '$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' == ''" />
       <CustomLinkerArg Include="-Wl,--version-script=&quot;$(ExportsFile)&quot;" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
       <CustomLinkerArg Include="-Wl,--export-dynamic" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
+      <!-- Root the cDAC contract descriptor export against linker dead code stripping. The export
+           args above merely set the symbol's visibility if it survives; unlike DotNetRuntimeDebugHeader
+           (referenced by PopulateDebugHeaders) the descriptor is a pure data symbol with no other
+           references, so without an explicit -u it is stripped. Windows .def EXPORTS already roots it.
+           Mirrors the apphost's -Wl,-u,DotNetRuntimeContractDescriptor (with the underscore-prefixed
+           name on Apple). -->
+      <CustomLinkerArg Include="-Wl,-u,_DotNetRuntimeContractDescriptor" Condition="'$(_IsApplePlatform)' == 'true' and '$(DebuggerSupport)' != 'false'" />
+      <CustomLinkerArg Include="-Wl,-u,DotNetRuntimeContractDescriptor" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetOS)' != 'browser' and '$(DebuggerSupport)' != 'false'" />
       <CustomLinkerArg Include="-Wl,-dead_strip" Condition="'$(_IsApplePlatform)' == 'true'" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
