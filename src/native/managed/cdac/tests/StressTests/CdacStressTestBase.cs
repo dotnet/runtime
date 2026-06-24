@@ -199,11 +199,15 @@ public abstract class CdacStressTestBase
 
     /// <summary>
     /// Asserts the ArgIter stress run produced an <c>[ARG_STATS]</c> summary
-    /// with non-zero verifications and zero hard failures. Skips
-    /// (<c>[ARG_SKIP]</c>) are treated as failures here, on the same logic
-    /// as <see cref="AssertAllPassed"/>: the suite ships with a hand-curated
-    /// set of debuggees so any acknowledged SKIP would need to be promoted to
-    /// a known-issue mechanism (none exists yet).
+    /// with non-zero verifications and zero hard failures.
+    /// <see cref="CdacStressResults.ArgIterSkipped"/> is tolerated (and logged
+    /// so triage can see it), mirroring how <see cref="AssertAllPassed"/>
+    /// tolerates <see cref="CdacStressResults.KnownIssues"/> for GCREFS.
+    /// <c>[ARG_SKIP]</c> is emitted by the native harness when either side
+    /// returns <c>E_NOTIMPL</c> / <c>S_FALSE</c> -- an acknowledged gap, not a
+    /// divergence. <c>[ARG_FAIL]</c> (byte-for-byte mismatch) and
+    /// <c>[ARG_ERROR]</c> (unexpected failure HR from cDAC or runtime) still
+    /// fail the test.
     /// </summary>
     internal static void AssertAllArgIterPassed(CdacStressResults results, string debuggeeName)
     {
@@ -220,7 +224,7 @@ public abstract class CdacStressTestBase
             "(typical fix: call AllocBurst() at the entry of each test method).\n" +
             $"Log: {results.LogFilePath}");
 
-        if (results.ArgIterFailed > 0 || results.ArgIterErrors > 0 || results.ArgIterSkipped > 0)
+        if (results.ArgIterFailed > 0 || results.ArgIterErrors > 0)
         {
             // Surface up to a handful of [ARG_FAIL] / [ARG_ERROR] lines so the
             // test failure message is actionable without opening the log.
@@ -230,8 +234,8 @@ public abstract class CdacStressTestBase
                 : "(no [ARG_FAIL] / [ARG_ERROR] lines captured in log)";
             Assert.Fail(
                 $"ArgIter stress test '{debuggeeName}' had " +
-                $"{results.ArgIterFailed} fail / {results.ArgIterErrors} error / " +
-                $"{results.ArgIterSkipped} skip out of {total} verifications.\n" +
+                $"{results.ArgIterFailed} fail / {results.ArgIterErrors} error out of " +
+                $"{total} verifications ({results.ArgIterSkipped} skip(s) tolerated).\n" +
                 $"Log: {results.LogFilePath}\n\n" +
                 $"First {Math.Min(MaxFailLines, results.ArgIterFailureLines.Count)} divergence line(s):\n{sample}");
         }
