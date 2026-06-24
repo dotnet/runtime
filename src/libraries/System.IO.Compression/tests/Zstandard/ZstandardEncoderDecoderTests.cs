@@ -583,26 +583,12 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentNullException>("decompressionOptions", () => new ZstandardDecoder((ZstandardDecompressionOptions)null!));
         }
 
-        [Fact]
-        public void Decoder_Ctor_DecompressionOptions_Default_Succeeds()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void Decoder_Ctor_DecompressionOptions_Succeeds(int maxWindowLog)
         {
-            ZstandardDecompressionOptions options = new();
-            using ZstandardDecoder decoder = new(options);
-
-            byte[] testData = ZstandardTestUtils.CreateTestData();
-            byte[] compressed = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
-            ZstandardEncoder.TryCompress(testData, compressed, out int compressedLength);
-
-            byte[] decompressed = new byte[testData.Length];
-            OperationStatus status = decoder.Decompress(compressed.AsSpan(0, compressedLength), decompressed, out _, out int bytesWritten);
-            Assert.Equal(OperationStatus.Done, status);
-            Assert.Equal(testData, decompressed.AsSpan(0, bytesWritten).ToArray());
-        }
-
-        [Fact]
-        public void Decoder_Ctor_DecompressionOptions_WithMaxWindowLog_Succeeds()
-        {
-            ZstandardDecompressionOptions options = new() { MaxWindowLog = 10 };
+            ZstandardDecompressionOptions options = new() { MaxWindowLog = maxWindowLog };
             using ZstandardDecoder decoder = new(options);
 
             byte[] testData = ZstandardTestUtils.CreateTestData(100);

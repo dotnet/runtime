@@ -343,5 +343,21 @@ namespace System.IO.Compression
             Assert.Equal(testData, decompressedStream.ToArray());
         }
 
+        [Fact]
+        public void ZstandardStream_WithDecompressionOptions_DisposedStream_ThrowsObjectDisposedException()
+        {
+            byte[] testData = ZstandardTestUtils.CreateTestData();
+            byte[] compressedData = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
+            ZstandardEncoder.TryCompress(testData, compressedData, out int compressedLength);
+            Array.Resize(ref compressedData, compressedLength);
+
+            ZstandardDecompressionOptions options = new();
+            using MemoryStream input = new(compressedData);
+            ZstandardStream decompressionStream = new(input, options);
+            decompressionStream.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => decompressionStream.Read(new byte[1], 0, 1));
+        }
+
     }
 }

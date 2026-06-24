@@ -79,15 +79,8 @@ namespace System.IO.Compression
 
     public class ZstandardDecompressionOptionsTests
     {
-        [Fact]
-        public void MaxWindowLog_SetToZero_Succeeds()
-        {
-            ZstandardDecompressionOptions options = new();
-            options.MaxWindowLog = 0;
-            Assert.Equal(0, options.MaxWindowLog);
-        }
-
         [Theory]
+        [InlineData(0)]
         [InlineData(10)]
         [InlineData(23)]
         [InlineData(30)]
@@ -99,6 +92,7 @@ namespace System.IO.Compression
         }
 
         [Theory]
+        [InlineData(1)]
         [InlineData(9)]
         [InlineData(32)]
         public void MaxWindowLog_SetOutOfRange_ThrowsArgumentOutOfRangeException(int maxWindowLog)
