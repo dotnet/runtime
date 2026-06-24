@@ -2235,15 +2235,11 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
         (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
         targetIp = pMD->GetInterpreterCode();
     }
-    if (targetIp == NULL)
-    {
-        // No interpreter code: the method was compiled to native (R2R) code. Invoke it as a compiled
-        // managed method through the interpreter->R2R thunk instead of handing a NULL byte code pointer
-        // to the interpreter (which would dispatch it as INTOP_INVALID).
-        ManagedMethodParam param = { pMD, args, ret, (PCODE)NULL, nullptr };
-        InvokeManagedMethod(&param);
-        return;
-    }
+    // The g_ReverseThunks reverse thunk is only used for UnmanagedCallersOnly methods that are executed
+    // by the interpreter. Methods compiled to native (R2R) code are dispatched directly to their R2R
+    // entrypoint by GetUnmanagedCallersOnlyThunk and never reach this path, so the interpreter byte code
+    // must exist here.
+    _ASSERTE(targetIp != NULL);
     (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret, callerIp);
 }
 #endif // FEATURE_INTERPRETER

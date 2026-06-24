@@ -174,7 +174,14 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD);
 
 bool PortableEntryPoint::EnsureCodeForUnmanagedCallersOnly()
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     _ASSERTE(IsValid());
 
     if (HasFlags(_flags, kUnmanagedCallersOnly_Checked | kUnmanagedCallersOnly_Has))

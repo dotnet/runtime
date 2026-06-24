@@ -2006,7 +2006,13 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
     CONTRACTL
     {
         THROWS;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // On portable entrypoint platforms resolving the entrypoint may need to run the prestub
+        // (e.g. to publish R2R native code for the method), which can trigger a GC.
+        GC_TRIGGERS;
+#else
         GC_NOTRIGGER;
+#endif
         MODE_ANY;
         PRECONDITION(HasUnmanagedCallersOnlyAttribute());
     }
