@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Logging.Console
                 }
             }
 
-            return SearchValues.Create(chars.ToArray());
+            return SearchValues.Create(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(chars));
         }
 #endif
 
