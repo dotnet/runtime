@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -222,25 +221,25 @@ internal class RuntimeLookupDelegateGenericVirtual
     {
         Console.WriteLine("Testing {0}: {1}...", nameof(TestGenericMethodOnNonGenericType), typeof(T));
 
-        var test1 = new Base();
+        Base test1 = new Base();
         test1.Foo<List<T>>();
         Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
 
         s_list.Clear();
 
-        var test2 = new DerivedClassNoImpl();
-        ((IBase)test2).Foo<List<T>>();
+        IBase test2 = new DerivedClassNoImpl();
+        test2.Foo<List<T>>();
         Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
 
         s_list.Clear();
 
-        var test3 = new DerivedStructNoImpl();
-        ((IBase)test3).Foo<List<T>>();
+        IBase test3 = new DerivedStructNoImpl();
+        test3.Foo<List<T>>();
         Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
 
         s_list.Clear();
 
-        var test4 = new DerivedClass();
+        Base test4 = new DerivedClass();
         Delegate m1 = test4.Foo<List<T>>();
         Delegate m2 = test4.Foo<List<List<T>>>;
         Assert.Equal(m1, m2);
@@ -255,25 +254,25 @@ internal class RuntimeLookupDelegateGenericVirtual
     {
         Console.WriteLine("Testing {0}: {1}, {2}...", nameof(TestGenericMethodOnGenericType), typeof(T), typeof(U));
 
-        var test1 = new Base<U>();
+        Base<U> test1 = new Base<U>();
         test1.Foo<List<T>>();
         Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
 
         s_list.Clear();
 
-        var test2 = new DerivedClassNoImpl<U>();
-        ((IBase<U>)test2).Foo<List<T>>();
+        IBase<U> test2 = new DerivedClassNoImpl<U>();
+        test2.Foo<List<T>>();
         Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
 
         s_list.Clear();
 
-        var test3 = new DerivedStructNoImpl<U>();
-        ((IBase<U>)test3).Foo<List<T>>();
+        IBase<U> test3 = new DerivedStructNoImpl<U>();
+        test3.Foo<List<T>>();
         Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
 
         s_list.Clear();
 
-        var test4 = new DerivedClass<U>();
+        Base<U> test4 = new DerivedClass<U>();
         Delegate m1 = test4.Foo<List<T>>();
         Delegate m2 = test4.Foo<List<List<T>>>;
         Assert.Equal(m1, m2);
@@ -288,25 +287,25 @@ internal class RuntimeLookupDelegateGenericVirtual
     {
         Console.WriteLine("Testing {0}: {1}...", nameof(TestGenericMethodOnStringType), typeof(T));
 
-        var test1 = new Base<string>();
+        Base<string> test1 = new Base<string>();
         test1.Foo<List<T>>();
         Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
 
         s_list.Clear();
 
-        var test2 = new DerivedClassStringNoImpl();
-        ((IBase<string>)test2).Foo<List<T>>();
+        IBase<string> test2 = new DerivedClassStringNoImpl();
+        test2.Foo<List<T>>();
         Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
 
         s_list.Clear();
 
-        var test3 = new DerivedStructStringNoImpl();
-        ((IBase<string>)test3).Foo<List<T>>();
+        IBase<string> test3 = new DerivedStructStringNoImpl();
+        test3.Foo<List<T>>();
         Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
 
         s_list.Clear();
 
-        var test4 = new DerivedClassString();
+        Base<string> test4 = new DerivedClassString();
         Delegate m1 = test4.Foo<List<T>>();
         Delegate m2 = test4.Foo<List<List<T>>>;
         Assert.Equal(m1, m2);
