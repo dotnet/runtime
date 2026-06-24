@@ -954,7 +954,7 @@ namespace System
 
             double delta = Math.Abs(actual - expected);
 
-            if (!(delta <= variance)) // Invert comparison to handle NaN variance case, which should always fail the comparison
+            if (delta > variance)
             {
                 throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual), banner);
             }
@@ -1069,7 +1069,7 @@ namespace System
 
             float delta = Math.Abs(actual - expected);
 
-            if (!(delta <= variance)) // Invert comparison to handle NaN variance case, which should always fail the comparison
+            if (delta > variance)
             {
                 throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual), banner);
             }
@@ -1185,7 +1185,7 @@ namespace System
 
             Half delta = (Half)Math.Abs((float)actual - (float)expected);
 
-            if (!(delta <= variance)) // Invert comparison to handle NaN variance case, which should always fail the comparison
+            if (delta > variance)
             {
                 throw EqualException.ForMismatchedValues(ToStringPadded(expected), ToStringPadded(actual), banner);
             }

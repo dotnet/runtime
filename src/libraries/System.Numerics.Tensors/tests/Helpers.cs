@@ -40,13 +40,13 @@ namespace System.Numerics.Tensors.Tests
             T actualTolerance = tolerance ?? DefaultTolerance<T>.Value;
             try
             {
-                T scaledTolerance = T.Max(T.Abs(expected), T.Abs(actual)) * actualTolerance;
+                T scaledTolerance = checked(T.Max(T.Abs(expected), T.Abs(actual)) * actualTolerance);
                 if (T.IsFinite(scaledTolerance))
                 {
                     actualTolerance = T.Max(scaledTolerance, actualTolerance);
                 }
             }
-            catch (OverflowException) { } // T.Abs throws for int.Max, just keep the original tolerance in that case.
+            catch (OverflowException) { } // Multiplication and T.Abs can throw for integers, just keep the original tolerance in that case.
 
             // Delegate to AssertExtensions.Equal for special value comparisons (NaN, +-inf, +-0)
             if (typeof(T) == typeof(double))
@@ -63,18 +63,33 @@ namespace System.Numerics.Tensors.Tests
             }
             else if (typeof(T) == typeof(NFloat))
             {
-                if (NFloat.Size == 8)
+                AssertExtensions.Equal((NFloat)(object)expected, (NFloat)(object)actual, (NFloat)(object)actualTolerance, banner);
+            }
+            else if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(byte) ||
+                typeof(T) == typeof(short) || typeof(T) == typeof(ushort) || typeof(T) == typeof(char) ||
+                typeof(T) == typeof(int) || typeof(T) == typeof(uint) ||
+                typeof(T) == typeof(long) || typeof(T) == typeof(ulong) ||
+                typeof(T) == typeof(nint) || typeof(T) == typeof(nuint) ||
+                typeof(T) == typeof(Int128) || typeof(T) == typeof(UInt128))
+            {
+                T delta;
+                try
                 {
-                    AssertExtensions.Equal((double)(NFloat)(object)expected, (double)(NFloat)(object)actual, (double)(NFloat)(object)actualTolerance, banner);
+                    delta = T.Abs(checked(expected - actual));
                 }
-                else
+                catch (OverflowException)
                 {
-                    AssertExtensions.Equal((float)(NFloat)(object)expected, (float)(NFloat)(object)actual, (float)(NFloat)(object)actualTolerance, banner);
+                    // Subtraction and T.Abs can throw for integers, in that case the mismatch is large enough to fail assertion
+                    throw EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), banner);
+                }
+                if (delta > actualTolerance)
+                {
+                    throw EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), banner);
                 }
             }
-            else if (!(T.Abs(expected - actual) <= actualTolerance)) // Invert comparison to handle NaN variance case, which should always fail the comparison
+            else
             {
-                throw EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), banner);
+                throw new NotImplementedException($"Type not supported for {nameof(AssertEqualWithTolerance)}: {typeof(T).Name}");
             }
         }
 #else
