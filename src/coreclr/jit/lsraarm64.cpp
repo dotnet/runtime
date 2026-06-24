@@ -1380,17 +1380,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     if (embeddedOp != nullptr)
     {
         assert(delayFreeOp == nullptr);
-        delayFreeOp = getDelayFreeOperand(embeddedOp, /* embedded */ true);
-
-        const HWIntrinsic intrinEmbedded(embeddedOp);
-        if (intrinEmbedded.numOperands == 1 && !HWIntrinsicInfo::IsReduceOperation(intrinEmbedded.id))
-        {
-            // Unary embedded masked operations are non-RMW, but also support movprfx.
-            // Mark the falseOp of the conditional select as delay free.
-            assert(intrin.id == NI_Sve_ConditionalSelect);
-            delayFreeOp = intrinsicTree->Op(3);
-            assert(delayFreeOp != nullptr);
-        }
+        delayFreeOp = getDelayFreeOperand(embeddedOp, intrinsicTree);
     }
 
     // Build any immediates
@@ -2275,17 +2265,18 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
 //
 // Arguments:
 //    intrinsicTree - Tree to check
-//    embedded - If this is an embedded operand
+//    user          - The user of intrinsicTree if intrinsicTree is an embedded operand
 //
 // Return Value:
 //    The operand that needs to be delay freed
 //
-GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool embedded)
+GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenTreeHWIntrinsic* user)
 {
     bool isRMW = intrinsicTree->isRMWHWIntrinsic(m_compiler);
 
     const NamedIntrinsic intrinsicId = intrinsicTree->GetHWIntrinsicId();
     GenTree*             delayFreeOp = nullptr;
+    const bool           embedded    = user != nullptr;
 
     switch (intrinsicId)
     {
@@ -2365,6 +2356,24 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
                     delayFreeOp = intrinsicTree->Op(1);
                     assert(delayFreeOp != nullptr);
                 }
+            }
+            else if ((intrinsicTree->GetOperandCount() == 1) && embedded &&
+                     !HWIntrinsicInfo::IsReduceOperation(intrinsicId))
+            {
+                // Unary embedded masked operations are non-RMW, but also support movprfx.
+                assert(user->OperIsHWIntrinsic(NI_Sve_ConditionalSelect));
+
+                if (user->Op(1)->IsTrueMask(user->GetSimdBaseType()) && user->Op(3)->IsVectorZero())
+                {
+                    // When all lanes are active, falseOp is irrelevant and the embedded operation can write back to op1.
+                    delayFreeOp = intrinsicTree->Op(1);
+                }
+                else
+                {
+                    // Mark the falseOp of the conditional select as delay free.
+                    delayFreeOp = user->Op(3);
+                }
+                assert(delayFreeOp != nullptr);
             }
             break;
     }
