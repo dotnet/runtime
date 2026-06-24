@@ -221,14 +221,10 @@ internal class RuntimeLookupDelegateGenericVirtual
         Delegate m2 = test2.Foo<List<List<T>>>;
         Assert.Equal(m1, m2);
 
-        // Disable this test for NativeAOT due to https://github.com/dotnet/runtime/issues/129696
-        if (RuntimeFeature.IsDynamicCodeSupported)
-        {
-            IBase foo = new DerivedStruct();
-            Delegate d = foo.Foo<List<T>>();
-            MethodInfo expected = typeof(DerivedStruct).GetMethod(nameof(DerivedStruct.Foo))!.MakeGenericMethod(typeof(List<T>));
-            Assert.Equal(expected, d.Method);
-        }
+        IBase foo = new DerivedStruct();
+        Delegate d = foo.Foo<List<T>>();
+        MethodInfo expected = typeof(DerivedStruct).GetMethod(nameof(DerivedStruct.Foo))!.MakeGenericMethod(typeof(List<T>));
+        Assert.Equal(expected, d.Method);
     }
 }
 
