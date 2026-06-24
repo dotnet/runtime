@@ -66,11 +66,11 @@ partial interface IRuntimeTypeSystem : IContract
     // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
     public virtual bool IsObject(TypeHandle typeHandle);
     public virtual bool IsString(TypeHandle typeHandle);
+    // True if the CorElementType represents a GC-collectable object reference.
+    public virtual bool IsCorElementTypeObjRef(CorElementType elementType);
     // Returns the address of one of the runtime's well-known singleton MethodTables, or
     // TargetPointer.Null if the runtime has not yet initialized that global.
     public virtual TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind);
-    // True if the type is a GC-collectable object reference.
-    public virtual bool IsObjRef(TypeHandle typeHandle);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
@@ -326,8 +326,9 @@ internal partial struct RuntimeTypeSystem_1
     internal enum WFLAGS_LOW : uint
     {
         GenericsMask = 0x00000030,
-        GenericsMask_NonGeneric = 0x00000000,   // no instantiation
-        GenericsMask_TypicalInstantiation = 0x00000030,   // the type instantiated at its formal parameters, e.g. List<T>
+        GenericsMask_NonGeneric = 0x00000000,            // no instantiation
+        GenericsMask_SharedInst = 0x00000020,            // shared instantiation, e.g. List<__Canon> or List<MyValueType<__Canon>>
+        GenericsMask_TypicalInstantiation = 0x00000030,  // the type instantiated at its formal parameters, e.g. List<T>
 
         StringArrayValues = GenericsMask_NonGeneric,
     }
@@ -402,6 +403,7 @@ internal partial struct RuntimeTypeSystem_1
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
         public bool IsTrackedReferenceWithFinalizer => GetFlag(WFLAGS_HIGH.IsTrackedReferenceWithFinalizer) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
+        public bool IsSharedByGenericInstantiations => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_SharedInst);
     }
 
     [Flags]
@@ -635,6 +637,13 @@ Contracts used:
 
     public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
 
+    public bool IsCorElementTypeObjRef(CorElementType elementType) =>
+        elementType is CorElementType.Class
+            or CorElementType.Object
+            or CorElementType.String
+            or CorElementType.Array
+            or CorElementType.SzArray;
+
     public TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind)
     {
         // Map the well-known kind to the corresponding runtime global. Returns
@@ -656,8 +665,6 @@ Contracts used:
             return TargetPointer.Null;
         return value;
     }
-
-    public bool IsObjRef(TypeHandle typeHandle) => // Returns true if GetSignatureCorElementType returns Class, Array, or SzArray.
 
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
@@ -1837,7 +1844,7 @@ Determining where a shared generic method obtains its generic context:
                 return true;
         }
         MethodTable mt = _methodTables[md.MethodTable];
-        return mt.IsCanonMT && mt.Flags.HasInstantiation;
+        return mt.Flags.IsSharedByGenericInstantiations;
     }
 ```
 
