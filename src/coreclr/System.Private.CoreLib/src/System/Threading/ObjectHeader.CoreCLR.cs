@@ -131,7 +131,7 @@ namespace System.Threading
                 else if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0)
                 {
                     return HeaderLockResult.UseSlowPath;
-                }
+            }
             }
 
             // Everything else (id doesn't fit, lost race, recursive acquire, contention) is handled by
@@ -144,19 +144,18 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe HeaderLockResult AcquireUncommon(object obj, bool isOneShot)
         {
-            int currentThreadID = ManagedThreadId.Current;
-
-            // A thin lock can only store a thread id that fits in the thread-id field.
-            // This check is deferred to here (rather than at entry) because it is unusual to be true.
-            if ((uint)currentThreadID > (uint)SBLK_MASK_LOCK_THREADID)
-                return HeaderLockResult.UseSlowPath;
-
             // A one-shot acquire does not spin while the lock is owned by another thread, but it still
             // retries the rare CAS failures below where the lock is not owned by somebody else: a caller
             // that knows the lock is unowned expects a one-shot acquire to succeed.
             // Lock.IsSingleProcessor is lazily initialized at the first contended acquire; until then it
             // is false and we assume a multicore machine.
             int retries = isOneShot || Lock.IsSingleProcessor ? 0 : 16;
+
+            int currentThreadID = ManagedThreadId.Current;
+            // A thin lock can only store a thread id that fits in the thread-id field.
+            // This check is deferred to here (rather than at entry) because it is unusual to be true.
+            if ((uint)currentThreadID > (uint)SBLK_MASK_LOCK_THREADID)
+                return HeaderLockResult.UseSlowPath;
 
             // retry when the lock is owned by somebody else.
             // this loop will spinwait between iterations.
@@ -221,15 +220,13 @@ namespace System.Threading
                     }
                 }
 
-                if (retries != 0)
-                {
-                    // spin a bit before retrying (1 spinwait is roughly 35 nsec)
-                    // the object is not pinned here
-                    Thread.SpinWait(i);
-                }
+                // lock is thin, but owned by somebody else.
+                // spin a bit before retrying (1 spinwait is roughly 35 nsec)
+                // the object is not pinned here
+                Thread.SpinWait(i);
             }
 
-            // owned by somebody else
+            // lock is thin, but owned by somebody else
             return HeaderLockResult.Failure;
         }
 
