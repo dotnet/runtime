@@ -1773,6 +1773,19 @@ public:
         return FindOrCreateAssociatedMethodDesc(this, mt, FALSE, GetMethodInstantiation(), allowInstParam, AsyncVariantLookup::Async, FALSE, FALSE, mt->GetLoadLevel());
     }
 
+    // If this method supports async version codegen, then get the ordinary non-async method.
+    // For async version codegen the ordinary non-async method is the method whose IL we use
+    // for both compilations.
+    MethodDesc* GetOrdinaryVariantIfAsyncVersion()
+    {
+        if (SupportsAsyncVersionCodegen())
+        {
+            return GetOrdinaryVariant();
+        }
+
+        return this;
+    }
+
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
     // an MD for a generic instantiation...In other words the MethodDescs and the
     // MethodTable are guaranteed to be "tightly-knit", i.e. if one is present in
