@@ -25,7 +25,7 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
             return;
         }
 
-        _context.InstructionPointer = CodePointerUtils.AddressFromCodePointer(new TargetCodePointer(inlinedCallFrame.CallerReturnAddress.Value), _target);
+        _context.InstructionPointer = CodePointerUtils.CodePointerFromAddress(inlinedCallFrame.CallerReturnAddress.AsTargetPointer, _target);
         _context.StackPointer = inlinedCallFrame.CallSiteSP;
         _context.FramePointer = inlinedCallFrame.CalleeSavedFP;
     }
@@ -49,7 +49,7 @@ internal abstract class BaseFrameHandler(Target target, IPlatformAgnosticContext
             throw new InvalidOperationException("TransitionBlock size is not set");
         }
 
-        _context.InstructionPointer = CodePointerUtils.AddressFromCodePointer(new TargetCodePointer(transitionBlock.ReturnAddress.Value), _target);
+        _context.InstructionPointer = CodePointerUtils.CodePointerFromAddress(transitionBlock.ReturnAddress.AsTargetPointer, _target);
         _context.StackPointer = framedMethodFrame.TransitionBlockPtr + transitionBlockSize;
 
         Data.CalleeSavedRegisters calleeSavedRegisters = _target.ProcessedData.GetOrAdd<Data.CalleeSavedRegisters>(transitionBlock.CalleeSavedRegisters);
