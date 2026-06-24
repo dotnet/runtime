@@ -9211,7 +9211,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle, pResolvedToken);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle,
+                                        pResolvedToken);
 
         return;
     }
@@ -9255,7 +9256,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle, pResolvedToken);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, baseClass, pContextHandle,
+                                        pResolvedToken);
         return;
     }
 
@@ -9377,7 +9379,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
             return;
         }
 
-        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, pContextHandle, pResolvedToken);
+        considerGuardedDevirtualization(call, ilOffset, isInterface, baseMethod, objClass, pContextHandle,
+                                        pResolvedToken);
         return;
     }
 
