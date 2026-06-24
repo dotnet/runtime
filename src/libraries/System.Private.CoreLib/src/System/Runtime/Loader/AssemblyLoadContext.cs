@@ -315,7 +315,10 @@ namespace System.Runtime.Loader
         /// <summary>
         /// Sets a process-wide callback that overrides the value returned by <see cref="Assembly.Location"/>.
         /// </summary>
-        /// <remarks>The callback can only be set once for the lifetime of the process.</remarks>
+        /// <remarks>
+        /// The callback can only be set once for the lifetime of the process. The callback should not
+        /// call <see cref="Assembly.Location"/> on the provided assembly to avoid recursion.
+        /// </remarks>
         /// <param name="locationOverride">
         /// A callback that receives an <see cref="Assembly"/> and the location the runtime computed for it, and
         /// returns the value that <see cref="Assembly.Location"/> should report.
@@ -342,7 +345,8 @@ namespace System.Runtime.Loader
                 return originalLocation;
             }
 
-            return locationOverride(assembly, originalLocation);
+            // A callback that returns null falls back to the original location, since Assembly.Location is non-nullable.
+            return locationOverride(assembly, originalLocation) ?? originalLocation;
         }
 
         // Custom AssemblyLoadContext implementations can override this
