@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.Primitives
                 {
                     return;
                 }
-                IDisposable registration = token.RegisterChangeCallback(static s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
+                IDisposable? registration = token.RegisterChangeCallback(static s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
                 if (token.HasChanged && token.ActiveChangeCallbacks)
                 {
                     registration?.Dispose();
@@ -141,7 +141,7 @@ namespace Microsoft.Extensions.Primitives
                 SetDisposable(registration);
             }
 
-            private void SetDisposable(IDisposable disposable)
+            private void SetDisposable(IDisposable? disposable)
             {
                 // We don't want to transition from _disposedSentinel => anything since it's terminal
                 // but we want to allow going from previously assigned disposable, to another
@@ -151,7 +151,7 @@ namespace Microsoft.Extensions.Primitives
                 // If Dispose was called, then immediately dispose the disposable
                 if (current == _disposedSentinel)
                 {
-                    disposable.Dispose();
+                    disposable?.Dispose();
                     return;
                 }
 
@@ -161,7 +161,7 @@ namespace Microsoft.Extensions.Primitives
                 if (previous == _disposedSentinel)
                 {
                     // The subscription was disposed so we dispose immediately and return
-                    disposable.Dispose();
+                    disposable?.Dispose();
                 }
                 else if (previous == current)
                 {
