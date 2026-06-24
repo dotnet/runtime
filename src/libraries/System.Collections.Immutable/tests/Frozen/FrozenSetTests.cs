@@ -377,8 +377,9 @@ namespace System.Collections.Frozen.Tests
             Assert.All(expected, s => actual.Contains(s));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Allocates ~1 GB strings; requires a 64-bit address space (OOMs on 32-bit platforms).
+        [Fact]
         [OuterLoop]
+        [SkipOnPlatform(TestPlatforms.Browser, "Allocates ~1 GB strings; exhausts the constrained wasm browser heap.")]
         public void ToFrozenSet_WithExtremelyLargeStrings()
         {
             // Test case with extremely large strings that exceed length bucket boundaries.
