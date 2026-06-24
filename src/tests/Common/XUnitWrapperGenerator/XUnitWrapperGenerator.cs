@@ -1103,6 +1103,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             "browser" => Xunit.TestPlatforms.Browser,
             "wasi" => Xunit.TestPlatforms.Wasi,
             "freebsd" => Xunit.TestPlatforms.FreeBSD,
+            "openbsd" => Xunit.TestPlatforms.OpenBSD,
             "netbsd" => Xunit.TestPlatforms.NetBSD,
             null or "" or "anyos" => Xunit.TestPlatforms.Any,
             _ => 0

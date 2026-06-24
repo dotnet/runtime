@@ -1729,12 +1729,27 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     assert(varTypeIsStruct(varDsc));
     assert(!varDsc->lvPromoted); // Don't ask again :)
 
-    // If this lclVar is used in a SIMD intrinsic, then we don't want to struct promote it.
-    // Note, however, that SIMD lclVars that are NOT used in a SIMD intrinsic may be
-    // profitably promoted.
-    if (varDsc->lvIsUsedInSIMDIntrinsic())
+    if (varTypeIsSIMDOrMask(varDsc->lvType))
     {
-        JITDUMP("  struct promotion of V%02u is disabled because lvIsUsedInSIMDIntrinsic()\n", lclNum);
+        // TYP_SIMD and TYP_MASK locals should never be promoted because they either don't have accessible fields
+        // or they have specialized IR support that transforms those field accesses into appropriate codegen. While
+        // could potentially be a little smarter here if the user is only touching the fields, this is not a recommended
+        // pattern in the first place and so its not something we want to spend effort optimizing. Rather, developers
+        // should treat it as a proper SIMD primitive type and do the "right" thing.
+
+        JITDUMP("  struct promotion of V%02u is disabled because it is a SIMD or MASK type\n", lclNum);
+        return false;
+    }
+
+    if (varDsc->IsBitcastToSimd())
+    {
+        // The local is effectively bitcast to one of the recognized TYP_SIMD structs and so we use this as a hint that
+        // it is likely a user-defined vector wrapper and they want it to be optimized accordingly. This may pessimize
+        // some rare edge cases where devs are mixing SIMD and non-SIMD patterns, but as with the comment above we want
+        // to discourage doing that and for them to pick one pattern, because it otherwise ends up non-optimal no matter
+        // what we do.
+
+        JITDUMP("  struct promotion of V%02u is disabled because IsBitcastToSimd()\n", lclNum);
         return false;
     }
 
@@ -1824,16 +1839,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
                 {
                     canPromote = false;
                 }
-#if defined(FEATURE_SIMD)
-                // If we have a register-passed struct with mixed non-opaque SIMD types (i.e. with defined fields)
-                // and non-SIMD types, we don't currently handle that case in the prolog, so we can't promote.
-                else if ((fieldCnt > 1) && varTypeIsStruct(fieldType) &&
-                         (structPromotionInfo.fields[i].fldSIMDTypeHnd != NO_CLASS_HANDLE) &&
-                         !m_compiler->isOpaqueSIMDType(structPromotionInfo.fields[i].fldSIMDTypeHnd))
-                {
-                    canPromote = false;
-                }
-#endif // FEATURE_SIMD
             }
         }
 #elif defined(UNIX_AMD64_ABI)

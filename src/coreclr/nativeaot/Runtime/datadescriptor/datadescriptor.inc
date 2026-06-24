@@ -105,6 +105,8 @@ CDAC_TYPE_FIELD(StressLog, T_INT32, TotalChunks, offsetof(StressLog, totalChunk)
 CDAC_TYPE_FIELD(StressLog, T_POINTER, Logs, offsetof(StressLog, logs))
 CDAC_TYPE_FIELD(StressLog, T_UINT64, TickFrequency, offsetof(StressLog, tickFrequency))
 CDAC_TYPE_FIELD(StressLog, T_UINT64, StartTimestamp, offsetof(StressLog, startTimeStamp))
+CDAC_TYPE_FIELD(StressLog, T_UINT64, StartTime, offsetof(StressLog, startTime))
+CDAC_TYPE_FIELD(StressLog, T_NUINT, ModuleOffset, offsetof(StressLog, moduleOffset))
 CDAC_TYPE_END(StressLog)
 
 CDAC_TYPE_BEGIN(ThreadStressLog)
@@ -137,6 +139,30 @@ CDAC_TYPE_FIELD(StressMsg, TYPE(StressMsgHeader), Header, 0)
 CDAC_TYPE_FIELD(StressMsg, T_POINTER, Args, offsetof(StressMsg, args))
 CDAC_TYPE_END(StressMsg)
 
+// ========================
+// Loader (RuntimeInstance / TypeManager)
+// ========================
+
+CDAC_TYPE_BEGIN(RuntimeInstance)
+CDAC_TYPE_INDETERMINATE(RuntimeInstance)
+CDAC_TYPE_FIELD(RuntimeInstance, T_POINTER, OsModuleList, cdac_data<RuntimeInstance>::OsModuleList)
+CDAC_TYPE_FIELD(RuntimeInstance, T_POINTER, TypeManagerList, cdac_data<RuntimeInstance>::TypeManagerList)
+CDAC_TYPE_FIELD(RuntimeInstance, T_POINTER, ManagedCodeStartRange, cdac_data<RuntimeInstance>::ManagedCodeStartRange)
+CDAC_TYPE_FIELD(RuntimeInstance, T_UINT32, ManagedCodeRangeSize, cdac_data<RuntimeInstance>::ManagedCodeRangeSize)
+CDAC_TYPE_END(RuntimeInstance)
+
+CDAC_TYPE_BEGIN(TypeManagerEntry)
+CDAC_TYPE_INDETERMINATE(TypeManagerEntry)
+CDAC_TYPE_FIELD(TypeManagerEntry, T_POINTER, Next, offsetof(RuntimeInstance::TypeManagerEntry, m_pNext))
+CDAC_TYPE_FIELD(TypeManagerEntry, T_POINTER, TypeManager, offsetof(RuntimeInstance::TypeManagerEntry, m_pTypeManager))
+CDAC_TYPE_END(TypeManagerEntry)
+
+CDAC_TYPE_BEGIN(TypeManager)
+CDAC_TYPE_INDETERMINATE(TypeManager)
+CDAC_TYPE_FIELD(TypeManager, T_POINTER, OsModule, cdac_data<TypeManager>::OsModule)
+CDAC_TYPE_FIELD(TypeManager, T_POINTER, Header, cdac_data<TypeManager>::Header)
+CDAC_TYPE_END(TypeManager)
+
 CDAC_TYPES_END()
 
 // ========================
@@ -147,14 +173,12 @@ CDAC_GLOBALS_BEGIN()
 
 CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 
+CDAC_GLOBAL_POINTER(RuntimeInstance, &g_pTheRuntimeInstance)
+
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &g_pFreeObjectEEType)
 
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
-
-// Thread state flag constants
-CDAC_GLOBAL(ThreadStateFlagAttached, T_UINT32, 0x00000001)
-CDAC_GLOBAL(ThreadStateFlagDetached, T_UINT32, 0x00000002)
 
 // Object contract globals
 #ifdef TARGET_64BIT
@@ -163,13 +187,14 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, T_UINT8, 7)
 CDAC_GLOBAL(ObjectToMethodTableUnmask, T_UINT8, 3)
 #endif
 
-// StressLog globals (no module table in NativeAOT)
 CDAC_GLOBAL(StressLogEnabled, T_UINT8, 1)
 CDAC_GLOBAL_POINTER(StressLog, &StressLog::theLog)
 CDAC_GLOBAL(StressLogHasModuleTable, T_UINT8, 0)
 CDAC_GLOBAL(StressLogChunkSize, T_UINT32, STRESSLOG_CHUNK_SIZE)
 CDAC_GLOBAL(StressLogValidChunkSig, T_UINT32, 0xCFCFCFCF)
 CDAC_GLOBAL(StressLogMaxMessageSize, T_UINT64, (uint64_t)StressMsg::maxMsgSize)
+
+CDAC_GLOBAL(SOSBreakingChangeVersion, T_UINT8, 5)
 
 #if defined(TARGET_BROWSER)
 #ifdef Browser
@@ -221,10 +246,20 @@ CDAC_GLOBAL(RecommendedReaderVersion, T_UINT32, CDAC_RECOMMENDED_READER_VERSION)
 
 // Contracts: declare which contracts this runtime supports
 CDAC_GLOBAL_CONTRACT(Thread, n1)
-CDAC_GLOBAL_CONTRACT(Exception, c1)
+CDAC_GLOBAL_CONTRACT(Exception, n1)
+CDAC_GLOBAL_CONTRACT(Object, n1)
 CDAC_GLOBAL_CONTRACT(RuntimeTypeSystem, n1)
 CDAC_GLOBAL_CONTRACT(RuntimeInfo, c1)
 CDAC_GLOBAL_CONTRACT(StressLog, c2)
+CDAC_GLOBAL_CONTRACT(Loader, n1)
+CDAC_GLOBAL_CONTRACT(ExecutionManager, n1)
+CDAC_GLOBAL_CONTRACT(SyncBlock, n1)
+CDAC_GLOBAL_CONTRACT(SymbolName, n1)
+CDAC_GLOBAL_CONTRACT(CodeVersions, n1)
+CDAC_GLOBAL_CONTRACT(ReJIT, n1)
+CDAC_GLOBAL_CONTRACT(PrecodeStubs, n1)
+CDAC_GLOBAL_CONTRACT(PlatformMetadata, n1)
+CDAC_GLOBAL_CONTRACT(FeatureFlags, c1)
 
 // Managed type sub-descriptor: ILC emits a ContractDescriptor with managed type layouts
 // that the cDAC reader merges as a sub-descriptor. This provides field offsets for managed
