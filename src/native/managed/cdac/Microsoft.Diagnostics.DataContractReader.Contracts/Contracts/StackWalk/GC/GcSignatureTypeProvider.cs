@@ -177,7 +177,7 @@ internal sealed class GcSignatureTypeProvider
     /// </summary>
     private GcTypeKind ClassifyTypeHandle(ITypeHandle typeHandle)
     {
-        if (typeHandle.Address == TargetPointer.Null)
+        if (typeHandle.IsNull)
             return GcTypeKind.Ref;
 
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;

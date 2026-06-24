@@ -52,7 +52,7 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
         }
 
         Assert.Fail("Could not find CrashInExceptionHandler on the crashing thread's stack");
-        return default;
+        return ITypeHandle.Null;
     }
 
     [ConditionalTheory]

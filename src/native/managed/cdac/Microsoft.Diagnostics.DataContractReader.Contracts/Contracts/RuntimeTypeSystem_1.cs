@@ -74,13 +74,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         public TypeKey(ITypeHandle typeHandle, CorElementType elementType, int rank, ImmutableArray<ITypeHandle> typeArgs, SignatureCallingConvention callConv = SignatureCallingConvention.Default)
         {
-            ITypeHandle = typeHandle;
+            TypeHandle = typeHandle;
             ElementType = elementType;
             Rank = rank;
             TypeArgs = typeArgs;
             CallConv = callConv;
         }
-        public ITypeHandle ITypeHandle { get; }
+        public ITypeHandle TypeHandle { get; }
         public CorElementType ElementType { get; }
         public int Rank { get; }
         public ImmutableArray<ITypeHandle> TypeArgs { get; }
@@ -88,7 +88,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public bool Equals(TypeKey other)
         {
-            if (ElementType != other.ElementType || Rank != other.Rank || CallConv != other.CallConv || TypeArgs.Length != other.TypeArgs.Length || !ITypeHandle.Equals(other.TypeHandle))
+            if (ElementType != other.ElementType || Rank != other.Rank || CallConv != other.CallConv || TypeArgs.Length != other.TypeArgs.Length || !TypeHandle.Equals(other.TypeHandle))
                 return false;
             for (int i = 0; i < TypeArgs.Length; i++)
             {
@@ -102,7 +102,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public override int GetHashCode()
         {
-            int hash = HashCode.Combine(ITypeHandle.GetHashCode(), (int)ElementType, Rank, (int)CallConv);
+            int hash = HashCode.Combine(TypeHandle.GetHashCode(), (int)ElementType, Rank, (int)CallConv);
             foreach (ITypeHandle th in TypeArgs)
             {
                 hash = HashCode.Combine(hash, th.GetHashCode());
@@ -517,6 +517,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
     public TargetPointer GetModule(ITypeHandle typeHandle)
     {
+        if (typeHandle is SyntheticTypeHandle synthetic)
+            return GetModule(synthetic.Element);
+
         if (typeHandle.IsMethodTable())
         {
             return _methodTables[typeHandle.Address].Module;
@@ -832,7 +835,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         public static TypeInstantiation Create(Target target, TargetPointer address) => new TypeInstantiation(target, address);
 
-        public ITypeHandle[] ITypeHandles { get; }
+        public ITypeHandle[] TypeHandles { get; }
         private TypeInstantiation(Target target, TargetPointer typePointer)
         {
             RuntimeTypeSystem_1 rts = (RuntimeTypeSystem_1)target.Contracts.RuntimeTypeSystem;
@@ -848,10 +851,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             TargetPointer dictionaryPointer = target.ReadPointer(perInstInfo + (ulong)target.PointerSize * (ulong)(genericsDictInfo.NumDicts - 1));
 
             int numberOfGenericArgs = genericsDictInfo.NumTypeArgs;
-            ITypeHandles = new ITypeHandle[numberOfGenericArgs];
+            TypeHandles = new ITypeHandle[numberOfGenericArgs];
             for (int i = 0; i < numberOfGenericArgs; i++)
             {
-                ITypeHandles[i] = rts.GetTypeHandle(target.ReadPointer(dictionaryPointer + (ulong)target.PointerSize * (ulong)i));
+                TypeHandles[i] = rts.GetTypeHandle(target.ReadPointer(dictionaryPointer + (ulong)target.PointerSize * (ulong)i));
             }
         }
     }
@@ -859,6 +862,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public bool IsGenericTypeDefinition(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsGenericTypeDefinition;
     public bool ContainsGenericVariables(ITypeHandle typeHandle)
     {
+        if (typeHandle is SyntheticTypeHandle)
+            return ContainsGenericVariables(GetRootTypeParam(typeHandle));
+
         if (typeHandle.IsTypeDesc())
         {
             CorElementType type = GetSignatureCorElementType(typeHandle);
@@ -888,6 +894,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     public bool IsCollectible(ITypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsCollectible;
     public bool HasTypeParam(ITypeHandle typeHandle)
     {
+        if (typeHandle is SyntheticTypeHandle)
+            return true;
+
         if (typeHandle.IsMethodTable())
         {
             MethodTable methodTable = _methodTables[typeHandle.Address];
@@ -910,6 +919,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public CorElementType GetSignatureCorElementType(ITypeHandle typeHandle)
     {
+        if (typeHandle is SyntheticTypeHandle synthetic)
+            return synthetic.Kind;
+
         if (typeHandle.IsMethodTable())
         {
             MethodTable methodTable = _methodTables[typeHandle.Address];
@@ -992,6 +1004,22 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     // return true if the ITypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     public bool IsArray(ITypeHandle typeHandle, out uint rank)
     {
+        if (typeHandle is SyntheticTypeHandle synthetic)
+        {
+            if (synthetic.Kind == CorElementType.SzArray)
+            {
+                rank = 1;
+                return true;
+            }
+            if (synthetic.Kind == CorElementType.Array)
+            {
+                rank = (uint)synthetic.Rank;
+                return true;
+            }
+            rank = 0;
+            return false;
+        }
+
         if (typeHandle.IsMethodTable())
         {
             MethodTable methodTable = _methodTables[typeHandle.Address];
@@ -1017,6 +1045,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public ITypeHandle GetTypeParam(ITypeHandle typeHandle)
     {
+        if (typeHandle is SyntheticTypeHandle synthetic)
+            return synthetic.Element;
+
         if (typeHandle.IsMethodTable())
         {
             MethodTable methodTable = _methodTables[typeHandle.Address];
@@ -1099,7 +1130,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private bool IsLoaded(ITypeHandle typeHandle)
     {
-        if (typeHandle.Address == TargetPointer.Null)
+        if (typeHandle.IsNull || typeHandle.IsSynthetic)
             return false;
         if (typeHandle.IsTypeDesc())
         {
@@ -1152,6 +1183,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 return potentialMatch;
             }
         }
+        // No loaded match found. For Ptr/Byref/SzArray/Array, synthesize a handle
+        // so signature-decoding contracts can treat unloaded constructed types uniformly.
+        if (corElementType is CorElementType.Ptr or CorElementType.Byref or CorElementType.SzArray or CorElementType.Array)
+        {
+            var synthetic = new SyntheticTypeHandle(corElementType, typeHandle, rank);
+            _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments, callConv), synthetic);
+            return synthetic;
+        }
+
         return ITypeHandle.Null;
     }
 
@@ -1169,7 +1209,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         foreach (ITypeHandle arg in retAndArgTypes)
         {
-            if (arg.Address == TargetPointer.Null)
+            if (arg.IsNull)
                 continue;
 
             TargetPointer argModulePtr = GetLoaderModule(arg);
@@ -1254,6 +1294,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsPointer(ITypeHandle typeHandle)
     {
+        if (typeHandle is SyntheticTypeHandle synthetic)
+            return synthetic.Kind == CorElementType.Ptr;
+
         if (!typeHandle.IsTypeDesc())
             return false;
 
@@ -1272,6 +1315,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public TargetPointer GetLoaderModule(ITypeHandle typeHandle)
     {
+        if (typeHandle is SyntheticTypeHandle synthetic)
+            return GetLoaderModule(synthetic.Element);
+
         if (typeHandle.IsTypeDesc())
         {
             // TypeDesc::GetLoaderModule
@@ -1300,7 +1346,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         public static FunctionPointerRetAndArgs Create(Target target, TargetPointer address) => new FunctionPointerRetAndArgs(target, address);
 
-        public ITypeHandle[] ITypeHandles { get; }
+        public ITypeHandle[] TypeHandles { get; }
         private FunctionPointerRetAndArgs(Target target, TargetPointer typePointer)
         {
             RuntimeTypeSystem_1 rts = (RuntimeTypeSystem_1)target.Contracts.RuntimeTypeSystem;
@@ -1309,10 +1355,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             TargetPointer retAndArgs = fnPtrTypeDesc.RetAndArgTypes;
             int numberOfRetAndArgTypes = checked((int)fnPtrTypeDesc.NumArgs + 1);
 
-            ITypeHandles = new ITypeHandle[numberOfRetAndArgTypes];
+            TypeHandles = new ITypeHandle[numberOfRetAndArgTypes];
             for (int i = 0; i < numberOfRetAndArgTypes; i++)
             {
-                ITypeHandles[i] = rts.GetTypeHandle(target.ReadPointer(retAndArgs + (ulong)target.PointerSize * (ulong)i));
+                TypeHandles[i] = rts.GetTypeHandle(target.ReadPointer(retAndArgs + (ulong)target.PointerSize * (ulong)i));
             }
         }
     }
@@ -2085,16 +2131,16 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             TargetPointer enclosingMT = ((IRuntimeTypeSystem)this).GetMTOfEnclosingClass(fieldDescPointer);
             if (enclosingMT == TargetPointer.Null)
-                return default;
+                return ITypeHandle.Null;
             ITypeHandle enclosingType = GetTypeHandle(enclosingMT);
             TargetPointer modulePtr = GetModule(enclosingType);
             if (modulePtr == TargetPointer.Null)
-                return default;
+                return ITypeHandle.Null;
 
             ModuleHandle moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
             MetadataReader? mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
             if (mdReader is null)
-                return default;
+                return ITypeHandle.Null;
 
             uint memberDef = ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer);
             FieldDefinitionHandle fieldDefHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)memberDef);
@@ -2104,7 +2150,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
         catch
         {
-            return default;
+            return ITypeHandle.Null;
         }
     }
 

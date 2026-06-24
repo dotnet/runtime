@@ -2548,7 +2548,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         {
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             ITypeHandle th = rts.GetTypeHandle(new TargetPointer(vmTypeHandle));
-            ITypeHandleToExpandedTypeInfoImpl(rts, boxed, th, pTypeInfo);
+            TypeHandleToExpandedTypeInfoImpl(rts, boxed, th, pTypeInfo);
         }
         catch (System.Exception ex)
         {
@@ -2577,7 +2577,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             TargetPointer mtAddr = _target.Contracts.Object.GetMethodTableAddress(new TargetPointer(addr));
             ITypeHandle th = rts.GetTypeHandle(mtAddr);
-            ITypeHandleToExpandedTypeInfoImpl(rts, boxed, th, pTypeInfo);
+            TypeHandleToExpandedTypeInfoImpl(rts, boxed, th, pTypeInfo);
         }
         catch (System.Exception ex)
         {
@@ -2700,10 +2700,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             TargetPointer canonMtPtr = rts.GetWellKnownMethodTable(WellKnownMethodTable.Canon);
             if (canonMtPtr == TargetPointer.Null)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
-            TypeHandle canonTh = rts.GetTypeHandle(canonMtPtr);
+            ITypeHandle canonTh = rts.GetTypeHandle(canonMtPtr);
 
             TypeDataWalk walk = new TypeDataWalk(_target, rts, canonTh, pTypeData->m_pList, (uint)pTypeData->m_nEntries);
-            TypeHandle th = walk.ReadLoadedTypeHandle();
+            ITypeHandle th = walk.ReadLoadedTypeHandle();
             if (th.IsNull)
                 throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
             *pRetVal = th.Address.Value;
@@ -3196,15 +3196,15 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    internal TypeHandle LookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
+    internal ITypeHandle LookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
     {
-        TypeHandle th = TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
+        ITypeHandle th = TryLookupTypeDefOrRefInAssembly(vmAssembly, metadataToken);
         if (th.IsNull)
             throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
         return th;
     }
 
-    internal TypeHandle TryLookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
+    internal ITypeHandle TryLookupTypeDefOrRefInAssembly(ulong vmAssembly, uint metadataToken)
     {
         ILoader loader = _target.Contracts.Loader;
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
@@ -3220,10 +3220,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 mt = loader.GetModuleLookupMapElement(lookupTables.TypeRefToMethodTable, metadataToken, out _);
                 break;
             default:
-                return default;
+                return ITypeHandle.Null;
         }
         if (mt == TargetPointer.Null)
-            return default;
+            return ITypeHandle.Null;
         return rts.GetTypeHandle(mt);
     }
 
@@ -3246,7 +3246,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             DebuggerIPCE_ExpandedTypeData entry;
             for (int i = 0; i < instantiation.Length; i++)
             {
-                ITypeHandleToExpandedTypeInfoImpl(rts, AreValueTypesBoxed.NoValueTypeBoxing, instantiation[i], &entry);
+                TypeHandleToExpandedTypeInfoImpl(rts, AreValueTypesBoxed.NoValueTypeBoxing, instantiation[i], &entry);
                 fpCallback(&entry, pUserData);
 #if DEBUG
                 entries.Add(entry);
@@ -3715,7 +3715,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 // objOffsetToVars = offset from the object base to the first field = sizeof(Object) = pointer size
                 *pObjOffsetToVars = (uint)_target.GetTypeInfo(DataType.Object).Size!.Value;
                 *pObjSize = (uint)_target.Contracts.Object.GetSize(objectAddress);
-                ITypeHandleToExpandedTypeInfoImpl(rts, AreValueTypesBoxed.AllBoxed, th, pObjTypeData);
+                TypeHandleToExpandedTypeInfoImpl(rts, AreValueTypesBoxed.AllBoxed, th, pObjTypeData);
 
                 // If this is a string, force elementType to ELEMENT_TYPE_STRING
                 if (rts.IsString(th))
@@ -5611,11 +5611,11 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         try
         {
-            ITypeHandleToExpandedTypeInfoImpl(rts, AreValueTypesBoxed.NoValueTypeBoxing, typeHandle, pTypeInfo);
+            TypeHandleToExpandedTypeInfoImpl(rts, AreValueTypesBoxed.NoValueTypeBoxing, typeHandle, pTypeInfo);
         }
         catch (VirtualReadException)
         {
-            ITypeHandleToExpandedTypeInfoImpl(rts, AreValueTypesBoxed.NoValueTypeBoxing, thCanon, pTypeInfo);
+            TypeHandleToExpandedTypeInfoImpl(rts, AreValueTypesBoxed.NoValueTypeBoxing, thCanon, pTypeInfo);
         }
     }
 
@@ -5653,7 +5653,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     }
 
     // Shared core implementation for TypeHandleToExpandedTypeInfo and GetObjectExpandedTypeInfo.
-    private void ITypeHandleToExpandedTypeInfoImpl(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, ITypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
+    private void TypeHandleToExpandedTypeInfoImpl(IRuntimeTypeSystem rts, AreValueTypesBoxed boxed, ITypeHandle typeHandle, DebuggerIPCE_ExpandedTypeData* pTypeInfo)
     {
         *pTypeInfo = default;
         CorElementType elementType = GetElementType(rts, typeHandle);

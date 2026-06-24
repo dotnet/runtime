@@ -21,7 +21,13 @@ public readonly struct TargetTypeHandle : ITypeHandle, IEquatable<TargetTypeHand
     public bool IsSynthetic => false;
 
     public bool Equals(ITypeHandle? other)
-        => other is TargetTypeHandle t && Address == t.Address;
+    {
+        if (other is null) return false;
+        if (other is TargetTypeHandle t) return Address == t.Address;
+        // A zero-address TargetTypeHandle is equivalent to a NullTypeHandle
+        if (IsNull && other.IsNull && !other.IsSynthetic) return true;
+        return false;
+    }
     public bool Equals(TargetTypeHandle other) => Address == other.Address;
     public override bool Equals(object? obj)
         => obj is ITypeHandle th && Equals(th);

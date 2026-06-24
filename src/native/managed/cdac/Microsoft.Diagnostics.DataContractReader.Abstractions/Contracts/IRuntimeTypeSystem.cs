@@ -84,7 +84,7 @@ public readonly struct MethodDescHandle
     public TargetPointer Address { get; }
 }
 
-public readonly record struct TypedByRefInfo(TargetPointer Data, TargetPointer ITypeHandle);
+public readonly record struct TypedByRefInfo(TargetPointer Data, TargetPointer TypeHandle);
 
 public enum ArrayFunctionType
 {
