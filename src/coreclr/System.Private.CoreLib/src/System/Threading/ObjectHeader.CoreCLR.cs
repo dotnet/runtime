@@ -266,20 +266,21 @@ namespace System.Threading
                             {
                                 return;
                             }
-                        }
 
-                        // rare contention on owned thin lock,
-                        // we still own the lock, try again
-                        continue;
+                            // rare contention on owned thin lock,
+                            // we still own the lock, try again
+                            continue;
+                        }
                     }
 
+                    // Thin-lock layout but we are NOT the owner -> let the slow path throw.
                     break;
                 }
             }
 
             // This is a case when we have:
             // * a fat lock - the most likely case by far, or
-            // * we don't own the lock and need to throw and it is ok if the lock gets inflated
+            // * we don't own the lock and need to throw and it is ok if the lock gets inflated.
             // Let the slow path handle this.
             Monitor.GetLockObject(obj).Exit();
         }
