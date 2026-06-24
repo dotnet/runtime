@@ -10167,9 +10167,14 @@ calli_end:
 				if (!field || CLASS_HAS_FAILURE (klass)) {
 						HANDLE_TYPELOAD_ERROR (cfg, klass);
 
-						// Reached only in AOT. Cannot turn a token into a class. We silence the compilation error
-						// and generate a runtime exception.
-						if (cfg->error->error_code == MONO_ERROR_BAD_IMAGE)
+						/*
+						 * Reached only in AOT. After lowering the field resolution failure into a runtime
+						 * throw, consume the expected recoverable metadata errors as well. Memberref field
+						 * resolution can report MissingField/BadImage directly through cfg->error without
+						 * setting cfg->exception_type, and leaving one of those live lets an accepted inline
+						 * trip the inline_method () cfg->error assert later on.
+						 */
+						if (cfg->error->error_code == MONO_ERROR_BAD_IMAGE || cfg->error->error_code == MONO_ERROR_MISSING_FIELD)
 							clear_cfg_error (cfg);
 
 						// We need to push a dummy value onto the stack, respecting the intended type.
