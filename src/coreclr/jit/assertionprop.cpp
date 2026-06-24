@@ -4129,34 +4129,20 @@ GenTree* Compiler::optAssertionProp_ModDiv(ASSERT_VALARG_TP assertions,
         changed = true;
     }
 
-    if (op2IsNotZero)
+    if (op2IsNotZero && ((tree->gtFlags & GTF_DIV_MOD_NO_BY_ZERO) == 0))
     {
-        JITDUMP("Divisor for DIV/MOD is proven to be never zero...\n")
+        JITDUMP("Divisor for DIV/MOD is proven to be never negative...\n")
         tree->gtFlags |= GTF_DIV_MOD_NO_BY_ZERO;
+        tree->SetHasOrderingSideEffect();
         changed = true;
     }
 
-    if (op1IsNotNegative || op2IsNotNegative)
+    if ((op1IsNotNegative || op2IsNotNegative) && ((tree->gtFlags & GTF_DIV_MOD_NO_OVERFLOW) == 0))
     {
         JITDUMP("DIV/MOD is proven to never overflow...\n")
         tree->gtFlags |= GTF_DIV_MOD_NO_OVERFLOW;
-        changed = true;
-    }
-
-    // The no-throw flags above make the divide look non-throwing. When the safety proof
-    // is location-dependent (derived from a dominating assertion rather than from the
-    // operand's own value), the divide is only safe at this position, so CSE/loop hoisting
-    // must not move it above the check that justified the flag. Pin it with an ordering
-    // side effect in that case. A value-based proof (e.g. a constant non-zero divisor)
-    // holds everywhere, so such a divide stays freely movable and is not pinned.
-    const bool byZeroNeedsPin = op2IsNotZero && !op2->IsNeverZero();
-    // Overflow (ArithmeticException) is only possible for signed div/mod, so only those need
-    // pinning for an assertion-based no-overflow proof.
-    const bool overflowNeedsPin = tree->OperIs(GT_DIV, GT_MOD) && (op1IsNotNegative || op2IsNotNegative) &&
-                                  !op1->IsNeverNegative(this) && !op2->IsNeverNegative(this);
-    if (byZeroNeedsPin || overflowNeedsPin)
-    {
         tree->SetHasOrderingSideEffect();
+        changed = true;
     }
 
     return changed ? optAssertionProp_Update(tree, tree, stmt) : nullptr;
