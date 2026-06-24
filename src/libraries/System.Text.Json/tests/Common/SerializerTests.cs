@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -196,7 +197,8 @@ namespace System.Text.Json.Serialization.Tests
             if (contexts.HasFlag(SerializedValueContext.JsonNode))
             {
                 const string key = "key";
-                var jsonObject = new JsonObject { [key] = JsonValue.Create<TValue>(value) };
+                JsonTypeInfo<TValue> typeInfo = Serializer.GetTypeInfo<TValue>(options);
+                var jsonObject = new JsonObject { [key] = JsonValue.Create(value, typeInfo) };
 
                 if (expectedExceptionType != null)
                 {
