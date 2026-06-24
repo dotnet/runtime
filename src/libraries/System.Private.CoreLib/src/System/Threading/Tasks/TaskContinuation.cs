@@ -782,6 +782,11 @@ namespace System.Threading.Tasks
             // If we're not allowed to run here, schedule the action
             if (!allowInlining || !IsValidLocationForInlining)
             {
+                if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
+                {
+                    box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box);
+                }
+
                 // If logging is disabled, we can simply queue the box itself as a custom work
                 // item, and its work item execution will just invoke its MoveNext.  However, if
                 // logging is enabled, there is pre/post-work we need to do around logging to

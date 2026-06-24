@@ -2986,7 +2986,12 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             // block (later we can refine this to something like: blocks that have calls
             // or will inspire calls during codegen).
             //
-            if (!block->isEmpty())
+            // Also refresh BBJ_CALLFINALLY blocks: the implicit call_indirect to the
+            // finally funclet is emitted at codegen time and the runtime EH walker
+            // would otherwise see the stale try-region virtualIP and re-dispatch the
+            // same finally during unwind.
+            //
+            if (!block->isEmpty() || block->KindIs(BBJ_CALLFINALLY))
             {
                 updateVirtualIPOnFrame(func, block);
             }
