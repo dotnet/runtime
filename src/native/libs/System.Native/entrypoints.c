@@ -313,6 +313,15 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_LowLevelCrossProcessMutex_SetAbandoned)
     DllImportEntry(SystemNative_Select)
     DllImportEntry(SystemNative_GetNextAreaInfo)
+    DllImportEntry(SystemNative_GetTeamInfo)
+    DllImportEntry(SystemNative_GetNextTeamInfo)
+    DllImportEntry(SystemNative_GetNextTeamId)
+    DllImportEntry(SystemNative_GetTeamUsageInfo)
+    DllImportEntry(SystemNative_SetThreadPriority)
+    DllImportEntry(SystemNative_GetThreadInfo)
+    DllImportEntry(SystemNative_GetNextThreadInfo)
+    DllImportEntry(SystemNative_GetSystemInfo)
+    DllImportEntry(SystemNative_GetNextImageInfo)
 };
 
 EXTERN_C const void* SystemResolveDllImport(const char* name);
