@@ -1306,10 +1306,12 @@ static void PrepareMethodHelper(MethodDesc * pMD)
     STANDARD_VM_CONTRACT;
 
     // If a MethodImpl (.override) has remapped this method's vtable slot to a
-    // different method, prepare the method that actually owns the slot's code.
-    // This mirrors getFunctionEntryPoint, which resolves direct calls the same
-    // way; without it PrepareMethod would prepare the (dead) decl body instead of
-    // the body that runs when the method is invoked.
+    // different method, prepare the method that actually owns the slot's code
+    // (the impl), not the decl. This mirrors getFunctionEntryPoint, which resolves
+    // direct calls the same way. Without this, PrepareMethod operates on the decl
+    // and never prepares the impl body that runs when the method is invoked - on
+    // portable entrypoints it even compiles the decl's dead body and then fails to
+    // publish it.
     if (pMD->IsVtableSlot())
         pMD = MethodTable::MapMethodDeclToMethodImpl(pMD);
 
