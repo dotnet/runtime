@@ -141,6 +141,9 @@ namespace System.Security.Cryptography
             try
             {
                 written = ExportKey(Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB, rented);
+
+                Debug.Assert(Algorithm.IsValidPrivateKeySize(written));
+
                 privateKeyInfo.PrivateKey = rented.AsSpan(0, written);
 
                 AsnWriter pkcs8Writer = new(AsnEncodingRules.DER);
