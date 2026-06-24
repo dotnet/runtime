@@ -8858,25 +8858,18 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     }
 
     MethodDesc* pInstArgMD = pDevirtMD;
-    bool isUnboxingStub = pDevirtMD->IsUnboxingStub();
-    bool instArgIsInstantiatingStub = pDevirtMD->IsInstantiatingStub();
+    bool isUnboxingStubOfInstantiatingStub = false;
 
-    if (isUnboxingStub || instArgIsInstantiatingStub)
+    if (pDevirtMD->IsUnboxingStub())
     {
+        // RequiresInstMethodDescArg and RequiresInstMethodTableArg are only valid for canonical instantiatins,
+        // use pDevirtMD instead of pInstantiatedMD for pInstArgMD.
+        //
         pInstArgMD = pDevirtMD->GetWrappedMethodDesc();
         if (pInstArgMD->IsInstantiatingStub())
         {
-            instArgIsInstantiatingStub = true;
+            isUnboxingStubOfInstantiatingStub = true;
         }
-    }
-    
-    if (instArgIsInstantiatingStub &&
-        (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()) ||
-         TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation())))
-    {
-        // TODO: Support for runtime lookup
-        info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-        return false;
     }
 
     if (pInstArgMD->RequiresInstMethodDescArg())
@@ -8901,7 +8894,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     }
     else if (pInstArgMD->RequiresInstMethodTableArg())
     {
-        if (!isUnboxingStub && TypeHandle::IsCanonicalSubtypeInstantiation(pExactMT->GetInstantiation()))
+        if (!pDevirtMD->IsUnboxingStub() && TypeHandle::IsCanonicalSubtypeInstantiation(pExactMT->GetInstantiation()))
         {
             // If we end up with a shared MethodTable that is not exact,
             // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
@@ -8910,6 +8903,22 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         }
 
         info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pExactMT;
+        info->instParamLookup.constLookup.accessType = IAT_VALUE;
+    }
+    else if (isUnboxingStubOfInstantiatingStub)
+    {
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()) ||
+            TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
+        {
+            // This is an unboxing stub that points to an instantiating stub that requires a runtime lookup.
+            // Bail out.
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
+        // pInstArgMD is the wrapped instantiating stub in the unboxing stub.
+        //
+        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstArgMD;
         info->instParamLookup.constLookup.accessType = IAT_VALUE;
     }
 
