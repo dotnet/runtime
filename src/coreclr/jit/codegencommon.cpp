@@ -5006,6 +5006,16 @@ void CodeGen::genFinalizeFrame()
     }
 #endif
 
+#if defined(TARGET_AMD64)
+    // If LSRA reserved a secondary frame-pointer candidate, commit to saving it now so the single
+    // FINAL layout below already accounts for the push. After layout we decide whether to actually
+    // establish it; if not, we leave it saved (a small wasted push/pop) rather than redoing the layout.
+    if (genSecondFramePtrReg != REG_NA)
+    {
+        regSet.rsSetRegsModified(genRegMask(genSecondFramePtrReg));
+    }
+#endif // TARGET_AMD64
+
     /* Count how many callee-saved registers will actually be saved (pushed) */
 
     // EBP cannot be (directly) modified for EBP frame and double-aligned frames
@@ -5118,33 +5128,16 @@ void CodeGen::genFinalizeFrame()
     m_compiler->lvaAssignFrameOffsets(Compiler::FINAL_FRAME_LAYOUT);
 
 #if defined(TARGET_AMD64)
-    // A secondary frame pointer was reserved as a candidate during LSRA. Now that FINAL offsets are
-    // known, decide whether establishing it pays off. These offsets assume the register is NOT pushed;
-    // pushing it only shifts RBP-relative locals deeper and leaves RSP-relative locals unchanged, so
-    // scanning them is a sound, conservative test. If profitable, mark it modified (so prolog/epilog
-    // save and restore it) and redo the layout to account for the push; otherwise cancel the
-    // reservation so no push/lea or unwind data is emitted.
-    if (genSecondFramePtrReg != REG_NA)
+    // A secondary frame pointer was reserved during LSRA and we committed to saving it before the
+    // single FINAL layout above, so the offsets already account for the push. Now that FINAL offsets
+    // are known, decide whether actually establishing it (prolog lea + per-access redirects) pays off.
+    // If not, demote the register to REG_NA so no lea/redirect is emitted; the register stays
+    // saved/restored (a small wasted push/pop), which lets us avoid a second frame layout.
+    if ((genSecondFramePtrReg != REG_NA) && !genSecondFramePtrIsProfitable())
     {
-        if (genSecondFramePtrIsProfitable())
-        {
-            // Reset the layout state first: rsSetRegsModified forbids adding a callee-saved register
-            // once FINAL layout is complete, and we are about to redo the layout for the push anyway.
-            m_compiler->lvaDoneFrameLayout = Compiler::REGALLOC_FRAME_LAYOUT;
-
-            regSet.rsSetRegsModified(genRegMask(genSecondFramePtrReg));
-
-            regMaskTP maskCalleeRegsPushed = regSet.rsGetModifiedCalleeSavedRegsMask();
-            maskCalleeRegsPushed &= ~RBM_FLT_CALLEE_SAVED;
-            m_compiler->compCalleeRegsPushed = genCountBits(maskCalleeRegsPushed);
-
-            m_compiler->lvaAssignFrameOffsets(Compiler::FINAL_FRAME_LAYOUT);
-        }
-        else
-        {
-            JITDUMP("Cancelling secondary frame pointer: no local lands in the secondary disp8 band\n");
-            genSecondFramePtrReg = REG_NA;
-        }
+        JITDUMP("Not establishing secondary frame pointer: no local lands in the secondary disp8 band "
+                "(register stays saved)\n");
+        genSecondFramePtrReg = REG_NA;
     }
 #endif // TARGET_AMD64
 
