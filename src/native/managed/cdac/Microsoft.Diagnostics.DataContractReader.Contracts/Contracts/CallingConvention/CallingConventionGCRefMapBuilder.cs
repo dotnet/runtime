@@ -160,8 +160,6 @@ internal static class CallingConventionGCRefMapBuilder
                                 if (probe.Address != TargetPointer.Null)
                                 {
                                     EmitByRefLikeInterior(rts, probe, arg.Offset, tokens);
-                                    if (tokens.Count > MaxBlobLength)
-                                        return null;
                                 }
                                 emitted = true;
                             }
@@ -182,8 +180,6 @@ internal static class CallingConventionGCRefMapBuilder
                                     for (int subOff = 0; subOff < (int)seriesSize; subOff += pointerSize)
                                     {
                                         tokens[seriesBase + subOff] = GCRefMapToken.Ref;
-                                        if (tokens.Count > MaxBlobLength)
-                                            return null;
                                     }
                                 }
                                 emitted = true;

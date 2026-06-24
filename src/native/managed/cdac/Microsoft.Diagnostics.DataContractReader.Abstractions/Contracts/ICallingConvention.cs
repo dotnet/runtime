@@ -73,7 +73,7 @@ public interface ICallingConvention : IContract
     /// where each argument resides (stack offset, element type, type handle).
     /// The caller is responsible for interpreting these locations for GC or other purposes.
     /// </summary>
-    IEnumerable<ArgumentLocation> EnumerateArguments(MethodDescHandle methodDesc) => throw new System.NotImplementedException();
+    IEnumerable<ArgumentLocation> EnumerateArguments(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     /// <summary>
     /// Compute the argument GCRefMap blob for the given method in the same wire
@@ -82,7 +82,7 @@ public interface ICallingConvention : IContract
     /// by-value structs containing GC pointers); the caller treats <c>null</c> as
     /// <c>E_NOTIMPL</c> for the cdacstress ArgIterator sub-check.
     /// </summary>
-    byte[]? TryComputeArgGCRefMapBlob(MethodDescHandle methodDesc) => null;
+    byte[]? TryComputeArgGCRefMapBlob(MethodDescHandle methodDesc) => throw new NotImplementedException();
 
     /// <summary>
     /// Return the number of bytes the callee pops off the stack on return,
@@ -90,7 +90,7 @@ public interface ICallingConvention : IContract
     /// non-x86 architectures (or VarArgs methods). Used by the cdacstress
     /// ArgIterator sub-check.
     /// </summary>
-    uint GetCbStackPop(MethodDescHandle methodDesc) => 0;
+    uint GetCbStackPop(MethodDescHandle methodDesc) => throw new NotImplementedException();
 }
 
 public readonly struct CallingConvention : ICallingConvention

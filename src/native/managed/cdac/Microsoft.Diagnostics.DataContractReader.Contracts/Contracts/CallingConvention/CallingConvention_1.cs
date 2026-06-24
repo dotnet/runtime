@@ -32,10 +32,19 @@ internal sealed class CallingConvention_1 : ICallingConvention
         {
             return CallingConventionGCRefMapBuilder.TryBuild(_target, methodDesc);
         }
-        catch
+        catch (NotImplementedException)
         {
-            // Any thrown exception from EnumerateArguments / signature decode
-            // makes the result unusable; treat as "cDAC can't encode this MD".
+            // Encoder declined to encode this MD: an unported ABI path
+            // in the shared ArgIterator, a missing TransitionBlock helper,
+            // an explicit `throw new NotImplementedException(...)` in this
+            // contract, or any deeper NIE that surfaced through lazy
+            // enumeration. The outer SOSDacImpl handler maps null to
+            // E_NOTIMPL which the stress harness logs as [ARG_SKIP].
+            //
+            // Other exception types deliberately propagate to the
+            // handler's own catch so they show up as E_FAIL ->
+            // [ARG_ERROR] -- those are genuine bugs we don't want to
+            // silently hide behind an acknowledged-gap signal.
             return null;
         }
     }

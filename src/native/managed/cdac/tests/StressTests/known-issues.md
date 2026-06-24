@@ -7,7 +7,7 @@ enumeration and the runtime's own GC root scanning, exposed by the
 ## Verification verdicts
 
 When running `RunStressTests.ps1` (Checked, `DOTNET_CdacStress=0x101` =
-`ALLOC`), each verification is bucketed into one of:
+`ALLOC + GCREFS`), each verification is bucketed into one of:
 
 | Verdict | Meaning |
 |---------|---------|

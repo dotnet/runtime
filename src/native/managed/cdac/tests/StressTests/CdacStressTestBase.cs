@@ -156,14 +156,6 @@ public abstract class CdacStressTestBase
     }
 
     /// <summary>
-    /// Asserts the GC stress run produced at least one verification and had no
-    /// hard failures. <see cref="CdacStressResults.KnownIssues"/> is intentionally
-    /// tolerated (the native harness emits <c>[KNOWN_ISSUE]</c> for acknowledged
-    /// divergences via <c>s_knownIssueCount</c>, separate from
-    /// <c>s_failCount</c>) but is logged so regressions in the known-issue
-    /// count are visible during triage.
-    /// </summary>
-    /// <summary>
     /// Asserts the GCREFS stress run produced a <c>[GC_STATS]</c> summary
     /// with at least one verification and no hard failures.
     /// <see cref="CdacStressResults.KnownIssues"/> is intentionally

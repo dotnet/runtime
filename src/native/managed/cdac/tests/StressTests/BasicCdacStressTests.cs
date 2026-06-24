@@ -25,9 +25,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests.GCStress;
 /// * <see cref="ArgIterStress_AllVerificationsPass"/> -- DOTNET_CdacStress=0x201
 ///   (ALLOC + ARGITER). Compares cDAC-built GCRefMap blobs (via the
 ///   <see cref="ICallingConvention"/> contract) against the runtime's
-///   <c>ComputeCallRefMap</c>. Any <c>[ARG_FAIL]</c> / <c>[ARG_ERROR]</c>
-///   / <c>[ARG_SKIP]</c> fails the test -- there is no known-issue
-///   mechanism for ARGITER today.
+///   <c>ComputeCallRefMap</c>. <c>[ARG_SKIP]</c> results (where either
+///   side returned <c>E_NOTIMPL</c> / <c>S_FALSE</c> -- an acknowledged
+///   gap, e.g. SystemV / ARM64 struct-in-registers) are tolerated and
+///   logged for triage visibility. <c>[ARG_FAIL]</c> (byte-for-byte
+///   mismatch) and <c>[ARG_ERROR]</c> (unexpected failure HR from cDAC
+///   or runtime) still fail the test.
 /// </summary>
 /// <remarks>
 /// Prerequisites:
