@@ -50,6 +50,11 @@
         type([TestLibrary]TestLibrary.PlatformDetection)
         string[1] ('Is32BitProcess')
     }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('Allocates large contiguous array that is not consistently available on Apple mobile')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsAppleMobile')
+    }
     .entrypoint
     // Code size       40 (0x28)
     .maxstack  2
