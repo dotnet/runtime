@@ -42,6 +42,19 @@ namespace System.Text.Json
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // U+00F0..U+00FF
         ];
 
+#if DEBUG && NET
+        static JsonWriterHelper()
+        {
+            for (int i = 0; i < 128; i++)
+            {
+                bool needsEscaping = AllowList[i] == 0;
+                Debug.Assert(needsEscaping == JavaScriptEncoder.Default.WillEncode(i));
+                Debug.Assert(needsEscaping == !s_allowedBytes.Contains((byte)i));
+                Debug.Assert(needsEscaping == !s_allowedChars.Contains((char)i));
+            }
+        }
+#endif
+
 #if NET
         private const string HexFormatString = "X4";
 #endif
