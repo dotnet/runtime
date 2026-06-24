@@ -209,27 +209,36 @@ public class GenericVirtualMethodTests
 
 internal class RuntimeLookupDelegateGenericVirtual
 {
-    internal static readonly List<object> s_list1 = new();
-    internal static readonly List<object> s_list2 = new();
+    internal static readonly List<object> s_list = new();
 
     internal static void Test<T>()
     {
         var test1 = new Base();
         test1.Foo<List<T>>();
-        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list1);
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
 
         var test2 = new DerivedClassNoImpl();
         ((IBase)test2).Foo<List<T>>();
-        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list2);
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
 
-        var test3 = new DerivedClass();
-        Delegate m1 = test3.Foo<List<T>>();
-        Delegate m2 = test3.Foo<List<List<T>>>;
+        s_list.Clear();
+
+        var test3 = new DerivedStructNoImpl();
+        ((IBase)test3).Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        var test4 = new DerivedClass();
+        Delegate m1 = test4.Foo<List<T>>();
+        Delegate m2 = test4.Foo<List<List<T>>>;
         Assert.Equal(m1, m2);
 
-        IBase test4 = new DerivedStruct();
-        Delegate m3 = test4.Foo<List<T>>();
-        Delegate m4 = test4.Foo<List<List<T>>>;
+        IBase test5 = new DerivedStruct();
+        Delegate m3 = test5.Foo<List<T>>();
+        Delegate m4 = test5.Foo<List<List<T>>>;
         Assert.Equal(m3.Method, m4.Method);
     }
 }
@@ -238,11 +247,11 @@ internal class Base
 {
     public virtual Delegate Foo<U>()
     {
-        RuntimeLookupDelegateGenericVirtual.s_list1.Add(typeof(U));
-        RuntimeLookupDelegateGenericVirtual.s_list1.Add(typeof(List<U>));
-        RuntimeLookupDelegateGenericVirtual.s_list1.Add(typeof(List<List<U>>));
-        RuntimeLookupDelegateGenericVirtual.s_list1.Add(typeof(List<List<List<U>>>));
-        RuntimeLookupDelegateGenericVirtual.s_list1.Add(typeof(List<List<List<List<U>>>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(U));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<U>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<U>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<U>>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<U>>>>));
         return Foo<U>;
     }
 }
@@ -259,16 +268,20 @@ internal interface IBase
 {
     public virtual Delegate Foo<U>()
     {
-        RuntimeLookupDelegateGenericVirtual.s_list2.Add(typeof(U));
-        RuntimeLookupDelegateGenericVirtual.s_list2.Add(typeof(List<U>));
-        RuntimeLookupDelegateGenericVirtual.s_list2.Add(typeof(List<List<U>>));
-        RuntimeLookupDelegateGenericVirtual.s_list2.Add(typeof(List<List<List<U>>>));
-        RuntimeLookupDelegateGenericVirtual.s_list2.Add(typeof(List<List<List<List<U>>>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(U));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<U>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<U>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<U>>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<U>>>>));
         return Foo<U>;
     }
 }
 
 internal class DerivedClassNoImpl : IBase
+{
+}
+
+internal struct DerivedStructNoImpl : IBase
 {
 }
 
