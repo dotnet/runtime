@@ -188,7 +188,6 @@ enum ClrModifiableAssemblies : uint
 | `AssemblyBinder` | `AssemblyLoadContext` | Pointer to the AssemblyBinder's AssemblyLoadContext |
 | `PEImage` | `LoadedImageLayout` | Pointer to the PEImage's loaded PEImageLayout |
 | `PEImage` | `ProbeExtensionResult` | PEImage's ProbeExtensionResult |
-| `PEImage` | `ModuleFileNameHint` | Pointer to a diagnostic file name hint for in-memory modules |
 | `ProbeExtensionResult` | `Type` | Type of ProbeExtensionResult |
 | `PEImageLayout` | `Base` | Base address of the image layout |
 | `PEImageLayout` | `Size` | Size of the image layout |
