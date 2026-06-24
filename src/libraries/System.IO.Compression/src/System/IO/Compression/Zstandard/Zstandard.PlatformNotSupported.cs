@@ -39,7 +39,6 @@ namespace System.IO.Compression
     {
         public ZstandardDecoder() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public ZstandardDecoder(int maxWindowLog) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
-        [OverloadResolutionPriority(-1)]
         public ZstandardDecoder(ZstandardDecompressionOptions decompressionOptions) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public ZstandardDecoder(ZstandardDictionary dictionary) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public ZstandardDecoder(ZstandardDictionary dictionary, int maxWindowLog) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);

@@ -83,7 +83,6 @@ namespace System.IO.Compression
         /// <param name="decompressionOptions">The options to use for Zstandard decompression.</param>
         /// <exception cref="ArgumentNullException"><paramref name="decompressionOptions"/> is null.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
-        [OverloadResolutionPriority(-1)]
         public ZstandardDecoder(ZstandardDecompressionOptions decompressionOptions)
         {
             ArgumentNullException.ThrowIfNull(decompressionOptions);

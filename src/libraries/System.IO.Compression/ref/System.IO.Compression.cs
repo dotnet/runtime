@@ -285,7 +285,6 @@ namespace System.IO.Compression
     {
         public ZstandardDecoder() { }
         public ZstandardDecoder(int maxWindowLog) { }
-        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public ZstandardDecoder(System.IO.Compression.ZstandardDecompressionOptions decompressionOptions) { }
         public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary) { }
         public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary, int maxWindowLog) { }
