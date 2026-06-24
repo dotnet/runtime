@@ -204,6 +204,9 @@ namespace System
         internal const string RSACspEncryptDecryptMessage = "RSACryptoServiceProvider.Encrypt and RSACryptoServiceProvider.Decrypt methods that take a Boolean are obsolete. Use the overload that accepts RSAEncryptionPadding instead.";
         internal const string RSACspEncryptDecryptDiagId = "SYSLIB0064";
 
+        internal const string AsnEncodedDataRawDataSetterMessage = "Setting AsnEncodedData.RawData is obsolete. Use CopyFrom instead.";
+        internal const string AsnEncodedDataRawDataSetterDiagId = "SYSLIB0065";
+
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
     }
