@@ -516,6 +516,8 @@ public class MdArrayCloning
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     static int Sum2DBounded(Array a)
     {
+        int[,] md = (int[,])a;
+
         // Iterate dim 0 from 0 to GetLength(0)-1, accessing a[i, 0]. Note:
         // for a bounded MD array, valid indices are
         // [GetLowerBound(d), GetUpperBound(d)], NOT [0, GetLength(d)).
@@ -523,8 +525,30 @@ public class MdArrayCloning
         // accessing at `i` with i < GetLength(d) (when lower bound != 0)
         // throws IOORE for the first iteration if lower bound > 0.
         int sum = 0;
-        for (int i = 0; i < a.GetLength(0); i++)
-            sum += (int)a.GetValue(i, 0)!;
+        for (int i = 0; i < md.GetLength(0); i++)
+            sum += md[i, 0];
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int SumCrossArrayBoundedRange(Array bounds, int[,] data)
+    {
+        int[,] source = (int[,])bounds;
+
+        int sum = 0;
+        for (int i = source.GetLowerBound(0); i < source.GetUpperBound(0); i++)
+            sum += data[i, 0];
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int SumSzArrayBoundedRange(Array bounds, int[] data)
+    {
+        int[,] source = (int[,])bounds;
+
+        int sum = 0;
+        for (int i = source.GetLowerBound(0); i < source.GetUpperBound(0); i++)
+            sum += data[i];
         return sum;
     }
 
@@ -535,5 +559,27 @@ public class MdArrayCloning
         // Indexing at 0 below the [10, 10] lower bound must throw, whether or
         // not cloning fires.
         Assert.Throws<IndexOutOfRangeException>(() => Sum2DBounded(a));
+    }
+
+    [Fact]
+    public static void CrossArrayBoundedRange_NonZeroLowerBound_Throws()
+    {
+        var sourceBounds = Array.CreateInstance(typeof(int), new int[] { 4, 4 }, new int[] { 10, 10 });
+        var data         = Make2D(4, 1);
+        Assert.Throws<IndexOutOfRangeException>(() => SumCrossArrayBoundedRange(sourceBounds, data));
+    }
+
+    [Fact]
+    public static void SzArrayBoundedRange_NonZeroLowerBound_Throws()
+    {
+        var sourceBounds = Array.CreateInstance(typeof(int), new int[] { 4, 4 }, new int[] { 10, 10 });
+        var data         = new int[4];
+        Assert.Throws<IndexOutOfRangeException>(() => SumSzArrayBoundedRange(sourceBounds, data));
+    }
+
+    [Fact]
+    public static void NullArray_ZeroTrip_DoesNotThrow()
+    {
+        Assert.Equal(0, Sum2DUserLimit(null!, 0, 0));
     }
 }

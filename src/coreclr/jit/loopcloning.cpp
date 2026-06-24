@@ -126,12 +126,17 @@ GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
     else
     {
         assert(type == MdArray);
-        assert(oper == ArrLen);
+        assert((oper == ArrLen) || (oper == LowerBound));
         assert(mdRank > 0);
         assert((dim >= 0) && ((unsigned)dim < mdRank));
-        GenTree* arr   = comp->gtNewLclvNode(arrIndex->arrLcl, comp->lvaTable[arrIndex->arrLcl].lvType);
-        GenTree* mdLen = comp->gtNewMDArrLen(arr, (unsigned)dim, mdRank);
-        return mdLen;
+        GenTree* arr = comp->gtNewLclvNode(arrIndex->arrLcl, comp->lvaTable[arrIndex->arrLcl].lvType);
+
+        if (oper == ArrLen)
+        {
+            return comp->gtNewMDArrLen(arr, (unsigned)dim, mdRank);
+        }
+
+        return comp->gtNewMDArrLowerBound(arr, (unsigned)dim, mdRank);
     }
     return nullptr;
 }
@@ -1561,6 +1566,43 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
         return false;
     }
 
+    if (iterInfo->HasMDArrayBoundedRangeLoop)
+    {
+        bool requireBoundedRangeLowerBoundZero = false;
+        for (unsigned i = 0; i < optInfos->Size(); ++i)
+        {
+            LcOptInfo* optInfo = optInfos->Get(i);
+            if (optInfo->GetOptType() != LcOptInfo::LcMdArray)
+            {
+                requireBoundedRangeLowerBoundZero = true;
+                break;
+            }
+
+            LcMdArrayOptInfo* mdArrInfo = optInfo->AsLcMdArrayOptInfo();
+            if ((iterInfo->BoundedRangeArrLcl != mdArrInfo->arrLcl) || (iterInfo->BoundedRangeDim != mdArrInfo->dim) ||
+                (iterInfo->BoundedRangeRank != mdArrInfo->rank))
+            {
+                requireBoundedRangeLowerBoundZero = true;
+                break;
+            }
+        }
+
+        if (requireBoundedRangeLowerBoundZero)
+        {
+            ArrIndex* boundedRangeIndex = new (this, CMK_LoopClone) ArrIndex(getAllocator(CMK_LoopClone));
+            boundedRangeIndex->arrLcl   = iterInfo->BoundedRangeArrLcl;
+            boundedRangeIndex->arrType  = TYP_REF;
+            boundedRangeIndex->rank     = iterInfo->BoundedRangeRank;
+
+            LC_Array boundedRangeLowerBound(LC_Array::MdArray, boundedRangeIndex, (int)iterInfo->BoundedRangeDim,
+                                            LC_Array::LowerBound);
+            boundedRangeLowerBound.mdRank = iterInfo->BoundedRangeRank;
+            LC_Condition boundedRangeLowerBoundIsZero(GT_EQ, LC_Expr(LC_Ident::CreateArrAccess(boundedRangeLowerBound)),
+                                                      LC_Expr(LC_Ident::CreateConst(0u)));
+            context->EnsureConditions(loop->GetIndex())->Push(boundedRangeLowerBoundIsZero);
+        }
+    }
+
     // Increasing loops
     // GT_LT loop test: (start < end) ==> (end <= arrLen)
     // GT_LE loop test: (start <= end) ==> (end < arrLen)
@@ -1626,11 +1668,25 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
 
                 // Build a synthetic ArrIndex referring to the MD array local. The
                 // MdArray LC_Array path materializes `MDARR_LENGTH(arr, dim, rank)`
-                // and only needs the arrLcl + dim + rank — indLcls are unused.
+                // or `MDARR_LOWER_BOUND(arr, dim, rank)` and only needs the
+                // arrLcl + dim + rank — indLcls are unused.
                 ArrIndex* mdIndex = new (this, CMK_LoopClone) ArrIndex(getAllocator(CMK_LoopClone));
                 mdIndex->arrLcl   = mdArrInfo->arrLcl;
                 mdIndex->arrType  = TYP_REF;
                 mdIndex->rank     = mdArrInfo->rank;
+
+                context->EnsureObjDerefs(loop->GetIndex())
+                    ->Push(LC_Ident::CreateVar(mdArrInfo->arrLcl, mdIndex->arrType));
+
+                if (!iterInfo->HasMDArrayBoundedRangeLoop || (iterInfo->BoundedRangeArrLcl != mdArrInfo->arrLcl) ||
+                    (iterInfo->BoundedRangeDim != mdArrInfo->dim) || (iterInfo->BoundedRangeRank != mdArrInfo->rank))
+                {
+                    LC_Array lowerBound(LC_Array::MdArray, mdIndex, (int)mdArrInfo->dim, LC_Array::LowerBound);
+                    lowerBound.mdRank = mdArrInfo->rank;
+                    LC_Condition lowerBoundIsZero(GT_EQ, LC_Expr(LC_Ident::CreateArrAccess(lowerBound)),
+                                                  LC_Expr(LC_Ident::CreateConst(0u)));
+                    context->EnsureConditions(loop->GetIndex())->Push(lowerBoundIsZero);
+                }
 
                 LC_Array arrLen(LC_Array::MdArray, mdIndex, (int)mdArrInfo->dim, LC_Array::ArrLen);
                 arrLen.mdRank            = mdArrInfo->rank;

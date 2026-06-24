@@ -436,6 +436,7 @@ struct LC_Array
     {
         None,
         ArrLen,
+        LowerBound,
     };
 
     ArrType   type;     // The type of the array on which to invoke length operator.
@@ -446,10 +447,21 @@ struct LC_Array
 #ifdef DEBUG
     void Print()
     {
-        arrIndex->Print(dim);
+        if (type == MdArray)
+        {
+            printf("V%02d", arrIndex->arrLcl);
+        }
+        else
+        {
+            arrIndex->Print(dim);
+        }
         if (oper == ArrLen)
         {
             printf(".Length");
+        }
+        else if (oper == LowerBound)
+        {
+            printf(".LowerBound(%d)", dim);
         }
     }
 #endif
@@ -495,6 +507,11 @@ struct LC_Array
             arrIndex->arrType != that.arrIndex->arrType || oper != that.oper)
         {
             return false;
+        }
+
+        if (type == MdArray)
+        {
+            return (dim == that.dim) && (mdRank == that.mdRank);
         }
 
         // If the dim ranks are not matching, quit.
