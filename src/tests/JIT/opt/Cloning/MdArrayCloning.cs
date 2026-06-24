@@ -86,6 +86,15 @@ public class MdArrayCloning
         return sum;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Sum2DNeedsZeroTripGuard(int[,] a)
+    {
+        int sum = 0;
+        for (int i = 1; i < a.GetLength(0); i++)
+            sum += a[i, 0];
+        return sum;
+    }
+
     // ---- Cases where the runtime guard must NOT pick the fast path --------
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -299,6 +308,20 @@ public class MdArrayCloning
         for (int i = 0; i < rows - 1; i++)
             for (int j = 0; j < cols - 1; j++)
                 want += a[i, j];
+        Assert.Equal(want, got);
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(3, 5)]
+    [InlineData(10, 20)]
+    public static void MDLengthLimit_ZeroTripGuard(int rows, int cols)
+    {
+        var a   = Make2D(rows, cols);
+        int got = Sum2DNeedsZeroTripGuard(a);
+        int want = 0;
+        for (int i = 1; i < rows; i++)
+            want += a[i, 0];
         Assert.Equal(want, got);
     }
 

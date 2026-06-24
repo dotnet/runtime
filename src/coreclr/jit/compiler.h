@@ -2026,8 +2026,8 @@ struct NaturalLoopIterInfo
     bool NeedsZeroTripGuard : 1;
 
     // Constant peeled from the loop limit so that the effective limit is
-    // `LimitBase() + LimitOffset`. Non-zero only for HasInvariantLocalLimit
-    // and HasArrayLengthLimit.
+    // `LimitBase() + LimitOffset`. Non-zero only for HasInvariantLocalLimit,
+    // HasArrayLengthLimit, and HasMDArrayLengthLimit.
     int LimitOffset = 0;
 
     NaturalLoopIterInfo()

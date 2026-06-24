@@ -5746,7 +5746,8 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allo
         // loop body might not execute on the first iteration, allow the loop
         // through provided we have enough symbolic info about init and limit
         // to express the guard.
-        if (allowMissingBaseCase && (info->HasConstLimit || info->HasInvariantLocalLimit || info->HasArrayLengthLimit))
+        if (allowMissingBaseCase && (info->HasConstLimit || info->HasInvariantLocalLimit || info->HasArrayLengthLimit ||
+                                     info->HasMDArrayLengthLimit))
         {
             JITDUMP("  Loop condition may not be true on the first iteration; deferring to caller "
                     "(NeedsZeroTripGuard)\n");

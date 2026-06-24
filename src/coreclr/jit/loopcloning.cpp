@@ -1407,6 +1407,22 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
             limitIdent = LC_Ident::CreateArrAccess(LC_Array(LC_Array::Jagged, limitArrIndex, LC_Array::ArrLen),
                                                    iterInfo->LimitOffset);
         }
+        else if (iterInfo->HasMDArrayLengthLimit)
+        {
+            unsigned mdArrLcl = BAD_VAR_NUM;
+            unsigned mdDim    = 0;
+            unsigned mdRank   = 0;
+            iterInfo->MDArrayLengthLimit(&mdArrLcl, &mdDim, &mdRank);
+
+            ArrIndex* mdIndex = new (this, CMK_LoopClone) ArrIndex(getAllocator(CMK_LoopClone));
+            mdIndex->arrLcl   = mdArrLcl;
+            mdIndex->arrType  = TYP_REF;
+            mdIndex->rank     = mdRank;
+
+            LC_Array mdLen(LC_Array::MdArray, mdIndex, (int)mdDim, LC_Array::ArrLen);
+            mdLen.mdRank = mdRank;
+            limitIdent   = LC_Ident::CreateArrAccess(mdLen, iterInfo->LimitOffset);
+        }
         else
         {
             JITDUMP("> NeedsZeroTripGuard: undetected limit\n");
