@@ -4162,22 +4162,16 @@ typedef struct _SOSGCInfoHeader
     unsigned int GenericsInstContextKind;
     } 	SOSGCInfoHeader;
 
-typedef struct _SOSGCRegisterLifetime
+typedef struct _SOSGCSlotLifetime
     {
     unsigned int BeginOffset;
     unsigned int EndOffset;
+    int IsRegister;
     unsigned int RegisterNumber;
-    unsigned int GcFlags;
-    } 	SOSGCRegisterLifetime;
-
-typedef struct _SOSGCStackSlotLifetime
-    {
-    unsigned int BeginOffset;
-    unsigned int EndOffset;
     int SpOffset;
     unsigned int BaseRegister;
     unsigned int GcFlags;
-    } 	SOSGCStackSlotLifetime;
+    } 	SOSGCSlotLifetime;
 
 #endif // _SOS_GCInfoData
 
@@ -4212,16 +4206,10 @@ EXTERN_C const IID IID_ISOSDacInterface18;
             unsigned int *offsets,
             ULONG *pNeeded) = 0;
 
-        virtual HRESULT STDMETHODCALLTYPE GetGCInfoRegisterLifetimes(
+        virtual HRESULT STDMETHODCALLTYPE GetGCInfoSlotLifetimes(
             CLRDATA_ADDRESS ip,
             ULONG count,
-            SOSGCRegisterLifetime *lifetimes,
-            ULONG *pNeeded) = 0;
-
-        virtual HRESULT STDMETHODCALLTYPE GetGCInfoStackSlotLifetimes(
-            CLRDATA_ADDRESS ip,
-            ULONG count,
-            SOSGCStackSlotLifetime *lifetimes,
+            SOSGCSlotLifetime *lifetimes,
             ULONG *pNeeded) = 0;
 
     };
@@ -4264,18 +4252,11 @@ EXTERN_C const IID IID_ISOSDacInterface18;
             unsigned int *offsets,
             ULONG *pNeeded);
 
-        HRESULT ( STDMETHODCALLTYPE *GetGCInfoRegisterLifetimes )(
+        HRESULT ( STDMETHODCALLTYPE *GetGCInfoSlotLifetimes )(
             ISOSDacInterface18 * This,
             CLRDATA_ADDRESS ip,
             ULONG count,
-            SOSGCRegisterLifetime *lifetimes,
-            ULONG *pNeeded);
-
-        HRESULT ( STDMETHODCALLTYPE *GetGCInfoStackSlotLifetimes )(
-            ISOSDacInterface18 * This,
-            CLRDATA_ADDRESS ip,
-            ULONG count,
-            SOSGCStackSlotLifetime *lifetimes,
+            SOSGCSlotLifetime *lifetimes,
             ULONG *pNeeded);
 
         END_INTERFACE
@@ -4310,11 +4291,8 @@ EXTERN_C const IID IID_ISOSDacInterface18;
 #define ISOSDacInterface18_GetGCInfoSafePoints(This,ip,count,offsets,pNeeded)	\
     ( (This)->lpVtbl -> GetGCInfoSafePoints(This,ip,count,offsets,pNeeded) )
 
-#define ISOSDacInterface18_GetGCInfoRegisterLifetimes(This,ip,count,lifetimes,pNeeded)	\
-    ( (This)->lpVtbl -> GetGCInfoRegisterLifetimes(This,ip,count,lifetimes,pNeeded) )
-
-#define ISOSDacInterface18_GetGCInfoStackSlotLifetimes(This,ip,count,lifetimes,pNeeded)	\
-    ( (This)->lpVtbl -> GetGCInfoStackSlotLifetimes(This,ip,count,lifetimes,pNeeded) )
+#define ISOSDacInterface18_GetGCInfoSlotLifetimes(This,ip,count,lifetimes,pNeeded)	\
+    ( (This)->lpVtbl -> GetGCInfoSlotLifetimes(This,ip,count,lifetimes,pNeeded) )
 
 #endif /* COBJMACROS */
 

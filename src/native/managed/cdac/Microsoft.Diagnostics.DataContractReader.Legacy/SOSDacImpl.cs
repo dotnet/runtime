@@ -7523,10 +7523,10 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface18.GetGCInfoRegisterLifetimes(
+    int ISOSDacInterface18.GetGCInfoSlotLifetimes(
         ClrDataAddress ip,
         uint count,
-        SOSGCRegisterLifetime[]? lifetimes,
+        SOSGCSlotLifetime[]? lifetimes,
         uint* pNeeded)
     {
         int hr = HResults.S_OK;
@@ -7540,82 +7540,26 @@ public sealed unsafe partial class SOSDacImpl
             (Contracts.IGCInfoHandle handle, Contracts.IGCInfo gcInfo) = ResolveGCInfo(ip);
             IReadOnlyList<Contracts.GCSlotLifetime> allLifetimes = gcInfo.GetSlotLifetimes(handle);
 
-            // Filter to register slots only
-            List<Contracts.GCSlotLifetime> regLifetimes = [];
-            foreach (Contracts.GCSlotLifetime s in allLifetimes)
-            {
-                if (s.IsRegister)
-                    regLifetimes.Add(s);
-            }
-
-            *pNeeded = (uint)regLifetimes.Count;
+            *pNeeded = (uint)allLifetimes.Count;
 
             if (lifetimes is not null)
             {
-                uint toWrite = Math.Min(count, (uint)regLifetimes.Count);
+                uint toWrite = Math.Min(count, (uint)allLifetimes.Count);
                 for (uint i = 0; i < toWrite; i++)
                 {
-                    lifetimes[i] = new SOSGCRegisterLifetime
+                    Contracts.GCSlotLifetime s = allLifetimes[(int)i];
+                    lifetimes[i] = new SOSGCSlotLifetime
                     {
-                        BeginOffset = regLifetimes[(int)i].BeginOffset,
-                        EndOffset = regLifetimes[(int)i].EndOffset,
-                        RegisterNumber = regLifetimes[(int)i].RegisterNumber,
-                        GcFlags = regLifetimes[(int)i].GcFlags,
+                        BeginOffset = s.BeginOffset,
+                        EndOffset = s.EndOffset,
+                        IsRegister = s.IsRegister ? 1 : 0,
+                        RegisterNumber = s.RegisterNumber,
+                        SpOffset = s.SpOffset,
+                        BaseRegister = s.BaseRegister,
+                        GcFlags = s.GcFlags,
                     };
                 }
-                hr = toWrite < (uint)regLifetimes.Count ? HResults.S_FALSE : HResults.S_OK;
-            }
-        }
-        catch (System.Exception ex)
-        {
-            hr = ex.HResult;
-        }
-
-        return hr;
-    }
-
-    int ISOSDacInterface18.GetGCInfoStackSlotLifetimes(
-        ClrDataAddress ip,
-        uint count,
-        SOSGCStackSlotLifetime[]? lifetimes,
-        uint* pNeeded)
-    {
-        int hr = HResults.S_OK;
-        try
-        {
-            if (pNeeded is null)
-                return HResults.E_POINTER;
-
-            *pNeeded = 0;
-
-            (Contracts.IGCInfoHandle handle, Contracts.IGCInfo gcInfo) = ResolveGCInfo(ip);
-            IReadOnlyList<Contracts.GCSlotLifetime> allLifetimes = gcInfo.GetSlotLifetimes(handle);
-
-            // Filter to stack slots only
-            List<Contracts.GCSlotLifetime> stackLifetimes = [];
-            foreach (Contracts.GCSlotLifetime s in allLifetimes)
-            {
-                if (!s.IsRegister)
-                    stackLifetimes.Add(s);
-            }
-
-            *pNeeded = (uint)stackLifetimes.Count;
-
-            if (lifetimes is not null)
-            {
-                uint toWrite = Math.Min(count, (uint)stackLifetimes.Count);
-                for (uint i = 0; i < toWrite; i++)
-                {
-                    lifetimes[i] = new SOSGCStackSlotLifetime
-                    {
-                        BeginOffset = stackLifetimes[(int)i].BeginOffset,
-                        EndOffset = stackLifetimes[(int)i].EndOffset,
-                        SpOffset = stackLifetimes[(int)i].SpOffset,
-                        BaseRegister = stackLifetimes[(int)i].BaseRegister,
-                        GcFlags = stackLifetimes[(int)i].GcFlags,
-                    };
-                }
-                hr = toWrite < (uint)stackLifetimes.Count ? HResults.S_FALSE : HResults.S_OK;
+                hr = toWrite < (uint)allLifetimes.Count ? HResults.S_FALSE : HResults.S_OK;
             }
         }
         catch (System.Exception ex)
