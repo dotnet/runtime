@@ -134,7 +134,6 @@ extern "C" {
     int32_t SystemNative_PosixFAdvise (void *, int64_t, int64_t, int32_t);
     int32_t SystemNative_Read (void *, void *, int32_t);
     int32_t SystemNative_ReadDir (void *, void *);
-    int32_t SystemNative_ReadFromNonblocking (void *, void *, int32_t);
     int32_t SystemNative_ReadLink (void *, void *, int32_t);
     int64_t SystemNative_ReadV (void *, void *, int32_t);
     void * SystemNative_Realloc (void *, void *);
@@ -152,7 +151,6 @@ extern "C" {
     int32_t SystemNative_UTimensat (void *, void *);
     int32_t SystemNative_Unlink (void *);
     int32_t SystemNative_Write (void *, void *, int32_t);
-    int32_t SystemNative_WriteToNonblocking (void *, void *, int32_t);
     int64_t SystemNative_WriteV (void *, void *, int32_t);
 } // extern "C"
 
@@ -279,7 +277,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_PosixFAdvise) // System.Private.CoreLib
     DllImportEntry(SystemNative_Read) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_ReadFromNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadLink) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadV) // System.Private.CoreLib
     DllImportEntry(SystemNative_Realloc) // System.Private.CoreLib
@@ -297,7 +294,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_UTimensat) // System.Private.CoreLib
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_Write) // System.Console, System.Private.CoreLib
-    DllImportEntry(SystemNative_WriteToNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
 };
 

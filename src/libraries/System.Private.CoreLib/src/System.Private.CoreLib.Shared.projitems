@@ -2597,6 +2597,12 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PWriteV.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.PWriteV.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs">
+      <Link>Common\Interop\Unix\Interop.Poll.Structs.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Poll.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Read.cs</Link>
     </Compile>
@@ -2663,7 +2669,6 @@
     <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs" Condition="'$(TargetsAndroid)' == 'true'">
       <Link>Common\Interop\Android\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.ThreadPoolValueTaskSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomain.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.Unix.cs" />
@@ -2924,6 +2929,29 @@
   <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsWasi)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Results.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Operation.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' != 'true' and '$(TargetsWasi)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Results.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Operation.PlatformNotSupported.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PollThread.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.HandleEvents.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.HandleEvents.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\UnixHandleAsyncContext.Wasi.cs" />
+    <Compile Include="$(CommonPath)Interop\Wasi\System.Native\Interop.HandleEvents.cs">
+      <Link>Common\Interop\Wasi\System.Native\Interop.HandleEvents.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureMultithreading)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Browser.cs" />
