@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
@@ -20,9 +19,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// </summary>
 public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProcess2
 {
-    private const uint DacStressPrivRequestFlushTargetState = 0xf2000000;
-    private const uint DacStressPrivRequestComputeArgGCRefMap = 0xf2000001;
-
     int IXCLRDataProcess.Flush()
     {
         _target.Flush(FlushScope.All);
@@ -756,17 +752,9 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 hr = HResults.S_OK;
             }
         }
-        else if (reqCode == DacStressPrivRequestFlushTargetState)
+        else if (StressTestApi.CdacStressApi.IsStressRequest(reqCode))
         {
-            if (inBufferSize == 0 && inBuffer is null && outBufferSize == 0 && outBuffer is null)
-            {
-                _target.Flush(FlushScope.ForwardExecution);
-                hr = HResults.S_OK;
-            }
-        }
-        else if (reqCode == DacStressPrivRequestComputeArgGCRefMap)
-        {
-            hr = HandleComputeArgGCRefMap(inBufferSize, inBuffer, outBufferSize, outBuffer);
+            hr = StressTestApi.CdacStressApi.HandleRequest(_target, reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer);
         }
         else
         {
@@ -775,9 +763,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 #if DEBUG
         // Private DACSTRESSPRIV_REQUEST_* opcodes are cDAC-only and must NOT be
         // forwarded to the legacy DAC.
-        if (_legacyProcess is not null
-            && reqCode != DacStressPrivRequestFlushTargetState
-            && reqCode != DacStressPrivRequestComputeArgGCRefMap)
+        if (_legacyProcess is not null && !StressTestApi.CdacStressApi.IsStressRequest(reqCode))
         {
             byte[] localBuffer = new byte[(int)outBufferSize];
             fixed (byte* localOutBuffer = localBuffer)
@@ -795,88 +781,6 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
 #endif
         return hr;
-    }
-
-    // Mirrors DacStressArgGCRefMapRequest in src/coreclr/inc/dacprivate.h.
-    // The caller (vm/cdacstress.cpp) hands us an [in,out] descriptor with the
-    // MethodDesc plus a destination buffer; we write the blob there and
-    // populate cbFilled / cbNeeded. The COM `outBuffer` channel is unused.
-    [StructLayout(LayoutKind.Sequential)]
-    private struct DacStressArgGCRefMapRequest
-    {
-        public ulong MethodDesc;
-        public ulong BlobBuffer;
-        public uint  BlobBufferLen;
-        public uint  cbFilled;
-        public uint  cbNeeded;
-    }
-
-    // HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER).
-    private const int HResultErrorInsufficientBuffer = unchecked((int)0x8007007A);
-
-    // Handler for the cdacstress ArgIterator sub-check (cdacstress.cpp).
-    // Reads a MethodDesc address from `inBuffer`, asks the CallingConvention
-    // contract to encode the argument GCRefMap blob, and writes it into the
-    // caller-allocated destination carried by the request descriptor.
-    private int HandleComputeArgGCRefMap(uint inSize, byte* inBuffer, uint outSize, byte* outBuffer)
-    {
-        // outSize/outBuffer are unused: the wire format carries the
-        // [in,out] descriptor (MethodDesc + caller-allocated blob buffer)
-        // through inBuffer, and there is no COM out-channel payload.
-        _ = outSize;
-        _ = outBuffer;
-
-        if (inBuffer is null || inSize < (uint)Unsafe.SizeOf<DacStressArgGCRefMapRequest>())
-            return HResults.E_INVALIDARG;
-
-        // Alignment-safe view of the [in,out] descriptor. The cDAC ABI hands
-        // us a `byte*` from a COM marshaller with no guaranteed alignment, so
-        // field reads/writes go through Unsafe.ReadUnaligned / WriteUnaligned.
-        DacStressArgGCRefMapRequest req = Unsafe.ReadUnaligned<DacStressArgGCRefMapRequest>(inBuffer);
-
-        byte[] blob;
-        bool encoded;
-        try
-        {
-            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            MethodDescHandle mdh = rts.GetMethodDescHandle(
-                new ClrDataAddress(req.MethodDesc).ToTargetPointer(_target));
-            encoded = _target.Contracts.CallingConvention.TryComputeArgGCRefMapBlob(mdh, out blob);
-        }
-        catch
-        {
-            // Distinct from E_NOTIMPL so a stress log makes "encoder threw"
-            // visible as an error bucket separate from "encoder declined".
-            req.cbFilled = 0;
-            req.cbNeeded = 0;
-            Unsafe.WriteUnaligned(inBuffer, req);
-            return HResults.E_FAIL;
-        }
-
-        if (!encoded)
-        {
-            // Encoder declined to encode this MD (e.g. an unported ABI path).
-            req.cbFilled = 0;
-            req.cbNeeded = 0;
-            Unsafe.WriteUnaligned(inBuffer, req);
-            return HResults.E_NOTIMPL;
-        }
-
-        uint needed = (uint)blob.Length;
-        req.cbNeeded = needed;
-
-        if (req.BlobBuffer == 0 || req.BlobBufferLen < needed)
-        {
-            req.cbFilled = 0;
-            Unsafe.WriteUnaligned(inBuffer, req);
-            return HResultErrorInsufficientBuffer;
-        }
-
-        byte* dest = (byte*)(nuint)req.BlobBuffer;
-        blob.AsSpan().CopyTo(new Span<byte>(dest, (int)req.BlobBufferLen));
-        req.cbFilled = needed;
-        Unsafe.WriteUnaligned(inBuffer, req);
-        return HResults.S_OK;
     }
 
     int IXCLRDataProcess.CreateMemoryValue(

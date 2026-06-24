@@ -1,0 +1,77 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Runtime.InteropServices;
+
+namespace Microsoft.Diagnostics.DataContractReader.Tests.GCStress;
+
+/// <summary>
+/// Runs each debuggee under corerun with the cDAC stress framework enabled
+/// and asserts the cross-checked verification produces no failures. The
+/// <c>GCRefStress_*</c> theories run with DOTNET_CdacStress=0x101 (ALLOC +
+/// GCREFS); the <c>ArgIterStress_*</c> theories run with 0x201 (ALLOC +
+/// ARGITER). See <c>StressTests/README.md</c> for the flag layout and the
+/// pass/fail semantics.
+/// </summary>
+public class CdacStressTests : CdacStressTestBase
+{
+    public CdacStressTests(ITestOutputHelper output) : base(output) { }
+
+    public record Debuggee(string Name, bool WindowsOnly = false);
+
+    public static IEnumerable<object[]> Debuggees =>
+    [
+        [new Debuggee("BasicAlloc")],
+        [new Debuggee("DeepStack")],
+        [new Debuggee("Generics")],
+        [new Debuggee("MultiThread")],
+        [new Debuggee("Comprehensive")],
+        [new Debuggee("ExceptionHandling")],
+        [new Debuggee("StructScenarios")],
+        [new Debuggee("DynamicMethods")],
+        [new Debuggee("CallSignatures")],
+        [new Debuggee("PInvoke", WindowsOnly: true)],
+        [new Debuggee("VarArgs", WindowsOnly: true)],
+    ];
+
+    [ConditionalTheory]
+    [MemberData(nameof(Debuggees))]
+    public async Task GCRefStress_AllVerificationsPass(Debuggee debuggee)
+    {
+        GetTargetPlatform(out OSPlatform os, out Architecture arch);
+
+        if (debuggee.WindowsOnly && os != OSPlatform.Windows)
+            throw new SkipTestException($"{debuggee.Name} debuggee is Windows-only.");
+
+        // The GCREFS sub-check has only been validated on architectures where
+        // the cDAC GC root enumeration is at parity with the runtime. x86 has
+        // not been brought up yet (a separate effort); skip there until it is.
+        if (arch == Architecture.X86)
+            throw new SkipTestException("GCREFS stress is not yet validated on x86 (ARGITER stress runs there instead)");
+
+        CdacStressResults results = await RunGCRefStressAsync(debuggee.Name);
+        AssertAllPassed(results, debuggee.Name);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(Debuggees))]
+    public async Task ArgIterStress_AllVerificationsPass(Debuggee debuggee)
+    {
+        GetTargetPlatform(out OSPlatform os, out Architecture arch);
+
+        if (debuggee.WindowsOnly && os != OSPlatform.Windows)
+            throw new SkipTestException($"{debuggee.Name} debuggee is Windows-only.");
+
+        // Scope of this PR: ARGITER is validated on Windows x86 / x64
+        // only. Other architectures hit known gaps that need follow-up
+        // work (SystemV-AMD64 / ARM64 struct-in-register classification,
+        // arm32 ABI port). Skip there until those land.
+        if (os != OSPlatform.Windows || arch is not (Architecture.X86 or Architecture.X64))
+            throw new SkipTestException(
+                "ARGITER stress is validated for windows-x86 / windows-x64 in this PR; " +
+                "other targets need follow-up work (SystemV / ARM64 struct-in-registers, ARM32 ABI port).");
+
+        CdacStressResults results = await RunArgIterStressAsync(debuggee.Name);
+        AssertAllArgIterPassed(results, debuggee.Name);
+    }
+}

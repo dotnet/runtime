@@ -234,42 +234,51 @@ public abstract class CdacStressTestBase
     }
 
     /// <summary>
-    /// Architecture of the corerun the harness will exec. Differs from
-    /// <see cref="RuntimeInformation.ProcessArchitecture"/> when the test
-    /// process is a different architecture from the testhost it is driving
-    /// (typical local case: x64 dotnet.exe pointing CORE_ROOT at an x86
-    /// layout via the environment variable). Derived from the CORE_ROOT
-    /// path's `<os>.<arch>.<config>` segment when present, falling back to
-    /// the current process architecture.
+    /// Resolve the OS + architecture of the corerun the harness will exec.
+    /// Both differ from the testhost process when CORE_ROOT points at a
+    /// different layout (typical local case: x64 dotnet driving an x86 or
+    /// cross-OS Core_Root). Parses both from the CORE_ROOT path's
+    /// <c>&lt;os&gt;.&lt;arch&gt;.&lt;config&gt;</c> segment when present;
+    /// falls back to the current process when not (Helix's path layout
+    /// doesn't encode arch/os, but matches the testhost there anyway).
     /// </summary>
-    protected static Architecture GetTargetArchitecture()
+    protected static void GetTargetPlatform(out OSPlatform os, out Architecture arch)
     {
         string coreRoot = GetCoreRoot();
 
         // Standard layout: artifacts/tests/coreclr/<os>.<arch>.<config>/Tests/Core_Root
-        // Helix layout: <payload>/shared/Microsoft.NETCore.App/<version>/ -- arch
-        // not encoded in the path, so fall through to ProcessArchitecture
-        // (which is the testhost dotnet's arch, == target on Helix).
         foreach (string segment in coreRoot.Split([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]))
         {
-            // Match a "<os>.<arch>.<config>" segment, e.g. "windows.x86.Checked"
             string[] parts = segment.Split('.');
-            if (parts.Length == 3)
+            if (parts.Length != 3)
+                continue;
+            OSPlatform? osMatch = parts[0].ToLowerInvariant() switch
             {
-                Architecture? arch = parts[1].ToLowerInvariant() switch
-                {
-                    "x86" => Architecture.X86,
-                    "x64" => Architecture.X64,
-                    "arm" => Architecture.Arm,
-                    "arm64" => Architecture.Arm64,
-                    _ => null,
-                };
-                if (arch is not null)
-                    return arch.Value;
+                "windows" => OSPlatform.Windows,
+                "linux" => OSPlatform.Linux,
+                "osx" => OSPlatform.OSX,
+                _ => null,
+            };
+            Architecture? archMatch = parts[1].ToLowerInvariant() switch
+            {
+                "x86" => Architecture.X86,
+                "x64" => Architecture.X64,
+                "arm" => Architecture.Arm,
+                "arm64" => Architecture.Arm64,
+                _ => null,
+            };
+            if (osMatch is not null && archMatch is not null)
+            {
+                os = osMatch.Value;
+                arch = archMatch.Value;
+                return;
             }
         }
 
-        return RuntimeInformation.ProcessArchitecture;
+        os = OperatingSystem.IsWindows() ? OSPlatform.Windows
+           : OperatingSystem.IsMacOS() ? OSPlatform.OSX
+           : OSPlatform.Linux;
+        arch = RuntimeInformation.ProcessArchitecture;
     }
 
     private static string GetCoreRoot()

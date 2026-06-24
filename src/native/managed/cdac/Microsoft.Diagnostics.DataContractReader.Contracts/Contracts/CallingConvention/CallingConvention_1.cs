@@ -41,21 +41,8 @@ internal sealed class CallingConvention_1 : ICallingConvention
         }
         catch (NotImplementedException)
         {
-            // Wraps the whole encoder so any unported code path -- shared
-            // ArgIterator hitting an ABI it doesn't model, a missing
-            // TransitionBlock helper, an explicit `throw new
-            // NotImplementedException(...)` -- becomes a clean "decline"
-            // (false return). The outer SOSDacImpl handler maps that to
-            // E_NOTIMPL which the stress harness buckets as [ARG_SKIP].
-            // Other exception types propagate to the handler's own catch
-            // so they show up as E_FAIL -> [ARG_ERROR] -- genuine bugs we
-            // don't want to silently hide.
-            //
-            // Lazy enumeration of EnumerateArguments is the most common
-            // spot for an NIE because MoveNext'ing through it evaluates
-            // the shared ArgIterator's arch-specific paths only when
-            // iterated, which is why a try/catch around just the initial
-            // call isn't enough.
+            // Any unported ABI path, including lazy NIEs from
+            // EnumerateArguments, maps to a clean decline (false).
             blob = [];
             return false;
         }

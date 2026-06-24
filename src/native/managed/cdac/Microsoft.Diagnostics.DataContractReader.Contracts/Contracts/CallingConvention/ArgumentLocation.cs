@@ -3,9 +3,6 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-// One argument location on the caller's transition frame, as produced by
-// the shared ArgIterator. Internal to the Contracts assembly because the
-// only consumer is the GCRefMap encoder.
 internal readonly struct ArgumentLocation
 {
     public int Offset { get; init; }

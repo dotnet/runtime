@@ -6,13 +6,6 @@
 // provided with information mapping that argument into registers and/or stack locations.
 
 #nullable disable
-// Suppress analyzer warnings for crossgen2 code style when file-linked into cDAC
-#pragma warning disable SA1028 // Code should not contain trailing whitespace
-#pragma warning disable SA1129 // Do not use default value type constructor
-#pragma warning disable SA1206 // Modifier order
-#pragma warning disable SA1400 // Element should declare an access modifier
-#pragma warning disable CA1822 // Mark members as static
-#pragma warning disable IDE0059 // Unnecessary assignment
 
 using System;
 using System.Diagnostics;
@@ -103,7 +96,7 @@ namespace Internal.CallingConvention
         private readonly TransitionBlock _transitionBlock;
 
         // Offset of the argument relative to the base. On AMD64 on Unix, it can have a special
-        // value that represent a struct that contain both general purpose and floating point fields 
+        // value that represent a struct that contain both general purpose and floating point fields
         // passed in registers.
         private readonly int _offset;
 
@@ -125,7 +118,7 @@ namespace Internal.CallingConvention
         }
 
         // Returns true if the ArgDestination represents a homogeneous aggregate struct
-        bool IsHomogeneousAggregate()
+        private bool IsHomogeneousAggregate()
         {
             return _argLocDescForStructInRegs.HasValue;
         }
@@ -280,7 +273,7 @@ namespace Internal.CallingConvention
     // performance critical code.
     //
     // The ARGITERATOR_BASE argument of the template is provider of the parsed
-    // method signature. Typically, the arg iterator works on top of MetaSig. 
+    // method signature. Typically, the arg iterator works on top of MetaSig.
     // Reflection invoke uses alternative implementation to save signature parsing
     // time because of it has the parsed signature available.
     //-----------------------------------------------------------------------
@@ -439,7 +432,7 @@ namespace Internal.CallingConvention
             }
         }
 
-        // Is there a hidden parameter for the return parameter? 
+        // Is there a hidden parameter for the return parameter?
         //
         public bool HasRetBuffArg()
         {
@@ -661,7 +654,7 @@ namespace Internal.CallingConvention
         // Each time this is called, this returns a byte offset of the next
         // argument from the TransitionBlock* pointer. This offset can be positive *or* negative.
         //
-        // Returns TransitionBlock::InvalidOffset once you've hit the end 
+        // Returns TransitionBlock::InvalidOffset once you've hit the end
         // of the list.
         //------------------------------------------------------------
         public int GetNextOffset()
@@ -983,7 +976,7 @@ namespace Internal.CallingConvention
 
                             case CorElementType.ELEMENT_TYPE_VALUETYPE:
                                 {
-                                    // Value type case: extract the alignment requirement, note that this has to handle 
+                                    // Value type case: extract the alignment requirement, note that this has to handle
                                     // the interop "native value types".
                                     fRequiresAlign64Bit = _argTypeHandle.RequiresAlign8();
 
@@ -1039,7 +1032,7 @@ namespace Internal.CallingConvention
                             {
                                 if ((_armWFPRegs & wAllocMask) == 0)
                                 {
-                                    // We found one, mark the register or registers as used. 
+                                    // We found one, mark the register or registers as used.
                                     _armWFPRegs |= wAllocMask;
 
                                     // Indicate the registers used to the caller and return.
@@ -1074,7 +1067,7 @@ namespace Internal.CallingConvention
                             if (fRequiresAlign64Bit)
                             {
                                 // The argument requires 64-bit alignment. Align either the next general argument register if
-                                // we have any left.  See step C.3 in the algorithm in the ABI spec.       
+                                // we have any left.  See step C.3 in the algorithm in the ABI spec.
                                 _armIdxGenReg = ALIGN_UP(_armIdxGenReg, 2);
                             }
 
@@ -1105,7 +1098,7 @@ namespace Internal.CallingConvention
                         if (fRequiresAlign64Bit)
                         {
                             // The argument requires 64-bit alignment. If it is going to be passed on the stack, align
-                            // the next stack slot.  See step C.6 in the algorithm in the ABI spec.  
+                            // the next stack slot.  See step C.6 in the algorithm in the ABI spec.
                             _armOfsStack = ALIGN_UP(_armOfsStack, _transitionBlock.PointerSize * 2);
                         }
 
@@ -1518,8 +1511,8 @@ namespace Internal.CallingConvention
                         }
                         else
                         {
-                            // All stack arguments take just one stack slot on AMD64 because of arguments bigger 
-                            // than a stack slot are passed by reference. 
+                            // All stack arguments take just one stack slot on AMD64 because of arguments bigger
+                            // than a stack slot are passed by reference.
                             stackElemSize = _transitionBlock.PointerSize;
                         }
                     }
@@ -1699,8 +1692,7 @@ namespace Internal.CallingConvention
                         int byteArgSize = GetArgSize();
 
                         // Composites greater than 16bytes are passed by reference
-                        ITypeHandle dummy;
-                        if (GetArgType(out dummy) == CorElementType.ELEMENT_TYPE_VALUETYPE && GetArgSize() > _transitionBlock.EnregisteredParamTypeMaxSize)
+                        if (GetArgType(out _) == CorElementType.ELEMENT_TYPE_VALUETYPE && GetArgSize() > _transitionBlock.EnregisteredParamTypeMaxSize)
                         {
                             byteArgSize = _transitionBlock.PointerSize;
                         }
@@ -1735,7 +1727,7 @@ namespace Internal.CallingConvention
 
                         if (argOffset == TransitionBlock.StructInRegsOffset)
                         {
-                            // We always already have argLocDesc for structs passed in registers, we 
+                            // We always already have argLocDesc for structs passed in registers, we
                             // compute it in the GetNextOffset for those since it is always needed.
                             Debug.Assert(false);
                             return null;
@@ -1829,7 +1821,7 @@ namespace Internal.CallingConvention
         private uint _returnedFpFieldOffset1st;
         private uint _returnedFpFieldOffset2nd;
 
-        /*        ITERATION_STARTED               = 0x0001,   
+        /*      ITERATION_STARTED               = 0x0001,
                 SIZE_OF_ARG_STACK_COMPUTED      = 0x0002,
                 RETURN_FLAGS_COMPUTED           = 0x0004,
                 RETURN_HAS_RET_BUFFER           = 0x0008,   // Cached value of HasRetBuffArg
