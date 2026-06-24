@@ -809,6 +809,21 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
 
         case BBJ_THROW:
         {
+#if defined(TARGET_WASM)
+            // Wasm validator needs an `unreachable` after the throw so the
+            // fall-through stack is polymorphic.
+            //
+            GetEmitter()->emitIns(INS_unreachable);
+
+            // At function/funclet end, close open intervals and emit `end`
+            // (we've already emitted the terminating `unreachable` above).
+            //
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            {
+                genEmitFunctionEnd(/* emitTerminalUnreachable */ false);
+            }
+#else  // !TARGET_WASM
+
             // If we have a throw at the end of a function or funclet, we need to emit another instruction
             // afterwards to help the OS unwinder determine the correct context during unwind.
             // We insert an unexecuted breakpoint instruction in several situations
@@ -840,15 +855,7 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
                     }
                 }
             }
-
-#if defined(TARGET_WASM)
-            // For wasm the last instruction in a function or funclet must be end.
-            //
-            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
-            {
-                GetEmitter()->emitIns(INS_end);
-            }
-#endif // defined(TARGET_WASM)
+#endif // !TARGET_WASM
 
             break;
         }
@@ -907,6 +914,18 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
 #if FEATURE_LOOP_ALIGN
             SetLoopAlignBackEdge(block, block->GetTarget());
 #endif // FEATURE_LOOP_ALIGN
+
+#if defined(TARGET_WASM)
+            // If this BBJ_ALWAYS is the last block of the function or funclet
+            // (e.g., backedge of an infinite loop), close any still-open
+            // wasm intervals and emit the function-body terminator.
+            //
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            {
+                genEmitFunctionEnd();
+            }
+#endif // defined(TARGET_WASM)
+
             break;
 
         case BBJ_COND:
