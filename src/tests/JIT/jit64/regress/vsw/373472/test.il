@@ -46,7 +46,7 @@
         01 00 00 00
     )
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
-        string('Allocates large contiguous array that is not consistently available on 32-bit platforms')
+        string('Allocates large contiguous array that is not consistently available on 32-bit processes')
         type([TestLibrary]TestLibrary.PlatformDetection)
         string[1] ('Is32BitProcess')
     }
