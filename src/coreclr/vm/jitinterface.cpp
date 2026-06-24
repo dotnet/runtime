@@ -8869,7 +8869,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             instArgIsInstantiatingStub = true;
         }
     }
-
+    
     if (instArgIsInstantiatingStub &&
         (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()) ||
          TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation())))
@@ -8917,15 +8917,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     info->tokenLookupContext = (isArray || isGenericVirtual)
         ? MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pInstantiatedMD)
         : MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
-
-    // If we devirtualized into an unboxing stub, also hand back the unboxed entry
-    // so the jit can perform the unboxing transformation.
-    //
-    if (pDevirtMD->IsUnboxingStub())
-    {
-        MethodDesc* pUnboxedMD = pDevirtMD->GetMethodTable()->GetUnboxedEntryPointMD(pDevirtMD);
-        info->resolvedTokenDevirtualizedUnboxedMethod.hMethod = (CORINFO_METHOD_HANDLE) pUnboxedMD;
-    }
 
     // If we devirtualized into an unboxing stub, also hand back the unboxed entry
     // so the jit can perform the unboxing transformation.
