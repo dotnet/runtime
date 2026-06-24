@@ -459,7 +459,19 @@ extern "C" void STDCALL DelayLoad_Helper_ObjObj()
 }
 
 extern "C" void DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class_TestForNull();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class_0_0();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class_0_1();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class_0_2();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Class_0_3();
 extern "C" void DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method_TestForNull();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method_0();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method_1();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method_2();
+extern "C" void DynamicHelper_GenericDictionaryLookup_Method_3();
 #include "readytoruninfo.h"
 #include "jitinterface.h"
 #include "loaderallocator.hpp"
@@ -507,12 +519,12 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(pLookup->offsets[0] == offsetof(MethodTable, m_pPerInstInfo));
             dictLookupData.SecondIndir = (UINT32)pLookup->offsets[1];
             dictLookupData.LastIndir = (UINT32)pLookup->offsets[2];
-//            if (pLookup->testForNull && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            if (pLookup->testForNull && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
                 helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull;
                 needsDictLookupData = true;
             }
-/*            else if (pLookup->testForNull)
+            else if (pLookup->testForNull)
             {
                 helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Class_TestForNull;
                 needsDictLookupData = true;
@@ -544,7 +556,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                     helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Class;
                     needsDictLookupData = true;
                 }
-            }*/
+            }
         }
         else if (pLookup->indirections == 2)
         {
@@ -552,12 +564,12 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(helperAddress == g_pMethodWithSlotAndModule);
             _ASSERTE(pLookup->offsets[0] == offsetof(InstantiatedMethodDesc, m_pPerInstInfo));
             dictLookupData.LastIndir = (UINT32)pLookup->offsets[1];
-//            if (pLookup->testForNull && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
+            if (pLookup->testForNull && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
                 helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull;
                 needsDictLookupData = true;
             }
-/*            else if (pLookup->testForNull)
+            else if (pLookup->testForNull)
             {
                 helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method_TestForNull;
                 needsDictLookupData = true;
@@ -589,7 +601,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                     helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method;
                     needsDictLookupData = true;
                 }
-            }*/
+            }
         }
 
         if (needsDictLookupData)
@@ -609,7 +621,11 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         }
         else
         {
-            result = helper;
+            // The simple helpers do not need any stub data, but the portable entrypoint calling convention
+            // requires the result to point at a location whose first word is the helper's function table index.
+            PCODE *pHelperEntryPoint = (PCODE *)amTracker.Track(pAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE))));
+            *pHelperEntryPoint = helper;
+            result = (PCODE)pHelperEntryPoint;
         }
 
         amTracker.SuppressRelease();
