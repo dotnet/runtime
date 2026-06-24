@@ -48,6 +48,18 @@ public class ComputeBatchTimeout : Task
 
     public override bool Execute()
     {
+        // Sanitize MSBuild-provided knobs: fall back to defaults on non-positive values, and cap
+        // MaximumMinutes below 24h so the "hh" specifier in the formatted Timeout cannot wrap
+        // (e.g. 1440 minutes would render as 00:00:00). Also ensure the floor never exceeds the cap.
+        if (MinutesPerSuite <= 0)
+            MinutesPerSuite = 20;
+        if (MinimumMinutes <= 0)
+            MinimumMinutes = 30;
+        if (MaximumMinutes <= 0 || MaximumMinutes > 1439)
+            MaximumMinutes = 1439;
+        if (MinimumMinutes > MaximumMinutes)
+            MinimumMinutes = MaximumMinutes;
+
         var counts = new Dictionary<string, int>();
         foreach (var item in GroupedItems)
         {

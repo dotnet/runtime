@@ -18,11 +18,11 @@ namespace CoreXml.Test.XLinq
         // Test Module
         [Fact]
         [OuterLoop]
-        // This ModuleCore entry point runs the full XNodeBuilder writer suite. On CoreCLR wasm
-        // the runtime fails to shut down cleanly after it completes, so the test harness hangs
-        // until it times out. It is [OuterLoop], so it never ran on single-threaded wasm before;
-        // gate it off Browser to keep the lane green while preserving coverage elsewhere.
-        [SkipOnPlatform(TestPlatforms.Browser, "CoreCLR wasm runtime hangs at shutdown after this suite completes.")]
+        // This ModuleCore entry point runs the full XNodeBuilder writer suite. On wasm the runtime
+        // fails to shut down cleanly after it completes, so the test harness hangs until it times
+        // out. It is [OuterLoop], so it never ran on single-threaded wasm before; gate it off
+        // Browser to keep the lane green while preserving coverage elsewhere.
+        [SkipOnPlatform(TestPlatforms.Browser, "The wasm runtime hangs at shutdown after this suite completes.")]
         public static void RunTests()
         {
             TestInput.CommandLine = "";

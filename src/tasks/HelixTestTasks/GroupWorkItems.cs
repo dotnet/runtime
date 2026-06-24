@@ -56,9 +56,13 @@ public class GroupWorkItems : Task
         // Sort largest first for greedy bin-packing
         itemsWithSize.Sort((a, b) => b.size.CompareTo(a.size));
 
+        // Match on the file name only, so callers may pass either a bare suite name or a path.
+        // Do not strip the extension here: suite names contain dots (e.g. "System.Text.Json.Tests")
+        // and Path.GetFileNameWithoutExtension would drop the trailing ".Tests" segment, while the
+        // candidate side below strips only the real archive extension (".zip").
         var soloNames = new HashSet<string>(StringComparer.Ordinal);
         foreach (var solo in SoloItems)
-            soloNames.Add(solo.ItemSpec);
+            soloNames.Add(Path.GetFileName(solo.ItemSpec));
 
         var result = new List<ITaskItem>();
         int negativeBatchId = -1;
