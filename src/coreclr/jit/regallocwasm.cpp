@@ -490,6 +490,15 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForStoreInd(node->AsStoreInd());
             break;
 
+        case GT_IND:
+            if (node->AsIndir()->Addr()->gtLIRFlags & LIR::Flags::MultiplyUsed)
+            {
+                // Faulting loads are null checked on wasm; consume the temporary register
+                // holding the address so it is available for both the check and the load.
+                ConsumeTemporaryRegForOperand(node->AsIndir()->Addr() DEBUGARG("indir load null check"));
+            }
+            break;
+
         case GT_STORE_BLK:
             CollectReferencesForBlockStore(node->AsBlk());
             break;

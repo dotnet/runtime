@@ -2652,6 +2652,16 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     genConsumeAddress(tree->Addr());
 
+    // On wasm a load from a null address does not fault, so emit an explicit null check
+    // for faulting loads (mirrors genCodeForStoreInd). Use the same predicate the throw-
+    // helper reservation phase uses (StackLevelSetter), so we never demand an unreserved
+    // throw helper block here.
+    if (((tree->gtFlags & GTF_EXCEPT) != 0) && tree->OperMayThrow(m_compiler))
+    {
+        regNumber addrReg = GetMultiUseOperandReg(tree->Addr());
+        genEmitNullCheck(addrReg);
+    }
+
     // TODO-WASM: Memory barriers
 
     GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
