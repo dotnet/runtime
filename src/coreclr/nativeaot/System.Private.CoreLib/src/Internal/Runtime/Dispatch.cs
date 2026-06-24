@@ -15,19 +15,19 @@ namespace Internal.Runtime
     internal static class Dispatch
     {
         [RuntimeExport("ResolveDispatch")]
-        internal static unsafe MethodTable* ResolveDispatch(object pObject, DispatchCell* pCell)
+        internal static unsafe IntPtr ResolveDispatch(object pObject, DispatchCell* pCell)
         {
             // Assume this is a static dispatch cell first
             foreach (TypeManagerHandle typeManager in StartupCodeHelpers.GetLoadedModules())
             {
                 var pDispatchCellRegion = (DispatchCell*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.InterfaceDispatchCellRegion, out int length);
-                if (pCell >= pDispatchCellRegion && pCell < (byte*)pDispatchCellRegion + length)
+                if ((byte*)pCell >= (byte*)pDispatchCellRegion && (byte*)pCell < (byte*)pDispatchCellRegion + length)
                 {
                     return ResolveStaticInterfaceDispatch(typeManager, pObject, (nint)(pCell - pDispatchCellRegion));
                 }
 
                 pDispatchCellRegion = (DispatchCell*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GvmDispatchCellRegion, out length);
-                if (pCell >= pDispatchCellRegion && pCell < (byte*)pDispatchCellRegion + length)
+                if ((byte*)pCell >= (byte*)pDispatchCellRegion && (byte*)pCell < (byte*)pDispatchCellRegion + length)
                 {
                     return ResolveGvmDispatch(typeManager, pObject, (nint)(pCell - pDispatchCellRegion));
                 }
@@ -38,7 +38,7 @@ namespace Internal.Runtime
             if (pDynamicCell->IsGvmDispatchCell)
             {
                 DynamicDispatchCell.DynamicGvmDispatchCell* pDynamicGvmCell = pDynamicCell->AsGvmDispatchCell();
-                return (MethodTable*)RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
+                return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
                     new RuntimeTypeHandle(pObject.GetMethodTable()),
                     RuntimeTypeHandle.FromIntPtr(pDynamicGvmCell->OwningType),
                     pDynamicGvmCell->Handle,
@@ -48,37 +48,37 @@ namespace Internal.Runtime
             }
 
             DynamicDispatchCell.DynamicInterfaceDispatchCell* pDynamicInterfaceCell = pDynamicCell->AsInterfaceDispatchCell();
-            return (MethodTable*)CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, (MethodTable*)pDynamicInterfaceCell->InterfaceType, (ushort)pDynamicInterfaceCell->Slot);
+            return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, (MethodTable*)pDynamicInterfaceCell->InterfaceType, (ushort)pDynamicInterfaceCell->Slot);
         }
 
-        private static unsafe MethodTable* ResolveStaticInterfaceDispatch(TypeManagerHandle typeManager, object pObject, nint cellIndex)
+        private static unsafe IntPtr ResolveStaticInterfaceDispatch(TypeManagerHandle typeManager, object pObject, nint cellIndex)
         {
             IntPtr pDispatchCellInfoRegion = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.InterfaceDispatchCellInfoRegion, out _);
             if (MethodTable.SupportsRelativePointers)
             {
                 var dispatchCellInfo = &((RelativeInterfaceDispatchInfo*)pDispatchCellInfoRegion)[cellIndex];
-                return (MethodTable*)CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, dispatchCellInfo->InterfaceType, (ushort)dispatchCellInfo->Slot);
+                return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, dispatchCellInfo->InterfaceType, (ushort)dispatchCellInfo->Slot);
             }
             else
             {
                 var dispatchCellInfo = &((InterfaceDispatchInfo*)pDispatchCellInfoRegion)[cellIndex];
-                return (MethodTable*)CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, dispatchCellInfo->InterfaceType, (ushort)dispatchCellInfo->Slot);
+                return CachedInterfaceDispatch.RhResolveDispatchWorker(pObject, dispatchCellInfo->InterfaceType, (ushort)dispatchCellInfo->Slot);
             }
         }
 
-        private static unsafe MethodTable* ResolveGvmDispatch(TypeManagerHandle typeManager, object pObject, nint cellIndex)
+        private static unsafe IntPtr ResolveGvmDispatch(TypeManagerHandle typeManager, object pObject, nint cellIndex)
         {
             IntPtr pDispatchCellInfoRegion = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GvmDispatchCellInfoRegion, out _);
             if (MethodTable.SupportsRelativePointers)
             {
                 var dispatchCellInfo = &((RelativeGvmDispatchInfo*)pDispatchCellInfoRegion)[cellIndex];
-                return (MethodTable*)RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
+                return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
                     new RuntimeTypeHandle(pObject.GetMethodTable()), new RuntimeTypeHandle(dispatchCellInfo->OwningType), dispatchCellInfo->Handle, dispatchCellInfo->IsAsyncVariant, dispatchCellInfo->Instantiation, isMethodInstantiationDataRelative: true);
             }
             else
             {
                 var dispatchCellInfo = &((GvmDispatchInfo*)pDispatchCellInfoRegion)[cellIndex];
-                return (MethodTable*)RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
+                return RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(
                     new RuntimeTypeHandle(pObject.GetMethodTable()), new RuntimeTypeHandle(dispatchCellInfo->OwningType), dispatchCellInfo->Handle, dispatchCellInfo->IsAsyncVariant, dispatchCellInfo->Instantiation, isMethodInstantiationDataRelative: false);
             }
         }

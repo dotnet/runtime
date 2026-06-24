@@ -12,9 +12,9 @@ namespace Internal.Runtime
     internal static class Dispatch
     {
         [RuntimeExport("ResolveDispatch")]
-        internal static unsafe MethodTable* ResolveDispatch(object pObject, DispatchCell* pCell)
+        internal static unsafe IntPtr ResolveDispatch(object pObject, DispatchCell* pCell)
         {
-            return null;
+            return IntPtr.Zero;
         }
     }
 }

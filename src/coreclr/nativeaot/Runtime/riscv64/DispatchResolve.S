@@ -31,13 +31,6 @@ LEAF_ENTRY RhpDispatchResolve, _TEXT
         // Trigger an AV if we're dispatching on a null this.
         ld      t0, 0(a0)
 
-        ld      t1, 0(a1)               // load cached MethodTable
-        bne     t0, t1, LOCAL_LABEL(ResolveInterfaceMethod)
-
-        ld      a0, 8(a1)               // return cached monomorphic resolved code address
-        ret
-
-LOCAL_LABEL(ResolveInterfaceMethod):
         tail    C_FUNC(RhpResolveInterfaceMethod)
 
 LEAF_END RhpDispatchResolve, _TEXT

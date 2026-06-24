@@ -286,12 +286,8 @@ static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
     {
 #if defined(TARGET_ARM)
         (uintptr_t)&RhpInterfaceDispatchAVLocation,
-        (uintptr_t)&RhpDispatchResolveAVLocation,
 #else
         (uintptr_t)&RhpInterfaceDispatch,
-#endif
-#if !defined(TARGET_ARM)
-        (uintptr_t)&RhpDispatchResolve,
 #endif
 #if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
         (uintptr_t)&RhpInterfaceDispatchGuarded,
@@ -315,6 +311,26 @@ static bool InInterfaceDispatchHelper(uintptr_t faultingIP)
     return false;
 }
 
+static bool InInterfaceResolveHelper(uintptr_t faultingIP)
+{
+#ifndef FEATURE_PORTABLE_HELPERS
+#if defined(TARGET_ARM)
+    return faultingIP == (uintptr_t)&RhpDispatchResolveAVLocation;
+#else
+    uintptr_t interfaceResolveAVLocation = (uintptr_t)&RhpDispatchResolve;
+#if defined(HOST_AMD64) || defined(HOST_X86)
+    // Verify that the runtime is not linked with incremental linking enabled. Incremental linking
+    // wraps every method symbol with a jump stub that breaks the following check.
+    ASSERT(*(uint8_t*)interfaceResolveAVLocation != 0xE9); // jmp XXXXXXXX
+#endif
+
+    return interfaceResolveAVLocation == faultingIP;
+#endif
+#else
+    return false;
+#endif // FEATURE_PORTABLE_HELPERS
+}
+
 static uintptr_t UnwindSimpleHelperToCaller(
 #ifdef TARGET_UNIX
     PAL_LIMITED_CONTEXT * pContext
@@ -325,7 +341,9 @@ static uintptr_t UnwindSimpleHelperToCaller(
 {
 #if defined(_DEBUG)
     uintptr_t faultingIP = pContext->GetIp();
-    ASSERT(InWriteBarrierHelper(faultingIP) || InInterfaceDispatchHelper(faultingIP));
+    ASSERT(InWriteBarrierHelper(faultingIP) ||
+           InInterfaceDispatchHelper(faultingIP) ||
+           InInterfaceResolveHelper(faultingIP));
 #endif
 #if defined(HOST_AMD64) || defined(HOST_X86)
     // simulate a ret instruction
@@ -386,8 +404,9 @@ int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress,
         // Could still be an AV in one of our assembly helpers that we know how to handle.
         bool inWriteBarrierHelper = InWriteBarrierHelper(faultingIP);
         bool inInterfaceDispatchHelper = InInterfaceDispatchHelper(faultingIP);
+        bool inInterfaceResolveHelper = InInterfaceResolveHelper(faultingIP);
 
-        if (inWriteBarrierHelper || inInterfaceDispatchHelper)
+        if (inWriteBarrierHelper || inInterfaceDispatchHelper || inInterfaceResolveHelper)
         {
             if (faultAddress < NULL_AREA_SIZE)
             {
@@ -524,8 +543,9 @@ LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         // Could still be an AV in one of our assembly helpers that we know how to handle.
         bool inWriteBarrierHelper = InWriteBarrierHelper(faultingIP);
         bool inInterfaceDispatchHelper = InInterfaceDispatchHelper(faultingIP);
+        bool inInterfaceResolveHelper = InInterfaceResolveHelper(faultingIP);
 
-        if (inWriteBarrierHelper || inInterfaceDispatchHelper)
+        if (inWriteBarrierHelper || inInterfaceDispatchHelper || inInterfaceResolveHelper)
         {
             if (pExPtrs->ExceptionRecord->ExceptionInformation[1] < NULL_AREA_SIZE)
             {

@@ -144,6 +144,7 @@ FASTCALL_ENDFUNC
 ;; Resolve helper for standard x86 calling convention.
 ;; Arguments are passed on the stack: object, dispatch cell.
 RhpDispatchResolve PROC public
+ALTERNATE_ENTRY _RhpDispatchResolve
 
         mov     ecx, dword ptr [esp + 4] ;; this
         mov     eax, dword ptr [esp + 8] ;; dispatch cell
