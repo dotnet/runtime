@@ -38,7 +38,7 @@ public class MdArrayCloning
 
     // ---- Cases where bounds-check elimination must be safe ----------------
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DDimLimits(int[,] a)
     {
         // Loop bounds match a.GetLength(d), accessed at a[i,j] — both bounds
@@ -50,7 +50,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DCachedLengths(int[,] a)
     {
         // Lengths cached in locals; the cloning condition becomes
@@ -64,7 +64,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum3D(int[,,] a)
     {
         int sum = 0;
@@ -75,7 +75,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DLengthMinus1(int[,] a)
     {
         // Limit with constant offset: `< len - 1`.
@@ -88,7 +88,7 @@ public class MdArrayCloning
 
     // ---- Cases where the runtime guard must NOT pick the fast path --------
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DUserLimit(int[,] a, int limit0, int limit1)
     {
         // User-provided limits can exceed the actual dim lengths. The cloning
@@ -102,7 +102,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DSwappedIndex(int[,] a, int limit)
     {
         // Iter var bound by `limit` is used as the column index, which is
@@ -116,7 +116,7 @@ public class MdArrayCloning
 
     // ---- "Trivially true" condition path ----------------------------------
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DDirect(int[,] a, int dim0Hint)
     {
         // Outer loop limit == access dim length, so the cloning condition
@@ -128,7 +128,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DStride2(int[,] a)
     {
         // Non-unit (constant) stride.
@@ -139,7 +139,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DDecreasing(int[,] a)
     {
         // Decreasing IV (i--).
@@ -150,7 +150,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DDecStride2(int[,] a)
     {
         // Decreasing non-unit stride.
@@ -163,7 +163,7 @@ public class MdArrayCloning
 
     // ---- foreach / GetUpperBound (issue #103321) pattern ------------------
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DGetUpperBound(int[,] a)
     {
         // The literal #103321 example: inline GetLowerBound/GetUpperBound on
@@ -177,7 +177,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DGetUpperBoundLE(int[,] a)
     {
         // LE variant: iterates the full valid index range.
@@ -188,7 +188,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum1DOfDim0_GetUpperBound(int[,] a)
     {
         // Bounded-range loop on dim 0, body accesses a fixed column. The
@@ -199,7 +199,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DInitMismatch(int[,] a)
     {
         // Init is a const 0 but the limit is GetUpperBound(0) — these don't
@@ -212,7 +212,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DForeach(int[,] a)
     {
         int sum = 0;
@@ -221,7 +221,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum3DForeach(int[,,] a)
     {
         int sum = 0;
@@ -513,7 +513,7 @@ public class MdArrayCloning
     // bound isn't zero.
     // ======================================================================
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int Sum2DBounded(Array a)
     {
         int[,] md = (int[,])a;
@@ -530,7 +530,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int SumCrossArrayBoundedRange(Array bounds, int[,] data)
     {
         int[,] source = (int[,])bounds;
@@ -541,7 +541,7 @@ public class MdArrayCloning
         return sum;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int SumSzArrayBoundedRange(Array bounds, int[] data)
     {
         int[,] source = (int[,])bounds;
