@@ -2332,6 +2332,23 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, GenT
             assert(delayFreeOp != nullptr);
             break;
 
+        case NI_Sve2_ConvertToSingleOdd:
+        case NI_Sve2_ConvertToSingleOddRoundToOdd:
+            assert(isRMW);
+            if (embedded && user->OperIsHWIntrinsic(NI_Sve_ConditionalSelect) && user->Op(3)->IsVectorZero() &&
+                !user->Op(1)->IsTrueMask(user->GetSimdBaseType()))
+            {
+                // These instructions cannot use movprfx. Prefer the zero falseOp as the target so codegen can
+                // preserve inactive lanes by first copying active lanes from op1.
+                delayFreeOp = user->Op(3);
+            }
+            else
+            {
+                delayFreeOp = intrinsicTree->Op(1);
+            }
+            assert(delayFreeOp != nullptr);
+            break;
+
         default:
             if (isRMW)
             {

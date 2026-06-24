@@ -448,6 +448,14 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
             {
                 // These instructions do not support movprfx.
                 embOpt = INS_OPTS_D_TO_S;
+                if (falseOp->IsVectorZero() && !maskOp->IsTrueMask(intrinCndSel.baseType) && (targetReg == falseReg))
+                {
+                    GetEmitter()->emitIns_R_R_R(INS_sve_mov, emitSize, targetReg, maskReg, embMaskOp1Reg, opt,
+                                                INS_SCALABLE_OPTS_PREDICATE_MERGE);
+                    GetEmitter()->emitInsSve_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg, embOpt,
+                                                   sopt);
+                    return;
+                }
                 FALLTHROUGH;
             }
 
