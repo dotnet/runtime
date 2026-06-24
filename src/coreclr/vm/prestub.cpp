@@ -3361,7 +3361,17 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     RVA rva = pNativeImage->GetDataRva((TADDR)pCell);
 
-    PTR_READYTORUN_IMPORT_SECTION pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
+    PTR_READYTORUN_IMPORT_SECTION pImportSection;
+    if (sectionIndex != (DWORD)-1)
+    {
+        pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
+        _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
+    }
+    else
+    {
+        pImportSection = pModule->GetImportSectionForRVA(rva);
+    }
+
     _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
 
     _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
@@ -3392,6 +3402,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     switch (kind)
     {
+#ifndef TARGET_WASM
     case READYTORUN_FIXUP_NewObject:
         th = ZapSig::DecodeType(pModule, pInfoModule, pBlob);
         th.AsMethodTable()->EnsureInstanceActive();
@@ -3443,7 +3454,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
             pMD->EnsureActive();
         }
         break;
-
+#endif // !TARGET_WASM
     case READYTORUN_FIXUP_ThisObjDictionaryLookup:
     case READYTORUN_FIXUP_TypeDictionaryLookup:
     case READYTORUN_FIXUP_MethodDictionaryLookup:
@@ -3464,6 +3475,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         {
             switch (kind)
             {
+#ifndef TARGET_WASM
             case READYTORUN_FIXUP_IsInstanceOf:
             case READYTORUN_FIXUP_ChkCast:
                 {
@@ -3553,7 +3565,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                     }
                 }
                 break;
-
+#endif // !TARGET_WASM
             default:
                 UNREACHABLE();
             }
@@ -3577,6 +3589,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     {
         switch (kind)
         {
+#ifndef TARGET_WASM
         case READYTORUN_FIXUP_NewObject:
             {
                 bool fHasSideEffectsUnused;
@@ -3650,7 +3663,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 }
             }
             break;
-
+#endif // !TARGET_WASM
         case READYTORUN_FIXUP_ThisObjDictionaryLookup:
         case READYTORUN_FIXUP_TypeDictionaryLookup:
         case READYTORUN_FIXUP_MethodDictionaryLookup:

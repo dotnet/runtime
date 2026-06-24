@@ -943,6 +943,10 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
 elseif(CLR_CMAKE_TARGET_ARCH_WASM)
     set(VM_HEADERS_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/entrypoints.h
+        ${ARCH_SOURCES_DIR}/asmconstants.h
+    )
+    set(VM_SOURCES_WKS_ARCH_ASM
+        ${ARCH_SOURCES_DIR}/dynamichelpers.S
     )
     set(VM_SOURCES_WKS_ARCH
         ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/writebarriers.cpp
