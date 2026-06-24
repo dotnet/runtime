@@ -159,7 +159,7 @@ namespace System.Text.Json
         private static void EscapeNextBytes(byte value, Span<byte> destination, ref int totalWritten)
         {
             // Slice the span so the JIT can see that no bounds checks are needed below
-            destination = destination.Slice(totalWritten, JsonConstants.StackallocByteThreshold);
+            destination = destination.Slice(totalWritten, JsonConstants.MaxExpansionFactorWhileEscaping);
             int written = 0;
 
             destination[written++] = (byte)'\\';
@@ -280,9 +280,13 @@ namespace System.Text.Json
             }
         }
 
-        private static void EscapeNextChars(char value, Span<char> destination, ref int written)
+        private static void EscapeNextChars(char value, Span<char> destination, ref int totalWritten)
         {
             Debug.Assert(IsAsciiValue(value));
+
+            // Slice the span so the JIT can see that no bounds checks are needed below
+            destination = destination.Slice(totalWritten, JsonConstants.MaxExpansionFactorWhileEscaping);
+            int written = 0;
 
             destination[written++] = '\\';
             switch ((byte)value)
@@ -325,6 +329,8 @@ namespace System.Text.Json
 #endif
                     break;
             }
+
+            totalWritten += written;
         }
 
 #if !NET
