@@ -1489,6 +1489,8 @@ namespace Internal.JitInterface
             bool requiresInstMethodDescArg = instArgTarget.RequiresInstMethodDescArg();
             bool requiresInstMethodTableArg = instArgTarget.RequiresInstMethodTableArg();
 
+            // For unboxing stubs whose unboxed entry needs a MethodTable inst arg, the boxed object supplies the exact MT.
+            // For MethodDesc cases we always need to supply the exact MD.
             if (requiresInstMethodDescArg || (requiresInstMethodTableArg && !unboxingStub))
             {
                 if (originalImpl.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
