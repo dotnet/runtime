@@ -30,6 +30,8 @@
     <_TargetOSForJitLibraryName Condition="'$(_TargetOSForJitLibraryName)' == '' and '$(TargetOS)' == 'windows'">win</_TargetOSForJitLibraryName>
     <_TargetOSForJitLibraryName Condition="'$(_TargetOSForJitLibraryName)' == ''">unix</_TargetOSForJitLibraryName>
     <SingleJitLibraryName>$(_LibPrefix)clrjit_$(_TargetOSForJitLibraryName)_$(_TargetArchitectureForJitLibraryName)_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)</SingleJitLibraryName>
+    <SingleJitLibrarySourceName>$(_LibPrefix)clrjit$(_LibSuffix)</SingleJitLibrarySourceName>
+    <SingleJitLibrarySourceName Condition="'$(TargetArchitecture)' == 'wasm'">$(SingleJitLibraryName)</SingleJitLibrarySourceName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -49,7 +51,7 @@
       Condition="'$(CrossHostArch)' == ''"
       />
 
-    <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(_LibPrefix)clrjit$(_LibSuffix)"
+    <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(SingleJitLibrarySourceName)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       ExcludeFromSingleFile="$(PublishSingleFile)"
