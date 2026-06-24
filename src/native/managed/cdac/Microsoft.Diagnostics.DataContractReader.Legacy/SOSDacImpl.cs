@@ -33,7 +33,7 @@ public sealed unsafe partial class SOSDacImpl
     : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
       ISOSDacInterface6, ISOSDacInterface7, ISOSDacInterface8, ISOSDacInterface9, ISOSDacInterface10,
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
-      ISOSDacInterface16, ISOSDacInterface17
+      ISOSDacInterface16, ISOSDacInterface17, ISOSDacInterface18
 {
     private const uint DefaultAppDomainId = 1;
 
@@ -7385,4 +7385,246 @@ public sealed unsafe partial class SOSDacImpl
     }
 
     #endregion ISOSDacInterface17
+
+    #region ISOSDacInterface18
+
+    private (Contracts.IGCInfoHandle handle, Contracts.IGCInfo gcInfo) ResolveGCInfo(ClrDataAddress ip)
+    {
+        Contracts.IExecutionManager eman = _target.Contracts.ExecutionManager;
+        Contracts.CodeBlockHandle? cbh = eman.GetCodeBlockHandle(ip.ToTargetCodePointer(_target));
+        if (cbh is null)
+            throw new ArgumentException("No code block found for the given IP");
+
+        eman.GetGCInfo(cbh.Value, out TargetPointer pGcInfo, out uint gcVersion);
+        Contracts.CodeKind codeKind = eman.GetCodeKind(ip.ToTargetCodePointer(_target));
+        Contracts.IGCInfo gcInfo = _target.Contracts.GCInfo;
+        Contracts.IGCInfoHandle handle = codeKind == Contracts.CodeKind.Interpreter
+            ? gcInfo.DecodeInterpreterGCInfo(pGcInfo, gcVersion)
+            : gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+
+        return (handle, gcInfo);
+    }
+
+    int ISOSDacInterface18.GetGCInfoHeader(ClrDataAddress ip, SOSGCInfoHeader* header)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (header is null)
+                return HResults.E_POINTER;
+
+            *header = default;
+
+            (Contracts.IGCInfoHandle handle, Contracts.IGCInfo gcInfo) = ResolveGCInfo(ip);
+            Contracts.GCInfoHeader h = gcInfo.GetHeader(handle);
+
+            header->SizeOf = (uint)sizeof(SOSGCInfoHeader);
+            header->GcInfoVersion = h.Version;
+            header->CodeSize = h.CodeSize;
+            header->PrologSize = h.PrologSize;
+            header->StackBaseRegister = h.StackBaseRegister;
+            header->SizeOfStackParameterArea = h.SizeOfStackParameterArea;
+            header->IsVarArg = h.IsVarArg ? 1 : 0;
+            header->WantsReportOnlyLeaf = h.WantsReportOnlyLeaf ? 1 : 0;
+            header->HasTailCalls = h.HasTailCalls ? 1 : 0;
+            header->GSCookieIsPresent = h.GSCookie.HasValue ? 1 : 0;
+            header->GSCookieStackSlot = h.GSCookie?.SpOffset ?? 0;
+            header->GSCookieValidRangeStart = h.GSCookieValidRangeStart;
+            header->GSCookieValidRangeEnd = h.GSCookieValidRangeEnd;
+            header->PSPSymIsPresent = h.PSPSym.HasValue ? 1 : 0;
+            header->PSPSymStackSlot = h.PSPSym?.SpOffset ?? 0;
+            header->GenericsInstContextIsPresent = h.GenericsInstContext.HasValue ? 1 : 0;
+            header->GenericsInstContextStackSlot = h.GenericsInstContext?.SpOffset ?? 0;
+            header->GenericsInstContextKind = (uint)h.GenericsInstContextKind;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface18.GetGCInfoInterruptibleRanges(
+        ClrDataAddress ip,
+        uint count,
+        SOSCodeRange[]? ranges,
+        uint* pNeeded)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+
+            *pNeeded = 0;
+
+            (Contracts.IGCInfoHandle handle, Contracts.IGCInfo gcInfo) = ResolveGCInfo(ip);
+            IReadOnlyList<Contracts.InterruptibleRange> interruptibleRanges = gcInfo.GetInterruptibleRanges(handle);
+
+            *pNeeded = (uint)interruptibleRanges.Count;
+
+            if (ranges is not null)
+            {
+                uint toWrite = Math.Min(count, (uint)interruptibleRanges.Count);
+                for (uint i = 0; i < toWrite; i++)
+                {
+                    ranges[i] = new SOSCodeRange
+                    {
+                        BeginOffset = interruptibleRanges[(int)i].StartOffset,
+                        EndOffset = interruptibleRanges[(int)i].EndOffset,
+                    };
+                }
+                hr = toWrite < (uint)interruptibleRanges.Count ? HResults.S_FALSE : HResults.S_OK;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface18.GetGCInfoSafePoints(
+        ClrDataAddress ip,
+        uint count,
+        uint[]? offsets,
+        uint* pNeeded)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+
+            *pNeeded = 0;
+
+            (Contracts.IGCInfoHandle handle, Contracts.IGCInfo gcInfo) = ResolveGCInfo(ip);
+            IReadOnlyList<uint> safePoints = gcInfo.GetSafePoints(handle);
+
+            *pNeeded = (uint)safePoints.Count;
+
+            if (offsets is not null)
+            {
+                uint toWrite = Math.Min(count, (uint)safePoints.Count);
+                for (uint i = 0; i < toWrite; i++)
+                {
+                    offsets[i] = safePoints[(int)i];
+                }
+                hr = toWrite < (uint)safePoints.Count ? HResults.S_FALSE : HResults.S_OK;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface18.GetGCInfoRegisterLifetimes(
+        ClrDataAddress ip,
+        uint count,
+        SOSGCRegisterLifetime[]? lifetimes,
+        uint* pNeeded)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+
+            *pNeeded = 0;
+
+            (Contracts.IGCInfoHandle handle, Contracts.IGCInfo gcInfo) = ResolveGCInfo(ip);
+            IReadOnlyList<Contracts.GCSlotLifetime> allLifetimes = gcInfo.GetSlotLifetimes(handle);
+
+            // Filter to register slots only
+            List<Contracts.GCSlotLifetime> regLifetimes = [];
+            foreach (Contracts.GCSlotLifetime s in allLifetimes)
+            {
+                if (s.IsRegister)
+                    regLifetimes.Add(s);
+            }
+
+            *pNeeded = (uint)regLifetimes.Count;
+
+            if (lifetimes is not null)
+            {
+                uint toWrite = Math.Min(count, (uint)regLifetimes.Count);
+                for (uint i = 0; i < toWrite; i++)
+                {
+                    lifetimes[i] = new SOSGCRegisterLifetime
+                    {
+                        BeginOffset = regLifetimes[(int)i].BeginOffset,
+                        EndOffset = regLifetimes[(int)i].EndOffset,
+                        RegisterNumber = regLifetimes[(int)i].RegisterNumber,
+                        GcFlags = regLifetimes[(int)i].GcFlags,
+                    };
+                }
+                hr = toWrite < (uint)regLifetimes.Count ? HResults.S_FALSE : HResults.S_OK;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface18.GetGCInfoStackSlotLifetimes(
+        ClrDataAddress ip,
+        uint count,
+        SOSGCStackSlotLifetime[]? lifetimes,
+        uint* pNeeded)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (pNeeded is null)
+                return HResults.E_POINTER;
+
+            *pNeeded = 0;
+
+            (Contracts.IGCInfoHandle handle, Contracts.IGCInfo gcInfo) = ResolveGCInfo(ip);
+            IReadOnlyList<Contracts.GCSlotLifetime> allLifetimes = gcInfo.GetSlotLifetimes(handle);
+
+            // Filter to stack slots only
+            List<Contracts.GCSlotLifetime> stackLifetimes = [];
+            foreach (Contracts.GCSlotLifetime s in allLifetimes)
+            {
+                if (!s.IsRegister)
+                    stackLifetimes.Add(s);
+            }
+
+            *pNeeded = (uint)stackLifetimes.Count;
+
+            if (lifetimes is not null)
+            {
+                uint toWrite = Math.Min(count, (uint)stackLifetimes.Count);
+                for (uint i = 0; i < toWrite; i++)
+                {
+                    lifetimes[i] = new SOSGCStackSlotLifetime
+                    {
+                        BeginOffset = stackLifetimes[(int)i].BeginOffset,
+                        EndOffset = stackLifetimes[(int)i].EndOffset,
+                        SpOffset = stackLifetimes[(int)i].SpOffset,
+                        BaseRegister = stackLifetimes[(int)i].BaseRegister,
+                        GcFlags = stackLifetimes[(int)i].GcFlags,
+                    };
+                }
+                hr = toWrite < (uint)stackLifetimes.Count ? HResults.S_FALSE : HResults.S_OK;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    #endregion ISOSDacInterface18
 }

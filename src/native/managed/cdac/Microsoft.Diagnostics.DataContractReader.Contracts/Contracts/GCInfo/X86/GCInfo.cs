@@ -821,6 +821,15 @@ public record X86GCInfo : IGCInfoDecoder
         yield return RegMask.EDI;
         // ESP is intentionally excluded -- it's never a live GC ref holder.
     }
+
+    GCInfoHeader IGCInfoDecoder.GetHeader()
+        => throw new NotSupportedException("x86 GC info header projection for the expanded IGCInfo surface is not yet implemented.");
+
+    IReadOnlyList<uint> IGCInfoDecoder.GetSafePoints()
+        => throw new NotSupportedException("x86 GC info safe-point enumeration for the expanded IGCInfo surface is not yet implemented.");
+
+    IReadOnlyList<GCSlotLifetime> IGCInfoDecoder.GetSlotLifetimes()
+        => throw new NotSupportedException("x86 GC info slot lifetime enumeration for the expanded IGCInfo surface is not yet implemented.");
 }
 
 /// <summary>

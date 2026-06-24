@@ -657,3 +657,94 @@ interface ISOSDacInterface17 : IUnknown
                                           [out] ISOSStressLogMsgEnum **ppEnum);
     HRESULT GetStressLogMemoryRanges([out] ISOSMemoryEnum **ppEnum);
 }
+
+cpp_quote("#ifndef _SOS_GCInfoData")
+cpp_quote("#define _SOS_GCInfoData")
+
+typedef struct _SOSCodeRange
+{
+    unsigned int BeginOffset;
+    unsigned int EndOffset;
+} SOSCodeRange;
+
+typedef struct _SOSGCInfoHeader
+{
+    ULONG  SizeOf;
+
+    unsigned int GcInfoVersion;
+    unsigned int CodeSize;
+    unsigned int PrologSize;
+    unsigned int StackBaseRegister;
+    unsigned int SizeOfStackParameterArea;
+
+    BOOL   IsVarArg;
+    BOOL   WantsReportOnlyLeaf;
+    BOOL   HasTailCalls;
+
+    BOOL   GSCookieIsPresent;
+    int    GSCookieStackSlot;
+    unsigned int GSCookieValidRangeStart;
+    unsigned int GSCookieValidRangeEnd;
+
+    BOOL   PSPSymIsPresent;
+    int    PSPSymStackSlot;
+
+    BOOL   GenericsInstContextIsPresent;
+    int    GenericsInstContextStackSlot;
+    unsigned int GenericsInstContextKind;
+} SOSGCInfoHeader;
+
+typedef struct _SOSGCRegisterLifetime
+{
+    unsigned int BeginOffset;
+    unsigned int EndOffset;
+    unsigned int RegisterNumber;
+    unsigned int GcFlags;
+} SOSGCRegisterLifetime;
+
+typedef struct _SOSGCStackSlotLifetime
+{
+    unsigned int BeginOffset;
+    unsigned int EndOffset;
+    int          SpOffset;
+    unsigned int BaseRegister;
+    unsigned int GcFlags;
+} SOSGCStackSlotLifetime;
+
+cpp_quote("#endif //_SOS_GCInfoData")
+
+[
+    object,
+    local,
+    uuid(3dccf95b-bca2-40ee-8b83-d8d7574a1df0)
+]
+interface ISOSDacInterface18 : IUnknown
+{
+    HRESULT GetGCInfoHeader(
+        [in]      CLRDATA_ADDRESS ip,
+        [in, out] SOSGCInfoHeader* header);
+
+    HRESULT GetGCInfoInterruptibleRanges(
+        [in]  CLRDATA_ADDRESS ip,
+        [in]  ULONG count,
+        [out, size_is(count), length_is(*pNeeded)] SOSCodeRange* ranges,
+        [out] ULONG* pNeeded);
+
+    HRESULT GetGCInfoSafePoints(
+        [in]  CLRDATA_ADDRESS ip,
+        [in]  ULONG count,
+        [out, size_is(count), length_is(*pNeeded)] unsigned int* offsets,
+        [out] ULONG* pNeeded);
+
+    HRESULT GetGCInfoRegisterLifetimes(
+        [in]  CLRDATA_ADDRESS ip,
+        [in]  ULONG count,
+        [out, size_is(count), length_is(*pNeeded)] SOSGCRegisterLifetime* lifetimes,
+        [out] ULONG* pNeeded);
+
+    HRESULT GetGCInfoStackSlotLifetimes(
+        [in]  CLRDATA_ADDRESS ip,
+        [in]  ULONG count,
+        [out, size_is(count), length_is(*pNeeded)] SOSGCStackSlotLifetime* lifetimes,
+        [out] ULONG* pNeeded);
+}
