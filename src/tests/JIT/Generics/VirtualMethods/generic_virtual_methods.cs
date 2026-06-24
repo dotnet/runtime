@@ -142,7 +142,14 @@ public class GenericVirtualMethodTests
     [Fact]
     public static void RuntimeLookupDelegate()
     {
-        RuntimeLookupDelegateGenericVirtual.Test<string>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnNonGenericType<int>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnNonGenericType<string>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnGenericType<int, int>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnGenericType<int, string>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnGenericType<string, int>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnGenericType<string, string>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnStringType<int>();
+        RuntimeLookupDelegateGenericVirtual.TestGenericMethodOnStringType<string>();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -211,8 +218,10 @@ internal class RuntimeLookupDelegateGenericVirtual
 {
     internal static readonly List<object> s_list = new();
 
-    internal static void Test<T>()
+    internal static void TestGenericMethodOnNonGenericType<T>()
     {
+        Console.WriteLine("Testing {0}: {1}...", nameof(TestGenericMethodOnNonGenericType), typeof(T));
+
         var test1 = new Base();
         test1.Foo<List<T>>();
         Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
@@ -237,6 +246,72 @@ internal class RuntimeLookupDelegateGenericVirtual
         Assert.Equal(m1, m2);
 
         IBase test5 = new DerivedStruct();
+        Delegate m3 = test5.Foo<List<T>>();
+        Delegate m4 = test5.Foo<List<List<T>>>;
+        Assert.Equal(m3.Method, m4.Method);
+    }
+    
+    internal static void TestGenericMethodOnGenericType<T, U>()
+    {
+        Console.WriteLine("Testing {0}: {1}, {2}...", nameof(TestGenericMethodOnGenericType), typeof(T), typeof(U));
+
+        var test1 = new Base<U>();
+        test1.Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        var test2 = new DerivedClassNoImpl<U>();
+        ((IBase<U>)test2).Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        var test3 = new DerivedStructNoImpl<U>();
+        ((IBase<U>)test3).Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        var test4 = new DerivedClass<U>();
+        Delegate m1 = test4.Foo<List<T>>();
+        Delegate m2 = test4.Foo<List<List<T>>>;
+        Assert.Equal(m1, m2);
+
+        IBase<U> test5 = new DerivedStruct<U>();
+        Delegate m3 = test5.Foo<List<T>>();
+        Delegate m4 = test5.Foo<List<List<T>>>;
+        Assert.Equal(m3.Method, m4.Method);
+    }
+    
+    internal static void TestGenericMethodOnStringType<T>()
+    {
+        Console.WriteLine("Testing {0}: {1}...", nameof(TestGenericMethodOnStringType), typeof(T));
+
+        var test1 = new Base<string>();
+        test1.Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        var test2 = new DerivedClassStringNoImpl();
+        ((IBase<string>)test2).Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        var test3 = new DerivedStructStringNoImpl();
+        ((IBase<string>)test3).Foo<List<T>>();
+        Assert.Contains(typeof(List<List<List<List<List<T>>>>>), s_list);
+
+        s_list.Clear();
+
+        var test4 = new DerivedClassString();
+        Delegate m1 = test4.Foo<List<T>>();
+        Delegate m2 = test4.Foo<List<List<T>>>;
+        Assert.Equal(m1, m2);
+
+        IBase<string> test5 = new DerivedStructString();
         Delegate m3 = test5.Foo<List<T>>();
         Delegate m4 = test5.Foo<List<List<T>>>;
         Assert.Equal(m3.Method, m4.Method);
@@ -286,6 +361,80 @@ internal struct DerivedStructNoImpl : IBase
 }
 
 internal struct DerivedStruct : IBase
+{
+    public Delegate Foo<U>()
+    {
+        return Foo<List<U>>;
+    }
+}
+
+internal class Base<T>
+{
+    public virtual Delegate Foo<U>()
+    {
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(U));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<U>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<U>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<U>>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<U>>>>));
+        return Foo<U>;
+    }
+}
+
+internal class DerivedClass<T> : Base<T>
+{
+    public override Delegate Foo<U1>()
+    {
+        return Foo<List<U1>>;
+    }
+}
+
+internal interface IBase<T>
+{
+    public virtual Delegate Foo<U>()
+    {
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(U));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<U>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<U>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<U>>>));
+        RuntimeLookupDelegateGenericVirtual.s_list.Add(typeof(List<List<List<List<U>>>>));
+        return Foo<U>;
+    }
+}
+
+internal class DerivedClassNoImpl<T> : IBase<T>
+{
+}
+
+internal struct DerivedStructNoImpl<T> : IBase<T>
+{
+}
+
+internal struct DerivedStruct<T> : IBase<T>
+{
+    public Delegate Foo<U>()
+    {
+        return Foo<List<U>>;
+    }
+}
+
+internal class DerivedClassString : Base<string>
+{
+    public override Delegate Foo<U1>()
+    {
+        return Foo<List<U1>>;
+    }
+}
+
+internal class DerivedClassStringNoImpl : IBase<string>
+{
+}
+
+internal struct DerivedStructStringNoImpl : IBase<string>
+{
+}
+
+internal struct DerivedStructString : IBase<string>
 {
     public Delegate Foo<U>()
     {
