@@ -45,6 +45,31 @@ internal static class CallingConventionGCRefMapBuilder
     /// </summary>
     public static byte[]? TryBuild(Target target, MethodDescHandle methodDesc)
     {
+        try
+        {
+            return TryBuildCore(target, methodDesc);
+        }
+        catch (NotImplementedException)
+        {
+            // Wraps the whole encoder so any unported code path -- shared
+            // ArgIterator hitting an ABI it doesn't model, a missing
+            // TransitionBlock helper for a new architecture, an explicit
+            // `throw new NotImplementedException(...)` in this file -- becomes
+            // a clean "decline" (null return). The outer SOSDacImpl handler
+            // maps that to E_NOTIMPL which the stress harness buckets as
+            // [ARG_SKIP]. Other exception types still propagate as [ARG_ERROR]
+            // so genuine bugs stay visible.
+            //
+            // Lazy enumeration of EnumerateArguments is the most common spot
+            // for an NIE because MoveNext'ing through it evaluates the shared
+            // ArgIterator's arch-specific paths only when iterated, which is
+            // why a try/catch around just the initial call isn't enough.
+            return null;
+        }
+    }
+
+    private static byte[]? TryBuildCore(Target target, MethodDescHandle methodDesc)
+    {
         IRuntimeInfo runtimeInfo = target.Contracts.RuntimeInfo;
         IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
         ICallingConvention cc = target.Contracts.CallingConvention;
@@ -52,36 +77,10 @@ internal static class CallingConventionGCRefMapBuilder
         RuntimeInfoArchitecture arch = runtimeInfo.GetTargetArchitecture();
         bool isX86 = arch is RuntimeInfoArchitecture.X86;
 
-        // Architectures that have been validated against the runtime oracle.
-        // Other targets are routed to ARG_SKIP (E_NOTIMPL) via the SOSDacImpl
-        // handler rather than ARG_ERROR (E_FAIL) -- the encoder may or may not
-        // produce correct output on them, but we don't want to claim divergence
-        // until the path is reviewed.
-        //
-        // arm32 in particular: the shared ArgIterator port throws partway
-        // through enumeration for every MD on linux-arm, surfacing as
-        // ARG_ERROR. Mark the arch as "not yet supported" so the harness
-        // treats it as an acknowledged gap until the arm32 path is brought up.
-        if (arch is not (RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.X64 or RuntimeInfoArchitecture.Arm64))
-        {
-            return null;
-        }
-
         int pointerSize = target.PointerSize;
 
-        // Walk argument locations and stamp tokens into a sparse offset->token map.
-        // Mirrors the runtime's FakeGcScanRoots (frames.cpp:1911) which fills a
-        // fake TransitionBlock then walks slot positions to emit tokens.
         SortedDictionary<int, GCRefMapToken> tokens = new();
-        IEnumerable<ArgumentLocation> args;
-        try
-        {
-            args = cc.EnumerateArguments(methodDesc);
-        }
-        catch (NotImplementedException)
-        {
-            return null;
-        }
+        IEnumerable<ArgumentLocation> args = cc.EnumerateArguments(methodDesc);
 
         GenericContextLoc ctxLoc = GenericContextLoc.None;
 
