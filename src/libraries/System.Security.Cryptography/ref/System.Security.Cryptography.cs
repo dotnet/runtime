@@ -71,6 +71,7 @@ namespace System.Security.Cryptography
         public AesCcm(byte[] key) { }
         public AesCcm(System.ReadOnlySpan<byte> key) { }
         public static bool IsSupported { get { throw null; } }
+        public int KeySizeInBytes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes NonceByteSizes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes TagByteSizes { get { throw null; } }
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null) { }
@@ -144,6 +145,7 @@ namespace System.Security.Cryptography
         public AesGcm(System.ReadOnlySpan<byte> key) { }
         public AesGcm(System.ReadOnlySpan<byte> key, int tagSizeInBytes) { }
         public static bool IsSupported { get { throw null; } }
+        public int KeySizeInBytes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes NonceByteSizes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes TagByteSizes { get { throw null; } }
         public int? TagSizeInBytes { get { throw null; } }
