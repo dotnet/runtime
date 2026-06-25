@@ -237,7 +237,7 @@ test_enable_disable (void)
 
 	test_location = 2;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	if (!ep_enabled ()) {
 		result = FAILED ("event pipe disabled");
@@ -366,7 +366,7 @@ test_enable_disable_default_provider_config (void)
 
 	test_location = 3;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	if (!ep_enabled ()) {
 		result = FAILED ("event pipe disabled");
@@ -416,7 +416,7 @@ test_enable_disable_multiple_default_provider_config (void)
 
 	test_location = 3;
 
-	ep_start_streaming (session_id_1);
+	ep_start_session (session_id_1);
 
 	if (!ep_enabled ()) {
 		result = FAILED ("event pipe disabled");
@@ -449,7 +449,7 @@ test_enable_disable_multiple_default_provider_config (void)
 
 	test_location = 6;
 
-	ep_start_streaming (session_id_2);
+	ep_start_session (session_id_2);
 
 	if (!ep_enabled ()) {
 		result = FAILED ("event pipe disabled");
@@ -517,7 +517,7 @@ test_enable_disable_provider_config (void)
 
 	test_location = 7;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	if (!ep_enabled ()) {
 		result = FAILED ("event pipe disabled");
@@ -582,7 +582,7 @@ test_enable_disable_provider_parse_default_config (void)
 
 	test_location = 3;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	if (!ep_enabled ()) {
 		result = FAILED ("event pipe disabled");
@@ -650,7 +650,7 @@ test_create_delete_provider_with_callback (void)
 
 	test_location = 2;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	test_provider = ep_create_provider (TEST_PROVIDER_NAME, provider_callback, &provider_callback_data);
 	ep_raise_error_if_nok (test_provider != NULL);
@@ -752,7 +752,7 @@ test_session_start_streaming (void)
 
 	test_location = 2;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 ep_on_exit:
 	ep_disable (session_id);
@@ -797,7 +797,7 @@ test_session_write_event (void)
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
@@ -850,7 +850,7 @@ test_session_write_event_seq_point (void)
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
@@ -907,7 +907,7 @@ test_session_write_wait_get_next_event (void)
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
@@ -972,7 +972,7 @@ test_session_write_get_next_event (void)
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	// Starts as signaled.
 	// TODO: Is this expected behavior, just a way to notify observer that we are up and running?
@@ -1049,7 +1049,7 @@ test_session_write_suspend_event (void)
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventPipeEventPayload payload;;
 	ep_event_payload_init (&payload, NULL, 0);
@@ -1109,7 +1109,7 @@ test_write_event (void)
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventData data[1];
 	ep_event_data_init (&data[0], 0, 0, 0);
@@ -1160,7 +1160,7 @@ test_write_get_next_event (void)
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventData data[1];
 	ep_event_data_init (&data[0], 0, 0, 0);
@@ -1223,7 +1223,7 @@ test_write_wait_get_next_event (void)
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	// Starts as signaled.
 	// TODO: Is this expected behavior, just a way to notify observer that we are up and running?
@@ -1300,7 +1300,7 @@ test_write_event_perf (void)
 
 	test_location = 4;
 
-	ep_start_streaming (session_id);
+	ep_start_session (session_id);
 
 	EventData data[1];
 	ep_event_data_init (&data[0], 0, 0, 0);

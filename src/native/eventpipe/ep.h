@@ -208,7 +208,7 @@ bool
 ep_is_session_enabled (EventPipeSessionID session_id);
 
 void
-ep_start_streaming (EventPipeSessionID session_id);
+ep_start_session (EventPipeSessionID session_id);
 
 bool
 ep_enabled (void);

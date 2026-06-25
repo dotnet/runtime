@@ -1014,7 +1014,7 @@ eventpipe_protocol_helper_collect_tracing (
 		ep_raise_error ();
 	} else {
 		eventpipe_protocol_helper_send_start_tracing_success (stream, session_id);
-		ep_start_streaming (session_id);
+		ep_start_session (session_id);
 	}
 
 	result = true;

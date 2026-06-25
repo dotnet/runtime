@@ -1122,7 +1122,7 @@ enable_default_session_via_env_variables (void)
 			ep_rt_config_value_get_buffering_mode () != 0 ? EP_BUFFERING_MODE_BLOCK : EP_BUFFERING_MODE_DROP);
 
 		if (session_id)
-			ep_start_streaming (session_id);
+			ep_start_session (session_id);
 	}
 
 	ep_rt_utf8_string_free (ep_config_output_path);
@@ -1442,7 +1442,7 @@ ep_is_session_enabled (EventPipeSessionID session_id)
 }
 
 void
-ep_start_streaming (EventPipeSessionID session_id)
+ep_start_session (EventPipeSessionID session_id)
 {
 	ep_requires_lock_not_held ();
 

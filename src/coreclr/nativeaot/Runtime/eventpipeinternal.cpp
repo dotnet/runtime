@@ -96,7 +96,7 @@ EXTERN_C uint64_t QCALLTYPE EventPipeInternal_Enable(
         nullptr);
     ep_rt_utf8_string_free (outputPathUTF8);
 
-    ep_start_streaming(result);
+    ep_start_session(result);
 
     if (configProviders) {
         for (uint32_t i = 0; i < numProviders; ++i)
