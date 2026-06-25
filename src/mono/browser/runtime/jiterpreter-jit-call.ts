@@ -645,7 +645,9 @@ function generate_wasm_body (
     if (builder.options.enableWasmFinalEh) {
         builder.block(WasmValtype.void); // $outer
         builder.block(WasmValtype.i32); // $catch - receives the exception pointer
-        builder.tryTable(WasmValtype.void, "__cpp_exception", 1); // catch __cpp_exception -> $catch
+        // try_table catch labels are resolved in the scope surrounding the try_table (its own
+        //  block label is not counted), so depth 0 targets the immediately-enclosing $catch block.
+        builder.tryTable(WasmValtype.void, "__cpp_exception", 0); // catch __cpp_exception -> $catch
     }
 
     // Wrapper signature: [thisptr], [&retval], &arg0, ..., &funcdef
