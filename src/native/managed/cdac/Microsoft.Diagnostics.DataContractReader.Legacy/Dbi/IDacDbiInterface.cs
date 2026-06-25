@@ -111,6 +111,13 @@ public struct DacDbiExceptionCallStackData
 }
 
 [StructLayout(LayoutKind.Sequential)]
+public struct AsyncLocalData
+{
+    public uint Offset;
+    public uint IlVarNum;
+}
+
+[StructLayout(LayoutKind.Sequential)]
 public struct COR_HEAPINFO
 {
     public Interop.BOOL areGCStructuresValid;
@@ -126,6 +133,16 @@ public struct COR_HEAPOBJECT
     public ulong address;
     public ulong size;
     public COR_TYPEID type;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct DacGcReference
+{
+    [FieldOffset(0)] public ulong vmDomain;
+    [FieldOffset(8)] public ulong pObject;
+    [FieldOffset(8)] public ulong objHnd;
+    [FieldOffset(16)] public CorGCReferenceType dwType;
+    [FieldOffset(24)] public ulong i64ExtraData;
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -314,6 +331,20 @@ public unsafe struct ArgInfoList
     public int m_nEntries;
 }
 
+[StructLayout(LayoutKind.Sequential, Size = 48)]
+public struct DebuggerIPCE_TypeArgData
+{
+    public DebuggerIPCE_ExpandedTypeData data;
+    public uint numTypeArgs; // Portable<UINT>
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct TypeInfoList
+{
+    public DebuggerIPCE_TypeArgData* m_pList;
+    public int m_nEntries;
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public struct DacDbiArrayInfo
 {
@@ -367,6 +398,19 @@ public enum CorDebugGenerationTypes
 public enum IlNum : int
 {
     TYPECTXT_ILNUM = -3,
+}
+
+[Flags]
+public enum CorGCReferenceType : uint
+{
+    CorHandleStrong = 1 << 0,
+    CorHandleStrongPinning = 1 << 1,
+    CorHandleWeakShort = 1 << 2,
+    CorHandleWeakLong = 1 << 3,
+    CorHandleWeakRefCount = 1 << 4,
+    CorHandleStrongRefCount = 1 << 5,
+    CorHandleStrongDependent = 1 << 6,
+    CorReferenceStack = 0x80000001,
 }
 
 public enum CorDebugSetContextFlags
@@ -595,7 +639,7 @@ public unsafe partial interface IDacDbiInterface
     int GetTypeHandle(ulong vmModule, uint metadataToken, ulong* pRetVal);
 
     [PreserveSig]
-    int GetApproxTypeHandle(nint pTypeData, ulong* pRetVal);
+    int GetApproxTypeHandle(TypeInfoList* pTypeData, ulong* pRetVal);
 
     [PreserveSig]
     int GetExactTypeHandle(DebuggerIPCE_ExpandedTypeData* pTypeData, ArgInfoList* pArgInfo, ulong* pVmTypeHandle);
@@ -672,7 +716,7 @@ public unsafe partial interface IDacDbiInterface
     int GetAttachStateFlags(int* pRetVal);
 
     [PreserveSig]
-    int GetMetaDataFileInfoFromPEFile(ulong vmPEAssembly, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, Interop.BOOL* pResult);
+    int GetModuleMetaDataFileInfo(ulong vmModule, uint* dwTimeStamp, uint* dwImageSize, nint pStrFilename, Interop.BOOL* pResult);
 
     [PreserveSig]
     int IsThreadSuspendedOrHijacked(ulong vmThread, Interop.BOOL* pResult);
@@ -693,13 +737,13 @@ public unsafe partial interface IDacDbiInterface
     int IsValidObject(ulong obj, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, Interop.BOOL walkFQ, uint handleWalkMask);
+    int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, CorGCReferenceType handleWalkMask);
 
     [PreserveSig]
     int DeleteRefWalk(nuint handle);
 
     [PreserveSig]
-    int WalkRefs(nuint handle, uint count, nint refs, uint* pFetched);
+    int WalkRefs(nuint handle, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] DacGcReference[] refs, uint* pFetched);
 
     [PreserveSig]
     int GetTypeID(ulong obj, COR_TYPEID* pType);
@@ -768,7 +812,8 @@ public unsafe partial interface IDacDbiInterface
     int ParseContinuation(ulong continuationAddress, ulong* pDiagnosticIP, ulong* pNextContinuation, uint* pState);
 
     [PreserveSig]
-    int GetAsyncLocals(ulong vmMethod, ulong codeAddr, uint state, nint pAsyncLocals);
+    int EnumerateAsyncLocals(ulong vmMethod, ulong codeAddr, uint state,
+        delegate* unmanaged<AsyncLocalData*, nint, void> fpCallback, nint pUserData);
 
     [PreserveSig]
     int GetGenericArgTokenIndex(ulong vmMethod, uint* pIndex);

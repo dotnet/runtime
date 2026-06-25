@@ -2993,8 +2993,7 @@ public:
     IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly);
 
     // Helper functions for LookupMetaData implementation
-    IMDInternalImport * LookupMetaDataFromDebugger(VMPTR_PEAssembly vmPEAssembly,
-                                                   CordbModule * pModule);
+    IMDInternalImport * LookupMetaDataFromDebugger(CordbModule * pModule);
 
     IMDInternalImport * LookupMetaDataFromDebuggerForSingleFile(CordbModule * pModule,
                                                                 LPCWSTR pwszImagePath,
@@ -10613,7 +10612,7 @@ public:
 
 private:
     RefWalkHandle mRefHandle;
-    BOOL mEnumStacksFQ;
+    BOOL mEnumStacks;
     UINT32 mHandleMask;
 };
 
@@ -11427,8 +11426,7 @@ class CordbAsyncFrame : public CordbBase, public ICorDebugILFrame, public ICorDe
     CORDB_ADDRESS m_diagnosticIP;
     CORDB_ADDRESS m_continuationAddress;
     UINT32 m_state;
-    int m_nNumberOfVars;
-    DacDbiArrayList<AsyncLocalData> m_asyncVars;
+    CQuickArrayList<AsyncLocalData> m_asyncVars;
 
     Instantiation     m_genericArgs;        // the generics type arguments
     BOOL              m_genericArgsLoaded;  // whether we have loaded and cached the generics type arguments

@@ -296,7 +296,7 @@ IMetaDataImport * CordbModule::GetMetaDataImporter()
         // Since we've already done everything possible from the Module anyhow, just call the
         // stuff that talks to the debugger.
         // Don't do anything with the ptr returned here, since it's really m_pInternalMetaDataImport.
-        pProcess->LookupMetaDataFromDebugger(m_vmPEFile, this);
+        pProcess->LookupMetaDataFromDebugger(this);
     }
 
     // If we still can't get it, throw.
@@ -788,10 +788,10 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
         StringCopyHolder filePath;
 
 
-        _ASSERTE(!m_vmPEFile.IsNull());
+        _ASSERTE(!m_vmModule.IsNull());
         // MetaData lookup favors the NGEN image, which is what we want here.
         BOOL _mdFileInfoResult;
-        IfFailThrow(this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
+        IfFailThrow(this->GetProcess()->GetDAC()->GetModuleMetaDataFileInfo(m_vmModule,
                                                                          &dwImageTimeStamp,
                                                                          &dwImageSize,
                                                                          &filePath,
@@ -1175,9 +1175,9 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_
             DWORD dwImageSize = 0;      // unused
             StringCopyHolder filePath;
 
-            _ASSERTE(!m_vmPEFile.IsNull());
+            _ASSERTE(!m_vmModule.IsNull());
             BOOL _mdFileInfoResult;
-            IfFailThrow(this->GetProcess()->GetDAC()->GetMetaDataFileInfoFromPEFile(m_vmPEFile,
+            IfFailThrow(this->GetProcess()->GetDAC()->GetModuleMetaDataFileInfo(m_vmModule,
                                                                              &dwImageTimeStamp,
                                                                              &dwImageSize,
                                                                              &filePath,

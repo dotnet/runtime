@@ -42,7 +42,15 @@ WARNING:   When setting properties based on their current state (for example:
     <Error Text="Setting both AlwaysUseCrossGen2 to true and CrossGenTest to false is non-sensical" Condition="'$(CrossGenTest)' == 'false' and '$(AlwaysUseCrossGen2)' == 'true'"/>
 
     <PropertyGroup>
-      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
+      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(R2RIncompatible)' == 'true'">
+        <![CDATA[
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  echo SKIPPING EXECUTION BECAUSE the test is incompatible with ReadyToRun
+  exit 0
+fi
+        ]]>
+      </CrossgenBashScript>
+      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false' and '$(R2RIncompatible)' != 'true'">
         <![CDATA[
 
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
@@ -229,7 +237,16 @@ fi
 
   <Target Name="GetCrossgenBatchScript">
     <PropertyGroup>
-      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
+      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(R2RIncompatible)' == 'true'">
+        <![CDATA[
+IF NOT "%RunCrossGen2%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with ReadyToRun
+  popd
+  Exit /b 0
+)
+        ]]>
+      </CrossgenBatchScript>
+      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false' and '$(R2RIncompatible)' != 'true'">
         <![CDATA[
 
 if /i "$(AlwaysUseCrossGen2)" == "true" (

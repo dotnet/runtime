@@ -139,7 +139,7 @@ internal partial class StackWalk_1 : IStackWalk
     private void SetupContext(IPlatformAgnosticContext context, FrameIterator frameIterator, StackWalkState state, ref bool isFirst, out bool matchedIsInterrupted)
     {
         TargetPointer curSP = context.StackPointer;
-        TargetPointer curPc = context.InstructionPointer;
+        TargetCodePointer curPc = context.InstructionPointer;
         TargetPointer curFP = context.FramePointer;
         if (state == StackWalkState.Frameless)
         {
@@ -246,7 +246,7 @@ internal partial class StackWalk_1 : IStackWalk
         }
     }
 
-    IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData)
+    IReadOnlyList<StackReferenceData> IStackWalk.WalkStackReferences(ThreadData threadData, bool resolveInteriorPointers)
     {
         // Initialize the walk data directly
         IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
@@ -273,7 +273,7 @@ internal partial class StackWalk_1 : IStackWalk
         if (walkData.State == StackWalkState.Frameless && CheckForSkippedFrames(walkData))
             walkData.State = StackWalkState.SkippedFrame;
 
-        GcScanContext scanContext = new(_target, resolveInteriorPointers: false);
+        GcScanContext scanContext = new(_target, resolveInteriorPointers);
 
         // Filter drives Next() directly, matching native Filter()+NextRaw() integration.
         // This prevents funclet-to-parent transitions from re-visiting already-walked frames.
@@ -361,6 +361,7 @@ internal partial class StackWalk_1 : IStackWalk
         return scanContext.StackRefs.Select(r => new StackReferenceData
         {
             HasRegisterInformation = r.HasRegisterInformation,
+            IsInteriorPointer = r.IsInteriorPointer,
             Register = r.Register,
             Offset = r.Offset,
             Address = r.Address,
@@ -398,7 +399,7 @@ internal partial class StackWalk_1 : IStackWalk
             // and the previous (nested) ExInfo; GCReportCallback reads the object through that slot.
             // ExInfo lives on the stack but is not a Frame, so it is treated specially here.
             exceptionContract.GetNestedExceptionInfo(pExInfo, out TargetPointer previous, out TargetPointer thrownObjectSlot);
-            scanContext.UpdateScanContext(pExInfo, TargetPointer.Null, pExInfo, StackRefData.SourceTypes.StackSourceOther);
+            scanContext.UpdateScanContext(pExInfo, TargetCodePointer.Null, pExInfo, StackRefData.SourceTypes.StackSourceOther);
             scanContext.GCReportCallback(thrownObjectSlot, GcScanFlags.None);
             pExInfo = previous;
         }
@@ -420,7 +421,7 @@ internal partial class StackWalk_1 : IStackWalk
             Data.GCFrame gcFrame = _target.ProcessedData.GetOrAdd<Data.GCFrame>(pGCFrame);
 
             // A GCFrame node lives on the stack but is a separate chain from the explicit Frame chain.
-            scanContext.UpdateScanContext(pGCFrame, TargetPointer.Null, pGCFrame, StackRefData.SourceTypes.StackSourceOther);
+            scanContext.UpdateScanContext(pGCFrame, TargetCodePointer.Null, pGCFrame, StackRefData.SourceTypes.StackSourceOther);
             GcScanFlags flags = (GcScanFlags)gcFrame.GCFlags;
             for (uint i = 0; i < gcFrame.NumObjRefs; i++)
             {
@@ -847,8 +848,8 @@ internal partial class StackWalk_1 : IStackWalk
             case StackWalkState.InitialNativeContext:
             case StackWalkState.NativeMarker:
             {
-                TargetPointer ip = handle.Context.InstructionPointer;
-                HijackKind hijackKind = _target.Contracts.Debugger.GetHijackKind(new TargetCodePointer(ip.Value));
+                TargetCodePointer ip = handle.Context.InstructionPointer;
+                HijackKind hijackKind = _target.Contracts.Debugger.GetHijackKind(ip);
                 if (hijackKind != HijackKind.None)
                 {
                     IPlatformAgnosticContext recoveredContext = RetrieveHijackedContext(handle.Context, hijackKind == HijackKind.UnhandledException);
@@ -872,9 +873,9 @@ internal partial class StackWalk_1 : IStackWalk
                 // pInlinedFrame is set only for active InlinedCallFrames.
                 {
                     var frameType = handle.FrameIter.GetCurrentFrameType();
-                    TargetPointer returnAddress = handle.FrameIter.GetCurrentReturnAddress();
+                    TargetCodePointer returnAddress = handle.FrameIter.GetCurrentReturnAddress();
                     bool isActiveICF = frameType == FrameType.InlinedCallFrame
-                                       && returnAddress != TargetPointer.Null;
+                                       && returnAddress != TargetCodePointer.Null;
 
                     // Record the frame type so UpdateState can detect exception frames
                     // and set IsInterrupted when transitioning to the managed frame.
@@ -1048,7 +1049,7 @@ internal partial class StackWalk_1 : IStackWalk
         return TargetPointer.Null;
     }
 
-    TargetPointer IStackWalk.GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
+    TargetCodePointer IStackWalk.GetInstructionPointer(IStackDataFrameHandle stackDataFrameHandle)
     {
         StackDataFrameHandle handle = AssertCorrectHandle(stackDataFrameHandle);
         return handle.Context.InstructionPointer;
@@ -1084,8 +1085,8 @@ internal partial class StackWalk_1 : IStackWalk
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
                 Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(framePtr);
-                TargetPointer returnAddress = icf.CallerReturnAddress;
-                if (returnAddress != TargetPointer.Null && _eman.GetCodeBlockHandle(returnAddress.Value) is CodeBlockHandle cbh)
+                TargetCodePointer returnAddress = icf.CallerReturnAddress;
+                if (returnAddress != TargetCodePointer.Null && _eman.GetCodeBlockHandle(returnAddress) is CodeBlockHandle cbh)
                 {
                     MethodDescHandle returnMethodDesc = rts.GetMethodDescHandle(_eman.GetMethodDesc(cbh));
                     reportInteropMD = rts.HasMDContextArg(returnMethodDesc);
@@ -1211,10 +1212,9 @@ internal partial class StackWalk_1 : IStackWalk
         return TargetPointer.Null;
     }
 
-    private bool IsManaged(TargetPointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)
+    private bool IsManaged(TargetCodePointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)
     {
-        TargetCodePointer codePointer = CodePointerUtils.CodePointerFromAddress(ip, _target);
-        if (_eman.GetCodeBlockHandle(codePointer) is CodeBlockHandle cbh && cbh.Address != TargetPointer.Null)
+        if (_eman.GetCodeBlockHandle(ip) is CodeBlockHandle cbh && cbh.Address != TargetPointer.Null)
         {
             codeBlockHandle = cbh;
             return true;
@@ -1253,9 +1253,9 @@ internal partial class StackWalk_1 : IStackWalk
     /// <summary>
     /// Checks if the given IP is in interpreter-managed code (CodeKind.Interpreter).
     /// </summary>
-    private bool IsInterpreterCode(TargetPointer ip)
+    private bool IsInterpreterCode(TargetCodePointer ip)
     {
-        return _eman.GetCodeKind(new TargetCodePointer(ip)) == CodeKind.Interpreter;
+        return _eman.GetCodeKind(ip) == CodeKind.Interpreter;
     }
 
     #endregion Interpreter
