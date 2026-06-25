@@ -104,8 +104,8 @@ namespace ILCompiler
             // directly encoded as part of the required ISAs.
             bool isVectorTOptimistic = false;
 
-            TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
-            TargetOS targetOS = Get(_command.TargetOS);
+            (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
+                Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 "Unrecognized instruction set {0}", "Unsupported combination of instruction sets: {0}/{1}", logger,
                 allowOptimistic: _command.OptimizationMode != OptimizationMode.PreferSize,
@@ -122,37 +122,13 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
             var simdVectorLength = instructionSetSupport.GetVectorTSimdVector();
-            var targetAbi = ILCompilerRootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, simdVectorLength);
             CompilerTypeSystemContext typeSystemContext =
                 new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0,
                     genericCycleDepthCutoff: Get(_command.MaxGenericCycleDepth),
                     genericCycleBreadthCutoff: Get(_command.MaxGenericCycleBreadth));
 
-            //
-            // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
-            // some tests contain a mixture of both managed and native binaries.
-            //
-            // See: https://github.com/dotnet/corert/issues/2785
-            //
-            // When we undo this hack, replace the foreach with
-            //  typeSystemContext.InputFilePaths = _command.Result.GetValueForArgument(inputFilePaths);
-            //
-            Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
-            foreach (var inputFile in _command.Result.GetValue(_command.InputFilePaths))
-            {
-                try
-                {
-                    var module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-                    inputFilePaths.Add(inputFile.Key, inputFile.Value);
-                }
-                catch (TypeSystemException.BadImageFormatException)
-                {
-                    // Keep calm and carry on.
-                }
-            }
-
-            typeSystemContext.InputFilePaths = inputFilePaths;
+            typeSystemContext.InputFilePaths = _command.Result.GetValue(_command.InputFilePaths);
             typeSystemContext.ReferenceFilePaths = Get(_command.ReferenceFiles);
             if (!typeSystemContext.InputFilePaths.ContainsKey(systemModuleName)
                 && !typeSystemContext.ReferenceFilePaths.ContainsKey(systemModuleName))
@@ -263,7 +239,24 @@ namespace ILCompiler
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(settingsBlobName, runtimeOptions));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(knobsBlobName, runtimeKnobs));
                     compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
-                    if (SplitExeInitialization)
+
+                    string[] aggregateExeModules = Get(_command.AggregateExeLibrary);
+                    if (aggregateExeModules.Length > 0)
+                    {
+                        foreach (string specifier in aggregateExeModules)
+                        {
+                            int separatorIndex = specifier.IndexOf('=');
+                            if (separatorIndex < 0)
+                                throw new CommandLineException($"Invalid format for --aggregateexe: '{specifier}'. Missing '=' separator between assemblyName and MainEntryPointName. Expected format: assemblyName=MainEntryPointName.");
+
+                            if (separatorIndex == 0 || separatorIndex != specifier.LastIndexOf('=') || separatorIndex == specifier.Length - 1)
+                                throw new CommandLineException($"Invalid format for --aggregateexe: '{specifier}'. Expected format: assemblyName=MainEntryPointName with non-empty assemblyName and MainEntryPointName.");
+
+                            EcmaModule module = typeSystemContext.GetModuleForSimpleName(specifier.Substring(0, separatorIndex));
+                            compilationRoots.Add(new MainMethodRootProvider(module, null, generateLibraryAndModuleInitializers: false, specifier.Substring(separatorIndex + 1)));
+                        }
+                    }
+                    else if (SplitExeInitialization)
                     {
                         compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext), generateLibraryAndModuleInitializers: false));
                     }
@@ -279,6 +272,8 @@ namespace ILCompiler
                         compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
                     }
                 }
+
+                compilationRoots.Add(new ManagedDataDescriptorProvider());
 
                 string win32resourcesModule = Get(_command.Win32ResourceModuleName);
                 if (typeSystemContext.Target.IsWindows && !string.IsNullOrEmpty(win32resourcesModule))
@@ -667,7 +662,7 @@ namespace ILCompiler
                     foreach (var compilationRoot in compilationRoots)
                     {
                         if (compilationRoot is UnmanagedEntryPointsRootProvider provider && !provider.Hidden)
-                            defFileWriter.AddExportedMethods(provider.ExportedMethods);
+                            defFileWriter.AddExportedMethods(provider.ExportedMethods, compilationResults);
                     }
                 }
 

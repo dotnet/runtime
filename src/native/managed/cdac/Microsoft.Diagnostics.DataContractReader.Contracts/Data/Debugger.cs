@@ -3,21 +3,16 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class Debugger : IData<Debugger>
+[CdacType(nameof(DataType.Debugger))]
+internal sealed partial class Debugger : IData<Debugger>
 {
-    static Debugger IData<Debugger>.Create(Target target, TargetPointer address)
-        => new Debugger(target, address);
+    [Field] public int LeftSideInitialized { get; }
+    [Field] public uint Defines { get; }
+    [Field] public uint MDStructuresVersion { get; }
+    [Field] public TargetPointer RCThread { get; }
 
-    public Debugger(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.Debugger);
-
-        LeftSideInitialized = target.Read<int>(address + (ulong)type.Fields[nameof(LeftSideInitialized)].Offset);
-        Defines = target.Read<uint>(address + (ulong)type.Fields[nameof(Defines)].Offset);
-        MDStructuresVersion = target.Read<uint>(address + (ulong)type.Fields[nameof(MDStructuresVersion)].Offset);
-    }
-
-    public int LeftSideInitialized { get; init; }
-    public uint Defines { get; init; }
-    public uint MDStructuresVersion { get; init; }
+    [Field(Writable = true)] public int RSRequestedSync { get; private set; }
+    [Field(Writable = true)] public int SendExceptionsOutsideOfJMC { get; private set; }
+    [Field(Writable = true)] public int GCNotificationEventsEnabled { get; private set; }
+    [Field] public TargetPointer RgHijackFunction { get; }
 }

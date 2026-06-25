@@ -3,22 +3,11 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class GCAllocContext : IData<GCAllocContext>
+[CdacType(nameof(DataType.GCAllocContext))]
+internal sealed partial class GCAllocContext : IData<GCAllocContext>
 {
-    static GCAllocContext IData<GCAllocContext>.Create(Target target, TargetPointer address)
-        => new GCAllocContext(target, address);
-
-    public GCAllocContext(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.GCAllocContext);
-        Pointer = target.ReadPointer(address + (ulong)type.Fields[nameof(Pointer)].Offset);
-        Limit = target.ReadPointer(address + (ulong)type.Fields[nameof(Limit)].Offset);
-        AllocBytes = target.Read<long>(address + (ulong)type.Fields[nameof(AllocBytes)].Offset);
-        AllocBytesLoh = target.Read<long>(address + (ulong)type.Fields[nameof(AllocBytesLoh)].Offset);
-    }
-
-    public TargetPointer Pointer { get; init; }
-    public TargetPointer Limit { get; init; }
-    public long AllocBytes { get; init; }
-    public long AllocBytesLoh { get; init; }
+    [Field] public TargetPointer Pointer { get; }
+    [Field] public TargetPointer Limit { get; }
+    [Field] public long AllocBytes { get; }
+    [Field] public long AllocBytesLoh { get; }
 }

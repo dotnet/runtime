@@ -3,16 +3,8 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class RegionFreeList : IData<RegionFreeList>
+[CdacType(nameof(DataType.RegionFreeList))]
+internal sealed partial class RegionFreeList : IData<RegionFreeList>
 {
-    static RegionFreeList IData<RegionFreeList>.Create(Target target, TargetPointer address)
-        => new RegionFreeList(target, address);
-
-    public RegionFreeList(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.RegionFreeList);
-        HeadFreeRegion = target.ReadPointer(address + (ulong)type.Fields[nameof(HeadFreeRegion)].Offset);
-    }
-
-    public TargetPointer HeadFreeRegion { get; init; }
+    [Field] public TargetPointer HeadFreeRegion { get; }
 }

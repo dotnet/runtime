@@ -33,7 +33,9 @@ PALEXPORT int32_t SystemNative_ForkAndExecProcess(
                    int32_t stdoutFd,       // the fd for the child's stdout
                    int32_t stderrFd,       // the fd for the child's stderr
                    int32_t* inheritedFds,  // array of fds to explicitly inherit (-1 to disable restriction)
-                   int32_t inheritedFdCount); // count of fds in inheritedFds; -1 means no restriction
+                   int32_t inheritedFdCount, // count of fds in inheritedFds; -1 means no restriction
+                   int32_t startDetached,  // whether to start the process as a leader of a new session
+                   int32_t killOnParentExit); // whether to kill the child when the parent exits
 
 /************
  * The values below in the header are fixed and correct for managed callers to use forever.
@@ -185,8 +187,12 @@ PALEXPORT int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(void);
  * 2) if pid is not a child or there are no unwaited-for children, -1 is returned (errno=ECHILD)
  * 3) if the child has not yet terminated, 0 is returned
  * 4) on error, -1 is returned.
+ *
+ * exitCode: set to WEXITSTATUS on normal exit, or 128 + signal number on signal termination.
+ * terminatingSignal: set to 0 on normal exit, or the PosixSignal value on signal termination.
+ *                    For signals not in the known PosixSignal set, this is the raw signal number.
  */
-PALEXPORT int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode);
+PALEXPORT int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal);
 
 /**
  * Gets the configurable limit or variable for system path or file descriptor options.

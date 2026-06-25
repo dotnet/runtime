@@ -21,7 +21,6 @@
 #include "method.hpp"
 #include "class.h"
 #include "runtimecallablewrapper.h"
-#include "olevariant.h"
 #include "cachelinealloc.h"
 #include "threads.h"
 #include "ceemain.h"
@@ -292,7 +291,7 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
 //--------------------------------------------------------------------------
 extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
 {
-    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
@@ -305,6 +304,11 @@ extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
     {
         return pMarshalInfo->GetReturnStubForHResult(E_OUTOFMEMORY);
     }
+
+    // The below "INSTALL_" macros ensure exceptions don't escape,
+    // but the macros do not update the contract state for the thread, so
+    // we manually indicate that here.
+    BEGIN_CONTRACT_VIOLATION(ThrowsViolation);
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -326,6 +330,8 @@ extern "C" PCODE ComPreStubWorker(UMEntryThunkData* pEntryThunk)
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    END_CONTRACT_VIOLATION;
 
     return pStub;
 }
@@ -2250,7 +2256,7 @@ static IUnknown * GetComIPFromCCW_ForIID_Worker(
         {
             // Make sure the all the base classes of the class this IClassX corresponds to
             // are visible to COM.
-            pIntfComMT->CheckParentComVisibility(FALSE);
+            pIntfComMT->CheckParentComVisibility();
 
             // Giveout IClassX of this class because the IID matches one of the IClassX in the hierarchy
             // This assumes any IClassX implementation must be derived from base class IClassX's implementation
@@ -2298,7 +2304,7 @@ static IUnknown *GetComIPFromCCW_ForIntfMT_Worker(ComCallWrapper *pWrap, MethodT
             {
                 // Make sure the all the base classes of the class this IClassX corresponds to
                 // are visible to COM.
-                pIntfComMT->CheckParentComVisibility(FALSE);
+                pIntfComMT->CheckParentComVisibility();
 
                 // Giveout IClassX
                 IUnknown * pIntf = pWrap->GetIClassXIP();
@@ -2584,7 +2590,7 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
         // Make sure we release the BasicIP we're about to get.
         SafeComHolder<IUnknown> pBasic = GetBasicIP();
         ComMethodTable* pCMT = ComMethodTable::ComMethodTableFromIP(pBasic);
-        pCMT->CheckParentComVisibility(TRUE);
+        pCMT->CheckParentComVisibility();
     }
 
     // If the class implements IReflect then use the IDispatchEx implementation.
@@ -3216,7 +3222,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
     // to access empty slots quickly and, during cleanup, we can tell empty
     // slots from full ones.
     if (m_pMT->IsSparseForCOMInterop())
-        memset(pUnkVtable + cbExtraSlots, -1, m_cbSlots * sizeof(SLOT));
+        memset(((SLOT*)pUnkVtable) + cbExtraSlots, -1, m_cbSlots * sizeof(SLOT));
 
     // Method descs are at the end of the vtable
     // m_cbSlots interfaces methods + IUnk methods
@@ -3789,7 +3795,7 @@ BOOL ComCallWrapperTemplate::IsSafeTypeForMarshalling()
 // Checks to see if the parent of the current class interface is visible to COM.
 // Throws an InvalidOperationException if not.
 //--------------------------------------------------------------------------
-void ComCallWrapperTemplate::CheckParentComVisibility(BOOL fForIDispatch)
+void ComCallWrapperTemplate::CheckParentComVisibility()
 {
     CONTRACTL
     {
@@ -3799,9 +3805,8 @@ void ComCallWrapperTemplate::CheckParentComVisibility(BOOL fForIDispatch)
     }
     CONTRACTL_END;
 
-
     // Throw an exception to report the error.
-    if (!CheckParentComVisibilityNoThrow(fForIDispatch))
+    if (HasInvisibleParent())
     {
         ComCallWrapperTemplate *invisParent = FindInvisibleParent();
         _ASSERTE(invisParent != NULL);
@@ -3812,24 +3817,6 @@ void ComCallWrapperTemplate::CheckParentComVisibility(BOOL fForIDispatch)
         TypeString::AppendType(invisParentType, invisParent->m_thClass);
         COMPlusThrow(kInvalidOperationException, IDS_EE_COM_INVISIBLE_PARENT, thisType.GetUnicode(), invisParentType.GetUnicode());
     }
-}
-
-BOOL ComCallWrapperTemplate::CheckParentComVisibilityNoThrow(BOOL fForIDispatch)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-
-    // If the parent is visible to COM then everything is ok.
-    if (!HasInvisibleParent())
-        return TRUE;
-
-    return FALSE;
 }
 
 DefaultInterfaceType ComCallWrapperTemplate::GetDefaultInterface(MethodTable **ppDefaultItf)
@@ -4220,6 +4207,69 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForBasic(MethodTable
 }
 
 //--------------------------------------------------------------------------
+// Returns TRUE if the parent's ComMethodTable for pItfMT can be reused for
+// pClassMT. This requires that no class between pClassMT and pParentMT has
+// re-implemented pItfMT in its dispatch map, and that the interface methods
+// resolve to the same MethodDescs on both pClassMT and pParentMT.
+//--------------------------------------------------------------------------
+static bool CanShareComMethodTableWithParent(MethodTable* pClassMT, MethodTable* pParentMT, MethodTable* pItfMT)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(pClassMT != NULL && !pClassMT->IsInterface());
+        PRECONDITION(pParentMT != NULL && !pParentMT->IsInterface());
+        PRECONDITION(pItfMT != NULL && pItfMT->IsInterface());
+    }
+    CONTRACTL_END;
+
+    // Check for explicit interface re-implementations in the dispatch map.
+    MethodTable* pMT = pClassMT;
+    do
+    {
+        DispatchMap::EncodedMapIterator mapIt(pMT);
+        for (; mapIt.IsValid(); mapIt.Next())
+        {
+            DispatchMapEntry *pEntry = mapIt.Entry();
+            if (pMT->DispatchMapTypeMatchesMethodTable(pEntry->GetTypeID(), pItfMT))
+            {
+                return false;
+            }
+        }
+
+        pMT = pMT->GetParentMethodTable();
+        _ASSERTE(pMT != NULL);
+    }
+    while (pMT != pParentMT);
+
+    // Check that interface methods resolve to the same MethodDescs on both
+    // this class and pParentMT. With the baked-in dispatch target model, the
+    // ComMethodTable stores the resolved MethodDesc at layout time, so the
+    // table can only be shared if the targets are identical.
+    for (unsigned i = 0; i < pItfMT->GetNumVirtuals(); i++)
+    {
+        MethodDesc *pItfMD = pItfMT->GetMethodDescForSlot_NoThrow(i);
+        _ASSERTE(pItfMD != NULL);
+
+        if (pItfMD->IsAsyncMethod())
+            continue;
+
+        DispatchSlot childSlot(pClassMT->FindDispatchSlotForInterfaceMD(pItfMD, FALSE /* throwOnConflict */));
+        DispatchSlot parentSlot(pParentMT->FindDispatchSlotForInterfaceMD(pItfMD, FALSE /* throwOnConflict */));
+
+        if (childSlot.IsNull() || parentSlot.IsNull())
+            return false;
+
+        if (childSlot.GetMethodDesc() != parentSlot.GetMethodDesc())
+            return false;
+    }
+
+    return true;
+}
+
+//--------------------------------------------------------------------------
 // Creates a ComMethodTable for an interface and stores it in the m_rgpIPtr array.
 //--------------------------------------------------------------------------
 ComMethodTable *ComCallWrapperTemplate::InitializeForInterface(MethodTable *pParentMT, MethodTable *pItfMT, DWORD dwIndex)
@@ -4235,22 +4285,16 @@ ComMethodTable *ComCallWrapperTemplate::InitializeForInterface(MethodTable *pPar
     ComMethodTable *pItfComMT = NULL;
     if (m_pParent != NULL)
     {
-        pItfComMT = m_pParent->GetComMTForItf(pItfMT);
-        if (pItfComMT != NULL)
+        // Check if we can reuse the parent's ComMethodTable for this interface.
+        ComMethodTable* pParentComMT = m_pParent->GetComMTForItf(pItfMT);
+        if (pParentComMT != NULL && CanShareComMethodTableWithParent(m_thClass.GetMethodTable(), pParentMT, pItfMT))
         {
-            // if the parent COM MT is not a trivial aggregate, simple MethodTable slot check is enough
-            if (!m_thClass.GetMethodTable()->ImplementsInterfaceWithSameSlotsAsParent(pItfMT, pParentMT))
-            {
-                // the interface is implemented by parent but this class reimplemented
-                // its method(s) so we will need to build a new COM vtable for it
-                pItfComMT = NULL;
-            }
+            pItfComMT = pParentComMT;
         }
     }
 
     if (pItfComMT == NULL)
     {
-        // we couldn't use parent's vtable so we create a new one
         pItfComMT = CreateComMethodTableForInterface(pItfMT);
     }
 
