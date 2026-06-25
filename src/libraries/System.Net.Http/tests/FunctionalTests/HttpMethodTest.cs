@@ -9,24 +9,19 @@ namespace System.Net.Http.Functional.Tests
 {
     public class HttpMethodTest
     {
-        public static IEnumerable<object[]> StaticHttpMethods { get;  }
-
-        static HttpMethodTest()
+        public static readonly List<HttpMethod> StaticHttpMethods = new List<HttpMethod>
         {
-            List<object[]> staticHttpMethods = new List<object[]>
-            {
-                new object[] { HttpMethod.Get },
-                new object[] { HttpMethod.Put },
-                new object[] { HttpMethod.Post },
-                new object[] { HttpMethod.Delete },
-                new object[] { HttpMethod.Head },
-                new object[] { HttpMethod.Options },
-                new object[] { HttpMethod.Trace },
-                new object[] { HttpMethod.Query }
-            };
-            AddStaticHttpMethods(staticHttpMethods);
-            StaticHttpMethods = staticHttpMethods;
-        }
+            HttpMethod.Connect,
+            HttpMethod.Delete,
+            HttpMethod.Get,
+            HttpMethod.Head,
+            HttpMethod.Options,
+            HttpMethod.Patch,
+            HttpMethod.Post,
+            HttpMethod.Put,
+            HttpMethod.Query,
+            HttpMethod.Trace,
+        };
 
         [Fact]
         public void StaticProperties_VerifyValues_PropertyNameMatchesHttpMethodName()
@@ -116,11 +111,13 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(input.ToUpperInvariant().GetHashCode(), method.GetHashCode());
         }
 
-        [Theory]
-        [MemberData(nameof(StaticHttpMethods))]
-        public void GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode(HttpMethod method)
+        [Fact]
+        public void GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode()
         {
-            Assert.Equal(method.ToString().ToUpperInvariant().GetHashCode(), method.GetHashCode());
+            foreach (HttpMethod method in StaticHttpMethods)
+            {
+                Assert.Equal(method.ToString().ToUpperInvariant().GetHashCode(), method.GetHashCode());
+            }
         }
 
         [Fact]
@@ -152,27 +149,16 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal("PATCH", HttpMethod.Patch.Method);
         }
 
-        public static IEnumerable<object[]> Parse_UsesKnownInstances_MemberData()
+        [Fact]
+        public void Parse_KnownMethod_UsesKnownInstances()
         {
-            yield return new object[] { HttpMethod.Connect, nameof(HttpMethod.Connect) };
-            yield return new object[] { HttpMethod.Delete, nameof(HttpMethod.Delete) };
-            yield return new object[] { HttpMethod.Get, nameof(HttpMethod.Get) };
-            yield return new object[] { HttpMethod.Head, nameof(HttpMethod.Head) };
-            yield return new object[] { HttpMethod.Options, nameof(HttpMethod.Options) };
-            yield return new object[] { HttpMethod.Patch, nameof(HttpMethod.Patch) };
-            yield return new object[] { HttpMethod.Post, nameof(HttpMethod.Post) };
-            yield return new object[] { HttpMethod.Put, nameof(HttpMethod.Put) };
-            yield return new object[] { HttpMethod.Query, nameof(HttpMethod.Query) };
-            yield return new object[] { HttpMethod.Trace, nameof(HttpMethod.Trace) };
-        }
-
-        [Theory]
-        [MemberData(nameof(Parse_UsesKnownInstances_MemberData))]
-        public void Parse_KnownMethod_UsesKnownInstances(HttpMethod method, string methodName)
-        {
-            Assert.Same(method, HttpMethod.Parse(methodName));
-            Assert.Same(method, HttpMethod.Parse(methodName.ToUpperInvariant()));
-            Assert.Same(method, HttpMethod.Parse(methodName.ToLowerInvariant()));
+            foreach (HttpMethod method in StaticHttpMethods)
+            {
+                string methodName = method.Method;
+                Assert.Same(method, HttpMethod.Parse(methodName));
+                Assert.Same(method, HttpMethod.Parse(methodName.ToUpperInvariant()));
+                Assert.Same(method, HttpMethod.Parse(methodName.ToLowerInvariant()));
+            }
         }
 
         [Theory]
@@ -201,11 +187,6 @@ namespace System.Net.Http.Functional.Tests
         public void Parse_InvalidToken_Throws(string method)
         {
             Assert.Throws<FormatException>(() => HttpMethod.Parse(method));
-        }
-
-        private static void AddStaticHttpMethods(List<object[]> staticHttpMethods)
-        {
-            staticHttpMethods.Add(new object[] { HttpMethod.Patch });
         }
     }
 }
