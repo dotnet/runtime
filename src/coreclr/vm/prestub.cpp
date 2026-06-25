@@ -502,6 +502,32 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
     return pCode;
 }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(HasUnmanagedCallersOnlyAttribute());
+
+#ifdef FEATURE_READYTORUN
+    // Only plain IL/NoMetadata/PInvoke methods are eligible for R2R precompilation.
+    if (!(IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg())))
+        return false;
+
+    PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
+    config.SetCallerGCMode(CallerGCMode::Preemptive);
+
+    // GetPrecompiledR2RCode resolves the R2R entrypoint and, on portable-entrypoint (wasm) targets,
+    // publishes it into this method's portable entrypoint as a side effect (PortableEntryPoint::SetActualCode).
+    // It never compiles interpreter byte code, so purely interpreted methods simply return NULL here and
+    // are left unprepared for lazy byte code generation on first call.
+    PCODE pCode = GetPrecompiledR2RCode(&config);
+    return pCode != (PCODE)NULL;
+#else // !FEATURE_READYTORUN
+    return false;
+#endif // FEATURE_READYTORUN
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0)
 {
     STANDARD_VM_CONTRACT;
