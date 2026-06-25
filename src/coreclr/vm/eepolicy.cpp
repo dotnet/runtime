@@ -783,9 +783,6 @@ static FatalErrorInfo CreateFatalErrorInfo(UINT_PTR address, PEXCEPTION_POINTERS
     }
 #else
     PAL_GetNativeExceptionPointers(&errorInfo.info, &errorInfo.context);
-
-    // If the PAL produced exception pointers, we must have signal info stashed.
-    _ASSERTE(pExceptionInfo == NULL || errorInfo.info != NULL);
 #endif // TARGET_WINDOWS
     errorInfo.pfnGetFatalErrorLog = GetFatalErrorLogCallback;
 

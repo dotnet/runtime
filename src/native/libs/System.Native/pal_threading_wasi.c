@@ -77,12 +77,6 @@ void SystemNative_Exit(int32_t exitCode)
 }
 
 DEBUGNOTRETURN
-void SystemNative__Exit(int32_t exitCode)
-{
-    _Exit(exitCode);
-}
-
-DEBUGNOTRETURN
 void SystemNative_Abort(void)
 {
     abort();

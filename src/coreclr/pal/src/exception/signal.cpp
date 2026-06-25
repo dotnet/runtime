@@ -136,7 +136,7 @@ struct NativeExceptionPointerHolder
     }
 };
 
-void PAL_GetNativeExceptionPointers(void** siginfo, void** sigcontext)
+PALIMPORT VOID PALAPI PAL_GetNativeExceptionPointers(void** siginfo, void** sigcontext)
 {
     _ASSERTE(siginfo != NULL);
     _ASSERTE(sigcontext != NULL);

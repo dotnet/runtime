@@ -468,7 +468,7 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* 
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE ExceptionHandling_TrySetFatalErrorHandler(void* handler)
+extern "C" CLR_BOOL QCALLTYPE ExceptionHandling_TrySetFatalErrorHandler(void* handler)
 {
     QCALL_CONTRACT_NO_GC_TRANSITION;
 
