@@ -36,6 +36,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonSerializerOptionsTypeRef = "global::System.Text.Json.JsonSerializerOptions";
             private const string JsonSerializerContextTypeRef = "global::System.Text.Json.Serialization.JsonSerializerContext";
             private const string Utf8JsonWriterTypeRef = "global::System.Text.Json.Utf8JsonWriter";
+            private const string ByteArrayValueWriterMethodName = "WriteByteArrayValue";
             private const string JsonCommentHandlingTypeRef = "global::System.Text.Json.JsonCommentHandling";
             private const string JsonConverterTypeRef = "global::System.Text.Json.Serialization.JsonConverter";
             private const string JsonConverterFactoryTypeRef = "global::System.Text.Json.Serialization.JsonConverterFactory";
@@ -85,6 +86,12 @@ namespace System.Text.Json.SourceGeneration
             private bool _emitValueTypeSetterDelegate;
 
             /// <summary>
+            /// Indicates that the fast-path serializer writes a <see cref="byte"/> array value,
+            /// requiring the on-demand byte[] writer helper to be emitted on the context.
+            /// </summary>
+            private bool _emitByteArrayValueHelper;
+
+            /// <summary>
             /// The SourceText emit implementation filled by the individual Roslyn versions.
             /// </summary>
             private partial void AddSource(string hintName, SourceText sourceText);
@@ -112,7 +119,7 @@ namespace System.Text.Json.SourceGeneration
                 string contextName = contextGenerationSpec.ContextType.Name;
 
                 // Add root context implementation.
-                AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec, _emitGetConverterForNullablePropertyMethod, _emitValueTypeSetterDelegate));
+                AddSource($"{contextName}.g.cs", GetRootJsonContextImplementation(contextGenerationSpec, _emitGetConverterForNullablePropertyMethod, _emitValueTypeSetterDelegate, _emitByteArrayValueHelper));
 
                 // Add GetJsonTypeInfo override implementation.
                 AddSource($"{contextName}.GetJsonTypeInfo.g.cs", GetGetTypeInfoImplementation(contextGenerationSpec));
@@ -122,6 +129,7 @@ namespace System.Text.Json.SourceGeneration
 
                 _emitGetConverterForNullablePropertyMethod = false;
                 _emitValueTypeSetterDelegate = false;
+                _emitByteArrayValueHelper = false;
                 _propertyNames.Clear();
                 _typeIndex.Clear();
             }
@@ -1775,7 +1783,7 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private static void GenerateSerializeValueStatement(SourceWriter writer, TypeGenerationSpec typeSpec, string valueExpr)
+            private void GenerateSerializeValueStatement(SourceWriter writer, TypeGenerationSpec typeSpec, string valueExpr)
             {
                 if (GetPrimitiveWriterMethod(typeSpec) is string primitiveWriterMethod)
                 {
@@ -1786,17 +1794,9 @@ namespace System.Text.Json.SourceGeneration
                     else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
                     {
                         // byte[] is a reference type but WriteBase64StringValue accepts ReadOnlySpan<byte>,
-                        // which loses null information. Emit an explicit null check to match reflection behavior.
-                        writer.WriteLine($$"""
-                            if ({{valueExpr}} is not null)
-                            {
-                                writer.{{primitiveWriterMethod}}Value({{valueExpr}});
-                            }
-                            else
-                            {
-                                writer.WriteNullValue();
-                            }
-                            """);
+                        // which silently maps null to an empty value. Route through a helper that preserves null.
+                        writer.WriteLine($"{ByteArrayValueWriterMethodName}(writer, {valueExpr});");
+                        _emitByteArrayValueHelper = true;
                     }
                     else
                     {
@@ -1816,7 +1816,7 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private static void GenerateSerializePropertyStatement(SourceWriter writer, TypeGenerationSpec typeSpec, string propertyNameExpr, string valueExpr)
+            private void GenerateSerializePropertyStatement(SourceWriter writer, TypeGenerationSpec typeSpec, string propertyNameExpr, string valueExpr)
             {
                 if (GetPrimitiveWriterMethod(typeSpec) is string primitiveWriterMethod)
                 {
@@ -1827,17 +1827,10 @@ namespace System.Text.Json.SourceGeneration
                     else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
                     {
                         // byte[] is a reference type but WriteBase64String accepts ReadOnlySpan<byte>,
-                        // which loses null information. Emit an explicit null check to match reflection behavior.
-                        writer.WriteLine($$"""
-                            if ({{valueExpr}} is not null)
-                            {
-                                writer.{{primitiveWriterMethod}}({{propertyNameExpr}}, {{valueExpr}});
-                            }
-                            else
-                            {
-                                writer.WriteNull({{propertyNameExpr}});
-                            }
-                            """);
+                        // which silently maps null to an empty value. Route through a helper that preserves null.
+                        writer.WriteLine($"writer.WritePropertyName({propertyNameExpr});");
+                        writer.WriteLine($"{ByteArrayValueWriterMethodName}(writer, {valueExpr});");
+                        _emitByteArrayValueHelper = true;
                     }
                     else
                     {
@@ -1922,7 +1915,7 @@ namespace System.Text.Json.SourceGeneration
                     """);
             }
 
-            private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec, bool emitGetConverterForNullablePropertyMethod, bool emitValueTypeSetterDelegate)
+            private static SourceText GetRootJsonContextImplementation(ContextGenerationSpec contextSpec, bool emitGetConverterForNullablePropertyMethod, bool emitValueTypeSetterDelegate, bool emitByteArrayValueHelper)
             {
                 string contextTypeRef = contextSpec.ContextType.FullyQualifiedName;
                 string contextTypeName = contextSpec.ContextType.Name;
@@ -1975,6 +1968,24 @@ namespace System.Text.Json.SourceGeneration
                     """);
 
                 writer.WriteLine();
+
+                if (emitByteArrayValueHelper)
+                {
+                    writer.WriteLine($$"""
+                        private static void {{ByteArrayValueWriterMethodName}}({{Utf8JsonWriterTypeRef}} writer, byte[]? value)
+                        {
+                            if (value is null)
+                            {
+                                writer.WriteNullValue();
+                            }
+                            else
+                            {
+                                writer.WriteBase64StringValue(value);
+                            }
+                        }
+                        """);
+                    writer.WriteLine();
+                }
 
                 GenerateConverterHelpers(writer, emitGetConverterForNullablePropertyMethod);
 
