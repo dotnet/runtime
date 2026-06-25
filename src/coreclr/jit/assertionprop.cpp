@@ -78,6 +78,180 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
     return Limit(Limit::keUnknown);
 }
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
+//----------------------------------------------------------------------------------------------
+// IsHWIntrinsicCmpMask: Checks if the hwintrinsic produces a SIMD comparison mask.
+//
+// Arguments:
+//    intrinsic - The hwintrinsic id
+//
+// Return Value:
+//    True if the hwintrinsic produces a mask where each SIMD element is either all-bits-set or zero.
+//
+static bool IsHWIntrinsicCmpMask(NamedIntrinsic intrinsic)
+{
+    switch (intrinsic)
+    {
+        case NI_AdvSimd_CompareEqual:
+        case NI_AdvSimd_CompareGreaterThan:
+        case NI_AdvSimd_CompareGreaterThanOrEqual:
+        case NI_AdvSimd_CompareLessThan:
+        case NI_AdvSimd_CompareLessThanOrEqual:
+        case NI_AdvSimd_Arm64_CompareEqual:
+        case NI_AdvSimd_Arm64_CompareGreaterThan:
+        case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+        case NI_AdvSimd_Arm64_CompareLessThan:
+        case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
+        {
+            return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// AllComponentsEitherZeroOrAllBitsSet: Check if a SIMD VN has per-element boolean values.
+//
+// Arguments:
+//    comp     - The compiler instance
+//    vn       - The value number
+//    baseType - The expected SIMD element base type
+//
+// Return Value:
+//    True if every SIMD element is known to be either all-bits-set or zero.
+//
+static bool AllComponentsEitherZeroOrAllBitsSet(Compiler* comp, ValueNum vn, var_types baseType)
+{
+    if (vn == ValueNumStore::NoVN)
+    {
+        return false;
+    }
+
+    vn = comp->vnStore->VNNormalValue(vn);
+
+    if (comp->vnStore->IsVNConstant(vn))
+    {
+        switch (comp->vnStore->TypeOfVN(vn))
+        {
+            case TYP_SIMD8:
+            {
+                simd8_t val = comp->vnStore->GetConstantSimd8(vn);
+                return val.IsAllBitsSet() || val.IsZero();
+            }
+
+            case TYP_SIMD16:
+            {
+                simd16_t val = comp->vnStore->GetConstantSimd16(vn);
+                return val.IsAllBitsSet() || val.IsZero();
+            }
+
+            default:
+            {
+                return false;
+            }
+        }
+    }
+
+    VNFuncApp     funcApp;
+    NamedIntrinsic intrinsicId;
+    unsigned       simdSize;
+    var_types      intrinsicSimdBaseType;
+
+    if (!comp->vnStore->IsVNHWIntrinsicFunc(vn, &funcApp, &intrinsicId, &simdSize, &intrinsicSimdBaseType))
+    {
+        return false;
+    }
+
+    if ((simdSize != 8) && (simdSize != 16))
+    {
+        return false;
+    }
+
+    bool       isScalar = false;
+    genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, baseType, &isScalar);
+
+    if (isScalar)
+    {
+        return false;
+    }
+
+    switch (oper)
+    {
+        case GT_EQ:
+        case GT_NE:
+        case GT_GT:
+        case GT_GE:
+        case GT_LE:
+        case GT_LT:
+        {
+            return varTypeIsIntegral(baseType) &&
+                   (genTypeSize(baseType) <= genTypeSize(intrinsicSimdBaseType));
+        }
+
+        case GT_NOT:
+        {
+            return AllComponentsEitherZeroOrAllBitsSet(comp, funcApp.GetArg(0), baseType);
+        }
+
+        case GT_OR:
+        case GT_AND:
+        case GT_XOR:
+        case GT_AND_NOT:
+        {
+            return AllComponentsEitherZeroOrAllBitsSet(comp, funcApp.GetArg(0), baseType) &&
+                   AllComponentsEitherZeroOrAllBitsSet(comp, funcApp.GetArg(1), baseType);
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// optAssertionProp_HWIntrinsic: Propagate VN-derived facts to hwintrinsic tree flags.
+//
+// Arguments:
+//    tree - The hwintrinsic node
+//
+static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tree)
+{
+    NamedIntrinsic intrinsic = tree->GetHWIntrinsicId();
+
+    if ((intrinsic != NI_Vector64_ExtractMostSignificantBits) &&
+        (intrinsic != NI_Vector128_ExtractMostSignificantBits))
+    {
+        return;
+    }
+
+    assert(tree->GetOperandCount() == 1);
+
+    GenTree* op1 = tree->Op(1);
+
+    if (op1->OperIsHWIntrinsic() && !IsHWIntrinsicCmpMask(op1->AsHWIntrinsic()->GetHWIntrinsicId()))
+    {
+        return;
+    }
+
+    ValueNum op1VN = comp->vnStore->VNConservativeNormalValue(op1->gtVNPair);
+
+    auto vnVisitor = [comp, tree](ValueNum vn) -> ValueNumStore::VNVisit {
+        return AllComponentsEitherZeroOrAllBitsSet(comp, vn, tree->GetSimdBaseType()) ? ValueNumStore::VNVisit::Continue
+                                                                                      : ValueNumStore::VNVisit::Abort;
+    };
+
+    if (comp->vnStore->VNVisitReachingVNs(op1VN, vnVisitor) == ValueNumStore::VNVisit::Continue)
+    {
+        tree->gtFlags |= GTF_HW_ZERO_OR_ALL_BITS_SET;
+    }
+}
+#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
+
 //------------------------------------------------------------------------
 // SymbolicToRealValue: Convert a symbolic value to a 64-bit signed integer.
 //
@@ -5866,6 +6040,12 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_CALL:
             return optAssertionProp_Call(assertions, tree->AsCall(), stmt);
+
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
+        case GT_HWINTRINSIC:
+            optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            return nullptr;
+#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
 
         case GT_EQ:
         case GT_NE:

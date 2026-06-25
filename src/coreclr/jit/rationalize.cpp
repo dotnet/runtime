@@ -1457,7 +1457,17 @@ static bool IsHWIntrinsicCmpMaskExtractMsb(GenTreeHWIntrinsic* node)
         return false;
     }
 
+    if (NormalizeCmpMaskSimdBaseType(node->GetSimdBaseType()) == TYP_UNDEF)
+    {
+        return false;
+    }
+
     GenTree* op1 = node->Op(1);
+
+    if (((node->gtFlags & GTF_HW_ZERO_OR_ALL_BITS_SET) != 0) && op1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    {
+        return true;
+    }
 
     return op1->OperIsHWIntrinsic() && IsHWIntrinsicCmpMask(op1->AsHWIntrinsic()->GetHWIntrinsicId());
 }

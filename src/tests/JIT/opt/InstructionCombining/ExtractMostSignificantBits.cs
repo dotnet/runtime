@@ -113,6 +113,11 @@ namespace TestExtractMostSignificantBits
                 fail = true;
             }
 
+            if (CountGreaterThanOrEqualByteViaLocal(byteData, 0x80) != 8)
+            {
+                fail = true;
+            }
+
             if (IndexOfFirstGreaterThanOrEqualByte(byteData, 0x80) != 1)
             {
                 fail = true;
@@ -373,6 +378,17 @@ namespace TestExtractMostSignificantBits
             // ARM64-FULL-LINE: addv {{b[0-9]+}}, {{v[0-9]+}}.16b
             // ARM64-FULL-LINE: umov {{w[0-9]+}}, {{v[0-9]+}}.b[0]
             return BitOperations.PopCount(Vector128.GreaterThanOrEqual(value, Vector128.Create(limit)).ExtractMostSignificantBits());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int CountGreaterThanOrEqualByteViaLocal(Vector128<byte> value, byte limit)
+        {
+            // ARM64-FULL-LINE: cmhs {{v[0-9]+}}.16b, {{v[0-9]+}}.16b, {{v[0-9]+}}.16b
+            // ARM64-FULL-LINE: ushr {{v[0-9]+}}.16b, {{v[0-9]+}}.16b, #7
+            // ARM64-FULL-LINE: addv {{b[0-9]+}}, {{v[0-9]+}}.16b
+            // ARM64-FULL-LINE: umov {{w[0-9]+}}, {{v[0-9]+}}.b[0]
+            Vector128<byte> mask = Vector128.GreaterThanOrEqual(value, Vector128.Create(limit));
+            return BitOperations.PopCount(mask.ExtractMostSignificantBits());
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
