@@ -182,10 +182,16 @@ public class ResourcesData
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
     /// </summary>
     /// <remarks>
-    /// Deprecated in .NET 8, use <see cref="jsModuleNative"/>, <see cref="jsModuleRuntime"/>, <see cref="wasmNative"/>, <see cref="wasmSymbols"/>, <see cref="icu"/>.
+    /// Deprecated in .NET 8, use <see cref="jsModuleWorker"/>, <see cref="jsModuleNative"/>, <see cref="jsModuleRuntime"/>, <see cref="wasmNative"/>, <see cref="wasmSymbols"/>, <see cref="icu"/>.
     /// </remarks>
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary runtime { get; set; }
+
+    /// <remarks>
+    /// Removed in .NET 11; kept for compatibility when the .NET 11 SDK builds projects targeting earlier TFMs.
+    /// </remarks>
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary jsModuleWorker { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary jsModuleDiagnostics { get; set; }
@@ -280,6 +286,9 @@ public class AssetsData
     /// Gets a hash of all resources
     /// </summary>
     public string hash { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<JsAsset> jsModuleWorker { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
     public List<JsAsset> jsModuleDiagnostics { get; set; }
