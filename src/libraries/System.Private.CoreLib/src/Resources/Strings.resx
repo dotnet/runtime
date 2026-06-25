@@ -4053,7 +4053,7 @@
     <value>Use of ResourceManager for custom types is disabled. Set the MSBuild Property CustomResourceTypesSupport to true in order to enable it.</value>
   </data>
   <data name="InvalidOperation_AssemblyLocationOverrideAlreadySet" xml:space="preserve">
-    <value>The assembly location override has already been set and can only be set once.</value>
+    <value>Attempt to update previously set assembly location override.</value>
   </data>
   <data name="InvalidOperation_AssemblyNotEditable" xml:space="preserve">
     <value>The assembly can not be edited or changed.</value>
