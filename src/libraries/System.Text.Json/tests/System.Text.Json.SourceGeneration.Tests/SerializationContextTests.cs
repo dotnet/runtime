@@ -468,6 +468,12 @@ namespace System.Text.Json.SourceGeneration.Tests
             void RunTest(ClassWithNullableProperties expected)
             {
                 string json = JsonSerializer.Serialize(expected, DefaultContext.ClassWithNullableProperties);
+
+                if (expected.ByteArray is null)
+                {
+                    Assert.Contains("\"ByteArray\":null", json);
+                }
+
                 ClassWithNullableProperties actual = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).ClassWithNullableProperties);
 
                 Assert.Equal(expected.Uri, actual.Uri);
