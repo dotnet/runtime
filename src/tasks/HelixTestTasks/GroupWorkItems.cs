@@ -56,13 +56,13 @@ public class GroupWorkItems : Task
         // Sort largest first for greedy bin-packing
         itemsWithSize.Sort((a, b) => b.size.CompareTo(a.size));
 
-        // Match on the file name only, so callers may pass either a bare suite name or a path.
-        // Do not strip the extension here: suite names contain dots (e.g. "System.Text.Json.Tests")
-        // and Path.GetFileNameWithoutExtension would drop the trailing ".Tests" segment, while the
-        // candidate side below strips only the real archive extension (".zip").
+        // Match on the work item name, tolerating either a bare suite name or an archive path on
+        // both sides. Only the ".zip" work item extension is stripped: suite names themselves
+        // contain dots (e.g. "System.Text.Json.Tests"), so Path.GetFileNameWithoutExtension must
+        // not be used as it would drop the trailing ".Tests" segment from a bare name.
         var soloNames = new HashSet<string>(StringComparer.Ordinal);
         foreach (var solo in SoloItems)
-            soloNames.Add(Path.GetFileName(solo.ItemSpec));
+            soloNames.Add(NormalizeWorkItemName(solo.ItemSpec));
 
         var result = new List<ITaskItem>();
         int negativeBatchId = -1;
@@ -71,7 +71,7 @@ public class GroupWorkItems : Task
         var smallItems = new List<(ITaskItem item, long size)>();
         foreach (var entry in itemsWithSize)
         {
-            if (entry.size > LargeThreshold || soloNames.Contains(Path.GetFileNameWithoutExtension(entry.item.ItemSpec)))
+            if (entry.size > LargeThreshold || soloNames.Contains(NormalizeWorkItemName(entry.item.ItemSpec)))
             {
                 var newItem = new TaskItem(entry.item);
                 newItem.SetMetadata("BatchId", negativeBatchId.ToString());
@@ -114,5 +114,13 @@ public class GroupWorkItems : Task
 
         GroupedItems = result.ToArray();
         return !Log.HasLoggedErrors;
+
+        static string NormalizeWorkItemName(string itemSpec)
+        {
+            string name = Path.GetFileName(itemSpec);
+            return name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+                ? name.Substring(0, name.Length - 4)
+                : name;
+        }
     }
 }

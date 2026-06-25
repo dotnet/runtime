@@ -77,7 +77,10 @@ public class ComputeBatchTimeout : Task
             // execution; MinimumMinutes floor handles the heaviest individual suites
             // (e.g. Cryptography ~17m); capped at MaximumMinutes (kept below 24h to prevent
             // hh format wrapping, and intended to stay under the AzDO job timeout).
-            int totalMinutes = Math.Min(MaximumMinutes, Math.Max(MinimumMinutes, count * MinutesPerSuite));
+            // Multiply in long so an outsized MinutesPerSuite override cannot overflow int; the
+            // result is bounded by MaximumMinutes (< 24h), so casting back to int is safe.
+            long perSuiteMinutes = (long)count * MinutesPerSuite;
+            int totalMinutes = (int)Math.Min(MaximumMinutes, Math.Max(MinimumMinutes, perSuiteMinutes));
             var ts = TimeSpan.FromMinutes(totalMinutes);
 
             var helixItem = new TaskItem(ItemPrefix + "Batch-" + bid);
