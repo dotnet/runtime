@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                process.StartCore(startInfo, callback);
+                process.StartCoreWithCallback(startInfo, callback);
             }
             catch
             {

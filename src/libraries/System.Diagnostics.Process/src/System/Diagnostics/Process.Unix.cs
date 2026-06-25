@@ -358,13 +358,25 @@ namespace System.Diagnostics
             return new SafeProcessHandle(_waitStateHolder!.IncrementRefCount());
         }
 
-        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles, Func<UnixProcessStartArguments, int>? callback)
+        private bool StartCore(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, SafeHandle[]? inheritedHandles)
         {
             ProcessWaitState.Holder? waitStateHolder = null;
+            SafeProcessHandle startedProcess = SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, out waitStateHolder);
 
-            SafeProcessHandle startedProcess = callback is null
-                ? SafeProcessHandle.StartCore(startInfo, stdinHandle, stdoutHandle, stderrHandle, inheritedHandles, out waitStateHolder)
-                : SafeProcessHandle.StartWithCallback(startInfo, stdinHandle!, stdoutHandle!, stderrHandle!, callback, out waitStateHolder);
+            Debug.Assert(!startedProcess.IsInvalid);
+
+            // SafeProcessHandle has its own copy of the wait state holder, so we need to increment the ref count for our copy.
+            _waitStateHolder = waitStateHolder!.IncrementRefCount();
+
+            SetProcessHandle(startedProcess);
+            SetProcessId(startedProcess.ProcessId);
+            return true;
+        }
+
+        private bool StartCoreWithCallback(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, Func<UnixProcessStartArguments, int> callback)
+        {
+            ProcessWaitState.Holder? waitStateHolder = null;
+            SafeProcessHandle startedProcess = SafeProcessHandle.StartWithCallback(startInfo, stdinHandle!, stdoutHandle!, stderrHandle!, callback, out waitStateHolder);
 
             Debug.Assert(!startedProcess.IsInvalid);
 

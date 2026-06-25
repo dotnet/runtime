@@ -1189,17 +1189,173 @@ namespace System.Diagnostics
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
 
-            return StartCore(StartInfo, callback: null);
+            return StartCore(StartInfo);
         }
 
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        internal bool StartCore(ProcessStartInfo startInfo,
+        internal bool StartCore(ProcessStartInfo startInfo)
+        {
+            startInfo.ThrowIfInvalid(out bool anyRedirection, out SafeHandle[]? inheritedHandles);
+            _startInfo = startInfo;
+
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref ProcessUtils.s_cachedSerializationSwitch);
+
+            SafeFileHandle? parentInputPipeHandle = null;
+            SafeFileHandle? parentOutputPipeHandle = null;
+            SafeFileHandle? parentErrorPipeHandle = null;
+
+            SafeFileHandle? childInputHandle = null;
+            SafeFileHandle? childOutputHandle = null;
+            SafeFileHandle? childErrorHandle = null;
+
+            try
+            {
+                if (!startInfo.UseShellExecute)
+                {
+                    // Windows supports creating non-inheritable pipe in atomic way.
+                    // When it comes to Unixes, it depends whether they support pipe2 sys-call or not.
+                    // If they don't, the pipe is created as inheritable and made non-inheritable with another sys-call.
+                    // Some process could be started in the meantime, so in order to prevent accidental handle inheritance,
+                    // a writer lock is used around the pipe creation code.
+
+                    bool requiresLock = anyRedirection && !ProcessUtils.SupportsAtomicNonInheritablePipeCreation;
+
+                    if (requiresLock)
+                    {
+                        ProcessUtils.s_processStartLock.EnterWriteLock();
+                    }
+
+                    try
+                    {
+                        if (startInfo.StandardInputHandle is not null)
+                        {
+                            childInputHandle = startInfo.StandardInputHandle;
+                        }
+                        else if (startInfo.RedirectStandardInput)
+                        {
+                            SafeFileHandle.CreateAnonymousPipe(out childInputHandle, out parentInputPipeHandle);
+                        }
+
+                        if (startInfo.StandardOutputHandle is not null)
+                        {
+                            childOutputHandle = startInfo.StandardOutputHandle;
+                        }
+                        else if (startInfo.RedirectStandardOutput)
+                        {
+                            SafeFileHandle.CreateAnonymousPipe(out parentOutputPipeHandle, out childOutputHandle, asyncRead: OperatingSystem.IsWindows());
+                        }
+
+                        if (startInfo.StandardErrorHandle is not null)
+                        {
+                            childErrorHandle = startInfo.StandardErrorHandle;
+                        }
+                        else if (startInfo.RedirectStandardError)
+                        {
+                            SafeFileHandle.CreateAnonymousPipe(out parentErrorPipeHandle, out childErrorHandle, asyncRead: OperatingSystem.IsWindows());
+                        }
+                    }
+                    finally
+                    {
+                        if (requiresLock)
+                        {
+                            ProcessUtils.s_processStartLock.ExitWriteLock();
+                        }
+                    }
+
+                    // After releasing the lock, open the null device handle once (if needed for StartDetached)
+                    // or fall back to the console handles. The null device handle will be disposed in the finally block below.
+                    if (startInfo.StartDetached)
+                    {
+                        if (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
+                        {
+                            SafeFileHandle nullDeviceHandle = File.OpenNullHandle();
+                            childInputHandle ??= nullDeviceHandle;
+                            childOutputHandle ??= nullDeviceHandle;
+                            childErrorHandle ??= nullDeviceHandle;
+                        }
+                    }
+                    else if (ProcessUtils.PlatformSupportsConsole)
+                    {
+                        childInputHandle ??= Console.OpenStandardInputHandle();
+                        childOutputHandle ??= Console.OpenStandardOutputHandle();
+                        childErrorHandle ??= Console.OpenStandardErrorHandle();
+                    }
+
+                    ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
+                }
+
+                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles))
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                parentInputPipeHandle?.Dispose();
+                parentOutputPipeHandle?.Dispose();
+                parentErrorPipeHandle?.Dispose();
+
+                throw;
+            }
+            finally
+            {
+                // We MUST close the child handles, otherwise the parent
+                // process will not receive EOF when the child process closes its handles.
+                // It's OK to do it for handles returned by Console.OpenStandard*Handle APIs,
+                // because these handles are not owned and won't be closed by Dispose.
+                // We don't dispose handles that were passed in
+                // by the caller via StartInfo.StandardInputHandle/OutputHandle/ErrorHandle.
+                if (startInfo.StandardInputHandle is null)
+                {
+                    childInputHandle?.Dispose();
+                }
+                if (startInfo.StandardOutputHandle is null)
+                {
+                    childOutputHandle?.Dispose();
+                }
+                if (startInfo.StandardErrorHandle is null)
+                {
+                    childErrorHandle?.Dispose();
+                }
+            }
+
+            if (startInfo.RedirectStandardInput)
+            {
+                _standardInput = new StreamWriter(OpenStream(parentInputPipeHandle!, FileAccess.Write),
+                    startInfo.StandardInputEncoding ?? GetStandardInputEncoding(), StreamBufferSize)
+                {
+                    AutoFlush = true
+                };
+            }
+            if (startInfo.RedirectStandardOutput)
+            {
+                _standardOutput = new StreamReader(OpenStream(parentOutputPipeHandle!, FileAccess.Read),
+                    startInfo.StandardOutputEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+            if (startInfo.RedirectStandardError)
+            {
+                _standardError = new StreamReader(OpenStream(parentErrorPipeHandle!, FileAccess.Read),
+                    startInfo.StandardErrorEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+
+            return true;
+        }
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        internal bool StartCoreWithCallback(ProcessStartInfo startInfo,
 #if TARGET_WINDOWS
-            Func<WindowsProcessStartArguments, nint>?
+            Func<WindowsProcessStartArguments, nint>
 #else
-            Func<UnixProcessStartArguments, int>?
+            Func<UnixProcessStartArguments, int>
 #endif
             callback)
         {
@@ -1297,7 +1453,7 @@ namespace System.Diagnostics
                     ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
                 }
 
-                if (!StartCore(startInfo, childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles, callback))
+                if (!StartCoreWithCallback(startInfo, childInputHandle, childOutputHandle, childErrorHandle, callback))
                 {
                     return false;
                 }
