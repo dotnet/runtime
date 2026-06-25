@@ -45,7 +45,12 @@ namespace System.Security.Cryptography
             }
 
             int written = Interop.BCrypt.BCryptSignHashPqcPure(_key, data, context, destination);
-            Debug.Assert(written == destination.Length);
+
+            if (written != destination.Length)
+            {
+                Debug.Fail($"Expected {destination.Length} bytes, but {nameof(Interop.BCrypt.BCryptSignHashPqcPure)} wrote {written} bytes.");
+                throw new CryptographicException();
+            }
         }
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>

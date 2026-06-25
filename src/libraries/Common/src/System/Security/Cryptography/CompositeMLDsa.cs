@@ -1805,6 +1805,50 @@ namespace System.Security.Cryptography
         {
         }
 
+        private protected bool TryExportPkcs8FromExportedPrivateKey(Span<byte> destination, out int bytesWritten)
+        {
+            AsnWriter? writer = null;
+
+            try
+            {
+                using (CryptoPoolLease lease = CryptoPoolLease.Rent(Algorithm.MaxPrivateKeySizeInBytes))
+                {
+                    int privateKeySize = ExportCompositeMLDsaPrivateKeyCore(lease.Span);
+
+                    if (!Algorithm.IsValidPrivateKeySize(privateKeySize))
+                    {
+                        bytesWritten = 0;
+                        throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
+                    }
+
+                    // Add some overhead for the ASN.1 structure.
+                    int initialCapacity = 32 + privateKeySize;
+
+                    writer = new AsnWriter(AsnEncodingRules.DER, initialCapacity);
+
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteInteger(0); // Version
+
+                        using (writer.PushSequence())
+                        {
+                            writer.WriteObjectIdentifier(Algorithm.Oid);
+                        }
+
+                        writer.WriteOctetString(lease.Span.Slice(0, privateKeySize));
+                    }
+
+                    Debug.Assert(writer.GetEncodedLength() <= initialCapacity);
+
+                    return writer.TryEncode(destination, out bytesWritten);
+                }
+            }
+            finally
+            {
+                writer?.Reset();
+            }
+        }
+
         private AsnWriter WriteEncryptedPkcs8PrivateKeyToAsnWriter(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
             AsnWriter? tmp = null;

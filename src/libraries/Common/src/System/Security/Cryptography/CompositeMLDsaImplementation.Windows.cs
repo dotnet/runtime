@@ -127,37 +127,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_NoPrivateKeyAvailable);
             }
 
-            ValuePrivateKeyInfoAsn privateKeyInfo = new()
-            {
-                PrivateKeyAlgorithm = new ValueAlgorithmIdentifierAsn
-                {
-                    Algorithm = Algorithm.Oid,
-                },
-            };
-
-            int written = 0;
-            byte[] rented = CryptoPool.Rent(Algorithm.MaxPrivateKeySizeInBytes);
-
-            try
-            {
-                written = ExportKey(Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB, rented);
-
-                Debug.Assert(Algorithm.IsValidPrivateKeySize(written));
-
-                privateKeyInfo.PrivateKey = rented.AsSpan(0, written);
-
-                AsnWriter pkcs8Writer = new(AsnEncodingRules.DER);
-                privateKeyInfo.Encode(pkcs8Writer);
-
-                bool result = pkcs8Writer.TryEncode(destination, out bytesWritten);
-                pkcs8Writer.Reset();
-
-                return result;
-            }
-            finally
-            {
-                CryptoPool.Return(rented, clearSize: written);
-            }
+            return TryExportPkcs8FromExportedPrivateKey(destination, out bytesWritten);
         }
 
         protected override int ExportCompositeMLDsaPublicKeyCore(Span<byte> destination) =>
