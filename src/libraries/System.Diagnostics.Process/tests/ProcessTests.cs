@@ -1079,7 +1079,6 @@ namespace System.Diagnostics.Tests
                         {
                             int pid = int.Parse(pidStr);
                             int count = int.Parse(countStr);
-                            Process p = Process.GetProcessById(pid);
         
                             // Take multiple readings inside this process and print each one.
                             // We re-read StartTime each time to make sure caching isn't
@@ -1098,12 +1097,11 @@ namespace System.Diagnostics.Tests
                         ReadingsPerProcess.ToString(),
                         new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } }))
                     {
-                        string output = handle.Process.StandardOutput.ReadToEnd();
-        
-                        foreach (string line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                        foreach (ProcessOutputLine line in handle.Process.ReadAllLines())
                         {
+                            Assert.False(line.StandardError);
                             Assert.True(
-                                long.TryParse(line.Trim(), out long ticks),
+                                long.TryParse(line.Content, out long ticks),
                                 $"Child process {i + 1} returned non-numeric output: '{line}'");
         
                             allReadings.Add(ticks);
@@ -1138,8 +1136,7 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                if (!target.HasExited)
-                    target.Kill();
+                target.Kill();
                 target.WaitForExit();
                 target.Dispose();
             }
