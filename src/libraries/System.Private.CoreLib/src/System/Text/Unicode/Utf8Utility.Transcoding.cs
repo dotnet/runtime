@@ -885,7 +885,7 @@ namespace System.Text.Unicode
 #if NET
             Vector128<short> nonAsciiUtf16DataMask;
 
-            if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || (PackedSimd.IsSupported && BitConverter.IsLittleEndian))
+            if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || PackedSimd.IsSupported)
             {
                 nonAsciiUtf16DataMask = Vector128.Create(unchecked((short)0xFF80)); // mask of non-ASCII bits in a UTF-16 char
             }
@@ -945,7 +945,7 @@ namespace System.Text.Unicode
                     uint minElementsRemaining = (uint)Math.Min(inputCharsRemaining, outputBytesRemaining);
 
 #if NET
-                    if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || (PackedSimd.IsSupported && BitConverter.IsLittleEndian))
+                    if (Sse41.X64.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || PackedSimd.IsSupported)
                     {
                         // Try reading and writing 8 elements per iteration.
                         uint maxIters = minElementsRemaining / 8;
