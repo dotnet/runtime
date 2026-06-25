@@ -27,12 +27,7 @@
     <!-- NETCoreSdkVersion is normally set by the SDK, but for non-SDK projects we need extract from global.json -->
     <_GlobalJsonContent>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../global.json'))</_GlobalJsonContent>
     <_GlobalJsonSdkVersion Condition="'$(_GlobalJsonContent)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(_GlobalJsonContent), '"sdk"\s*:\s*\{[^\}]*"version"\s*:\s*"([^"]+)"', System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value)</_GlobalJsonSdkVersion>
-    <!-- TEMPORARY: pinned to the staged emsdk 5.0.6 SDK build on the ci.dot.net/dev feed (only 11.0.100-preview.6.26314.102 is staged there).
-         WorkloadTesting.Core.targets installs the SDK at this version from ci.dot.net/dev; do NOT follow
-         $(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportVersion): merges from main bump it past the staged build,
-         and that SDK exists on neither ci.dot.net/dev nor production (dotnet-install fails, MSB3073).
-         Repin to the production .NET 11 emsdk 5.0.6 manifest transport (and drop the ci.dot.net/dev wiring) before merge. See dotnet/runtime#113786. -->
-    <_DotnetSdkVersion>11.0.100-preview.6.26314.102</_DotnetSdkVersion>
+    <_DotnetSdkVersion>$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportVersion)</_DotnetSdkVersion>
     <SdkVersionForWorkloadTesting Condition="$([System.String]::Compare('$(_GlobalJsonSdkVersion)', '$(_DotnetSdkVersion)')) &lt;= 0">$(_DotnetSdkVersion)</SdkVersionForWorkloadTesting>
     <SdkVersionForWorkloadTesting Condition="'$(SdkVersionForWorkloadTesting)' == ''">$(_GlobalJsonSdkVersion)</SdkVersionForWorkloadTesting>
     <SdkMajorVersion>$([System.String]::Copy('$(SdkVersionForWorkloadTesting)').Split('.')[0])</SdkMajorVersion>
@@ -171,18 +166,10 @@
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.7</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- emscripten workload package when testing workloads -->
-    <!-- TEMPORARY: pinned to the staged emsdk 5.0.6 workload manifest in the general-testing feed.
-         NOTE: this is the emscripten workload MANIFEST version and uses the sdk feature-band format (11.0.100-preview.6.*),
-         NOT the runtime format (11.0.0-preview.6.*) used by EmsdkPackageVersion below; both share the 26314.102 build stamp.
-         Do NOT restore to $(MicrosoftDotNetApiCompatTaskPackageVersion): merges from main bump it past the staged manifest
-         and break the workload install (NU1102 on Microsoft.NET.Workload.Emscripten.Current.Manifest-11.0.100-preview.6).
-         Repin to the production .NET 11 emsdk 5.0.6 version (and drop the general-testing feed) before merge. See dotnet/runtime#113786. -->
-    <MicrosoftNETRuntimeEmscriptenVersion>11.0.100-preview.6.26314.102</MicrosoftNETRuntimeEmscriptenVersion>
+    <!-- we're using MicrosoftDotNetApiCompatTaskPackageVersion since the emscripten workload package ID contains a changing version. This one uses sdk-style feature band version numbers. -->
+    <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftDotNetApiCompatTaskPackageVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- we're using MicrosoftNETCoreAppRefPackageVersion since the emsdk package ID contains a changing version. This one uses runtime version numbers.  -->
-    <!-- TEMPORARY: pinned to the staged emsdk 5.0.6 packages (Microsoft.NET.Runtime.Emscripten.5.0.6.Cache/Sdk.*) in the general-testing feed, which only
-         exist at 11.0.0-preview.6.26314.102. Do NOT restore to $(MicrosoftNETCoreAppRefPackageVersion): merges from main bump it past the staged build
-         and break native build restore (NU1102). Repin to the production .NET 11 emsdk 5.0.6 transport (and drop the general-testing feed) before merge. -->
-    <EmsdkPackageVersion>11.0.0-preview.6.26314.102</EmsdkPackageVersion>
+    <EmsdkPackageVersion>$(MicrosoftNETCoreAppRefPackageVersion)</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
     <EmsdkVersion>5.0.6</EmsdkVersion>
