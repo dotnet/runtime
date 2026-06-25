@@ -119,13 +119,19 @@ namespace System.Net.NameResolution.Tests
                     EndPoint remote = result.RemoteEndPoint;
                     _ = Task.Run(async () =>
                     {
-                        Interlocked.Increment(ref _requestCount);
-
-                        byte[] response = ProcessQuery(query);
-                        if (response.Length > 0)
+                        try
                         {
-                            await _udp.SendToAsync(response, SocketFlags.None, remote, ct);
+                            Interlocked.Increment(ref _requestCount);
+
+                            byte[] response = ProcessQuery(query);
+                            if (response.Length > 0)
+                            {
+                                await _udp.SendToAsync(response, SocketFlags.None, remote, ct);
+                            }
                         }
+                        catch (OperationCanceledException) { }
+                        catch (ObjectDisposedException) { }
+                        catch (SocketException) { }
                     });
                 }
             }

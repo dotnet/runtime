@@ -103,7 +103,7 @@ namespace System.Net
             {
                 AddressFamily.InterNetwork => Interop.Dnsapi.DNS_TYPE_A,
                 AddressFamily.InterNetworkV6 => Interop.Dnsapi.DNS_TYPE_AAAA,
-                _ => throw new ArgumentException(SR.net_invalid_ip_addr, nameof(addressFamily)),
+                _ => throw new ArgumentException(SR.net_dns_unsupported_address_family, nameof(addressFamily)),
             };
 
         // ---- Query wrappers (issue the query, then parse the record list) ----
@@ -255,8 +255,24 @@ namespace System.Net
             DnsResponseCode chosenRc = a.ResponseCode == DnsResponseCode.NxDomain || b.ResponseCode == DnsResponseCode.NxDomain
                 ? DnsResponseCode.NxDomain
                 : (a.ResponseCode != DnsResponseCode.NoError ? a.ResponseCode : b.ResponseCode);
-            TimeSpan negTtl = a.NegativeCacheTtl > TimeSpan.Zero ? a.NegativeCacheTtl : b.NegativeCacheTtl;
+            TimeSpan negTtl = MinNonZero(a.NegativeCacheTtl, b.NegativeCacheTtl);
             return new DnsResult<AddressRecord>(chosenRc, null, negTtl);
+        }
+
+        // Returns the smaller of two non-zero negative-cache TTLs, or zero if neither is positive.
+        private static TimeSpan MinNonZero(TimeSpan x, TimeSpan y)
+        {
+            if (x <= TimeSpan.Zero)
+            {
+                return y > TimeSpan.Zero ? y : TimeSpan.Zero;
+            }
+
+            if (y <= TimeSpan.Zero)
+            {
+                return x;
+            }
+
+            return x < y ? x : y;
         }
 
         private static bool TryParseAddress(ushort recordType, IntPtr dataPtr, out IPAddress? address)

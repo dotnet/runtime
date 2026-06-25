@@ -472,7 +472,7 @@ namespace System.Net
             }
             else
             {
-                throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
+                throw new ArgumentException(SR.net_dns_unsupported_address_family, nameof(address));
             }
         }
     }
