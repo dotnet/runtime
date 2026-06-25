@@ -410,10 +410,15 @@ bool pal_get_loaded_library(
     // Not all systems support getting the path from just the handle (e.g.
     // dlinfo), so we rely on the caller passing a symbol name to get (any)
     // address in the library.
-    assert(symbol_name != NULL);
+    if (symbol_name == NULL)
+    {
+        dlclose(dll_maybe);
+        return false;
+    }
+
     void* proc = dlsym(dll_maybe, symbol_name);
     Dl_info info;
-    if (dladdr(proc, &info) == 0)
+    if (proc == NULL || dladdr(proc, &info) == 0)
     {
         dlclose(dll_maybe);
         return false;
