@@ -593,12 +593,116 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
         for (uint slotIndex = numTracked; slotIndex < _numSlots; slotIndex++)
         {
             GcSlotDesc slot = _slots[(int)slotIndex];
-            uint gcFlags = (uint)slot.Flags & ((uint)GcSlotFlags.GC_SLOT_INTERIOR | (uint)GcSlotFlags.GC_SLOT_PINNED);
+            uint gcFlags = (uint)slot.Flags & ((uint)GcSlotFlags.GC_SLOT_INTERIOR | (uint)GcSlotFlags.GC_SLOT_PINNED | (uint)GcSlotFlags.GC_SLOT_UNTRACKED);
             lifetimes.Add(new GCSlotLifetime(slot.IsRegister, slot.RegisterNumber, slot.SpOffset, (uint)slot.Base, gcFlags, 0, _codeLength));
         }
 
-        if (numTracked == 0 || _numInterruptibleRanges == 0)
+        if (numTracked == 0)
             return lifetimes;
+
+        // For methods with only safe points (not fully interruptible),
+        // decode tracked slot lifetimes from the per-safe-point bitmaps.
+        if (_numInterruptibleRanges == 0)
+        {
+            if (_numSafePoints == 0)
+                return lifetimes;
+
+            int safePointBitPos = _liveStateBitOffset;
+
+            // Read indirect live state table header
+            uint numBitsPerOffset = 0;
+            if (_reader.ReadBits(1, ref safePointBitPos) != 0)
+            {
+                numBitsPerOffset = (uint)_reader.DecodeVarLengthUnsigned(TTraits.POINTER_SIZE_ENCBASE, ref safePointBitPos) + 1;
+            }
+
+            // For each safe point, read the live slot bitmap.
+            // Safe points are independent snapshots. We emit lifetimes spanning
+            // from the first safe point where a slot is live to the last consecutive
+            // safe point where it remains live.
+            IReadOnlyList<uint> safePoints = GetSafePoints();
+            uint[] liveStart = new uint[numTracked];
+            bool[] prevLive = new bool[numTracked];
+
+            for (uint sp = 0; sp < _numSafePoints; sp++)
+            {
+                bool[] curLive = new bool[numTracked];
+                int spBitOffset;
+
+                if (numBitsPerOffset != 0)
+                {
+                    // Indirect table: read offset pointer for this safe point
+                    int offsetTablePos = safePointBitPos;
+                    int spOffsetBit = offsetTablePos + (int)(sp * numBitsPerOffset);
+                    uint liveStatesOffset = (uint)_reader.ReadBits((int)numBitsPerOffset, ref spOffsetBit);
+                    int liveStatesStart = (int)(((uint)offsetTablePos + _numSafePoints * numBitsPerOffset + 7) & (~7u));
+                    spBitOffset = (int)(liveStatesStart + liveStatesOffset);
+
+                    if (_reader.ReadBits(1, ref spBitOffset) != 0)
+                    {
+                        // RLE encoded
+                        bool fSkip = _reader.ReadBits(1, ref spBitOffset) == 0;
+                        bool fReport = true;
+                        uint readSlots = (uint)_reader.DecodeVarLengthUnsigned(
+                            fSkip ? TTraits.LIVESTATE_RLE_SKIP_ENCBASE : TTraits.LIVESTATE_RLE_RUN_ENCBASE, ref spBitOffset);
+                        fSkip = !fSkip;
+                        while (readSlots < numTracked)
+                        {
+                            uint cnt = (uint)_reader.DecodeVarLengthUnsigned(
+                                fSkip ? TTraits.LIVESTATE_RLE_SKIP_ENCBASE : TTraits.LIVESTATE_RLE_RUN_ENCBASE, ref spBitOffset) + 1;
+                            if (fReport)
+                            {
+                                for (uint si = readSlots; si < readSlots + cnt; si++)
+                                    curLive[si] = true;
+                            }
+                            readSlots += cnt;
+                            fSkip = !fSkip;
+                            fReport = !fReport;
+                        }
+                    }
+                    else
+                    {
+                        for (uint si = 0; si < numTracked; si++)
+                            curLive[si] = _reader.ReadBits(1, ref spBitOffset) != 0;
+                    }
+                }
+                else
+                {
+                    // Direct bitmap: numTracked bits per safe point
+                    spBitOffset = safePointBitPos + (int)(sp * numTracked);
+                    for (uint si = 0; si < numTracked; si++)
+                        curLive[si] = _reader.ReadBits(1, ref spBitOffset) != 0;
+                }
+
+                uint spOffset = safePoints[(int)sp];
+
+                for (uint si = 0; si < numTracked; si++)
+                {
+                    if (curLive[si] && !prevLive[si])
+                    {
+                        // Slot became live at this safe point
+                        liveStart[si] = spOffset;
+                    }
+                    else if (!curLive[si] && prevLive[si])
+                    {
+                        // Slot is dead -- emit lifetime ending after previous safe point
+                        EmitSlotLifetime(si, liveStart[si], safePoints[(int)(sp - 1)] + 1, lifetimes);
+                    }
+                }
+
+                Array.Copy(curLive, prevLive, numTracked);
+            }
+
+            // Close any slots still live at the last safe point
+            uint lastSpOffset = safePoints[(int)(_numSafePoints - 1)];
+            for (uint si = 0; si < numTracked; si++)
+            {
+                if (prevLive[si])
+                    EmitSlotLifetime(si, liveStart[si], lastSpOffset + 1, lifetimes);
+            }
+
+            return lifetimes;
+        }
 
         int bitOffset = _liveStateBitOffset;
 
