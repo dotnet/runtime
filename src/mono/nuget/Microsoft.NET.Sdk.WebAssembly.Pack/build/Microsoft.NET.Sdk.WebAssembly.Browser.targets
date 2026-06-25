@@ -950,10 +950,64 @@ Copyright (c) .NET Foundation. All rights reserved.
        output image missing. Keeping the crossgen invocation inline in each hook keeps them
        independent; the small duplication (MakeDir + response file + Exec) is intentional.
 
-       Requires CoreCLR + webcil. The crossgen2 tool, wasm JIT and reference assemblies are provided
-       via the _WasmCrossgen2Path / _WasmCrossgen2JitPath / _WasmReadyToRunReferenceAssembliesPath
-       properties (set by WasmApp.InTree.props in the runtime repo; a shipping SDK would resolve them
-       from the crossgen2 pack). -->
+       Requires CoreCLR + webcil. The crossgen2 tool and wasm JIT are provided via the
+       _WasmCrossgen2Path / _WasmCrossgen2JitPath properties. In the runtime repo these are set by
+       WasmApp.InTree.props (in-repo artifact paths). For a shipping SDK they are resolved from the
+       restored Microsoft.NETCore.App.Crossgen2.<hostRID> pack by _WasmResolveReadyToRunCompiler
+       below; that target only fills in the properties when they are not already set, so the in-repo
+       override always wins. -->
+
+  <!-- crossgen2 pack coordinates (host RID/arch of the tool, not the wasm target) and the version it
+       is coupled to. The crossgen2 pack version must match the app's runtime framework version exactly
+       (R2R is version-bubble sensitive). RuntimeFrameworkVersion honors an explicit user override but
+       is only available at evaluation time when set in the project; otherwise it is resolved later in a
+       target, so fall back to the SDK-bundled runtime version (available at evaluation, which is what a
+       PackageDownload requires). -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser'">
+    <_WasmCrossgen2HostRid Condition="'$(_WasmCrossgen2HostRid)' == ''">$(NETCoreSdkPortableRuntimeIdentifier)</_WasmCrossgen2HostRid>
+    <_WasmCrossgen2HostRid Condition="'$(_WasmCrossgen2HostRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</_WasmCrossgen2HostRid>
+    <_WasmCrossgen2HostArch Condition="'$(_WasmCrossgen2HostArch)' == '' and '$(_WasmCrossgen2HostRid)' != ''">$(_WasmCrossgen2HostRid.Substring($([MSBuild]::Add($(_WasmCrossgen2HostRid.LastIndexOf('-')), 1))))</_WasmCrossgen2HostArch>
+    <_WasmCrossgen2PackVersion Condition="'$(_WasmCrossgen2PackVersion)' == ''">$(RuntimeFrameworkVersion)</_WasmCrossgen2PackVersion>
+    <_WasmCrossgen2PackVersion Condition="'$(_WasmCrossgen2PackVersion)' == ''">$(BundledNETCoreAppPackageVersion)</_WasmCrossgen2PackVersion>
+  </PropertyGroup>
+
+  <!-- Acquisition: restore the crossgen2 pack when a project opts into R2R and no in-repo override is
+       present. PackageDownload is collected at restore, so it is a top-level item (not produced in a
+       target) and uses an evaluation-time version. -->
+  <ItemGroup Condition="'@(WasmReadyToRunAssembly)' != '' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser' and '$(_WasmCrossgen2Path)' == '' and '$(_WasmCrossgen2HostRid)' != '' and '$(_WasmCrossgen2PackVersion)' != ''">
+    <PackageDownload Include="Microsoft.NETCore.App.Crossgen2.$(_WasmCrossgen2HostRid)">
+      <Version>[$(_WasmCrossgen2PackVersion)]</Version>
+    </PackageDownload>
+  </ItemGroup>
+
+  <!-- Resolve the crossgen2 tool and wasm JIT from the restored crossgen2 pack. Only runs (and only
+       sets the properties) when they are not already provided by an in-repo override. -->
+  <Target Name="_WasmResolveReadyToRunCompiler"
+          Condition="'@(WasmReadyToRunAssembly)' != '' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser' and '$(_WasmCrossgen2Path)' == ''">
+
+    <PropertyGroup>
+      <_WasmCrossgen2NuGetRoot Condition="'$(_WasmCrossgen2NuGetRoot)' == ''">$(NuGetPackageRoot)</_WasmCrossgen2NuGetRoot>
+      <_WasmCrossgen2NuGetRoot Condition="'$(_WasmCrossgen2NuGetRoot)' == ''">$(NuGetPackageFolders)</_WasmCrossgen2NuGetRoot>
+    </PropertyGroup>
+
+    <Error Condition="'$(_WasmCrossgen2NuGetRoot)' == ''"
+           Text="ReadyToRun for WebAssembly could not determine the NuGet packages folder to resolve the crossgen2 pack. Set the %24(_WasmCrossgen2Path) and %24(_WasmCrossgen2JitPath) properties to point at a crossgen2 tool and wasm JIT." />
+
+    <PropertyGroup>
+      <_WasmCrossgen2PackDir>$([MSBuild]::NormalizeDirectory('$(_WasmCrossgen2NuGetRoot)', 'microsoft.netcore.app.crossgen2.$(_WasmCrossgen2HostRid)', '$(_WasmCrossgen2PackVersion)', 'tools'))</_WasmCrossgen2PackDir>
+      <_WasmCrossgen2Path Condition="'$(OS)' == 'Windows_NT'">$(_WasmCrossgen2PackDir)crossgen2.exe</_WasmCrossgen2Path>
+      <_WasmCrossgen2Path Condition="'$(_WasmCrossgen2Path)' == ''">$(_WasmCrossgen2PackDir)crossgen2</_WasmCrossgen2Path>
+      <_WasmCrossgen2JitName Condition="'$(_WasmCrossgen2JitName)' == '' and '$(OS)' == 'Windows_NT'">clrjit_universal_wasm_$(_WasmCrossgen2HostArch).dll</_WasmCrossgen2JitName>
+      <_WasmCrossgen2JitName Condition="'$(_WasmCrossgen2JitName)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">libclrjit_universal_wasm_$(_WasmCrossgen2HostArch).dylib</_WasmCrossgen2JitName>
+      <_WasmCrossgen2JitName Condition="'$(_WasmCrossgen2JitName)' == ''">libclrjit_universal_wasm_$(_WasmCrossgen2HostArch).so</_WasmCrossgen2JitName>
+      <_WasmCrossgen2JitPath Condition="'$(_WasmCrossgen2JitPath)' == ''">$(_WasmCrossgen2PackDir)$(_WasmCrossgen2JitName)</_WasmCrossgen2JitPath>
+      <!-- -O works around the MinOpts wasm R2R JIT assert (https://github.com/dotnet/runtime/issues/129630).
+           JitWasmNyiToR2RUnsupported / JitWasmSimdNyiToR2RUnsupported let NYI (incl. SIMD) methods fall
+           back at runtime instead of failing crossgen (https://github.com/dotnet/runtime/issues/129745).
+           Mirrors the in-repo default in WasmApp.InTree.props; drop once those bugs are fixed. -->
+      <_WasmCrossgen2ExtraArgs Condition="'$(_WasmCrossgen2ExtraArgs)' == ''">--codegenopt:JitWasmNyiToR2RUnsupported=1 --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 -O</_WasmCrossgen2ExtraArgs>
+    </PropertyGroup>
+  </Target>
 
   <!-- Build hook: crossgen the opted-in assemblies from the untrimmed build output before webcil
        conversion. This must run wherever _ConvertBuildDllsToWebcil produces the shipping webcil —
@@ -966,7 +1020,7 @@ Copyright (c) .NET Foundation. All rights reserved.
        (@(_WasmDllBuildCandidates)), minus the assemblies being compiled. -->
   <Target Name="_WasmCrossgenReadyToRunForBuild"
           BeforeTargets="_ConvertBuildDllsToWebcil"
-          DependsOnTargets="_ComputeWasmBuildCandidates"
+          DependsOnTargets="_ComputeWasmBuildCandidates;_WasmResolveReadyToRunCompiler"
           Condition="'@(WasmReadyToRunAssembly)' != '' and '$(_WasmEnableWebcil)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(_IsPublishing)' != 'true'">
 
     <Error Condition="'$(_WasmCrossgen2Path)' == '' or !Exists('$(_WasmCrossgen2Path)')"
@@ -1016,6 +1070,7 @@ Copyright (c) .NET Foundation. All rights reserved.
        publish webcil conversion. Self-contained for the reason described above. -->
   <Target Name="_WasmCrossgenReadyToRunForPublish"
           BeforeTargets="ProcessPublishFilesForWasm"
+          DependsOnTargets="_WasmResolveReadyToRunCompiler"
           Condition="'@(WasmReadyToRunAssembly)' != '' and '$(_WasmEnableWebcil)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(WasmBuildingForNestedPublish)' != 'true'">
 
     <Error Condition="'$(_WasmCrossgen2Path)' == '' or !Exists('$(_WasmCrossgen2Path)')"
