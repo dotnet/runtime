@@ -15,7 +15,7 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Sdk.WebAssembly
 {
-    public class BootJsonBuilderHelper(TaskLoggingHelper Log, string DebugLevel, bool IsMultiThreaded, bool IsPublish)
+    public class BootJsonBuilderHelper(TaskLoggingHelper Log, string DebugLevel, bool IsMultiThreaded, bool IsPublish, Version TargetFrameworkVersion)
     {
 #pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
         internal static readonly Regex mergeWithPlaceholderRegex = new Regex(@"/\*!\s*dotnetBootConfig\s*\*/\s*{}");
@@ -154,7 +154,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             ResourcesData resources = (ResourcesData)bootConfig.resources;
 
             string resourceExtension = Path.GetExtension(resourceName);
-            if (resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".mjs", StringComparison.OrdinalIgnoreCase))
+            if (TargetFrameworkVersion < version110 && resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".mjs", StringComparison.OrdinalIgnoreCase))
                 return resources.jsModuleWorker ??= new();
             else if (resourceName.StartsWith("dotnet.diagnostics", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return resources.jsModuleDiagnostics ??= new();
@@ -359,6 +359,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             return string.Join(Environment.NewLine, imports);
         }
 
+        private static readonly Version version110 = new Version(11, 0);
         private static string? GetCacheControl(string endpoint, ResourcesData resources) => resources.fingerprinting?.ContainsKey(endpoint) ?? false ? "force-cache" : null;
     }
 }

@@ -695,7 +695,7 @@ function(add_jit jitName)
 
     # add the install targets
     if (${jitName} MATCHES "clrjit_universal_wasm")
-        # TODO-WASM: add the WASM Jit to alljits once that becomes necessary.
+        install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)
         install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT wasmjit)
     else()
         install_clr(TARGETS ${jitName} DESTINATIONS . COMPONENT alljits)

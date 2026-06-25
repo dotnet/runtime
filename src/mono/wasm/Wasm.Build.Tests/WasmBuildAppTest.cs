@@ -93,7 +93,7 @@ namespace Wasm.Build.Tests
                         Console.WriteLine(""Hello, World!"");
                         return 42;
                     }
-                }", config, aot);
+                }", config, aot, readyToRun: true);
 
         [Theory]
         [MemberData(nameof(MainMethodTestData), parameters: new object[] { /*aot*/ false })]

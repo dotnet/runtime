@@ -21,8 +21,11 @@
   </PropertyGroup>
 
   <!-- ReadyToRun (R2R) for WebAssembly: tool/reference paths consumed by the SDK's
-       _WasmCrossgenReadyToRunAssemblies target when a project opts in via @(WasmReadyToRunAssembly).
-       These point at the in-tree build outputs; a shipping SDK would resolve crossgen2 from its pack. -->
+       _WasmCrossgenReadyToRunForBuild/_WasmCrossgenReadyToRunForPublish targets when a project opts in
+       via @(WasmReadyToRunAssembly). These point at the in-tree build outputs and are the in-repo
+       override only: when set, the SDK's _WasmResolveReadyToRunCompiler target leaves them as-is; when
+       unset (shipping SDK), it resolves crossgen2 and the wasm JIT from the restored
+       Microsoft.NETCore.App.Crossgen2.<hostRID> pack instead. -->
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser'">
     <!-- Architecture of the host crossgen2 tool (not the wasm target). -->
     <_WasmCrossgen2HostArch Condition="'$(_WasmCrossgen2HostArch)' == ''">x64</_WasmCrossgen2HostArch>

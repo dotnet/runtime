@@ -606,7 +606,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         var bootJsonEntries = assets.jsModuleNative.Select(a => a.name)
             .Union(assets.wasmNative.Select(a => a.name))
             .Union(assets.jsModuleRuntime.Select(a => a.name))
-            .Union(assets.jsModuleWorker?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .Union(assets.jsModuleDiagnostics?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .Union(assets.wasmSymbols?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .ToArray();
