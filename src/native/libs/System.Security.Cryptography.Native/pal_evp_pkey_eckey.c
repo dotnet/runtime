@@ -4,15 +4,16 @@
 #include "pal_evp_pkey_eckey.h"
 #include "pal_ecc_import_export.h"
 
+#include <assert.h>
+
 EVP_PKEY* CryptoNative_CreateEvpPkeyFromEcKey(EC_KEY* ecKey, int32_t* outKeySize)
 {
+    assert(ecKey != NULL);
+    assert(outKeySize != NULL);
+
     ERR_clear_error();
 
-    if (outKeySize)
-        *outKeySize = 0;
-
-    if (!ecKey)
-        return NULL;
+    *outKeySize = 0;
 
     EVP_PKEY* pkey = EVP_PKEY_new();
     if (!pkey)
@@ -32,8 +33,6 @@ EVP_PKEY* CryptoNative_CreateEvpPkeyFromEcKey(EC_KEY* ecKey, int32_t* outKeySize
         return NULL;
     }
 
-    if (outKeySize)
-        *outKeySize = keySize;
-
+    *outKeySize = keySize;
     return pkey;
 }

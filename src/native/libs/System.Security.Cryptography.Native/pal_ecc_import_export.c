@@ -669,21 +669,14 @@ static int32_t EvpPKeyGetEcKeyParameters(
     assert(d != NULL);
     assert(cbD != NULL);
 
+    if (
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (!API_EXISTS(EVP_PKEY_get_bn_param) ||
+        !API_EXISTS(EVP_PKEY_get_bn_param) ||
         !API_EXISTS(EVP_PKEY_get_octet_string_param) ||
         !API_EXISTS(EVP_PKEY_get_utf8_string_param) ||
-        !API_EXISTS(EVP_PKEY_get0_provider))
-    {
-        *cbQx = *cbQy = 0;
-        *qx = *qy = NULL;
-        *d = NULL;
-        *cbD = 0;
-        return 2;
-    }
+        !API_EXISTS(EVP_PKEY_get0_provider) ||
 #endif
-
-    if (!EVP_PKEY_get0_provider(pkey))
+        !EVP_PKEY_get0_provider(pkey))
     {
         *cbQx = *cbQy = 0;
         *qx = *qy = NULL;
@@ -1220,27 +1213,17 @@ static int32_t EvpPKeyGetEcCurveParameters(
     assert(seed != NULL);
     assert(cbSeed != NULL);
 
+    // For legacy EC_KEY-backed EVP_PKEYs, the OSSL 3.0 params API (get_bn_param etc.)
+    // does not expose curve parameters. Signal to caller to use legacy path.
+    if (
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (!API_EXISTS(EC_GROUP_get_field_type) ||
+        !API_EXISTS(EC_GROUP_get_field_type) ||
         !API_EXISTS(EVP_PKEY_get_octet_string_param) ||
         !API_EXISTS(EVP_PKEY_get_utf8_string_param) ||
         !API_EXISTS(EVP_PKEY_get_bn_param) ||
-        !API_EXISTS(EVP_PKEY_get0_provider))
-    {
-        *cbQx = *cbQy = 0;
-        *qx = *qy = NULL;
-        *d = NULL;
-        *cbD = 0;
-        *curveType = Unspecified;
-        *cbP = *cbA = *cbB = *cbGx = *cbGy = *cbOrder = *cbCofactor = *cbSeed = 0;
-        *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
-        return 2;
-    }
+        !API_EXISTS(EVP_PKEY_get0_provider) ||
 #endif
-
-    // For legacy EC_KEY-backed EVP_PKEYs, the OSSL 3.0 params API (get_bn_param etc.)
-    // does not expose curve parameters. Signal to driver to use legacy path.
-    if (!EVP_PKEY_get0_provider(pkey))
+        !EVP_PKEY_get0_provider(pkey))
     {
         *cbQx = *cbQy = 0;
         *qx = *qy = NULL;
