@@ -1252,6 +1252,8 @@ namespace System
                     return SR.ConcurrentDictionary_ItemKeyIsNull;
                 case ExceptionResource.ConcurrentDictionary_TypeOfValueIncorrect:
                     return SR.ConcurrentDictionary_TypeOfValueIncorrect;
+                case ExceptionResource.InvalidOperation_NoElements:
+                    return SR.InvalidOperation_NoElements;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1453,5 +1455,6 @@ namespace System
         InvalidOperation_IncompatibleComparer,
         ConcurrentDictionary_ItemKeyIsNull,
         ConcurrentDictionary_TypeOfValueIncorrect,
+        InvalidOperation_NoElements,
     }
 }

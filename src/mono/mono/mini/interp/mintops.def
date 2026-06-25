@@ -763,6 +763,8 @@ OPDEF(MINT_TANH, "tanh", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ABS, "abs_d", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_MIN, "min_d", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_MAX, "max_d", 4, 1, 2, MintOpNoArgs)
+OPDEF(MINT_TRUNC, "trunc_d", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_COPYSIGN, "copysign_d", 4, 1, 2, MintOpNoArgs)
 
 // float. These must be kept in the same order as their double counterpart
 OPDEF(MINT_ASINF, "asinf", 3, 1, 1, MintOpNoArgs)
@@ -792,6 +794,8 @@ OPDEF(MINT_TANHF, "tanhf", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_ABSF, "abs_f", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_MINF, "min_f", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_MAXF, "max_f", 4, 1, 2, MintOpNoArgs)
+OPDEF(MINT_TRUNCF, "trunc_f", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_COPYSIGNF, "copysign_f", 4, 1, 2, MintOpNoArgs)
 
 OPDEF(MINT_PROF_ENTER, "prof_enter", 2, 0, 0, MintOpShortInt)
 OPDEF(MINT_PROF_SAMPLEPOINT, "prof_samplepoint", 2, 0, 0, MintOpShortInt)

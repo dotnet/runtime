@@ -578,16 +578,12 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
     Debugger_STRData frameData;
     ZeroMemory(&frameData, sizeof(frameData));
 
-    // Allocate the DT_CONTEXT and DebuggerREGDISPLAY buffers on the dbi stack and
-    // hand their addresses to the DAC via Debugger_STRData. The DAC writes the
-    // populated context/regdisplay through these pointers. See the comment on
-    // Debugger_STRData in dbgipcevents.h for the protocol.
+    // Allocate the DT_CONTEXT buffer on the dbi stack and
+    // hand the address to the DAC via Debugger_STRData. The DAC writes the
+    // populated context through this pointer.
     DT_CONTEXT          frameCtx;
-    DebuggerREGDISPLAY  frameRd;
     ZeroMemory(&frameCtx, sizeof(frameCtx));
-    ZeroMemory(&frameRd,  sizeof(frameRd));
     frameData.ctx = &frameCtx;
-    frameData.rd  = &frameRd;
 
     IDacDbiInterface::FrameType ft = IDacDbiInterface::kInvalid;
 
@@ -693,7 +689,6 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
                                                               frameData.fp,
                                                               pNativeCode,
                                                               (SIZE_T)pJITFuncData->nativeOffset,
-                                                              &frameRd,
                                                               (TADDR)frameData.v.taAmbientESP,
                                                               pCurrentAppDomain,
                                                               &miscFrame,
