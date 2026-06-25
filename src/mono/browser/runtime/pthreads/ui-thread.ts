@@ -301,9 +301,8 @@ function getNewWorker (modulePThread: PThreadLibrary): PThreadWorker {
 function allocateUnusedWorker (): PThreadWorker {
     if (!WasmEnableThreads) return null as any;
 
-    const asset = loaderHelpers.resolve_single_asset_path("js-module-threads");
-    const uri = asset.resolvedUrl;
-    mono_assert(uri !== undefined, "could not resolve the uri for the js-module-threads asset");
+    const uri = loaderHelpers.scriptUrl;
+    mono_assert(uri !== undefined, "loaderHelpers.scriptUrl must be defined");
     const workerNumber = loaderHelpers.workerNextNumber++;
     const worker = new Worker(uri, {
         name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
