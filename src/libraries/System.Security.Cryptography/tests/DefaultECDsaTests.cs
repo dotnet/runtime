@@ -3,13 +3,12 @@
 
 using System.IO;
 using System.Reflection;
-using System.Security.Cryptography.EcDsa.Tests;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class ECDsaTests
+    public sealed class DefaultECDsaTests
     {
         [Fact]
         public void Create_InvalidArgument_Throws()
@@ -31,7 +30,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void NotSupportedBaseMethods_Throw()
         {
-            using (var ecdsa = new OverrideAbstractECDsa(ECDsaFactory.Create()))
+            using (var ecdsa = new OverrideAbstractECDsa(ECDsa.Create()))
             {
                 Assert.Throws<NotSupportedException>(() => ecdsa.ExportParameters(false));
                 Assert.Throws<NotSupportedException>(() => ecdsa.ExportExplicitParameters(false));
@@ -46,7 +45,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void BaseProperties_ExpectedValues()
         {
-            using (var ecdsa = new OverrideAbstractECDsa(ECDsaFactory.Create()))
+            using (var ecdsa = new OverrideAbstractECDsa(ECDsa.Create()))
             {
                 Assert.Null(ecdsa.KeyExchangeAlgorithm);
                 Assert.Equal("ECDsa", ecdsa.SignatureAlgorithm);
@@ -56,7 +55,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void Array_SignData_VerifyData_UsesHashDataAndSignHashAndVerifyHash()
         {
-            using (var ecdsa = new OverrideAbstractECDsa(ECDsaFactory.Create()))
+            using (var ecdsa = new OverrideAbstractECDsa(ECDsa.Create()))
             {
                 AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.SignData((byte[])null, HashAlgorithmName.SHA1));
                 AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.SignData(null, 0, 0, HashAlgorithmName.SHA1));
@@ -92,7 +91,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void Stream_SignData_VerifyData_UsesHashDataAndSignHashAndVerifyHash()
         {
-            using (var ecdsa = new OverrideAbstractECDsa(ECDsaFactory.Create()))
+            using (var ecdsa = new OverrideAbstractECDsa(ECDsa.Create()))
             {
                 AssertExtensions.Throws<ArgumentNullException>("data", () => ecdsa.SignData((Stream)null, HashAlgorithmName.SHA1));
                 AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.SignData(new MemoryStream(new byte[1]), new HashAlgorithmName(null)));
@@ -118,7 +117,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void Span_TrySignData_VerifyData_UsesTryHashDataAndTrySignHashAndTryVerifyHash()
         {
-            using (var ecdsa = new OverrideAbstractECDsa(ECDsaFactory.Create()))
+            using (var ecdsa = new OverrideAbstractECDsa(ECDsa.Create()))
             {
                 AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => ecdsa.TrySignData(new byte[1], new byte[1], new HashAlgorithmName(null), out int bytesWritten));
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => ecdsa.TrySignData(new byte[1], new byte[1], new HashAlgorithmName(""), out int bytesWritten));

@@ -3,24 +3,28 @@
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
-    public class ECDsaProvider : IECDsaProvider
+    public class ECDsaOpenSslProvider : ECDsaProvider
     {
-        public ECDsa Create()
+        public static readonly ECDsaOpenSslProvider Instance = new ECDsaOpenSslProvider();
+
+        private ECDsaOpenSslProvider() { }
+
+        public override ECDsa Create()
         {
             return new ECDsaOpenSsl();
         }
 
-        public ECDsa Create(int keySize)
+        public override ECDsa Create(int keySize)
         {
             return new ECDsaOpenSsl(keySize);
         }
 
-        public ECDsa Create(ECCurve curve)
+        public override ECDsa Create(ECCurve curve)
         {
             return new ECDsaOpenSsl(curve);
         }
 
-        public bool IsCurveValid(Oid oid)
+        public override bool IsCurveValid(Oid oid)
         {
             if (!string.IsNullOrEmpty(oid.Value))
             {
@@ -46,11 +50,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return false;
         }
 
-        public bool ExplicitCurvesSupported => PlatformDetection.IsNotSymCryptOpenSsl;
-    }
+        public override bool ExplicitCurvesSupported => PlatformDetection.IsNotSymCryptOpenSsl;
 
-    public partial class ECDsaFactory
-    {
-        private static readonly IECDsaProvider s_provider = new ECDsaProvider();
     }
 }
