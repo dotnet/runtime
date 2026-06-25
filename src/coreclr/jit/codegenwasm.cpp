@@ -1903,9 +1903,12 @@ void CodeGen::genCodeForVectorConstant(GenTree* treeNode)
     assert(treeNode->IsCnsVec());
     GenTreeVecCon* vecCon = treeNode->AsVecCon();
 
+    uint8_t bytes[16] = {};
+    memcpy(bytes, &vecCon->gtSimdVal, genTypeSize(vecCon->TypeGet()));
+
     // There is only one type variant for v128.const, v128.const <byte[16]>
     // and the bytes are reinterpreted according to whichever operation consumes the value.
-    GetEmitter()->emitIns_V128Imm(INS_v128_const, vecCon->gtSimd16Val.u8);
+    GetEmitter()->emitIns_V128Imm(INS_v128_const, bytes);
     WasmProduceReg(treeNode);
 }
 #endif
