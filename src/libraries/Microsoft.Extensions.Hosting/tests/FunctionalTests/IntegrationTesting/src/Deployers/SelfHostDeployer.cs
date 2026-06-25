@@ -122,37 +122,9 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
                 AddEnvironmentVariablesToProcess(startInfo, DeploymentParameters.EnvironmentVariables);
 
                 var started = new TaskCompletionSource<object>();
-
-                HostProcess = new Process() { StartInfo = startInfo };
-                HostProcess.EnableRaisingEvents = true;
-                HostProcess.OutputDataReceived += (sender, dataArgs) =>
-                {
-                    if (string.Equals(dataArgs.Data, ApplicationStartedMessage))
-                    {
-                        started.TrySetResult(null);
-                    }
-
-                    OutputReceived?.Invoke(sender, dataArgs);
-                };
                 var hostExitTokenSource = new CancellationTokenSource();
-                HostProcess.Exited += (sender, e) =>
-                {
-                    Logger.LogInformation("host process ID {pid} shut down", HostProcess.Id);
 
-                    // If TrySetResult was called above, this will just silently fail to set the new state, which is what we want
-                    started.TrySetException(new Exception($"Command exited unexpectedly with exit code: {HostProcess.ExitCode}"));
-
-                    TriggerHostShutdown(hostExitTokenSource);
-                };
-
-                try
-                {
-                    HostProcess.StartAndCaptureOutAndErrToLogger(executableName, Logger);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError("Error occurred while starting the process. Exception: {exception}", ex.ToString());
-                }
+                await StartHostWithRetryAsync(startInfo, executableName, started, hostExitTokenSource);
 
                 if (HostProcess.HasExited)
                 {
@@ -172,6 +144,59 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
                 }
 
                 return hostExitTokenSource.Token;
+            }
+        }
+
+        // Launching the host process can fail transiently on constrained CI/Helix machines (for example a
+        // failed fork or a momentarily unavailable executable). Retry a few times before giving up so a
+        // one-off launch failure doesn't fail the test; the final failure is rethrown with its real cause.
+        private async Task StartHostWithRetryAsync(ProcessStartInfo startInfo, string executableName, TaskCompletionSource<object> started, CancellationTokenSource hostExitTokenSource)
+        {
+            const int MaxAttempts = 3;
+            TimeSpan retryDelay = TimeSpan.FromSeconds(2);
+
+            for (int attempt = 1; ; attempt++)
+            {
+                var process = new Process() { StartInfo = startInfo };
+                process.EnableRaisingEvents = true;
+                process.OutputDataReceived += (sender, dataArgs) =>
+                {
+                    if (string.Equals(dataArgs.Data, ApplicationStartedMessage))
+                    {
+                        started.TrySetResult(null);
+                    }
+
+                    OutputReceived?.Invoke(sender, dataArgs);
+                };
+                process.Exited += (sender, e) =>
+                {
+                    Logger.LogInformation("host process ID {pid} shut down", process.Id);
+
+                    // If TrySetResult was called above, this will just silently fail to set the new state, which is what we want
+                    started.TrySetException(new Exception($"Command exited unexpectedly with exit code: {process.ExitCode}"));
+
+                    TriggerHostShutdown(hostExitTokenSource);
+                };
+
+                HostProcess = process;
+
+                try
+                {
+                    process.StartAndCaptureOutAndErrToLogger(executableName, Logger);
+                    return;
+                }
+                catch (Exception ex) when (attempt < MaxAttempts)
+                {
+                    Logger.LogWarning("Attempt {attempt} of {maxAttempts} to start the host process failed; retrying in {delaySeconds}s. Exception: {exception}",
+                        attempt, MaxAttempts, retryDelay.TotalSeconds, ex.ToString());
+                    process.Dispose();
+                    await Task.Delay(retryDelay);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError("Failed to start the host process after {maxAttempts} attempts. Exception: {exception}", MaxAttempts, ex.ToString());
+                    throw;
+                }
             }
         }
 

@@ -102,8 +102,8 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
 
         protected string GetDotNetExeForArchitecture()
         {
-            var executableName = DotnetCommandName;
-            // We expect x64 dotnet.exe to be on the path but we have to go searching for the x86 version.
+            var executableName = GetHostDotNetExecutable();
+            // We expect the x64 dotnet host to be resolvable, but we have to go searching for the x86 version.
             if (DotNetCommands.IsRunningX86OnX64(DeploymentParameters.RuntimeArchitecture))
             {
                 executableName = DotNetCommands.GetDotNetExecutable(DeploymentParameters.RuntimeArchitecture);
@@ -116,15 +116,36 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
             return executableName;
         }
 
+        // The runtime libraries Helix harness runs tests against the testhost via $RUNTIME_PATH/dotnet by
+        // absolute path and doesn't add dotnet to PATH (that's only done for workload tests), so the bare
+        // command name can fail to launch on machines without a global dotnet. Resolve the muxer next to the
+        // running shared framework instead, falling back to PATH for local runs.
+        private static string GetHostDotNetExecutable()
+        {
+            var runtimeDirectory = Path.GetDirectoryName(typeof(object).Assembly.Location);
+            if (!string.IsNullOrEmpty(runtimeDirectory))
+            {
+                // runtimeDirectory is <testhost>/shared/Microsoft.NETCore.App/<version>; the muxer lives at <testhost>/dotnet.
+                string dotnetRoot = Path.GetFullPath(Path.Combine(runtimeDirectory, "..", "..", ".."));
+                string muxer = Path.Combine(dotnetRoot, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dotnet.exe" : "dotnet");
+                if (File.Exists(muxer))
+                {
+                    return muxer;
+                }
+            }
+
+            return DotnetCommandName;
+        }
+
         protected void ShutDownIfAnyHostProcess(Process hostProcess)
         {
-            if (hostProcess != null && !hostProcess.HasExited)
+            if (hostProcess is not null && IsRunning(hostProcess))
             {
                 Logger.LogInformation("Attempting to cancel process {0}", hostProcess.Id);
 
                 // Shutdown the host process.
                 hostProcess.KillTree();
-                if (!hostProcess.HasExited)
+                if (IsRunning(hostProcess))
                 {
                     Logger.LogWarning("Unable to terminate the host process with process Id '{processId}", hostProcess.Id);
                 }
@@ -136,6 +157,21 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
             else
             {
                 Logger.LogWarning("Host process already exited or never started successfully.");
+            }
+        }
+
+        // Process.HasExited throws InvalidOperationException ("No process is associated with this object")
+        // when the process was never started. Treat that as "not running" so disposal after a failed
+        // deployment doesn't mask the original start failure with a misleading exception.
+        private static bool IsRunning(Process hostProcess)
+        {
+            try
+            {
+                return !hostProcess.HasExited;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
             }
         }
 
