@@ -12394,11 +12394,9 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         "get_Length",
         "get_Capacity",
         "op_Equality",
-        "Initialize",
         "ThrowIfNullOrEmpty",
         "IsNullOrEmpty",
         "Enter",
-        "CtorOpened",
         "GetTypeFromHandle",
         "AsPointer",
         "GetUnderlyingNativeHandle",
@@ -12408,7 +12406,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         "GetHandleValue",
         "InternalFree",
         "Grow",
-        "CtorClosed",
         "IsNullHandle",
         "GetRuntimeFieldInfo",
         "System.IRuntimeFieldInfo.get_Value",
@@ -12426,7 +12423,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         "KeepAlive",
         "EqualsIgnoreCase_Scalar",
         "As",
-        "get_Item",
         "EqualsIgnoreCase",
         "UInt32OrdinalIgnoreCaseAscii",
         "GetTitle",
@@ -12463,45 +12459,78 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
        	"get_Log",
        	"get_IsMeterSupported",
        	"get_Out",
-       	"get_IsSupported",
         "ReadUnaligned",
 	"WriteUnaligned",
         "_Memmove",
-	".ctor",
     };
 
-    // 2D array for class name and function name combinations to exclude from JIT compilation
-    struct JitExclusionEntry
+    struct JitInclusionEntry
     {
         const char* className;
         const char* functionName;
     };
 
-    static const JitExclusionEntry jitExclusionList[] = {
-       { "System.Diagnostics.Tracing.EventSource", "Initialize" },
-       { "System.Collections.Generic.Dictionary`2[__Canon,__Canon]", ".ctor"},
-       { "System.Collections.Generic.NonRandomizedStringEqualityComparer", ".ctor"},
-       { "System.Collections.Generic.List`1[__Canon]", ".ctor"},
-       { "System.Runtime.CompilerServices.QCallTypeHandle", ".ctor"},
-       { "System.Resources.ResourceManager", ".ctor"}, //Assertion failed 'Unhandled TARGET in getReturnTypeForStruct'
-       { "RuntimeTypeCache", ".ctor"},
-       { "System.Runtime.CompilerServices.QCallModule", ".ctor"},
-       { "System.Runtime.CompilerServices.ObjectHandleOnStack", ".ctor"},
-       { "System.Reflection.MetadataImport", ".ctor"},
-       { "System.Runtime.CompilerServices.DefaultInterpolatedStringHandler", ".ctor"}, //Assertion failed 'Unhandled TARGET in getReturnTypeForStruct'
-       { "System.Runtime.CompilerServices.ConditionalWeakTable`2[__Canon,__Canon]", ".ctor"},
-       { "Container[__Canon,__Canon]", ".ctor"},
+    static const JitInclusionEntry jitInclusionList[] = {
+	{ "System.Collections.Generic.Dictionary`2[__Canon,__Canon]","Initialize"},
+	{ "System.Collections.Generic.Dictionary`2[Char,__Canon]","Initialize"},
+	{ "System.Collections.Generic.Dictionary`2[Guid,__Canon]","Initialize"},
+	{ "System.Collections.Generic.Dictionary`2[__Canon,ConsoleKeyInfo]","Initialize"},
+	{ "System.Diagnostics.Tracing.EventSource", "get_IsSupported"},
+	{ "System.StartupHookProvider", "get_IsSupported"},
+	{ "EmptyArray`1[Char]", ".cctor"},
+	{ "EmptyArray`1[__Canon]", ".cctor"},
+	{ "FileDescriptors", ".cctor"},
+	{ "Microsoft.Win32.SafeHandles.SafeFileHandle", ".cctor"},
+	{ "Sys", ".cctor"},
+	{ "System.BitConverter", ".cctor"},
+	{ "System.Collections.Generic.List`1[Char]", ".cctor"},
+	{ "System.Collections.Generic.List`1[__Canon]", ".cctor"},
+	{ "System.Collections.Generic.NonRandomizedStringEqualityComparer", ".cctor"},
+	{ "System.Console", ".cctor"},
+	{ "System.ConsolePal", ".cctor"},
+	{ "System.Diagnostics.Debug", ".cctor"},
+	{ "System.Diagnostics.DebugProvider", ".cctor"},
+	{ "System.Diagnostics.Tracing.ActivityTracker", ".cctor"},
+	{ "System.Diagnostics.Tracing.EventSource", ".cctor"},
+	{ "System.Diagnostics.Tracing.EventSourceInitHelper", ".cctor"},
+	{ "System.Diagnostics.Tracing.NativeRuntimeEventSource", ".cctor"},
+	{ "System.Diagnostics.Tracing.RuntimeEventSource", ".cctor"},
+	{ "System.Diagnostics.Tracing.Statics", ".cctor"},
+	{ "System.Diagnostics.Tracing.XplatEventLogger", ".cctor"},
+	{ "System.Environment", ".cctor"},
+	{ "System.IO.EncodingCache", ".cctor"},
+	{ "System.IO.StreamWriter", ".cctor"},
+	{ "System.IO.TextWriter", ".cctor"},
+	{ "System.LazyHelper", ".cctor"},
+	{ "System.OrdinalCaseSensitiveComparer", ".cctor"},
+	{ "System.OrdinalIgnoreCaseComparer", ".cctor"},
+	{ "System.Reflection.ConstructorInfo", ".cctor"},
+	{ "System.Reflection.Missing", ".cctor"},
+	{ "System.Runtime.InteropServices.Marshal", ".cctor"},
+	{ "System.Runtime.InteropServices.SafeHandle", ".cctor"},
+	{ "System.RuntimeType", ".cctor"},
+	{ "System.Text.ASCIIEncoding", ".cctor"},
+	{ "System.Text.DecoderExceptionFallback", ".cctor"},
+	{ "System.Text.DecoderReplacementFallback", ".cctor"},
+	{ "System.Text.EncoderExceptionFallback", ".cctor"},
+	{ "System.Text.EncoderReplacementFallback", ".cctor"},
+	{ "System.Text.Encoding", ".cctor"},
+	{ "System.Text.UTF8Encoding", ".cctor"},
+	{ "System.Threading.Tasks.TaskCache", ".cctor"},
+	{ "System.Threading.Tasks.Task`1[Boolean]", ".cctor"},
+	{ "System.Threading.Tasks.Task`1[Int32]", ".cctor"},
+	{ "System.Type", ".cctor"},
     };
 
-    const size_t numExclusions = sizeof(jitExclusionList) / sizeof(jitExclusionList[0]);
+    const size_t numInclusions = sizeof(jitInclusionList) / sizeof(jitInclusionList[0]);
 
     // Check if the current class/function combination should be excluded from JIT
-    for (size_t i = 0; i < numExclusions; i++)
+    for (size_t i = 0; i < numInclusions; i++)
     {
-        if (!strcmp(ftnDesc->m_pszDebugClassName, jitExclusionList[i].className) &&
-            !strcmp(ftnName, jitExclusionList[i].functionName))
+        if (!strcmp(ftnDesc->m_pszDebugClassName, jitInclusionList[i].className) &&
+            !strcmp(ftnName, jitInclusionList[i].functionName))
         {
-            return false;
+            return true;
         }
     }
 
