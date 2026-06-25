@@ -4401,12 +4401,15 @@ namespace System.Runtime.Intrinsics
             }
             else if (PackedSimd.IsSupported)
             {
-                // Compose with two ShuffleNative (PackedSimd.Swizzle, which clamps indices >= 16 to 0)
-                // plus OR. PackedSimd.Shuffle (two-vector i8x16.shuffle) would require constant lane
-                // indices and is impractical to call portably from generic code paths.
-                Vector128<byte> leftPart = Vector128.ShuffleNative(left,
+                // Compose with two PackedSimd.Swizzle calls (clamp out-of-range to 0) plus OR.
+                // We call PackedSimd.Swizzle directly rather than Vector128.ShuffleNative because
+                // the latter goes through a Ssse3 -> AdvSimd.Arm64 -> PackedSimd dispatcher chain
+                // that the Mono SIMD intrinsic recognizer doesn't always lower cleanly.
+                // PackedSimd.Shuffle (two-vector i8x16.shuffle) requires constant lane indices
+                // and is impractical to call portably from generic code paths.
+                Vector128<byte> leftPart = PackedSimd.Swizzle(left,
                     Vector128.Create((byte)0, 0xFF, 1, 0xFF, 2, 0xFF, 3, 0xFF, 4, 0xFF, 5, 0xFF, 6, 0xFF, 7, 0xFF));
-                Vector128<byte> rightPart = Vector128.ShuffleNative(right,
+                Vector128<byte> rightPart = PackedSimd.Swizzle(right,
                     Vector128.Create((byte)0xFF, 0, 0xFF, 1, 0xFF, 2, 0xFF, 3, 0xFF, 4, 0xFF, 5, 0xFF, 6, 0xFF, 7));
                 return leftPart | rightPart;
             }
@@ -4430,9 +4433,9 @@ namespace System.Runtime.Intrinsics
             }
             else if (PackedSimd.IsSupported)
             {
-                Vector128<byte> leftPart = Vector128.ShuffleNative(left,
+                Vector128<byte> leftPart = PackedSimd.Swizzle(left,
                     Vector128.Create((byte)8, 0xFF, 9, 0xFF, 10, 0xFF, 11, 0xFF, 12, 0xFF, 13, 0xFF, 14, 0xFF, 15, 0xFF));
-                Vector128<byte> rightPart = Vector128.ShuffleNative(right,
+                Vector128<byte> rightPart = PackedSimd.Swizzle(right,
                     Vector128.Create((byte)0xFF, 8, 0xFF, 9, 0xFF, 10, 0xFF, 11, 0xFF, 12, 0xFF, 13, 0xFF, 14, 0xFF, 15));
                 return leftPart | rightPart;
             }

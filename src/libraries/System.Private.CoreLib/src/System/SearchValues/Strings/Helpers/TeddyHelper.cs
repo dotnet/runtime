@@ -369,11 +369,13 @@ namespace System.Buffers
             }
             else if (PackedSimd.IsSupported)
             {
-                // ShuffleNative lowers to PackedSimd.Swizzle which clamps out-of-range
-                // indices (>= 16) to 0, so we can compose the two halves with an OR.
-                Vector128<byte> leftPart = Vector128.ShuffleNative(left,
+                // Call PackedSimd.Swizzle directly (i8x16.swizzle) rather than through
+                // Vector128.ShuffleNative's dispatcher chain, which the Mono SIMD intrinsic
+                // recognizer doesn't always lower cleanly. Swizzle clamps out-of-range
+                // indices (>= 16) to 0 so we can compose the two halves with OR.
+                Vector128<byte> leftPart = PackedSimd.Swizzle(left,
                     Vector128.Create((byte)15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF));
-                Vector128<byte> rightPart = Vector128.ShuffleNative(right,
+                Vector128<byte> rightPart = PackedSimd.Swizzle(right,
                     Vector128.Create((byte)0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14));
                 return leftPart | rightPart;
             }
@@ -407,9 +409,9 @@ namespace System.Buffers
             }
             else if (PackedSimd.IsSupported)
             {
-                Vector128<byte> leftPart = Vector128.ShuffleNative(left,
+                Vector128<byte> leftPart = PackedSimd.Swizzle(left,
                     Vector128.Create((byte)14, 15, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF));
-                Vector128<byte> rightPart = Vector128.ShuffleNative(right,
+                Vector128<byte> rightPart = PackedSimd.Swizzle(right,
                     Vector128.Create((byte)0xFF, 0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13));
                 return leftPart | rightPart;
             }
