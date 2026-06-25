@@ -21,6 +21,7 @@ parameters:
   dependsOn: []
   extraHelixArguments: ''
   buildAllTestsAsStandalone: false
+  sendToHelix: true
   #arcade-specific parameters
   condition: always()
   continueOnError: false
@@ -107,8 +108,9 @@ steps:
         helixType: 'test/functional/cli/'
 
       helixQueues: ${{ parameters.helixQueues }}
-      # This tests whether an array is empty
-      ${{ if eq(join('', parameters.helixQueues), '') }}:
+      # Skip the Helix send (and thus test execution) when there are no queues, or when the caller
+      # disabled it via sendToHelix=false (e.g. the target JS engine can't run the tests yet).
+      ${{ if or(eq(join('', parameters.helixQueues), ''), ne(parameters.sendToHelix, true)) }}:
         condition: false
       publishTestResults: true
       timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
