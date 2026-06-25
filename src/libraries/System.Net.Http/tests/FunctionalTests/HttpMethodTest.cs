@@ -9,7 +9,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public class HttpMethodTest
     {
-        public static readonly List<HttpMethod> StaticHttpMethods = new List<HttpMethod>
+        private static readonly IReadOnlyList<HttpMethod> StaticHttpMethods = new HttpMethod[]
         {
             HttpMethod.Connect,
             HttpMethod.Delete,
@@ -159,10 +159,20 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(StaticHttpMethods_MemberData))]
         public void Parse_KnownMethod_UsesKnownInstances(HttpMethod method)
         {
-            string methodName = method.Method;
+            string methodName = method.Method; // Already upper-case (e.g. "GET").
             Assert.Same(method, HttpMethod.Parse(methodName));
-            Assert.Same(method, HttpMethod.Parse(methodName.ToUpperInvariant()));
             Assert.Same(method, HttpMethod.Parse(methodName.ToLowerInvariant()));
+            Assert.Same(method, HttpMethod.Parse(ToMixedCase(methodName)));
+        }
+
+        private static string ToMixedCase(string value)
+        {
+            char[] chars = value.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                chars[i] = (i % 2 == 0) ? char.ToUpperInvariant(chars[i]) : char.ToLowerInvariant(chars[i]);
+            }
+            return new string(chars);
         }
 
         [Theory]
