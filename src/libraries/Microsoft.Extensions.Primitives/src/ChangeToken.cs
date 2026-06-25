@@ -120,9 +120,7 @@ namespace Microsoft.Extensions.Primitives
 
             protected TState State { get; } = state;
 
-            protected void Start() => RegisterChangeTokenCallback(changeTokenProducer());
-
-            protected IChangeToken? ProduceToken() => changeTokenProducer();
+            protected Func<IChangeToken?> ChangeTokenProducer { get; } = changeTokenProducer;
 
             protected abstract void OnChangeTokenFired();
 
@@ -198,7 +196,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 _changeTokenConsumer = changeTokenConsumer;
 
-                Start();
+                RegisterChangeTokenCallback(changeTokenProducer());
             }
 
             protected override void OnChangeTokenFired()
@@ -208,7 +206,7 @@ namespace Microsoft.Extensions.Primitives
                 //
                 // If the token changes after we take the token, then we'll process the update immediately upon
                 // registering the callback.
-                IChangeToken? token = ProduceToken();
+                IChangeToken? token = ChangeTokenProducer();
 
                 try
                 {
@@ -231,7 +229,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 _changeTokenConsumer = changeTokenConsumer;
 
-                Start();
+                RegisterChangeTokenCallback(changeTokenProducer());
             }
 
             protected override void OnChangeTokenFired()
@@ -241,7 +239,7 @@ namespace Microsoft.Extensions.Primitives
                 //
                 // If the token changes after we take the token, then we'll process the update immediately upon
                 // registering the callback once the consumer's task completes.
-                IChangeToken? token = ProduceToken();
+                IChangeToken? token = ChangeTokenProducer();
 
                 try
                 {
