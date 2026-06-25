@@ -17,7 +17,10 @@
     <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" IsImplicitlyDefined="true" PrivateAssets="all" Publish="true" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
 
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
-    <PackageReference Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" Condition="'$(IncludeRemoteExecutor)' == 'true'" />
+    <!-- TODO: Remove NoWarn="NU1703" once NuGet stops raising NU1703 for packages (like the transitively
+         referenced System.Security.Cryptography.ProtectedData) that don't provide an asset for the current
+         target framework. -->
+    <PackageReference Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" NoWarn="NU1703" Condition="'$(IncludeRemoteExecutor)' == 'true'" />
 
     <!--
       Microsoft.Net.Test.Sdk has a dependency on Newtonsoft.Json v9.0.1. We upgrade the dependency version
