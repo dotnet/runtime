@@ -95,27 +95,27 @@ public class R2RTestSuites
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal)));
-            // Reads static data, so the JIT materializes the image base via a base-global global.get.
+            // Reads static data, so the JIT materializes the image base via a well-known-global global.get.
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("SumStaticData", StringComparison.Ordinal)));
-            // Has a try/finally, so the JIT materializes the table base via a base-global global.get.
+            // Has a try/finally, so the JIT materializes the table base via a well-known-global global.get.
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("SumWithFinally", StringComparison.Ordinal)));
 
-            // The wasm JIT references the ABI base globals via maximally padded WASM_GLOBAL_INDEX_LEB
+            // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
             // relocations that the R2R object writer must self-resolve back to the fixed global
             // indices. Verify the emitted code contains a correctly self-resolved 'global.get' for the
             // image base (1, materialized by static-data reads in SumStaticData) and the table base
             // (2, materialized by the try/finally funclet path in SumWithFinally). Each pattern encodes
             // the exact resolved index, so a regression in self-resolution changes it (or makes
-            // crossgen2 throw while emitting the method). The stack-pointer base global is passed to
+            // crossgen2 throw while emitting the method). The stack-pointer well-known global is passed to
             // managed methods as a parameter in R2R, so it is not referenced via 'global.get' here.
             const int ImageBaseGlobal = 1;
             const int TableBaseGlobal = 2;
-            Assert.True(R2RAssert.WasmImageContainsBaseGlobalGet(webcilReader, ImageBaseGlobal),
-                "Expected a 'global.get' of the wasm image-base base global in the emitted code.");
-            Assert.True(R2RAssert.WasmImageContainsBaseGlobalGet(webcilReader, TableBaseGlobal),
-                "Expected a 'global.get' of the wasm table-base base global in the emitted code.");
+            Assert.True(R2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, ImageBaseGlobal),
+                "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
+            Assert.True(R2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
+                "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
         }
     }
 

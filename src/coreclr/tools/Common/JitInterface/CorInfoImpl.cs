@@ -3473,11 +3473,12 @@ namespace Internal.JitInterface
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
         }
 
-        private void getWasmBaseGlobals(ref CORINFO_WASM_BASE_GLOBALS pBaseGlobalsOut)
+        private void getWasmWellKnownGlobals(ref CORINFO_WASM_WELLKNOWN_GLOBALS pWellKnownGlobalsOut)
         {
-            pBaseGlobalsOut.stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(WasmBaseGlobalSymbolNode.GetForIndex(WasmBaseGlobalSymbolNode.StackPointerGlobalIndex));
-            pBaseGlobalsOut.imageBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(WasmBaseGlobalSymbolNode.GetForIndex(WasmBaseGlobalSymbolNode.ImageBaseGlobalIndex));
-            pBaseGlobalsOut.tableBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(WasmBaseGlobalSymbolNode.GetForIndex(WasmBaseGlobalSymbolNode.TableBaseGlobalIndex));
+            NodeFactory factory = _compilation.NodeFactory;
+            pWellKnownGlobalsOut.stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWasmGlobal(WasmWellKnownGlobal.StackPointer));
+            pWellKnownGlobalsOut.imageBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWasmGlobal(WasmWellKnownGlobal.ImageBase));
+            pWellKnownGlobalsOut.tableBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWasmGlobal(WasmWellKnownGlobal.TableBase));
         }
         private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_LOOKUP instArg)
         {

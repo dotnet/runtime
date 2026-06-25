@@ -149,7 +149,7 @@ namespace Internal.JitInterface
                 s_callbacks.getSwiftLowering = &_getSwiftLowering;
                 s_callbacks.getFpStructLowering = &_getFpStructLowering;
                 s_callbacks.getWasmLowering = &_getWasmLowering;
-                s_callbacks.getWasmBaseGlobals = &_getWasmBaseGlobals;
+                s_callbacks.getWasmWellKnownGlobals = &_getWasmWellKnownGlobals;
                 s_callbacks.getThreadTLSIndex = &_getThreadTLSIndex;
                 s_callbacks.getAddrOfCaptureThreadGlobal = &_getAddrOfCaptureThreadGlobal;
                 s_callbacks.getHelperFtn = &_getHelperFtn;
@@ -332,7 +332,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_SWIFT_LOWERING*, void> getSwiftLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_FPSTRUCT_LOWERING*, void> getFpStructLowering;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoWasmType> getWasmLowering;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_WASM_BASE_GLOBALS*, void> getWasmBaseGlobals;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_WASM_WELLKNOWN_GLOBALS*, void> getWasmWellKnownGlobals;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, uint> getThreadTLSIndex;
             public delegate* unmanaged<IntPtr, IntPtr*, void**, int*> getAddrOfCaptureThreadGlobal;
             public delegate* unmanaged<IntPtr, IntPtr*, CorInfoHelpFunc, CORINFO_CONST_LOOKUP*, CORINFO_METHOD_STRUCT_**, void> getHelperFtn;
@@ -2295,12 +2295,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _getWasmBaseGlobals(IntPtr thisHandle, IntPtr* ppException, CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+        private static void _getWasmWellKnownGlobals(IntPtr thisHandle, IntPtr* ppException, CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getWasmBaseGlobals(ref *pBaseGlobalsOut);
+                _this.getWasmWellKnownGlobals(ref *pWellKnownGlobalsOut);
             }
             catch (Exception ex)
             {

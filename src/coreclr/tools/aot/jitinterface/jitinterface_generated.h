@@ -140,7 +140,7 @@ struct JitInterfaceCallbacks
     void (* getSwiftLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering);
     void (* getFpStructLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering);
     CorInfoWasmType (* getWasmLowering)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE structHnd);
-    void (* getWasmBaseGlobals)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut);
+    void (* getWasmWellKnownGlobals)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut);
     uint32_t (* getThreadTLSIndex)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     int32_t* (* getAddrOfCaptureThreadGlobal)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppIndirection);
     void (* getHelperFtn)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP* pNativeEntrypoint, CORINFO_METHOD_HANDLE* pMethod);
@@ -1452,11 +1452,11 @@ public:
     return temp;
 }
 
-    virtual void getWasmBaseGlobals(
-          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+    virtual void getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->getWasmBaseGlobals(_thisHandle, &pException, pBaseGlobalsOut);
+    _callbacks->getWasmWellKnownGlobals(_thisHandle, &pException, pWellKnownGlobalsOut);
     if (pException != nullptr) throw pException;
 }
 

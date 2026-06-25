@@ -536,8 +536,8 @@ void getFpStructLowering(
 CorInfoWasmType getWasmLowering(
           CORINFO_CLASS_HANDLE structHnd) override;
 
-void getWasmBaseGlobals(
-          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut) override;
+void getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut) override;
 
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;

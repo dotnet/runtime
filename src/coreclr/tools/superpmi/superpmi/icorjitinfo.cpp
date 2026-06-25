@@ -1197,10 +1197,10 @@ void MyICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
     jitInstance->mc->repGetAsyncInfo(pAsyncInfo);
 }
 
-void MyICJI::getWasmBaseGlobals(CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+void MyICJI::getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
 {
-    jitInstance->mc->cr->AddCall("getWasmBaseGlobals");
-    jitInstance->mc->repGetWasmBaseGlobals(pBaseGlobalsOut);
+    jitInstance->mc->cr->AddCall("getWasmWellKnownGlobals");
+    jitInstance->mc->repGetWasmWellKnownGlobals(pWellKnownGlobalsOut);
 }
 CORINFO_METHOD_HANDLE MyICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg)
 {

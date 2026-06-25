@@ -1043,11 +1043,11 @@ CorInfoWasmType interceptor_ICJI::getWasmLowering(
     return original_ICorJitInfo->getWasmLowering(structHnd);
 }
 
-void interceptor_ICJI::getWasmBaseGlobals(
-          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+void interceptor_ICJI::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
 {
-    mcs->AddCall("getWasmBaseGlobals");
-    original_ICorJitInfo->getWasmBaseGlobals(pBaseGlobalsOut);
+    mcs->AddCall("getWasmWellKnownGlobals");
+    original_ICorJitInfo->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(

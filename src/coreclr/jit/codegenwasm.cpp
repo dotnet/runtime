@@ -153,7 +153,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     if (!m_compiler->lvaGetDesc(m_compiler->lvaWasmSpArg)->lvIsParam)
     {
         initialSPLclIndex = spLclIndex;
-        GetEmitter()->emitIns_BaseGlobalGet(STACK_POINTER_GLOBAL);
+        GetEmitter()->emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->stackPointer);
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, initialSPLclIndex);
     }
     else

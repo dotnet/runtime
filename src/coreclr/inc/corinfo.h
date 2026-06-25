@@ -1836,10 +1836,10 @@ struct CORINFO_ASYNC_INFO
     CORINFO_METHOD_HANDLE finishSuspensionWithContinuationContextMethHnd;
 };
 
-// The well-known wasm "base globals" that JIT-generated code references via
+// The well-known wasm globals that JIT-generated code references via
 // WASM_GLOBAL_INDEX_LEB relocations. Each handle is the relocation target for the
-// corresponding base global; the object writer resolves it to the final wasm global index.
-struct CORINFO_WASM_BASE_GLOBALS
+// corresponding well-known global; the object writer resolves it to the final wasm global index.
+struct CORINFO_WASM_WELLKNOWN_GLOBALS
 {
     // Shadow stack pointer global (read at the root frame, then threaded through locals).
     CORINFO_WASM_GLOBAL_SYMBOL_HANDLE stackPointer;
@@ -3204,10 +3204,10 @@ public:
     // or CORINFO_WASM_TYPE_VOID if passing/returning must be by reference.
     virtual CorInfoWasmType getWasmLowering(CORINFO_CLASS_HANDLE structHnd) = 0;
 
-    // Get the well-known wasm base-global symbols (shadow stack pointer, image base, table base)
+    // Get the well-known wasm global symbols (shadow stack pointer, image base, table base)
     // that JIT-generated wasm code references via WASM_GLOBAL_INDEX_LEB relocations.
-    virtual void getWasmBaseGlobals(
-        CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut
+    virtual void getWasmWellKnownGlobals(
+        CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut
     ) = 0;
 };
 

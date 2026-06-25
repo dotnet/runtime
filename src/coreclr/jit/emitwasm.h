@@ -40,11 +40,6 @@ void emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t offset, u
 void emitAddressConstant(void* address);
 void emitFuncletAddressConstant(cnsval_ssize_t funcletId);
 
-// Emit a 'global.get' of one of the well-known base globals (stack pointer, image base, table
-// base) as a WASM_GLOBAL_INDEX_LEB relocation against that base global's symbol. The JIT only
-// reads these globals, so only 'global.get' is supported.
-void emitIns_BaseGlobalGet(unsigned baseGlobalIndex);
-
 static unsigned SizeOfULEB128(uint64_t value);
 static unsigned SizeOfSLEB128(int64_t value);
 static uint8_t  GetWasmValueTypeCode(WasmValueType type);

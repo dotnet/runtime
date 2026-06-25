@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
 
     // To make the code future compatible to the composite R2R story
     // do NOT attempt to pass and store _inputModule here
-    public sealed class NodeFactory
+    public sealed partial class NodeFactory
     {
         private bool _markingComplete;
 

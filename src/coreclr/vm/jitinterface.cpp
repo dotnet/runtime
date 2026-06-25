@@ -10142,7 +10142,7 @@ CORINFO_WASM_TYPE_SYMBOL_HANDLE CEEInfo::getWasmTypeSymbol(
     UNREACHABLE_RET();
 }
 
-void CEEInfo::getWasmBaseGlobals(CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+void CEEInfo::getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();

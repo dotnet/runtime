@@ -14,7 +14,7 @@ public static class WasmWebcilModule
     }
 
     // Reads static data, which forces the JIT to materialize the image-base address via a
-    // 'global.get' of the wasm image-base base global. That global is referenced through a
+    // 'global.get' of the wasm image-base well-known global. That global is referenced through a
     // WASM_GLOBAL_INDEX_LEB relocation the R2R object writer must self-resolve back to the fixed
     // image-base global index; if that resolution regresses, the emitted 'global.get' encoding
     // changes (or crossgen2 throws while emitting this method).
@@ -25,7 +25,7 @@ public static class WasmWebcilModule
     }
 
     // A try/finally makes the JIT emit a call to the 'finally' funclet (genCallFinally), which
-    // computes the funclet's address from the wasm table-base base global via a 'global.get'.
+    // computes the funclet's address from the wasm table-base well-known global via a 'global.get'.
     // Like the image base, that table-base global is referenced through a WASM_GLOBAL_INDEX_LEB
     // relocation the R2R object writer must self-resolve back to the fixed table-base global
     // index; if that resolution regresses, the emitted 'global.get' encoding changes (or

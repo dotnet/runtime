@@ -8,7 +8,7 @@
 
 #include "codegen.h"
 
-// Well-known wasm base globals, referenced by the JIT via WASM_GLOBAL_INDEX_LEB relocations.
+// Well-known wasm globals, referenced by the JIT via WASM_GLOBAL_INDEX_LEB relocations.
 // These fixed indices match the ABI shared with the object writer (see WasmAbiConstants /
 // WasmObjectWriter): 0 = stack pointer, 1 = image base (__memory_base), 2 = table base (__table_base).
 static const unsigned WASM_STACK_POINTER_GLOBAL = 0;
@@ -107,54 +107,6 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t imm)
 }
 
 //------------------------------------------------------------------------
-// emitIns_BaseGlobalGet: Emit a 'global.get' of a well-known base global as a
-// WASM_GLOBAL_INDEX_LEB relocation against that base global's symbol.
-//
-// Arguments:
-//   baseGlobalIndex  - the fixed wasm global index of the base global (0/1/2)
-//
-// Notes:
-//   The JIT only ever reads these base globals (the shadow stack pointer is read once at the root
-//   frame and then threaded through locals; the image base and table base are immutable relocation
-//   bases set by the loader), so only 'global.get' is supported.
-//   The bare immediate is replaced by a maximally-padded, relocatable global index. The object
-//   writer resolves the relocation to the final global index: crossgen2/R2R self-resolves it back
-//   to the same fixed index, while a relocatable NativeAOT object leaves it for wasm-ld to assign.
-//   The relocation target is the base global's symbol handle, obtained from the EE via
-//   getWasmBaseGlobals; the object writer maps that symbol to the corresponding global index.
-//
-void emitter::emitIns_BaseGlobalGet(unsigned baseGlobalIndex)
-{
-    assert(baseGlobalIndex <= WASM_TABLE_BASE_GLOBAL);
-
-    // Resolve the base global to its symbol handle, which becomes the relocation target.
-    CORINFO_WASM_BASE_GLOBALS* baseGlobals = m_compiler->eeGetWasmBaseGlobals();
-
-    CORINFO_WASM_GLOBAL_SYMBOL_HANDLE symbol;
-    switch (baseGlobalIndex)
-    {
-        case WASM_STACK_POINTER_GLOBAL:
-            symbol = baseGlobals->stackPointer;
-            break;
-        case WASM_IMAGE_BASE_GLOBAL:
-            symbol = baseGlobals->imageBase;
-            break;
-        case WASM_TABLE_BASE_GLOBAL:
-            symbol = baseGlobals->tableBase;
-            break;
-        default:
-            unreached();
-    }
-
-    instrDesc* id = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(size_t)symbol);
-    id->idIns(INS_global_get);
-    id->idInsFmt(IF_GLOBALIDX);
-
-    dispIns(id);
-    appendToCurIG(id);
-}
-
-//------------------------------------------------------------------------
 // emitIns_J: Emit a jump instruction with an immediate operand.
 //
 // Arguments:
@@ -243,7 +195,7 @@ bool emitter::emitInsIsStore(instruction ins)
 void emitter::emitAddressConstant(void* address)
 {
     // Load our module base from the image base global, then load our address constant, then sum them.
-    emitIns_BaseGlobalGet(WASM_IMAGE_BASE_GLOBAL);
+    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
     emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
     emitIns(INS_i32_add);
 }
@@ -251,7 +203,7 @@ void emitter::emitAddressConstant(void* address)
 void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
 {
     // Load our table base, then load our funclet pointer offset, then sum them.
-    emitIns_BaseGlobalGet(WASM_TABLE_BASE_GLOBAL);
+    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->tableBase);
     emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
     emitIns(INS_i32_add);
 }
@@ -722,11 +674,8 @@ unsigned emitter::instrDesc::idCodeSize() const
         }
         case IF_FUNCIDX:
         case IF_ULEB128:
-            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
-            break;
         case IF_GLOBALIDX:
-            // Base global references are always emitted as relocations.
-            size += PADDED_RELOC_SIZE;
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
         case IF_MEMADDR:
         case IF_FUNCPTR:

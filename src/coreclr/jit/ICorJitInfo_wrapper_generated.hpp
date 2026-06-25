@@ -1269,12 +1269,12 @@ CorInfoWasmType WrapICorJitInfo::getWasmLowering(
     return temp;
 }
 
-void WrapICorJitInfo::getWasmBaseGlobals(
-          CORINFO_WASM_BASE_GLOBALS* pBaseGlobalsOut)
+void WrapICorJitInfo::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
 {
-    API_ENTER(getWasmBaseGlobals);
-    wrapHnd->getWasmBaseGlobals(pBaseGlobalsOut);
-    API_LEAVE(getWasmBaseGlobals);
+    API_ENTER(getWasmWellKnownGlobals);
+    wrapHnd->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
+    API_LEAVE(getWasmWellKnownGlobals);
 }
 
 uint32_t WrapICorJitInfo::getThreadTLSIndex(

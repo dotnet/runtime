@@ -173,7 +173,7 @@ LWM(GetUnmanagedCallConv, MethodOrSigInfoValue, DD)
 LWM(DoesFieldBelongToClass, DLDL, DWORD)
 DENSELWM(SigInstHandleMap, DWORDLONG)
 LWM(GetWasmTypeSymbol, Agnostic_GetWasmTypeSymbol, DWORDLONG)
-LWM(GetWasmBaseGlobals, DWORD, Agnostic_CORINFO_WASM_BASE_GLOBALS)
+LWM(GetWasmWellKnownGlobals, DWORD, Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS)
 
 #undef LWM
 #undef DENSELWM

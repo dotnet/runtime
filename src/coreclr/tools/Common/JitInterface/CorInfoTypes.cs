@@ -973,10 +973,10 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* finishSuspensionWithContinuationContextMethHnd;
     }
 
-    // The well-known wasm "base globals" referenced by JIT-generated code via
+    // The well-known wasm globals referenced by JIT-generated code via
     // WASM_GLOBAL_INDEX_LEB relocations. Each handle is the relocation target for the
-    // corresponding base global; the object writer resolves it to the final wasm global index.
-    public unsafe struct CORINFO_WASM_BASE_GLOBALS
+    // corresponding well-known global; the object writer resolves it to the final wasm global index.
+    public unsafe struct CORINFO_WASM_WELLKNOWN_GLOBALS
     {
         // Shadow stack pointer global (read at the root frame, then threaded through locals).
         public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* stackPointer;

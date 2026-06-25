@@ -188,15 +188,15 @@ inline CORINFO_ASYNC_INFO* Compiler::eeGetAsyncInfo()
 }
 
 #if defined(TARGET_WASM)
-inline CORINFO_WASM_BASE_GLOBALS* Compiler::eeGetWasmBaseGlobals()
+inline CORINFO_WASM_WELLKNOWN_GLOBALS* Compiler::eeGetWasmWellKnownGlobals()
 {
-    if (!wasmBaseGlobalsInitialized)
+    if (!wasmWellKnownGlobalsInitialized)
     {
-        info.compCompHnd->getWasmBaseGlobals(&wasmBaseGlobals);
-        wasmBaseGlobalsInitialized = true;
+        info.compCompHnd->getWasmWellKnownGlobals(&wasmWellKnownGlobals);
+        wasmWellKnownGlobalsInitialized = true;
     }
 
-    return &wasmBaseGlobals;
+    return &wasmWellKnownGlobals;
 }
 #endif // defined(TARGET_WASM)
 
