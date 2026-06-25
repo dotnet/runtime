@@ -98,7 +98,7 @@ buffer_manager_init_mode (
 			1,
 			TEST_FILE,
 			NULL,
-			EP_SESSION_TYPE_FILE,
+			(buffering_mode == EP_BUFFERING_MODE_BLOCK) ? EP_SESSION_TYPE_FILESTREAM : EP_SESSION_TYPE_FILE,
 			format,
 			0,
 			false,

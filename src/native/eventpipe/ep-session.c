@@ -947,7 +947,8 @@ ep_session_write_event (
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_event != NULL);
 
-	// Paused: skip the write. This result is not consumed today (callers only act on BLOCKED).
+	// Paused: skip the write but report WRITTEN (not a drop), so a paused session is not counted as lossy.
+	// This result is not consumed today (callers only act on BLOCKED).
 	if (session->paused)
 		return EP_WRITE_EVENT_RESULT_WRITTEN;
 

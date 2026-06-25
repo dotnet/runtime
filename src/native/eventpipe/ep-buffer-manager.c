@@ -1091,12 +1091,23 @@ ep_buffer_manager_writer_wait_for_capacity (
 	// the queue node could not be allocated under memory pressure), nobody will ever signal us - so instead
 	// of blocking forever, yield and let the caller re-attempt the fair reserve. Block mode stays lossless
 	// (the producer keeps retrying) at the cost of briefly spinning until memory frees.
-	if (ep_thread_get_buffer_wait_enqueued (thread) == 0) {
+	bool enqueued = false;
+	EP_SPIN_LOCK_ENTER (&buffer_manager->rt_lock, section1)
+		enqueued = ep_thread_get_buffer_wait_enqueued (thread) != 0;
+	EP_SPIN_LOCK_EXIT (&buffer_manager->rt_lock, section1)
+
+	if (enqueued) {
+		EP_ASSERT (ep_rt_wait_event_is_valid (ep_thread_get_buffer_wait_event_ref (thread)));
+		ep_rt_wait_event_wait (ep_thread_get_buffer_wait_event_ref (thread), EP_INFINITE_WAIT, false);
+	} else {
 		ep_rt_thread_sleep (0);
-		return;
 	}
-	EP_ASSERT (ep_rt_wait_event_is_valid (ep_thread_get_buffer_wait_event_ref (thread)));
-	ep_rt_wait_event_wait (ep_thread_get_buffer_wait_event_ref (thread), EP_INFINITE_WAIT, false);
+
+ep_on_exit:
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
 }
 
 bool

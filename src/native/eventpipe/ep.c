@@ -1119,7 +1119,7 @@ enable_default_session_via_env_variables (void)
 			NULL,
 			NULL,
 			NULL,
-			ep_rt_config_value_get_buffering_mode () != 0 ? EP_BUFFERING_MODE_BLOCK : EP_BUFFERING_MODE_DROP);
+			ep_rt_config_value_get_buffering_mode () == EP_BUFFERING_MODE_BLOCK ? EP_BUFFERING_MODE_BLOCK : EP_BUFFERING_MODE_DROP);
 
 		if (session_id)
 			ep_start_session (session_id);
@@ -1485,10 +1485,10 @@ ep_start_session (EventPipeSessionID session_id)
 		provider_invoke_callback (&provider_callback_data);
 		ep_provider_callback_data_fini (&provider_callback_data);
 	}
-	ep_provider_callback_data_queue_fini (provider_callback_data_queue);
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
+	ep_provider_callback_data_queue_fini (provider_callback_data_queue);
 	return;
 
 ep_on_error:
