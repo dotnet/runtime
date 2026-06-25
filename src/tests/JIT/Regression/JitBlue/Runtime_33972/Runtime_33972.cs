@@ -558,6 +558,21 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<sbyte> AdvSimd_CompareLessThan_Vector128_SByte_Zero(Vector128<sbyte> left)
+    {
+        // ARM64-FULL-LINE: cmlt v0.16b, v0.16b, #0
+        return AdvSimd.CompareLessThan(left, Vector128<sbyte>.Zero);
+    }
+
+    // Unsigned base types are not contained (lowering excludes them), so no 'cmlt' should be emitted.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<byte> AdvSimd_CompareLessThan_Vector128_Byte_Zero(Vector128<byte> left)
+    {
+        // ARM64-NOT: cmlt
+        return AdvSimd.CompareLessThan(left, Vector128<byte>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector128<double> AdvSimd_Arm64_CompareLessThan_Vector128_Double_Zero(Vector128<double> left)
     {
         // ARM64-FULL-LINE: fcmlt v0.2d, v0.2d, #0.0
@@ -908,6 +923,16 @@ public class Program
             result = -1;
 
         if (!ValidateResult_Vector128<int>(AdvSimd_CompareLessThan_Vector128_Int32_Zero(Vector128<int>.One), 0))
+            result = -1;
+
+        if (!ValidateResult_Vector128<sbyte>(AdvSimd_CompareLessThan_Vector128_SByte_Zero(Vector128.Create((sbyte)-1)), -1))
+            result = -1;
+
+        if (!ValidateResult_Vector128<sbyte>(AdvSimd_CompareLessThan_Vector128_SByte_Zero(Vector128<sbyte>.One), 0))
+            result = -1;
+
+        // Unsigned 'less than zero' is always false.
+        if (!ValidateResult_Vector128<byte>(AdvSimd_CompareLessThan_Vector128_Byte_Zero(Vector128<byte>.One), 0))
             result = -1;
 
         // End CompareLessThan Tests
