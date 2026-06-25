@@ -784,7 +784,7 @@ function generate_wasm_body (
         builder.appendMemarg(0, 0);
     }
 
-    // If the call threw a JS or wasm exception, set the thrown flag
+    // If the call threw a C++ exception, set the thrown flag
     if (builder.options.enableWasmFinalEh) {
         builder.endBlock(); // end try_table
         // Normal completion (no exception): skip the handler by branching out to $outer
