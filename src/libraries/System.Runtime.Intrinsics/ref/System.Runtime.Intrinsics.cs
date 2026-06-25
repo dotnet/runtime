@@ -11914,10 +11914,10 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<uint> ConvertToUInt32(Vector128<float> value) { throw null; }
         public static Vector128<int> ConvertToInt32(Vector128<double> value) { throw null; }
         public static Vector128<uint> ConvertToUInt32(Vector128<double> value) { throw null; }
-        public static Vector128<float> MultiplyAdd(Vector128<float> a, Vector128<float> b, Vector128<float> c) { throw null; }
-        public static Vector128<double> MultiplyAdd(Vector128<double> a, Vector128<double> b, Vector128<double> c) { throw null; }
-        public static Vector128<float> MultiplyAddNegated(Vector128<float> a, Vector128<float> b, Vector128<float> c) { throw null; }
-        public static Vector128<double> MultiplyAddNegated(Vector128<double> a, Vector128<double> b, Vector128<double> c) { throw null; }
+        public static Vector128<float> MultiplyAddEstimate(Vector128<float> a, Vector128<float> b, Vector128<float> c) { throw null; }
+        public static Vector128<double> MultiplyAddEstimate(Vector128<double> a, Vector128<double> b, Vector128<double> c) { throw null; }
+        public static Vector128<float> MultiplyAddNegatedEstimate(Vector128<float> a, Vector128<float> b, Vector128<float> c) { throw null; }
+        public static Vector128<double> MultiplyAddNegatedEstimate(Vector128<double> a, Vector128<double> b, Vector128<double> c) { throw null; }
         public static Vector128<sbyte> LaneSelect(Vector128<sbyte> left, Vector128<sbyte> right, Vector128<sbyte> mask) { throw null; }
         public static Vector128<byte> LaneSelect(Vector128<byte> left, Vector128<byte> right, Vector128<byte> mask) { throw null; }
         public static Vector128<short> LaneSelect(Vector128<short> left, Vector128<short> right, Vector128<short> mask) { throw null; }

@@ -60,17 +60,17 @@ namespace System.Runtime.Intrinsics.Wasm
 
         /// <summary>  f32x4.relaxed_madd</summary>
         [Intrinsic]
-        public static Vector128<float>  MultiplyAdd(Vector128<float>  a, Vector128<float>  b, Vector128<float>  c) => MultiplyAdd(a, b, c);
+        public static Vector128<float>  MultiplyAddEstimate(Vector128<float>  a, Vector128<float>  b, Vector128<float>  c) => MultiplyAddEstimate(a, b, c);
         /// <summary>  f64x2.relaxed_madd</summary>
         [Intrinsic]
-        public static Vector128<double> MultiplyAdd(Vector128<double> a, Vector128<double> b, Vector128<double> c) => MultiplyAdd(a, b, c);
+        public static Vector128<double> MultiplyAddEstimate(Vector128<double> a, Vector128<double> b, Vector128<double> c) => MultiplyAddEstimate(a, b, c);
 
         /// <summary>  f32x4.relaxed_nmadd</summary>
         [Intrinsic]
-        public static Vector128<float>  MultiplyAddNegated(Vector128<float>  a, Vector128<float>  b, Vector128<float>  c) => MultiplyAddNegated(a, b, c);
+        public static Vector128<float>  MultiplyAddNegatedEstimate(Vector128<float>  a, Vector128<float>  b, Vector128<float>  c) => MultiplyAddNegatedEstimate(a, b, c);
         /// <summary>  f64x2.relaxed_nmadd</summary>
         [Intrinsic]
-        public static Vector128<double> MultiplyAddNegated(Vector128<double> a, Vector128<double> b, Vector128<double> c) => MultiplyAddNegated(a, b, c);
+        public static Vector128<double> MultiplyAddNegatedEstimate(Vector128<double> a, Vector128<double> b, Vector128<double> c) => MultiplyAddNegatedEstimate(a, b, c);
 
         // Relaxed lane select. The mask is interpreted per-byte/word; lanes where the mask bit is
         // neither all-ones nor all-zeros produce implementation-defined results. For deterministic

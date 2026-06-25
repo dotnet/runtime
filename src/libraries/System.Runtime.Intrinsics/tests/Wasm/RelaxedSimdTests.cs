@@ -66,7 +66,7 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             var b = Vector128.Create(2.0f, -1.5f, 0.5f, 6.25f);
             var c = Vector128.Create(0.5f, 1.0f, -0.25f, -2.0f);
 
-            Vector128<float> actual = RelaxedSimd.MultiplyAdd(a, b, c);
+            Vector128<float> actual = RelaxedSimd.MultiplyAddEstimate(a, b, c);
             Vector128<float> unfused = (a * b) + c;
 
             for (int i = 0; i < 4; i++)
