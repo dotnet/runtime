@@ -17,14 +17,9 @@
      | fxr_search_location_environment_variable \
      | fxr_search_location_global)
 
-typedef struct
-{
-    c_fx_ver_t max_ver;
-} find_max_version_context_t;
-
 static bool find_max_version_callback(const pal_char_t* entry_name, void* ctx_in)
 {
-    find_max_version_context_t* ctx = (find_max_version_context_t*)ctx_in;
+    c_fx_ver_t* max_ver = (c_fx_ver_t*)ctx_in;
 
     trace_info(_X("Considering fxr version=[%s]..."), entry_name);
 
@@ -36,14 +31,14 @@ static bool find_max_version_callback(const pal_char_t* entry_name, void* ctx_in
         return true;
     }
 
-    if (!c_fx_ver_is_empty(&ctx->max_ver) && c_fx_ver_compare(&ver, &ctx->max_ver) <= 0)
+    if (!c_fx_ver_is_empty(max_ver) && c_fx_ver_compare(&ver, max_ver) <= 0)
     {
         c_fx_ver_cleanup(&ver);
         return true;
     }
 
-    c_fx_ver_cleanup(&ctx->max_ver);
-    ctx->max_ver = ver; // transfer ownership of pre/build
+    c_fx_ver_cleanup(max_ver);
+    *max_ver = ver; // transfer ownership of pre/build
     return true;
 }
 
@@ -54,23 +49,23 @@ static bool get_latest_fxr(const pal_char_t* fxr_root, pal_char_t** out_fxr_path
 {
     trace_info(_X("Reading fx resolver directory=[%s]"), fxr_root);
 
-    find_max_version_context_t ctx;
-    c_fx_ver_init(&ctx.max_ver);
+    c_fx_ver_t max_ver;
+    c_fx_ver_init(&max_ver);
 
-    pal_readdir_onlydirectories(fxr_root, find_max_version_callback, &ctx);
+    pal_readdir_onlydirectories(fxr_root, find_max_version_callback, &max_ver);
 
-    if (c_fx_ver_is_empty(&ctx.max_ver))
+    if (c_fx_ver_is_empty(&max_ver))
     {
         trace_error(_X("Error: [%s] does not contain any version-numbered child folders"), fxr_root);
-        c_fx_ver_cleanup(&ctx.max_ver);
+        c_fx_ver_cleanup(&max_ver);
         return false;
     }
 
     // SemVer does not define a size limit on version string, but calls out a reasonable max of 255 characters:
     // https://semver.org/#does-semver-have-a-size-limit-on-the-version-string
     pal_char_t max_ver_str[256];
-    c_fx_ver_as_str(&ctx.max_ver, max_ver_str, ARRAY_SIZE(max_ver_str));
-    c_fx_ver_cleanup(&ctx.max_ver);
+    c_fx_ver_as_str(&max_ver, max_ver_str, ARRAY_SIZE(max_ver_str));
+    c_fx_ver_cleanup(&max_ver);
 
     pal_char_t* fxr_dir = utils_append_path_alloc(fxr_root, max_ver_str);
     if (fxr_dir == NULL)
