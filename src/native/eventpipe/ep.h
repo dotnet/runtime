@@ -190,7 +190,8 @@ ep_enable_2 (
 	uint64_t rundown_keyword,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data);
+	void *callback_additional_data,
+	EventPipeBufferingMode buffering_mode);
 
 EventPipeSessionID
 ep_enable_3 (

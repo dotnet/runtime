@@ -556,6 +556,15 @@ ep_rt_config_value_get_circular_mb (void)
 
 static
 inline
+uint32_t
+ep_rt_config_value_get_buffering_mode (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeBufferingMode);
+}
+
+static
+inline
 bool
 ep_rt_config_value_get_output_streaming (void)
 {

@@ -481,6 +481,23 @@ ep_rt_config_value_get_circular_mb (void)
 
 static
 inline
+uint32_t
+ep_rt_config_value_get_buffering_mode (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    uint64_t value;
+    if (RhConfig::Environment::TryGetIntegerValue("EventPipeBufferingMode", &value))
+    {
+        EP_ASSERT(value <= UINT32_MAX);
+        return static_cast<uint32_t>(value);
+    }
+
+    return 0;
+}
+
+static
+inline
 bool
 ep_rt_config_value_get_output_streaming (void)
 {

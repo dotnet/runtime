@@ -351,7 +351,8 @@ test_enable_disable_default_provider_config (void)
 		false,
 		NULL,
 		NULL,
-		NULL);
+		NULL,
+		EP_BUFFERING_MODE_DROP);
 
 	if (!session_id) {
 		result = FAILED ("Failed to enable session");
@@ -400,7 +401,8 @@ test_enable_disable_multiple_default_provider_config (void)
 		false,
 		NULL,
 		NULL,
-		NULL);
+		NULL,
+		EP_BUFFERING_MODE_DROP);
 
 	if (!session_id_1) {
 		result = FAILED ("Failed to enable session");
@@ -432,7 +434,8 @@ test_enable_disable_multiple_default_provider_config (void)
 		false,
 		NULL,
 		NULL,
-		NULL);
+		NULL,
+		EP_BUFFERING_MODE_DROP);
 
 	if (!session_id_2) {
 		result = FAILED ("Failed to enable session");
@@ -482,7 +485,8 @@ test_enable_disable_provider_config (void)
 		false,
 		NULL,
 		NULL,
-		NULL);
+		NULL,
+		EP_BUFFERING_MODE_DROP);
 
 	if (!session_id) {
 		result = FAILED ("Failed to enable session");
@@ -563,7 +567,8 @@ test_enable_disable_provider_parse_default_config (void)
 		false,
 		NULL,
 		NULL,
-		NULL);
+		NULL,
+		EP_BUFFERING_MODE_DROP);
 
 	if (!session_id) {
 		result = FAILED ("Failed to enable session");

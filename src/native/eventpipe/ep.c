@@ -1118,7 +1118,8 @@ enable_default_session_via_env_variables (void)
 			ep_default_rundown_keyword,
 			NULL,
 			NULL,
-			NULL);
+			NULL,
+			ep_rt_config_value_get_buffering_mode () != 0 ? EP_BUFFERING_MODE_BLOCK : EP_BUFFERING_MODE_DROP);
 
 		if (session_id)
 			ep_start_streaming (session_id);
@@ -1207,13 +1208,15 @@ ep_enable_2 (
 	uint64_t rundown_keyword,
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data)
+	void *callback_additional_data,
+	EventPipeBufferingMode buffering_mode)
 {
 	const ep_char8_t *providers_config_to_parse = providers_config;
 	int32_t providers_len = 0;
 	EventPipeProviderConfiguration *providers = NULL;
 	int32_t current_provider = 0;
 	uint64_t session_id = 0;
+	EventPipeSessionOptions options;
 
 	// If no specific providers config is used, enable EventPipe session
 	// with the default provider configurations.
@@ -1277,7 +1280,10 @@ ep_enable_2 (
 		}
 	}
 
-	session_id = ep_enable (
+	// Build options directly instead of calling ep_enable, which always defaults to Drop, so the requested
+	// buffering mode is carried through. ep_session_alloc degrades Block to Drop for non-streaming session types.
+	ep_session_options_init (
+		&options,
 		output_path,
 		circular_buffer_size_in_mb,
 		providers,
@@ -1285,9 +1291,14 @@ ep_enable_2 (
 		session_type,
 		format,
 		rundown_keyword,
+		true,
 		stream,
 		sync_callback,
-		callback_additional_data);
+		callback_additional_data,
+		0,
+		buffering_mode);
+	session_id = ep_enable_3 (&options);
+	ep_session_options_fini (&options);
 
 ep_on_exit:
 
