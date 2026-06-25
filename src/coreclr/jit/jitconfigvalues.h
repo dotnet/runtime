@@ -55,8 +55,8 @@ CONFIG_INTEGER(EnablePCRelAddr, "JitEnablePCRelAddr", 1) // Whether absolute add
                                                          // RyuJIT where possible
 CONFIG_INTEGER(JitAssertOnMaxRAPasses, "JitAssertOnMaxRAPasses", 0)
 CONFIG_INTEGER(JitBreakEmitOutputInstr, "JitBreakEmitOutputInstr", -1)
-// Assert if the xarch encoder emits a different number of bytes than its estimator predicted.
-CONFIG_INTEGER(JitAssertOnEmitSizeMismatch, "JitAssertOnEmitSizeMismatch", 0)
+// Assert if the xarch encoder emits a different number of bytes than its estimator predicted; set to 0 to disable.
+CONFIG_INTEGER(JitAssertOnEmitSizeMismatch, "JitAssertOnEmitSizeMismatch", 1)
 CONFIG_INTEGER(JitBreakMorphTree, "JitBreakMorphTree", 0xffffffff)
 CONFIG_INTEGER(JitBreakOnBadCode, "JitBreakOnBadCode", 0)
 CONFIG_INTEGER(JitBreakOnMinOpts, "JITBreakOnMinOpts", 0) // Halt if jit switches to MinOpts

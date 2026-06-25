@@ -2092,6 +2092,15 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
 #endif
 }
 
+static bool HasRewrittenBuiltInRexPrefix(instruction ins)
+{
+#ifdef TARGET_AMD64
+    return (ins >= INS_imul_08) && (ins <= INS_imul_15);
+#else
+    return false;
+#endif
+}
+
 //------------------------------------------------------------------------
 // TakesApxExtendedEvexPrefix: Checks if the instruction should be legacy-promoted-EVEX encoded.
 //
@@ -3872,7 +3881,7 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
 
         emitAttr attr = id->idOpSize();
 
-        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx))
+        if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && (ins != INS_cmpxchg))
         {
             // Most 16-bit operand instructions will need a 0x66 prefix.
             adjustedSize++;
@@ -5222,9 +5231,11 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
     if ((code & 0xFF00) != 0)
     {
         sz += emitInsSize(id, code, includeRexPrefixSize);
-        if (!IsSimdInstruction(ins) && !TakesApxExtendedEvexPrefix(id) && ((code & 0xFF00) != 0xC000))
+        if (!IsSimdInstruction(ins) && !TakesApxExtendedEvexPrefix(id) && (ins != INS_crc32) &&
+            ((code & 0xFF00) != 0xC000))
         {
             // Non-SIMD two-byte opcodes generally emit a separate ModRM byte; 0xC000 already includes it.
+            // CRC32 accounts for its ModRM byte in emitGetAdjustedSize.
             sz++;
         }
     }
@@ -5237,6 +5248,12 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
     {
         // K instructions add VEX before this helper; avoid counting the prefix once here and once in the adjustment.
         sz -= emitGetVexPrefixSize(id);
+    }
+
+    if (HasRewrittenBuiltInRexPrefix(ins) && TakesRexWPrefix(id) && !TakesRex2Prefix(id))
+    {
+        // Legacy 3-op IMUL opcodes carry a built-in REX byte that output rewrites from operand state.
+        sz--;
     }
 
     return sz;
@@ -5258,6 +5275,14 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
 {
     instruction    ins  = id->idIns();
     UNATIVE_OFFSET size = emitInsSize(id, code, /* includeRexPrefixSize */ true);
+
+#ifdef TARGET_AMD64
+    if (HasRewrittenBuiltInRexPrefix(ins) && TakesRexWPrefix(id) && !TakesRex2Prefix(id))
+    {
+        // Legacy 3-op IMUL opcodes carry a built-in REX byte that output rewrites from operand state.
+        size--;
+    }
+#endif
 
     int  adr;
     bool EBPbased;
@@ -5510,6 +5535,15 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         size = 2;
     }
 
+#ifdef TARGET_AMD64
+    if (HasRewrittenBuiltInRexPrefix(ins) && TakesRexWPrefix(id) && !TakesRex2Prefix(id) &&
+        ((reg != REG_NA) || (rgx != REG_NA)))
+    {
+        // The legacy 3-op IMUL opcodes carry a built-in REX byte that output rewrites from operand state.
+        size--;
+    }
+#endif
+
     size += emitGetAdjustedSize(id, code);
 
     if (hasRexPrefix(code))
@@ -5523,7 +5557,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         size += emitGetRexPrefixSize(id, ins);
     }
     else if (IsExtendedReg(reg, EA_PTRSIZE) || IsExtendedReg(rgx, EA_PTRSIZE) ||
-             ((ins != INS_call) && (IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))))
+             ((ins != INS_call) && ((id->idHasReg1() && IsExtendedReg(id->idReg1(), attrSize)) ||
+                                    (id->idHasReg2() && IsExtendedReg(id->idReg2(), attrSize)))))
     {
         // Should have a REX byte
         size += emitGetRexPrefixSize(id, ins);
@@ -7453,12 +7488,6 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
         sz = emitInsSizeCV(id, insCodeMR(ins));
     }
 
-    if (TakesRexWPrefix(id))
-    {
-        // REX.W prefix
-        sz += emitGetRexPrefixSize(id, ins);
-    }
-
     id->idAddr()->iiaFieldHnd = fldHnd;
 
     id->idCodeSize(sz);
@@ -7487,6 +7516,11 @@ void emitter::emitIns_A(instruction ins, emitAttr attr, GenTreeIndir* indir)
     emitHandleMemOp(indir, id, fmt, ins);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
+    if (ins == INS_idiv)
+    {
+        printf("emitIns_A idiv sz=%u attr=%x code=%llx fmt=%u reloc=%u reg1=%u reg2=%u\n", sz, attr, insCodeMR(ins),
+               id->idInsFmt(), id->idIsDspReloc(), id->idReg1(), id->idReg2());
+    }
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -8781,7 +8815,8 @@ void emitter::emitIns_R_R_A_R(instruction   ins,
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
+    // AVX512 blendv encodes mask registers in EVEX.aaa, not as an immediate byte.
+    UNATIVE_OFFSET sz = isMaskReg(op3Reg) ? emitInsSizeAM(id, insCodeRM(ins)) : emitInsSizeAM(id, insCodeRM(ins), ival);
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -8836,7 +8871,8 @@ void emitter::emitIns_R_R_C_R(instruction          ins,
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
 
-    UNATIVE_OFFSET sz = emitInsSizeCV(id, insCodeRM(ins), ival);
+    // AVX512 blendv encodes mask registers in EVEX.aaa, not as an immediate byte.
+    UNATIVE_OFFSET sz = isMaskReg(op3Reg) ? emitInsSizeCV(id, insCodeRM(ins)) : emitInsSizeCV(id, insCodeRM(ins), ival);
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -8885,7 +8921,9 @@ void emitter::emitIns_R_R_S_R(instruction ins,
     SetEvexBroadcastIfNeeded(id, instOptions);
     SetEvexEmbMaskIfNeeded(id, instOptions);
 
-    UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
+    // AVX512 blendv encodes mask registers in EVEX.aaa, not as an immediate byte.
+    UNATIVE_OFFSET sz = isMaskReg(op3Reg) ? emitInsSizeSV(id, insCodeRM(ins), varx, offs)
+                                          : emitInsSizeSV(id, insCodeRM(ins), varx, offs, ival);
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -20188,12 +20226,19 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     if (JitConfig.JitAssertOnEmitSizeMismatch() != 0)
     {
         // Labels and align pseudo-instructions can intentionally shrink after initial size estimation.
-        const bool skipSizeCheck =
-            (id->idIns() == INS_align) || (insFmt == IF_LABEL) || (insFmt == IF_RWR_LABEL) || (insFmt == IF_SWR_LABEL);
+        const IS_INFO insFmtInfo = emitGetSchedInfo(insFmt);
+#if !FEATURE_FIXED_OUT_ARGS
+        const bool skipStackSizeCheck = ((insFmtInfo & (IS_SF_RD | IS_SF_RW | IS_SF_WR)) != 0);
+#else
+        const bool skipStackSizeCheck = false;
+#endif
+        const bool skipSizeCheck = (id->idIns() == INS_align) || (insFmt == IF_LABEL) || (insFmt == IF_RWR_LABEL) ||
+                                   (insFmt == IF_SWR_LABEL) || skipStackSizeCheck;
         const UNATIVE_OFFSET actualCodeSize = static_cast<UNATIVE_OFFSET>(dst - *dp);
         if (!skipSizeCheck && (id->idCodeSize() != actualCodeSize))
         {
-            printf("Instruction size mismatch: estimated=%u actual=%u\n", id->idCodeSize(), actualCodeSize);
+            printf("Instruction size mismatch: estimated=%u actual=%u fmt=%u attr=%x reg1=%u reg2=%u\n",
+                   id->idCodeSize(), actualCodeSize, insFmt, id->idOpSize(), id->idReg1(), id->idReg2());
             emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, actualCodeSize);
             assert(!"Instruction size mismatch");
         }
