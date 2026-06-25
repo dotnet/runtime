@@ -1374,7 +1374,7 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
         // interpreted methods are intentionally left unprepared here so that their byte code is generated
         // lazily on first call through the reverse thunk below (better for startup). For R2R methods we
         // run the prestub to perform the canonical full preparation; it finds the R2R code first and never
-        // falls back to compiling byte code. STANDARD_VM_CONTRACT already implies preemptive mode.
+        // falls back to compiling byte code.
         if (pMD->TryPublishR2RCodeForUnmanagedCallersOnly())
         {
             (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Preemptive);
