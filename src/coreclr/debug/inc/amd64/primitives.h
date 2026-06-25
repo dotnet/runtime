@@ -116,7 +116,7 @@ inline void CORDbgSetIP(DT_CONTEXT* context, LPVOID rip)
     context->Rip = (DWORD64) rip;
 }
 
-inline LPVOID CORDbgGetSP(const DT_CONTEXT * context)
+inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context)
 {
     CONTRACTL
     {
@@ -127,7 +127,7 @@ inline LPVOID CORDbgGetSP(const DT_CONTEXT * context)
     }
     CONTRACTL_END;
 
-    return (LPVOID)context->Rsp;
+    return (CORDB_ADDRESS)context->Rsp;
 }
 inline void CORDbgSetSP(DT_CONTEXT *context, LPVOID rsp)
 {
