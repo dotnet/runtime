@@ -92,6 +92,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
+            // For non-GVM virtual method calls, mark the virtual slot as used so that
+            // conditional dependencies on InheritedVirtualMethodsNode can trigger compilation
+            // of concrete implementations.
+            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
+                Method.IsVirtual &&
+                !Method.HasInstantiation &&
+                !Method.IsFinal &&
+                !Method.OwningType.IsGenericDefinition)
+            {
+                list = list ?? new DependencyList();
+                list.Add(factory.VirtualMethodUse(canonMethod), "Non-GVM virtual slot use");
+            }
+
             return list;
         }
 
