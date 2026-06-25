@@ -11,7 +11,6 @@ using Internal.TypeSystem;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using ArgIterator = Internal.CallingConvention.ArgIterator;
 
 using ILCompiler.DependencyAnalysisFramework;
 
@@ -86,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ISymbolNode targetTypeIndex = _targetTypeNode;
 
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            (ArgIterator argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
 
             bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
             bool hasThis = !methodSignature.IsStatic;

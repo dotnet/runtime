@@ -179,12 +179,12 @@ namespace Internal.CallingConvention
         }
     }
 
-    internal class ArgIteratorData
+    internal class ArgIteratorData<TTypeHandle> where TTypeHandle : ITypeHandle
     {
         public ArgIteratorData(bool hasThis,
                         bool isVarArg,
-                        ITypeHandle[] parameterTypes,
-                        ITypeHandle returnType)
+                        TTypeHandle[] parameterTypes,
+                        TTypeHandle returnType)
         {
             _hasThis = hasThis;
             _isVarArg = isVarArg;
@@ -194,15 +194,15 @@ namespace Internal.CallingConvention
 
         private bool _hasThis;
         private bool _isVarArg;
-        private ITypeHandle[] _parameterTypes;
-        private ITypeHandle _returnType;
+        private TTypeHandle[] _parameterTypes;
+        private TTypeHandle _returnType;
 
         public override bool Equals(object obj)
         {
             if (this == obj)
                 return true;
 
-            ArgIteratorData other = obj as ArgIteratorData;
+            ArgIteratorData<TTypeHandle> other = obj as ArgIteratorData<TTypeHandle>;
             if (other == null)
                 return false;
 
@@ -244,21 +244,21 @@ namespace Internal.CallingConvention
         public int NumFixedArgs() { return _parameterTypes != null ? _parameterTypes.Length : 0; }
 
         // Argument iteration.
-        public CorElementType GetArgumentType(int argNum, out ITypeHandle thArgType)
+        public CorElementType GetArgumentType(int argNum, out TTypeHandle thArgType)
         {
             thArgType = _parameterTypes[argNum];
             CorElementType returnValue = thArgType.GetCorElementType();
             return returnValue;
         }
 
-        public ITypeHandle GetByRefArgumentType(int argNum)
+        public TTypeHandle GetByRefArgumentType(int argNum)
         {
             return (argNum < _parameterTypes.Length && _parameterTypes[argNum].GetCorElementType() == CorElementType.ELEMENT_TYPE_BYREF) ?
                 _parameterTypes[argNum] :
-                null;
+                default;
         }
 
-        public CorElementType GetReturnType(out ITypeHandle thRetType)
+        public CorElementType GetReturnType(out TTypeHandle thRetType)
         {
             thRetType = _returnType;
             return thRetType.GetCorElementType();
@@ -278,7 +278,7 @@ namespace Internal.CallingConvention
     // time because of it has the parsed signature available.
     //-----------------------------------------------------------------------
     //template<class ARGITERATOR_BASE>
-    internal struct ArgIterator
+    internal struct ArgIterator<TTypeHandle> where TTypeHandle : ITypeHandle
     {
         private readonly TransitionBlock _transitionBlock;
 
@@ -286,15 +286,15 @@ namespace Internal.CallingConvention
         private bool _hasParamType;
         private bool _hasAsyncContinuation;
         private bool _extraFunctionPointerArg;
-        private ArgIteratorData _argData;
+        private ArgIteratorData<TTypeHandle> _argData;
         private bool[] _forcedByRefParams;
         private bool _skipFirstArg;
         private bool _extraObjectFirstArg;
         private CallingConventions _interpreterCallingConvention;
         private bool _hasArgLocDescForStructInRegs;
         private ArgLocDesc _argLocDescForStructInRegs;
-        private ITypeHandle _objectTypeHandle;
-        private ITypeHandle _intPtrTypeHandle;
+        private TTypeHandle _objectTypeHandle;
+        private TTypeHandle _intPtrTypeHandle;
         private bool _isWindows;
 
         public bool HasThis => _hasThis;
@@ -304,7 +304,7 @@ namespace Internal.CallingConvention
         public int NumFixedArgs => _argData.NumFixedArgs() + (_extraFunctionPointerArg ? 1 : 0) + (_extraObjectFirstArg ? 1 : 0);
 
         // Argument iteration.
-        public CorElementType GetArgumentType(int argNum, out ITypeHandle thArgType, out bool forceByRefReturn)
+        public CorElementType GetArgumentType(int argNum, out TTypeHandle thArgType, out bool forceByRefReturn)
         {
             forceByRefReturn = false;
 
@@ -329,7 +329,7 @@ namespace Internal.CallingConvention
             return _argData.GetArgumentType(argNum, out thArgType);
         }
 
-        public CorElementType GetReturnType(out ITypeHandle thRetType, out bool forceByRefReturn)
+        public CorElementType GetReturnType(out TTypeHandle thRetType, out bool forceByRefReturn)
         {
             if (_forcedByRefParams != null && _forcedByRefParams.Length > 0)
                 forceByRefReturn = _forcedByRefParams[0];
@@ -342,7 +342,7 @@ namespace Internal.CallingConvention
         public void Reset()
         {
             _argType = default(CorElementType);
-            _argTypeHandle = null;
+            _argTypeHandle = default;
             _argSize = 0;
             _argNum = 0;
             _argForceByRef = false;
@@ -355,7 +355,7 @@ namespace Internal.CallingConvention
         //------------------------------------------------------------
         public ArgIterator(
             TransitionBlock transitionBlock,
-            ArgIteratorData argData,
+            ArgIteratorData<TTypeHandle> argData,
             CallingConventions callConv,
             bool hasParamType,
             bool hasAsyncContinuation,
@@ -364,10 +364,10 @@ namespace Internal.CallingConvention
             bool skipFirstArg,
             bool extraObjectFirstArg,
             bool isWindows,
-            ITypeHandle objectTypeHandle,
-            ITypeHandle intPtrTypeHandle)
+            TTypeHandle objectTypeHandle,
+            TTypeHandle intPtrTypeHandle)
         {
-            this = default(ArgIterator);
+            this = default(ArgIterator<TTypeHandle>);
             _transitionBlock = transitionBlock;
             _argData = argData;
             _hasThis = callConv == CallingConventions.ManagedInstance;
@@ -757,7 +757,7 @@ namespace Internal.CallingConvention
 
             CorElementType argType = GetArgumentType(_argNum, out _argTypeHandle, out _argForceByRef);
 
-            _argTypeHandleOfByRefParam = (argType == CorElementType.ELEMENT_TYPE_BYREF ? _argData.GetByRefArgumentType(_argNum) : null);
+            _argTypeHandleOfByRefParam = (argType == CorElementType.ELEMENT_TYPE_BYREF ? _argData.GetByRefArgumentType(_argNum) : default);
 
             _argNum++;
 
@@ -1373,14 +1373,14 @@ namespace Internal.CallingConvention
             }
         }
 
-        public CorElementType GetArgType(out ITypeHandle pTypeHandle)
+        public CorElementType GetArgType(out TTypeHandle pTypeHandle)
         {
             //        LIMITED_METHOD_CONTRACT;
             pTypeHandle = _argTypeHandle;
             return _argType;
         }
 
-        public CorElementType GetByRefArgType(out ITypeHandle pByRefArgTypeHandle)
+        public CorElementType GetByRefArgType(out TTypeHandle pByRefArgTypeHandle)
         {
             //        LIMITED_METHOD_CONTRACT;
             pByRefArgTypeHandle = _argTypeHandleOfByRefParam;
@@ -1439,7 +1439,7 @@ namespace Internal.CallingConvention
                 int nArgs = NumFixedArgs;
                 for (int i = (_skipFirstArg ? 1 : 0); i < nArgs; i++)
                 {
-                    ITypeHandle thArgType;
+                    TTypeHandle thArgType;
                     bool argForcedToBeByref;
                     CorElementType type = GetArgumentType(i, out thArgType, out argForcedToBeByref);
                     if (argForcedToBeByref)
@@ -1779,8 +1779,8 @@ namespace Internal.CallingConvention
         // Cached information about last argument
         private CorElementType _argType;
         private int _argSize;
-        private ITypeHandle _argTypeHandle;
-        private ITypeHandle _argTypeHandleOfByRefParam;
+        private TTypeHandle _argTypeHandle;
+        private TTypeHandle _argTypeHandleOfByRefParam;
         private bool _argForceByRef;
 
         private int _x86OfsStack;           // Current position of the stack iterator
@@ -1858,7 +1858,7 @@ namespace Internal.CallingConvention
 
         private void ComputeReturnFlags()
         {
-            ITypeHandle thRetType;
+            TTypeHandle thRetType;
             CorElementType type = GetReturnType(out thRetType, out _RETURN_HAS_RET_BUFFER);
 
             if (!_RETURN_HAS_RET_BUFFER)

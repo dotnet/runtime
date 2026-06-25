@@ -11,7 +11,6 @@ using Internal.CorConstants;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
-using ArgIterator = Internal.CallingConvention.ArgIterator;
 using CallingConventions = Internal.CallingConvention.CallingConventions;
 using CdacCorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorElementType;
 
@@ -94,20 +93,20 @@ internal sealed class CallingConvention_1 : ICallingConvention
         }
 
         ParamTypeInfo[] paramInfo = DecodeParamTypeInfo(rts, methodDesc, methodSig.ParameterTypes.Length);
-        ITypeHandle[] parameterTypes = new ITypeHandle[methodSig.ParameterTypes.Length];
+        CdacTypeHandle[] parameterTypes = new CdacTypeHandle[methodSig.ParameterTypes.Length];
         for (int i = 0; i < parameterTypes.Length; i++)
             parameterTypes[i] = new CdacTypeHandle(methodSig.ParameterTypes[i], _target, paramInfo[i].OutermostKind);
-        ITypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target);
+        CdacTypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target);
 
         TransitionBlock transitionBlock = BuildTransitionBlock(runtimeInfo);
         CallingConventions callingConventions = hasThis
             ? CallingConventions.ManagedInstance
             : CallingConventions.ManagedStatic;
-        ArgIteratorData argIteratorData = new ArgIteratorData(
+        ArgIteratorData<CdacTypeHandle> argIteratorData = new ArgIteratorData<CdacTypeHandle>(
             hasThis, isVarArg: false, parameterTypes, returnType);
         bool isWindows = runtimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows;
 
-        ArgIterator argit = new ArgIterator(
+        ArgIterator<CdacTypeHandle> argit = new ArgIterator<CdacTypeHandle>(
             transitionBlock,
             argIteratorData,
             callingConventions,
@@ -179,13 +178,13 @@ internal sealed class CallingConvention_1 : ICallingConvention
         {
         }
 
-        ITypeHandle[] parameterTypes = new ITypeHandle[methodSig.ParameterTypes.Length];
+        CdacTypeHandle[] parameterTypes = new CdacTypeHandle[methodSig.ParameterTypes.Length];
         for (int i = 0; i < parameterTypes.Length; i++)
         {
             parameterTypes[i] = new CdacTypeHandle(methodSig.ParameterTypes[i], _target, paramInfo[i].OutermostKind);
         }
 
-        ITypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target);
+        CdacTypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target);
 
         TransitionBlock transitionBlock = BuildTransitionBlock(runtimeInfo);
 
@@ -193,12 +192,12 @@ internal sealed class CallingConvention_1 : ICallingConvention
             ? CallingConventions.ManagedInstance
             : CallingConventions.ManagedStatic;
 
-        ArgIteratorData argIteratorData = new ArgIteratorData(
+        ArgIteratorData<CdacTypeHandle> argIteratorData = new ArgIteratorData<CdacTypeHandle>(
             hasThis, isVarArg: isVarArg, parameterTypes, returnType);
 
         bool isWindows = runtimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows;
 
-        ArgIterator argit = new ArgIterator(
+        ArgIterator<CdacTypeHandle> argit = new ArgIterator<CdacTypeHandle>(
             transitionBlock,
             argIteratorData,
             callingConventions,

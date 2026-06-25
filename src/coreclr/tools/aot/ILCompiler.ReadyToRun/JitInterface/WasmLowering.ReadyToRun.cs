@@ -8,7 +8,6 @@ using ILCompiler;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Internal.CallingConvention;
-using ArgIterator = Internal.CallingConvention.ArgIterator;
 
 using Internal.TypeSystem;
 
@@ -16,14 +15,13 @@ namespace Internal.JitInterface
 {
     public static partial class WasmLowering
     {
-        internal static bool CurrentArgLowersValueTypeToPassAsByref(ArgIterator argit)
+        internal static bool CurrentArgLowersValueTypeToPassAsByref(ArgIterator<TypeHandle> argit)
         {
             if (argit.IsValueType())
             {
                 // Check to see if this argument lowers to a byref on the wasm side
-                ITypeHandle typeHandle;
-                argit.GetArgType(out typeHandle);
-                if (WasmLowering.LowerToAbiType(((TypeHandle)typeHandle).GetRuntimeTypeHandle()) == null)
+                argit.GetArgType(out TypeHandle typeHandle);
+                if (WasmLowering.LowerToAbiType(typeHandle.GetRuntimeTypeHandle()) == null)
                 {
                     return true;
                 }

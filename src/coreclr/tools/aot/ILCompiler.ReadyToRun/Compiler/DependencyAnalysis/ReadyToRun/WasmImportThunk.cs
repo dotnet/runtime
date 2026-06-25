@@ -12,7 +12,6 @@ using Internal.ReadyToRunConstants;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using ArgIterator = Internal.CallingConvention.ArgIterator;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -126,7 +125,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
 
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            (ArgIterator argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
 
             int[] offsets = new int[methodSignature.Length];
             bool[] isIndirectStructArg = new bool[methodSignature.Length];

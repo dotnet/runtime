@@ -8,7 +8,6 @@ using System.Linq;
 using System.Xml.Linq;
 using Internal.TypeSystem;
 using Internal.CallingConvention;
-using ArgIterator = Internal.CallingConvention.ArgIterator;
 
 // The GCRef map is used to encode GC type of arguments for callsites. Logically, it is sequence <pos, token> where pos is
 // position of the reference in the stack frame and token is type of GC reference (one of GCREFMAP_XXX values).
@@ -71,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 target.Abi == TargetAbi.NativeAotArmel);
         }
 
-        internal static (ArgIterator, TransitionBlock) BuildArgIterator(MethodSignature signature, TypeSystemContext context, bool methodRequiresInstArg = false, bool isUnboxingStub = false, bool methodIsArrayAddressMethod = false, bool methodIsStringConstructor = false, bool methodIsAsyncCall = false)
+        internal static (ArgIterator<TypeHandle>, TransitionBlock) BuildArgIterator(MethodSignature signature, TypeSystemContext context, bool methodRequiresInstArg = false, bool isUnboxingStub = false, bool methodIsArrayAddressMethod = false, bool methodIsStringConstructor = false, bool methodIsAsyncCall = false)
         {
             TransitionBlock transitionBlock = TransitionBlock.FromTarget(context.Target.Architecture,
                 context.Target.OperatingSystem == TargetOS.Windows,
@@ -87,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             bool isVarArg = false;
             TypeHandle returnType = new TypeHandle(signature.ReturnType);
-            ITypeHandle[] parameterTypes = new ITypeHandle[signature.Length];
+            TypeHandle[] parameterTypes = new TypeHandle[signature.Length];
             for (int parameterIndex = 0; parameterIndex < parameterTypes.Length; parameterIndex++)
             {
                 parameterTypes[parameterIndex] = new TypeHandle(signature[parameterIndex]);
@@ -110,9 +109,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             bool[] forcedByRefParams = new bool[parameterTypes.Length];
             bool skipFirstArg = false;
             bool extraObjectFirstArg = false;
-            ArgIteratorData argIteratorData = new ArgIteratorData(hasThis, isVarArg, parameterTypes, returnType);
+            ArgIteratorData<TypeHandle> argIteratorData = new ArgIteratorData<TypeHandle>(hasThis, isVarArg, parameterTypes, returnType);
 
-            ArgIterator argit = new ArgIterator(
+            ArgIterator<TypeHandle> argit = new ArgIterator<TypeHandle>(
                 transitionBlock,
                 argIteratorData,
                 callingConventions,
@@ -131,7 +130,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void GetCallRefMap(MethodDesc method, bool isUnboxingStub)
         {
-            (ArgIterator argit, TransitionBlock transitionBlock) = BuildArgIterator(method.Signature, method.Context, 
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = BuildArgIterator(method.Signature, method.Context,
                 methodRequiresInstArg: method.RequiresInstArg(),
                 isUnboxingStub: isUnboxingStub,
                 methodIsArrayAddressMethod: method.IsArrayAddressMethod(),
@@ -177,7 +176,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// <summary>
         /// Fill in the GC-relevant stack frame locations.
         /// </summary>
-        private void FakeGcScanRoots(MethodDesc method, ArgIterator argit, CORCOMPILE_GCREFMAP_TOKENS[] frame, bool isUnboxingStub)
+        private void FakeGcScanRoots(MethodDesc method, ArgIterator<TypeHandle> argit, CORCOMPILE_GCREFMAP_TOKENS[] frame, bool isUnboxingStub)
         {
             // Encode generic instantiation arg
             if (argit.HasParamType)

@@ -76,7 +76,7 @@ namespace Internal.CallingConvention
             -2,//ELEMENT_TYPE_SZARRAY      0x1d
         };
 
-        static int GetElemSize(CorElementType t, ITypeHandle thValueType)
+        static int GetElemSize<T>(CorElementType t, T thValueType) where T : ITypeHandle
         {
             if (((int)t) <= 0x1d)
             {
