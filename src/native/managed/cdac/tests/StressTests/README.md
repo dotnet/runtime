@@ -141,7 +141,7 @@ $env:CORE_ROOT = "path\to\Core_Root"
 3. `Main()` must return `100` on success
 4. Use `[MethodImpl(MethodImplOptions.NoInlining)]` on methods to prevent inlining
 5. Use `GC.KeepAlive()` to ensure objects are live at GC stress points
-6. Add the debuggee name to `BasicStressTests.Debuggees`
+6. Add the debuggee name to `CdacStressTests.Debuggees`
 
 ## Debuggee Catalog
 
@@ -151,11 +151,14 @@ $env:CORE_ROOT = "path\to\Core_Root"
 | **ExceptionHandling** | try/catch/finally funclets, nested exceptions, filter funclets, rethrow |
 | **DeepStack** | Deep recursion with live refs at each frame |
 | **Generics** | Generic method instantiations, interface dispatch, delegates |
-| **PInvoke** | P/Invoke transitions, pinned GC handles, struct with object refs |
+| **PInvoke** | P/Invoke transitions, pinned GC handles, struct with object refs (Windows-only) |
 | **MultiThread** | Concurrent threads with synchronized GC stress |
 | **Comprehensive** | All-in-one: every scenario in a single run |
 | **StructScenarios** | Struct returns, by-ref params |
 | **DynamicMethods** | DynamicMethod / IL emit |
+| **CallSignatures** | Wide signature surface for the ARGITER sub-check (primitives, byref/ptr, structs, generics) |
+| **CrossModule** | Calls across multiple assemblies exercising cross-module type references |
+| **VarArgs** | `__arglist` / VASigCookie validation for ARGITER (Windows x86/x64/ARM64 only; excluded from GCREFS until GetStackReferences walks the cookie signature) |
 
 ## Architecture
 

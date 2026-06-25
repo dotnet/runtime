@@ -16,17 +16,20 @@ using System.Runtime.CompilerServices;
 ///   return TargetOS::IsWindows &amp;&amp; !TargetArchitecture::IsArm32;
 /// </code>
 /// So this debuggee's methods will fail to JIT on Linux/macOS (all
-/// architectures), Windows ARM32, RISC-V, LoongArch64, and WASM.
-/// The xunit harness must skip <c>VarArgs</c> on those targets.
+/// architectures), Windows ARM32, RISC-V, LoongArch64, and WASM. The
+/// xunit harness skips <c>VarArgs</c> on those targets via the
+/// <c>WindowsOnly</c> flag on the <c>Debuggee</c> record.
 /// </para>
 ///
 /// <para>
-/// Additionally lives outside the unified <c>Debuggees</c> list because
-/// the cDAC's <c>GetStackReferences</c> doesn't yet walk the VASigCookie
-/// signature blob to enumerate variadic-tail GC refs, so the GCREFS
-/// sub-check reports false failures on vararg frames. ARGITER has no
-/// such gap (the encoder emits <c>GCRefMapToken.VASigCookie</c> and
-/// stops, matching the runtime's <c>FakeGcScanRoots</c> short-circuit).
+/// The <c>VarArgs</c> entry in <c>CdacStressTests.Debuggees</c> also sets
+/// <c>SkipGCRefs: true</c>: the cDAC's <c>GetStackReferences</c> does not
+/// yet walk the VASigCookie signature blob to enumerate variadic-tail GC
+/// refs, so the GCREFS sub-check reports false failures on vararg frames.
+/// ARGITER has no such gap (the encoder emits
+/// <c>GCRefMapToken.VASigCookie</c> and stops, matching the runtime's
+/// <c>FakeGcScanRoots</c> short-circuit), so we still exercise this
+/// debuggee under the <c>ArgIterStress_*</c> theory.
 /// </para>
 /// </summary>
 internal static class Program
