@@ -447,6 +447,10 @@ namespace System
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static int LastIndexOfAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         public static int LastIndexOfAnyWhiteSpace(this System.ReadOnlySpan<char> span) { throw null; }
+        public static T? Max<T>(this System.ReadOnlySpan<T> span) { throw null; }
+        public static T? Max<T>(this System.ReadOnlySpan<T> span, System.Collections.Generic.IComparer<T>? comparer) { throw null; }
+        public static T? Min<T>(this System.ReadOnlySpan<T> span) { throw null; }
+        public static T? Min<T>(this System.ReadOnlySpan<T> span, System.Collections.Generic.IComparer<T>? comparer) { throw null; }
         public static bool Overlaps<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) { throw null; }
         public static bool Overlaps<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other, out int elementOffset) { throw null; }
         [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
