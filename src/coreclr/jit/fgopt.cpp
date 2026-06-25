@@ -5308,11 +5308,17 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     // From most to least preferable.
                     //
                     if (isNoSplit && isFallThrough)
+                    {
                         return 0;
+                    }
                     if (isNoSplit)
+                    {
                         return 1;
+                    }
                     if (isFallThrough)
+                    {
                         return 2;
+                    }
 
                     return 3;
                 };
@@ -5321,7 +5327,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                 bool           pick = rank < bestRank;
                 if (rank == bestRank)
                 {
-                    pick = predBlock->bbNum < crossJumpVictim->bbNum;
+                    pick = predBlock->bbID < crossJumpVictim->bbID;
                 }
 
                 if (pick)
