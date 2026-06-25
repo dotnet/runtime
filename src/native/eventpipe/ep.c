@@ -58,11 +58,23 @@ is_session_id_in_collection (EventPipeSessionID id);
 // _Requires_lock_held (ep)
 static
 EventPipeSessionID
-enable (const EventPipeSessionOptions *options);
+session_init (const EventPipeSessionOptions *options);
+
+// _Requires_lock_held (ep)
+static
+void
+session_fini (EventPipeSession *session, bool was_enabled);
 
 static
 void
 log_process_info_event (EventPipeEventSource *event_source);
+
+// _Requires_lock_held (ep)
+static
+void
+enable_holding_lock (
+	EventPipeSession *session,
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue);
 
 // _Requires_lock_held (ep)
 static
@@ -73,7 +85,7 @@ disable_holding_lock (
 
 static
 void
-disable_helper (EventPipeSessionID id);
+stop_session (EventPipeSessionID id);
 
 static
 void
@@ -529,9 +541,13 @@ static bool check_options_valid (const EventPipeSessionOptions *options)
 	return true;
 }
 
+// Allocates and publishes a new EventPipe session, but leaves it INERT: reachable in the session array, yet its
+// providers are unconfigured, its allow_write bit is clear, and number_of_sessions is not bumped - so it captures
+// nothing and is invisible to provider config. Configuring providers, dispatching the provider-enable callbacks,
+// and starting the drain thread happen in the separate streaming-start phase the caller must run next.
 static
 EventPipeSessionID
-enable (const EventPipeSessionOptions *options)
+session_init (const EventPipeSessionOptions *options)
 {
 	ep_requires_lock_held ();
 
@@ -543,7 +559,6 @@ enable (const EventPipeSessionOptions *options)
 	EventPipeSession *session = NULL;
 	EventPipeSessionID session_id = 0;
 	uint32_t session_index = 0;
-	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = NULL;
 
 	ep_raise_error_if_nok (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED);
 
@@ -581,20 +596,6 @@ enable (const EventPipeSessionOptions *options)
 		ep_raise_error ();
 	}
 
-	provider_callback_data_queue = ep_rt_object_alloc (EventPipeProviderCallbackDataQueue);
-	ep_raise_error_if_nok (provider_callback_data_queue != NULL);
-	if (ep_provider_callback_data_queue_init (provider_callback_data_queue) == NULL) {
-		ep_rt_object_free (provider_callback_data_queue);
-		provider_callback_data_queue = NULL;
-		ep_raise_error ();
-	}
-	// Attach the provider-enable callbacks to the session; config_enable_disable below fills the queue,
-	// but it is dispatched later, not here. See EventPipeSession::provider_callbacks.
-	ep_session_set_provider_callbacks (session, provider_callback_data_queue);
-
-	// Register the SampleProfiler the very first time (if supported).
-	ep_sample_profiler_init (provider_callback_data_queue);
-
 	// Enable the EventPipe EventSource.
 	ep_raise_error_if_nok (ep_event_source_enable (ep_event_source_get (), session));
 
@@ -604,16 +605,10 @@ enable (const EventPipeSessionOptions *options)
 		ep_raise_error ();
 	}
 
+	// Publish the session but leave it inert: providers are not configured, no callbacks are generated, and
+	// allow_write / number_of_sessions stay untouched until the enable phase runs. The config session-walks skip
+	// sessions whose allow_write bit is clear, and producers skip them too, so an inert session is invisible.
 	ep_volatile_store_session (ep_session_get_index (session), session);
-
-	ep_volatile_store_allow_write (ep_volatile_load_allow_write () | ep_session_get_mask (session));
-	ep_volatile_store_number_of_sessions (ep_volatile_load_number_of_sessions () + 1);
-
-	// Enable tracing.
-	config_enable_disable (ep_config_get (), session, provider_callback_data_queue, true);
-
-	if (session_requested_sampling (session))
-		ep_sample_profiler_enable ();
 
 ep_on_exit:
 	ep_requires_lock_held ();
@@ -625,6 +620,47 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
+// Mirror of session init: unpublishes the session from the array and reclaims it. Runs under the lock. The drain
+// (only when the session was enabled) is bracketed between the unpublish and the close so no producer can observe
+// the session mid-flush. The unpublish, close, and reference drop always run, since even an inert session was
+// allocated and published.
+static
+void
+session_fini (EventPipeSession *session, bool was_enabled)
+{
+	ep_requires_lock_held ();
+
+	// Unpublish (always). Clear the slot before waiting on in-flight ops so a producer either already grabbed the
+	// pointer and finishes its write, or reads NULL and bails.
+	EP_ASSERT (ep_volatile_load_session (ep_session_get_index (session)) == session);
+	ep_volatile_store_session (ep_session_get_index (session), NULL);
+
+	// Drain (only if enabled): wait out in-flight writers, flush, uncount, write the final sequence point. Must
+	// follow the unpublish so no new events land mid-flush.
+	if (was_enabled) {
+		ep_session_wait_for_inflight_thread_ops (session);
+
+		bool ignored;
+		ep_session_write_all_buffers_to_file (session, &ignored); // Flush the buffers to the stream/file
+
+		ep_volatile_store_number_of_sessions (ep_volatile_load_number_of_sessions () - 1);
+
+		// Write a final sequence point to the file now that all events have
+		// been emitted.
+		ep_session_write_sequence_point_unbuffered (session);
+	}
+
+	// Destroy (always). Close quiesces buffers and detaches per-thread states so a session that later reuses this
+	// slot index is never mistaken for this one; dropping the reference frees at the last ref.
+	ep_session_close (session);
+
+	ep_session_dec_ref (session);
+
+	ep_requires_lock_held ();
+}
+
+// Sends the one-shot process-information event (the managed command line) into the session. Used only by the
+// teardown path below, which logs it before the providers are turned off.
 static
 void
 log_process_info_event (EventPipeEventSource *event_source)
@@ -636,6 +672,47 @@ log_process_info_event (EventPipeEventSource *event_source)
 	ep_event_source_send_process_info (event_source, cmd_line);
 }
 
+// The "enable" half of session startup, run under the lock once the session has been published inert: configures
+// providers, sets allow_write, bumps number_of_sessions, and inits/enables the sample profiler, collecting the
+// provider-enable callbacks onto the queue for the caller to dispatch after the drain thread is running.
+static
+void
+enable_holding_lock (
+	EventPipeSession *session,
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
+{
+	ep_requires_lock_held ();
+
+	EP_ASSERT (session != NULL);
+
+	// Register the SampleProfiler the very first time (if supported).
+	ep_sample_profiler_init (provider_callback_data_queue);
+
+	// Mark the session writable before configuring providers so config_enable_disable's session walk
+	// includes it (see the allow_write gate in config_compute_keyword_and_level / config_register_provider).
+	ep_volatile_store_allow_write (ep_volatile_load_allow_write () | ep_session_get_mask (session));
+	ep_volatile_store_number_of_sessions (ep_volatile_load_number_of_sessions () + 1);
+
+	// Enable tracing. Provider-enable callbacks are collected onto the queue and dispatched by the caller once the
+	// drain thread is running - not fired inline here.
+	config_enable_disable (ep_config_get (), session, provider_callback_data_queue, true);
+
+	if (session_requested_sampling (session))
+		ep_sample_profiler_enable ();
+
+	ep_requires_lock_held ();
+}
+
+// Tears a session down and reclaims it - the counterpart to session creation plus enable. Runs under the lock,
+// in two steps: undo enable (only if the session was enabled), then session fini to unpublish, drain, and free.
+//   1. Undo enable (only if enabled): stop new activity - abort Block writers, disable the profiler and
+//      providers, run rundown, clear allow_write. Reverses the enable phase.
+//   2. session fini (always): unpublish, drain the enabled session's buffers, then close and free. Mirror of
+//      session creation.
+// The "only if enabled" guard exists because publish and enable run under separate lock acquisitions, so a
+// disable can observe a published-but-inert session (e.g. shutdown racing an in-progress enable). An inert
+// session has nothing configured, counted, buffered, or started, so step 1 is skipped and session fini just
+// unpublishes and frees.
 static
 void
 disable_holding_lock (
@@ -643,89 +720,58 @@ disable_holding_lock (
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
 	EP_ASSERT (id != 0);
-	EP_ASSERT (ep_volatile_load_number_of_sessions () > 0);
 
 	ep_requires_lock_held ();
 
 	if (is_session_id_in_collection (id)) {
 		EventPipeSession *const session = (EventPipeSession *)(uintptr_t)id;
 
-		// Session disabled before ep_start_streaming could dispatch: its provider-enable callbacks are still
-		// attached. Move them into this disable's callback queue (detached under the lock, racing
-		// ep_start_streaming's own detach) so disable_helper invokes them outside the lock, ahead of the
-		// disable callbacks added below. See EventPipeSession::provider_callbacks for why this is required.
-		EventPipeProviderCallbackDataQueue *pending_provider_callbacks = ep_session_get_provider_callbacks (session);
-		if (pending_provider_callbacks != NULL && provider_callback_data_queue != NULL) {
-			EventPipeProviderCallbackData pending_callback_data;
-			while (ep_provider_callback_data_queue_try_dequeue (pending_provider_callbacks, &pending_callback_data))
-				ep_provider_callback_data_queue_enqueue (provider_callback_data_queue, &pending_callback_data);
-			ep_session_set_provider_callbacks (session, NULL);
-			ep_provider_callback_data_queue_fini (pending_provider_callbacks);
-			ep_rt_object_free (pending_provider_callbacks);
-		}
+		// Distinguishes an enabled session from a published-but-still-inert one (see header).
+		const bool was_enabled = (ep_volatile_load_allow_write () & ep_session_get_mask (session)) != 0;
 
-		EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
-		if (buffer_manager != NULL)
-			ep_buffer_manager_abort_blocked_writers (buffer_manager);
+		// Phase 1 - undo enable.
+		if (was_enabled) {
+			EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
+			if (buffer_manager != NULL)
+				ep_buffer_manager_abort_blocked_writers (buffer_manager);
 
-		if (session_requested_sampling (session)) {
-			// Disable the profiler.
-			ep_sample_profiler_disable ();
-		}
-
-		// Log the process information event.
-		log_process_info_event (ep_event_source_get ());
-
-		// Disable session tracing.
-		config_enable_disable (ep_config_get (), session, provider_callback_data_queue, false);
-
-		ep_session_disable (session); // WriteAllBuffersToFile, disable user_events, and remove providers.
-
-		// Do rundown before fully stopping the session unless rundown wasn't requested
-		if ((ep_session_get_rundown_keyword (session) != 0) && _ep_can_start_threads) {
-			ep_session_enable_rundown (session); // Set Rundown provider.
-			EventPipeThread *const thread = ep_thread_get_or_create ();
-			if (thread != NULL) {
-				ep_thread_set_as_rundown_thread (thread, session);
-				{
-					config_enable_disable (ep_config_get (), session, provider_callback_data_queue, true);
-					{
-						ep_session_execute_rundown (session, _ep_rundown_execution_checkpoints);
-					}
-					config_enable_disable(ep_config_get (), session, provider_callback_data_queue, false);
-				}
-				ep_thread_set_as_rundown_thread (thread, NULL);
-			} else {
-				EP_ASSERT (!"Failed to get or create the EventPipeThread for rundown events.");
+			if (session_requested_sampling (session)) {
+				// Disable the profiler.
+				ep_sample_profiler_disable ();
 			}
+
+			// Log the process information event.
+			log_process_info_event (ep_event_source_get ());
+
+			// Disable session tracing.
+			config_enable_disable (ep_config_get (), session, provider_callback_data_queue, false);
+
+			ep_session_disable (session); // WriteAllBuffersToFile, disable user_events, and remove providers.
+
+			// Do rundown before fully stopping the session unless rundown wasn't requested
+			if ((ep_session_get_rundown_keyword (session) != 0) && _ep_can_start_threads) {
+				ep_session_enable_rundown (session); // Set Rundown provider.
+				EventPipeThread *const thread = ep_thread_get_or_create ();
+				if (thread != NULL) {
+					ep_thread_set_as_rundown_thread (thread, session);
+					{
+						config_enable_disable (ep_config_get (), session, provider_callback_data_queue, true);
+						{
+							ep_session_execute_rundown (session, _ep_rundown_execution_checkpoints);
+						}
+						config_enable_disable(ep_config_get (), session, provider_callback_data_queue, false);
+					}
+					ep_thread_set_as_rundown_thread (thread, NULL);
+				} else {
+					EP_ASSERT (!"Failed to get or create the EventPipeThread for rundown events.");
+				}
+			}
+
+			ep_volatile_store_allow_write (ep_volatile_load_allow_write () & ~(ep_session_get_mask (session)));
 		}
 
-		ep_volatile_store_allow_write (ep_volatile_load_allow_write () & ~(ep_session_get_mask (session)));
-
-		// Remove the session from the array before calling ep_session_wait_for_inflight_thread_ops. This way
-		// we can guarantee that either the event write got the pointer and will complete
-		// the write successfully, or it gets NULL and will bail.
-		EP_ASSERT (ep_volatile_load_session (ep_session_get_index (session)) == session);
-		ep_volatile_store_session (ep_session_get_index (session), NULL);
-
-		ep_session_wait_for_inflight_thread_ops (session);
-
-		bool ignored;
-		ep_session_write_all_buffers_to_file (session, &ignored); // Flush the buffers to the stream/file
-
-		ep_volatile_store_number_of_sessions (ep_volatile_load_number_of_sessions () - 1);
-
-		// Write a final sequence point to the file now that all events have
-		// been emitted.
-		ep_session_write_sequence_point_unbuffered (session);
-
-		// The session is disabled but might still be referenced elsewhere.
-		// As a newly allocated session may inherit this session's index, close the session to
-		// ensure all buffers are freed and detach all threads EventPipeThreadSessionStates
-		// so threads won't write to the closed session mistaking it as the new session.
-		ep_session_close (session);
-
-		ep_session_dec_ref (session);
+		// Phase 2 - unpublish, drain, and reclaim the object (mirror of session creation).
+		session_fini (session, was_enabled);
 
 		// Providers can't be deleted during tracing because they may be needed when serializing the file.
 		// Allow delete deferred providers to accumulate to mitigate potential use-after-free should
@@ -737,9 +783,13 @@ disable_holding_lock (
 	return;
 }
 
+// Disable driver, entered without the lock from ep_disable and the deferred-disable replay in ep_finish_init:
+// take the lock and run the teardown, then dispatch the balanced provider-disable callbacks outside the lock.
+// This is the disable-side counterpart to the enable driver, which does the same take-lock / enable / dispatch
+// shape for startup.
 static
 void
-disable_helper (EventPipeSessionID id)
+stop_session (EventPipeSessionID id)
 {
 	ep_requires_lock_not_held ();
 
@@ -757,7 +807,11 @@ disable_helper (EventPipeSessionID id)
 		EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
 
 		EP_LOCK_ENTER (section1)
-			if (ep_volatile_load_number_of_sessions () > 0)
+			// number_of_sessions counts only enabled sessions. A published-but-not-yet-enabled session is inert,
+			// and when it is the only session number_of_sessions is still 0 - yet it must still be torn down if
+			// disabled in that window (e.g. shutdown racing an in-progress enable), so also gate on it being in
+			// the collection.
+			if (ep_volatile_load_number_of_sessions () > 0 || is_session_id_in_collection (id))
 				disable_holding_lock (id, provider_callback_data_queue);
 		EP_LOCK_EXIT (section1)
 
@@ -920,8 +974,8 @@ write_event_2 (
 					write_session = ep_volatile_load_session (i);
 				}
 			}
-			// Do not reference session past this point, we are signaling disable_holding_lock that it is safe to
-			// delete it
+			// Do not reference session past this point; we are signaling the teardown path that it is safe to
+			// delete it.
 			ep_thread_set_session_use_in_progress (current_thread, UINT32_MAX);
 		}
 	}
@@ -1278,13 +1332,12 @@ ep_enable_3 (const EventPipeSessionOptions *options)
 	EventPipeSessionID session_id = 0;
 
 	EP_LOCK_ENTER (section1)
-		session_id = enable (options);
+		session_id = session_init (options);
 	EP_LOCK_EXIT (section1)
 
-	// enable() defers this session's provider-enable callbacks onto the session (see
-	// EventPipeSession::provider_callbacks); ep_start_streaming - which the caller invokes next on success -
-	// dispatches them, or disable_holding_lock does if the session is disabled first. On the error path
-	// enable() returns session_id == 0 with an empty queue, so there is nothing to dispatch.
+	// The call above only allocates and publishes the session inert (providers unconfigured, allow_write unset,
+	// uncounted) and returns 0 on failure; on success the streaming-start call below enables it - configures
+	// providers, sets allow_write, bumps the count, starts the drain thread, and dispatches the provider-enable callbacks.
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
@@ -1315,7 +1368,7 @@ ep_disable (EventPipeSessionID id)
 		}
 	EP_LOCK_EXIT (section1)
 
-	disable_helper (id);
+	stop_session (id);
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
@@ -1364,47 +1417,46 @@ ep_start_streaming (EventPipeSessionID session_id)
 
 	bool streaming_started = false;
 	EventPipeSession *const session = (EventPipeSession *)(uintptr_t)session_id;
-	EventPipeProviderCallbackDataQueue *provider_callbacks = NULL;
+	EventPipeProviderCallbackDataQueue callback_data_queue;
+	EventPipeProviderCallbackData provider_callback_data;
+	EventPipeProviderCallbackDataQueue *provider_callback_data_queue = NULL;
 
 	EP_LOCK_ENTER (section1)
 		ep_raise_error_if_nok_holding_lock (is_session_id_in_collection (session_id), section1);
+
+		provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
+
+		// Enable the session under the lock: configure providers, set allow_write, bump number_of_sessions, and
+		// collect the provider-enable callbacks onto the stack-local queue. They are dispatched below - outside
+		// the lock and after the drain thread is running - not fired inline here.
+		enable_holding_lock (session, provider_callback_data_queue);
+
 		if (_ep_can_start_threads) {
 			ep_session_start_streaming (session);
 			streaming_started = true;
 		}
 		else
 			dn_vector_push_back (_ep_deferred_enable_session_ids, session_id);
-
-		// Detach the callback queue under the lock so a concurrent disable_holding_lock sees NULL and won't
-		// also take it; this thread now owns the queue and frees it below. See
-		// EventPipeSession::provider_callbacks.
-		provider_callbacks = ep_session_get_provider_callbacks (session);
-		ep_session_set_provider_callbacks (session, NULL);
 	EP_LOCK_EXIT (section1)
 
-	if (provider_callbacks != NULL) {
-		// If we started the drain thread, wait until it is running before invoking. A blocking
-		// GCHeapSnapshot callback forces a stop-the-world heap walk that parks the cooperative producer
-		// on a full buffer; only the drain thread frees capacity, and it drains in preemptive mode so it
-		// keeps consuming through the suspension. Dispatching before it exists would park with no drainer
-		// and deadlock. A startup-parked session has no drain thread, but its heap walk no-ops until the
-		// GC is initialized, so skipping the wait there can't deadlock.
-		//
-		// The session read below is safe against a concurrent disable freeing it: disable joins the drain
-		// thread before freeing, and the thread sets "started" before exiting, so we observe it first.
-		if (streaming_started)
-			EP_YIELD_WHILE (!ep_session_has_started (session));
+	// If we started the drain thread, wait until it is running before invoking the callbacks. A blocking
+	// GCHeapSnapshot callback forces a stop-the-world heap walk that parks the cooperative producer on a
+	// full buffer; only the drain thread frees capacity, and it drains in preemptive mode so it keeps
+	// consuming through the suspension. Dispatching before it exists would park with no drainer and deadlock.
+	// A startup-parked (deferred) session has no drain thread yet, but its heap walk no-ops until the GC is
+	// initialized, so skipping the wait there can't deadlock.
+	//
+	// The session read below is safe against a concurrent disable freeing it: disable joins the drain thread
+	// before freeing, and the thread sets "started" before exiting, so we observe it first.
+	if (streaming_started)
+		EP_YIELD_WHILE (!ep_session_has_started (session));
 
-		// Invoke, then free the queue (heap-allocated in enable, owned here after the detach above).
-		EventPipeProviderCallbackData provider_callback_data;
-		while (ep_provider_callback_data_queue_try_dequeue (provider_callbacks, &provider_callback_data)) {
-			ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
-			provider_invoke_callback (&provider_callback_data);
-			ep_provider_callback_data_fini (&provider_callback_data);
-		}
-		ep_provider_callback_data_queue_fini (provider_callbacks);
-		ep_rt_object_free (provider_callbacks);
+	while (ep_provider_callback_data_queue_try_dequeue (provider_callback_data_queue, &provider_callback_data)) {
+		ep_rt_prepare_provider_invoke_callback (&provider_callback_data);
+		provider_invoke_callback (&provider_callback_data);
+		ep_provider_callback_data_fini (&provider_callback_data);
 	}
+	ep_provider_callback_data_queue_fini (provider_callback_data_queue);
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
@@ -1648,7 +1700,7 @@ ep_finish_init (void)
 	if (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED) {
 		if (_ep_deferred_disable_session_ids) {
 			DN_VECTOR_FOREACH_BEGIN (EventPipeSessionID, session_id, _ep_deferred_disable_session_ids) {
-				disable_helper (session_id);
+				stop_session (session_id);
 			} DN_VECTOR_FOREACH_END;
 			dn_vector_clear (_ep_deferred_disable_session_ids);
 		}

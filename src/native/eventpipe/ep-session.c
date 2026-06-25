@@ -51,6 +51,10 @@ void
 session_disable_user_events (EventPipeSession *session);
 
 static
+void
+session_free (EventPipeSession *session);
+
+static
 bool
 is_guid_empty(const uint8_t *guid);
 
@@ -363,7 +367,6 @@ ep_session_alloc (
 	instance->paused = false;
 	instance->enable_stackwalk = ep_rt_config_value_get_enable_stackwalk () && stackwalk_requested;
 	instance->started = 0;
-	instance->provider_callbacks = NULL;
 
 ep_on_exit:
 	ep_requires_lock_held ();
@@ -391,8 +394,15 @@ ep_session_dec_ref (EventPipeSession *session)
 
 	EP_ASSERT (!ep_session_get_streaming_enabled (session));
 
-	if (ep_rt_atomic_dec_uint32_t (&session->ref_count) != 0)
-		return;
+	if (ep_rt_atomic_dec_uint32_t (&session->ref_count) == 0)
+		session_free (session);
+}
+
+static
+void
+session_free (EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
 
 	ep_rt_wait_event_free (&session->rt_thread_shutdown_event);
 
@@ -401,18 +411,15 @@ ep_session_dec_ref (EventPipeSession *session)
 	ep_buffer_manager_free (session->buffer_manager);
 	ep_file_free (session->file);
 
-	// Safety-net free for the provider-enable callback queue: the only path that reaches here with it still
-	// attached is enable() failing after allocating it but before enqueuing anything, so it is empty. The
-	// success and disabled-first paths detach and free it elsewhere (see EventPipeSession::provider_callbacks).
-	// Freeing without invoking the callbacks never calls into managed code.
-	if (session->provider_callbacks != NULL) {
-		EventPipeProviderCallbackData provider_callback_data;
-		while (ep_provider_callback_data_queue_try_dequeue (session->provider_callbacks, &provider_callback_data))
-			ep_provider_callback_data_fini (&provider_callback_data);
-		ep_provider_callback_data_queue_fini (session->provider_callbacks);
-		ep_rt_object_free (session->provider_callbacks);
-		session->provider_callbacks = NULL;
-	}
+#if HAVE_UNISTD_H
+	// Close the user_events data fd if still open. For a USEREVENTS session that was enabled,
+	// ep_session_disable already closed it and set it to -1 (making this a no-op); this also releases it for
+	// inert or alloc-error teardowns that never run ep_session_disable. Closing the fd drops the kernel
+	// tracepoint registrations bound to it, and the per-provider tracepoint state is freed with the provider
+	// list above. Non-USEREVENTS sessions keep the fd at its -1 default (set in ep_session_alloc).
+	if (session->session_type == EP_SESSION_TYPE_USEREVENTS && session->user_events_data_fd != -1)
+		close (session->user_events_data_fd);
+#endif
 
 	ep_rt_object_free (session);
 }

@@ -31,28 +31,6 @@ struct _EventPipeSession_Internal {
 	EventPipeSessionProviderList *providers;
 	// Session buffer manager.
 	EventPipeBufferManager *buffer_manager;
-	// Provider-enable callbacks collected during enable() but deferred - not fired inline.
-	//
-	// Before: enable() built these on a stack-local queue and invoked them inline, so each provider's
-	// EventSource enable notification fired during enable(), unconditionally, before streaming began.
-	//
-	// Why deferred: An EventPipeSession using the blocking buffer mode will block producers when buffers are full,
-	// and given that enable callbacks are allowed to generate an unbounded number of events, we need a concurrent
-	// drain, otherwise threads will block indefinitely. So enable() parks the callbacks here and a later site
-	// dispatches them once the drain thread runs.
-	//
-	// Ownership: exactly one site invokes (or frees) this queue. Once enable() publishes the session it is
-	// reachable by both ep_start_streaming and a concurrent disable in the enable()->dispatch window, so
-	// those two race - each detaches the queue (NULLing this field) under the EventPipe lock, and the loser
-	// sees NULL, preventing a double-free:
-	//   - ep_start_streaming (enable succeeded): wait for the drain thread, then invoke and free.
-	//   - disable_holding_lock (disabled first): move the still-attached callbacks into the disable callback
-	//     queue so they still fire - balanced with, and ahead of, the disable notifications - and decrement
-	//     each provider's callbacks_pending, which ep_delete_provider would otherwise wait on forever.
-	// enable() can only fail before it publishes the session, so the failure path frees the (empty) queue
-	// with no concurrent observer - no race:
-	//   - ep_session_dec_ref (enable failed before enqueuing any): free the empty queue.
-	EventPipeProviderCallbackDataQueue *provider_callbacks;
 	// Object used to flush event data (File, IPC stream, etc.).
 	EventPipeFile *file;
 	// For synchoronous sessions.
@@ -107,8 +85,6 @@ struct _EventPipeSession {
 EP_DEFINE_GETTER(EventPipeSession *, session, uint32_t, index)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeSessionProviderList *, providers)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeBufferManager *, buffer_manager)
-EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeProviderCallbackDataQueue *, provider_callbacks)
-EP_DEFINE_SETTER(EventPipeSession *, session, EventPipeProviderCallbackDataQueue *, provider_callbacks)
 EP_DEFINE_GETTER_REF(EventPipeSession *, session, volatile uint32_t *, rundown_enabled)
 EP_DEFINE_GETTER(EventPipeSession *, session, EventPipeSessionType, session_type)
 EP_DEFINE_GETTER(EventPipeSession *, session, uint64_t, rundown_keyword)
