@@ -36,6 +36,14 @@ enum {
 #define method_name(idx) ((const char*)&method_names + (idx))
 
 static gboolean emit_sri_packedsimd (TransformData *, MonoMethod *, MonoMethodSignature *);
+static gboolean emit_sri_relaxedsimd (TransformData *, MonoMethod *, MonoMethodSignature *);
+
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+// Set by interp-simd.c to 1 in libmono-wasm-relaxed-simd.a and to 0 in libmono-wasm-simd.a /
+// libmono-wasm-nosimd.a. The app build picks one library variant via WasmEnableRelaxedSimd,
+// so this lets a single mono-ee-interp.a decide RelaxedSimd.IsSupported at runtime.
+extern const int mono_interp_relaxed_simd_supported;
+#endif
 
 static int
 simd_intrinsic_compare_by_name (const void *key, const void *value)
@@ -972,6 +980,17 @@ typedef struct {
 #define INTERP_WASM_SIMD_INTRINSIC_V_C3(name, arg1, c_intrinsic, wasm_opcode) \
 	INTRINS_COMMON(name, arg1, c_intrinsic, MINT_SIMD_INTRINS_P_PPP, INTERP_SIMD_INTRINSIC_ ## name ## arg1)
 
+// Relaxed-SIMD: route through the regular WASM_SIMD macros so the entries land in the
+// shared unsorted_packedsimd_intrinsic_infos[] lookup table with proper enum ids and
+// MINT_SIMD_INTRINS_P_{PP,PPP} dispatch opcodes. emit_sri_relaxedsimd prepends "Relaxed"
+// to the method name before looking up the table entry.
+#undef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V   INTERP_WASM_SIMD_INTRINSIC_V_V
+#undef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV  INTERP_WASM_SIMD_INTRINSIC_V_VV
+#undef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV INTERP_WASM_SIMD_INTRINSIC_V_VVV
+
 static PackedSimdIntrinsicInfo unsorted_packedsimd_intrinsic_infos[] = {
 #include "interp-simd-intrins.def"
 };
@@ -984,6 +1003,9 @@ static PackedSimdIntrinsicInfo unsorted_packedsimd_intrinsic_infos[] = {
 #undef INTERP_WASM_SIMD_INTRINSIC_V_C2
 #undef INTERP_WASM_SIMD_INTRINSIC_V_VVV
 #undef INTERP_WASM_SIMD_INTRINSIC_V_C3
+#undef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V
+#undef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV
+#undef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV
 
 static PackedSimdIntrinsicInfo *sorted_packedsimd_intrinsic_infos;
 
@@ -1321,6 +1343,69 @@ opcode_added:
 }
 
 static gboolean
+emit_sri_relaxedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
+{
+	if (csignature->hasthis)
+		return FALSE;
+
+	MonoClass *vector_klass = NULL;
+	if (csignature->ret->type == MONO_TYPE_GENERICINST)
+		vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+	else if (csignature->param_count && csignature->params [0]->type == MONO_TYPE_GENERICINST)
+		vector_klass = mono_class_from_mono_type_internal (csignature->params [0]);
+
+	int vector_size = -1;
+
+	// IsSupported is normally constant-folded by the linker substitution + the JIT/AOT
+	// recognizer in simd-intrinsics.c. The interpreter only reaches it when those layers
+	// were bypassed (e.g. reflection); answer based on which mono-wasm-simd library
+	// variant the app build linked against.
+	if (!strcmp (cmethod->name, "get_IsSupported")) {
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+		interp_add_ins (td, mono_interp_relaxed_simd_supported ? MINT_LDC_I4_1 : MINT_LDC_I4_0);
+#else
+		interp_add_ins (td, MINT_LDC_I4_0);
+#endif
+		vector_klass = mono_class_from_mono_type_internal (csignature->ret);
+		goto opcode_added;
+	}
+
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+	if (!mono_interp_relaxed_simd_supported)
+		return FALSE;
+
+	if (!vector_klass)
+		return FALSE;
+
+	MonoTypeEnum atype;
+	int arg_size, scalar_arg;
+	if (!get_common_simd_info (vector_klass, csignature, &atype, &vector_size, &arg_size, &scalar_arg))
+		return FALSE;
+
+	// The RelaxedSimd.* method names overlap with PackedSimd.* (Swizzle, Min, Max,
+	// MultiplyAddEstimate, ConvertToInt32, ConvertToUInt32). The interpreter intrinsic
+	// table is keyed on a flat method name, so the .def entries for relaxed-simd are
+	// prefixed with "Relaxed". Prepend it before the lookup.
+	char relaxed_name [128];
+	if ((size_t)g_snprintf (relaxed_name, sizeof (relaxed_name), "Relaxed%s", cmethod->name) >= sizeof (relaxed_name))
+		return FALSE;
+
+	PackedSimdIntrinsicInfo *info = lookup_packedsimd_intrinsic (relaxed_name, csignature->params [0]);
+	if (!info || !info->interp_opcode || !info->simd_intrins)
+		return FALSE;
+
+	interp_add_ins (td, info->interp_opcode);
+	td->last_ins->data [0] = info->simd_intrins;
+#else
+	return FALSE;
+#endif
+
+opcode_added:
+	emit_common_simd_epilogue (td, vector_klass, csignature, vector_size, TRUE);
+	return TRUE;
+}
+
+static gboolean
 interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature, gboolean newobj)
 {
 	const char *class_name;
@@ -1351,6 +1436,8 @@ interp_emit_simd_intrinsics (TransformData *td, MonoMethod *cmethod, MonoMethodS
 	} else if (!strcmp (class_ns, "System.Runtime.Intrinsics.Wasm")) {
 		if (!strcmp (class_name, "PackedSimd"))
 			return emit_sri_packedsimd (td, cmethod, csignature);
+		else if (!strcmp (class_name, "RelaxedSimd"))
+			return emit_sri_relaxedsimd (td, cmethod, csignature);
 	}
 	return FALSE;
 }

@@ -229,6 +229,7 @@
     <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-simd.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libmono-wasm-relaxed-simd.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-nosimd.a" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js.map" IsNative="true" />
