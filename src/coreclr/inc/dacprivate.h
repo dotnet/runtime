@@ -75,12 +75,13 @@ enum
 
 // In/out request descriptor for DACSTRESSPRIV_REQUEST_COMPUTE_ARG_GCREFMAP.
 // outBuffer is unused; the caller-allocated blob destination + size are
-// carried by this struct, and the handler writes cbFilled in place.
-//   S_OK                                    blob fit; cbFilled bytes written to *BlobBuffer.
-//   HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)  cbFilled = required size; *BlobBuffer untouched.
-//   E_NOTIMPL                               encoder declined this MD (bucketed as ARG_SKIP).
-//   E_FAIL                                  encoder threw (bucketed as ARG_ERROR).
-//   E_INVALIDARG                            bad inBuffer.
+// carried by this struct, and the handler writes cbFilled and cbNeeded in
+// place.
+//   S_OK                                              blob fit; cbFilled bytes written to *BlobBuffer; cbNeeded == cbFilled.
+//   HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)    cbFilled = 0, cbNeeded = required size; *BlobBuffer untouched.
+//   E_NOTIMPL                                         encoder declined this MD (bucketed as ARG_SKIP).
+//   E_FAIL                                            encoder threw (bucketed as ARG_ERROR).
+//   E_INVALIDARG                                      bad inBuffer.
 struct DacStressArgGCRefMapRequest
 {
     CLRDATA_ADDRESS MethodDesc;     // [in]

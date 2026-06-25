@@ -62,7 +62,7 @@ internal static unsafe class CdacStressApi
         _ = outSize;
         _ = outBuffer;
 
-        if (inBuffer is null || inSize < (uint)Unsafe.SizeOf<DacStressArgGCRefMapRequest>())
+        if (inBuffer is null || inSize < (uint)sizeof(DacStressArgGCRefMapRequest))
             return HResults.E_INVALIDARG;
 
         // Alignment-safe view of the [in,out] descriptor. The cDAC ABI hands

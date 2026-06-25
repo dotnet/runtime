@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <LangVersion>latest</LangVersion>
     <!-- This debuggee deliberately defines many "test scaffolding" types and
          enums where StyleCop's one-value-per-line / no-unassigned-fields
          conventions don't add value. Extend the parent NoWarn. -->

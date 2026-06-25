@@ -20,7 +20,6 @@ internal readonly struct CdacTypeHandle : ITypeHandle
     private readonly Target _target;
 
     private readonly RuntimeInfoArchitecture _arch;
-    private readonly RuntimeInfoOperatingSystem _os;
 
     // Outermost ELEMENT_TYPE_* wrapper (PTR / BYREF / SZARRAY / ARRAY / etc.)
     // recorded out-of-band by the signature wrapper provider in
@@ -28,7 +27,8 @@ internal readonly struct CdacTypeHandle : ITypeHandle
     // TypeHandle would be null (the runtime hasn't cached the constructed
     // form), in which case Rts.GetSignatureCorElementType would return 0 and
     // ArgIterator would fail to classify the arg for stack-size accounting.
-    // CdacCorElementType.End (== default) means "no override; ask Rts".
+    // `default` (the enum's 0 value, which CorElementType doesn't name) means
+    // "no override; ask Rts".
     private readonly CdacCorElementType _kindOverride;
 
     public CdacTypeHandle(TypeHandle typeHandle, Target target)
@@ -41,7 +41,6 @@ internal readonly struct CdacTypeHandle : ITypeHandle
         _typeHandle = typeHandle;
         _target = target;
         _arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
-        _os = _target.Contracts.RuntimeInfo.GetTargetOperatingSystem();
         _kindOverride = kindOverride;
     }
 
