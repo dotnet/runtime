@@ -54,6 +54,15 @@ public class StraddlingVtypeAbi
         public int B;
     }
 
+    // 8-byte struct holding only an object reference. Its Nullable is 16 bytes, 8-aligned, with the
+    // HasValue flag in the low eightbyte and the reference at offset 8 -> the reference lands whole
+    // in the *high* eightbyte register. Used to confirm that a managed pointer carried in the high
+    // register of a register-passed value is found by the GC (it never straddles the boundary).
+    public struct RefOnly
+    {
+        public object O;
+    }
+
     // Box a Nullable<T> and unbox it back, all through shared generic code.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool BoxUnboxGeneric<T>(T? value, T expected, bool hasValue) where T : struct
@@ -140,6 +149,16 @@ public class StraddlingVtypeAbi
         RefHolder backRh = IdentityWithGc<RefHolder>(rh);
         if (!ReferenceEquals(backRh.O, marker) || backRh.A != 7 || backRh.B != 9)
             return 151;
+
+        // 7. Same GC-safety check, but with the reference wrapped in a Nullable so it rides in the
+        //    high eightbyte (offset 8) of a 16-byte register-passed value rather than at offset 0.
+        //    Confirms the managed pointer in the upper register is whole (never straddling) and is
+        //    still found by the collector while the value is in flight through shared generic code.
+        object nullableMarker = new object();
+        RefOnly? nrh = new RefOnly { O = nullableMarker };
+        RefOnly? backNrh = IdentityWithGc<RefOnly?>(nrh);
+        if (!backNrh.HasValue || !ReferenceEquals(backNrh.Value.O, nullableMarker))
+            return 161;
 
         return 100;
     }
