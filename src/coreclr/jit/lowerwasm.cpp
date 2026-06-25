@@ -460,8 +460,6 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 
     if (indirNode->OperIs(GT_IND) && ((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0))
     {
-        // On wasm a load from a null address does not fault, so a faulting load needs an
-        // explicit null check, which requires multiple uses of the address operand.
         SetMultiplyUsed(indirNode->Addr() DEBUGARG("ContainCheckIndir faulting load Addr"));
     }
 

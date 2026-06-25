@@ -486,17 +486,9 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
             CollectReferencesForBinop(node->AsOp());
             break;
 
-        case GT_STOREIND:
-            CollectReferencesForStoreInd(node->AsStoreInd());
-            break;
-
         case GT_IND:
-            if (node->AsIndir()->Addr()->gtLIRFlags & LIR::Flags::MultiplyUsed)
-            {
-                // Faulting loads are null checked on wasm; consume the temporary register
-                // holding the address so it is available for both the check and the load.
-                ConsumeTemporaryRegForOperand(node->AsIndir()->Addr() DEBUGARG("indir load null check"));
-            }
+        case GT_STOREIND:
+            CollectReferencesForIndir(node->AsIndir());
             break;
 
         case GT_STORE_BLK:
@@ -657,15 +649,15 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
 }
 
 //------------------------------------------------------------------------
-// CollectReferencesForStoreInd: Collect virtual register references for an indirect store
+// CollectReferencesForIndir: Collect virtual register references for an indirection.
 //
 // Arguments:
-//    node - The GT_STOREIND node
+//    node - The indirection node.
 //
-void WasmRegAlloc::CollectReferencesForStoreInd(GenTreeStoreInd* node)
+void WasmRegAlloc::CollectReferencesForIndir(GenTreeIndir* node)
 {
     GenTree* const addr = node->Addr();
-    ConsumeTemporaryRegForOperand(addr DEBUGARG("storeind null check"));
+    ConsumeTemporaryRegForOperand(addr DEBUGARG("indirection address"));
 }
 
 //------------------------------------------------------------------------
