@@ -1281,21 +1281,6 @@ public:
     // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT STDMETHODCALLTYPE GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContextBuffer) = 0;
 
-    //
-    // This is a simple helper function to convert a CONTEXT to a DebuggerREGDISPLAY.  We need to do this
-    // inside DDI because the RS has no notion of REGDISPLAY.
-    //
-    // Arguments:
-    //    pInContext - the CONTEXT to be converted
-    //    pOutDRD    - the converted DebuggerREGDISPLAY
-    //    fActive    - Indicate whether the CONTEXT is active or not.  An active CONTEXT means that the
-    //                 IP is the next instruction to be executed, not the return address of a function call.
-    //                 The opposite of an active CONTEXT is an unwind CONTEXT, which is obtained from
-    //                 unwinding.
-    //
-
-    virtual HRESULT STDMETHODCALLTYPE ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * pInContext, DebuggerREGDISPLAY * pOutDRD, BOOL fActive) = 0;
-
     typedef enum
     {
         kNone,
@@ -1905,7 +1890,7 @@ public:
     // to terminate the process when the attach is canceled.
     virtual HRESULT STDMETHODCALLTYPE GetAttachStateFlags(OUT CLR_DEBUGGING_PROCESS_FLAGS * pRetVal) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetModuleMetaDataFileInfo(VMPTR_Module vmModule, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT BOOL * pResult) = 0;
 
@@ -1980,13 +1965,12 @@ public:
     //  Parameters:
     //      pHandle - out - the reference walk handle to create
     //      walkStacks - in - whether or not to report stack references
-    //      walkFQ - in - whether or not to report references from the finalizer queue
     //      handleWalkMask - in - the types of handles report (see CorGCReferenceType, cordebug.idl)
     //  Returns:
     //      An HRESULT indicating whether it succeeded or failed.
     //  Exceptions:
     //      Returns an HRESULT indicating success or failure.
-    virtual HRESULT STDMETHODCALLTYPE CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask) = 0;
+    virtual HRESULT STDMETHODCALLTYPE CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, UINT32 handleWalkMask) = 0;
 
     // Deletes a reference walk.
     // Parameters:

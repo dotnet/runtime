@@ -2790,6 +2790,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             assert(seg.IsPassedInRegister());
             WasmValueType wvt = WasmRegToType(seg.GetRegister());
             assert(wvt < WasmValueType::Count);
+            if (wvt == WasmValueType::V128)
+            {
+                // Passing a 16-byte SIMD value by value through a call is not yet correctly
+                // implemented: the argument is materialized as an i32 (by-ref) while the call
+                // signature requires v128, producing an invalid module. Bail for now.
+                NYI_WASM_SIMD("SIMD16 call argument");
+            }
             typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
         }
     }
