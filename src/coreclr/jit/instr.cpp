@@ -790,9 +790,10 @@ void CodeGen::inst_Mov_Extend(var_types srcType,
                               regNumber srcReg,
                               bool      canSkip,
                               emitAttr  size,
-                              insFlags  flags /* = INS_FLAGS_DONT_CARE */)
+                              insFlags  flags /* = INS_FLAGS_DONT_CARE */,
+                              var_types dstType /* = TYP_UNKNOWN */)
 {
-    instruction ins = ins_Move_Extend(srcType, srcInReg);
+    instruction ins = ins_Move_Extend(srcType, srcInReg, dstType);
 
     if (size == EA_UNKNOWN)
     {
@@ -1920,9 +1921,17 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
  *  Parameters
  *      srcType   - source type
  *      srcInReg  - whether source is in a register
+ *      dstType   - type the value will be consumed as; defaults to srcType. Must share srcType's
+ *                  actual type, as genuine widening (e.g. int -> long) must use a cast instead.
  */
-instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
+instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg, var_types dstType /* = TYP_UNKNOWN */)
 {
+    if (dstType == TYP_UNKNOWN)
+    {
+        dstType = srcType;
+    }
+    assert(genActualType(srcType) == genActualType(dstType));
+
     if (varTypeUsesIntReg(srcType))
     {
         instruction ins = INS_invalid;
@@ -2005,14 +2014,8 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
                 }
                 else
                 {
-                    if (srcType == TYP_INT)
-                    {
-                        ins = INS_sxtw;
-                    }
-                    else
-                    {
-                        ins = INS_mov;
-                    }
+                    // A TYP_INT value only needs its low 32 bits; mov Wd, Wn zero extends the rest.
+                    ins = INS_mov;
                 }
             }
         }
