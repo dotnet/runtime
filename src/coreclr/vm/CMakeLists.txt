@@ -468,7 +468,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    noopmetadataimport.h
     pendingload.h
     profdetach.h
     profilingenumerators.h

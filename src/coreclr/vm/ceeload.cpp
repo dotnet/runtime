@@ -34,9 +34,6 @@
 #include "virtualcallstub.h"
 #include "typestring.h"
 #include "stringliteralmap.h"
-#ifndef DACCESS_COMPILE
-#include "noopmetadataimport.h"
-#endif
 #include <formattype.h>
 #include "fieldmarshaler.h"
 #include "sigbuilder.h"
@@ -1813,11 +1810,11 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
                 // Hand the reader an inert importer rather than the module's real
                 // (RW) metadata interface: the reader only needs it to satisfy the
                 // binder, and producing the real importer would force this module's
-                // metadata to its locked RW backing store. See noopmetadataimport.h.
-                IUnknown* pNoopImport = NoopMetadataImport::GetInstance();
-                hr = (pNoopImport != NULL)
-                    ? pBinder->GetReaderFromStream(pNoopImport, pIStream, &pReader)
-                    : E_OUTOFMEMORY;
+                // metadata to its locked RW backing store.
+                IMetaDataImport2* pNoopImport = NULL;
+                hr = CreateNoopMetaDataImport2(&pNoopImport);
+                if (SUCCEEDED(hr))
+                    hr = pBinder->GetReaderFromStream(pNoopImport, pIStream, &pReader);
             }
         }
         else
@@ -1828,11 +1825,11 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // Hand the reader an inert importer rather than a readable metadata
             // interface for this module: the reader only needs it to satisfy the
             // binder, and obtaining the real importer would force this module's
-            // metadata to its locked RW backing store. See noopmetadataimport.h.
-            IUnknown* pNoopImport = NoopMetadataImport::GetInstance();
-            hr = (pNoopImport != NULL)
-                ? pBinder->GetReaderForFile(pNoopImport, path, NULL, &pReader)
-                : E_OUTOFMEMORY;
+            // metadata to its locked RW backing store.
+            IMetaDataImport2* pNoopImport = NULL;
+            hr = CreateNoopMetaDataImport2(&pNoopImport);
+            if (SUCCEEDED(hr))
+                hr = pBinder->GetReaderForFile(pNoopImport, path, NULL, &pReader);
         }
 
         if (SUCCEEDED(hr))
