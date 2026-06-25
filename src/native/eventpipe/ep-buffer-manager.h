@@ -123,11 +123,13 @@ struct _EventPipeBufferManager_Internal {
 	volatile int64_t num_oversized_events_dropped;
 
 	EventPipeBufferingMode buffering_mode;
+#ifndef PERFTRACING_DISABLE_THREADS
 	// Block mode only (NULL otherwise): strict-FIFO queue of producer threads (EventPipeThread*) parked
 	// waiting for buffer budget. Only the front thread may reserve; the reader signals the front (each thread
 	// waits on its own event) when it frees a buffer. Guarded by rt_lock, the buffer manager's existing spin
 	// lock.
 	dn_queue_t *wait_queue;
+#endif // !PERFTRACING_DISABLE_THREADS
 	// Block mode: set once at teardown so parked producers give up and none newly park.
 	volatile uint32_t aborting;
 
@@ -195,6 +197,7 @@ ep_buffer_manager_write_event (
 	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack);
 
+#ifndef PERFTRACING_DISABLE_THREADS
 // Park the calling producer (front of the FIFO) on its own event until the reader frees capacity or
 // teardown wakes it. The thread must already be enqueued (by the fair reserve on a failed allocation).
 void
@@ -210,6 +213,7 @@ ep_buffer_manager_is_aborting (const EventPipeBufferManager *buffer_manager);
 // the buffers.
 void
 ep_buffer_manager_abort_blocked_writers (EventPipeBufferManager *buffer_manager);
+#endif // !PERFTRACING_DISABLE_THREADS
 
 // Write the contents of the managed buffers to the specified file.
 // The stop_timeStamp is used to determine when tracing was stopped to ensure that we

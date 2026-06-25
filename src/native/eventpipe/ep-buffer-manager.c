@@ -91,6 +91,7 @@ buffer_manager_free_buffer_and_release_budget (
 	EventPipeBuffer *buffer,
 	uint32_t budget_size);
 
+#ifndef PERFTRACING_DISABLE_THREADS
 static
 bool
 buffer_manager_try_reserve_buffer_fair (
@@ -101,6 +102,7 @@ buffer_manager_try_reserve_buffer_fair (
 static
 void
 buffer_manager_signal_front_waiter (EventPipeBufferManager *buffer_manager);
+#endif // !PERFTRACING_DISABLE_THREADS
 
 // An iterator that can enumerate all the events which have been written into this buffer manager.
 // Initially the iterator starts uninitialized and get_current_event () returns NULL. The iterator
@@ -532,11 +534,14 @@ buffer_manager_allocate_buffer_for_thread (
 	// draining the very session they would wait on - so they take the plain reserve and drop on failure,
 	// exactly as Drop mode does.
 	EP_ASSERT(buffer_size > 0);
+#ifndef PERFTRACING_DISABLE_THREADS
 	EventPipeThread *writer_thread = ep_thread_session_state_get_thread (thread_session_state);
 	if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK && !ep_thread_is_rundown_thread (writer_thread)) {
 		if (!buffer_manager_try_reserve_buffer_fair (buffer_manager, writer_thread, buffer_size))
 			return NULL;
-	} else {
+	} else
+#endif // !PERFTRACING_DISABLE_THREADS
+	{
 		ep_return_null_if_nok(buffer_manager_try_reserve_buffer (buffer_manager, buffer_size));
 	}
 
@@ -601,8 +606,10 @@ buffer_manager_deallocate_buffer (
 		buffer_manager->num_buffers_allocated--;
 #endif
 
+#ifndef PERFTRACING_DISABLE_THREADS
 		if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK)
 			buffer_manager_signal_front_waiter (buffer_manager);
+#endif // !PERFTRACING_DISABLE_THREADS
 	}
 }
 
@@ -907,11 +914,13 @@ ep_buffer_manager_alloc (
 
 	instance->buffering_mode = buffering_mode;
 	instance->aborting = 0;
+#ifndef PERFTRACING_DISABLE_THREADS
 	instance->wait_queue = NULL;
 	if (buffering_mode == EP_BUFFERING_MODE_BLOCK) {
 		instance->wait_queue = dn_queue_alloc ();
 		ep_raise_error_if_nok (instance->wait_queue != NULL);
 	}
+#endif // !PERFTRACING_DISABLE_THREADS
 
 	instance->thread_session_state_list_snapshot = dn_list_alloc ();
 	ep_raise_error_if_nok (instance->thread_session_state_list_snapshot != NULL);
@@ -971,15 +980,19 @@ ep_buffer_manager_free (EventPipeBufferManager * buffer_manager)
 
 	ep_rt_wait_event_free (&buffer_manager->rt_wait_event);
 
+#ifndef PERFTRACING_DISABLE_THREADS
 	if (buffer_manager->wait_queue != NULL) {
 		EP_ASSERT (dn_queue_empty (buffer_manager->wait_queue));
 		dn_queue_free (buffer_manager->wait_queue);
 	}
+#endif // !PERFTRACING_DISABLE_THREADS
 
 	ep_rt_spin_lock_free (&buffer_manager->rt_lock);
 
 	ep_rt_object_free (buffer_manager);
 }
+
+#ifndef PERFTRACING_DISABLE_THREADS
 
 // Block mode: wake the producer at the front of the wait queue - the only one allowed to reserve next.
 static
@@ -1125,6 +1138,7 @@ ep_on_exit:
 ep_on_error:
 	ep_exit_error_handler ();
 }
+#endif // !PERFTRACING_DISABLE_THREADS
 
 #ifdef EP_CHECKED_BUILD
 void
@@ -1257,11 +1271,14 @@ ep_buffer_manager_write_event (
 
 			// In block mode, notify the caller that they should park and retry, unless the session is closing,
 			// or rundown is enabled, in which case we cannot block without deadlocking.
+#ifndef PERFTRACING_DISABLE_THREADS
 			if (buffer_manager->buffering_mode == EP_BUFFERING_MODE_BLOCK &&
 				!ep_rt_volatile_load_uint32_t (&buffer_manager->aborting) &&
 				!ep_thread_is_rundown_thread (current_thread)) {
 				result = EP_WRITE_EVENT_RESULT_BLOCKED;
-			} else {
+			} else
+#endif // !PERFTRACING_DISABLE_THREADS
+			{
 				ep_thread_session_state_increment_sequence_number (session_state);
 			}
 		} else {

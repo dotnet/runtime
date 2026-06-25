@@ -729,9 +729,11 @@ disable_holding_lock (
 
 		// Phase 1 - undo enable.
 		if (was_enabled) {
+#ifndef PERFTRACING_DISABLE_THREADS
 			EventPipeBufferManager *const buffer_manager = ep_session_get_buffer_manager (session);
 			if (buffer_manager != NULL)
 				ep_buffer_manager_abort_blocked_writers (buffer_manager);
+#endif // !PERFTRACING_DISABLE_THREADS
 
 			if (session_requested_sampling (session)) {
 				// Disable the profiler.
@@ -932,6 +934,7 @@ write_event_2 (
 				// between the allow-write check and this load; re-loading on each block-mode retry below
 				// also picks up such an unpublish. The first write and every block-mode retry share the
 				// single ep_session_write_event call in this loop.
+#ifndef PERFTRACING_DISABLE_THREADS
 				EventPipeSession *write_session = ep_volatile_load_session (i);
 				EventPipeBufferManager *buffer_manager = NULL;
 				while (write_session != NULL) {
@@ -971,6 +974,23 @@ write_event_2 (
 					ep_thread_set_session_use_in_progress (current_thread, i | EP_SESSION_USE_WRITE_BUFFER_IN_USE);
 					write_session = ep_volatile_load_session (i);
 				}
+#else
+				// Single-threaded build: Block parking is unavailable (a single thread cannot block and still
+				// run the cooperative drain), so the Block write-path is compiled out and write_event never
+				// returns BLOCKED. This is a single write that drops on a full buffer, exactly like Drop mode.
+				EventPipeSession *write_session = ep_volatile_load_session (i);
+				if (write_session != NULL) {
+					ep_session_write_event (
+						write_session,
+						thread,
+						ep_event,
+						payload,
+						activity_id,
+						related_activity_id,
+						event_thread,
+						stack);
+				}
+#endif // !PERFTRACING_DISABLE_THREADS
 			}
 			// Do not reference session past this point; we are signaling the teardown path that it is safe to
 			// delete it.
