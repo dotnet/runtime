@@ -132,6 +132,7 @@ namespace System.Net.Sockets
             {
                 // Get properties like address family and blocking mode from the OS.
                 LoadSocketTypeFromHandle(handle, out _addressFamily, out _socketType, out _protocolType, out _willBlockInternal, out _isListening, out bool isSocket);
+                _willBlock = _willBlockInternal;
 
                 if (isSocket)
                 {
@@ -260,7 +261,8 @@ namespace System.Net.Sockets
         public static bool OSSupportsIPv4 => SocketProtocolSupportPal.OSSupportsIPv4;
         public static bool OSSupportsIPv6 => SocketProtocolSupportPal.OSSupportsIPv6;
         [UnsupportedOSPlatformGuard("wasi")]
-        internal static bool OSSupportsIPv6DualMode => !OperatingSystem.IsWasi() && OSSupportsIPv6;
+        // OpenBSD does not support dual-mode (IPv4-mapped IPv6) sockets: setting IPV6_V6ONLY to 0 fails with EINVAL.
+        internal static bool OSSupportsIPv6DualMode => !OperatingSystem.IsWasi() && OSSupportsIPv6 && !RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"));
         [UnsupportedOSPlatformGuard("wasi")]
         internal static bool OSSupportsThreads => !OperatingSystem.IsWasi();
         public static bool OSSupportsUnixDomainSockets => SocketProtocolSupportPal.OSSupportsUnixDomainSockets;

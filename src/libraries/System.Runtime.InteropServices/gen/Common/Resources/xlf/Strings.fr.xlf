@@ -477,6 +477,11 @@
         <target state="translated">Ce type sera traité en tant que struct dans la signature native, et non en tant que HRESULT natif</target>
         <note />
       </trans-unit>
+      <trans-unit id="IidParameterIndexUnsupportedConfigurationName">
+        <source>{0} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)</source>
+        <target state="translated">{0} (pris en charge uniquement pour les paramètres out object [MarshalAs(UnmanagedType.Interface)])</target>
+        <note>Configuration name reported via the 'configuration not supported' diagnostic when 'MarshalAs.IidParameterIndex' is used on an unsupported parameter shape. {0} is the dotted attribute member name, e.g. 'MarshalAsAttribute.IidParameterIndex'.</note>
+      </trans-unit>
       <trans-unit id="InAttributeNotSupportedOnByValueParameters">
         <source>The '[In]' attribute is only supported on array parameters. By-value parameters are considered read-only by default.</source>
         <target state="translated">L'attribut '[In]' n'est pris en charge que sur les paramètres de tableau. Les paramètres par valeur sont considérés comme en lecture seule par défaut.</target>
@@ -525,21 +530,6 @@
       <trans-unit id="InstanceEventDeclaredInInterfaceTitle">
         <source>Declaring an instance event in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
         <target state="translated">La déclaration d’un événement d’instance dans un type avec « GeneratedComInterfaceAttribute » n’est pas prise en charge</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InstancePropertyDeclaredInInterfaceDescription">
-        <source>Properties are not a concept in COM, so no interop code will be source generated for instance properties on source-generated COM interfaces.</source>
-        <target state="translated">Les propriétés ne sont pas un concept dans COM. Par conséquent, aucun code d’interopérabilité n’est généré à la source pour les propriétés d’instance sur les interfaces COM générées par la source.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InstancePropertyDeclaredInInterfaceMessage">
-        <source>The instance property '{0}' is declared in the interface '{1}', which has the 'GeneratedComInterfaceAttribute' applied</source>
-        <target state="translated">La propriété d’instance « {0} » est déclarée dans l’interface « {1} », à laquelle « GeneratedComInterfaceAttribute » est appliqué</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InstancePropertyDeclaredInInterfaceTitle">
-        <source>Declaring an instance property in a type with the 'GeneratedComInterfaceAttribute' is not supported</source>
-        <target state="translated">La déclaration d’une propriété d’instance dans un type avec « GeneratedComInterfaceAttribute » n’est pas prise en charge</target>
         <note />
       </trans-unit>
       <trans-unit id="InterfaceTypeNotSupportedMessage">
@@ -702,6 +692,21 @@
         <target state="translated">Les 'ComInterfaceOptions' spécifiées sur « {0} » ne sont pas valides. {1}</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceDescription">
+        <source>Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</source>
+        <target state="new">Source-generated COM interface properties do not support the 'static', 'extern', 'required', or 'init' modifiers/accessors.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceMessage">
+        <source>The property '{0}' on interface '{1}' uses '{2}', which is not supported on a source-generated COM interface property</source>
+        <target state="new">The property '{0}' on interface '{1}' uses '{2}', which is not supported on a source-generated COM interface property</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidPropertyDeclarationOnGeneratedComInterfaceTitle">
+        <source>Property uses an unsupported modifier or accessor for a source-generated COM interface</source>
+        <target state="new">Property uses an unsupported modifier or accessor for a source-generated COM interface</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
         <source>Marshaller type has incompatible method signatures</source>
         <target state="translated">Le type Marshaller a des signatures de méthode incompatibles</target>
@@ -842,9 +847,39 @@
         <target state="translated">La configuration « MarshalAsAttribute » spécifiée pour la valeur de retour de la méthode «{1}» n’est pas prise en charge par les P/Invokes générés par la source. Si la configuration spécifiée est requise, utilisez plutôt un « DllImport » standard.</target>
         <note />
       </trans-unit>
+      <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberDescription">
+        <source>Marshalling attributes such as 'MarshalUsing' and 'MarshalAs' on a default-implemented (body-bearing) member of a source-generated COM interface have no effect. Default implementations are pure managed code that bypasses the COM marshalling pipeline and does not get a generated stub.</source>
+        <target state="new">Marshalling attributes such as 'MarshalUsing' and 'MarshalAs' on a default-implemented (body-bearing) member of a source-generated COM interface have no effect. Default implementations are pure managed code that bypasses the COM marshalling pipeline and does not get a generated stub.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberMessage">
+        <source>The marshalling attribute on the default-implemented member '{0}' on interface '{1}' will be ignored because default implementations do not generate COM marshalling code</source>
+        <target state="new">The marshalling attribute on the default-implemented member '{0}' on interface '{1}' will be ignored because default implementations do not generate COM marshalling code</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAttributeOnDefaultImplementedComInterfaceMemberTitle">
+        <source>Marshalling attribute on a default-implemented member of a source-generated COM interface has no effect</source>
+        <target state="new">Marshalling attribute on a default-implemented member of a source-generated COM interface has no effect</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshalModeMustBeValidEnumValue">
         <source>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</source>
         <target state="translated">L’argument 'marshalMode' de 'CustomMarshallerAttribute' doit être une valeur enum valide de 'MarshalMode'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeDescription">
+        <source>When 'MarshalUsing' is applied to a source-generated COM interface property accessor (via '[return: MarshalUsing(...)]' on a getter or '[param: MarshalUsing(...)]' on a setter), it must supply a marshaller type via the constructor argument. Count-only or depth-only forms ('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)', or 'MarshalUsing(ElementIndirectionDepth = ...)' on an accessor) would silently override or partially conflict with a property-level 'MarshalUsing'. Combine the marshaller type and count information on a single 'MarshalUsing' attribute on the accessor. 'ConstantElementCount' and 'ElementIndirectionDepth' may also be supplied via a property-level 'MarshalUsing'; 'CountElementName' is not supported on property or indexer accessors because peer-parameter lookups are not available in that context.</source>
+        <target state="new">When 'MarshalUsing' is applied to a source-generated COM interface property accessor (via '[return: MarshalUsing(...)]' on a getter or '[param: MarshalUsing(...)]' on a setter), it must supply a marshaller type via the constructor argument. Count-only or depth-only forms ('MarshalUsing(ConstantElementCount = ...)', 'MarshalUsing(CountElementName = ...)', or 'MarshalUsing(ElementIndirectionDepth = ...)' on an accessor) would silently override or partially conflict with a property-level 'MarshalUsing'. Combine the marshaller type and count information on a single 'MarshalUsing' attribute on the accessor. 'ConstantElementCount' and 'ElementIndirectionDepth' may also be supplied via a property-level 'MarshalUsing'; 'CountElementName' is not supported on property or indexer accessors because peer-parameter lookups are not available in that context.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeMessage">
+        <source>The 'MarshalUsing' attribute on an accessor of property '{0}' on interface '{1}' must specify a marshaller type. Combine the marshaller type and count on a single 'MarshalUsing' on the accessor, or specify 'ConstantElementCount' or 'ElementIndirectionDepth' on the property declaration.</source>
+        <target state="new">The 'MarshalUsing' attribute on an accessor of property '{0}' on interface '{1}' must specify a marshaller type. Combine the marshaller type and count on a single 'MarshalUsing' on the accessor, or specify 'ConstantElementCount' or 'ElementIndirectionDepth' on the property declaration.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalUsingOnPropertyAccessorMustSpecifyTypeTitle">
+        <source>'MarshalUsing' applied to a source-generated COM interface property accessor must specify a marshaller type</source>
+        <target state="new">'MarshalUsing' applied to a source-generated COM interface property accessor must specify a marshaller type</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
@@ -975,6 +1010,21 @@
       <trans-unit id="PreferExplicitInOutAttributesOnArrays">
         <source>It is recommended to use explicit '[In]' and '[Out]' attributes on array parameters.</source>
         <target state="translated">Il est recommandé d'utiliser les attributs explicites '[In]' et '[Out]' sur les paramètres du tableau.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyAccessorsMustBeAllOrNothingDescription">
+        <source>On a source-generated COM interface, a property is either fully abstract (no accessor bodies, treated as a COM property occupying vtable slots) or fully default-implemented (every accessor has a body, treated as managed-only code that bypasses COM marshalling). Mixing the two shapes within a single property is not supported.</source>
+        <target state="new">On a source-generated COM interface, a property is either fully abstract (no accessor bodies, treated as a COM property occupying vtable slots) or fully default-implemented (every accessor has a body, treated as managed-only code that bypasses COM marshalling). Mixing the two shapes within a single property is not supported.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyAccessorsMustBeAllOrNothingMessage">
+        <source>The property '{0}' on interface '{1}' mixes abstract and default-implemented accessors. Either all accessors must have bodies or none must have bodies.</source>
+        <target state="new">The property '{0}' on interface '{1}' mixes abstract and default-implemented accessors. Either all accessors must have bodies or none must have bodies.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyAccessorsMustBeAllOrNothingTitle">
+        <source>Property accessors on a source-generated COM interface must either all have bodies or none have bodies</source>
+        <target state="new">Property accessors on a source-generated COM interface must either all have bodies or none have bodies</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresAllowUnsafeBlocksDescriptionCom">

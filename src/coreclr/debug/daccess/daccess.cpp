@@ -5937,6 +5937,27 @@ ClrDataAccess::GetHostJitNotificationTable()
 }
 
 /* static */ bool
+ClrDataAccess::GetMetaDataFileInfoFromModule(Module *pModule,
+                                             DWORD &dwTimeStamp,
+                                             DWORD &dwSize,
+                                             DWORD &dwDataSize,
+                                             DWORD &dwRvaHint,
+                                             _Out_writes_(cchFilePath) LPWSTR wszFilePath,
+                                             const DWORD cchFilePath)
+{
+    SUPPORTS_DAC_HOST_ONLY;
+
+    if (pModule == NULL)
+        return false;
+
+    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
+    if (pPEAssembly == NULL)
+        return false;
+
+    return ClrDataAccess::GetMetaDataFileInfoFromPEFile(pPEAssembly, dwTimeStamp, dwSize, dwDataSize, dwRvaHint, wszFilePath, cchFilePath);
+}
+
+/* static */ bool
 ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                              DWORD &dwTimeStamp,
                                              DWORD &dwSize,
@@ -7976,7 +7997,7 @@ void DacFreeRegionEnumerator::AddSingleSegment(const dac_heap_segment &curr, Fre
 
 void DacFreeRegionEnumerator::AddSegmentList(DPTR(dac_heap_segment) start, FreeRegionKind kind, int heap)
 {
-    int iterationMax = 2048;
+    int iterationMax = 65536;
 
     DPTR(dac_heap_segment) curr = start;
     while (curr != nullptr)

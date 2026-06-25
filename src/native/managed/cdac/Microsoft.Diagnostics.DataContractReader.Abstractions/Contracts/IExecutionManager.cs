@@ -109,6 +109,7 @@ public interface IExecutionManager : IContract
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion) => throw new NotImplementedException();
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
+    uint GetStackParameterSize(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
     // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)

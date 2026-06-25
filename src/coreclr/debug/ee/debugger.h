@@ -1053,7 +1053,7 @@ public:
     ~DebuggerMethodInfo();
 
     // A profiler can remap the IL. We track the "instrumented" IL map here.
-    void SetInstrumentedILMap(COR_IL_MAP * pMap, SIZE_T cEntries);
+    void SetInstrumentedILMap(COR_IL_MAP * pMap, UINT cEntries);
     bool HasInstrumentedILMap() {return m_fHasInstrumentedILMap; }
 
     // TranslateToInstIL will take offOrig, and translate it to the
@@ -1502,8 +1502,6 @@ protected:
     ULONG                    m_lastIL;
     PTR_DebuggerILToNativeMap m_sequenceMap;
     unsigned int             m_sequenceMapCount;
-    PTR_DebuggerILToNativeMap m_callsiteMap;
-    unsigned int             m_callsiteMapCount;
     bool                     m_sequenceMapSorted;
 
     PTR_NativeVarInfo        m_varNativeInfo;
@@ -1532,10 +1530,9 @@ public:
             "                 m_addrOfCode: %p\n"
             "                 m_sizeOfCode: 0x%zx\n"
             "                     m_lastIL: 0x%x\n"
-            "           m_sequenceMapCount: %u\n"
-            "           m_callsiteMapCount: %u\n",
+            "           m_sequenceMapCount: %u\n",
             this, (m_jitComplete ? "true" : "false"), encState,
-            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount, m_callsiteMapCount));
+            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount));
 #endif //LOGGING
     }
 
@@ -1554,22 +1551,6 @@ public:
 
         LazyInitBounds();
         return m_sequenceMap;
-    }
-
-    unsigned int GetCallsiteMapCount()
-    {
-        SUPPORTS_DAC;
-
-        LazyInitBounds();
-        return m_callsiteMapCount;
-    }
-
-    PTR_DebuggerILToNativeMap GetCallSiteMap()
-    {
-        SUPPORTS_DAC;
-
-        LazyInitBounds();
-        return m_callsiteMap;
     }
 
     PTR_NativeVarInfo GetVarNativeInfo()
@@ -1944,6 +1925,7 @@ public:
 
     void ThreadCreated(Thread* pRuntimeThread);
     void ThreadStarted(Thread* pRuntimeThread);
+    void SendCreateThreadAtInterpreterEntry(Thread* pRuntimeThread);
     void DetachThread(Thread *pRuntimeThread);
 
     BOOL SuspendComplete(bool isEESuspendedForGC = false);
@@ -2874,7 +2856,7 @@ private:
     // represents different thead redirection functions recognized by the debugger
     enum HijackFunction
     {
-        kUnhandledException = 0,
+        kUnhandledException = 0, // [cDAC] [Debugger]: Contract depends on this value.
         kRedirectedForGCThreadControl,
         kRedirectedForDbgThreadControl,
         kRedirectedForUserSuspend,
@@ -3435,6 +3417,7 @@ public:
     mdMethodDef                        m_methodToken;
     mdTypeDef                          m_classToken;
     PTR_DebuggerModule                 m_debuggerModule;     // Only valid if AD is still around
+    PTR_Assembly                       m_pAssembly;
     RSPTR_CORDBEVAL                    m_funcEvalKey;
     bool                               m_successful;        // Did the eval complete successfully
     Debugger::AreValueTypesBoxed       m_retValueBoxing;        // Is the return value boxed?
@@ -3865,6 +3848,8 @@ struct cdac_data<Debugger>
     static constexpr size_t RSRequestedSync = offsetof(Debugger, m_RSRequestedSync);
     static constexpr size_t SendExceptionsOutsideOfJMC = offsetof(Debugger, m_sendExceptionsOutsideOfJMC);
     static constexpr size_t GCNotificationEventsEnabled = offsetof(Debugger, m_isGarbageCollectionEventsEnabled);
+    static constexpr size_t RgHijackFunction = offsetof(Debugger, m_rgHijackFunction);
+    static constexpr size_t MaxHijackFunctions = Debugger::kMaxHijackFunctions;
 };
 
 template<>

@@ -64,6 +64,17 @@ CONFIG_INTEGER(JitCloneLoopsWithGdvTests, "JitCloneLoopsWithGdvTests", 1)     //
                                                                               // invariant type/method address tests
 RELEASE_CONFIG_INTEGER(JitCloneLoopsSizeLimit, "JitCloneLoopsSizeLimit", 400) // limit cloning to loops with no more
                                                                               // than this many tree nodes
+RELEASE_CONFIG_INTEGER(JitCloneLoopsMinPerCallRatio, "JitCloneLoopsMinPerCallRatio", 4) // Gate cloning on per-call
+                                                                                        // benefit ratio: (cycles saved
+                                                                                        // per method call) /
+                                                                                        // (duplicated body nodes).
+                                                                                        // Value is interpreted in
+                                                                                        // hundredths (config / 100), so
+                                                                                        // the default 4 means a
+                                                                                        // threshold of 0.04. Higher
+                                                                                        // values are stricter and
+                                                                                        // produce fewer clones; 0
+                                                                                        // disables the gate.
 CONFIG_INTEGER(JitDebugLogLoopCloning, "JitDebugLogLoopCloning", 0) // In debug builds log places where loop cloning
                                                                     // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, "JitDefaultFill", 0xdd) // In debug builds, initialize the memory allocated by the nra
@@ -126,6 +137,9 @@ CONFIG_STRING(JitInlineMethodsWithEHRange, "JitInlineMethodsWithEHRange")
 
 CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
+#if defined(TARGET_ARM64)
+RELEASE_CONFIG_INTEGER(JitPacEnabled, "JitPacEnabled", 0)
+#endif
 
 // Enable devirtualization for generic virtual methods
 RELEASE_CONFIG_INTEGER(JitEnableGenericVirtualDevirtualization, "JitEnableGenericVirtualDevirtualization", 1)
@@ -711,6 +725,7 @@ RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 CONFIG_INTEGER(JitEnableFinallyCloning, "JitEnableFinallyCloning", 1)
 CONFIG_INTEGER(JitEnableRemoveEmptyTry, "JitEnableRemoveEmptyTry", 1)
 CONFIG_INTEGER(JitEnableRemoveEmptyTryCatchOrTryFault, "JitEnableRemoveEmptyTryCatchOrTryFault", 1)
+CONFIG_INTEGER(JitEnableRemoveUnreachableTry, "JitEnableRemoveUnreachableTry", 1)
 
 // Overall master enable for Guarded Devirtualization.
 RELEASE_CONFIG_INTEGER(JitEnableGuardedDevirtualization, "JitEnableGuardedDevirtualization", 1)
@@ -886,11 +901,13 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #if defined(TARGET_WASM)
 // Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
 RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
+RELEASE_CONFIG_INTEGER(JitWasmSimdNyiToR2RUnsupported, "JitWasmSimdNyiToR2RUnsupported", 0)
+
 // Specify methods that will fail with R2R unsupported after codegen.
 // Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
 CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
-// Enable processing methods with funclets.
-RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 0)
+// Enable processing methods with funclets. Set to 0 to bail to R2R unsupported before codegen.
+RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 1)
 #endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.

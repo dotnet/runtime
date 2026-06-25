@@ -370,7 +370,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                         fpReturnSize += 1;
                                     }
 
-                                    if (descriptor.eightByteClassifications0 == SystemVClassificationType.SystemVClassificationTypeSSE)
+                                    if (descriptor.eightByteClassifications1 == SystemVClassificationType.SystemVClassificationTypeSSE)
                                     {
                                         fpReturnSize += 2;
                                     }
@@ -385,6 +385,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             {
                                 int haElementSize = thRetType.GetHomogeneousAggregateElementSize();
                                 fpReturnSize = 4 * (uint)haElementSize;
+                                break;
+                            }
+
+                            if (IsWasm32)
+                            {
+                                // Wasm doesn't use a ret buffer for returning structs in the interpreter calling convention, which is the TransitionBlock convention on Wasm platforms.
                                 break;
                             }
 
@@ -774,7 +780,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public override bool IsArgPassedByRef(TypeHandle th)
             {
-                return WasmLowering.LowerToAbiType(th.GetRuntimeTypeHandle()) == null;
+                return false;
             }
 
             public override int StackElemSize(int parmSize, bool isValueType, bool isFloatHfa)

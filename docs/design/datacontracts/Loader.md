@@ -51,7 +51,8 @@ record struct ModuleLookupTables(
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
     TargetPointer TypeRefToMethodTable,
-    TargetPointer MethodDefToILCodeVersioningState);
+    TargetPointer MethodDefToILCodeVersioningState,
+    uint TableDataOffset);
 
 readonly struct LoaderHeapBlockData
 {
@@ -82,6 +83,7 @@ ModuleHandle GetModuleHandleFromAssemblyPtr(TargetPointer assemblyPointer);
 IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags);
 TargetPointer GetRootAssembly();
 string GetAppDomainFriendlyName();
+TargetPointer GetAppDomain();
 TargetPointer GetModule(ModuleHandle handle);
 TargetPointer GetAssembly(ModuleHandle handle);
 TargetPointer GetPEAssembly(ModuleHandle handle);
@@ -98,6 +100,7 @@ bool IsReadyToRun(ModuleHandle handle);
 string GetSimpleName(ModuleHandle handle);
 string GetPath(ModuleHandle handle);
 string GetFileName(ModuleHandle handle);
+bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize);
 TargetPointer GetLoaderAllocator(ModuleHandle handle);
 TargetPointer GetILBase(ModuleHandle handle);
 TargetPointer GetAssemblyLoadContext(ModuleHandle handle);
@@ -411,6 +414,12 @@ string ILoader.GetAppDomainFriendlyName()
     return new string(name);
 }
 
+TargetPointer GetAppDomain()
+{
+    TargetPointer appDomainPointer = target.ReadGlobalPointer("AppDomain");
+    return target.ReadPointer(appDomainPointer);
+}
+
 TargetPointer ILoader.GetModule(ModuleHandle handle)
 {
     return handle.Address;
@@ -658,6 +667,19 @@ string GetFileName(ModuleHandle handle)
     return new string(fileName);
 }
 
+bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize)
+{
+    timeStamp = 0;
+    imageSize = 0;
+
+    if (!TryGetLoadedImageContents(handle, out TargetPointer baseAddress, out _, out _))
+        return false;
+    TargetPointer ntHeadersPtr = baseAddress + // offset to NT headers
+    timeStamp = // read from NT header
+    imageSize = // read from NT header
+    return true;
+}
+
 TargetPointer GetLoaderAllocator(ModuleHandle handle)
 {
     return target.ReadPointer(handle.Address + /* Module::LoaderAllocator offset */);
@@ -678,6 +700,7 @@ TargetPointer ILoader.GetAssemblyLoadContext(ModuleHandle handle)
 
 ModuleLookupTables GetLookupTables(ModuleHandle handle)
 {
+    uint tableDataOffset = (uint)/* ModuleLookupMap::TableData offset */;
     return new ModuleLookupTables(
         FieldDefToDescMap: target.ReadPointer(handle.Address + /* Module::FieldDefToDescMap */),
         ManifestModuleReferencesMap: target.ReadPointer(handle.Address + /* Module::ManifestModuleReferencesMap */),
@@ -686,7 +709,8 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle)
         TypeDefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeDefToMethodTableMap */),
         TypeRefToMethodTableMap: target.ReadPointer(handle.Address + /* Module::TypeRefToMethodTableMap */),
         MethodDefToILCodeVersioningState: target.ReadPointer(handle.Address + /*
-        Module::MethodDefToILCodeVersioningState */));
+        Module::MethodDefToILCodeVersioningState */),
+        TableDataOffset: tableDataOffset);
 }
 
 TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags);

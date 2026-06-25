@@ -34,6 +34,7 @@ struct CallDescrData
     size_t                      nArgsSize;
     bool                        hasThis;
     bool                        hasRetBuff;
+    void*                       pRetBuffArg;
 #endif // TARGET_WASM
 
 #ifdef CALLDESCR_RETBUFFARGREG

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -61,6 +62,392 @@ internal static class R2RAssert
             : $"Expected assembly reference '{assemblyName}' not found. " +
               $"Found: [{string.Join(", ", allRefs.OrderBy(s => s))}]";
         return found;
+    }
+
+    /// <summary>
+    /// Returns true if ARM R2R relocations preserve the Thumb bit only for raw runtime function
+    /// start RVAs, while non-code pointers keep even RVAs.
+    /// </summary>
+    public static bool HasExpectedArmThumbBitTargets(ReadyToRunReader reader, out string diagnostic)
+    {
+        if (reader.Machine != Machine.ArmThumb2)
+        {
+            diagnostic = $"Expected ARM Thumb2 image, but found {reader.Machine}.";
+            return false;
+        }
+
+        var failures = new List<string>();
+
+        bool result = true;
+        result &= SectionRVAIsEven(reader, ReadyToRunSectionType.ExceptionInfo, failures);
+        result &= SectionRVAIsEven(reader, ReadyToRunSectionType.DelayLoadMethodCallThunks, failures);
+        result &= DelayLoadHelperImportTargetsAreOdd(reader, failures);
+        result &= ExceptionInfoMethodRVAsAreEven(reader, failures);
+        result &= RuntimeFunctionStartRVAsAreOdd(reader, failures);
+        result &= BaseRelocatedCodePointersAreOdd(reader, failures);
+
+        diagnostic = result
+            ? "ARM Thumb-bit relocation targets are encoded as expected."
+            : string.Join(Environment.NewLine, failures);
+        return result;
+    }
+
+    /// <summary>
+    /// Returns true if the image contains hot/cold split runtime functions and the raw cold
+    /// runtime function start RVAs carry exactly one ARM Thumb bit.
+    /// </summary>
+    public static bool HasExpectedArmHotColdRuntimeFunctionTargets(ReadyToRunReader reader, out string diagnostic)
+    {
+        if (reader.Machine != Machine.ArmThumb2)
+        {
+            diagnostic = $"Expected ARM Thumb2 image, but found {reader.Machine}.";
+            return false;
+        }
+
+        var failures = new List<string>();
+
+        bool result = true;
+        result &= RuntimeFunctionStartRVAsAreOdd(reader, failures);
+        result &= ColdRuntimeFunctionStartRVAsAreOdd(reader, failures);
+
+        diagnostic = result
+            ? "ARM hot/cold runtime function targets are encoded as expected."
+            : string.Join(Environment.NewLine, failures);
+        return result;
+    }
+
+    /// <summary>
+    /// Returns true if the manifest assembly MVID table in a composite image is present, holds a
+    /// whole number of 16-byte GUID entries, and starts on a 4-byte aligned RVA. The runtime reads
+    /// each entry as a GUID by value, so the table must be 4-byte aligned to avoid alignment faults
+    /// (SIGBUS) on architectures such as 32-bit ARM that do not permit unaligned multi-word loads.
+    /// </summary>
+    public static bool ManifestAssemblyMvidsTableIsAligned(ReadyToRunReader reader, out string diagnostic)
+    {
+        const int GuidByteSize = 16;
+        const int RequiredAlignment = 4;
+
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ManifestAssemblyMvids, out ReadyToRunSection section))
+        {
+            diagnostic = "Expected ManifestAssemblyMvids section not found.";
+            return false;
+        }
+
+        var failures = new List<string>();
+
+        if (section.Size <= 0)
+            failures.Add("Expected ManifestAssemblyMvids section to be non-empty.");
+
+        if (section.Size % GuidByteSize != 0)
+            failures.Add($"ManifestAssemblyMvids section size {section.Size} should be a multiple of {GuidByteSize} (a table of GUIDs).");
+
+        if ((section.RelativeVirtualAddress % RequiredAlignment) != 0)
+            failures.Add($"ManifestAssemblyMvids section RVA 0x{section.RelativeVirtualAddress:X8} should be aligned to {RequiredAlignment} bytes.");
+
+        diagnostic = failures.Count == 0
+            ? $"ManifestAssemblyMvids table is {RequiredAlignment}-byte aligned ({section.Size / GuidByteSize} entries)."
+            : string.Join(Environment.NewLine, failures);
+        return failures.Count == 0;
+    }
+
+    private static bool SectionRVAIsEven(ReadyToRunReader reader, ReadyToRunSectionType sectionType, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(sectionType, out ReadyToRunSection section))
+        {
+            failures.Add($"Expected {sectionType} section not found.");
+            return false;
+        }
+
+        bool result = true;
+        if (section.Size <= 0)
+        {
+            failures.Add($"Expected {sectionType} section to be non-empty.");
+            result = false;
+        }
+
+        if ((section.RelativeVirtualAddress & 1) != 0)
+        {
+            failures.Add($"{sectionType} section RVA 0x{section.RelativeVirtualAddress:X8} should be even.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool ExceptionInfoMethodRVAsAreEven(ReadyToRunReader reader, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ExceptionInfo, out ReadyToRunSection section))
+        {
+            return true;
+        }
+
+        bool result = true;
+        int offset = reader.CompositeReader.GetOffset(section.RelativeVirtualAddress);
+        int endOffset = offset + section.Size;
+        int entries = 0;
+        for (; offset + 2 * sizeof(int) <= endOffset; offset += 2 * sizeof(int))
+        {
+            int methodRva = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(offset));
+            if (methodRva == -1)
+            {
+                break;
+            }
+
+            entries++;
+            if ((methodRva & 1) != 0)
+            {
+                failures.Add($"ExceptionInfo method RVA 0x{methodRva:X8} should be even.");
+                result = false;
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected ExceptionInfo to contain at least one method entry.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool DelayLoadHelperImportTargetsAreOdd(ReadyToRunReader reader, List<string> failures)
+    {
+        bool result = true;
+        int entries = 0;
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
+        {
+            if ((section.Flags & ReadyToRunImportSectionFlags.PCode) == 0)
+            {
+                continue;
+            }
+
+            int offset = reader.CompositeReader.GetOffset(section.SectionRVA);
+            int endOffset = offset + section.SectionSize;
+            for (; offset + section.EntrySize <= endOffset; offset += section.EntrySize)
+            {
+                int targetAddress = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(offset));
+                if (targetAddress == 0)
+                {
+                    continue;
+                }
+
+                entries++;
+                if ((targetAddress & 1) == 0)
+                {
+                    failures.Add($"PCode import target 0x{targetAddress:X8} should have the Thumb bit set.");
+                    result = false;
+                }
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected at least one non-empty PCode import target.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool BaseRelocatedCodePointersAreOdd(ReadyToRunReader reader, List<string> failures)
+    {
+        byte[] image = reader.Image.ToArray();
+        using var peReader = new PEReader(new MemoryStream(image));
+
+        if (peReader.PEHeaders.PEHeader is null)
+        {
+            failures.Add("Expected PE header to be present.");
+            return false;
+        }
+
+        DirectoryEntry relocDirectory = peReader.PEHeaders.PEHeader.BaseRelocationTableDirectory;
+        if (relocDirectory.Size == 0)
+        {
+            failures.Add("Expected base relocation table to contain entries.");
+            return false;
+        }
+
+        List<(int Start, int End)> runtimeFunctionRanges = GetAllMethods(reader)
+            .SelectMany(method => method.RuntimeFunctions)
+            .Select(function =>
+            {
+                int start = function.StartAddress & ~1;
+                int size = function.Size >= 0 ? function.Size : (function.EndAddress & ~1) - start;
+                return (Start: start, End: start + size);
+            })
+            .Where(range => range.End > range.Start)
+            .OrderBy(range => range.Start)
+            .ToList();
+
+        bool result = true;
+        int entries = 0;
+        int offset = peReader.GetOffset(relocDirectory.RelativeVirtualAddress);
+        int endOffset = offset + relocDirectory.Size;
+        while (offset + 2 * sizeof(int) <= endOffset)
+        {
+            int pageRva = BinaryPrimitives.ReadInt32LittleEndian(image.AsSpan(offset));
+            int blockSize = BinaryPrimitives.ReadInt32LittleEndian(image.AsSpan(offset + sizeof(int)));
+            offset += 2 * sizeof(int);
+
+            if (pageRva == 0 || blockSize < 2 * sizeof(int))
+                break;
+
+            int entryCount = (blockSize - 2 * sizeof(int)) / sizeof(ushort);
+            for (int i = 0; i < entryCount && offset + sizeof(ushort) <= endOffset; i++, offset += sizeof(ushort))
+            {
+                ushort entry = BinaryPrimitives.ReadUInt16LittleEndian(image.AsSpan(offset));
+                const int ImageRelBasedHighLow = 3;
+                if (entry >> 12 != ImageRelBasedHighLow)
+                    continue;
+
+                int relocatedRva = pageRva + (entry & 0x0FFF);
+                int relocatedOffset = peReader.GetOffset(relocatedRva);
+                int targetAddress = BinaryPrimitives.ReadInt32LittleEndian(image.AsSpan(relocatedOffset));
+                int targetRva = targetAddress - (int)reader.ImageBase;
+                if (!IsRuntimeFunctionAddress(runtimeFunctionRanges, targetRva & ~1))
+                    continue;
+
+                entries++;
+                if ((targetAddress & 1) == 0)
+                {
+                    failures.Add($"Base relocation at RVA 0x{relocatedRva:X8} points to code address 0x{targetAddress:X8} without the Thumb bit set.");
+                    result = false;
+                }
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected at least one base-relocated code pointer.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool IsRuntimeFunctionAddress(List<(int Start, int End)> ranges, int rva)
+    {
+        foreach ((int start, int end) in ranges)
+        {
+            if (rva < start)
+                return false;
+            if (rva < end)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool ColdRuntimeFunctionStartRVAsAreOdd(ReadyToRunReader reader, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection runtimeFunctionsSection))
+        {
+            failures.Add("Expected RuntimeFunctions section not found.");
+            return false;
+        }
+
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.HotColdMap, out ReadyToRunSection hotColdMapSection))
+        {
+            failures.Add("Expected HotColdMap section not found.");
+            return false;
+        }
+
+        const int RuntimeFunctionSize = 2 * sizeof(int);
+        int runtimeFunctionCount = runtimeFunctionsSection.Size / RuntimeFunctionSize;
+        int hotColdMapCount = hotColdMapSection.Size / (2 * sizeof(int));
+        if (hotColdMapCount == 0)
+        {
+            failures.Add("Expected HotColdMap to contain at least one mapping.");
+            return false;
+        }
+
+        var mappings = new List<(int ColdIndex, int HotIndex)>(hotColdMapCount);
+        int hotColdMapOffset = reader.CompositeReader.GetOffset(hotColdMapSection.RelativeVirtualAddress);
+        for (int i = 0; i < hotColdMapCount; i++, hotColdMapOffset += 2 * sizeof(int))
+        {
+            int coldIndex = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(hotColdMapOffset));
+            int hotIndex = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(hotColdMapOffset + sizeof(int)));
+            mappings.Add((coldIndex, hotIndex));
+        }
+
+        bool result = true;
+        int entries = 0;
+        int runtimeFunctionsOffset = reader.CompositeReader.GetOffset(runtimeFunctionsSection.RelativeVirtualAddress);
+        for (int i = 0; i < mappings.Count; i++)
+        {
+            int coldIndex = mappings[i].ColdIndex;
+            int coldEndIndex = i + 1 < mappings.Count ? mappings[i + 1].ColdIndex : runtimeFunctionCount;
+            if (coldIndex < 0 || coldEndIndex > runtimeFunctionCount || coldIndex >= coldEndIndex)
+            {
+                failures.Add($"Invalid HotColdMap cold runtime function range [{coldIndex}, {coldEndIndex}) for {runtimeFunctionCount} runtime functions.");
+                result = false;
+                continue;
+            }
+
+            for (int runtimeFunctionIndex = coldIndex; runtimeFunctionIndex < coldEndIndex; runtimeFunctionIndex++)
+            {
+                int entryOffset = runtimeFunctionsOffset + runtimeFunctionIndex * RuntimeFunctionSize;
+                int startRva = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(entryOffset));
+                entries++;
+                if ((startRva & 1) == 0)
+                {
+                    failures.Add($"Cold RuntimeFunctions[{runtimeFunctionIndex}] start RVA 0x{startRva:X8} should have the Thumb bit set.");
+                    result = false;
+                }
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected at least one cold runtime function entry.");
+            result = false;
+        }
+
+        return result;
+    }
+
+    private static bool RuntimeFunctionStartRVAsAreOdd(ReadyToRunReader reader, List<string> failures)
+    {
+        if (!reader.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection section))
+        {
+            failures.Add("Expected RuntimeFunctions section not found.");
+            return false;
+        }
+
+        int runtimeFunctionSize = 2 * sizeof(int);
+        if (section.Size < runtimeFunctionSize)
+        {
+            failures.Add($"Expected RuntimeFunctions section to contain at least one entry, but size is {section.Size}.");
+            return false;
+        }
+
+        bool result = true;
+        int offset = reader.CompositeReader.GetOffset(section.RelativeVirtualAddress);
+        int count = section.Size / runtimeFunctionSize;
+        int entries = 0;
+        for (int index = 0; index < count; index++, offset += runtimeFunctionSize)
+        {
+            int startRva = BinaryPrimitives.ReadInt32LittleEndian(reader.Image.AsSpan(offset));
+            if (startRva == -1)
+            {
+                break;
+            }
+
+            entries++;
+            if ((startRva & 1) == 0)
+            {
+                failures.Add($"RuntimeFunctions[{index}] start RVA 0x{startRva:X8} should have the Thumb bit set.");
+                result = false;
+            }
+        }
+
+        if (entries == 0)
+        {
+            failures.Add("Expected RuntimeFunctions to contain at least one entry.");
+            result = false;
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -335,6 +722,64 @@ internal static class R2RAssert
     }
 
     /// <summary>
+    /// Returns true if every [ASYNC] method with a ResumptionStubEntryPoint fixup is followed
+    /// immediately in emitted code by its [RESUME] stub.
+    /// </summary>
+    public static bool AsyncMethodsWithResumptionStubsAreAdjacent(ReadyToRunReader reader, out string diagnostic)
+    {
+        var methodsByRva = GetAllMethods(reader)
+            .Select(method => (Method: method, EntryPointRva: GetEntryPointRva(method)))
+            .Where(entry => entry.EntryPointRva >= 0)
+            .OrderBy(entry => entry.EntryPointRva)
+            .ToList();
+
+        var failures = new List<string>();
+        int checkedMethodCount = 0;
+        for (int i = 0; i < methodsByRva.Count; i++)
+        {
+            ReadyToRunMethod method = methodsByRva[i].Method;
+            if (!HasSignaturePrefix(method, "[ASYNC]") ||
+                !HasFixupKind(method, ReadyToRunFixupKind.ResumptionStubEntryPoint))
+            {
+                continue;
+            }
+
+            checkedMethodCount++;
+            if (i + 1 == methodsByRva.Count)
+            {
+                failures.Add($"'{method.SignatureString}' at RVA 0x{methodsByRva[i].EntryPointRva:X} is the final method.");
+                continue;
+            }
+
+            ReadyToRunMethod nextMethod = methodsByRva[i + 1].Method;
+            if (!HasSignaturePrefix(nextMethod, "[RESUME]") ||
+                StripAsyncMethodPrefix(nextMethod.SignatureString) != StripAsyncMethodPrefix(method.SignatureString))
+            {
+                failures.Add(
+                    $"'{method.SignatureString}' at RVA 0x{methodsByRva[i].EntryPointRva:X} " +
+                    $"is followed by '{nextMethod.SignatureString}' at RVA 0x{methodsByRva[i + 1].EntryPointRva:X}.");
+            }
+        }
+
+        if (checkedMethodCount == 0)
+        {
+            diagnostic = "No [ASYNC] methods with ResumptionStubEntryPoint fixups were found.";
+            return false;
+        }
+
+        if (failures.Count != 0)
+        {
+            diagnostic =
+                $"Expected each [ASYNC] method with a ResumptionStubEntryPoint fixup to be followed by its [RESUME] stub, " +
+                $"but found {failures.Count} mismatch(es):\n  {string.Join("\n  ", failures)}";
+            return false;
+        }
+
+        diagnostic = $"Found {checkedMethodCount} [ASYNC] method(s), each followed by its [RESUME] stub.";
+        return true;
+    }
+
+    /// <summary>
     /// Returns true if the R2R image contains at least one ContinuationLayout fixup.
     /// </summary>
     public static bool HasContinuationLayout(ReadyToRunReader reader, out string diagnostic)
@@ -439,6 +884,47 @@ internal static class R2RAssert
             : $"Expected fixup kind '{kind}' not found. " +
               $"Present kinds: [{string.Join(", ", presentKinds)}]";
         return found;
+    }
+
+    private static bool HasFixupKind(ReadyToRunMethod method, ReadyToRunFixupKind kind)
+    {
+        if (method.Fixups is null)
+            return false;
+
+        foreach (var cell in method.Fixups)
+        {
+            if (cell.Signature is not null && cell.Signature.FixupKind == kind)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool HasSignaturePrefix(ReadyToRunMethod method, string prefix)
+        => method.SignaturePrefixes is not null && method.SignaturePrefixes.Contains(prefix);
+
+    private static int GetEntryPointRva(ReadyToRunMethod method)
+    {
+        foreach (RuntimeFunction runtimeFunction in method.RuntimeFunctions)
+        {
+            if (runtimeFunction.Id == method.EntryPointRuntimeFunctionId)
+                return runtimeFunction.StartAddress;
+        }
+
+        return -1;
+    }
+
+    private static string StripAsyncMethodPrefix(string signature)
+    {
+        const string AsyncPrefix = "[ASYNC] ";
+        const string ResumePrefix = "[RESUME] ";
+        if (signature.StartsWith(AsyncPrefix, StringComparison.Ordinal))
+            return signature.Substring(AsyncPrefix.Length);
+
+        if (signature.StartsWith(ResumePrefix, StringComparison.Ordinal))
+            return signature.Substring(ResumePrefix.Length);
+
+        return signature;
     }
 
     /// <summary>

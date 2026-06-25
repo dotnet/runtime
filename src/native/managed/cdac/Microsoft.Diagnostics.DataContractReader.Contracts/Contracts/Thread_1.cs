@@ -48,14 +48,14 @@ internal readonly struct Thread_1 : IThread
 
     void IThread.SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
     {
-        uint current = _target.ReadField<uint>(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState));
-        _target.WriteField(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState), current | (uint)state);
+        Data.Thread t = _target.ProcessedData.GetOrAdd<Data.Thread>(thread);
+        t.WriteDebuggerControlledThreadState(t.DebuggerControlledThreadState | (uint)state);
     }
 
     void IThread.ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
     {
-        uint current = _target.ReadField<uint>(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState));
-        _target.WriteField(thread, _threadTypeInfo, nameof(Data.Thread.DebuggerControlledThreadState), current & ~(uint)state);
+        Data.Thread t = _target.ProcessedData.GetOrAdd<Data.Thread>(thread);
+        t.WriteDebuggerControlledThreadState(t.DebuggerControlledThreadState & ~(uint)state);
     }
 
     ThreadStoreData IThread.GetThreadStoreData()
@@ -147,7 +147,11 @@ internal readonly struct Thread_1 : IThread
             thread.CurrentCustomDebuggerNotification.Handle,
             thread.LastThrownObjectIsUnhandled != 0,
             hasUnhandledException,
-            thread.LinkNext);
+            thread.LinkNext,
+            thread.ThreadHandle,
+            thread.InteropDebuggingHijacked != 0,
+            thread.DebuggerFilterContext,
+            thread.GCFrame);
     }
 
     void IThread.GetThreadAllocContext(TargetPointer threadPointer, out long allocBytes, out long allocBytesLoh)
@@ -213,7 +217,8 @@ internal readonly struct Thread_1 : IThread
                 if (collectibleCount > indexOffset)
                 {
                     TargetPointer collectibleArray = threadLocalData.CollectibleTlsArrayData;
-                    threadLocalStaticBase = _target.ReadPointer(collectibleArray + (ulong)(indexOffset * _target.PointerSize));
+                    TargetPointer handleSlotAddress = collectibleArray + (ulong)(indexOffset * _target.PointerSize);
+                    threadLocalStaticBase = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(handleSlotAddress).Object;
                 }
                 break;
             case TLSIndexType.DirectOnThreadLocalData:
@@ -282,10 +287,10 @@ internal readonly struct Thread_1 : IThread
             }
             else
             {
-                readFrom = thread.UEWatsonBucketTrackerBuckets;
+                readFrom = thread.UEWatsonBucketTrackerBuckets ?? TargetPointer.Null;
                 if (readFrom == TargetPointer.Null)
                 {
-                    readFrom = exceptionInfo.ExceptionWatsonBucketTrackerBuckets;
+                    readFrom = exceptionInfo.ExceptionWatsonBucketTrackerBuckets ?? TargetPointer.Null;
                 }
                 else
                 {
@@ -295,7 +300,7 @@ internal readonly struct Thread_1 : IThread
         }
         else
         {
-            readFrom = thread.UEWatsonBucketTrackerBuckets;
+            readFrom = thread.UEWatsonBucketTrackerBuckets ?? TargetPointer.Null;
         }
 
         if (readFrom == TargetPointer.Null)
@@ -304,32 +309,5 @@ internal readonly struct Thread_1 : IThread
         byte[] rval = new byte[_target.ReadGlobal<uint>(Constants.Globals.SizeOfGenericModeBlock)];
         _target.ReadBuffer(readFrom, rval);
         return rval;
-    }
-
-    byte[] IThread.GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags)
-    {
-        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(_target);
-        byte[] bytes = new byte[context.Size];
-        Span<byte> buffer = new Span<byte>(bytes);
-
-        Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
-
-        TargetPointer filterContext = TargetPointer.Null;
-
-        if (contextSource.HasFlag(ThreadContextSource.Debugger))
-            filterContext = thread.DebuggerFilterContext;
-
-        if (filterContext != TargetPointer.Null)
-        {
-            _target.ReadBuffer(filterContext.Value, buffer);
-            return bytes;
-        }
-
-        if (!_target.TryGetThreadContext(thread.OSId.Value, contextFlags, buffer))
-        {
-            throw new InvalidOperationException($"GetThreadContext failed for thread {thread.OSId.Value}");
-        }
-
-        return bytes;
     }
 }
