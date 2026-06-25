@@ -40,88 +40,20 @@ internal sealed class CallingConvention_1 : ICallingConvention
         }
         catch (NotImplementedException)
         {
-            // Any unported ABI path, including lazy NIEs from
-            // EnumerateArguments, maps to a clean decline (false).
+            // Any unported ABI path, including NIEs from GetArgumentLayout,
+            // maps to a clean decline (false).
             blob = [];
             return false;
         }
     }
 
-    internal uint GetCbStackPop(MethodDescHandle methodDesc)
-    {
-        IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
-        if (runtimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.X86)
-            return 0;
-
-        try
-        {
-            return GetCbStackPopCore(methodDesc, runtimeInfo);
-        }
-        catch
-        {
-            // Match the encoder's general behavior: any failure to compute
-            // produces a conservative zero, and the cdacstress framework
-            // reports the resulting mismatch as a [ARG_FAIL] rather than
-            // crashing the stress run.
-            return 0;
-        }
-    }
-
-    private uint GetCbStackPopCore(MethodDescHandle methodDesc, IRuntimeInfo runtimeInfo)
-    {
-        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        MethodSignature<TypeHandle> methodSig = DecodeMethodSignature(rts, methodDesc);
-
-        // VarArgs methods don't pop arguments on x86 (caller cleans up).
-        // ArgIterator.CbStackPop already encodes this, but we never call it
-        // for VarArgs because EnumerateArguments throws first; mirror its
-        // 0 return here so the encoder writes the correct prefix.
-        if (methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs)
-            return 0;
-
-        bool hasThis = methodSig.Header.IsInstance;
-        bool requiresInstArg = false;
-        bool isAsync = false;
-        try
-        {
-            GenericContextLoc ctxLoc = rts.GetGenericContextLoc(methodDesc);
-            requiresInstArg = ctxLoc is GenericContextLoc.InstArgMethodDesc or GenericContextLoc.InstArgMethodTable;
-            isAsync = rts.IsAsyncMethod(methodDesc);
-        }
-        catch
-        {
-        }
-
-        ParamTypeInfo[] paramInfo = DecodeParamTypeInfo(rts, methodDesc, methodSig.ParameterTypes.Length);
-        CdacTypeHandle[] parameterTypes = new CdacTypeHandle[methodSig.ParameterTypes.Length];
-        for (int i = 0; i < parameterTypes.Length; i++)
-            parameterTypes[i] = new CdacTypeHandle(methodSig.ParameterTypes[i], _target, paramInfo[i].OutermostKind);
-        CdacTypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target);
-
-        TransitionBlock transitionBlock = BuildTransitionBlock(runtimeInfo);
-        CallingConventions callingConventions = hasThis
-            ? CallingConventions.ManagedInstance
-            : CallingConventions.ManagedStatic;
-        ArgIteratorData<CdacTypeHandle> argIteratorData = new ArgIteratorData<CdacTypeHandle>(
-            hasThis, isVarArg: false, parameterTypes, returnType);
-        bool isWindows = runtimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows;
-
-        ArgIterator<CdacTypeHandle> argit = new ArgIterator<CdacTypeHandle>(
-            transitionBlock,
-            argIteratorData,
-            callingConventions,
-            hasParamType: requiresInstArg,
-            hasAsyncContinuation: isAsync,
-            extraFunctionPointerArg: false,
-            forcedByRefParams: new bool[parameterTypes.Length],
-            skipFirstArg: false,
-            extraObjectFirstArg: false,
-            isWindows: isWindows,
-            objectTypeHandle: GetObjectTypeHandle(rts),
-            intPtrTypeHandle: GetIntPtrTypeHandle(rts));
-
-        return argit.CbStackPop();
-    }
+    // Result of GetArgumentLayout: a single ArgIterator walk produces the
+    // per-argument locations the encoder iterates plus the x86 callee-pop
+    // stack-byte count it needs for the WriteStackPop prefix. Bundled so the
+    // implementation builds ArgIterator once per method instead of twice.
+    private readonly record struct ArgumentLayout(
+        IReadOnlyList<ArgumentLocation> Arguments,
+        uint CbStackPop);
 
     // Per-parameter metadata captured at signature-decode time. We track this
     // out-of-band because the standard SignatureTypeProvider collapses
@@ -147,7 +79,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         public TypeHandle OpenGenericType { get; init; }
     }
 
-    internal IEnumerable<ArgumentLocation> EnumerateArguments(MethodDescHandle methodDesc)
+    private ArgumentLayout GetArgumentLayout(MethodDescHandle methodDesc)
     {
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
@@ -211,53 +143,58 @@ internal sealed class CallingConvention_1 : ICallingConvention
             objectTypeHandle: GetObjectTypeHandle(rts),
             intPtrTypeHandle: GetIntPtrTypeHandle(rts));
 
+        List<ArgumentLocation> arguments = new();
+
         if (hasThis)
         {
             TargetPointer methodTablePtr = rts.GetMethodTable(methodDesc);
             TypeHandle owningType = rts.GetTypeHandle(methodTablePtr);
             bool isValueTypeThis = rts.IsValueType(owningType) && !rts.IsUnboxingStub(methodDesc);
 
-            yield return new ArgumentLocation
+            arguments.Add(new ArgumentLocation
             {
                 Offset = transitionBlock.ThisOffset,
                 ElementType = isValueTypeThis ? CdacCorElementType.ValueType : CdacCorElementType.Class,
                 TypeHandle = owningType,
                 IsThis = true,
                 IsValueTypeThis = isValueTypeThis,
-            };
+            });
         }
 
         if (argit.HasParamType)
         {
-            yield return new ArgumentLocation
+            arguments.Add(new ArgumentLocation
             {
                 Offset = argit.GetParamTypeArgOffset(),
                 ElementType = CdacCorElementType.I,
                 IsParamType = true,
-            };
+            });
         }
 
         if (argit.HasAsyncContinuation)
         {
-            yield return new ArgumentLocation
+            arguments.Add(new ArgumentLocation
             {
                 Offset = argit.GetAsyncContinuationArgOffset(),
                 ElementType = CdacCorElementType.Object,
-            };
+            });
         }
 
         // VarArgs: mirror the runtime's FakeGcScanRoots short-circuit -- emit
         // the VASigCookie slot and stop. The variadic tail is reported via
         // the cookie's signature at GC scan time, not via this contract.
+        // CbStackPop is 0 for VarArgs on x86 (caller cleans up), and
+        // argit.CbStackPop() is unsafe to call on the VarArgs-configured
+        // iterator -- short-circuit both here.
         if (isVarArg)
         {
-            yield return new ArgumentLocation
+            arguments.Add(new ArgumentLocation
             {
                 Offset = argit.GetVASigCookieOffset(),
                 ElementType = CdacCorElementType.I,
                 IsVASigCookie = true,
-            };
-            yield break;
+            });
+            return new ArgumentLayout(arguments, CbStackPop: 0);
         }
 
         int argIndex = 0;
@@ -311,7 +248,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
                     }
                 }
 
-                yield return new ArgumentLocation
+                arguments.Add(new ArgumentLocation
                 {
                     Offset = argOffset,
                     ElementType = elemType,
@@ -319,10 +256,17 @@ internal sealed class CallingConvention_1 : ICallingConvention
                     IsPassedByRef = passedByRef,
                     IsByRefLikeStruct = isByRefLikeStruct,
                     OpenGenericType = paramInfo[argIndex].OpenGenericType,
-                };
+                });
             }
             argIndex++;
         }
+
+        // CbStackPop is only consumed on x86; skip the call elsewhere.
+        uint cbStackPop = runtimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X86
+            ? argit.CbStackPop()
+            : 0;
+
+        return new ArgumentLayout(arguments, cbStackPop);
     }
 
     private MethodSignature<TypeHandle> DecodeMethodSignature(
@@ -659,11 +603,11 @@ internal sealed class CallingConvention_1 : ICallingConvention
         int pointerSize = _target.PointerSize;
 
         SortedDictionary<int, GCRefMapToken> tokens = new();
-        IEnumerable<ArgumentLocation> args = EnumerateArguments(methodDesc);
+        ArgumentLayout enumeration = GetArgumentLayout(methodDesc);
 
         GenericContextLoc ctxLoc = GenericContextLoc.None;
 
-        foreach (ArgumentLocation arg in args)
+        foreach (ArgumentLocation arg in enumeration.Arguments)
         {
             GCRefMapToken token;
             if (arg.IsThis)
@@ -786,7 +730,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
             if (!isX86)
                 return EmptyGCRefMapBlob();
             GCRefMapEncoder enc0 = default;
-            enc0.WriteStackPop(GetCbStackPop(methodDesc) / (uint)pointerSize);
+            enc0.WriteStackPop(enumeration.CbStackPop / (uint)pointerSize);
             return enc0.Flush();
         }
 
@@ -813,7 +757,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
 
         GCRefMapEncoder enc = default;
         if (isX86)
-            enc.WriteStackPop(GetCbStackPop(methodDesc) / (uint)pointerSize);
+            enc.WriteStackPop(enumeration.CbStackPop / (uint)pointerSize);
 
         for (int pos = 0; pos <= maxPos; pos++)
         {
