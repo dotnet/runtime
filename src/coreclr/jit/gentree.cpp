@@ -10464,7 +10464,12 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
             // x / -1 can't be optimized because INT_MIN / -1 is required to throw an exception.
             return false;
         }
-        else if (isPow2(divisorValue))
+        // Match the lowering acceptance for absolute value: lowering's TryLowerConstIntDivOrMod
+        // turns negative pow2 divisors into shift+neg and negative non-pow2 divisors into
+        // signed magic-divide sequences, both of which require the divisor be a literal.
+        size_t absDivisorValue = (divisorValue == SSIZE_T_MIN) ? static_cast<size_t>(divisorValue)
+                                                               : static_cast<size_t>(std::abs(divisorValue));
+        if (isPow2(absDivisorValue))
         {
             return true;
         }
@@ -10514,7 +10519,9 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
 
 // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    if (!comp->opts.MinOpts() && ((divisorValue >= 3) || !isSignedDivide))
+    // For signed divides also accept negative magic divisors (e.g. -3, -5); lowering generates
+    // a reciprocal-multiply sequence for those, see TryLowerConstIntDivOrMod.
+    if (!comp->opts.MinOpts() && (!isSignedDivide || (divisorValue >= 3) || (divisorValue <= -3)))
     {
         // All checks pass we can perform the division operation using a reciprocal multiply.
         return true;
