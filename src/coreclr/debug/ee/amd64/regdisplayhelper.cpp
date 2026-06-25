@@ -1,19 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 /* ------------------------------------------------------------------------- *
- * DebuggerRegDisplayHelper.cpp -- implementation of the platform-dependent
-//
-
- *                                 methods for transferring information between
- *                                 REGDISPLAY and DebuggerREGDISPLAY
+ * RegDisplayHelper.cpp -- implementation of the platform-dependent
+ *                         methods for transferring information between
+ *                         REGDISPLAYs
  * ------------------------------------------------------------------------- */
 
 #include "stdafx.h"
 
-
 void CopyREGDISPLAY(REGDISPLAY* pDst, REGDISPLAY* pSrc)
 {
-    *pDst = *pSrc;
+    memcpy((BYTE*)pDst, (BYTE*)pSrc, sizeof(REGDISPLAY));
+
+    pDst->pContext = pSrc->pContext;
 
     if (pSrc->pCurrentContextPointers == &(pSrc->ctxPtrsOne))
     {

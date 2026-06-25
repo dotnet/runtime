@@ -19,8 +19,8 @@ import { mono_log_error, set_thread_prefix, setup_proxy_console } from "./loggin
 import { invokeLibraryInitializers } from "./libraryInitializers";
 import { deep_merge_config, isDebuggingSupported } from "./config";
 
-// if we are ST build or the first script loaded in the web worker, we are expected to become the sidecar
-if (typeof importScripts === "function" && (!WasmEnableThreads || !globalThis.onmessage)) {
+// If we are a single-threaded build running in a web worker, we are expected to become the sidecar
+if (typeof importScripts === "function" && (!WasmEnableThreads)) {
     (globalThis as any).dotnetSidecar = true;
 }
 

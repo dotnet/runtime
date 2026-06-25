@@ -129,6 +129,9 @@
     <Compile Include="..\Common\TestClasses\TestData.cs"  Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestData.cs" />
     <Compile Include="..\Common\UnmappedMemberHandlingTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\UnmappedMemberHandlingTests.cs" />
     <Compile Include="..\Common\UnionTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\UnionTests.cs" />
+    <Compile Include="..\Common\PolymorphicTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PolymorphicTests.cs" />
+    <Compile Include="..\Common\PolymorphicTests.CustomTypeHierarchies.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PolymorphicTests.CustomTypeHierarchies.cs" />
+    <Compile Include="..\Common\PolymorphicTests.TypeClassifier.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PolymorphicTests.TypeClassifier.cs" />
     <Compile Include="..\Common\UnsupportedTypesTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\UnsupportedTypesTests.cs" />
     <Compile Include="Serialization\CollectionTests.cs" />
     <Compile Include="Serialization\ConstructorTests.cs" />
@@ -142,7 +145,7 @@
     <Compile Include="Serialization\NodeInteropTests.cs" />
     <Compile Include="Serialization\NullableAnnotationsTests.cs" />
     <Compile Include="Serialization\NumberHandlingTests.cs" />
-    <Compile Include="Serialization\PolymorphismTests.cs" />
+    <Compile Include="Serialization\PolymorphicTests.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="Serialization\StructuralJsonTypeClassifierTests.cs" />
