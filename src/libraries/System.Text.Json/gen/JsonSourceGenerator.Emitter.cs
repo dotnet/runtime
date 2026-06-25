@@ -1793,8 +1793,6 @@ namespace System.Text.Json.SourceGeneration
                     }
                     else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
                     {
-                        // byte[] is a reference type but WriteBase64StringValue accepts ReadOnlySpan<byte>,
-                        // which silently maps null to an empty value. Route through a helper that preserves null.
                         writer.WriteLine($"{ByteArrayValueWriterMethodName}(writer, {valueExpr});");
                         _emitByteArrayValueHelper = true;
                     }
@@ -1826,8 +1824,6 @@ namespace System.Text.Json.SourceGeneration
                     }
                     else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
                     {
-                        // byte[] is a reference type but WriteBase64String accepts ReadOnlySpan<byte>,
-                        // which silently maps null to an empty value. Route through a helper that preserves null.
                         writer.WriteLine($"writer.WritePropertyName({propertyNameExpr});");
                         writer.WriteLine($"{ByteArrayValueWriterMethodName}(writer, {valueExpr});");
                         _emitByteArrayValueHelper = true;
