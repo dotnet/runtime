@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
-    public partial class ECDiffieHellmanTests
+    public static class ECDiffieHellmanCngTests
     {
         private static ECDiffieHellmanCng NewDefaultECDHCng()
         {
