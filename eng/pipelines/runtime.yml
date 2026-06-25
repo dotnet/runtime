@@ -1749,6 +1749,24 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      # CoreCLR linux-x64: use BXL to build tests from source (leveraging BXL cache)
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: checked
+          platforms:
+          - linux_x64
+          helixQueueGroup: pr
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: innerloop
+            useBxl: true
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
@@ -1756,7 +1774,6 @@ extends:
           platforms:
           - osx_arm64
           - osx_x64
-          - linux_x64
           - linux_arm64
           - windows_x64
           helixQueueGroup: pr

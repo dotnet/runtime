@@ -44,6 +44,7 @@ function print_usage {
     echo '  --interpreter                    : Runs the tests with the interpreter enabled'
     echo '  --node                           : Runs the tests with NodeJS (wasm only)'
     echo '  --tree=<path>                    : Only run tests under the specified subtree (e.g. JIT/Regression)'
+    echo '  --bxl                           : Run the BuildXL-backed test flow (Linux x64 Checked only)'
     echo '  --limitedDumpGeneration          : '
 }
 
@@ -63,6 +64,8 @@ buildConfiguration="Debug"
 testRootDir=
 coreRootDir=
 logsDir=
+bxlRun=0
+bxlFilter=
 testEnv=
 gcsimulator=
 longgc=
@@ -149,6 +152,12 @@ do
         --testRootDir=*)
             testRootDir=${i#*=}
             ;;
+        --bxl)
+            bxlRun=1
+            ;;
+        --bxl-filter=*)
+            bxlFilter=${i#*=}
+            ;;
         --coreRootDir=*)
             coreRootDir=${i#*=}
             ;;
@@ -223,6 +232,85 @@ done
 # Set default for RunWithNodeJS when using wasm architecture
 if [ "$buildArch" = "wasm" ] && [ -z "$RunWithNodeJS" ]; then
     export RunWithNodeJS=1
+fi
+
+resolve_bxl_tree_path() {
+    local input_path="$1"
+    local resolved_path=
+
+    if [[ "$input_path" = /* ]]; then
+        resolved_path="$(realpath -m "$input_path")"
+    else
+        resolved_path="$(realpath -m "$repoRootDir/src/tests/$input_path")"
+    fi
+
+    if [[ ! -e "$resolved_path" ]]; then
+        echo "BuildXL tree path does not exist: $input_path" >&2
+        return $EXIT_CODE_EXCEPTION
+    fi
+
+    if [[ "$resolved_path" != "$repoRootDir/src/tests" && "$resolved_path" != "$repoRootDir/src/tests/"* ]]; then
+        echo "BuildXL tree paths must stay under $repoRootDir/src/tests: $input_path" >&2
+        return $EXIT_CODE_EXCEPTION
+    fi
+
+    printf '%s\n' "$resolved_path"
+}
+
+run_tests_with_bxl() {
+    local resolvedTreePath=
+    local bxlCoreRoot="$repoRootDir/artifacts/tests/coreclr/linux.x64.Checked/Tests/Core_Root"
+    local exitCode=0
+
+    if [[ "$buildArch" != "x64" ]]; then
+        echo "BuildXL test flow currently supports only x64."
+        exit $EXIT_CODE_EXCEPTION
+    fi
+
+    if [[ "$buildConfiguration" != "Checked" ]]; then
+        echo "BuildXL test flow currently supports only Checked runtime configuration."
+        exit $EXIT_CODE_EXCEPTION
+    fi
+
+    if [[ -n "$buildOS" && "$buildOS" != "linux" ]]; then
+        echo "BuildXL test flow currently supports only Linux."
+        exit $EXIT_CODE_EXCEPTION
+    fi
+
+    if [[ ! -x "$bxlCoreRoot/corerun" || ! -x "$bxlCoreRoot/ilasm" ]]; then
+        echo "BuildXL test flow requires a Checked Core_Root at: $bxlCoreRoot" >&2
+        echo "Generate it with:" >&2
+        echo "    ./build.sh clr+libs+clr.iltools -lc Release -rc Checked" >&2
+        echo "    src/tests/build.sh checked x64 generatelayoutonly" >&2
+        exit $EXIT_CODE_EXCEPTION
+    fi
+
+    if [[ -n "$testRootDir" || -n "$coreRootDir" || -n "$logsDir" || -n "$testEnv" || -n "$longgc" || -n "$gcsimulator" || -n "$ilasmroundtrip" || -n "$printLastResultsOnly" || "$runSequential" -ne 0 || "$verbose" -ne 0 || "$runincontext" -ne 0 || "$tieringtest" -ne 0 || "$nativeaottest" -ne 0 || -n "$RunCrossGen2" || -n "$CrossGen2SynthesizePgo" || -n "$RunInterpreter" || -n "$RunWithNodeJS" || "$limitedCoreDumps" == "ON" ]]; then
+        echo "BuildXL test flow currently supports only the standard Linux x64 Checked run plus --tree."
+        exit $EXIT_CODE_EXCEPTION
+    fi
+
+    if [[ -z "$bxlFilter" && -n "$treeSubtree" ]]; then
+        if ! resolvedTreePath="$(resolve_bxl_tree_path "$treeSubtree")"; then
+            exit $EXIT_CODE_EXCEPTION
+        fi
+        bxlFilter="spec='${resolvedTreePath}/*'"
+    fi
+
+    echo "Running tests via BuildXL"
+    if [[ -n "$bxlFilter" ]]; then
+        echo "BuildXL filter                : ${bxlFilter}"
+        BXL_FILTER_APPEND="$bxlFilter" bash "$repoRootDir/bxl.sh" test
+    else
+        bash "$repoRootDir/bxl.sh" test
+    fi
+
+    exitCode=$?
+    exit "$exitCode"
+}
+
+if [[ "$bxlRun" -ne 0 ]]; then
+    run_tests_with_bxl
 fi
 
 ################################################################################

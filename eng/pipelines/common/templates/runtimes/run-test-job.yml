@@ -30,6 +30,7 @@ parameters:
   unifiedBuildNameSuffix: ''
   unifiedBuildConfigOverride: ''
   extraBuildArgs: ''
+  useBxl: false
 
 ### Test run job
 
@@ -59,20 +60,26 @@ jobs:
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       continueOnError: true
 
-    ${{ if ne(parameters.dependsOn[0], '') }}:
-      dependsOn: ${{ parameters.dependsOn }}
+    # BXL jobs are self-contained: they build runtime + tests from source (using BXL cache),
+    # so they don't depend on the separate build-test-job or unified build job.
+    ${{ if eq(parameters.useBxl, true) }}:
+      dependsOn: []
 
-    ${{ if eq(parameters.dependsOn[0], '') }}:
-      dependsOn:
-      - ${{ if in(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-      - ${{ if notIn(parameters.testGroup, 'innerloop') }}:
-        - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
-      - ${{ if ne(parameters.unifiedArtifactsName, '')}}:
-        - ${{ if eq(parameters.hostedOs, '')}}:
-          - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
-        - ${{ if ne(parameters.hostedOs, '')}}:
-          - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
+    ${{ if ne(parameters.useBxl, true) }}:
+      ${{ if ne(parameters.dependsOn[0], '') }}:
+        dependsOn: ${{ parameters.dependsOn }}
+
+      ${{ if eq(parameters.dependsOn[0], '') }}:
+        dependsOn:
+        - ${{ if in(parameters.testGroup, 'innerloop') }}:
+          - '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{parameters.buildConfig }}'
+        - ${{ if notIn(parameters.testGroup, 'innerloop') }}:
+          - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
+        - ${{ if ne(parameters.unifiedArtifactsName, '')}}:
+          - ${{ if eq(parameters.hostedOs, '')}}:
+            - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
+          - ${{ if ne(parameters.hostedOs, '')}}:
+            - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
 
     # Compute job name from template parameters
     ${{ if in(parameters.testGroup, 'innerloop') }}:
@@ -210,51 +217,90 @@ jobs:
 
     steps:
 
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
-        artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
-        artifactName: '${{ parameters.unifiedArtifactsName }}'
-        displayName: 'unified artifacts'
+    - ${{ if eq(parameters.useBxl, true) }}:
+      # BXL flow: build runtime + tests from source, leveraging BXL cache for speed.
+      # This makes the job self-contained — no artifact downloads needed.
+      - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+        parameters:
+          archType: ${{ parameters.archType }}
+          osGroup: ${{ parameters.osGroup }}
+          osSubgroup: ${{ parameters.osSubgroup }}
+          nameSuffix: BxlTests
 
-    # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
-    # ilproj test projects during copynativeonly.
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: '$(microsoftNetSdkIlFolderPath)'
-        artifactFileName: '$(microsoftNetSdkIlArtifactName).tar.gz'
-        artifactName: '$(microsoftNetSdkIlArtifactName)'
-        displayName: 'Microsoft.NET.Sdk.IL package'
+      - template: /eng/pipelines/coreclr/templates/setup-bxl-cache.yml
+        parameters:
+          archType: ${{ parameters.archType }}
+          osGroup: ${{ parameters.osGroup }}
+          osSubgroup: ${{ parameters.osSubgroup }}
 
-    # Download and unzip managed test artifacts
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: '$(managedTestArtifactRootFolderPath)'
-        artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
-        artifactName: '$(managedGenericTestArtifactName)'
-        displayName: 'generic managed test artifacts'
+      - script: $(Build.SourcesDirectory)/build$(scriptExt) -s clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.iltools+libs -lc Release -rc Checked -ci $(crossArg)
+        displayName: Build runtime for BXL tests
 
-    # Download and unzip native test artifacts
-    - template: /eng/pipelines/common/download-artifact-step.yml
-      parameters:
-        unpackFolder: '$(nativeTestArtifactRootFolderPath)'
-        artifactFileName: '$(nativeTestArtifactName)$(archiveExtension)'
-        artifactName: '$(nativeTestArtifactName)'
-        displayName: 'native test artifacts'
+      - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+        parameters:
+          archType: ${{ parameters.archType }}
+          osGroup: ${{ parameters.osGroup }}
+          osSubgroup: ${{ parameters.osSubgroup }}
 
-    # Publish native test components to test output folder. Sadly we cannot do this
-    # during product build (so that we could zip up the files in their final test location
-    # and directly unzip them there after download). Unfortunately the logic to copy
-    # the native artifacts to the final test folders is dependent on availability of the
-    # managed test artifacts. This step also generates the final test execution scripts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg) $(extraBuildArgs)
-      displayName: Copy native test components to test output folder
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly
+        displayName: Generate CORE_ROOT for BXL
 
-    # Compose the Core_Root folder containing all artifacts needed for running
-    # CoreCLR tests. This step also compiles the framework using Crossgen2
-    # in ReadyToRun jobs.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg) -ci $(extraBuildArgs)
-      displayName: Generate CORE_ROOT
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) -bxl $(buildConfig) $(archType)
+        displayName: Build tests via BuildXL
+
+      - script: |
+          echo "Looking for Out/ directory..."
+          ls -la $(Build.SourcesDirectory)/Out/ 2>/dev/null || echo "Out/ not found at repo root"
+          find $(Build.SourcesDirectory) -maxdepth 3 -name 'Out' -type d 2>/dev/null || echo "No Out/ dir found"
+          echo "Looking for .runner.sh files..."
+          find $(Build.SourcesDirectory)/Out -name '*.runner.sh' -type f 2>/dev/null | head -5 || echo "No .runner.sh files found"
+        displayName: Debug BXL output locations
+
+      - script: $(Build.SourcesDirectory)/eng/bxl/prepare-helix-payload.sh --output $(Build.SourcesDirectory)/artifacts/tests/bxl-helix-staging --objects-dir $(Build.SourcesDirectory)/Out/Objects --chunks 30
+        displayName: Prepare BXL Helix payload
+
+    - ${{ else }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
+          artifactFileName: '${{ parameters.unifiedArtifactsName }}$(archiveExtension)'
+          artifactName: '${{ parameters.unifiedArtifactsName }}'
+          displayName: 'unified artifacts'
+
+      # Download and unzip the Microsoft.NET.Sdk.IL package needed for traversing
+      # ilproj test projects during copynativeonly.
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(microsoftNetSdkIlFolderPath)'
+          artifactFileName: '$(microsoftNetSdkIlArtifactName).tar.gz'
+          artifactName: '$(microsoftNetSdkIlArtifactName)'
+          displayName: 'Microsoft.NET.Sdk.IL package'
+
+      # Download and unzip managed test artifacts
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(managedTestArtifactRootFolderPath)'
+          artifactFileName: '$(managedGenericTestArtifactName).tar.gz'
+          artifactName: '$(managedGenericTestArtifactName)'
+          displayName: 'generic managed test artifacts'
+
+      # Download and unzip native test artifacts
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(nativeTestArtifactRootFolderPath)'
+          artifactFileName: '$(nativeTestArtifactName)$(archiveExtension)'
+          artifactName: '$(nativeTestArtifactName)'
+          displayName: 'native test artifacts'
+
+      # Publish native test components to test output folder.
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg) $(extraBuildArgs)
+        displayName: Copy native test components to test output folder
+
+      # Compose the Core_Root folder containing all artifacts needed for running
+      # CoreCLR tests. This step also compiles the framework using Crossgen2
+      # in ReadyToRun jobs.
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg) -ci $(extraBuildArgs)
+        displayName: Generate CORE_ROOT
 
     # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
     - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), or(eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))) }}:
@@ -279,274 +325,306 @@ jobs:
             __MonoToolPrefix: aarch64-linux-gnu-
 
     # Send tests to Helix
-    - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
-      parameters:
-        displayName: Send tests to Helix
-        buildConfig: $(buildConfigUpper)
-        archType: ${{ parameters.archType }}
-        osGroup: ${{ parameters.osGroup }}
-        osSubgroup: ${{ parameters.osSubgroup}}
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-        runtimeVariant: ${{ parameters.runtimeVariant }}
-        SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+    - ${{ if eq(parameters.useBxl, true) }}:
+      - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+        parameters:
+          displayName: Send BXL tests to Helix
+          buildConfig: $(buildConfigUpper)
+          archType: ${{ parameters.archType }}
+          osGroup: ${{ parameters.osGroup }}
+          osSubgroup: ${{ parameters.osSubgroup}}
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
-        ${{ if eq(variables['System.TeamProject'], 'public') }}:
-          creator: $(Build.DefinitionName)
+          ${{ if eq(variables['System.TeamProject'], 'public') }}:
+            creator: $(Build.DefinitionName)
 
-        helixBuild: $(Build.BuildNumber)
-        helixSource: $(_HelixSource)
+          helixBuild: $(Build.BuildNumber)
+          helixSource: $(_HelixSource)
+          helixType: 'test/functional/bxl/'
 
-        # REVIEW: not sure why "cli" is part of the names here. Leave it for the ones that already had it,
-        # but don't add it to new ones.
-        ${{ if eq(parameters.readyToRun, true) }}:
-          helixType: 'test/functional/r2r/cli/'
-        ${{ if ne(parameters.readyToRun, true) }}:
-          helixType: 'test/functional/cli/'
+          helixQueues: ${{ parameters.helixQueues }}
 
-        helixQueues: ${{ parameters.helixQueues }}
+          ${{ if eq(join('', parameters.helixQueues), '') }}:
+            condition: false
 
-        # This tests whether an array is empty
-        ${{ if eq(join('', parameters.helixQueues), '') }}:
-          condition: false
+          publishTestResults: true
+          timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
 
-        publishTestResults: true
+          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+            helixAccessToken: $(HelixApiAccessToken)
 
-        timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
-        timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
-        runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
-        compositeBuildMode: ${{ parameters.compositeBuildMode }}
-        runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
-        runInterpreter: ${{ parameters.runInterpreter }}
-        tieringTest: ${{ parameters.tieringTest }}
-        hotColdSplitting: ${{ parameters.hotColdSplitting }}
-        largeVersionBubble: ${{ parameters.largeVersionBubble }}
+          helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishbxl.proj /p:BxlStagingDirectory=$(Build.SourcesDirectory)/artifacts/tests/bxl-helix-staging'
 
-        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-          # Access token variable for internal project from the
-          # DotNet-HelixApi-Access variable group
-          helixAccessToken: $(HelixApiAccessToken)
-
-        helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
-
-        # helixpublishwitharcade.proj processes one scenario per parallel MSBuild invocation. Each invocation only
-        # creates Helix work items and them waits for their completion on the remote Helix machines, so is not
-        # computationally intensive. We want Helix to be provided with all the possible work items in up front,
-        # so can do as much work in parallel as possible. Thus, increase the amount of allowed MSBuild parallelism
-        # to at least the maximum number of scenarios to be processed in a testGroup.
-        #
-        # We only need to do this for a testGroup with more than one or two scenarios, though it isn't functionally
-        # a problem to always do it. Thus, we only exempt this setting for a few cases.
-        ${{ if notIn(parameters.testGroup, 'innerloop', 'outerloop', 'ilasm', 'gc-longrunning', 'gc-simulator', 'gc-standalone', 'gc-standalone-server') }}:
-          msbuildParallelism: '/maxcpucount:55'
-
-        ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
-          ${{ if and(eq(parameters.runInterpreter, 'true'),eq(variables['Build.Reason'], 'PullRequest')) }}:
+    - ${{ else }}:
+      - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
+        parameters:
+          displayName: Send tests to Helix
+          buildConfig: $(buildConfigUpper)
+          archType: ${{ parameters.archType }}
+          osGroup: ${{ parameters.osGroup }}
+          osSubgroup: ${{ parameters.osSubgroup}}
+          runtimeFlavor: ${{ parameters.runtimeFlavor }}
+          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+          runtimeVariant: ${{ parameters.runtimeVariant }}
+          SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+  
+          ${{ if eq(variables['System.TeamProject'], 'public') }}:
+            creator: $(Build.DefinitionName)
+  
+          helixBuild: $(Build.BuildNumber)
+          helixSource: $(_HelixSource)
+  
+          # REVIEW: not sure why "cli" is part of the names here. Leave it for the ones that already had it,
+          # but don't add it to new ones.
+          ${{ if eq(parameters.readyToRun, true) }}:
+            helixType: 'test/functional/r2r/cli/'
+          ${{ if ne(parameters.readyToRun, true) }}:
+            helixType: 'test/functional/cli/'
+  
+          helixQueues: ${{ parameters.helixQueues }}
+  
+          # This tests whether an array is empty
+          ${{ if eq(join('', parameters.helixQueues), '') }}:
+            condition: false
+  
+          publishTestResults: true
+  
+          timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
+          timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
+          runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
+          compositeBuildMode: ${{ parameters.compositeBuildMode }}
+          runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
+          runInterpreter: ${{ parameters.runInterpreter }}
+          tieringTest: ${{ parameters.tieringTest }}
+          hotColdSplitting: ${{ parameters.hotColdSplitting }}
+          largeVersionBubble: ${{ parameters.largeVersionBubble }}
+  
+          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+            # Access token variable for internal project from the
+            # DotNet-HelixApi-Access variable group
+            helixAccessToken: $(HelixApiAccessToken)
+  
+          helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
+  
+          # helixpublishwitharcade.proj processes one scenario per parallel MSBuild invocation. Each invocation only
+          # creates Helix work items and them waits for their completion on the remote Helix machines, so is not
+          # computationally intensive. We want Helix to be provided with all the possible work items in up front,
+          # so can do as much work in parallel as possible. Thus, increase the amount of allowed MSBuild parallelism
+          # to at least the maximum number of scenarios to be processed in a testGroup.
+          #
+          # We only need to do this for a testGroup with more than one or two scenarios, though it isn't functionally
+          # a problem to always do it. Thus, we only exempt this setting for a few cases.
+          ${{ if notIn(parameters.testGroup, 'innerloop', 'outerloop', 'ilasm', 'gc-longrunning', 'gc-simulator', 'gc-standalone', 'gc-standalone-server') }}:
+            msbuildParallelism: '/maxcpucount:55'
+  
+          ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
+            ${{ if and(eq(parameters.runInterpreter, 'true'),eq(variables['Build.Reason'], 'PullRequest')) }}:
+              scenarios:
+              - interpmode3_no_tiered_compilation
+              - interpmode2_no_tiered_compilation
+              - interpmode1_no_tiered_compilation
+              - no_tiered_compilation
+            ${{ elseif eq(parameters.runInterpreter, 'true') }}:
+              scenarios:
+              - interpmode3_no_tiered_compilation
+              - interpmode3
+              - interpmode2_no_tiered_compilation
+              - interpmode2
+              - normal
+              - no_tiered_compilation
+              - interpmode1_no_tiered_compilation
+              - interpmode1
+            ${{ elseif eq(parameters.runtimeFlavor, 'mono') }}:
+              # tiered compilation isn't done on mono yet
+              scenarios:
+              - normal
+            ${{ elseif eq(variables['Build.Reason'], 'PullRequest') }}:
+              scenarios:
+              - no_tiered_compilation
+            ${{ else }}:
+              scenarios:
+              - normal
+              - no_tiered_compilation
+  
+          ${{ if in(parameters.testGroup, 'jitstress') }}:
             scenarios:
-            - interpmode3_no_tiered_compilation
-            - interpmode2_no_tiered_compilation
-            - interpmode1_no_tiered_compilation
-            - no_tiered_compilation
-          ${{ elseif eq(parameters.runInterpreter, 'true') }}:
+            - jitminopts
+            - jitstress1
+            - jitstress1_tiered
+            - jitstress2
+            - jitstress2_tiered
+            - disabler2r
+            - tailcallstress
+          ${{ if in(parameters.testGroup, 'jitstress-random') }}:
             scenarios:
-            - interpmode3_no_tiered_compilation
-            - interpmode3
-            - interpmode2_no_tiered_compilation
-            - interpmode2
+            - jitstress_random_1
+            - jitstress_random_2
+          ${{ if in(parameters.testGroup, 'jitstress-isas-arm') }}:
+            scenarios:
+            - jitstress_isas_nohwintrinsic
+          ${{ if in(parameters.testGroup, 'jitstress-isas-x86') }}:
+            scenarios:
+            - jitstress_isas_nohwintrinsic
+            - jitstress_isas_x86_evex
+            - jitstress_isas_x86_noavx
+            - jitstress_isas_x86_noavx2
+            - jitstress_isas_x86_noavx512
+            - jitstress_isas_x86_vectort128
+            - jitstress_isas_x86_vectort512
+            - jitstress_isas_x86_noavx512_vectort128
+            - jitstress_isas_1_x86_evex
+            - jitstress_isas_1_x86_noavx
+            - jitstress_isas_1_x86_noavx2
+            - jitstress_isas_1_x86_noavx512
+            - jitstress_isas_1_x86_vectort128
+            - jitstress_isas_1_x86_vectort512
+            - jitstress_isas_1_x86_noavx512_vectort128
+            - jitstress_isas_2_x86_evex
+            - jitstress_isas_2_x86_noavx
+            - jitstress_isas_2_x86_noavx2
+            - jitstress_isas_2_x86_noavx512
+            - jitstress_isas_2_x86_vectort128
+            - jitstress_isas_2_x86_vectort512
+            - jitstress_isas_2_x86_noavx512_vectort128
+          ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
+            scenarios:
+            - jitstress_isas_x86_evex
+            - jitstress_isas_x86_noavx512
+            - jitstressregs0x2000
+          ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
+            scenarios:
+            - jitstressregs1_x86_noavx
+            - jitstressregs2_x86_noavx
+            - jitstressregs3_x86_noavx
+            - jitstressregs4_x86_noavx
+            - jitstressregs8_x86_noavx
+            - jitstressregs0x10_x86_noavx
+            - jitstressregs0x80_x86_noavx
+            - jitstressregs0x1000_x86_noavx
+            - jitstressregs0x2000_x86_noavx
+          ${{ if in(parameters.testGroup, 'jitstressregs' ) }}:
+            scenarios:
+            - jitstressregs1
+            - jitstressregs2
+            - jitstressregs3
+            - jitstressregs4
+            - jitstressregs8
+            - jitstressregs0x10
+            - jitstressregs0x80
+            - jitstressregs0x1000
+            - jitstressregs0x2000
+          ${{ if in(parameters.testGroup, 'jitstress2-jitstressregs') }}:
+            scenarios:
+            - jitstress2_jitstressregs1
+            - jitstress2_jitstressregs2
+            - jitstress2_jitstressregs3
+            - jitstress2_jitstressregs4
+            - jitstress2_jitstressregs8
+            - jitstress2_jitstressregs0x10
+            - jitstress2_jitstressregs0x80
+            - jitstress2_jitstressregs0x1000
+            - jitstress2_jitstressregs0x2000
+          ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
+            scenarios:
+            - gcstress0x3
+            - gcstress0xc
+          ${{ if in(parameters.testGroup, 'gcstress-extra') }}:
+            scenarios:
+            - heapverify1
+            - gcstress0xc_disabler2r
+            - gcstress0xc_disabler2r_jitstress2
+            - gcstress0xc_disabler2r_heapverify1
+            - gcstress0xc_jitstress1
+            - gcstress0xc_jitstress2
+            - gcstress0xc_tailcallstress
+            - gcstress0xc_jitminopts_heapverify1
+          ${{ if in(parameters.testGroup, 'r2r-extra') }}:
+            scenarios:
+            - jitstress1
+            - jitstress2
+            - jitstress1_tiered
+            - jitstress2_tiered
+            - jitstressregs1
+            - jitstressregs2
+            - jitstressregs3
+            - jitstressregs4
+            - jitstressregs8
+            - jitstressregs0x10
+            - jitstressregs0x80
+            - jitstressregs0x1000
+            - jitstressregs0x2000
+            - jitminopts
+            - forcerelocs
+            - gcstress0xc
+          ${{ if in(parameters.testGroup, 'pgo') }}:
+            scenarios:
+            - defaultpgo
+          ${{ if in(parameters.testGroup, 'pgostress') }}:
+            # We run a limited number of scenarios on the win-arm64 queues as we hit frequent timeouts on those queues otherwise.
+            # The loss of coverage is not critical as win-arm64 is practically equivalent to linux-arm64 to the JIT.
+            ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+              scenarios:
+              - fullpgo
+              - fullpgo_random_gdv_edge
+            ${{ else }}:
+              scenarios:
+              - fullpgo
+              - fullpgo_methodprofiling
+              - fullpgo_random_gdv
+              - fullpgo_random_gdv_methodprofiling_only
+              - fullpgo_random_gdv_edge
+              - fullpgo_methodprofiling_always_optimized
+              - syntheticpgo
+              - syntheticpgo_blend
+              - instrument_if_optimizing
+          ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
+            longRunningGcTests: true
+            scenarios:
             - normal
-            - no_tiered_compilation
-            - interpmode1_no_tiered_compilation
-            - interpmode1
-          ${{ elseif eq(parameters.runtimeFlavor, 'mono') }}:
-            # tiered compilation isn't done on mono yet
+          ${{ if in(parameters.testGroup, 'gc-simulator') }}:
+            gcSimulatorTests: true
             scenarios:
             - normal
-          ${{ elseif eq(variables['Build.Reason'], 'PullRequest') }}:
+          ${{ if in(parameters.testGroup, 'gc-standalone') }}:
             scenarios:
-            - no_tiered_compilation
-          ${{ else }}:
+            - gcstandalone
+          ${{ if in(parameters.testGroup, 'gc-standalone-server') }}:
             scenarios:
-            - normal
-            - no_tiered_compilation
-
-        ${{ if in(parameters.testGroup, 'jitstress') }}:
-          scenarios:
-          - jitminopts
-          - jitstress1
-          - jitstress1_tiered
-          - jitstress2
-          - jitstress2_tiered
-          - disabler2r
-          - tailcallstress
-        ${{ if in(parameters.testGroup, 'jitstress-random') }}:
-          scenarios:
-          - jitstress_random_1
-          - jitstress_random_2
-        ${{ if in(parameters.testGroup, 'jitstress-isas-arm') }}:
-          scenarios:
-          - jitstress_isas_nohwintrinsic
-        ${{ if in(parameters.testGroup, 'jitstress-isas-x86') }}:
-          scenarios:
-          - jitstress_isas_nohwintrinsic
-          - jitstress_isas_x86_evex
-          - jitstress_isas_x86_noavx
-          - jitstress_isas_x86_noavx2
-          - jitstress_isas_x86_noavx512
-          - jitstress_isas_x86_vectort128
-          - jitstress_isas_x86_vectort512
-          - jitstress_isas_x86_noavx512_vectort128
-          - jitstress_isas_1_x86_evex
-          - jitstress_isas_1_x86_noavx
-          - jitstress_isas_1_x86_noavx2
-          - jitstress_isas_1_x86_noavx512
-          - jitstress_isas_1_x86_vectort128
-          - jitstress_isas_1_x86_vectort512
-          - jitstress_isas_1_x86_noavx512_vectort128
-          - jitstress_isas_2_x86_evex
-          - jitstress_isas_2_x86_noavx
-          - jitstress_isas_2_x86_noavx2
-          - jitstress_isas_2_x86_noavx512
-          - jitstress_isas_2_x86_vectort128
-          - jitstress_isas_2_x86_vectort512
-          - jitstress_isas_2_x86_noavx512_vectort128
-        ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
-          scenarios:
-          - jitstress_isas_x86_evex
-          - jitstress_isas_x86_noavx512
-          - jitstressregs0x2000
-        ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
-          scenarios:
-          - jitstressregs1_x86_noavx
-          - jitstressregs2_x86_noavx
-          - jitstressregs3_x86_noavx
-          - jitstressregs4_x86_noavx
-          - jitstressregs8_x86_noavx
-          - jitstressregs0x10_x86_noavx
-          - jitstressregs0x80_x86_noavx
-          - jitstressregs0x1000_x86_noavx
-          - jitstressregs0x2000_x86_noavx
-        ${{ if in(parameters.testGroup, 'jitstressregs' ) }}:
-          scenarios:
-          - jitstressregs1
-          - jitstressregs2
-          - jitstressregs3
-          - jitstressregs4
-          - jitstressregs8
-          - jitstressregs0x10
-          - jitstressregs0x80
-          - jitstressregs0x1000
-          - jitstressregs0x2000
-        ${{ if in(parameters.testGroup, 'jitstress2-jitstressregs') }}:
-          scenarios:
-          - jitstress2_jitstressregs1
-          - jitstress2_jitstressregs2
-          - jitstress2_jitstressregs3
-          - jitstress2_jitstressregs4
-          - jitstress2_jitstressregs8
-          - jitstress2_jitstressregs0x10
-          - jitstress2_jitstressregs0x80
-          - jitstress2_jitstressregs0x1000
-          - jitstress2_jitstressregs0x2000
-        ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
-          scenarios:
-          - gcstress0x3
-          - gcstress0xc
-        ${{ if in(parameters.testGroup, 'gcstress-extra') }}:
-          scenarios:
-          - heapverify1
-          - gcstress0xc_disabler2r
-          - gcstress0xc_disabler2r_jitstress2
-          - gcstress0xc_disabler2r_heapverify1
-          - gcstress0xc_jitstress1
-          - gcstress0xc_jitstress2
-          - gcstress0xc_tailcallstress
-          - gcstress0xc_jitminopts_heapverify1
-        ${{ if in(parameters.testGroup, 'r2r-extra') }}:
-          scenarios:
-          - jitstress1
-          - jitstress2
-          - jitstress1_tiered
-          - jitstress2_tiered
-          - jitstressregs1
-          - jitstressregs2
-          - jitstressregs3
-          - jitstressregs4
-          - jitstressregs8
-          - jitstressregs0x10
-          - jitstressregs0x80
-          - jitstressregs0x1000
-          - jitstressregs0x2000
-          - jitminopts
-          - forcerelocs
-          - gcstress0xc
-        ${{ if in(parameters.testGroup, 'pgo') }}:
-          scenarios:
-          - defaultpgo
-        ${{ if in(parameters.testGroup, 'pgostress') }}:
-          # We run a limited number of scenarios on the win-arm64 queues as we hit frequent timeouts on those queues otherwise.
-          # The loss of coverage is not critical as win-arm64 is practically equivalent to linux-arm64 to the JIT.
-          ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+            - gcstandaloneserver
+          ${{ if in(parameters.testGroup, 'jitelthookenabled') }}:
             scenarios:
-            - fullpgo
-            - fullpgo_random_gdv_edge
-          ${{ else }}:
+            - jitelthookenabled
+            - jitelthookenabled_tiered
+          ${{ if in(parameters.testGroup, 'jit-experimental') }}:
+            ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+              scenarios:
+              - jitosr_stress
+              - jitpartialcompilation_pgo
+              - jitpartialcompilation_pgo_stress_random
+              - jitoptrepeat
+            ${{ else }}:
+              scenarios:
+              - jitosr_stress
+              - jitosr_stress_random
+              - jit_stress_splitting
+              - jitpartialcompilation
+              - jitpartialcompilation_pgo
+              - jitpartialcompilation_pgo_stress_random
+              - jitobjectstackallocation
+              - jitphysicalpromotion_only
+              - jitphysicalpromotion_full
+              - jitrlcse
+              - jitoptrepeat
+          ${{ if in(parameters.testGroup, 'jit-cfg') }}:
             scenarios:
-            - fullpgo
-            - fullpgo_methodprofiling
-            - fullpgo_random_gdv
-            - fullpgo_random_gdv_methodprofiling_only
-            - fullpgo_random_gdv_edge
-            - fullpgo_methodprofiling_always_optimized
-            - syntheticpgo
-            - syntheticpgo_blend
-            - instrument_if_optimizing
-        ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
-          longRunningGcTests: true
-          scenarios:
-          - normal
-        ${{ if in(parameters.testGroup, 'gc-simulator') }}:
-          gcSimulatorTests: true
-          scenarios:
-          - normal
-        ${{ if in(parameters.testGroup, 'gc-standalone') }}:
-          scenarios:
-          - gcstandalone
-        ${{ if in(parameters.testGroup, 'gc-standalone-server') }}:
-          scenarios:
-          - gcstandaloneserver
-        ${{ if in(parameters.testGroup, 'jitelthookenabled') }}:
-          scenarios:
-          - jitelthookenabled
-          - jitelthookenabled_tiered
-        ${{ if in(parameters.testGroup, 'jit-experimental') }}:
-          ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+            - jitcfg
+            - jitcfg_dispatcher_always
+            - jitcfg_dispatcher_never
+            - jitcfg_gcstress0xc
+          ${{ if in(parameters.testGroup, 'ilasm') }}:
             scenarios:
-            - jitosr_stress
-            - jitpartialcompilation_pgo
-            - jitpartialcompilation_pgo_stress_random
-            - jitoptrepeat
-          ${{ else }}:
-            scenarios:
-            - jitosr_stress
-            - jitosr_stress_random
-            - jit_stress_splitting
-            - jitpartialcompilation
-            - jitpartialcompilation_pgo
-            - jitpartialcompilation_pgo_stress_random
-            - jitobjectstackallocation
-            - jitphysicalpromotion_only
-            - jitphysicalpromotion_full
-            - jitrlcse
-            - jitoptrepeat
-        ${{ if in(parameters.testGroup, 'jit-cfg') }}:
-          scenarios:
-          - jitcfg
-          - jitcfg_dispatcher_always
-          - jitcfg_dispatcher_never
-          - jitcfg_gcstress0xc
-        ${{ if in(parameters.testGroup, 'ilasm') }}:
-          scenarios:
-          - ilasmroundtrip
+            - ilasmroundtrip
 
     ########################################################################################################
     #
