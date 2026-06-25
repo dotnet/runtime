@@ -83,6 +83,57 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_Vector128_GetElement:
+        case NI_Vector128_WithElement:
+        {
+            // Vector128.GetElement / WithElement have valid managed implementations in
+            // Vector128.cs. Return nullptr to let the importer fall back to those rather
+            // than asserting / NYI'ing in the JIT.
+            return nullptr;
+        }
+
+        // The following PackedSimd intrinsics are not yet implemented on WASM. Because
+        // PackedSimd is decorated with a class-level [Intrinsic], the managed bodies in
+        // PackedSimd.cs are self-recursive stubs that would stack-overflow at runtime if
+        // the JIT didn't recognize them. Fail loudly with a descriptive NYI_WASM_SIMD
+        // instead until codegen lands.
+        case NI_PackedSimd_CompareGreaterThan:
+        case NI_PackedSimd_CompareGreaterThanOrEqual:
+        case NI_PackedSimd_CompareLessThan:
+        case NI_PackedSimd_CompareLessThanOrEqual:
+            NYI_WASM_SIMD("PackedSimd ordered compare (needs special codegen for Vector128<ulong>)");
+            break;
+
+        case NI_PackedSimd_ExtractScalar:
+            NYI_WASM_SIMD("PackedSimd.ExtractScalar");
+            break;
+        case NI_PackedSimd_ReplaceScalar:
+            NYI_WASM_SIMD("PackedSimd.ReplaceScalar");
+            break;
+
+        case NI_PackedSimd_LoadVector128:
+        case NI_PackedSimd_LoadScalarVector128:
+        case NI_PackedSimd_LoadScalarAndSplatVector128:
+        case NI_PackedSimd_LoadScalarAndInsert:
+        case NI_PackedSimd_LoadWideningVector128:
+            NYI_WASM_SIMD("PackedSimd load");
+            break;
+
+        case NI_PackedSimd_Store:
+        case NI_PackedSimd_StoreSelectedScalar:
+            NYI_WASM_SIMD("PackedSimd store");
+            break;
+
+        case NI_PackedSimd_ShiftLeft:
+        case NI_PackedSimd_ShiftRightArithmetic:
+        case NI_PackedSimd_ShiftRightLogical:
+            NYI_WASM_SIMD("PackedSimd shift");
+            break;
+
+        case NI_PackedSimd_Splat:
+            NYI_WASM_SIMD("PackedSimd.Splat");
+            break;
+
         case NI_Vector128_Create:
         {
             // Vector128.Create(T)                    -> broadcast/"splat" one T value to all elements
