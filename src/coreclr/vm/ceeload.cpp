@@ -34,6 +34,9 @@
 #include "virtualcallstub.h"
 #include "typestring.h"
 #include "stringliteralmap.h"
+#ifndef DACCESS_COMPILE
+#include "noopmetadataimport.h"
+#endif
 #include <formattype.h>
 #include "fieldmarshaler.h"
 #include "sigbuilder.h"
@@ -1807,7 +1810,14 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             }
             if (SUCCEEDED(hr))
             {
-                hr = pBinder->GetReaderFromStream(GetRWImporter(), pIStream, &pReader);
+                // Hand the reader an inert importer rather than the module's real
+                // (RW) metadata interface: the reader only needs it to satisfy the
+                // binder, and producing the real importer would force this module's
+                // metadata to its locked RW backing store. See noopmetadataimport.h.
+                IUnknown* pNoopImport = NoopMetadataImport::GetInstance();
+                hr = (pNoopImport != NULL)
+                    ? pBinder->GetReaderFromStream(pNoopImport, pIStream, &pReader)
+                    : E_OUTOFMEMORY;
             }
         }
         else
@@ -1815,13 +1825,14 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // The assembly is on disk, so try and load symbols based on the path to the assembly (case 1)
             const SString &path = m_pPEAssembly->GetPath();
 
-            // Call Fusion to ensure that any PDB's are shadow copied before
-            // trying to get a symbol reader. This has to be done once per
-            // Assembly.
-            ReleaseHolder<IUnknown> pUnk = NULL;
-            hr = GetReadablePublicMetaDataInterface(ofReadOnly, IID_IMetaDataImport, &pUnk);
-            if (SUCCEEDED(hr))
-                hr = pBinder->GetReaderForFile(pUnk, path, NULL, &pReader);
+            // Hand the reader an inert importer rather than a readable metadata
+            // interface for this module: the reader only needs it to satisfy the
+            // binder, and obtaining the real importer would force this module's
+            // metadata to its locked RW backing store. See noopmetadataimport.h.
+            IUnknown* pNoopImport = NoopMetadataImport::GetInstance();
+            hr = (pNoopImport != NULL)
+                ? pBinder->GetReaderForFile(pNoopImport, path, NULL, &pReader)
+                : E_OUTOFMEMORY;
         }
 
         if (SUCCEEDED(hr))

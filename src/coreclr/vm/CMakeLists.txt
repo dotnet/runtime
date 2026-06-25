@@ -361,6 +361,7 @@ set(VM_SOURCES_WKS
     nativeeventsource.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
+    noopmetadataimport.cpp
     pendingload.cpp
     pinvokeoverride.cpp
     profdetach.cpp
@@ -467,6 +468,7 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
+    noopmetadataimport.h
     pendingload.h
     profdetach.h
     profilingenumerators.h
