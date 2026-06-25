@@ -39,30 +39,13 @@ if(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions(_WASI_EMULATED_PROCESS_CLOCKS)
   add_compile_definitions(_WASI_EMULATED_MMAN)
   add_compile_definitions(_WASI_EMULATED_GETPID)
-  # Exception model: -fwasm-exceptions (set via configureplatform.cmake's
-  # -fwasm-exceptions compile/link options). sjlj is intentionally NOT used —
-  # it cannot handle throw-from-catch which the interpreter's ResumeAfterCatch
-  # requires. WASI SDK 33 ships an eh-flavored libc++abi/libunwind which
-  # clang picks automatically when -fwasm-exceptions is set.
-  # Disable EventPipe / diagnostic-server PAL for the initial WASI bring-up.
-  # eventpipe pulls in ds-ipc-pal-socket.c which requires UNIX-domain or TCP
-  # sockets we have not validated end-to-end yet. Revisit once corerun.wasm
-  # actually runs; for now keep the surface area small.
+  # EventPipe / diag-server PAL require sockets we have not validated
+  # for the WASI bring-up; revisit once corerun.wasm runs.
   set(FEATURE_EVENT_TRACE 0)
   set(FEATURE_PERFTRACING 0)
-  # NOTE: F_DUPFD_CLOEXEC=1030 and O_CLOEXEC=0 used to be defined here
-  # as compile-only fallbacks because WASI's fcntl.h omits them. They
-  # were removed once map.cpp and file.cpp grew explicit TARGET_WASI
-  # branches that avoid those constants entirely. If you re-introduce
-  # code that references F_DUPFD_CLOEXEC / O_CLOEXEC on WASI, prefer
-  # a #ifdef TARGET_WASI branch in the caller over redefining the
-  # constants here.
-  # WASI stub headers for missing POSIX headers
   include_directories(BEFORE SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/pal/src/include/pal/wasi)
-  # Cross-compile try_run() answers — wasm32 binaries cannot execute on the
-  # build host, so pre-seed the cache. WASI realpath rejects nonexistent
-  # paths; gettimeofday/clock_gettime are provided via emulated clocks;
-  # /proc/self/statm does not exist.
+  # Cross-compile try_run() answers — wasm32 binaries cannot execute on
+  # the build host, so pre-seed the cache.
   set(REALPATH_SUPPORTS_NONEXISTENT_FILES_EXITCODE 1 CACHE STRING "" FORCE)
   set(HAVE_WORKING_GETTIMEOFDAY_EXITCODE 0 CACHE STRING "" FORCE)
   set(HAVE_WORKING_CLOCK_GETTIME_EXITCODE 0 CACHE STRING "" FORCE)
@@ -120,9 +103,7 @@ if(NOT CLR_CROSS_COMPONENTS_BUILD)
     set(CORERUN_LIBS_ONLY 1)
   endif()
   if(CLR_CMAKE_TARGET_WASI)
-    # Build libs into a side directory so CoreCLR's sharedFramework dir
-    # does not collide with the separately-published libs.native artifacts
-    # consumed by the runtime pack.
+    # Side-build libs to avoid collision with the published libs.native artifact.
     set(STATIC_LIB_DESTINATION ${CMAKE_BINARY_DIR}/libs-native)
     set(CORERUN_LIBS_ONLY 1)
   endif()

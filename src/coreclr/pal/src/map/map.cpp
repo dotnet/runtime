@@ -467,9 +467,7 @@ CorUnix::InternalCreateFileMapping(
             //
 
 #ifdef TARGET_WASI
-            // WASI has no dup() and rejects F_DUPFD_CLOEXEC. Re-open the file
-            // by its path so the mapping owns a separate fd that survives the
-            // caller closing the handle.
+            // WASI has no dup(); re-open by path so the mapping owns its own fd.
             UnixFd = open(pFileLocalData->unix_filename, O_RDONLY);
 #else
             UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC

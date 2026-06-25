@@ -15,9 +15,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include "pal/wasi/pal_wasi_missing.h"
-// RESERVED_SEH_BIT lives in seh.cpp on Unix; redefine locally for WASI's
-// RaiseException since we don't compile seh.cpp's matching anonymous-namespace
-// constant into this TU.
+// RESERVED_SEH_BIT lives in seh.cpp on Unix; redefine here since we don't
+// compile that TU on WASI.
 namespace { const UINT WASI_RESERVED_SEH_BIT = 0x800000; }
 #endif
 
@@ -78,9 +77,8 @@ extern "C" void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHExcep
 #if defined(TARGET_BROWSER)
     _ASSERT(!"ThrowExceptionFromContextInternal not implemented on wasm");
 #else
-    // On WASI native wasm exceptions are used; the interpreter throws via the
-    // C++ exception machinery directly. This entrypoint exists for the WIN-style
-    // signature only.
+    // WASI uses native wasm exceptions; the interpreter throws C++ directly.
+    // This entrypoint exists for the WIN-style signature only.
     _ASSERT(!"ThrowExceptionFromContextInternal not implemented on wasi");
 #endif
 }
@@ -93,10 +91,9 @@ void ExecuteHandlerOnCustomStack(int code, siginfo_t *siginfo, void *context, si
 }
 
 #if defined(TARGET_BROWSER)
-// On the browser-wasm target seh-unwind.cpp is excluded from the build (see
-// pal/src/CMakeLists.txt) but emscripten's libunwind shim still exposes the
-// unw_* symbols at link time. Provide trap stubs to satisfy any residual
-// references during the wasm interpreter's stack walking.
+// seh-unwind.cpp is excluded from the browser-wasm build, but emscripten's
+// libunwind shim still exposes the unw_* symbols at link time. Trap stubs
+// satisfy any residual references.
 extern "C" int unw_getcontext(int)
 {
     _ASSERT(!"unw_getcontext not implemented on wasm");
@@ -131,12 +128,9 @@ extern "C" int pthread_setschedparam(pthread_t, int, const struct sched_param *)
 }
 
 #if defined(TARGET_WASI)
-// WASI build skips thread/context.cpp (no native_context_t / siginfo_t / FPE_*).
-// Provide trap stubs for the PAL context API that file would otherwise supply.
-// These are never reached on WASI: hardware exceptions don't exist, signals
-// aren't delivered, and the interpreter walks its own explicit frame chain
-// rather than calling these PAL APIs. Stubs exist purely so the linker can
-// resolve references in headers that are still compiled.
+// WASI build skips thread/context.cpp (no native_context_t / siginfo_t /
+// FPE_*). Trap stubs satisfy linker references in headers still compiled;
+// these are never reached on WASI.
 
 extern "C" BOOL CONTEXT_GetRegisters(DWORD processId, LPCONTEXT lpContext)
 {
@@ -174,17 +168,11 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
     return 0;
 }
 
-// RaiseException is the WIN32-style SEH entry — normally provided by
-// seh-unwind.cpp, which we exclude on WASI. WASI uses -fwasm-exceptions,
-// so C++ throw lowers to wasm-native exception dispatch and the EH personality
-// in libc++abi handles the catch. Match seh-unwind.cpp's RaiseException
-// implementation: allocate an EXCEPTION_RECORD + CONTEXT pair, fill the
-// record from the SEH args, and throw PAL_SEHException — which is what
-// RtlpRaiseException does on Unix. The CONTEXT capture / PAL_VirtualUnwind
-// step that the Unix path performs is skipped (it's already guarded by
-// #ifndef TARGET_WASM in seh-unwind.cpp); WASI has no libunwind and the
-// managed unwind doesn't read the EXCEPTION_RECORD->ExceptionAddress on
-// the interpreter path.
+// WIN32 SEH entry — normally in seh-unwind.cpp which we exclude on WASI.
+// Mirrors that file's RaiseException: allocate EXCEPTION_RECORD + CONTEXT,
+// fill the record, throw PAL_SEHException (what RtlpRaiseException does on
+// Unix). The CONTEXT capture / PAL_VirtualUnwind step is skipped — already
+// guarded by #ifndef TARGET_WASM in seh-unwind.cpp.
 extern "C" VOID PALAPI
 RaiseException(
     IN DWORD dwExceptionCode,
@@ -242,11 +230,9 @@ OutputDebugStringW(IN LPCWSTR lpOutputString)
     (void)lpOutputString;  // wchar_t* — not converted here; stub only
 }
 
-// PAL exception-record allocation. Normally provided by seh-unwind.cpp, which
-// we exclude on WASI. The WASI interpreter doesn't dispatch through the
-// EXCEPTION_RECORD/CONTEXT machinery (it throws PAL_SEHException directly),
-// so these are only here to satisfy linker references in dispatch helpers
-// that never run.
+// PAL exception-record allocation — normally in seh-unwind.cpp which we
+// exclude on WASI. Stubs satisfy linker references; the WASI interpreter
+// throws PAL_SEHException directly without using these.
 extern "C" PALIMPORT VOID PALAPI
 PAL_FreeExceptionRecords(IN EXCEPTION_RECORD *exceptionRecord, IN CONTEXT *contextRecord)
 {
