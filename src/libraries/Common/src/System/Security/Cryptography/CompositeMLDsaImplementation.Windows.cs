@@ -170,9 +170,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_NoPrivateKeyAvailable);
             }
 
-            return ExportKey(
-                Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB,
-                destination);
+            return ExportKey(Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB, destination);
         }
 
         protected override void Dispose(bool disposing)

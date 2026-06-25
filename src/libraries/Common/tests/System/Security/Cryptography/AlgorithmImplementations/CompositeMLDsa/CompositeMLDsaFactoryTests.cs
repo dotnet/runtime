@@ -5,7 +5,6 @@ using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 using Xunit.Sdk;
@@ -14,6 +13,11 @@ namespace System.Security.Cryptography.Tests
 {
     public static class CompositeMLDsaFactoryTests
     {
+        // The Ed448 composite is commonly not supported, so we can use it as a representative test case for scenarios 
+        // where Composite ML-DSA is supported but a specific composite is not.
+        public static bool CompositeMLDsaSupportedAndEd448CompositeNotSupported =>
+            CompositeMLDsa.IsSupported && !CompositeMLDsa.IsAlgorithmSupported(CompositeMLDsaAlgorithm.MLDsa87WithEd448);
+
         [Fact]
         public static void NullArgumentValidation()
         {
@@ -573,14 +577,9 @@ namespace System.Security.Cryptography.Tests
             CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import => AssertThrowIfNotSupported(() => import(spki.Encode())));
         }
 
-        [ConditionalFact]
+        [ConditionalFact(nameof(CompositeMLDsaSupportedAndEd448CompositeNotSupported))]
         public static void ImportSubjectPublicKeyInfo_SupportedButHasUnsupportedAlgorithm()
         {
-            // Ed448 is commonly not supported, so we will use it as a best effort test.
-            if (!CompositeMLDsa.IsSupported ||
-                CompositeMLDsa.IsAlgorithmSupported(CompositeMLDsaAlgorithm.MLDsa87WithEd448))
-                throw new SkipTestException("Algorithm is supported on this platform.");
-
             // Create an unsupported Composite ML-DSA SPKI
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
             {
@@ -634,14 +633,9 @@ namespace System.Security.Cryptography.Tests
             CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(import => AssertThrowIfNotSupported(() => import(pkcs8.Encode())));
         }
 
-        [ConditionalFact]
+        [ConditionalFact(nameof(CompositeMLDsaSupportedAndEd448CompositeNotSupported))]
         public static void ImportPkcs8PrivateKey_SupportedButHasUnsupportedAlgorithm()
         {
-            // Ed448 is commonly not supported, so we will use it as a best effort test.
-            if (!CompositeMLDsa.IsSupported ||
-                CompositeMLDsa.IsAlgorithmSupported(CompositeMLDsaAlgorithm.MLDsa87WithEd448))
-                throw new SkipTestException("Algorithm is supported on this platform.");
-
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn

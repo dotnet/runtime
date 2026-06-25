@@ -47,7 +47,9 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
-        internal static bool TryGetCompositeMLDsaParameterSet(CompositeMLDsaAlgorithm algorithm, [NotNullWhen(true)] out string? parameterSet)
+        internal static bool TryGetCompositeMLDsaParameterSet(
+            CompositeMLDsaAlgorithm algorithm,
+            [NotNullWhen(true)] out string? parameterSet)
         {
             if (algorithm == CompositeMLDsaAlgorithm.MLDsa44WithECDsaP256)
             {
