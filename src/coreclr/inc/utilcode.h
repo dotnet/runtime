@@ -28,6 +28,7 @@ using std::nothrow;
 #include "volatile.h"
 #include <daccess.h>
 #include "clrhost.h"
+#include "dn_xxhash.h"
 #include "debugmacros.h"
 #include "corhlprpriv.h"
 #include "check.h"
@@ -38,11 +39,13 @@ using std::nothrow;
 #include <stddef.h>
 #include <minipal/guid.h>
 #include <minipal/log.h>
+#include <minipal/ospagesize.h>
 #include <dn-u16.h>
 
 #include "clrnt.h"
 
 #include "random.h"
+#include "cdacdata.h"
 
 #define WINDOWS_KERNEL32_DLLNAME_A "kernel32"
 #define WINDOWS_KERNEL32_DLLNAME_W W("kernel32")
@@ -577,8 +580,6 @@ int GetTotalProcessorCount();
 //******************************************************************************
 int GetCurrentProcessCpuCount();
 
-uint32_t GetOsPageSize();
-
 
 //*****************************************************************************
 // Return != 0 if the bit at the specified index in the array is on and 0 if
@@ -682,28 +683,40 @@ private:
 // class.
 //*****************************************************************************
 
+class CUnorderedArrayBase
+{
+    friend struct ::cdac_data<CUnorderedArrayBase>;
+protected:
+    int   m_iCount;     // # of elements used in the list.
+    TADDR m_pTable;     // Pointer to the list of elements (opaque address;
+                        // the templated derived class supplies the element type).
+
+    CUnorderedArrayBase()
+        : m_iCount(0), m_pTable((TADDR)NULL)
+    {
+    }
+};
+
+template<>
+struct cdac_data<CUnorderedArrayBase>
+{
+    static constexpr size_t Count = offsetof(CUnorderedArrayBase, m_iCount);
+    static constexpr size_t Table = offsetof(CUnorderedArrayBase, m_pTable);
+};
+
 template <class T,
           int iGrowInc,
           class ALLOCATOR>
-class CUnorderedArrayWithAllocator
+class CUnorderedArrayWithAllocator : public CUnorderedArrayBase
 {
-    int         m_iCount;               // # of elements used in the list.
     int         m_iSize;                // # of elements allocated in the list.
-public:
-#ifndef DACCESS_COMPILE
-    T           *m_pTable;              // Pointer to the list of elements.
-#else
-    TADDR        m_pTable;              // Pointer to the list of elements.
-#endif
 
 public:
 
 #ifndef DACCESS_COMPILE
 
     CUnorderedArrayWithAllocator() :
-        m_iCount(0),
-        m_iSize(0),
-        m_pTable(NULL)
+        m_iSize(0)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -711,29 +724,29 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         // Free the chunk of memory.
-        if (m_pTable != NULL)
-            ALLOCATOR::Free(this, m_pTable);
+        if (m_pTable != (TADDR)NULL)
+            ALLOCATOR::Free(this, reinterpret_cast<T*>(m_pTable));
     }
 
     CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator const&) = delete;
     CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator const&) = delete;
     CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator&& other)
-        : m_iCount{ other.m_iCount }
-        , m_iSize{ other.m_iSize }
-        , m_pTable{ other.m_pTable }
+        : m_iSize{ other.m_iSize }
     {
         LIMITED_METHOD_CONTRACT;
+        m_iCount = other.m_iCount;
+        m_pTable = other.m_pTable;
         other.m_iCount = 0;
         other.m_iSize = 0;
-        other.m_pTable = NULL;
+        other.m_pTable = (TADDR)NULL;
     }
     CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator&& other)
     {
         LIMITED_METHOD_CONTRACT;
         if (this != &other)
         {
-            if (m_pTable != NULL)
-                ALLOCATOR::Free(this, m_pTable);
+            if (m_pTable != (TADDR)NULL)
+                ALLOCATOR::Free(this, reinterpret_cast<T*>(m_pTable));
 
             m_iCount = other.m_iCount;
             m_iSize = other.m_iSize;
@@ -741,7 +754,7 @@ public:
 
             other.m_iCount = 0;
             other.m_iSize = 0;
-            other.m_pTable = NULL;
+            other.m_pTable = (TADDR)NULL;
         }
         return *this;
     }
@@ -754,8 +767,8 @@ public:
         {
             T* tmp = ALLOCATOR::AllocNoThrow(this, iGrowInc);
             if (tmp) {
-                ALLOCATOR::Free(this, m_pTable);
-                m_pTable = tmp;
+                ALLOCATOR::Free(this, reinterpret_cast<T*>(m_pTable));
+                m_pTable = reinterpret_cast<TADDR>(tmp);
                 m_iSize = iGrowInc;
             }
         }
@@ -765,9 +778,10 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         int     iSize;
+        T*      pTable = reinterpret_cast<T*>(m_pTable);
 
         if (iFirst + iCount < m_iCount)
-            memmove(&m_pTable[iFirst], &m_pTable[iFirst + iCount], sizeof(T) * (m_iCount - (iFirst + iCount)));
+            memmove(&pTable[iFirst], &pTable[iFirst + iCount], sizeof(T) * (m_iCount - (iFirst + iCount)));
 
         m_iCount -= iCount;
 
@@ -776,9 +790,9 @@ public:
         {
             T *tmp = ALLOCATOR::AllocNoThrow(this, iSize);
             if (tmp) {
-                memcpy (tmp, m_pTable, iSize * sizeof(T));
-                delete [] m_pTable;
-                m_pTable = tmp;
+                memcpy (tmp, pTable, iSize * sizeof(T));
+                delete [] pTable;
+                m_pTable = reinterpret_cast<TADDR>(tmp);
                 m_iSize = iSize;
             }
         }
@@ -788,7 +802,7 @@ public:
     T *Table()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_pTable);
+        return reinterpret_cast<T*>(m_pTable);
     }
 
     T *Append()
@@ -800,7 +814,7 @@ public:
         // The array should grow, if we can't fit one more element into the array.
         if (m_iSize <= m_iCount && GrowNoThrow() == NULL)
             return (NULL);
-        return (&m_pTable[m_iCount++]);
+        return (&reinterpret_cast<T*>(m_pTable)[m_iCount++]);
     }
 
     T *AppendThrowing()
@@ -812,17 +826,18 @@ public:
         // The array should grow, if we can't fit one more element into the array.
         if (m_iSize <= m_iCount)
             Grow();
-        return (&m_pTable[m_iCount++]);
+        return (&reinterpret_cast<T*>(m_pTable)[m_iCount++]);
     }
 
     void Delete(const T &Entry)
     {
         LIMITED_METHOD_CONTRACT;
+        T* pTable = reinterpret_cast<T*>(m_pTable);
         --m_iCount;
         for (int i=0; i <= m_iCount; ++i)
-            if (m_pTable[i] == Entry)
+            if (pTable[i] == Entry)
             {
-                m_pTable[i] = m_pTable[m_iCount];
+                pTable[i] = pTable[m_iCount];
                 return;
             }
 
@@ -833,20 +848,22 @@ public:
     void DeleteByIndex(int i)
     {
         LIMITED_METHOD_CONTRACT;
+        T* pTable = reinterpret_cast<T*>(m_pTable);
         --m_iCount;
-        m_pTable[i] = m_pTable[m_iCount];
+        pTable[i] = pTable[m_iCount];
     }
 
     void Swap(int i,int j)
     {
         LIMITED_METHOD_CONTRACT;
         T       tmp;
+        T*      pTable = reinterpret_cast<T*>(m_pTable);
 
         if (i == j)
             return;
-        tmp = m_pTable[i];
-        m_pTable[i] = m_pTable[j];
-        m_pTable[j] = tmp;
+        tmp = pTable[i];
+        pTable[i] = pTable[j];
+        pTable[j] = tmp;
     }
 
 #else
@@ -891,13 +908,14 @@ T *CUnorderedArrayWithAllocator<T,iGrowInc,ALLOCATOR>::GrowNoThrow()  // NULL if
 {
     WRAPPER_NO_CONTRACT;
     T       *pTemp;
+    T       *pTable = reinterpret_cast<T*>(m_pTable);
 
     // try to allocate memory for reallocation.
     if ((pTemp = ALLOCATOR::AllocNoThrow(this, m_iSize+iGrowInc)) == NULL)
         return (NULL);
-    memcpy (pTemp, m_pTable, m_iSize*sizeof(T));
-    ALLOCATOR::Free(this, m_pTable);
-    m_pTable = pTemp;
+    memcpy (pTemp, pTable, m_iSize*sizeof(T));
+    ALLOCATOR::Free(this, pTable);
+    m_pTable = reinterpret_cast<TADDR>(pTemp);
     m_iSize += iGrowInc;
     _ASSERTE(m_iSize > 0);
     return (pTemp);
@@ -910,13 +928,14 @@ T *CUnorderedArrayWithAllocator<T,iGrowInc,ALLOCATOR>::Grow()  // exception if c
 {
     WRAPPER_NO_CONTRACT;
     T       *pTemp;
+    T       *pTable = reinterpret_cast<T*>(m_pTable);
 
     // try to allocate memory for reallocation.
     pTemp = ALLOCATOR::AllocThrowing(this, m_iSize+iGrowInc);
     if (m_iSize > 0)
-        memcpy (pTemp, m_pTable, m_iSize*sizeof(T));
-    ALLOCATOR::Free(this, m_pTable);
-    m_pTable = pTemp;
+        memcpy (pTemp, pTable, m_iSize*sizeof(T));
+    ALLOCATOR::Free(this, pTable);
+    m_pTable = reinterpret_cast<TADDR>(pTemp);
     m_iSize += iGrowInc;
     _ASSERTE(m_iSize > 0);
     return (pTemp);
@@ -1937,15 +1956,29 @@ inline COUNT_T HashPtr(COUNT_T currentHash, PTR_VOID ptr)
 inline ULONG HashBytes(BYTE const *pbData, size_t iSize)
 {
     LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
 
-    BYTE const *pbDataEnd = pbData + iSize;
+    ULONG hash = 5381;
+    hash += (ULONG)iSize;
 
-    for (/**/ ; pbData < pbDataEnd; pbData++)
+    // Process 4 bytes at a time.
+    while (iSize >= sizeof(uint32_t))
     {
-        hash = ((hash << 5) + hash) ^ *pbData;
+        uint32_t val;
+        memcpy(&val, pbData, sizeof(val));
+        hash = xxHash<xxHashDefaultTraits>::QueueRound(hash, val);
+        pbData += sizeof(val);
+        iSize -= sizeof(val);
     }
-    return hash;
+
+    // Process remaining bytes.
+    if (iSize > 0)
+    {
+        uint32_t val = 0;
+        memcpy(&val, pbData, iSize);
+        hash = xxHash<xxHashDefaultTraits>::QueueRound(hash, val);
+    }
+
+    return xxHash<xxHashDefaultTraits>::MixFinal(hash);
 }
 
 // Helper function for hashing a string char by char.
@@ -1977,58 +2010,12 @@ inline ULONG HashString(LPCWSTR szStr)
     return hash;
 }
 
-inline ULONG HashStringN(LPCWSTR szStr, SIZE_T cchStr)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
-
-    // hash the string two characters at a time
-    ULONG *ptr = (ULONG *)szStr;
-
-    // we assume that szStr is null-terminated
-    _ASSERTE(cchStr <= u16_strlen(szStr));
-    SIZE_T cDwordCount = (cchStr + 1) / 2;
-
-    for (SIZE_T i = 0; i < cDwordCount; i++)
-    {
-        hash = ((hash << 5) + hash) ^ ptr[i];
-    }
-
-    return hash;
-}
-
-// Case-insensitive string hash function.
-inline ULONG HashiStringA(LPCSTR szStr)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
-    while (*szStr != 0)
-    {
-        hash = ((hash << 5) + hash) ^ toupper(*szStr);
-        szStr++;
-    }
-    return hash;
-}
-
 // Case-insensitive string hash function.
 inline ULONG HashiString(LPCWSTR szStr)
 {
     LIMITED_METHOD_CONTRACT;
     ULONG   hash = 5381;
     while (*szStr != 0)
-    {
-        hash = ((hash << 5) + hash) ^ towupper(*szStr);
-        szStr++;
-    }
-    return hash;
-}
-
-// Case-insensitive string hash function.
-inline ULONG HashiStringN(LPCWSTR szStr, DWORD count)
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG   hash = 5381;
-    while (*szStr != 0 && count--)
     {
         hash = ((hash << 5) + hash) ^ towupper(*szStr);
         szStr++;

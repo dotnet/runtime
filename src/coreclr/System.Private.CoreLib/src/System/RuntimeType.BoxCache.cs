@@ -105,7 +105,6 @@ namespace System
             /// Given a RuntimeType, returns information about how to box instances
             /// of it via calli semantics.
             /// </summary>
-            [RequiresUnsafe]
             private static void GetBoxInfo(
                 RuntimeType rt,
                 out delegate*<void*, object> pfnAllocator,
@@ -132,7 +131,6 @@ namespace System
             }
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetBoxInfo")]
-            [RequiresUnsafe]
             private static partial void GetBoxInfo(
                 QCallTypeHandle type,
                 delegate*<void*, object>* ppfnAllocator,

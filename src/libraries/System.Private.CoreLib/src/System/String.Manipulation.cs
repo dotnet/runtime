@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -149,7 +149,7 @@ namespace System
         public static string Concat<T>(IEnumerable<T> values) =>
             JoinCore(ReadOnlySpan<char>.Empty, values);
 
-        public static string Concat(IEnumerable<string?> values)
+        public static unsafe string Concat(IEnumerable<string?> values)
         {
             ArgumentNullException.ThrowIfNull(values);
 
@@ -531,7 +531,7 @@ namespace System
             return FormatHelper(provider, format, args);
         }
 
-        private static string FormatHelper(IFormatProvider? provider, string format, ReadOnlySpan<object?> args)
+        private static unsafe string FormatHelper(IFormatProvider? provider, string format, ReadOnlySpan<object?> args)
         {
             ArgumentNullException.ThrowIfNull(format);
 
@@ -635,17 +635,19 @@ namespace System
             format.ValidateNumberOfArgs(args.Length);
             return args.Length switch
             {
-                0 => format.Format,
+                0 => format._literalLength == format.Format.Length ? format.Format : Format(provider, format, (object?)null, 0, 0, args),
                 1 => Format(provider, format, args[0], 0, 0, args),
                 2 => Format(provider, format, args[0], args[1], 0, args),
                 _ => Format(provider, format, args[0], args[1], args[2], args),
             };
         }
 
-        private static string Format<TArg0, TArg1, TArg2>(IFormatProvider? provider, CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2, ReadOnlySpan<object?> args)
+        private static unsafe string Format<TArg0, TArg1, TArg2>(IFormatProvider? provider, CompositeFormat format, TArg0 arg0, TArg1 arg1, TArg2 arg2, ReadOnlySpan<object?> args)
         {
-            // If there's no formatting to be done, we can just return the original format string as the result.
-            if (format._formattedCount == 0)
+            // If there's no formatting to be done and no brace escaping in the format string, we can just return
+            // the original format string as the result. If there is brace escaping, we need to process the segments
+            // so that the escaped braces are properly unescaped in the result.
+            if (format._formattedCount == 0 && format._literalLength == format.Format.Length)
             {
                 return format.Format;
             }
@@ -779,7 +781,7 @@ namespace System
             return JoinCore(separator, new ReadOnlySpan<string?>(value, startIndex, count));
         }
 
-        public static string Join(string? separator, IEnumerable<string?> values)
+        public static unsafe string Join(string? separator, IEnumerable<string?> values)
         {
             if (values is List<string?> valuesList)
             {
@@ -873,7 +875,7 @@ namespace System
         public static string Join(string? separator, params ReadOnlySpan<object?> values) =>
             JoinCore(separator.AsSpan(), values);
 
-        private static string JoinCore(ReadOnlySpan<char> separator, ReadOnlySpan<object?> values)
+        private static unsafe string JoinCore(ReadOnlySpan<char> separator, ReadOnlySpan<object?> values)
         {
             if (values.IsEmpty)
             {
@@ -910,7 +912,7 @@ namespace System
         public static string Join<T>(string? separator, IEnumerable<T> values) =>
             JoinCore(separator.AsSpan(), values);
 
-        private static string JoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
+        private static unsafe string JoinCore<T>(ReadOnlySpan<char> separator, IEnumerable<T> values)
         {
             if (values is null)
             {
@@ -1214,7 +1216,7 @@ namespace System
                 ?? this;
         }
 
-        private static string? ReplaceCore(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, CompareInfo compareInfo, CompareOptions options)
+        private static unsafe string? ReplaceCore(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, CompareInfo compareInfo, CompareOptions options)
         {
             Debug.Assert(!oldValue.IsEmpty);
             Debug.Assert(compareInfo != null);
@@ -1321,7 +1323,7 @@ namespace System
             return result;
         }
 
-        public string Replace(string oldValue, string? newValue)
+        public unsafe string Replace(string oldValue, string? newValue)
         {
             ArgumentException.ThrowIfNullOrEmpty(oldValue);
 
@@ -1453,11 +1455,11 @@ namespace System
         /// A string that is equivalent to this instance except that all instances of <paramref name="oldRune"/> are replaced with <paramref name="newRune"/>.
         /// If <paramref name="oldRune"/> is not found in the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public string Replace(Rune oldRune, Rune newRune)
+        public unsafe string Replace(Rune oldRune, Rune newRune)
         {
-            if (Length == 0)
+            if (oldRune.IsBmp && newRune.IsBmp)
             {
-                return this;
+                return Replace((char)oldRune.Value, (char)newRune.Value);
             }
 
             ReadOnlySpan<char> oldChars = oldRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -1527,7 +1529,7 @@ namespace System
                 : ReplaceLineEndingsCore(replacementText);
         }
 
-        private string ReplaceLineEndingsCore(string replacementText)
+        private unsafe string ReplaceLineEndingsCore(string replacementText)
         {
             ArgumentNullException.ThrowIfNull(replacementText);
 
@@ -1620,7 +1622,7 @@ namespace System
             }
         }
 
-        private string ReplaceLineEndingsWithLineFeed()
+        private unsafe string ReplaceLineEndingsWithLineFeed()
         {
             // If we are going to replace the new line with a line feed ('\n'),
             // we can skip looking for it to avoid breaking out of the vectorized path unnecessarily.
@@ -1681,13 +1683,11 @@ namespace System
         /// <param name="count">The maximum number of elements expected in the array.</param>
         /// <param name="options">A bitwise combination of the enumeration values that specifies whether to trim substrings and include empty substrings.</param>
         /// <returns>An array whose elements contain the substrings from this instance that are delimited by <paramref name="separator"/>.</returns>
-        public string[] Split(Rune separator, int count, StringSplitOptions options = StringSplitOptions.None)
+        public unsafe string[] Split(Rune separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
-            ReadOnlySpan<char> separatorSpan = separator.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
-
-            if (separatorSpan.Length == 1)
+            if (separator.IsBmp)
             {
-                return Split(separatorSpan[0], count, options);
+                return Split((char)separator.Value, count, options);
             }
 
             ArgumentOutOfRangeException.ThrowIfNegative(count);
@@ -1695,7 +1695,13 @@ namespace System
             CheckStringSplitOptions(options);
 
             // Ensure matching the string separator overload.
-            return (count <= 1 || Length == 0) ? CreateSplitArrayOfThisAsSoleValue(options, count) : Split(separatorSpan, count, options);
+            if (count <= 1 || Length == 0)
+            {
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
+            }
+
+            ReadOnlySpan<char> separatorSpan = separator.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+            return Split(separatorSpan, count, options);
         }
 
         // Creates an array of strings by splitting this string at each
@@ -1748,7 +1754,7 @@ namespace System
             return SplitInternal(separator, count, options);
         }
 
-        private string[] SplitInternal(ReadOnlySpan<char> separators, int count, StringSplitOptions options)
+        private unsafe string[] SplitInternal(ReadOnlySpan<char> separators, int count, StringSplitOptions options)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(count);
 
@@ -1810,7 +1816,7 @@ namespace System
             return SplitInternal(null, separator, count, options);
         }
 
-        private string[] SplitInternal(string? separator, string?[]? separators, int count, StringSplitOptions options)
+        private unsafe string[] SplitInternal(string? separator, string?[]? separators, int count, StringSplitOptions options)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(count);
 
@@ -1893,7 +1899,7 @@ namespace System
         private string[] SplitInternal(string separator, int count, StringSplitOptions options)
             => Split(separator.AsSpan(), count, options);
 
-        private string[] Split(ReadOnlySpan<char> separator, int count, StringSplitOptions options)
+        private unsafe string[] Split(ReadOnlySpan<char> separator, int count, StringSplitOptions options)
         {
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
 
@@ -2726,41 +2732,30 @@ namespace System
         /// The string that remains after all instances of the <paramref name="trimRune"/> rune are removed from the start and end of the
         /// current string. If no runes can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public string Trim(Rune trimRune)
+        public unsafe string Trim(Rune trimRune)
         {
-            if (Length == 0)
+            if (trimRune.IsBmp)
             {
-                return this;
+                return Trim((char)trimRune.Value);
             }
 
-            // Convert trimRune to span
-            ReadOnlySpan<char> trimChars = trimRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+            UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar((uint)trimRune.Value, out char highSurrogate, out char lowSurrogate);
 
             // Trim start
             int index = 0;
-            while (index < Length && this.AsSpan(index).StartsWith(trimChars))
+            while ((uint)(index + 1) < (uint)Length && this[index] == highSurrogate && this[index + 1] == lowSurrogate)
             {
-                index += trimChars.Length;
-            }
-
-            if (index >= Length)
-            {
-                return Empty;
+                index += 2;
             }
 
             // Trim end
-            int endIndex = Length - 1;
-            while (endIndex >= index && this.AsSpan(index..(endIndex + 1)).EndsWith(trimChars))
+            int endIndex = Length - 2;
+            while (endIndex > index && this[endIndex] == highSurrogate && this[endIndex + 1] == lowSurrogate)
             {
-                endIndex -= trimChars.Length;
+                endIndex -= 2;
             }
 
-            if (endIndex < index)
-            {
-                return Empty;
-            }
-
-            return this[index..(endIndex + 1)];
+            return this[index..(endIndex + 2)];
         }
 
         // Removes a set of characters from the beginning and end of this string.
@@ -2812,26 +2807,19 @@ namespace System
         /// The string that remains after all instances of the <paramref name="trimRune"/> rune are removed from the start of the
         /// current string. If no runes can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public string TrimStart(Rune trimRune)
+        public unsafe string TrimStart(Rune trimRune)
         {
-            if (Length == 0)
+            if (trimRune.IsBmp)
             {
-                return this;
+                return TrimStart((char)trimRune.Value);
             }
 
-            // Convert trimRune to span
-            ReadOnlySpan<char> trimChars = trimRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+            UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar((uint)trimRune.Value, out char highSurrogate, out char lowSurrogate);
 
-            // Trim start
             int index = 0;
-            while (index < Length && this.AsSpan(index).StartsWith(trimChars))
+            while ((uint)(index + 1) < (uint)Length && this[index] == highSurrogate && this[index + 1] == lowSurrogate)
             {
-                index += trimChars.Length;
-            }
-
-            if (index >= Length)
-            {
-                return Empty;
+                index += 2;
             }
 
             return this[index..];
@@ -2886,29 +2874,22 @@ namespace System
         /// The string that remains after all instances of the <paramref name="trimRune"/> rune are removed from the end of the
         /// current string. If no runes can be trimmed from the current instance, the method returns the current instance unchanged.
         /// </returns>
-        public string TrimEnd(Rune trimRune)
+        public unsafe string TrimEnd(Rune trimRune)
         {
-            if (Length == 0)
+            if (trimRune.IsBmp)
             {
-                return this;
+                return TrimEnd((char)trimRune.Value);
             }
 
-            // Convert trimRune to span
-            ReadOnlySpan<char> trimChars = trimRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+            UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar((uint)trimRune.Value, out char highSurrogate, out char lowSurrogate);
 
-            // Trim end
-            int endIndex = Length - 1;
-            while (endIndex >= 0 && this.AsSpan(..(endIndex + 1)).EndsWith(trimChars))
+            int endIndex = Length - 2;
+            while ((uint)endIndex < (uint)Length && this[endIndex] == highSurrogate && this[endIndex + 1] == lowSurrogate)
             {
-                endIndex -= trimChars.Length;
+                endIndex -= 2;
             }
 
-            if (endIndex < 0)
-            {
-                return Empty;
-            }
-
-            return this[..(endIndex + 1)];
+            return this[..(endIndex + 2)];
         }
 
         // Removes a set of characters from the end of this string.
@@ -2979,7 +2960,6 @@ namespace System
             return CreateTrimmedString(start, end);
         }
 
-        [RequiresUnsafe]
         private unsafe string TrimHelper(char* trimChars, int trimCharsLength, TrimType trimType)
         {
             Debug.Assert(trimChars != null);

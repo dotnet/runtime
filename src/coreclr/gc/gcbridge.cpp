@@ -44,7 +44,7 @@ static void DynPtrArrayUninit(DynPtrArray* da)
     if (da->capacity == 0)
         return;
 
-    free(da->data);
+    delete[] reinterpret_cast<void**>(da->data);
     da->data = NULL;
 }
 
@@ -72,7 +72,7 @@ static void DynPtrArrayEnsureCapacity(DynPtrArray* da, int capacity)
     assert(newData);
     memcpy(newData, da->data, sizeof(void*) * da->size);
     if (oldCapacity > 0)
-        free(da->data);
+        delete[] reinterpret_cast<void**>(da->data);
     da->data = newData;
 }
 

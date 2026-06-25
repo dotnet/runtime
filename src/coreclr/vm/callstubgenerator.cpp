@@ -1734,7 +1734,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, MethodDe
     totalStackSize = ALIGN_UP(totalStackSize, CALL_STACK_ALIGN_SIZE);
 #endif // TARGET_ARM
 
-    xxHash hashState;
+    xxHash<xxHashDefaultTraits> hashState;
     for (int i = 0; i < m_routineIndex; i++)
     {
         hashState.AddPointer((void*)pRoutines[i]);
@@ -1904,7 +1904,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         PInvoke::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, NULL);
         hasUnmanagedCallConv = true;
     }
-    else if (pMD != NULL && pMD->IsILStub())
+    else if (pMD != NULL && pMD->IsILStub() && !pMD->AsDynamicMethodDesc()->IsReversePInvokeStub())
     {
         MethodDesc* pTargetMD = pMD->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
         if (pTargetMD != NULL && pTargetMD->IsPInvoke())
@@ -1919,7 +1919,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
 #endif
         }
     }
-    else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute())
+    else if (pMD != NULL && !pMD->IsILStub() && pMD->HasUnmanagedCallersOnlyAttribute())
     {
         if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
         {
@@ -2888,7 +2888,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
                     else
                     {
                         _ASSERTE(info.flags == FpStruct::UseIntCallConv);
-                        _ASSERTE(thReturnValueType.AsMethodTable()->IsRegPassedStruct());
                         unsigned size = thReturnValueType.GetSize();
                         if (size <= 8)
                         {

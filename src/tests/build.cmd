@@ -70,8 +70,8 @@ if /i "%1" == "arm64"                    (set __BuildArch=arm64&set processedArg
 if /i "%1" == "wasm"                     (set __BuildArch=wasm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "os"                       (set __TargetOS=%2&set processedArgs=!processedArgs! %1&shift&shift&goto Arg_Loop)
-if /i "%1" == "browser"                  (set __TargetOS=browser&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "wasi"                     (set __TargetOS=wasi&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "browser"                  (set __TargetOS=browser&set __BuildArch=wasm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "wasi"                     (set __TargetOS=wasi&set __BuildArch=wasm&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"                    (set __BuildType=Debug&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "release"                  (set __BuildType=Release&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -355,8 +355,14 @@ echo All arguments are optional and case-insensitive, and the '-' prefix is opti
 echo.
 echo.-? -h --help: View this message.
 echo.
-echo Build architecture: one of "x64", "x86", "arm64" ^(default: x64^).
+echo Build architecture: one of "x64", "x86", "arm64", "wasm" ^(default: x64^).
 echo Build type: one of "Debug", "Checked", "Release" ^(default: Debug^).
+echo.
+echo Build target OS options:
+echo     os ^<value^>: Set the target OS. Common values: windows ^(default^), linux, osx, android,
+echo         ios, iossimulator, tvos, tvossimulator, maccatalyst, browser, wasi.
+echo     browser: Shorthand for "os browser" ^(also sets architecture to wasm^).
+echo     wasi: Shorthand for "os wasi" ^(also sets architecture to wasm^).
 echo.
 echo -Rebuild: Clean up all test artifacts prior to building tests.
 echo -SkipRestorePackages: Skip package restore.
@@ -374,6 +380,7 @@ echo -NativeAOT: Builds the tests for Native AOT compilation.
 echo -Perfmap: Emit perfmap symbol files when compiling the framework assemblies using Crossgen2.
 echo -AllTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).
 echo -ExcludeMonoFailures, Mono: Build the tests for the Mono runtime honoring mono-specific issues.
+echo -CoreCLR: Build tests targeting the CoreCLR runtime (default; opposite of -Mono/-ExcludeMonoFailures).
 echo.
 echo     Set to "" to disable default exclusion file.
 echo -Priority ^<N^> : specify a set of tests that will be built and run, with priority N.

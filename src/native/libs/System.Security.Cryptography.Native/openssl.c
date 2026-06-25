@@ -40,31 +40,6 @@ c_static_assert(CRYPTO_EX_INDEX_SSL_SESSION == 2);
 
 /*
 Function:
-MakeTimeT
-
-Used to convert the constituent elements of a struct tm into a time_t. As time_t does not have
-a guaranteed blitting size, this function is static and cannot be p/invoked. It is here merely
-as a utility.
-
-Return values:
-A time_t representation of the input date. See also man mktime(3).
-*/
-static time_t
-MakeTimeT(int32_t year, int32_t month, int32_t day, int32_t hour, int32_t minute, int32_t second, int32_t isDst)
-{
-    struct tm currentTm;
-    currentTm.tm_year = year - 1900;
-    currentTm.tm_mon = month - 1;
-    currentTm.tm_mday = day;
-    currentTm.tm_hour = hour;
-    currentTm.tm_min = minute;
-    currentTm.tm_sec = second;
-    currentTm.tm_isdst = isDst;
-    return mktime(&currentTm);
-}
-
-/*
-Function:
 GetX509Thumbprint
 
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateReader to copy the SHA1
@@ -914,20 +889,14 @@ Function:
 SetX509StoreVerifyTime
 
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509ChainProcessor to assign the
-verification time to the chain building.  The input is in LOCAL time, not UTC.
+verification time to the chain building. The input is an absolute instant as Unix time
+(seconds since 1970-01-01 UTC), directly convertible to a time_t value.
 
 Return values:
-0 if ctx is NULL, if ctx has no X509_VERIFY_PARAM, or the date inputs don't produce a valid time_t;
+0 if ctx is NULL, if ctx has no X509_VERIFY_PARAM, or if the time is out of bounds on a 32-bit time environment.
 1 on success.
 */
-int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
-                                            int32_t year,
-                                            int32_t month,
-                                            int32_t day,
-                                            int32_t hour,
-                                            int32_t minute,
-                                            int32_t second,
-                                            int32_t isDst)
+int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx, int64_t unixTime)
 {
     ERR_clear_error();
 
@@ -936,12 +905,7 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
         return 0;
     }
 
-    time_t verifyTime = MakeTimeT(year, month, day, hour, minute, second, isDst);
-
-    if (verifyTime == (time_t)-1)
-    {
-        return 0;
-    }
+    time_t verifyTime = (time_t)unixTime;
 
     X509_VERIFY_PARAM* verifyParams = X509_STORE_get0_param(ctx);
 
@@ -950,7 +914,7 @@ int32_t CryptoNative_X509StoreSetVerifyTime(X509_STORE* ctx,
         return 0;
     }
 
-#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX)
+#if defined(FEATURE_DISTRO_AGNOSTIC_SSL) && defined(TARGET_ARM) && defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
     if (g_libSslUses32BitTime)
     {
         if (verifyTime > INT_MAX || verifyTime < INT_MIN)

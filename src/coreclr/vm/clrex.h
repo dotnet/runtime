@@ -23,7 +23,7 @@ class PEAssembly;
 enum StackTraceElementFlags
 {
     // Set if this element represents the last frame of the foreign exception stack trace
-    STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001,
+    STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the "ip" field has already been adjusted (decremented)
     STEF_IP_ADJUSTED = 0x0002,
@@ -663,11 +663,13 @@ class EEFileLoadException : public EEException
   private:
     SString m_name;
     HRESULT m_hr;
+    SString m_diagnosticInfo;
     SString m_requestingAssemblyChain;
 
   public:
 
     EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException = NULL);
+    EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException = NULL);
     ~EEFileLoadException();
 
     void SetRequestingAssemblyChain(const SString &requestingAssemblyChain)
@@ -688,6 +690,7 @@ class EEFileLoadException : public EEException
 
     static RuntimeExceptionKind GetFileLoadKind(HRESULT hr);
     static void DECLSPEC_NORETURN Throw(AssemblySpec *pSpec, HRESULT hr, Exception *pInnerException = NULL);
+    static void DECLSPEC_NORETURN Throw(AssemblySpec *pSpec, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(PEAssembly *pPEAssembly, HRESULT hr, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(LPCWSTR path, HRESULT hr, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(PEAssembly *parent, const void *memory, COUNT_T size, HRESULT hr, Exception *pInnerException = NULL);
@@ -697,7 +700,7 @@ class EEFileLoadException : public EEException
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
-        EEFileLoadException *pClone = new EEFileLoadException(m_name, m_hr);
+        EEFileLoadException *pClone = new EEFileLoadException(m_name, m_hr, m_diagnosticInfo);
         pClone->SetRequestingAssemblyChain(m_requestingAssemblyChain);
         return pClone;
     }
@@ -754,7 +757,7 @@ class EEFileLoadException : public EEException
 #if defined(_DEBUG)
   // Redefine GET_EXCEPTION to validate CLRLastThrownObjectException as much as possible.
   #undef GET_EXCEPTION
-  #define GET_EXCEPTION() (__pException == NULL ? __defaultException.Validate() : __pException.GetValue())
+  #define GET_EXCEPTION() (__pException == NULL ? __defaultException.Validate() : static_cast<Exception*>(__pException))
 #endif // _DEBUG
 
 LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
@@ -811,8 +814,8 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
             /* a findstr /n will allow you to locate it in a pinch */                   \
             STRESS_LOG1(LF_EH, LL_INFO100,                                              \
                 "EX_RETHROW " INDEBUG(__FILE__) " line %d\n", __LINE__);                \
-            __pException.SuppressRelease();                                             \
-            if ((!__state.DidCatchCxx()) && (GetThreadNULLOk() != NULL))                      \
+            __pException.Detach();                                                      \
+            if ((!__state.DidCatchCxx()) && (GetThreadNULLOk() != NULL))                \
             {                                                                           \
                 if (GetThread()->PreemptiveGCDisabled())                                \
                 {                                                                       \

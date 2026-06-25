@@ -123,11 +123,9 @@ namespace System
         public static extern double Tanh(double value);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
         private static extern unsafe double ModF(double x, double* intptr);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        [RequiresUnsafe]
         private static extern unsafe void SinCos(double x, double* sin, double* cos);
     }
 }

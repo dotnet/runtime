@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -44,7 +44,7 @@ namespace System.Reflection
         }
 
         #region Object Override
-        public override string ToString()
+        public override unsafe string ToString()
         {
             var vsb = new ValueStringBuilder(stackalloc char[256]);
 

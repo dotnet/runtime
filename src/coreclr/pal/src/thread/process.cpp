@@ -60,6 +60,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <stdint.h>
 #include <dlfcn.h>
 #include <limits.h>
+#include <minipal/log.h>
 
 #ifdef __linux__
 #include <linux/membarrier.h>
@@ -119,41 +120,14 @@ extern bool g_running_in_exe;
 
 using namespace CorUnix;
 
-CObjectType CorUnix::otProcess(
-                otiProcess,
-                NULL,   // No cleanup routine
-                0,      // No immutable data
-                NULL,   // No immutable data copy routine
-                NULL,   // No immutable data cleanup routine
-                sizeof(CProcProcessLocalData),
-                NULL,   // No process local data cleanup routine
-                CObjectType::WaitableObject,
-                CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects
-                );
-
-CAllowedObjectTypes aotProcess(otiProcess);
-
-//
-// The representative IPalObject for this process
-//
-IPalObject* CorUnix::g_pobjProcess;
-
-//
-// The command line and app name for the process
-//
-LPWSTR g_lpwstrCmdLine = NULL;
-LPWSTR g_lpwstrAppDir = NULL;
-
 // Thread ID of thread that has started the ExitProcess process
 Volatile<LONG> terminator = 0;
 
 // Id of thread generating a core dump
 Volatile<LONG> g_crashingThreadId = 0;
 
-// Process and session ID of this process.
+// Process ID of this process.
 DWORD gPID = (DWORD) -1;
-DWORD gSID = (DWORD) -1;
 
 // Application group ID for this process
 #ifdef __APPLE__
@@ -189,6 +163,16 @@ Volatile<PLOGMANAGEDCALLSTACKFORSIGNAL_CALLBACK> g_logManagedCallstackForSignalC
 // Crash dump generating program arguments. Initialized in PROCAbortInitialize().
 #define MAX_ARGV_ENTRIES 32
 const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
+
+// Read from the fatal-signal path (PROCCreateCrashDumpIfEnabled) and written
+// once during startup via PAL_SetInProcCrashReportCallback; use Volatile<>
+// to match the publication ordering of g_logManagedCallstackForSignalCallback.
+// PAL has no direct dependency on the in-proc crash reporter library; the
+// reporter registers itself by installing this signal-safe callback. When
+// no callback is registered, the fatal-signal path falls back to the
+// out-of-proc createdump utility (where g_argvCreateDump has been populated
+// via PAL_InitializeCoreCLR).
+static Volatile<PINPROCCRASHREPORT_CALLBACK> g_inProcCrashReportCallback = nullptr;
 
 //
 // Key used for associating CPalThread's with the underlying pthread
@@ -232,12 +216,6 @@ GetProcessIdDisambiguationKey(
     IN DWORD processId,
     OUT UINT64 *disambiguationKey);
 
-PAL_ERROR
-PROCGetProcessStatus(
-    CPalThread *pThread,
-    HANDLE hProcess,
-    PROCESS_STATE *pps,
-    DWORD *pdwExitCode);
 
 static
 void
@@ -247,7 +225,7 @@ CreateSemaphoreName(
     const UnambiguousProcessDescriptor& unambiguousProcessDescriptor,
     LPCSTR applicationGroupId);
 
-static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUnconditionally);
+static BOOL PROCEndProcess(UINT uExitCode, BOOL bTerminateUnconditionally);
 
 /*++
 Function:
@@ -266,26 +244,6 @@ GetCurrentProcessId(
     LOGEXIT("GetCurrentProcessId returns DWORD %#x\n", gPID);
     PERF_EXIT(GetCurrentProcessId);
     return gPID;
-}
-
-
-/*++
-Function:
-  GetCurrentSessionId
-
-See MSDN doc.
---*/
-DWORD
-PALAPI
-GetCurrentSessionId(
-            VOID)
-{
-    PERF_ENTRY(GetCurrentSessionId);
-    ENTRY("GetCurrentSessionId()\n" );
-
-    LOGEXIT("GetCurrentSessionId returns DWORD %#x\n", gSID);
-    PERF_EXIT(GetCurrentSessionId);
-    return gSID;
 }
 
 
@@ -311,70 +269,6 @@ GetCurrentProcess(
 }
 
 
-/*++
-Function:
-  GetExitCodeProcess
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-GetExitCodeProcess(
-    IN HANDLE hProcess,
-    IN LPDWORD lpExitCode)
-{
-    CPalThread *pThread;
-    PAL_ERROR palError = NO_ERROR;
-    DWORD dwExitCode;
-    PROCESS_STATE ps;
-
-    PERF_ENTRY(GetExitCodeProcess);
-    ENTRY("GetExitCodeProcess(hProcess = %p, lpExitCode = %p)\n",
-          hProcess, lpExitCode);
-
-    pThread = InternalGetCurrentThread();
-
-    if(NULL == lpExitCode)
-    {
-        WARN("Got NULL lpExitCode\n");
-        palError = ERROR_INVALID_PARAMETER;
-        goto done;
-    }
-
-    palError = PROCGetProcessStatus(
-        pThread,
-        hProcess,
-        &ps,
-        &dwExitCode
-        );
-
-    if (NO_ERROR != palError)
-    {
-        ASSERT("Couldn't get process status information!\n");
-        goto done;
-    }
-
-    if( PS_DONE == ps )
-    {
-        *lpExitCode = dwExitCode;
-    }
-    else
-    {
-        *lpExitCode = STILL_ACTIVE;
-    }
-
-done:
-
-    if (NO_ERROR != palError)
-    {
-        pThread->SetLastError(palError);
-    }
-
-    LOGEXIT("GetExitCodeProcess returns BOOL %d\n", NO_ERROR == palError);
-    PERF_EXIT(GetExitCodeProcess);
-
-    return NO_ERROR == palError;
-}
 
 /*++
 Function:
@@ -411,7 +305,7 @@ ExitProcess(
         else
         {
             WARN("thread re-called ExitProcess\n");
-            PROCEndProcess(GetCurrentProcess(), uExitCode, FALSE);
+            PROCEndProcess(uExitCode, FALSE);
         }
     }
     else if (0 != old_terminator)
@@ -435,7 +329,7 @@ ExitProcess(
     */
     if (PALInitLock() && PALIsInitialized())
     {
-        PROCEndProcess(GetCurrentProcess(), uExitCode, FALSE);
+        PROCEndProcess(uExitCode, FALSE);
 
         /* Should not get here, because we terminate the current process */
         ASSERT("PROCEndProcess has returned\n");
@@ -470,10 +364,12 @@ TerminateProcess(
 {
     BOOL ret;
 
+    _ASSERTE(hProcess == hPseudoCurrentProcess);
+
     PERF_ENTRY(TerminateProcess);
     ENTRY("TerminateProcess(hProcess=%p, uExitCode=%u)\n",hProcess, uExitCode );
 
-    ret = PROCEndProcess(hProcess, uExitCode, TRUE);
+    ret = PROCEndProcess(uExitCode, TRUE);
 
     LOGEXIT("TerminateProcess returns BOOL %d\n", ret);
     PERF_EXIT(TerminateProcess);
@@ -514,77 +410,44 @@ Function:
   little extra work before exiting. Most importantly, it won't shut
   down any DLLs that are loaded.
 
+  Only terminating current process is supported.
+
 --*/
-static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUnconditionally)
+static BOOL PROCEndProcess(UINT uExitCode, BOOL bTerminateUnconditionally)
 {
-    DWORD dwProcessId;
     BOOL ret = FALSE;
 
-    dwProcessId = PROCGetProcessIDFromHandle(hProcess);
-    if (dwProcessId == 0)
+    // WARN/ERROR before starting the termination process and/or leaving the PAL.
+    if (bTerminateUnconditionally)
     {
-        SetLastError(ERROR_INVALID_HANDLE);
+        WARN("exit code 0x%x ignored for terminate.\n", uExitCode);
     }
-    else if(dwProcessId != GetCurrentProcessId())
+    else if ((uExitCode & 0xff) != uExitCode)
     {
-        if (uExitCode != 0)
-            WARN("exit code 0x%x ignored for external process.\n", uExitCode);
+        // TODO: Convert uExitCodes into sysexits(3)?
+        ERROR("exit() only supports the lower 8-bits of an exit code. "
+            "status will only see error 0x%x instead of 0x%x.\n", uExitCode & 0xff, uExitCode);
+    }
 
-        if (kill(dwProcessId, SIGKILL) == 0)
-        {
-            ret = TRUE;
-        }
-        else
-        {
-            switch (errno) {
-            case ESRCH:
-                SetLastError(ERROR_INVALID_HANDLE);
-                break;
-            case EPERM:
-                SetLastError(ERROR_ACCESS_DENIED);
-                break;
-            default:
-                // Unexpected failure.
-                ASSERT(FALSE);
-                SetLastError(ERROR_INTERNAL_ERROR);
-                break;
-            }
-        }
+    TerminateCurrentProcessNoExit(bTerminateUnconditionally);
+
+    LOGEXIT("PROCEndProcess will not return\n");
+
+    if (bTerminateUnconditionally)
+    {
+        // abort() has the semantics that
+        // (1) it doesn't run atexit handlers
+        // (2) can invoke CrashReporter or produce a coredump, which is appropriate for TerminateProcess calls
+        // TerminationRequestHandlingRoutine in synchmanager.cpp sets the exit code to this special value. The
+        // Watson analyzer needs to know that the process was terminated with a SIGTERM.
+        PROCAbort(uExitCode == (128 + SIGTERM) ? SIGTERM : SIGABRT);
     }
     else
     {
-        // WARN/ERROR before starting the termination process and/or leaving the PAL.
-        if (bTerminateUnconditionally)
-        {
-            WARN("exit code 0x%x ignored for terminate.\n", uExitCode);
-        }
-        else if ((uExitCode & 0xff) != uExitCode)
-        {
-            // TODO: Convert uExitCodes into sysexits(3)?
-            ERROR("exit() only supports the lower 8-bits of an exit code. "
-                "status will only see error 0x%x instead of 0x%x.\n", uExitCode & 0xff, uExitCode);
-        }
-
-        TerminateCurrentProcessNoExit(bTerminateUnconditionally);
-
-        LOGEXIT("PROCEndProcess will not return\n");
-
-        if (bTerminateUnconditionally)
-        {
-            // abort() has the semantics that
-            // (1) it doesn't run atexit handlers
-            // (2) can invoke CrashReporter or produce a coredump, which is appropriate for TerminateProcess calls
-            // TerminationRequestHandlingRoutine in synchmanager.cpp sets the exit code to this special value. The
-            // Watson analyzer needs to know that the process was terminated with a SIGTERM.
-            PROCAbort(uExitCode == (128 + SIGTERM) ? SIGTERM : SIGABRT);
-        }
-        else
-        {
-            exit(uExitCode);
-        }
-
-        ASSERT(FALSE); // we shouldn't get here
+        exit(uExitCode);
     }
+
+    ASSERT(FALSE); // we shouldn't get here
 
     return ret;
 }
@@ -646,6 +509,26 @@ PAL_SetLogManagedCallstackForSignalCallback(
 {
     _ASSERTE(g_logManagedCallstackForSignalCallback == nullptr);
     g_logManagedCallstackForSignalCallback = callback;
+}
+
+/*++
+Function:
+  PAL_SetInProcCrashReportCallback
+
+Abstract:
+  Sets a callback that is invoked from the fatal-signal path to let the host
+  emit an in-proc crash report (used by Android CoreCLR in place of
+  out-of-proc createdump).
+
+  NOTE: Currently only one callback can be set at a time.
+--*/
+VOID
+PALAPI
+PAL_SetInProcCrashReportCallback(
+    IN PINPROCCRASHREPORT_CALLBACK callback)
+{
+    _ASSERTE(g_inProcCrashReportCallback == nullptr);
+    g_inProcCrashReportCallback = callback;
 }
 
 // Build the semaphore names using the PID and a value that can be used for distinguishing
@@ -1350,137 +1233,6 @@ PAL_GetTransportPipeName(
 }
 
 /*++
-Function:
-  GetCommandLineW
-
-See MSDN doc.
---*/
-LPWSTR
-PALAPI
-GetCommandLineW(
-    VOID)
-{
-    PERF_ENTRY(GetCommandLineW);
-    ENTRY("GetCommandLineW()\n");
-
-    LPWSTR lpwstr = g_lpwstrCmdLine ? g_lpwstrCmdLine : (LPWSTR)W("");
-
-    LOGEXIT("GetCommandLineW returns LPWSTR %p (%S)\n",
-          g_lpwstrCmdLine,
-          lpwstr);
-    PERF_EXIT(GetCommandLineW);
-
-    return lpwstr;
-}
-
-/*++
-Function:
-  OpenProcess
-
-See MSDN doc.
-
-Notes :
-dwDesiredAccess is ignored (all supported operations will be allowed)
-bInheritHandle is ignored (no inheritance)
---*/
-HANDLE
-PALAPI
-OpenProcess(
-        DWORD dwDesiredAccess,
-        BOOL bInheritHandle,
-        DWORD dwProcessId)
-{
-    PAL_ERROR palError;
-    CPalThread *pThread;
-    IPalObject *pobjProcess = NULL;
-    IPalObject *pobjProcessRegistered = NULL;
-    IDataLock *pDataLock;
-    CProcProcessLocalData *pLocalData;
-    CObjectAttributes oa;
-    HANDLE hProcess = NULL;
-
-    PERF_ENTRY(OpenProcess);
-    ENTRY("OpenProcess(dwDesiredAccess=0x%08x, bInheritHandle=%d, "
-          "dwProcessId = 0x%08x)\n",
-          dwDesiredAccess, bInheritHandle, dwProcessId );
-
-    pThread = InternalGetCurrentThread();
-
-    if (0 == dwProcessId)
-    {
-        palError = ERROR_INVALID_PARAMETER;
-        goto OpenProcessExit;
-    }
-
-    palError = g_pObjectManager->AllocateObject(
-        pThread,
-        &otProcess,
-        &oa,
-        &pobjProcess
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto OpenProcessExit;
-    }
-
-    palError = pobjProcess->GetProcessLocalData(
-        pThread,
-        WriteLock,
-        &pDataLock,
-        reinterpret_cast<void **>(&pLocalData)
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto OpenProcessExit;
-    }
-
-    pLocalData->dwProcessId = dwProcessId;
-    pDataLock->ReleaseLock(pThread, TRUE);
-
-    palError = g_pObjectManager->RegisterObject(
-        pThread,
-        pobjProcess,
-        &aotProcess,
-        &hProcess,
-        &pobjProcessRegistered
-        );
-
-    //
-    // pobjProcess was invalidated by the above call, so NULL
-    // it out here
-    //
-
-    pobjProcess = NULL;
-
-    //
-    // TODO: check to see if the process actually exists?
-    //
-
-OpenProcessExit:
-
-    if (NULL != pobjProcess)
-    {
-        pobjProcess->ReleaseReference(pThread);
-    }
-
-    if (NULL != pobjProcessRegistered)
-    {
-        pobjProcessRegistered->ReleaseReference(pThread);
-    }
-
-    if (NO_ERROR != palError)
-    {
-        pThread->SetLastError(palError);
-    }
-
-    LOGEXIT("OpenProcess returns HANDLE %p\n", hProcess);
-    PERF_EXIT(OpenProcess);
-    return hProcess;
-}
-
-/*++
 Function
   PROCNotifyProcessShutdown
 
@@ -2065,25 +1817,24 @@ Parameters:
 
 (no return value)
 --*/
-#ifdef HOST_ANDROID
-#include <minipal/log.h>
 VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
 
-    // TODO: Dump stress log into logcat and/or file when enabled?
-    minipal_log_write_fatal("Aborting process.\n");
-}
-#else
-VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
-{
-    // Preserve context pointer to prevent optimization
-    DoNotOptimize(&context);
+    // If a host registered an in-proc crash report callback, prefer it: the
+    // host emits its report from this signal frame and the process aborts.
+    PINPROCCRASHREPORT_CALLBACK callback = g_inProcCrashReportCallback;
+    if (callback != nullptr)
+    {
+        callback(signal, siginfo, context);
+        minipal_log_write_fatal("Aborting process.\n");
+        return;
+    }
 
-    // If enabled, launch the create minidump utility and wait until it completes
+    // Otherwise fall back to launching the out-of-proc createdump utility
+    // and wait until it completes.
     if (g_argvCreateDump[0] != nullptr)
     {
         const char* argv[MAX_ARGV_ENTRIES];
@@ -2153,7 +1904,6 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
         free(signalAddressArg);
     }
 }
-#endif
 
 /*++
 Function:
@@ -2200,143 +1950,6 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
 
 /*++
 Function:
-  PROCGetProcessIDFromHandle
-
-Abstract
-  Return the process ID from a process handle
-
-Parameter
-  hProcess:  process handle
-
-Return
-  Return the process ID, or 0 if it's not a valid handle
---*/
-DWORD
-PROCGetProcessIDFromHandle(
-        HANDLE hProcess)
-{
-    PAL_ERROR palError;
-    IPalObject *pobjProcess = NULL;
-    CPalThread *pThread = InternalGetCurrentThread();
-
-    DWORD dwProcessId = 0;
-
-    if (hPseudoCurrentProcess == hProcess)
-    {
-        dwProcessId = gPID;
-        goto PROCGetProcessIDFromHandleExit;
-    }
-
-
-    palError = g_pObjectManager->ReferenceObjectByHandle(
-        pThread,
-        hProcess,
-        &aotProcess,
-        &pobjProcess
-        );
-
-    if (NO_ERROR == palError)
-    {
-        IDataLock *pDataLock;
-        CProcProcessLocalData *pLocalData;
-
-        palError = pobjProcess->GetProcessLocalData(
-            pThread,
-            ReadLock,
-            &pDataLock,
-            reinterpret_cast<void **>(&pLocalData)
-            );
-
-        if (NO_ERROR == palError)
-        {
-            dwProcessId = pLocalData->dwProcessId;
-            pDataLock->ReleaseLock(pThread, FALSE);
-        }
-
-        pobjProcess->ReleaseReference(pThread);
-    }
-
-PROCGetProcessIDFromHandleExit:
-
-    return dwProcessId;
-}
-
-/*++
-Function
-    InitializeProcessCommandLine
-
-Abstract
-    Initializes (or re-initializes) the saved command line and exe path.
-
-Parameter
-    lpwstrCmdLine
-    lpwstrFullPath
-
-Return
-    PAL_ERROR
-
-Notes
-    This function takes ownership of lpwstrCmdLine, but not of lpwstrFullPath
---*/
-
-PAL_ERROR
-CorUnix::InitializeProcessCommandLine(
-    LPWSTR lpwstrCmdLine,
-    LPWSTR lpwstrFullPath
-)
-{
-    PAL_ERROR palError = NO_ERROR;
-    LPWSTR initial_dir = NULL;
-
-    //
-    // Save the command line and initial directory
-    //
-
-    if (lpwstrFullPath)
-    {
-        LPWSTR lpwstr = PAL_wcsrchr(lpwstrFullPath, '/');
-        if (!lpwstr)
-        {
-            ERROR("Invalid full path\n");
-            palError = ERROR_INTERNAL_ERROR;
-            goto exit;
-        }
-        lpwstr[0] = '\0';
-        size_t n = PAL_wcslen(lpwstrFullPath) + 1;
-
-        size_t iLen = n;
-        initial_dir = reinterpret_cast<LPWSTR>(malloc(iLen*sizeof(WCHAR)));
-        if (NULL == initial_dir)
-        {
-            ERROR("malloc() failed! (initial_dir) \n");
-            palError = ERROR_NOT_ENOUGH_MEMORY;
-            goto exit;
-        }
-
-        if (wcscpy_s(initial_dir, iLen, lpwstrFullPath) != SAFECRT_SUCCESS)
-        {
-            ERROR("wcscpy_s failed!\n");
-            free(initial_dir);
-            palError = ERROR_INTERNAL_ERROR;
-            goto exit;
-        }
-
-        lpwstr[0] = '/';
-
-        free(g_lpwstrAppDir);
-        g_lpwstrAppDir = initial_dir;
-    }
-
-    free(g_lpwstrCmdLine);
-    g_lpwstrCmdLine = lpwstrCmdLine;
-
-exit:
-    return palError;
-}
-
-
-/*++
-Function:
   CreateInitialProcessAndThreadObjects
 
 Abstract
@@ -2357,11 +1970,7 @@ CorUnix::CreateInitialProcessAndThreadObjects(
 {
     PAL_ERROR palError = NO_ERROR;
     HANDLE hThread;
-    IPalObject *pobjProcess = NULL;
-    IDataLock *pDataLock;
-    CProcProcessLocalData *pLocalData;
     CObjectAttributes oa;
-    HANDLE hProcess;
 
     //
     // Create initial thread object
@@ -2379,107 +1988,11 @@ CorUnix::CreateInitialProcessAndThreadObjects(
 
     (void) g_pObjectManager->RevokeHandle(pThread, hThread);
 
-    //
-    // Create and initialize process object
-    //
-
-    palError = g_pObjectManager->AllocateObject(
-        pThread,
-        &otProcess,
-        &oa,
-        &pobjProcess
-        );
-
-    if (NO_ERROR != palError)
-    {
-        ERROR("Unable to allocate process object");
-        goto CreateInitialProcessAndThreadObjectsExit;
-    }
-
-    palError = pobjProcess->GetProcessLocalData(
-        pThread,
-        WriteLock,
-        &pDataLock,
-        reinterpret_cast<void **>(&pLocalData)
-        );
-
-    if (NO_ERROR != palError)
-    {
-        ASSERT("Unable to access local data");
-        goto CreateInitialProcessAndThreadObjectsExit;
-    }
-
-    pLocalData->dwProcessId = gPID;
-    pLocalData->ps = PS_RUNNING;
-    pDataLock->ReleaseLock(pThread, TRUE);
-
-    palError = g_pObjectManager->RegisterObject(
-        pThread,
-        pobjProcess,
-        &aotProcess,
-        &hProcess,
-        &g_pobjProcess
-        );
-
-    //
-    // pobjProcess is invalidated by the call to RegisterObject, so
-    // NULL it out here to prevent it from being released later
-    //
-
-    pobjProcess = NULL;
-
-    if (NO_ERROR != palError)
-    {
-        ASSERT("Failure registering process object");
-        goto CreateInitialProcessAndThreadObjectsExit;
-    }
-
-    //
-    // There's no need to keep this handle around, so revoke
-    // it now
-    //
-
-    g_pObjectManager->RevokeHandle(pThread, hProcess);
-
 CreateInitialProcessAndThreadObjectsExit:
-
-    if (NULL != pobjProcess)
-    {
-        pobjProcess->ReleaseReference(pThread);
-    }
 
     return palError;
 }
 
-
-/*++
-Function:
-  PROCCleanupInitialProcess
-
-Abstract
-  Cleanup all the structures for the initial process.
-
-Parameter
-  VOID
-
-Return
-  VOID
-
---*/
-VOID
-PROCCleanupInitialProcess(VOID)
-{
-    /* Free the application directory */
-    free(g_lpwstrAppDir);
-
-    /* Free the stored command line */
-    free(g_lpwstrCmdLine);
-
-    //
-    // Object manager shutdown will handle freeing the underlying
-    // thread and process data
-    //
-}
 
 /*++
 Function:
@@ -2546,194 +2059,6 @@ CorUnix::TerminateCurrentProcessNoExit(BOOL bTerminateUnconditionally)
     }
 }
 
-/*++
-Function:
-    PROCGetProcessStatus
-
-Abstract:
-    Retrieve process state information (state & exit code).
-
-Parameters:
-    DWORD process_id : PID of process to retrieve state for
-    PROCESS_STATE *state : state of process (starting, running, done)
-    DWORD *exit_code : exit code of process (from ExitProcess, etc.)
-
-Return value :
-    TRUE on success
---*/
-PAL_ERROR
-PROCGetProcessStatus(
-    CPalThread *pThread,
-    HANDLE hProcess,
-    PROCESS_STATE *pps,
-    DWORD *pdwExitCode
-    )
-{
-    PAL_ERROR palError = NO_ERROR;
-    IPalObject *pobjProcess = NULL;
-    IDataLock *pDataLock;
-    CProcProcessLocalData *pLocalData;
-    pid_t wait_retval;
-    int status;
-
-    //
-    // First, check if we already know the status of this process. This will be
-    // the case if this function has already been called for the same process.
-    //
-
-    palError = g_pObjectManager->ReferenceObjectByHandle(
-        pThread,
-        hProcess,
-        &aotProcess,
-        &pobjProcess
-        );
-
-    if (NO_ERROR != palError)
-    {
-        goto PROCGetProcessStatusExit;
-    }
-
-    palError = pobjProcess->GetProcessLocalData(
-        pThread,
-        WriteLock,
-        &pDataLock,
-        reinterpret_cast<void **>(&pLocalData)
-        );
-
-    if (PS_DONE == pLocalData->ps)
-    {
-        TRACE("We already called waitpid() on process ID %#x; process has "
-              "terminated, exit code is %d\n",
-              pLocalData->dwProcessId, pLocalData->dwExitCode);
-
-        *pps = pLocalData->ps;
-        *pdwExitCode = pLocalData->dwExitCode;
-
-        pDataLock->ReleaseLock(pThread, FALSE);
-
-        goto PROCGetProcessStatusExit;
-    }
-
-    /* By using waitpid(), we can even retrieve the exit code of a non-PAL
-       process. However, note that waitpid() can only provide the low 8 bits
-       of the exit code. This is all that is required for the PAL spec. */
-    TRACE("Looking for status of process; trying wait()");
-
-    while(1)
-    {
-        /* try to get state of process, using non-blocking call */
-        wait_retval = waitpid(pLocalData->dwProcessId, &status, WNOHANG);
-
-        if ( wait_retval == (pid_t) pLocalData->dwProcessId )
-        {
-            /* success; get the exit code */
-            if ( WIFEXITED( status ) )
-            {
-                *pdwExitCode = WEXITSTATUS(status);
-                TRACE("Exit code was %d\n", *pdwExitCode);
-            }
-            else if ( WIFSIGNALED( status ) )
-            {
-                *pdwExitCode = 128 + WTERMSIG(status);
-                TRACE("Exit code was signal %d = exit code %d\n", WTERMSIG(status), *pdwExitCode);
-            }
-            else
-            {
-                WARN("process terminated without exiting; can't get exit "
-                     "code. faking it.\n");
-                *pdwExitCode = EXIT_FAILURE;
-            }
-            *pps = PS_DONE;
-        }
-        else if (0 == wait_retval)
-        {
-            // The process is still running.
-            TRACE("Process %#x is still active.\n", pLocalData->dwProcessId);
-            *pps = PS_RUNNING;
-            *pdwExitCode = 0;
-        }
-        else if (-1 == wait_retval)
-        {
-            // This might happen if waitpid() had already been called, but
-            // this shouldn't happen - we call waitpid once, store the
-            // result, and use that afterwards.
-            // One legitimate cause of failure is EINTR; if this happens we
-            // have to try again. A second legitimate cause is ECHILD, which
-            // happens if we're trying to retrieve the status of a currently-
-            // running process that isn't a child of this process.
-            if (EINTR == errno)
-            {
-                TRACE("waitpid() failed with EINTR; re-waiting");
-                continue;
-            }
-            else if (ECHILD == errno)
-            {
-                TRACE("waitpid() failed with ECHILD; calling kill instead");
-                if (kill(pLocalData->dwProcessId, 0) != 0)
-                {
-                    if(ESRCH == errno)
-                    {
-                        WARN("kill() failed with ESRCH, i.e. target "
-                             "process exited and it wasn't a child, "
-                             "so can't get the exit code, assuming  "
-                             "it was 0.\n");
-                        *pdwExitCode = 0;
-                    }
-                    else
-                    {
-                        ERROR("kill(pid, 0) failed; errno is %d (%s)\n",
-                              errno, strerror(errno));
-                        *pdwExitCode = EXIT_FAILURE;
-                    }
-                    *pps = PS_DONE;
-                }
-                else
-                {
-                    *pps = PS_RUNNING;
-                    *pdwExitCode = 0;
-                }
-            }
-            else
-            {
-                // Ignoring unexpected waitpid errno and assuming that
-                // the process is still running
-                ERROR("waitpid(pid=%u) failed with unexpected errno=%d (%s)\n",
-                      pLocalData->dwProcessId, errno, strerror(errno));
-                *pps = PS_RUNNING;
-                *pdwExitCode = 0;
-            }
-        }
-        else
-        {
-            ASSERT("waitpid returned unexpected value %d\n",wait_retval);
-            *pdwExitCode = EXIT_FAILURE;
-            *pps = PS_DONE;
-        }
-        // Break out of the loop in all cases except EINTR.
-        break;
-    }
-
-    // Save the exit code for future reference (waitpid will only work once).
-    if(PS_DONE == *pps)
-    {
-        pLocalData->ps = PS_DONE;
-        pLocalData->dwExitCode = *pdwExitCode;
-    }
-
-    TRACE( "State of process 0x%08x : %d (exit code %d)\n",
-           pLocalData->dwProcessId, *pps, *pdwExitCode );
-
-    pDataLock->ReleaseLock(pThread, TRUE);
-
-PROCGetProcessStatusExit:
-
-    if (NULL != pobjProcess)
-    {
-        pobjProcess->ReleaseReference(pThread);
-    }
-
-    return palError;
-}
 
 #ifdef __APPLE__
 bool GetApplicationContainerFolder(PathCharString& buffer, const char *applicationGroupId, int applicationGroupIdLength)
