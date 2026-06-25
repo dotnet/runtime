@@ -3655,6 +3655,7 @@ namespace System.Text.Json.Tests
         [Theory, OuterLoop("Very long running test")]
         [MemberData(nameof(JsonOptions_TestData))]
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Too slow on the single-threaded wasm interpreter (writes a 3 MB base64 payload across every option combination).")]
         public void Writing3MBBase64Bytes(JsonWriterOptions options)
         {
             byte[] value = new byte[3 * 1024 * 1024];
