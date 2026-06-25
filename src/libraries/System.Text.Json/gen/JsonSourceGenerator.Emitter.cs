@@ -1783,6 +1783,21 @@ namespace System.Text.Json.SourceGeneration
                     {
                         writer.WriteLine($"writer.{primitiveWriterMethod}Value({valueExpr}.ToString());");
                     }
+                    else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
+                    {
+                        // byte[] is a nullable reference type; emit an explicit null check so that null values
+                        // serialize as 'null' rather than an empty Base64 string, matching reflection behavior.
+                        writer.WriteLine($$"""
+                            if ({{valueExpr}} is null)
+                            {
+                                writer.WriteNullValue();
+                            }
+                            else
+                            {
+                                writer.{{primitiveWriterMethod}}Value({{valueExpr}});
+                            }
+                            """);
+                    }
                     else
                     {
                         writer.WriteLine($"writer.{primitiveWriterMethod}Value({valueExpr});");
@@ -1808,6 +1823,21 @@ namespace System.Text.Json.SourceGeneration
                     if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.Char)
                     {
                         writer.WriteLine($"writer.{primitiveWriterMethod}({propertyNameExpr}, {valueExpr}.ToString());");
+                    }
+                    else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
+                    {
+                        // byte[] is a nullable reference type; emit an explicit null check so that null values
+                        // serialize as 'null' rather than an empty Base64 string, matching reflection behavior.
+                        writer.WriteLine($$"""
+                            if ({{valueExpr}} is null)
+                            {
+                                writer.WriteNull({{propertyNameExpr}});
+                            }
+                            else
+                            {
+                                writer.{{primitiveWriterMethod}}({{propertyNameExpr}}, {{valueExpr}});
+                            }
+                            """);
                     }
                     else
                     {

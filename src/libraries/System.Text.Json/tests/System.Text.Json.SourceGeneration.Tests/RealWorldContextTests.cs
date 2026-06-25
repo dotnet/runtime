@@ -873,6 +873,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 Uri = new Uri("http://contoso.com"),
                 Array = new int[] { 42 },
+                ByteArray = new byte[] { 1, 2, 3 },
                 Poco = new ClassWithNullableProperties.MyPoco(),
 
                 NullableUri = new Uri("http://contoso.com"),
@@ -889,6 +890,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
                 Assert.Equal(expected.Uri, actual.Uri);
                 Assert.Equal(expected.Array, actual.Array);
+                Assert.Equal(expected.ByteArray, actual.ByteArray);
                 Assert.Equal(expected.Poco, actual.Poco);
 
                 Assert.Equal(expected.NullableUri, actual.NullableUri);
@@ -943,6 +945,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             public Uri? Uri { get; set; }
             public int[]? Array { get; set; }
+            public byte[]? ByteArray { get; set; }
             public MyPoco? Poco { get; set; }
 
             public Uri? NullableUri { get; set; }
