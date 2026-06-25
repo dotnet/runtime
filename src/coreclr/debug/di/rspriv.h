@@ -6080,13 +6080,9 @@ public:
     // Converts the values in the floating point register area of the context to real number values.
     void Get32bitFPRegisters(CONTEXT * pContext);
 
-#elif defined(TARGET_AMD64) ||  defined(TARGET_ARM64) || defined(TARGET_ARM)
+#elif defined(TARGET_AMD64) ||  defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     // Converts the values in the floating point register area of the context to real number values.
     void Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int start, int nRegisters);
-
-#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-    // Copies the scalar 64-bit IEEE-754 value of each floating point register from the context.
-    void GetRawFPRegisters(ULONGLONG * pFPRegisters, int slotsPerRegister, int nRegisters);
 
 #endif // TARGET_X86
 
