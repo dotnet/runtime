@@ -190,8 +190,8 @@ namespace System.Text.Unicode
 
 #if NET
                     LoopTerminatedEarlyDueToNonAsciiData:
-                        // x86 can only be little endian, while ARM can be big or little endian
-                        // so if we reached this label we need to check both combinations are supported
+                        // x86 and Wasm can only be little endian, while ARM can be big or little endian,
+                        // so if we reached this label we need to check the LE-restricted combinations as well.
                         Debug.Assert((AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || Sse2.IsSupported || PackedSimd.IsSupported);
 
 
