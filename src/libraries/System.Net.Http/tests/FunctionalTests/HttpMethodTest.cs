@@ -23,6 +23,14 @@ namespace System.Net.Http.Functional.Tests
             HttpMethod.Trace,
         };
 
+        public static IEnumerable<object[]> StaticHttpMethods_MemberData()
+        {
+            foreach (HttpMethod method in StaticHttpMethods)
+            {
+                yield return new object[] { method };
+            }
+        }
+
         [Fact]
         public void StaticProperties_VerifyValues_PropertyNameMatchesHttpMethodName()
         {
@@ -111,13 +119,11 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(input.ToUpperInvariant().GetHashCode(), method.GetHashCode());
         }
 
-        [Fact]
-        public void GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode()
+        [Theory]
+        [MemberData(nameof(StaticHttpMethods_MemberData))]
+        public void GetHashCode_StaticMethods_SameAsStringToUpperInvariantHashCode(HttpMethod method)
         {
-            foreach (HttpMethod method in StaticHttpMethods)
-            {
-                Assert.Equal(method.ToString().ToUpperInvariant().GetHashCode(), method.GetHashCode());
-            }
+            Assert.Equal(method.ToString().ToUpperInvariant().GetHashCode(), method.GetHashCode());
         }
 
         [Fact]
@@ -149,16 +155,14 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal("PATCH", HttpMethod.Patch.Method);
         }
 
-        [Fact]
-        public void Parse_KnownMethod_UsesKnownInstances()
+        [Theory]
+        [MemberData(nameof(StaticHttpMethods_MemberData))]
+        public void Parse_KnownMethod_UsesKnownInstances(HttpMethod method)
         {
-            foreach (HttpMethod method in StaticHttpMethods)
-            {
-                string methodName = method.Method;
-                Assert.Same(method, HttpMethod.Parse(methodName));
-                Assert.Same(method, HttpMethod.Parse(methodName.ToUpperInvariant()));
-                Assert.Same(method, HttpMethod.Parse(methodName.ToLowerInvariant()));
-            }
+            string methodName = method.Method;
+            Assert.Same(method, HttpMethod.Parse(methodName));
+            Assert.Same(method, HttpMethod.Parse(methodName.ToUpperInvariant()));
+            Assert.Same(method, HttpMethod.Parse(methodName.ToLowerInvariant()));
         }
 
         [Theory]
