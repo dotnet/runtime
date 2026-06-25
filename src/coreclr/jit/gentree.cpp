@@ -8791,6 +8791,15 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_LOCKADD:
         case GT_CMPXCHG:
         case GT_MEMORYBARRIER:
+        // DIV/UDIV/MOD/UMOD support an ordering side effect so that, once assertion
+        // propagation proves the divide cannot throw (GTF_DIV_MOD_NO_BY_ZERO for any of
+        // them, plus GTF_DIV_MOD_NO_OVERFLOW for the signed ones) and the node would
+        // otherwise look movable, it stays pinned below the dominating check that
+        // justified the flag.
+        case GT_DIV:
+        case GT_UDIV:
+        case GT_MOD:
+        case GT_UMOD:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
