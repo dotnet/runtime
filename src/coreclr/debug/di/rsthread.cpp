@@ -1518,24 +1518,22 @@ void CordbThread::Get32bitFPRegisters(CONTEXT * pContext)
     m_floatStackTop = floatStackTop;
 } // CordbThread::Get32bitFPRegisters
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 // CordbThread::Get64bitFPRegisters
 // Converts the values in the floating point register area of the context to real number values. See
-// code:CordbThread::LoadFloatState for more details.
+// code:CordbThread::LoadFloatState for more details. The size of FPRegister64 is per-architecture and
+// determines the stride between consecutive registers in the context (8 bytes on Arm/RISC-V64, 16 on
+// Amd64/Arm64, and 32 on LoongArch64, whose FPR64/LSX/LASX slot holds the scalar value in its first
+// 64 bits); FPFillR8 reads that scalar value.
 // Arguments:
-//     input:  pFPRegisterBase - starting address of the floating point register storage of the CONTEXT
-//             registerSize    - the size of a floating point register
-//             start           - the index into m_floatValues where we start initializing. For amd64, we start
-//                               at the beginning, but for ia64, the first two registers have fixed values,
-//                               so we start at two.
-//             nRegisters      - the number of registers to be initialized
+//     input:  rgContextFPRegisters - starting address of the floating point register storage of the CONTEXT
+//             start                - the index into m_floatValues where we start initializing
+//             nRegisters           - the number of registers to be initialized
 //     output: none (initializes m_floatValues)
 
 void CordbThread::Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int start, int nRegisters)
 {
-    // make sure no one has changed the type definition for 64-bit FP registers
-    _ASSERTE(sizeof(FPRegister64) == 16);
     // We convert and copy all the fp registers.
     for (int reg = start; reg < nRegisters; reg++)
     {
@@ -1545,28 +1543,6 @@ void CordbThread::Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int s
         m_floatValues[reg] = FPFillR8(&rgContextFPRegisters[reg - start]);
     }
 } // CordbThread::Get64bitFPRegisters
-
-#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-
-// CordbThread::GetRawFPRegisters
-// Reads the scalar 64-bit IEEE-754 value of each floating point register from the context. These
-// platforms store the value as a raw double, so FPFillR8 simply loads it, matching how
-// Get64bitFPRegisters reads the other architectures. slotsPerRegister is the number of ULONGLONG
-// slots each register occupies in the context: 1 for RISC-V64, and 4 for LoongArch64, whose
-// FPR64/LSX/LASX layout stores the scalar value in the first 64-bit slot of each group.
-// Arguments:
-//     input:  pFPRegisters     - starting address of the floating point register storage of the CONTEXT
-//             slotsPerRegister - the number of ULONGLONG slots each register occupies
-//             nRegisters       - the number of registers to be initialized
-//     output: none (initializes m_floatValues)
-
-void CordbThread::GetRawFPRegisters(ULONGLONG * pFPRegisters, int slotsPerRegister, int nRegisters)
-{
-    for (int reg = 0; reg < nRegisters; reg++)
-    {
-        m_floatValues[reg] = FPFillR8(&(pFPRegisters[reg * slotsPerRegister]));
-    }
-} // CordbThread::GetRawFPRegisters
 
 #endif // TARGET_X86
 
@@ -1602,13 +1578,10 @@ void CordbThread::LoadFloatState()
     Get64bitFPRegisters((FPRegister64*) &(tempContext.V), 0, 32);
 #elif defined (TARGET_ARM)
     Get64bitFPRegisters((FPRegister64*) &(tempContext.D), 0, 32);
-#elif defined(TARGET_RISCV64)
-    // RISC-V64 stores each F register as a single raw 64-bit IEEE-754 value in the context.
-    GetRawFPRegisters((ULONGLONG*) &(tempContext.F), 1, DebuggerIPCE_FloatCount);
-#elif defined(TARGET_LOONGARCH64)
-    // LoongArch64 stores floating point registers in a SIMD-capable layout (FPR64/LSX/LASX), where
-    // each F register occupies 4 ULONGLONG slots and the scalar value is the first 64-bit slot.
-    GetRawFPRegisters((ULONGLONG*) &(tempContext.F), 4, DebuggerIPCE_FloatCount);
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    // The size of FPRegister64 selects the per-register stride in the context: a single 64-bit slot
+    // on RISC-V64, and a four-slot FPR64/LSX/LASX group on LoongArch64 (scalar value in the first slot).
+    Get64bitFPRegisters((FPRegister64*) &(tempContext.F), 0, 32);
 #else
     _ASSERTE(!"nyi for platform");
 #endif // !TARGET_X86
