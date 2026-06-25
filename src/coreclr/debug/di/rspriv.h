@@ -2993,8 +2993,7 @@ public:
     IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly);
 
     // Helper functions for LookupMetaData implementation
-    IMDInternalImport * LookupMetaDataFromDebugger(VMPTR_PEAssembly vmPEAssembly,
-                                                   CordbModule * pModule);
+    IMDInternalImport * LookupMetaDataFromDebugger(CordbModule * pModule);
 
     IMDInternalImport * LookupMetaDataFromDebuggerForSingleFile(CordbModule * pModule,
                                                                 LPCWSTR pwszImagePath,
@@ -10613,7 +10612,7 @@ public:
 
 private:
     RefWalkHandle mRefHandle;
-    BOOL mEnumStacksFQ;
+    BOOL mEnumStacks;
     UINT32 mHandleMask;
 };
 

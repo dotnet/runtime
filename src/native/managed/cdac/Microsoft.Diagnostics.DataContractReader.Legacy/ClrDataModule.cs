@@ -508,8 +508,7 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             }
             catch (VirtualReadException)
             {
-                // The memory for the path may not be enumerated - for example, in triage dumps
-                // In this case, GetPath will throw VirtualReadException
+                result = contract.GetFileName(handle);
             }
 
             if (string.IsNullOrEmpty(result))
