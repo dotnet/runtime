@@ -1818,7 +1818,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     if (size->IsCnsIntOrI() && size->isContained())
     {
         srcCount       = 0;
-        size_t sizeVal = AlignUp((size_t)size->AsIntCon()->gtIconVal, STACK_ALIGN);
+        size_t sizeVal = AlignUp((size_t)size->AsIntCon()->IconValue(), STACK_ALIGN);
 
         // Explicitly zeroed LCLHEAP also needs a regCnt in case of x86 or large page
         if ((TARGET_POINTER_SIZE == 4) || (sizeVal >= m_compiler->eeGetPageSize()))
@@ -1906,7 +1906,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
         tgtPrefUse          = op1Use;
         srcCount            = 1;
     }
-    srcCount += BuildDelayFreeUses(op2, op1, lowGprRegs & ~(SRBM_RAX | SRBM_RDX));
+    srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(SRBM_RAX | SRBM_RDX));
 
     buildInternalRegisterUses();
 

@@ -45,6 +45,13 @@ pr:
       - src/mono/mono/mini/decompose.c
       - src/mono/mono/mini/method-to-ir.c
       - src/mono/mono/mini/mini.c
+      - src/mono/mono/mini/mini-amd64*.*
+      - src/mono/mono/mini/mini-arm64*.*
+      - src/mono/mono/mini/mini-arm*.*
+      - src/mono/mono/mini/mini-riscv*.*
+      - src/mono/mono/mini/mini-exceptions.*
+      - src/mono/mono/mini/exceptions-*.*
+      - src/mono/mono/mini/mini-runtime.*
 
 variables:
   - template: /eng/pipelines/common/variables.yml

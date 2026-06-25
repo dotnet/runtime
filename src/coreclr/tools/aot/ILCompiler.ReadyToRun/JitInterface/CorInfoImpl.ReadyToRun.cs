@@ -477,8 +477,6 @@ namespace Internal.JitInterface
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
 
-        private uint OffsetOfDelegateFirstTarget => (uint)(3 * PointerSize); // Delegate._methodPtr
-
         private readonly ReadyToRunCodegenCompilation _compilation;
         private MethodWithGCInfo _methodCodeNode;
         private MethodColdCodeNode _methodColdCodeNode;
@@ -581,6 +579,14 @@ namespace Internal.JitInterface
                 methodNeedingCode.Name == "EndInvoke"u8))
             {
                 // Special methods on delegate types
+                return true;
+            }
+
+            // Currently crossgen2 does not support compiling async versions of synchronous Task-returning functions.
+            // We would compile a wrapper thunk but that comes with different perf characteristics and diagnostics
+            // that we do not want to deal with.
+            if (methodNeedingCode.SupportsAsyncVersionCodegen())
+            {
                 return true;
             }
 
@@ -2438,8 +2444,6 @@ namespace Internal.JitInterface
 
             pResult->methodFlags = getMethodAttribsInternal(methodToCall);
 
-            pResult->wrapperDelegateInvoke = false;
-
             Get_CORINFO_SIG_INFO(methodToCall, &pResult->sig, scope: null, useInstantiatingStub);
         }
 
@@ -3438,7 +3442,7 @@ namespace Internal.JitInterface
                     //    of the build finishes, it will then compute the IL bodies for those methods, then run the compilation again.
 
                     if (needsTokenTranslation && !(methodIL is IMethodTokensAreUseableInCompilation)
-                        && (methodIL is EcmaMethodIL || methodIL is ReadyToRunILProvider.AsyncEcmaMethodIL))
+                        && (methodIL is EcmaMethodIL || methodIL is ReadyToRunILProvider.AsyncMethodIL))
                     {
                         // We may have already acquired the right type of MethodIL here, or be working with a method that is an IL Intrinsic.
                         // Add the typicalMethod (which may be an AsyncMethodVariant) so that

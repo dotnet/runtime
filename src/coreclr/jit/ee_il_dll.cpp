@@ -894,12 +894,15 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
     {
         case CodeGenInterface::VLT_REG:
         case CodeGenInterface::VLT_REG_BYREF:
-        case CodeGenInterface::VLT_REG_FP:
             printf("%s", getRegName(var->loc.vlReg.vlrReg));
             if (var->loc.vlType == (ICorDebugInfo::VarLocType)CodeGenInterface::VLT_REG_BYREF)
             {
                 printf(" byref");
             }
+            break;
+
+        case CodeGenInterface::VLT_REG_FP:
+            printf("%s", getRegName((regNumber)(var->loc.vlReg.vlrReg + REG_FP_FIRST)));
             break;
 
         case CodeGenInterface::VLT_STK:

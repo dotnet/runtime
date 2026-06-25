@@ -268,7 +268,6 @@ jobs:
       - src/mono/wasi/build/*
       - src/mono/wasi/runtime/*
       - src/mono/wasi/testassets/*
-      - src/mono/wasi/Wasi.Build.Tests/*
       - ${{ parameters._const_paths._wasm_chrome }}
       - ${{ parameters._const_paths._wasm_src_native }}
       - src/tasks/*
@@ -312,7 +311,7 @@ jobs:
       - ${{ parameters._const_paths._always_exclude }}
       - ${{ parameters._const_paths._perf_pipeline_specific_only }}
 
-    # Wasm except Wasm.build.Tests, Wasi.build.Tests and debugger
+    # Wasm-specific paths excluding Wasm.Build.Tests, WASI (build/runtime/testassets), and the debugger
     - subset: wasm_specific_except_wbt_dbg
       combined: true
       include:
@@ -337,7 +336,6 @@ jobs:
       - src/mono/wasi/build/*
       - src/mono/wasi/runtime/*
       - src/mono/wasi/testassets/*
-      - src/mono/wasi/Wasi.Build.Tests/*
       - src/mono/nuget/Microsoft.NET.Runtime*
       - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*

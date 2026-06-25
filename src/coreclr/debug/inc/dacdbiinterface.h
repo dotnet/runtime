@@ -485,44 +485,17 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule, OUT BOOL * pIsModuleLoaded) = 0;
 
-    //.........................................................................
-    // These methods were the methods that DBI was calling from IXClrData in V2.
-    // We imported them over to this V3 interface so that we can sever all ties between DBI and the
-    // old IXClrData.
     //
-    // The exact semantics of these are whatever their V2 IXClrData counterpart did.
-    // We may eventually migrate these to their real V3 replacements.
-    //.........................................................................
-
-    // "types" of addresses. This is taken exactly from the definition, but renamed to match
-    // CLR coding conventions.
-    typedef enum
-    {
-        kAddressUnrecognized,
-        kAddressManagedMethod,
-        kAddressRuntimeManagedCode,
-        kAddressRuntimeUnmanagedCode,
-        kAddressGcData,
-        kAddressRuntimeManagedStub,
-        kAddressRuntimeUnmanagedStub,
-    } AddressType;
-
-    //
-    // Get the "type" of address.
+    // Get whether the address is managed.
     //
     // Arguments:
-    //    address      - address to query type.
-    //    pRetVal - [out] Type of address.
+    //    address      - address to query.
+    //    pIsManaged - [out] TRUE if the address is managed, FALSE otherwise.
     //
     // Return Value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
-    // Notes:
-    //    This is taken exactly from the IXClrData definition.
-    //    This is provided for V3 compatibility to support Interop-debugging.
-    //    This should eventually be deprecated.
-    //
-    virtual HRESULT STDMETHODCALLTYPE GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal) = 0;
+    virtual HRESULT STDMETHODCALLTYPE IsManagedCode(CORDB_ADDRESS address, OUT BOOL * pIsManaged) = 0;
 
 
     //.........................................................................
@@ -1308,21 +1281,6 @@ public:
     // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT STDMETHODCALLTYPE GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContextBuffer) = 0;
 
-    //
-    // This is a simple helper function to convert a CONTEXT to a DebuggerREGDISPLAY.  We need to do this
-    // inside DDI because the RS has no notion of REGDISPLAY.
-    //
-    // Arguments:
-    //    pInContext - the CONTEXT to be converted
-    //    pOutDRD    - the converted DebuggerREGDISPLAY
-    //    fActive    - Indicate whether the CONTEXT is active or not.  An active CONTEXT means that the
-    //                 IP is the next instruction to be executed, not the return address of a function call.
-    //                 The opposite of an active CONTEXT is an unwind CONTEXT, which is obtained from
-    //                 unwinding.
-    //
-
-    virtual HRESULT STDMETHODCALLTYPE ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * pInContext, DebuggerREGDISPLAY * pOutDRD, BOOL fActive) = 0;
-
     typedef enum
     {
         kNone,
@@ -1673,8 +1631,7 @@ public:
     //                              the assembly
     //                              an indication of the type: whether it's a class or value type
     //     output:  pFieldData    - information about the EnC added field
-    //              pfStatic      - flag to indicate whether the field is static
-    virtual HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData, OUT BOOL * pfStatic) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData) = 0;
 
 
     // EnumerateTypeHandleParams gets the necessary data for a type handle, i.e. its
@@ -1740,45 +1697,41 @@ public:
     // functions to get information about reference/handle referents for ICDValue
     // ----------------------------------------------------------------------------
 
-    // Get object information for a TypedByRef object. Initializes the objRef and typedByRefType fields of
-    // pObjectData (type info for the referent).
+    // Get object information for a TypedByRef object (System.TypedReference).
     // Arguments:
-    //     input:  pTypedByRef - pointer to a TypedByRef struct
-    //     output: pObjectData - information about the object referenced by pTypedByRef
+    //     input:  pTypedByRef     - address of the TypedByRef struct
+    //     output: pObjRef         - the managed pointer value (data field of TypedByRef)
+    //             pTypedByRefType - basic type information for the referent type
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, OUT CORDB_ADDRESS * pObjRef, OUT DebuggerIPCE_BasicTypeData * pTypedByRefType) = 0;
 
     // Get the string length and offset to string base for a string object
     // Arguments:
-    //     input:  objPtr - address of a string object
-    //     output: pObjectData - fills in the string fields stringInfo.offsetToStringBase and
-    //             stringInfo.length
+    //     input:  objectAddress        - address of a string object
+    //     output: pLength              - the string length in characters
+    //             pOffsetToStringBase  - byte offset from the object base to the first character
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetStringData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetStringData(CORDB_ADDRESS objectAddress, OUT UINT * pLength, OUT UINT * pOffsetToStringBase) = 0;
 
     // Get information for an array type referent of an objRef, including rank, upper and lower bounds,
     // element size and type, and the number of elements.
     // Arguments:
     //     input:  objectAddress - the address of an array object
-    //     output: pObjectData   - fills in the array-related fields:
-    //                             arrayInfo.offsetToArrayBase,
-    //                             arrayInfo.offsetToLowerBounds,
-    //                             arrayInfo.offsetToUpperBounds,
-    //                             arrayInfo.componentCount,
-    //                             arrayInfo.rank,
-    //                             arrayInfo.elementSize,
+    //     output: pIsValidArray - FALSE if the object is not actually an array
+    //             pArrayInfo    - filled with array layout information
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetArrayData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetArrayData(CORDB_ADDRESS objectAddress, OUT BOOL * pIsValidArray, OUT DacDbiArrayInfo * pArrayInfo) = 0;
 
     // Get information about an object for which we have a reference, including the object size and
     // type information.
     // Arguments:
-    //     input:  objectAddress - address of the object for which we want information
-    //             type          - the basic type of the object (we may find more specific type
-    //                             information for the object)
-    //     output: pObjectData   - fills in the size and type information fields
+    //     input:  objectAddress    - address of the object for which we want information
+    //     output: pIsValidRef      - FALSE if the object reference is bad
+    //             pObjSize         - size of the object in bytes
+    //             pObjOffsetToVars - byte offset from the object base to the first field
+    //             pObjTypeData     - expanded type information for the object
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, DebuggerIPCE_ObjectData * pObjectData) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, OUT BOOL * pIsValidRef, OUT UINT * pObjSize, OUT UINT * pObjOffsetToVars, OUT DebuggerIPCE_ExpandedTypeData * pObjTypeData) = 0;
 
     // Get the address of the Debugger control block on the helper thread. The debugger control block
     // contains information about the status of the debugger, handles to various events and space to hold
@@ -1937,7 +1890,7 @@ public:
     // to terminate the process when the attach is canceled.
     virtual HRESULT STDMETHODCALLTYPE GetAttachStateFlags(OUT CLR_DEBUGGING_PROCESS_FLAGS * pRetVal) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetModuleMetaDataFileInfo(VMPTR_Module vmModule, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE IsThreadSuspendedOrHijacked(VMPTR_Thread vmThread, OUT BOOL * pResult) = 0;
 
@@ -2012,13 +1965,12 @@ public:
     //  Parameters:
     //      pHandle - out - the reference walk handle to create
     //      walkStacks - in - whether or not to report stack references
-    //      walkFQ - in - whether or not to report references from the finalizer queue
     //      handleWalkMask - in - the types of handles report (see CorGCReferenceType, cordebug.idl)
     //  Returns:
     //      An HRESULT indicating whether it succeeded or failed.
     //  Exceptions:
     //      Returns an HRESULT indicating success or failure.
-    virtual HRESULT STDMETHODCALLTYPE CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask) = 0;
+    virtual HRESULT STDMETHODCALLTYPE CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, UINT32 handleWalkMask) = 0;
 
     // Deletes a reference walk.
     // Parameters:
@@ -2265,7 +2217,30 @@ public:
         OUT CORDB_ADDRESS* pNextContinuation,
         OUT UINT32* pState) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE GetAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, OUT DacDbiArrayList<AsyncLocalData>* pAsyncLocals) = 0;
+    // Callback invoked once per async local enumerated by EnumerateAsyncLocals.
+    // The callback must not throw. Implementations typically push the value into an
+    // accumulator stashed in pUserData (see CallbackAccumulator<AsyncLocalData>).
+    typedef void (*FP_ASYNC_LOCAL_CALLBACK)(AsyncLocalData * pLocal, CALLBACK_DATA pUserData);
+
+    // Enumerate the async locals captured at a given async suspension point.
+    //
+    // Arguments:
+    //    vmMethod    - the async method in question
+    //    codeAddr    - native code address used to disambiguate code versions; when 0
+    //                  the active native code of vmMethod is used
+    //    state       - index of the async suspension point whose locals are requested
+    //    fpCallback  - callback invoked once per AsyncLocalData; must not be NULL and
+    //                  must not throw
+    //    pUserData   - opaque user data passed through to the callback
+    //
+    // Notes:
+    //    Returns S_OK with no callbacks invoked when:
+    //      - vmMethod refers to an async thunk method
+    //      - codeAddr is non-zero but does not resolve to a valid native code version
+    //      - state is past the number of suspension points reported for the method
+    //    Otherwise returns S_OK after invoking fpCallback for every local captured at
+    //    suspension point `state`.
+    virtual HRESULT STDMETHODCALLTYPE EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(
         VMPTR_MethodDesc vmMethod,
