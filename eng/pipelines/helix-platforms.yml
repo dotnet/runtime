@@ -101,7 +101,7 @@ variables:
   # Ubuntu x64
   # Latest: 26.04
   - name: helix_linux_x64_ubuntu_latest
-    value: (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-amd64
+    value: Ubuntu.2604.Amd64.Open
 
   # Oldest: 24.04
   - name: helix_linux_x64_ubuntu_oldest
@@ -161,7 +161,7 @@ variables:
   # Linux ARM64
   # Latest: Ubuntu 26.04
   - name: helix_linux_arm64_latest
-    value: (Ubuntu.2604.ArmArch.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8
+    value: Ubuntu.2604.ArmArch.Open
 
   # Oldest: Ubuntu 24.04
   - name: helix_linux_arm64_oldest
@@ -262,9 +262,9 @@ variables:
   - name: helix_browser_wasm_latest
     value: (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64
 
-  # Oldest: Ubuntu 22.04
+  # Oldest: Ubuntu 24.04
   - name: helix_browser_wasm_oldest
-    value: (Ubuntu.2204.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly-amd64
+    value: (Ubuntu.2404.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-webassembly-amd64
 
   # ===========================================
   # Android Platforms
