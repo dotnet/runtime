@@ -368,8 +368,8 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetAttachStateFlags([out] CLR_DEBUGGING_PROCESS_FLAGS * pRetVal);
 
     // Metadata
-    HRESULT GetMetaDataFileInfoFromPEFile(
-        [in] VMPTR_PEAssembly vmPEAssembly,
+    HRESULT GetModuleMetaDataFileInfo(
+        [in] VMPTR_Module vmModule,
         [out] DWORD * pTimeStamp,
         [out] DWORD * pImageSize,
         [in] IDacDbiStringHolder pStrFilename,
@@ -386,7 +386,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT IsValidObject([in] CORDB_ADDRESS obj, [out] BOOL * pResult);
 
     // Reference Walking
-    HRESULT CreateRefWalk([out] RefWalkHandle * pHandle, [in] BOOL walkStacks, [in] BOOL walkFQ, [in] UINT32 handleWalkMask);
+    HRESULT CreateRefWalk([out] RefWalkHandle * pHandle, [in] BOOL walkStacks, [in] UINT32 handleWalkMask);
     HRESULT DeleteRefWalk([in] RefWalkHandle handle);
     HRESULT WalkRefs([in] RefWalkHandle handle, [in] ULONG count, [out] struct DacGcReference * refs, [out] ULONG * pFetched);
 
