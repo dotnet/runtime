@@ -281,6 +281,37 @@ namespace System.Net
                    Ascii.EqualsIgnoreCase(label[..4], "xn--"u8);
         }
 
+        // Returns the character count of the decoded dotted-string representation.
+        // For names containing ACE-encoded labels, this returns the length of the Unicode form.
+        // Useful for sizing a destination buffer before calling TryDecode.
+        public unsafe int GetFormattedLength()
+        {
+            if (_isAce)
+            {
+                // ACE names need full IDN conversion to determine the Unicode length.
+                Span<char> chars = stackalloc char[256];
+                bool success = TryDecode(chars, out int charsWritten);
+                Debug.Assert(success);
+                return charsWritten;
+            }
+
+            int length = 0;
+            bool first = true;
+
+            foreach (ReadOnlySpan<byte> label in EnumerateLabels())
+            {
+                if (!first)
+                {
+                    length++; // dot separator
+                }
+                first = false;
+                length += label.Length;
+            }
+
+            // Root name: no labels, formatted as ".".
+            return length == 0 ? 1 : length;
+        }
+
         // Enumerates the individual labels of this domain name.
         // Follows compression pointers transparently.
         public DnsLabelEnumerator EnumerateLabels() => new DnsLabelEnumerator(_buffer, _offset);
