@@ -1783,21 +1783,21 @@ namespace System.Text.Json.SourceGeneration
                     {
                         writer.WriteLine($"writer.{primitiveWriterMethod}Value({valueExpr}.ToString());");
                     }
-else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
-{
-    // byte[] is a nullable reference type; emit an explicit null check so that null values
-    // serialize as 'null' rather than an empty Base64 string, matching reflection behavior.
-    writer.WriteLine($$"""
-        if ({{valueExpr}} is byte[] __byteArray)
-        {
-            writer.{{primitiveWriterMethod}}Value(__byteArray);
-        }
-        else
-        {
-            writer.WriteNullValue();
-        }
-        """);
-}
+                    else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
+                    {
+                        // byte[] is a reference type but WriteBase64StringValue accepts ReadOnlySpan<byte>,
+                        // which loses null information. Emit an explicit null check to match reflection behavior.
+                        writer.WriteLine($$"""
+                            if ({{valueExpr}} is not null)
+                            {
+                                writer.{{primitiveWriterMethod}}Value({{valueExpr}});
+                            }
+                            else
+                            {
+                                writer.WriteNullValue();
+                            }
+                            """);
+                    }
                     else
                     {
                         writer.WriteLine($"writer.{primitiveWriterMethod}Value({valueExpr});");
@@ -1824,21 +1824,21 @@ else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
                     {
                         writer.WriteLine($"writer.{primitiveWriterMethod}({propertyNameExpr}, {valueExpr}.ToString());");
                     }
-else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
-{
-    // byte[] is a nullable reference type; emit an explicit null check so that null values
-    // serialize as 'null' rather than an empty Base64 string, matching reflection behavior.
-    writer.WriteLine($$"""
-        if ({{valueExpr}} is byte[] __byteArray)
-        {
-            writer.{{primitiveWriterMethod}}({{propertyNameExpr}}, __byteArray);
-        }
-        else
-        {
-            writer.WriteNull({{propertyNameExpr}});
-        }
-        """);
-}
+                    else if (typeSpec.PrimitiveTypeKind is JsonPrimitiveTypeKind.ByteArray)
+                    {
+                        // byte[] is a reference type but WriteBase64String accepts ReadOnlySpan<byte>,
+                        // which loses null information. Emit an explicit null check to match reflection behavior.
+                        writer.WriteLine($$"""
+                            if ({{valueExpr}} is not null)
+                            {
+                                writer.{{primitiveWriterMethod}}({{propertyNameExpr}}, {{valueExpr}});
+                            }
+                            else
+                            {
+                                writer.WriteNull({{propertyNameExpr}});
+                            }
+                            """);
+                    }
                     else
                     {
                         writer.WriteLine($"writer.{primitiveWriterMethod}({propertyNameExpr}, {valueExpr});");
