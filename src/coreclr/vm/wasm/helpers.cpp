@@ -1371,8 +1371,8 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
     {
         // The method has not been prepared yet. Run the prestub so that any R2R native code (or, for
         // interpreted methods, the interpreter byte code) is published into the portable entrypoint.
-        GCX_PREEMP();
-        (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+        // STANDARD_VM_CONTRACT already implies preemptive mode, so no GCX_PREEMP is needed here.
+        (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Preemptive);
     }
     if (PortableEntryPoint::HasNativeEntryPoint(entryPoint))
     {
