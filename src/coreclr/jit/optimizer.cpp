@@ -1955,8 +1955,7 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
         if (isExitingCondLatch(latch) && isIvTest(latch))
         {
-            JITDUMP("No loop-inversion for " FMT_LP "; IV-test latch " FMT_BB
-                    " already makes it bottom-tested\n",
+            JITDUMP("No loop-inversion for " FMT_LP "; IV-test latch " FMT_BB " already makes it bottom-tested\n",
                     loop->GetIndex(), latch->bbNum);
             return false;
         }
@@ -1968,8 +1967,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
                 BasicBlock* const pred = predEdge->getSourceBlock();
                 if (loop->ContainsBlock(pred) && isExitingCondLatch(pred) && isIvTest(pred))
                 {
-                    JITDUMP("No loop-inversion for " FMT_LP "; IV-test predecessor " FMT_BB " of canonical latch "
-                            FMT_BB " already makes it bottom-tested\n",
+                    JITDUMP("No loop-inversion for " FMT_LP "; IV-test predecessor " FMT_BB
+                            " of canonical latch " FMT_BB " already makes it bottom-tested\n",
                             loop->GetIndex(), pred->bbNum, latch->bbNum);
                     return false;
                 }
