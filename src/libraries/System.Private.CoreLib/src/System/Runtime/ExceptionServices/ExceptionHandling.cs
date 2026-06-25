@@ -8,10 +8,9 @@ namespace System.Runtime.ExceptionServices
     /// <summary>
     /// Provides helpers for configuring and raising global unhandled exception handlers.
     /// </summary>
-    public static class ExceptionHandling
+    public static partial class ExceptionHandling
     {
         private static Func<Exception, bool>? s_handler;
-        internal static IntPtr s_fatalErrorHandler;
 
         internal static bool IsHandledByGlobalHandler(Exception ex)
         {
@@ -71,9 +70,9 @@ namespace System.Runtime.ExceptionServices
 #if MONO
             throw new PlatformNotSupportedException();
 #else
-            ArgumentNullException.ThrowIfNull((void*)handler);
+            ArgumentNullException.ThrowIfNull((void*)handler, nameof(handler));
 
-            if (Interlocked.CompareExchange(ref s_fatalErrorHandler, (IntPtr)handler, IntPtr.Zero) != IntPtr.Zero)
+            if (!TrySetFatalErrorHandler((IntPtr)handler))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CannotRegisterSecondFatalErrorHandler);
             }

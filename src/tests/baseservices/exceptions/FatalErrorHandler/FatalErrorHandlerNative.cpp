@@ -57,7 +57,7 @@ static int DOTNET_CALLCONV HandlerWithLog(int hresult, void* pErrorInfo)
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
 
-    FatalErrorInfo* info = (FatalErrorInfo*)pErrorInfo;
+    FatalErrorInfo* info = static_cast<FatalErrorInfo*>(pErrorInfo);
     if (info->pfnGetFatalErrorLog != NULL)
     {
         info->pfnGetFatalErrorLog(info, LogCallback, NULL);

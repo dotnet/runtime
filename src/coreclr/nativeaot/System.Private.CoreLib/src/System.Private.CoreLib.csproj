@@ -229,6 +229,7 @@
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\Exception.NativeAot.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
+    <Compile Include="System\Runtime\ExceptionServices\ExceptionHandling.NativeAot.cs" />
     <Compile Include="System\EETypePtr.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\ModuleHandle.cs" />

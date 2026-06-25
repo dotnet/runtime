@@ -732,6 +732,8 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
 
 using FatalErrorHandlerFunc = int (DOTNET_CALLCONV *)(int hresult, void* errorData);
 
+void* s_fatalErrorHandler = NULL;
+
 // Stored crash context for on-demand replay by GetFatalErrorLogCallback.
 static UINT s_crashExitCode;
 static LPCWSTR s_crashMessage;
@@ -796,6 +798,10 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address, PEXCEPTION_
 {
     WRAPPER_NO_CONTRACT;
 
+    FatalErrorHandlerFunc pfnHandler = reinterpret_cast<FatalErrorHandlerFunc>(s_fatalErrorHandler);
+    if (pfnHandler == NULL)
+        return false;
+
     // We are in a fatal error path — suppress all contract enforcement.
     CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
 
@@ -803,23 +809,12 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address, PEXCEPTION_
 
     EX_TRY
     {
-        FatalErrorHandlerFunc pfnHandler;
-        {
-            // CoreLibBinder::GetField requires GC_TRIGGERS and
-            // GetCurrentStaticAddress requires MODE_COOPERATIVE.
-            GCX_COOP();
-            FieldDesc* pFD = CoreLibBinder::GetField(FIELD__EXCEPTION_HANDLING__FATAL_ERROR_HANDLER);
-            pfnHandler = reinterpret_cast<FatalErrorHandlerFunc>(pFD->GetStaticValuePtr());
-        }
-        if (pfnHandler != NULL)
-        {
-            GCX_PREEMP();
-            FatalErrorInfo errorInfo = CreateFatalErrorInfo(address, pExceptionInfo);
+        GCX_PREEMP();
+        FatalErrorInfo errorInfo = CreateFatalErrorInfo(address, pExceptionInfo);
 
-            // Call user-defined fatal error handler.
-            int result = pfnHandler(static_cast<int>(exitCode), &errorInfo);
-            skipDefault = (result == SkipDefaultHandler);
-        }
+        // Call user-defined fatal error handler.
+        int result = pfnHandler(static_cast<int>(exitCode), &errorInfo);
+        skipDefault = (result == SkipDefaultHandler);
     }
     EX_CATCH
     {

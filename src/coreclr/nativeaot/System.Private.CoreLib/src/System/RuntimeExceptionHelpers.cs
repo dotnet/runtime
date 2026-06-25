@@ -112,8 +112,11 @@ namespace System
                     ReadOnlySpan<char> remaining = fragment.AsSpan();
                     while (remaining.Length > 0)
                     {
-                        // Reserve last byte for null terminator.
-                        encoder.Convert(remaining, buffer[..^1], flush: true, out int charsUsed, out int bytesUsed, out _);
+                        // Reserve last byte for null terminator. Flush only on the
+                        // final iteration to avoid corrupting surrogate pairs split
+                        // across chunk boundaries.
+                        bool flush = remaining.Length <= ChunkSize - 1;
+                        encoder.Convert(remaining, buffer[..^1], flush: flush, out int charsUsed, out int bytesUsed, out _);
                         buffer[bytesUsed] = 0;
                         fixed (byte* pBuffer = buffer)
                         {
@@ -121,8 +124,6 @@ namespace System
                         }
                         remaining = remaining.Slice(charsUsed);
                     }
-
-                    encoder.Reset();
                 }
             }
             catch

@@ -155,7 +155,7 @@ static BSTR GetExceptionSource(OBJECTREF objException)
         PRECONDITION( IsException(objException->GetMethodTable()) );
     }
     CONTRACTL_END;
-    
+
     BSTR bstrSource;
 
     GCPROTECT_BEGIN(objException)
@@ -466,6 +466,13 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* 
     ThrowTypeAccessException(&accessContext, TypeHandle::FromPtr(callee).GetMethodTable());
 
     END_QCALL;
+}
+
+extern "C" BOOL QCALLTYPE ExceptionHandling_TrySetFatalErrorHandler(void* handler)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    return InterlockedCompareExchangeT(&s_fatalErrorHandler, handler, NULL) == NULL;
 }
 
 FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)

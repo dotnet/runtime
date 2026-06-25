@@ -120,6 +120,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ExceptionNative_ThrowMethodAccessException)
     DllImportEntry(ExceptionNative_ThrowFieldAccessException)
     DllImportEntry(ExceptionNative_ThrowClassAccessException)
+    DllImportEntry(ExceptionHandling_TrySetFatalErrorHandler)
     DllImportEntry(QCall_GetGCHandleForTypeHandle)
     DllImportEntry(QCall_FreeGCHandleForTypeHandle)
     DllImportEntry(MethodTable_AreTypesEquivalent)
