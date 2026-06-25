@@ -63,7 +63,7 @@ engine:
   id: copilot
   model: claude-opus-4.6
   env:
-     COPILOT_GITHUB_TOKEN: |
+    COPILOT_GITHUB_TOKEN: |
       ${{ case(
         needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0,
         needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1,

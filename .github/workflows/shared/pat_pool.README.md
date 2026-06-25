@@ -31,7 +31,7 @@ This environment is used for all agentic workflows, restricting agentic workflow
 
 ## PAT Management
 
-Team members provide PATs into the pool with secret names matching the pattern of `{pool-name}_{0-9}`, such as `COPILOT_PAT_0`.
+Team members provide PATs into the pool with secret names matching the pattern of `<pool_name>_<0-9>`, such as `COPILOT_PAT_0`.
 
 [Use this link to prefill the PAT creation form with the required settings][create-pat]:
 
@@ -94,7 +94,7 @@ environment: copilot-pat-pool
 engine:
   id: copilot
   env:
-     COPILOT_GITHUB_TOKEN: |
+    COPILOT_GITHUB_TOKEN: |
       ${{ case(
         needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0,
         needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1,
