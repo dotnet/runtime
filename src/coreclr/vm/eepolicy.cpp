@@ -763,6 +763,33 @@ static void DOTNET_CALLCONV GetFatalErrorLogCallback(FatalErrorInfo* errorData, 
     EmitCrashInfo(writer, s_crashExitCode, s_crashMessage, s_crashExceptionInfo, s_crashErrorSource, s_crashExceptionString);
 }
 
+// Populates the info and context fields of FatalErrorInfo from exception pointers.
+// On Windows, these are the native EXCEPTION_RECORD*/CONTEXT* directly.
+// On Unix, retrieves the original siginfo_t*/ucontext_t* from the PAL.
+static FatalErrorInfo CreateFatalErrorInfo(UINT_PTR address, PEXCEPTION_POINTERS pExceptionInfo)
+{
+    LIMITED_METHOD_CONTRACT;
+    FatalErrorInfo errorInfo{};
+    errorInfo.size = sizeof(FatalErrorInfo);
+    errorInfo.address = reinterpret_cast<void*>(address);
+
+#ifdef TARGET_WINDOWS
+    if (pExceptionInfo != NULL)
+    {
+        errorInfo.info = pExceptionInfo->ExceptionRecord;
+        errorInfo.context = pExceptionInfo->ContextRecord;
+    }
+#else
+    PAL_GetNativeExceptionPointers(&errorInfo.info, &errorInfo.context);
+
+    // If the PAL produced exception pointers, we must have signal info stashed.
+    _ASSERTE(pExceptionInfo == NULL || errorInfo.info != NULL);
+#endif // TARGET_WINDOWS
+    errorInfo.pfnGetFatalErrorLog = GetFatalErrorLogCallback;
+
+    return errorInfo;
+}
+
 // Invokes the user-registered fatal error handler if one has been set.
 // Returns true if the handler indicated that default handling should be skipped.
 static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address, PEXCEPTION_POINTERS pExceptionInfo)
@@ -787,20 +814,7 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address, PEXCEPTION_
         if (pfnHandler != NULL)
         {
             GCX_PREEMP();
-            FatalErrorInfo errorInfo{};
-            errorInfo.size = sizeof(FatalErrorInfo);
-            errorInfo.address = reinterpret_cast<void*>(address);
-            if (pExceptionInfo != NULL)
-            {
-#ifndef TARGET_UNIX
-                // On Unix the PAL provides emulated EXCEPTION_RECORD/CONTEXT
-                // structures, not the siginfo_t/ucontext_t documented in the
-                // public header. Pass NULL until proper conversion is added.
-                errorInfo.info = pExceptionInfo->ExceptionRecord;
-                errorInfo.context = pExceptionInfo->ContextRecord;
-#endif
-            }
-            errorInfo.pfnGetFatalErrorLog = GetFatalErrorLogCallback;
+            FatalErrorInfo errorInfo = CreateFatalErrorInfo(address, pExceptionInfo);
 
             // Call user-defined fatal error handler.
             int result = pfnHandler(static_cast<int>(exitCode), &errorInfo);

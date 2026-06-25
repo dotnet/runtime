@@ -3659,6 +3659,13 @@ PAL_SetHardwareExceptionHandler(
 PALIMPORT
 VOID
 PALAPI
+PAL_GetNativeExceptionPointers(
+    OUT void** siginfo,
+    OUT void** sigcontext);
+
+PALIMPORT
+VOID
+PALAPI
 PAL_SetGetGcMarkerExceptionCode(
     IN PGET_GCMARKER_EXCEPTION_CODE getGcMarkerExceptionCode);
 

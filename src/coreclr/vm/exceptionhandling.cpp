@@ -3654,7 +3654,7 @@ static CLR_BOOL CheckExceptionInterception(StackFrameIterator* pStackFrameIterat
     return isIntercepted;
 }
 
-void FailFastIfCorruptingStateException(ExInfo *pExInfo)
+static void FailFastIfCorruptingStateException(ExInfo *pExInfo)
 {
     // Failfast if exception indicates corrupted process state
     if (IsProcessCorruptedStateException(pExInfo->m_ExceptionCode, pExInfo->GetThrowable()))
