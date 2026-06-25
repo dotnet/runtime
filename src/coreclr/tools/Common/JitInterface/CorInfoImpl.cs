@@ -3518,7 +3518,7 @@ namespace Internal.JitInterface
                 {
                     // TODO-Async: the instantiation argument would have to be obtained through a runtime
                     // generic dictionary lookup, which is not yet emitted here, so defer to the runtime JIT.
-                    throw new RequiresRuntimeJitException(runtimeDeterminedResult.ToString());
+                    throw new RequiresRuntimeJitException($"getAwaitReturnCall: runtime-determined exact instantiation requires runtime JIT ({runtimeDeterminedResult})");
                 }
 
                 instArg.constLookup = CreateConstLookupToSymbol(
