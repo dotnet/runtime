@@ -802,26 +802,11 @@ static bool InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address, PEXCEPTION_
     if (pfnHandler == NULL)
         return false;
 
-    // We are in a fatal error path — suppress all contract enforcement.
-    CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
+    FatalErrorInfo errorInfo = CreateFatalErrorInfo(address, pExceptionInfo);
 
-    bool skipDefault = false;
-
-    EX_TRY
-    {
-        GCX_PREEMP();
-        FatalErrorInfo errorInfo = CreateFatalErrorInfo(address, pExceptionInfo);
-
-        // Call user-defined fatal error handler.
-        int result = pfnHandler(static_cast<int>(exitCode), &errorInfo);
-        skipDefault = (result == SkipDefaultHandler);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH
-
-    return skipDefault;
+    // Call user-defined fatal error handler.
+    int result = pfnHandler(static_cast<int>(exitCode), &errorInfo);
+    return result == SkipDefaultHandler;
 }
 
 void DisplayStackOverflowException()
