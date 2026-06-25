@@ -55,6 +55,7 @@ namespace System.Threading
 
         #region Public Enter/Exit methods
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Enter(object obj)
         {
             ObjectHeader.HeaderLockResult result = ObjectHeader.AcquireThinLock(obj);
@@ -64,6 +65,7 @@ namespace System.Threading
             GetLockObject(obj).Enter();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj)
         {
             ObjectHeader.HeaderLockResult result = ObjectHeader.AcquireThinLock(obj, isOneShot: true);
@@ -76,6 +78,7 @@ namespace System.Threading
             return GetLockObject(obj).TryEnter();
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);

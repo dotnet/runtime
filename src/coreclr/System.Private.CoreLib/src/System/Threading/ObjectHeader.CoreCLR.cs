@@ -99,6 +99,7 @@ namespace System.Threading
         // The public entry point spins by default (e.g. a blocking Monitor.Enter). Callers that want a
         // single attempt (e.g. Monitor.TryEnter) pass isOneShot: true to succeed only if the lock is
         // currently unowned.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe HeaderLockResult AcquireThinLock(object obj, bool isOneShot = false)
         {
             ArgumentNullException.ThrowIfNull(obj);
@@ -130,7 +131,7 @@ namespace System.Threading
                 else if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0)
                 {
                     return HeaderLockResult.UseSlowPath;
-            }
+                }
             }
 
             // Everything else (id doesn't fit, lost race, recursive acquire, contention) is handled by
