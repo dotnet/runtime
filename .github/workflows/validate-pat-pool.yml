@@ -10,6 +10,7 @@ permissions: {}
 
 jobs:
   validate:
+    environment: copilot-pat-pool
     name: Validate Copilot PAT Pool
     if: ${{ github.event_name == 'workflow_dispatch' || !github.event.repository.fork }}
     runs-on: ubuntu-latest
@@ -22,7 +23,7 @@ jobs:
         else echo "status=invalid" >> "$GITHUB_OUTPUT"; fi
     steps:
       - name: Setup gh-aw scripts
-        uses: github/gh-aw-actions/setup@b8068426813005612b960b5ab0b8bd2c27142323 # v0.71.5
+        uses: github/gh-aw-actions/setup@ba90f2186d7ad780ec640f364005fa24e797b360 # v0.68.3
         with:
           destination: ${{ runner.temp }}/gh-aw/actions
 
