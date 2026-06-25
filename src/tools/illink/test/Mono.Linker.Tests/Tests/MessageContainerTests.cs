@@ -27,7 +27,7 @@ namespace Mono.Linker.Tests
         }
 
         [Fact]
-        public void OriginBeforeFirstSequencePointUsesFirstAvailableSequencePoint()
+        public void OriginBeforeFirstSequencePointFallsBackToApplicationName()
         {
             using ModuleDefinition module = ModuleDefinition.CreateModule("test", ModuleKind.Dll);
             var type = new TypeDefinition("Test", "Type", TypeAttributes.Public, module.TypeSystem.Object);
@@ -79,7 +79,7 @@ namespace Mono.Linker.Tests
                 6001,
                 origin: new MessageOrigin(method, firstInstruction.Offset));
 
-            Assert.Equal("test.cs(10,5): error IL6001: Test.Type.Method(): message", msg.ToMSBuildString());
+            Assert.Equal("ILLink: error IL6001: Test.Type.Method(): message", msg.ToMSBuildString());
         }
     }
 }

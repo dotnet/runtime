@@ -86,14 +86,9 @@ namespace Mono.Linker
             if (Provider is MethodDefinition method &&
                 method.DebugInformation.HasSequencePoints)
             {
-                var sequencePoints = method.DebugInformation.SequencePoints;
-                var offset = ILOffset == UnsetILOffset ? sequencePoints[0].Offset : ILOffset;
-                SequencePoint? correspondingSequencePoint = sequencePoints
+                var offset = ILOffset == UnsetILOffset ? method.DebugInformation.SequencePoints[0].Offset : ILOffset;
+                SequencePoint? correspondingSequencePoint = method.DebugInformation.SequencePoints
                     .Where(s => s.Offset <= offset).LastOrDefault();
-
-                // If the warning comes from IL before the first sequence point
-                // (for example, rewritten IL), report the first available sequence point as a best effort.
-                correspondingSequencePoint ??= sequencePoints.FirstOrDefault();
 
                 // If the warning comes from hidden line (compiler generated code typically)
                 // search for any sequence point with non-hidden line number and report that as a best effort.
