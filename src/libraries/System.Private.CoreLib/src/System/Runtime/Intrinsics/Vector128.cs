@@ -4388,33 +4388,47 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static Vector128<byte> UnpackLow(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
             {
                 return Sse2.UnpackLow(left, right);
             }
-            else if (!AdvSimd.Arm64.IsSupported)
+            else if (AdvSimd.Arm64.IsSupported)
             {
-                ThrowHelper.ThrowNotSupportedException();
+                return AdvSimd.Arm64.ZipLow(left, right);
             }
-            return AdvSimd.Arm64.ZipLow(left, right);
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.Shuffle(left, right,
+                    Vector128.Create((byte)0, 16, 1, 17, 2, 18, 3, 19, 4, 20, 5, 21, 6, 22, 7, 23));
+            }
+            ThrowHelper.ThrowNotSupportedException();
+            return default;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Sse2))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static Vector128<byte> UnpackHigh(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
             {
                 return Sse2.UnpackHigh(left, right);
             }
-            else if (!AdvSimd.Arm64.IsSupported)
+            else if (AdvSimd.Arm64.IsSupported)
             {
-                ThrowHelper.ThrowNotSupportedException();
+                return AdvSimd.Arm64.ZipHigh(left, right);
             }
-            return AdvSimd.Arm64.ZipHigh(left, right);
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.Shuffle(left, right,
+                    Vector128.Create((byte)8, 24, 9, 25, 10, 26, 11, 27, 12, 28, 13, 29, 14, 30, 15, 31));
+            }
+            ThrowHelper.ThrowNotSupportedException();
+            return default;
         }
     }
 }
