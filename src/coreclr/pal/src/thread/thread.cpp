@@ -659,9 +659,8 @@ ExitThread(
 
     /* kill the thread (itself), resulting in a call to InternalEndCurrentThread */
 #if defined(TARGET_WASI)
-    // wasi-libc declares pthread_exit as a _Static_assert stub under
-    // _WASI_STRICT_PTHREAD (single-threaded). Abort instead — PAL only invokes
-    // ThreadExit on the orderly-shutdown path which doesn't run on WASI.
+    // wasi-libc pthread_exit is a _Static_assert stub. PAL only reaches here
+    // on the orderly-shutdown path which is not exercised on WASI.
     abort();
 #else
     pthread_exit(NULL);
@@ -930,9 +929,9 @@ CorUnix::InternalSetThreadPriority(
     /* get the previous thread schedule parameters.  We need to know the
        scheduling policy to determine the priority range */
 #if defined(TARGET_WASI)
-    // WASI is single-threaded and wasi-libc replaces pthread scheduling
-    // functions with _Static_assert stubs under _WASI_STRICT_PTHREAD. Record
-    // the requested priority value but skip the actual pthread plumbing.
+    // wasi-libc replaces pthread scheduling functions with _Static_assert
+    // stubs (single-threaded). Record the requested priority but skip the
+    // pthread plumbing.
     pTargetThread->m_iThreadPriority = iNewPriority;
     palError = NO_ERROR;
     goto InternalSetThreadPriorityExit;
@@ -1282,10 +1281,8 @@ CorUnix::GetThreadTimesInternal(
 
     ts = status.pr_utime;
 #elif defined(TARGET_WASI)
-    // WASI 0.2.8 has no per-thread CPU time API. wasi-libc's clock_gettime
-    // supports CLOCK_MONOTONIC/CLOCK_REALTIME via emulated process clocks but
-    // not CLOCK_THREAD_CPUTIME_ID. Report zero user-time on WASI rather than
-    // failing the build. REPLACE-WHEN: WASI gains a thread-cpu-time clock.
+    // WASI 0.2.8 has no per-thread CPU time clock. Report zero rather than
+    // fail the build.
     struct timespec ts;
     ts.tv_sec = 0;
     ts.tv_nsec = 0;
@@ -2358,10 +2355,9 @@ CPalThread::GetStackBase()
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
 #if defined(TARGET_WASI)
-    // WASI is single-threaded; pthread_getattr_np is unavailable.
-    // The linker places the stack first (--stack-first by default) with
-    // -Wl,-z,stack-size=8388608 in the corerun CMakeLists.txt. So the stack
-    // lives in [0, 8 MiB) growing down from 8 MiB. We return the upper bound.
+    // wasm-component-ld places the stack first with -Wl,-z,stack-size=8 MiB
+    // (see corerun CMakeLists.txt), so the stack lives in [0, 8 MiB) and the
+    // base is the upper bound. pthread_getattr_np is unavailable.
     (void)thread; (void)stackAddr; (void)stackSize; (void)status;
     pthread_attr_destroy(&attr);
     stackBase = (void*)(8 * 1024 * 1024);
@@ -2418,9 +2414,8 @@ CPalThread::GetStackLimit()
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
 #if defined(TARGET_WASI)
-    // See TARGET_WASI note in GetStackBase. The stack base address is 0 with
-    // --stack-first, but CoreCLR rejects NULL stack limits, so bump by one
-    // page (4 KiB) to give a usable lower bound.
+    // See GetStackBase. CoreCLR rejects NULL stack limits, so bump by one
+    // page to give a usable lower bound.
     (void)thread; (void)stackSize; (void)status;
     pthread_attr_destroy(&attr);
     stackLimit = (void*)4096;

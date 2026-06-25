@@ -724,11 +724,7 @@ namespace pal
     inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
     {
 #ifdef TARGET_WASI
-        // wasi-libc has no dlopen at all. (Emscripten does support dlopen
-        // when the module is built with -sMAIN_MODULE/-fPIC, so leave the
-        // browser path unchanged here even though our nodeJS corerun
-        // happens to be statically linked today.) Callers handle the
-        // false return as "library not available".
+        // wasi-libc has no dlopen; callers treat false as "not available".
         (void)path; hMod = nullptr;
         return false;
 #else
