@@ -81,7 +81,7 @@ namespace Internal.CallingConvention
             m_byteStackIndex = -1;
             m_byteStackSize = 0;
             m_floatFlags = 0;
-            m_structFields = new FpStructInRegistersInfo();
+            m_structFields = default;
 
             m_fRequires64BitAlignment = false;
         }
@@ -363,9 +363,9 @@ namespace Internal.CallingConvention
             bool[] forcedByRefParams,
             bool skipFirstArg,
             bool extraObjectFirstArg,
-            bool isWindows = false,
-            ITypeHandle objectTypeHandle = null,
-            ITypeHandle intPtrTypeHandle = null)
+            bool isWindows,
+            ITypeHandle objectTypeHandle,
+            ITypeHandle intPtrTypeHandle)
         {
             this = default(ArgIterator);
             _transitionBlock = transitionBlock;
@@ -837,7 +837,7 @@ namespace Internal.CallingConvention
                                     // Check if we have enough registers available for the struct passing
                                     if ((cFPRegs + _x64UnixIdxFPReg <= TransitionBlock.X64UnixTransitionBlock.NUM_FLOAT_ARGUMENT_REGISTERS) && (cGenRegs + _x64UnixIdxGenReg) <= _transitionBlock.NumArgumentRegisters)
                                     {
-                                        _argLocDescForStructInRegs = new ArgLocDesc();
+                                        _argLocDescForStructInRegs = default;
                                         _argLocDescForStructInRegs.m_cGenReg = (short)cGenRegs;
                                         _argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
                                         _argLocDescForStructInRegs.m_idxGenReg = _x64UnixIdxGenReg;
@@ -1133,7 +1133,7 @@ namespace Internal.CallingConvention
                                     // that are passed in FP argument registers if possible.
                                     if (_argTypeHandle.IsHomogeneousAggregate())
                                     {
-                                        _argLocDescForStructInRegs = new ArgLocDesc();
+                                        _argLocDescForStructInRegs = default;
                                         _argLocDescForStructInRegs.m_idxFloatReg = _arm64IdxFPReg;
 
                                         int haElementSize = _argTypeHandle.GetHomogeneousAggregateElementSize();
@@ -1298,7 +1298,7 @@ namespace Internal.CallingConvention
 
                                 if ((1 + _rvLa64IdxFPReg <= _transitionBlock.NumArgumentRegisters) && (1 + _rvLa64IdxGenReg <= _transitionBlock.NumArgumentRegisters))
                                 {
-                                    _argLocDescForStructInRegs = new ArgLocDesc();
+                                    _argLocDescForStructInRegs = default;
                                     _argLocDescForStructInRegs.m_idxFloatReg = _rvLa64IdxFPReg;
                                     _argLocDescForStructInRegs.m_cFloatReg = 1;
 
@@ -1324,7 +1324,7 @@ namespace Internal.CallingConvention
                                 if (info.flags != FpStruct.UseIntCallConv)
                                 {
                                     Debug.Assert((info.flags & (FpStruct.OnlyOne | FpStruct.BothFloat)) != 0);
-                                    _argLocDescForStructInRegs = new ArgLocDesc();
+                                    _argLocDescForStructInRegs = default;
                                     _hasArgLocDescForStructInRegs = true;
                                     _argLocDescForStructInRegs.m_idxFloatReg = _rvLa64IdxFPReg;
                                     _argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
@@ -1570,7 +1570,7 @@ namespace Internal.CallingConvention
             {
                 case TargetArchitecture.Wasm32:
                     {
-                        ArgLocDesc pLoc = new ArgLocDesc();
+                        ArgLocDesc pLoc = default;
                         int byteArgSize = GetArgSize();
 
                         if (IsArgPassedByRef())
@@ -1583,7 +1583,7 @@ namespace Internal.CallingConvention
                     {
                         //        LIMITED_METHOD_CONTRACT;
 
-                        ArgLocDesc pLoc = new ArgLocDesc();
+                        ArgLocDesc pLoc = default;
 
                         pLoc.m_fRequires64BitAlignment = _armRequires64BitAlignment;
 
@@ -1626,7 +1626,7 @@ namespace Internal.CallingConvention
                     {
                         //        LIMITED_METHOD_CONTRACT;
 
-                        ArgLocDesc pLoc = new ArgLocDesc();
+                        ArgLocDesc pLoc = default;
 
                         if (_transitionBlock.IsFloatArgumentRegisterOffset(argOffset))
                         {
@@ -1677,7 +1677,7 @@ namespace Internal.CallingConvention
 
                         //        LIMITED_METHOD_CONTRACT;
 
-                        ArgLocDesc pLoc = new ArgLocDesc();
+                        ArgLocDesc pLoc = default;
 
                         if (_transitionBlock.IsFloatArgumentRegisterOffset(argOffset))
                         {
@@ -1733,7 +1733,7 @@ namespace Internal.CallingConvention
                             return null;
                         }
 
-                        ArgLocDesc pLoc = new ArgLocDesc();
+                        ArgLocDesc pLoc = default;
 
                         if (_transitionBlock.IsFloatArgumentRegisterOffset(argOffset))
                         {

@@ -117,7 +117,9 @@ internal sealed class CallingConvention_1 : ICallingConvention
             forcedByRefParams: new bool[parameterTypes.Length],
             skipFirstArg: false,
             extraObjectFirstArg: false,
-            isWindows: isWindows);
+            isWindows: isWindows,
+            objectTypeHandle: GetObjectTypeHandle(rts),
+            intPtrTypeHandle: GetIntPtrTypeHandle(rts));
 
         return argit.CbStackPop();
     }
@@ -206,7 +208,9 @@ internal sealed class CallingConvention_1 : ICallingConvention
             forcedByRefParams: new bool[parameterTypes.Length],
             skipFirstArg: false,
             extraObjectFirstArg: false,
-            isWindows: isWindows);
+            isWindows: isWindows,
+            objectTypeHandle: GetObjectTypeHandle(rts),
+            intPtrTypeHandle: GetIntPtrTypeHandle(rts));
 
         if (hasThis)
         {
@@ -452,6 +456,22 @@ internal sealed class CallingConvention_1 : ICallingConvention
         bool isApplePlatform = os == RuntimeInfoOperatingSystem.Apple;
 
         return TransitionBlock.FromTarget(targetArch, isWindows, isApplePlatform, isArmel: false);
+    }
+
+    // Well-known type handles passed to ArgIterator. The shared iterator only
+    // dereferences them when extraObjectFirstArg / extraFunctionPointerArg are
+    // set; this contract never sets either, so the lookups are cheap insurance
+    // against a future cDAC change tripping a NullReferenceException deep in
+    // GetArgumentType.
+    private CdacTypeHandle GetObjectTypeHandle(IRuntimeTypeSystem rts)
+    {
+        TargetPointer objectMt = rts.GetWellKnownMethodTable(WellKnownMethodTable.Object);
+        return new CdacTypeHandle(rts.GetTypeHandle(objectMt), _target);
+    }
+
+    private CdacTypeHandle GetIntPtrTypeHandle(IRuntimeTypeSystem rts)
+    {
+        return new CdacTypeHandle(rts.GetPrimitiveType(CdacCorElementType.I), _target);
     }
 
     // Result type produced by ParamMetadataProvider. Carries the underlying
