@@ -33,6 +33,11 @@ namespace System.Text.Json.Serialization.Tests
             => (JsonTypeClassifierContext)s_ctor.Invoke([kind, declaringType, unionCases, derivedTypes, typeDiscriminatorPropertyName]);
     }
 
+    /// <summary>
+    /// Verifies polymorphic type resolution via <see cref="JsonTypeClassifier"/> and the
+    /// generation of <see cref="JsonPolymorphismOptions"/>. The same contract applies to both
+    /// the reflection and source-generated paths, so the suite is exercised by both wrappers.
+    /// </summary>
     public abstract partial class PolymorphicTests
     {
         #region Test Models
@@ -435,6 +440,114 @@ namespace System.Text.Json.Serialization.Tests
             public ClassifiedAnimalBase? Pet { get; set; }
         }
 
+        // Hierarchy with a custom type-discriminator configuration, used to validate that
+        // PolymorphismOptions are surfaced identically under reflection and source generation.
+        [JsonPolymorphic(
+            TypeDiscriminatorPropertyName = "$kind",
+            IgnoreUnrecognizedTypeDiscriminators = true,
+            UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType)]
+        [JsonDerivedType(typeof(StringDiscriminatorDerived), "string-derived")]
+        [JsonDerivedType(typeof(IntDiscriminatorDerived), 42)]
+        public class PolymorphicBaseWithCustomDiscriminator
+        {
+            public string? Value { get; set; }
+        }
+
+        public sealed class StringDiscriminatorDerived : PolymorphicBaseWithCustomDiscriminator
+        {
+            public string? StringValue { get; set; }
+        }
+
+        public sealed class IntDiscriminatorDerived : PolymorphicBaseWithCustomDiscriminator
+        {
+            public int IntValue { get; set; }
+        }
+
+        // Hierarchy whose classifier is supplied through a strongly typed
+        // JsonTypeClassifierFactory<T> referenced from the [JsonPolymorphic] attribute.
+        [JsonPolymorphic(TypeClassifier = typeof(FactoryClassifiedAnimalClassifierFactory))]
+        [JsonDerivedType(typeof(FactoryClassifiedDog), "dog")]
+        [JsonDerivedType(typeof(FactoryClassifiedCat), "cat")]
+        public class FactoryClassifiedAnimal
+        {
+            public string? Name { get; set; }
+        }
+
+        public sealed class FactoryClassifiedDog : FactoryClassifiedAnimal
+        {
+            public string? Breed { get; set; }
+        }
+
+        public sealed class FactoryClassifiedCat : FactoryClassifiedAnimal
+        {
+            public int Lives { get; set; }
+        }
+
+        public sealed class FactoryClassifiedAnimalClassifierFactory : JsonTypeClassifierFactory<FactoryClassifiedAnimal>
+        {
+            public override JsonTypeClassifier CreateJsonClassifier(JsonTypeClassifierContext context, JsonSerializerOptions options)
+            {
+                Assert.Equal(JsonTypeClassifierKind.PolymorphicType, context.Kind);
+                Assert.Equal(typeof(FactoryClassifiedAnimal), context.DeclaringType);
+                Assert.Equal("$type", context.TypeDiscriminatorPropertyName);
+                Assert.Collection(
+                    context.DerivedTypes,
+                    derivedType =>
+                    {
+                        Assert.Equal(typeof(FactoryClassifiedDog), derivedType.DerivedType);
+                        Assert.Equal("dog", derivedType.TypeDiscriminator);
+                    },
+                    derivedType =>
+                    {
+                        Assert.Equal(typeof(FactoryClassifiedCat), derivedType.DerivedType);
+                        Assert.Equal("cat", derivedType.TypeDiscriminator);
+                    });
+
+                return static (ref Utf8JsonReader reader) =>
+                {
+                    if (reader.TokenType != JsonTokenType.StartObject)
+                        return null;
+
+                    while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+                    {
+                        if (reader.TokenType == JsonTokenType.PropertyName)
+                        {
+                            if (reader.ValueTextEquals("Breed"u8)) return typeof(FactoryClassifiedDog);
+                            if (reader.ValueTextEquals("Lives"u8)) return typeof(FactoryClassifiedCat);
+                            reader.Read();
+                            reader.TrySkip();
+                        }
+                    }
+
+                    return null;
+                };
+            }
+        }
+
+        // Collection type carrying polymorphism options.
+        [JsonPolymorphic(TypeDiscriminatorPropertyName = "$kind")]
+        [JsonDerivedType(typeof(PolymorphicIntListDerived), "derived-list")]
+        public class PolymorphicIntList : List<int>
+        {
+        }
+
+        public sealed class PolymorphicIntListDerived : PolymorphicIntList
+        {
+        }
+
+        // Open generic hierarchy where the derived type only partially unifies with the base.
+        [JsonDerivedType(typeof(OpenGenericDerived<>), "derived")]
+        public class OpenGenericBase<T1, T2>
+        {
+            public T1? Value1 { get; set; }
+            public T2? Value2 { get; set; }
+        }
+
+        public sealed class OpenGenericDerived<T> : OpenGenericBase<T, int>
+        {
+            public T? Extra { get; set; }
+        }
+
         #endregion
 
         #region Classifier via contract customization — structural matching
@@ -594,12 +707,8 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task OptionsTypeClassifier_UsesPolymorphicContextToSelectFactory()
         {
-            var options = new JsonSerializerOptions
-            {
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
-            };
-
-            options.TypeClassifiers.Add(new TestStructuralClassifierFactory());
+            JsonSerializerOptions options = Serializer.CreateOptions(
+                configure: o => o.TypeClassifiers.Add(new TestStructuralClassifierFactory()));
 
             string json = """{"Name":"Rex","Breed":"Labrador"}""";
             ClassifiedAnimalBase? result = await Serializer.DeserializeWrapper<ClassifiedAnimalBase>(json, options);
@@ -612,24 +721,15 @@ namespace System.Text.Json.Serialization.Tests
         public void OptionsTypeClassifier_IsVisibleToPolymorphicModifier()
         {
             JsonTypeClassifier? classifierFromModifier = null;
-            var options = new JsonSerializerOptions
-            {
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+            JsonSerializerOptions options = Serializer.CreateOptions(
+                configure: o => o.TypeClassifiers.Add(new TestStructuralClassifierFactory()),
+                modifier: typeInfo =>
                 {
-                    Modifiers =
+                    if (typeInfo.Type == typeof(ClassifiedAnimalBase))
                     {
-                        typeInfo =>
-                        {
-                            if (typeInfo.Type == typeof(ClassifiedAnimalBase))
-                            {
-                                classifierFromModifier = typeInfo.TypeClassifier;
-                            }
-                        }
+                        classifierFromModifier = typeInfo.TypeClassifier;
                     }
-                }
-            };
-
-            options.TypeClassifiers.Add(new TestStructuralClassifierFactory());
+                });
 
             JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(ClassifiedAnimalBase));
 
@@ -700,22 +800,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonTypeClassifier? classifierFromModifier = null;
 
-            var options = new JsonSerializerOptions
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                if (typeInfo.Type == typeof(AttrClassifiedAnimal))
                 {
-                    Modifiers =
-                    {
-                        typeInfo =>
-                        {
-                            if (typeInfo.Type == typeof(AttrClassifiedAnimal))
-                            {
-                                classifierFromModifier = typeInfo.TypeClassifier;
-                            }
-                        }
-                    }
+                    classifierFromModifier = typeInfo.TypeClassifier;
                 }
-            };
+            });
 
             JsonTypeInfo typeInfo = options.GetTypeInfo(typeof(AttrClassifiedAnimal));
 
@@ -1026,23 +1117,14 @@ namespace System.Text.Json.Serialization.Tests
                                     "kind");
             JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
 
-            var options = new JsonSerializerOptions
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
-                AllowOutOfOrderMetadataProperties = true,
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                if (typeInfo.Type == typeof(ClassifiedAnimalBase))
                 {
-                    Modifiers =
-                    {
-                        typeInfo =>
-                        {
-                            if (typeInfo.Type == typeof(ClassifiedAnimalBase))
-                            {
-                                typeInfo.TypeClassifier = classify;
-                            }
-                        }
-                    }
+                    typeInfo.TypeClassifier = classify;
                 }
-            };
+            });
+            options.AllowOutOfOrderMetadataProperties = true;
 
             // "kind" property is not standard $type — classifier handles it
             string json = """{"Name":"Rex","kind":"dog","Breed":"Lab"}""";
@@ -1110,40 +1192,31 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task Classifier_WithCamelCaseNamingPolicy_ReadsRawJsonPropertyNames()
         {
-            var options = new JsonSerializerOptions
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                if (typeInfo.Type == typeof(ClassifiedAnimalBase))
                 {
-                    Modifiers =
+                    // Classifier reads raw JSON property names, not C# names
+                    typeInfo.TypeClassifier = (ref Utf8JsonReader reader) =>
                     {
-                        typeInfo =>
+                        if (reader.TokenType != JsonTokenType.StartObject) return null;
+                        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
                         {
-                            if (typeInfo.Type == typeof(ClassifiedAnimalBase))
+                            if (reader.TokenType == JsonTokenType.PropertyName)
                             {
-                                // Classifier reads raw JSON property names, not C# names
-                                typeInfo.TypeClassifier = (ref Utf8JsonReader reader) =>
-                                {
-                                    if (reader.TokenType != JsonTokenType.StartObject) return null;
-                                    while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
-                                    {
-                                        if (reader.TokenType == JsonTokenType.PropertyName)
-                                        {
-                                            // JSON uses camelCase "breed", not PascalCase "Breed"
-                                            if (reader.ValueTextEquals("breed"u8)) return typeof(ClassifiedDog);
-                                            if (reader.ValueTextEquals("lives"u8)) return typeof(ClassifiedCat);
-                                            reader.Read();
-                                            reader.TrySkip();
-                                        }
-                                    }
-
-                                    return null;
-                                };
+                                // JSON uses camelCase "breed", not PascalCase "Breed"
+                                if (reader.ValueTextEquals("breed"u8)) return typeof(ClassifiedDog);
+                                if (reader.ValueTextEquals("lives"u8)) return typeof(ClassifiedCat);
+                                reader.Read();
+                                reader.TrySkip();
                             }
                         }
-                    }
+
+                        return null;
+                    };
                 }
-            };
+            });
+            options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
             string json = """{"name":"Rex","breed":"Lab"}""";
             ClassifiedAnimalBase? result = await Serializer.DeserializeWrapper<ClassifiedAnimalBase>(json, options);
@@ -1168,41 +1241,32 @@ namespace System.Text.Json.Serialization.Tests
                                     "kind");
             JsonTypeClassifier animalClassify = animalFactory.CreateJsonClassifier(animalContext, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
 
-            var options = new JsonSerializerOptions
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                if (typeInfo.Type == typeof(ClassifiedAnimalBase))
                 {
-                    Modifiers =
+                    typeInfo.TypeClassifier = animalClassify;
+                }
+                else if (typeInfo.Type == typeof(ClassifiedShape))
+                {
+                    typeInfo.TypeClassifier = (ref Utf8JsonReader reader) =>
                     {
-                        typeInfo =>
+                        if (reader.TokenType != JsonTokenType.StartObject) return null;
+                        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
                         {
-                            if (typeInfo.Type == typeof(ClassifiedAnimalBase))
+                            if (reader.TokenType == JsonTokenType.PropertyName)
                             {
-                                typeInfo.TypeClassifier = animalClassify;
-                            }
-                            else if (typeInfo.Type == typeof(ClassifiedShape))
-                            {
-                                typeInfo.TypeClassifier = (ref Utf8JsonReader reader) =>
-                                {
-                                    if (reader.TokenType != JsonTokenType.StartObject) return null;
-                                    while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
-                                    {
-                                        if (reader.TokenType == JsonTokenType.PropertyName)
-                                        {
-                                            if (reader.ValueTextEquals("Radius"u8)) return typeof(ClassifiedCircle);
-                                            if (reader.ValueTextEquals("Width"u8)) return typeof(ClassifiedRectangle);
-                                            reader.Read();
-                                            reader.TrySkip();
-                                        }
-                                    }
-
-                                    return null;
-                                };
+                                if (reader.ValueTextEquals("Radius"u8)) return typeof(ClassifiedCircle);
+                                if (reader.ValueTextEquals("Width"u8)) return typeof(ClassifiedRectangle);
+                                reader.Read();
+                                reader.TrySkip();
                             }
                         }
-                    }
+
+                        return null;
+                    };
                 }
-            };
+            });
 
             // Animal
             string animalJson = """{"kind":"dog","Name":"Rex","Breed":"Lab"}""";
@@ -1285,35 +1349,106 @@ namespace System.Text.Json.Serialization.Tests
 
         #endregion
 
+        [Fact]
+        public void PolymorphismOptions_AreGenerated()
+        {
+            JsonTypeInfo<PolymorphicBaseWithCustomDiscriminator> typeInfo = Serializer.GetTypeInfo<PolymorphicBaseWithCustomDiscriminator>();
+            JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
+
+            Assert.True(options.IgnoreUnrecognizedTypeDiscriminators);
+            Assert.Equal(JsonUnknownDerivedTypeHandling.FallBackToBaseType, options.UnknownDerivedTypeHandling);
+            Assert.Equal("$kind", options.TypeDiscriminatorPropertyName);
+            Assert.Collection(
+                options.DerivedTypes,
+                derivedType =>
+                {
+                    Assert.Equal(typeof(StringDiscriminatorDerived), derivedType.DerivedType);
+                    Assert.Equal("string-derived", derivedType.TypeDiscriminator);
+                },
+                derivedType =>
+                {
+                    Assert.Equal(typeof(IntDiscriminatorDerived), derivedType.DerivedType);
+                    Assert.Equal(42, derivedType.TypeDiscriminator);
+                });
+        }
+
+        [Fact]
+        public void CollectionPolymorphismOptions_AreGenerated()
+        {
+            JsonTypeInfo<PolymorphicIntList> typeInfo = Serializer.GetTypeInfo<PolymorphicIntList>();
+            JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
+
+            Assert.Equal("$kind", options.TypeDiscriminatorPropertyName);
+            JsonDerivedType derivedType = Assert.Single(options.DerivedTypes);
+            Assert.Equal(typeof(PolymorphicIntListDerived), derivedType.DerivedType);
+            Assert.Equal("derived-list", derivedType.TypeDiscriminator);
+        }
+
+        [Fact]
+        public async Task PolymorphicTypeClassifier_IsGeneratedAndVisibleToModifier()
+        {
+            bool modifierObservedClassifier = false;
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(FactoryClassifiedAnimal))
+                {
+                    Assert.NotNull(typeInfo.PolymorphismOptions);
+                    Assert.NotNull(typeInfo.TypeClassifier);
+                    modifierObservedClassifier = true;
+                }
+            });
+
+            FactoryClassifiedAnimal? result = await Serializer.DeserializeWrapper<FactoryClassifiedAnimal>(
+                """{"Name":"Rex","Breed":"Labrador"}""",
+                options);
+
+            FactoryClassifiedDog dog = Assert.IsType<FactoryClassifiedDog>(result);
+            Assert.Equal("Rex", dog.Name);
+            Assert.Equal("Labrador", dog.Breed);
+            Assert.True(modifierObservedClassifier);
+        }
+
+        [Fact]
+        public async Task OpenGenericDerivedType_PartiallyConcrete_RoundTrips()
+        {
+            // OpenGenericDerived<T> : OpenGenericBase<T, int> registered on OpenGenericBase<string, int>.
+            // Position 0 (T) unifies to string; position 1 (concrete int) matches. The resolved derived
+            // type for the closed base must be OpenGenericDerived<string>.
+            JsonTypeInfo<OpenGenericBase<string, int>> typeInfo = Serializer.GetTypeInfo<OpenGenericBase<string, int>>();
+            JsonPolymorphismOptions options = Assert.IsType<JsonPolymorphismOptions>(typeInfo.PolymorphismOptions);
+            JsonDerivedType derivedType = Assert.Single(options.DerivedTypes);
+            Assert.Equal(typeof(OpenGenericDerived<string>), derivedType.DerivedType);
+            Assert.Equal("derived", derivedType.TypeDiscriminator);
+
+            OpenGenericBase<string, int> value = new OpenGenericDerived<string> { Extra = "hello" };
+            string json = await Serializer.SerializeWrapper(value, typeInfo);
+            Assert.Contains("\"$type\":\"derived\"", json);
+
+            OpenGenericBase<string, int>? result = await Serializer.DeserializeWrapper(json, typeInfo);
+            OpenGenericDerived<string> d = Assert.IsType<OpenGenericDerived<string>>(result);
+            Assert.Equal("hello", d.Extra);
+        }
+
         #region Helpers
 
-        private static JsonSerializerOptions CreateOptionsWithStructuralClassifier<TBase>()
+        private JsonSerializerOptions CreateOptionsWithStructuralClassifier<TBase>()
             where TBase : class
         {
-            return new JsonSerializerOptions
+            return Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                if (typeInfo.Type == typeof(TBase) && typeInfo.PolymorphismOptions is not null)
                 {
-                    Modifiers =
-                    {
-                        typeInfo =>
-                        {
-                            if (typeInfo.Type == typeof(TBase) && typeInfo.PolymorphismOptions is not null)
-                            {
-                                var factory = new TestStructuralClassifierFactory();
-                                var context = JsonTypeClassifierContextTestExtensions.Create(
-                                    typeof(TBase),
-                                    Array.Empty<JsonUnionCaseInfo>(),
-                                    typeInfo.PolymorphismOptions.DerivedTypes.ToList(),
-                                    typeInfo.PolymorphismOptions.TypeDiscriminatorPropertyName);
+                    var factory = new TestStructuralClassifierFactory();
+                    var context = JsonTypeClassifierContextTestExtensions.Create(
+                        typeof(TBase),
+                        Array.Empty<JsonUnionCaseInfo>(),
+                        typeInfo.PolymorphismOptions.DerivedTypes.ToList(),
+                        typeInfo.PolymorphismOptions.TypeDiscriminatorPropertyName);
 
-                                typeInfo.TypeClassifier =
-                                    factory.CreateJsonClassifier(context, typeInfo.Options);
-                            }
-                        }
-                    }
+                    typeInfo.TypeClassifier =
+                        factory.CreateJsonClassifier(context, typeInfo.Options);
                 }
-            };
+            });
         }
 
         [Fact]
@@ -1329,24 +1464,15 @@ namespace System.Text.Json.Serialization.Tests
                                     "kind");
             JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
 
-            var options = new JsonSerializerOptions
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
-                ReferenceHandler = ReferenceHandler.Preserve,
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                if (typeInfo.Type == typeof(ClassifiedAnimalBase) && typeInfo.PolymorphismOptions is not null)
                 {
-                    Modifiers =
-                    {
-                        typeInfo =>
-                        {
-                            if (typeInfo.Type == typeof(ClassifiedAnimalBase) && typeInfo.PolymorphismOptions is not null)
-                            {
-                                typeInfo.PolymorphismOptions.TypeDiscriminatorPropertyName = "kind";
-                                typeInfo.TypeClassifier = classify;
-                            }
-                        }
-                    }
+                    typeInfo.PolymorphismOptions.TypeDiscriminatorPropertyName = "kind";
+                    typeInfo.TypeClassifier = classify;
                 }
-            };
+            });
+            options.ReferenceHandler = ReferenceHandler.Preserve;
 
             var dog = new ClassifiedDog { Name = "Rex", Breed = "Lab" };
             ClassifiedAnimalBase[] payload = new ClassifiedAnimalBase[] { dog, dog };
@@ -1363,25 +1489,16 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("Lab", ((ClassifiedDog)result[0]).Breed);
         }
 
-        private static JsonSerializerOptions CreateOptionsWithClassifier<TBase>(JsonTypeClassifier classifier)
+        private JsonSerializerOptions CreateOptionsWithClassifier<TBase>(JsonTypeClassifier classifier)
             where TBase : class
         {
-            return new JsonSerializerOptions
+            return Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
-                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                if (typeInfo.Type == typeof(TBase) && typeInfo.PolymorphismOptions is not null)
                 {
-                    Modifiers =
-                    {
-                        typeInfo =>
-                        {
-                            if (typeInfo.Type == typeof(TBase) && typeInfo.PolymorphismOptions is not null)
-                            {
-                                typeInfo.TypeClassifier = classifier;
-                            }
-                        }
-                    }
+                    typeInfo.TypeClassifier = classifier;
                 }
-            };
+            });
         }
 
         #endregion

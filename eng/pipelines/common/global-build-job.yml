@@ -54,7 +54,7 @@ jobs:
     ${{ if eq(parameters.platform, 'windows_arm64') }}:
       ${{ if eq(parameters.timeoutInMinutes, '') }}:
         timeoutInMinutes: 75
-      ${{ elseif gt(parameters.timeoutInMinutes, 75) }}:
+      ${{ elseif lt(75, parameters.timeoutInMinutes) }}:
         timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       ${{ else }}:
         timeoutInMinutes: 75
