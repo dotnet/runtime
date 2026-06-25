@@ -129,9 +129,21 @@ void StackLevelSetter::ProcessBlock(BasicBlock* block)
         if (node->OperIsPutArgStkOrSplit())
         {
             GenTreePutArgStk* putArg   = node->AsPutArgStk();
+#ifdef TARGET_POWERPC64
+            // On PPC64LE, PutArgStk nodes may have 0 stack slots (all in registers).
+            // Check if the entry exists before accessing it.
+            unsigned* pNumSlots = putArgNumSlots.LookupPointer(putArg);
+            if (pNumSlots != nullptr)
+            {
+                unsigned numSlots = *pNumSlots;
+                putArgNumSlots.Remove(putArg);
+                SubStackLevel(numSlots);
+            }
+#else
             unsigned          numSlots = putArgNumSlots[putArg];
             putArgNumSlots.Remove(putArg);
             SubStackLevel(numSlots);
+#endif
         }
 
         if (node->IsCall())

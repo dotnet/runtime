@@ -24,6 +24,61 @@ const regMaskTP fltArgMasks[] = {RBM_F1, RBM_F2, RBM_F3, RBM_F4, RBM_F5, RBM_F6,
 // clang-format on
 
 //-----------------------------------------------------------------------------
+// IsPpc64leHfaLikeStruct: Check if a struct is a Homogeneous Float Aggregate (HFA)
+//
+// Arguments:
+//    comp       - Compiler instance
+//    hClass     - Class handle for the struct
+//    pHfaType   - [out] Type of HFA elements (TYP_FLOAT or TYP_DOUBLE), or TYP_UNDEF if not HFA
+//    pNumFields - [out] Number of HFA fields
+//
+// Return Value:
+//    true if the struct is an HFA (all float or all double fields), false otherwise
+//
+// Notes:
+//    This function detects HFA structs without requiring FEATURE_HFA to be enabled.
+//    It calls the VM's getHFAType() directly to determine if a struct qualifies as HFA.
+//    Per PPC64LE ELFv2 ABI:
+//    - For parameters: HFA can use all 13 float registers (f1-f13)
+//    - For return values: HFA limited to 8 fields maximum
+//
+bool IsPpc64leHfaLikeStruct(Compiler* comp, CORINFO_CLASS_HANDLE hClass, var_types* pHfaType, unsigned* pNumFields)
+{
+    assert(comp != nullptr);
+    assert(hClass != NO_CLASS_HANDLE);
+    assert(pHfaType != nullptr);
+    assert(pNumFields != nullptr);
+    
+    // Initialize output parameters
+    *pHfaType = TYP_UNDEF;
+    *pNumFields = 0;
+    
+    // Call VM to detect HFA type
+    CorInfoHFAElemType hfaElemKind = comp->info.compCompHnd->getHFAType(hClass);
+    
+    // Check if it's an HFA (all float or all double fields)
+    bool isHfa = (hfaElemKind == CORINFO_HFA_ELEM_FLOAT || hfaElemKind == CORINFO_HFA_ELEM_DOUBLE);
+    
+    if (isHfa)
+    {
+        // Determine the HFA element type
+        *pHfaType = (hfaElemKind == CORINFO_HFA_ELEM_FLOAT) ? TYP_FLOAT : TYP_DOUBLE;
+        
+        // Calculate number of fields based on struct size
+        unsigned structSize = comp->info.compCompHnd->getClassSize(hClass);
+        unsigned fieldSize = (*pHfaType == TYP_FLOAT) ? 4 : 8;
+        *pNumFields = structSize / fieldSize;
+        
+        // For parameters: can use up to 13 float registers (f1-f13)
+        // For return values: limited to 8 fields (checked elsewhere)
+        assert(*pNumFields > 0 && *pNumFields <= 13);
+    }
+    
+    return isHfa;
+}
+
+
+//-----------------------------------------------------------------------------
 // S390xClassifier:
 //   Construct a new instance of the S390X ABI classifier.
 //
@@ -127,6 +182,116 @@ ABIPassingInformation Ppc64leClassifier::Classify(Compiler*    comp,
     {
         unsigned size = structLayout->GetSize();
         
+        // PPC64LE ELFv2 ABI: Check if struct is a Homogeneous Float Aggregate (HFA)
+        // HFA: struct with all float or all double fields (up to 8 fields)
+        CORINFO_CLASS_HANDLE classHandle = structLayout->GetClassHandle();
+        var_types hfaType = TYP_UNDEF;
+        unsigned numFields = 0;
+        bool isHfa = IsPpc64leHfaLikeStruct(comp, classHandle, &hfaType, &numFields);
+        
+        // If HFA, pass in float registers
+        if (isHfa && !m_info.IsVarArgs)
+        {
+            // Get field size from HFA type
+            unsigned fieldSize = (hfaType == TYP_FLOAT) ? 4 : 8;
+            
+            // PPC64LE: Each HFA field consumes an 8-byte slot, even for 4-byte floats
+            unsigned slotSize = TARGET_POINTER_SIZE; // Always 8 bytes per slot
+            
+            // Check if we have enough float registers
+            if (m_floatRegs.Count() >= numFields)
+            {
+                // Pass HFA in float registers
+                ABIPassingInformation info = ABIPassingInformation(comp, numFields);
+                unsigned offset = 0;
+                
+                for (unsigned i = 0; i < numFields; i++)
+                {
+                    info.Segment(i) = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, fieldSize);
+                    offset += fieldSize;
+                }
+                
+                // HFA also consumes corresponding int register slots if within first 8 slots
+                if (m_numTotalSlots < 8)
+                {
+                    unsigned slotsToConsume = min(numFields, 8 - m_numTotalSlots);
+                    for (unsigned i = 0; i < slotsToConsume && m_intRegs.Count() > 0; i++)
+                    {
+                        m_intRegs.Dequeue();
+                    }
+                }
+                
+                m_argNum++;
+                m_numTotalSlots += numFields;
+                return info;
+            }
+            else if (m_floatRegs.Count() > 0)
+            {
+                // Split HFA between float registers and stack
+                unsigned regsAvailable = m_floatRegs.Count();
+                unsigned stackFields = numFields - regsAvailable;
+                
+                ABIPassingInformation info = ABIPassingInformation(comp, numFields);
+                unsigned offset = 0;
+                
+                // Fill available float registers
+                for (unsigned i = 0; i < regsAvailable; i++)
+                {
+                    info.Segment(i) = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, fieldSize);
+                    offset += fieldSize;
+                }
+                
+                // Consume corresponding int register slots
+                if (m_numTotalSlots < 8)
+                {
+                    unsigned slotsToConsume = min(regsAvailable, 8 - m_numTotalSlots);
+                    for (unsigned i = 0; i < slotsToConsume && m_intRegs.Count() > 0; i++)
+                    {
+                        m_intRegs.Dequeue();
+                    }
+                }
+                
+                m_numTotalSlots += regsAvailable;
+                unsigned stackOffset = 32 + (m_numTotalSlots * 8);
+                
+                // Put remainder on stack - each field uses 8-byte slot
+                for (unsigned i = regsAvailable; i < numFields; i++)
+                {
+                    info.Segment(i) = ABIPassingSegment::OnStack(stackOffset, offset, fieldSize);
+                    offset += fieldSize;
+                    stackOffset += slotSize; // Advance by 8 bytes per slot
+                }
+                
+                m_argNum++;
+                m_numTotalSlots += stackFields;
+                m_stackArgSize = stackOffset;
+                m_floatRegs.Clear();
+                return info;
+            }
+            else
+            {
+                // Pass HFA entirely on stack - each field uses 8-byte slot
+                ABIPassingInformation info = ABIPassingInformation(comp, numFields);
+                unsigned offset = 0;
+                unsigned stackOffset = 32 + (m_numTotalSlots * 8);
+                
+                for (unsigned i = 0; i < numFields; i++)
+                {
+                    info.Segment(i) = ABIPassingSegment::OnStack(stackOffset, offset, fieldSize);
+                    offset += fieldSize;
+                    stackOffset += slotSize; // Advance by 8 bytes per slot
+                }
+                
+                m_argNum++;
+                m_numTotalSlots += numFields;
+                m_stackArgSize = stackOffset;
+                m_floatRegs.Clear();
+                m_intRegs.Clear();
+                return info;
+            }
+        }
+        
+        // Non-HFA struct: pass in integer registers
         // PPC64LE ELFv2 ABI: Structs are passed by value in registers or on stack
         // Calculate number of 8-byte slots needed
         unsigned slots = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;

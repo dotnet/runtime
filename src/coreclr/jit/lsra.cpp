@@ -1742,9 +1742,42 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
     // references when using the general GC encoding.
     unsigned lclNum = compiler->lvaGetLclNum(varDsc);
+    
+#ifdef TARGET_POWERPC64
+    // For PPC64LE, HFA-like struct parameters passed in registers should be register candidates.
+    // On PPC64LE, structs are always passed by value in registers if registers are available,
+    // otherwise they're passed on the stack.
+    bool isPpc64leHfaParam = false;
+    if (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT) && varDsc->lvIsParam)
+    {
+        // Check if this is an HFA-like struct parameter passed in registers
+        if (varDsc->lvIsRegArg)
+        {
+            ClassLayout* layout = varDsc->GetLayout();
+            if (layout != nullptr)
+            {
+                CORINFO_CLASS_HANDLE typeHnd = layout->GetClassHandle();
+                var_types hfaType = TYP_UNDEF;
+                unsigned hfaSlots = 0;
+                
+                // IsPpc64leHfaLikeStruct validates size (up to 8 float/double fields = 64 bytes max)
+                if (IsPpc64leHfaLikeStruct(compiler, typeHnd, &hfaType, &hfaSlots))
+                {
+                    // This is an HFA-like struct parameter passed in registers
+                    isPpc64leHfaParam = true;
+                }
+            }
+        }
+    }
+    
+    if (varDsc->IsAddressExposed() || !varDsc->IsEnregisterableType() ||
+        (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT) && !isPpc64leHfaParam))
+    {
+#else
     if (varDsc->IsAddressExposed() || !varDsc->IsEnregisterableType() ||
         (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
     {
+#endif
 #ifdef DEBUG
         DoNotEnregisterReason dner;
         if (varDsc->IsAddressExposed())
@@ -1971,7 +2004,33 @@ void LinearScan::identifyCandidates()
         varDsc->SetOtherReg(REG_STK);
 #endif // TARGET_64BIT
 
+#ifdef TARGET_POWERPC64
+        // For PPC64LE, allow HFA-like struct parameters to be enregistered even when
+        // localVarsEnregistered is false. On PPC64LE, structs are passed by value in
+        // registers if available, so we need to enregister them to match the ABI.
+        bool isPpc64leHfaParam = false;
+        if (!localVarsEnregistered && varDsc->lvIsParam && (varDsc->lvType == TYP_STRUCT))
+        {
+            ClassLayout* layout = varDsc->GetLayout();
+            if (layout != nullptr && varDsc->lvIsRegArg)
+            {
+                CORINFO_CLASS_HANDLE typeHnd = layout->GetClassHandle();
+                var_types hfaType = TYP_UNDEF;
+                unsigned hfaSlots = 0;
+                
+                // IsPpc64leHfaLikeStruct validates size (up to 8 float/double fields = 64 bytes max)
+                if (IsPpc64leHfaLikeStruct(compiler, typeHnd, &hfaType, &hfaSlots))
+                {
+                    // This is an HFA-like struct parameter - allow it to be enregistered
+                    isPpc64leHfaParam = true;
+                }
+            }
+        }
+        
+        if (!localVarsEnregistered && !isPpc64leHfaParam)
+#else
         if (!localVarsEnregistered)
+#endif
         {
             varDsc->lvLRACandidate = false;
             continue;
@@ -2054,6 +2113,29 @@ void LinearScan::identifyCandidates()
         if (varDsc->lvLRACandidate)
         {
             var_types type = varDsc->GetStackSlotHomeType();
+#ifdef TARGET_POWERPC64
+            // On PPC64LE, HFA-like struct parameters need float register type
+            // GetStackSlotHomeType() returns TYP_LONG for 8-byte structs, but HFA structs
+            // need to use the HFA element type (TYP_FLOAT or TYP_DOUBLE) to get float register candidates
+            if (type == TYP_LONG && varDsc->lvType == TYP_STRUCT && varDsc->lvIsParam && varDsc->lvIsRegArg)
+            {
+                ClassLayout* layout = varDsc->GetLayout();
+                if (layout != nullptr)
+                {
+                    CORINFO_CLASS_HANDLE typeHnd = layout->GetClassHandle();
+                    var_types hfaType = TYP_UNDEF;
+                    unsigned hfaSlots = 0;
+                    
+                    if (IsPpc64leHfaLikeStruct(compiler, typeHnd, &hfaType, &hfaSlots))
+                    {
+                        // Use HFA element type for interval creation to get float register candidates
+                        type = hfaType;
+                        JITDUMP("V%02u is HFA struct parameter, using register type %s instead of TYP_LONG\n",
+                                lclNum, varTypeName(hfaType));
+                    }
+                }
+            }
+#endif // TARGET_POWERPC64
             if (!varTypeUsesIntReg(type))
             {
                 compiler->compFloatingPointUsed = true;
@@ -2906,9 +2988,9 @@ RegisterType LinearScan::getRegisterType(Interval* currentInterval, RefPosition*
     assert(refPosition->getInterval() == currentInterval);
     RegisterType     regType    = currentInterval->registerType;
     SingleTypeRegSet candidates = refPosition->registerAssignment;
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // The LoongArch64's ABI which the float args maybe passed by integer register
-    // when no float register left but free integer register.
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_POWERPC64)
+    // The LoongArch64/RISCV64/PPC64LE ABI allows float args to be passed in integer registers
+    // when no float register is available (or for PPC64LE, with GPR shadowing for HFA structs).
     if ((candidates & allRegs(regType)) != RBM_NONE)
     {
         return regType;

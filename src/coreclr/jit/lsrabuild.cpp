@@ -602,6 +602,16 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
         regNumber    physicalReg = genRegNumFromMask(mask, theInterval->registerType);
         RefPosition* pos         = newRefPosition(physicalReg, theLocation, RefTypeFixedReg, nullptr, mask);
         assert(theInterval != nullptr);
+#ifdef TARGET_POWERPC64
+        if ((allRegs(theInterval->registerType) & mask) == 0)
+        {
+            printf("[PPC64LE HFA DEBUG] ASSERTION FAILURE at line 605:\n");
+            printf("  interval->registerType = %s\n", varTypeName(theInterval->registerType));
+            printf("  mask = 0x%llx\n", (unsigned long long)mask);
+            printf("  allRegs(registerType) = 0x%llx\n", (unsigned long long)allRegs(theInterval->registerType));
+            printf("  theTreeNode = %s\n", theTreeNode ? GenTree::OpName(theTreeNode->OperGet()) : "nullptr");
+        }
+#endif
         assert((allRegs(theInterval->registerType) & mask) != 0);
     }
 
@@ -2877,8 +2887,33 @@ void LinearScan::buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramRe
 {
     assert(isCandidateVar(varDsc));
 
-    Interval*        interval = getIntervalForLocalVar(varDsc->lvVarIndex);
-    const var_types  regType  = varDsc->GetRegisterType();
+    Interval*       interval = getIntervalForLocalVar(varDsc->lvVarIndex);
+    var_types       regType  = varDsc->GetRegisterType();
+    
+#ifdef TARGET_POWERPC64
+    // For PPC64LE, HFA-like structs may have regType TYP_LONG but are passed in float registers.
+    // Override the register type to match the actual register being used.
+    if (regType == TYP_LONG && varDsc->lvIsParam && genIsValidFloatReg(paramReg))
+    {
+        ClassLayout* layout = varDsc->GetLayout();
+        if (layout != nullptr)
+        {
+            CORINFO_CLASS_HANDLE typeHnd = layout->GetClassHandle();
+            var_types hfaType = TYP_UNDEF;
+            unsigned hfaSlots = 0;
+            
+            // IsPpc64leHfaLikeStruct validates size (up to 8 float/double fields = 64 bytes max)
+            if (IsPpc64leHfaLikeStruct(compiler, typeHnd, &hfaType, &hfaSlots))
+            {
+                // Use the HFA element type for register allocation
+                regType = hfaType;
+                // Also update the interval's registerType
+                interval->registerType = hfaType;
+            }
+        }
+    }
+#endif
+    
     SingleTypeRegSet mask     = allRegs(regType);
     if ((paramReg != REG_NA) && !stressInitialParamReg())
     {
@@ -4485,9 +4520,78 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     int      srcCount        = 1;
     GenTree* op1             = node->gtGetOp1();
 
+#ifdef TARGET_POWERPC64
+    // On PPC64LE, HFA-like structs may have type TYP_LONG but need to be passed
+    // in float registers. We need to change both the operand's interval type
+    // and the PUT_ARG_REG node's type to match the target register type.
+    var_types overrideType = TYP_UNDEF;
+    if (op1->TypeGet() == TYP_LONG && genIsValidFloatReg(argReg) &&
+        (op1->OperIs(GT_LCL_VAR) || op1->OperIs(GT_LCL_FLD)))
+    {
+        unsigned lclNum = op1->OperIs(GT_LCL_VAR) ? op1->AsLclVar()->GetLclNum()
+                                                   : op1->AsLclFld()->GetLclNum();
+        LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+        if (varDsc->TypeGet() == TYP_STRUCT)
+        {
+            ClassLayout* layout = varDsc->GetLayout();
+            if (layout != nullptr)
+            {
+                CORINFO_CLASS_HANDLE typeHnd = layout->GetClassHandle();
+                var_types hfaType = TYP_UNDEF;
+                unsigned hfaSlots = 0;
+                
+                // IsPpc64leHfaLikeStruct validates size (up to 8 float/double fields = 64 bytes max)
+                if (IsPpc64leHfaLikeStruct(compiler, typeHnd, &hfaType, &hfaSlots))
+                {
+                    // Override the type to match the HFA element type
+                    overrideType = hfaType;
+                    printf("[PPC64LE HFA DEBUG] Detected HFA struct with element type %s for V%02u\n",
+                           varTypeName(hfaType), lclNum);
+                    
+                    // Update interval if variable is tracked
+                    if (varDsc->lvTracked)
+                    {
+                        Interval* interval = getIntervalForLocalVar(varDsc->lvVarIndex);
+                        interval->registerType = hfaType;
+                        printf("[PPC64LE HFA DEBUG] Updated tracked interval register type to %s for V%02u\n",
+                               varTypeName(hfaType), lclNum);
+                    }
+                    else
+                    {
+                        printf("[PPC64LE HFA DEBUG] Variable V%02u is NOT tracked\n", lclNum);
+                    }
+                }
+            }
+        }
+    }
+#endif
+
     // To avoid redundant moves, have the argument operand computed in the
     // register in which the argument is passed to the call.
     SingleTypeRegSet argMask = genSingleTypeRegMask(argReg);
+#ifdef TARGET_POWERPC64
+    // For HFA structs, update the interval's register type before calling BuildUse
+    if (overrideType != TYP_UNDEF && !isCandidateLocalRef(op1))
+    {
+        printf("[PPC64LE HFA DEBUG] ENTERED potentially redundant code path (non-local operand)\n");
+        // For non-local operands, find the interval in the def list and update its type
+        for (RefInfoListNode* listNode = defList.Begin(); listNode != defList.End(); listNode = listNode->Next())
+        {
+            if ((listNode->treeNode == op1) && (listNode->ref->getMultiRegIdx() == 0))
+            {
+                Interval* interval = listNode->ref->getInterval();
+                interval->registerType = overrideType;
+                printf("[PPC64LE HFA DEBUG] Updated untracked interval register type to %s\n",
+                       varTypeName(overrideType));
+                break;
+            }
+        }
+    }
+    else if (overrideType != TYP_UNDEF)
+    {
+        printf("[PPC64LE HFA DEBUG] Skipped untracked path because isCandidateLocalRef(op1) = true\n");
+    }
+#endif
     RefPosition*     use     = BuildUse(op1, argMask);
 
     // Record that this register is occupied by a register now.

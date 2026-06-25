@@ -208,7 +208,8 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     }
     else
     {
-        assert(src->TypeIs(TYP_STRUCT) && src->isContained());
+        // On PPC64LE, HFA-like structs may have type TYP_LONG instead of TYP_STRUCT
+        assert((src->TypeIs(TYP_STRUCT) || src->TypeIs(TYP_LONG)) && src->isContained());
 
         if (src->OperIs(GT_BLK))
         {
@@ -232,6 +233,10 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     }
     buildInternalRegisterUses();
     BuildDefs(argNode, dstCount, argMask);
+    
+    // Note: For HFA structs, getDefType() in lsra.h returns the correct HFA element type,
+    // so BuildDefs creates intervals with the correct register type automatically.
+    
     return srcCount;
 }
 

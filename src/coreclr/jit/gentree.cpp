@@ -1280,7 +1280,13 @@ unsigned CallArgABIInformation::GetStackByteSize() const
 
     assert(!IsHfaArg() || !IsSplit());
 
+#ifdef TARGET_POWERPC64
+    // On PPC64LE, split arguments may have ByteSize == TARGET_POINTER_SIZE * NumRegs
+    // when all bytes fit exactly in registers, leaving 0 bytes on stack.
+    assert(ByteSize >= TARGET_POINTER_SIZE * NumRegs);
+#else
     assert(ByteSize > TARGET_POINTER_SIZE * NumRegs);
+#endif
     const unsigned stackByteSize = ByteSize - TARGET_POINTER_SIZE * NumRegs;
     return stackByteSize;
 }

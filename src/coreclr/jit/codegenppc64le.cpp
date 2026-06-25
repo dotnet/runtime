@@ -434,16 +434,20 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_LCL_ADDR:
 	    genCodeForLclAddr(treeNode->AsLclFld());
 	    break;
+	case GT_COPY:
+	    // This is handled at the time we call genConsumeReg() on the GT_COPY
+	    break;
+
 	case GT_CATCH_ARG:
 
-            noway_assert(handlerGetsXcptnObj(compiler->compCurBB->bbCatchTyp));
+	           noway_assert(handlerGetsXcptnObj(compiler->compCurBB->bbCatchTyp));
 
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
+	           /* Catch arguments get passed in a register. genCodeForBBlist()
+	              would have marked it as holding a GC object, but not used. */
 
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
-            break;
+	           noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
+	           genConsumeReg(treeNode);
+	           break;
 	default:
 	    printf("ERROR: Unhandled tree node operation: %s (oper=%d)\n",
 	                  GenTree::OpName(treeNode->gtOper), treeNode->gtOper);
@@ -813,7 +817,25 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         else
         {
             genConsumeReg(source);
-            emit->emitIns_S_R(storeIns, storeAttr, source->GetRegNum(), varNumOut, argOffsetOut);
+            regNumber srcReg = source->GetRegNum();
+            
+            // For HFA struct fields, the register may be a float register even though slotType is TYP_LONG
+            // Override the instruction if we have a float register
+            if (genIsValidFloatReg(srcReg))
+            {
+                if (storeAttr == EA_8BYTE)
+                {
+                    storeIns = INS_stfd;  // Store double (8 bytes)
+                }
+                else if (storeAttr == EA_4BYTE)
+                {
+                    storeIns = INS_stfs;  // Store single (4 bytes)
+                }
+                printf("HFA DEBUG: genPutArgStk (non-struct) - Float register detected, overriding instruction to %s for %s (slotType=%s, attr=%d)\n",
+                       genInsName(storeIns), getRegName(srcReg), varTypeName(slotType), (int)storeAttr);
+            }
+            
+            emit->emitIns_S_R(storeIns, storeAttr, srcReg, varNumOut, argOffsetOut);
         }
         argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
         assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
@@ -877,6 +899,15 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             unsigned dstSize = treeNode->GetStackByteSize();
 
+            // PPC64LE: If dstSize is 0, this struct is passed entirely in registers
+            // and should not be processed by genPutArgStk. This can happen for HFAs.
+            if (dstSize == 0)
+            {
+                // This struct is passed entirely in registers via GT_FIELD_LIST
+                // Nothing to do here - the individual fields will be handled by genPutArgReg
+                return;
+            }
+
             // We can generate smaller code if store size is a multiple of TARGET_POINTER_SIZE.
             // The dst size can be rounded up to PUTARG_STK size. The src size can be rounded up
             // if it reads a local variable because reading "too much" from a local cannot fault.
@@ -900,14 +931,49 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             // For PPC64LE, we will generate a ld and std instruction each loop
             //             ld      r2, 0(r3)
             //             std     r2, offset(r1)
+            // For HFA structs, we use lfd/stfd or lfs/stfs instead
+            
+            // Check if this is an HFA struct
+            bool isHfa = false;
+            var_types hfaType = TYP_UNDEF;
+            unsigned hfaSlots = 0;
+            CORINFO_CLASS_HANDLE structHnd = layout->GetClassHandle();
+            if (genIsValidFloatReg(loReg) && structHnd != NO_CLASS_HANDLE &&
+                IsPpc64leHfaLikeStruct(compiler, structHnd, &hfaType, &hfaSlots))
+            {
+                isHfa = true;
+                printf("HFA DEBUG genPutArgStk: Detected HFA struct, loReg=%s, hfaType=%s, hfaSlots=%u\n",
+                       getRegName(loReg), varTypeName(hfaType), hfaSlots);
+            }
+            
             while (remainingSize >= TARGET_POINTER_SIZE)
             {
                 var_types type = layout->GetGCPtrType(nextIndex);
+                instruction loadIns = INS_ld;
+                instruction storeIns = INS_std;
+                emitAttr attr = emitTypeSize(type);
+                
+                // Override for HFA structs - use float instructions
+                if (isHfa)
+                {
+                    if (hfaType == TYP_FLOAT)
+                    {
+                        loadIns = INS_lfs;
+                        storeIns = INS_stfs;
+                        attr = EA_4BYTE;
+                    }
+                    else // TYP_DOUBLE
+                    {
+                        loadIns = INS_lfd;
+                        storeIns = INS_stfd;
+                        attr = EA_8BYTE;
+                    }
+                }
 
                 if (srcLclNode != nullptr)
                 {
                     // Load from our local source
-                    emit->emitIns_R_S(INS_ld, emitTypeSize(type), loReg, srcLclNode->GetLclNum(),
+                    emit->emitIns_R_S(loadIns, attr, loReg, srcLclNode->GetLclNum(),
                                       lclOffset + structOffset);
                 }
                 else
@@ -916,11 +982,11 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     assert(loReg != addrReg || remainingSize == TARGET_POINTER_SIZE);
 
                     // Load from our address expression source
-                    emit->emitIns_R_R_I(INS_ld, emitTypeSize(type), loReg, addrReg, structOffset);
+                    emit->emitIns_R_R_I(loadIns, attr, loReg, addrReg, structOffset);
                 }
 
-                // Emit std instruction to store the register into the outgoing argument area
-                emit->emitIns_S_R(INS_std, emitTypeSize(type), loReg, varNumOut, argOffsetOut);
+                // Emit store instruction to store the register into the outgoing argument area
+                emit->emitIns_S_R(storeIns, attr, loReg, varNumOut, argOffsetOut);
                 argOffsetOut += TARGET_POINTER_SIZE;  // We stored 8-bytes of the struct
                 assert(argOffsetOut <= argOffsetMax); // We can't write beyond the outgoing arg area
 
@@ -1006,8 +1072,26 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     GenTree* op1 = tree->gtOp1;
     genConsumeReg(op1);
 
+    // For HFA struct fields, the tree type may be TYP_LONG but registers are float registers
+    // Override the type based on the actual register type to use correct move instruction
+    var_types moveType = targetType;
+    if (genIsValidFloatReg(targetReg) && genIsValidFloatReg(op1->GetRegNum()))
+    {
+        // Both registers are float registers - determine type from size
+        if (targetType == TYP_LONG || emitActualTypeSize(targetType) == EA_8BYTE)
+        {
+            moveType = TYP_DOUBLE;
+        }
+        else if (emitActualTypeSize(targetType) == EA_4BYTE)
+        {
+            moveType = TYP_FLOAT;
+        }
+        printf("HFA DEBUG: genPutArgReg - Float registers detected, overriding type from %s to %s for %s -> %s\n",
+               varTypeName(targetType), varTypeName(moveType), getRegName(op1->GetRegNum()), getRegName(targetReg));
+    }
+
     // If child node is not already in the register we need, move it
-    inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
+    inst_Mov(moveType, targetReg, op1->GetRegNum(), /* canSkip */ true);
 
     genProduceReg(tree);
 }
@@ -1074,7 +1158,35 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     else
     {
         var_types targetType = source->TypeGet();
-        assert(source->isContained() && varTypeIsStruct(targetType));
+        
+        // For HFA structs, the source might not be contained and the type might not be TYP_STRUCT
+        // (it could be TYP_LONG for an 8-byte field). Check if this is an HFA struct.
+        bool isHfaStruct = false;
+        if (source->OperIsLocalRead())
+        {
+            LclVarDsc* varDsc = compiler->lvaGetDesc(source->AsLclVarCommon()->GetLclNum());
+            CORINFO_CLASS_HANDLE classHnd = varDsc->lvClassHnd;
+            if (classHnd == NO_CLASS_HANDLE && varDsc->GetLayout() != nullptr)
+            {
+                classHnd = varDsc->GetLayout()->GetClassHandle();
+            }
+            
+            if (classHnd != NO_CLASS_HANDLE)
+            {
+                var_types hfaType;
+                unsigned hfaSlots;
+                isHfaStruct = IsPpc64leHfaLikeStruct(compiler, classHnd, &hfaType, &hfaSlots);
+                if (isHfaStruct)
+                {
+                    printf("HFA DEBUG: genPutArgSplit - HFA struct detected (type=%s, contained=%d)\n",
+                           varTypeName(targetType), source->isContained());
+                }
+            }
+        }
+        
+        // For regular structs, source must be contained and type must be struct
+        // For HFA structs, we relax these requirements
+        assert((source->isContained() && varTypeIsStruct(targetType)) || isHfaStruct);
 
         // We need a register to store intermediate values that we are loading
         // from the source into. We can usually use one of the target registers
@@ -1095,8 +1207,71 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         {
             srcLclNum         = source->AsLclVarCommon()->GetLclNum();
             srcLclOffset      = source->AsLclVarCommon()->GetLclOffs();
-            layout            = source->AsLclVarCommon()->GetLayout(compiler);
             LclVarDsc* varDsc = compiler->lvaGetDesc(srcLclNum);
+
+            // For HFA structs, we need custom handling because:
+            // 1. The allocated registers are float registers
+            // 2. Normal struct handling uses integer load/store instructions
+            // 3. Can't use integer instructions with float registers
+            if (isHfaStruct)
+            {
+                printf("HFA DEBUG: genPutArgSplit - HFA struct, using custom float load/store\n");
+                
+                // Get HFA element type and size
+                layout = varDsc->GetLayout();
+                CORINFO_CLASS_HANDLE classHnd = layout->GetClassHandle();
+                
+                var_types hfaType;
+                unsigned hfaSlots;
+                IsPpc64leHfaLikeStruct(compiler, classHnd, &hfaType, &hfaSlots);
+                
+                unsigned fieldSize = (hfaType == TYP_FLOAT) ? 4 : 8;
+                instruction loadIns = (hfaType == TYP_FLOAT) ? INS_lfs : INS_lfd;
+                instruction storeIns = (hfaType == TYP_FLOAT) ? INS_stfs : INS_stfd;
+                
+                // Load fields into registers
+                for (unsigned i = 0; i < treeNode->gtNumRegs; i++)
+                {
+                    regNumber targetReg = treeNode->GetRegNumByIdx(i);
+                    unsigned fieldOffset = srcLclOffset + (i * fieldSize);
+                    
+                    GetEmitter()->emitIns_R_S(loadIns, emitActualTypeSize(hfaType), targetReg, srcLclNum, fieldOffset);
+                    
+                    printf("HFA DEBUG: genPutArgSplit - Loaded HFA field %d from V%02u+%u to %s\n",
+                           i, srcLclNum, fieldOffset, getRegName(targetReg));
+                }
+                
+                // Store remaining fields to stack
+                unsigned stackFields = hfaSlots - treeNode->gtNumRegs;
+                if (stackFields > 0)
+                {
+                    unsigned argOffsetOut = treeNode->getArgOffset();
+                    
+                    // Use first target register as temporary (it's already been placed)
+                    regNumber tempReg = treeNode->GetRegNumByIdx(0);
+                    
+                    for (unsigned i = 0; i < stackFields; i++)
+                    {
+                        unsigned fieldOffset = srcLclOffset + ((treeNode->gtNumRegs + i) * fieldSize);
+                        unsigned stackOffset = argOffsetOut + (i * fieldSize);
+                        
+                        GetEmitter()->emitIns_R_S(loadIns, emitActualTypeSize(hfaType), tempReg, srcLclNum, fieldOffset);
+                        GetEmitter()->emitIns_S_R(storeIns, emitActualTypeSize(hfaType), tempReg, varNumOut, stackOffset);
+                        
+                        printf("HFA DEBUG: genPutArgSplit - Stored HFA field %d from V%02u+%u to stack+%u\n",
+                               treeNode->gtNumRegs + i, srcLclNum, fieldOffset, stackOffset);
+                    }
+                }
+                
+                // Mark the node as having been handled
+                // The code in codegencommon.cpp will still process this node,
+                // but it will just move registers (which may be no-ops if source == dest)
+                genProduceReg(treeNode);
+                return;
+            }
+            
+            // Get layout for non-HFA structs
+            layout = source->AsLclVarCommon()->GetLayout(compiler);
 
             // This struct must live on the stack frame.
             assert(varDsc->lvOnFrame && !varDsc->lvRegister);
@@ -1153,7 +1328,28 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         }
 
         // Put on stack first
-        unsigned structOffset  = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
+        // For HFA structs, calculate offset based on actual field size, not TARGET_POINTER_SIZE
+        unsigned structOffset;
+        if (isHfaStruct)
+        {
+            // Get HFA element type to determine field size
+            CORINFO_CLASS_HANDLE classHnd = layout->GetClassHandle();
+            
+            var_types hfaType;
+            unsigned hfaSlots;
+            IsPpc64leHfaLikeStruct(compiler, classHnd, &hfaType, &hfaSlots);
+            
+            unsigned fieldSize = (hfaType == TYP_FLOAT) ? 4 : 8;
+            structOffset = treeNode->gtNumRegs * fieldSize;
+            
+            printf("HFA DEBUG: genPutArgSplit - HFA struct offset calculation: gtNumRegs=%u, fieldSize=%u, structOffset=%u, layoutSize=%u\n",
+                   treeNode->gtNumRegs, fieldSize, structOffset, layout->GetSize());
+        }
+        else
+        {
+            structOffset = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
+        }
+        
         unsigned remainingSize = layout->GetSize() - structOffset;
         unsigned argOffsetOut  = treeNode->getArgOffset();
 
@@ -1383,6 +1579,42 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             instruction ins  = ins_Store(targetType);
             emitAttr    attr = emitActualTypeSize(targetType);
 
+            // For HFA structs, if dataReg is a float register, we need to use float store instructions
+            // even though targetType might be TYP_LONG
+            // Check if this is an HFA struct with float register
+            var_types hfaType = TYP_UNDEF;
+            unsigned hfaSlots = 0;
+            
+            if (genIsValidFloatReg(dataReg) && varTypeIsStruct(varDsc))
+            {
+                // Try to get class handle - first from lvClassHnd, then from GetLayout()
+                CORINFO_CLASS_HANDLE classHnd = varDsc->lvClassHnd;
+                if (classHnd == NO_CLASS_HANDLE)
+                {
+                    ClassLayout* layout = varDsc->GetLayout();
+                    if (layout != nullptr)
+                    {
+                        classHnd = layout->GetClassHandle();
+                    }
+                }
+                
+                if (classHnd != NO_CLASS_HANDLE && IsPpc64leHfaLikeStruct(compiler, classHnd, &hfaType, &hfaSlots))
+                {
+                    // This is an HFA struct, compute attr from HFA element type and determine instruction
+                    attr = emitActualTypeSize(hfaType);
+                    if (attr == EA_8BYTE)
+                    {
+                        ins = INS_stfd;  // Store double (8 bytes)
+                    }
+                    else // EA_4BYTE
+                    {
+                        ins = INS_stfs;  // Store single (4 bytes)
+                    }
+                    printf("HFA DEBUG: genCodeForStoreLclVar - HFA detected (element type %s), overriding instruction to %s for %s -> V%02u (original type=%s, attr=%d, hfaSlots=%u, lvIsParam=%d)\n",
+                           varTypeName(hfaType), genInsName(ins), getRegName(dataReg), varNum, varTypeName(targetType), (int)attr, hfaSlots, varDsc->lvIsParam);
+                }
+            }
+
             emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0); //This will be handled via code implemented at lclvars.cpp:7063
         }
         else // store into register (i.e move into register)
@@ -1450,8 +1682,38 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     }
     assert(dataReg != REG_NA);
 
-    instruction ins  = ins_Store(targetType);
-    emitAttr    attr = emitActualTypeSize(targetType);
+    // Determine the actual type to store based on the source register type
+    // For HFA structs on PPC64LE, the tree type may be TYP_LONG but the register is a float register
+    var_types storeType = targetType;
+    
+    // Check if this is an HFA struct with float register
+    var_types hfaType = TYP_UNDEF;
+    unsigned hfaSlots = 0;
+    
+    if (genIsValidFloatReg(dataReg) && varTypeIsStruct(varDsc))
+    {
+        // Try to get class handle - first from lvClassHnd, then from GetLayout()
+        CORINFO_CLASS_HANDLE classHnd = varDsc->lvClassHnd;
+        if (classHnd == NO_CLASS_HANDLE)
+        {
+            ClassLayout* layout = varDsc->GetLayout();
+            if (layout != nullptr)
+            {
+                classHnd = layout->GetClassHandle();
+            }
+        }
+        
+        if (classHnd != NO_CLASS_HANDLE && IsPpc64leHfaLikeStruct(compiler, classHnd, &hfaType, &hfaSlots))
+        {
+            // This is an HFA struct, use the HFA element type
+            storeType = hfaType;
+            printf("HFA DEBUG: genCodeForStoreLclFld - HFA detected, overriding store type from %s to %s for %s -> V%02u+%u (hfaSlots=%u, lvIsParam=%d)\n",
+                   varTypeName(targetType), varTypeName(storeType), getRegName(dataReg), varNum, offset, hfaSlots, varDsc->lvIsParam);
+        }
+    }
+
+    instruction ins  = ins_Store(storeType);
+    emitAttr    attr = emitActualTypeSize(storeType);
 
     emit->emitIns_S_R(ins, attr, dataReg, varNum, offset);
 
@@ -2027,8 +2289,39 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     unsigned varNum = tree->GetLclNum();
     assert(varNum < compiler->lvaCount);
 
-    emitAttr    attr = emitActualTypeSize(targetType);
-    instruction ins  = ins_Load(targetType);
+    // Determine the actual type to load based on the target register type
+    // For HFA structs on PPC64LE, the tree type may be TYP_LONG but the register is a float register
+    var_types loadType = targetType;
+    
+    // Check if this is an HFA struct with float register
+    LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+    var_types hfaType = TYP_UNDEF;
+    unsigned hfaSlots = 0;
+    
+    if (genIsValidFloatReg(targetReg) && varTypeIsStruct(varDsc))
+    {
+        // Try to get class handle - first from lvClassHnd, then from GetLayout()
+        CORINFO_CLASS_HANDLE classHnd = varDsc->lvClassHnd;
+        if (classHnd == NO_CLASS_HANDLE)
+        {
+            ClassLayout* layout = varDsc->GetLayout();
+            if (layout != nullptr)
+            {
+                classHnd = layout->GetClassHandle();
+            }
+        }
+        
+        if (classHnd != NO_CLASS_HANDLE && IsPpc64leHfaLikeStruct(compiler, classHnd, &hfaType, &hfaSlots))
+        {
+            // This is an HFA struct, use the HFA element type
+            loadType = hfaType;
+            printf("HFA DEBUG: genCodeForLclFld - HFA detected, overriding load type from %s to %s for V%02u+%u -> %s (hfaSlots=%u, lvIsParam=%d)\n",
+                   varTypeName(targetType), varTypeName(loadType), varNum, offs, getRegName(targetReg), hfaSlots, varDsc->lvIsParam);
+        }
+    }
+
+    emitAttr    attr = emitActualTypeSize(loadType);
+    instruction ins  = ins_Load(loadType);
     emit->emitIns_R_S(ins, attr, targetReg, varNum, offs);
 
     genProduceReg(tree);

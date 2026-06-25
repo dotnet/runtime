@@ -139,6 +139,45 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
 #if FEATURE_MULTIREG_ARGS
     if (varTypeIsStruct(argDsc->lvType))
     {
+#ifdef TARGET_POWERPC64
+        // For PPC64LE: regState->rsIsFloat tells us if this is HFA (float regs) or not (int regs)
+        // The classifier has already determined the register type based on HFA detection
+        if (regState->rsIsFloat)
+        {
+            // HFA passed in float registers - mark float registers as live
+            // Need to determine number of fields by calling helper
+            var_types hfaType = TYP_UNDEF;
+            unsigned numFields = 0;
+            CORINFO_CLASS_HANDLE classHandle = argDsc->lvClassHnd;
+            
+            if (classHandle != NO_CLASS_HANDLE &&
+                IsPpc64leHfaLikeStruct(this, classHandle, &hfaType, &numFields))
+            {
+                assert(inArgReg >= FIRST_FP_ARGREG && inArgReg <= LAST_FP_ARGREG);
+                unsigned cSlots = numFields;
+                for (unsigned i = 1; i < cSlots; i++)
+                {
+                    assert(inArgReg + i <= LAST_FP_ARGREG);
+                    regState->rsCalleeRegArgMaskLiveIn |= genRegMask(static_cast<regNumber>(inArgReg + i));
+                }
+            }
+            // Note: GPR consumption for HFA is already handled in the classifier (targetppc64le.cpp)
+        }
+        else
+        {
+            // Non-HFA struct passed in integer registers
+            unsigned cSlots = argDsc->lvSize() / TARGET_POINTER_SIZE;
+            for (unsigned i = 1; i < cSlots; i++)
+            {
+                regNumber nextArgReg = (regNumber)(inArgReg + i);
+                if (nextArgReg > REG_ARG_LAST)
+                {
+                    break;
+                }
+                regState->rsCalleeRegArgMaskLiveIn |= genRegMask(nextArgReg);
+            }
+        }
+#else // !TARGET_POWERPC64
         if (argDsc->lvIsHfaRegArg())
         {
             assert(regState->rsIsFloat);
@@ -163,6 +202,7 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
                 regState->rsCalleeRegArgMaskLiveIn |= genRegMask(nextArgReg);
             }
         }
+#endif // TARGET_POWERPC64
     }
 #endif // FEATURE_MULTIREG_ARGS
 

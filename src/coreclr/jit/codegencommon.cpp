@@ -3257,10 +3257,25 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
     for (unsigned i = 0; i < abiInfo.NumSegments; i++)
     {
         const ABIPassingSegment& seg = abiInfo.Segment(i);
+        
+#ifdef TARGET_POWERPC64
+        // PPC64LE: For HFA structs, paramRegs may only track the first register,
+        // but we need to process all segments. Skip the paramRegs check for
+        // multi-segment HFA structs that are passed in float registers.
+        bool skipParamRegsCheck = (varDsc->TypeGet() == TYP_STRUCT) && (abiInfo.NumSegments > 1) &&
+                                  seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister());
+        
+        if (!seg.IsPassedInRegister() ||
+            (!skipParamRegsCheck && ((paramRegs & genRegMask(seg.GetRegister())) == 0)))
+        {
+            continue;
+        }
+#else
         if (!seg.IsPassedInRegister() || ((paramRegs & genRegMask(seg.GetRegister())) == 0))
         {
             continue;
         }
+#endif
 
         if (seg.Offset + seg.Size <= baseOffset)
         {
@@ -3284,6 +3299,24 @@ void CodeGen::genSpillOrAddRegisterParam(unsigned lclNum, RegGraph* graph)
             GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), seg.GetRegister(), lclNum,
                                       seg.Offset - baseOffset);
         }
+#ifdef TARGET_POWERPC64
+        // PPC64LE: For HFA structs with multiple segments, we must store ALL segments
+        // to the stack frame, even if lvIsInReg() is true. The LclVarDsc only tracks
+        // the first register, but ABIPassingInformation has all segments.
+        else if (varDsc->lvOnFrame && (varDsc->TypeGet() == TYP_STRUCT) &&
+                 (abiInfo.NumSegments > 1) && seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
+        {
+            var_types storeType = genParamStackType(paramVarDsc, seg);
+            if ((varDsc->TypeGet() != TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
+            {
+                // Can happen for struct fields due to padding.
+                storeType = genActualType(varDsc);
+            }
+
+            GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), seg.GetRegister(), lclNum,
+                                      seg.Offset - baseOffset);
+        }
+#endif
 
         if (!varDsc->lvIsInReg())
         {
@@ -3380,9 +3413,47 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             for (unsigned i = 0; i < abiInfo.NumSegments; i++)
             {
                 const ABIPassingSegment& seg = abiInfo.Segment(i);
+                
+#ifdef TARGET_POWERPC64
+                // PPC64LE: For HFA structs, paramRegs may only track the first register,
+                // but we need to store all segments. Skip the paramRegs check for
+                // multi-segment HFA structs that are passed in float registers.
+                bool skipParamRegsCheck = (lclDsc->TypeGet() == TYP_STRUCT) && (abiInfo.NumSegments > 1) &&
+                                          seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister());
+                
+                if (seg.IsPassedInRegister() &&
+                    (skipParamRegsCheck || ((paramRegs & genRegMask(seg.GetRegister())) != 0)))
+#else
                 if (seg.IsPassedInRegister() && ((paramRegs & genRegMask(seg.GetRegister())) != 0))
+#endif
                 {
                     var_types storeType = genParamStackType(lclDsc, seg);
+                    
+#ifdef TARGET_POWERPC64
+                    // On PPC64LE, for HFA structs, genParamStackType may return TYP_LONG but the register
+                    // is a float register. Check if this is an HFA struct and override the store type.
+                    var_types hfaType = TYP_UNDEF;
+                    unsigned hfaSlots = 0;
+                    
+                    if (genIsValidFloatReg(seg.GetRegister()) && lclDsc->lvIsParam && varTypeIsStruct(lclDsc) &&
+                        lclDsc->lvClassHnd != NO_CLASS_HANDLE &&
+                        IsPpc64leHfaLikeStruct(compiler, lclDsc->lvClassHnd, &hfaType, &hfaSlots))
+                    {
+                        var_types origStoreType = storeType;
+                        // This is an HFA struct, use float store instruction based on segment size
+                        if (seg.Size == 8)
+                        {
+                            storeType = TYP_DOUBLE;
+                        }
+                        else if (seg.Size == 4)
+                        {
+                            storeType = TYP_FLOAT;
+                        }
+                        printf("HFA DEBUG: genHomeRegisterParams - HFA detected (element type %s), overriding store type from %s to %s for %s -> V%02u+%u (size=%u, hfaSlots=%u)\n",
+                               varTypeName(hfaType), varTypeName(origStoreType), varTypeName(storeType), getRegName(seg.GetRegister()), lclNum, seg.Offset, seg.Size, hfaSlots);
+                    }
+#endif
+                    
                     GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), seg.GetRegister(),
                                               lclNum, seg.Offset);
                 }
@@ -7552,6 +7623,28 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
             inst_Mov(genActualType(argNode), argReg, argNode->GetRegNum(), /* canSkip */ true);
             continue;
         }
+
+#ifdef TARGET_POWERPC64
+        // On PPC64LE, handle multi-segment register-only arguments (e.g., HFA structs in registers)
+        // These have multiple register segments but are passed as a single GT_PUTARG_REG node
+        if (abiInfo.HasAnyRegisterSegment() && !abiInfo.HasAnyStackSegment())
+        {
+            // All segments are in registers - this is a multi-register argument like an HFA
+            // The register allocator has already assigned the source register
+            // We need to move to each target register specified in the ABI
+            assert(argNode->OperIs(GT_PUTARG_REG));
+            genConsumeReg(argNode);
+            
+            // For HFA structs, determine the element type from the first segment's register type
+            // Float registers indicate this is an HFA with float or double elements
+            regNumber firstReg = abiInfo.Segment(0).GetRegister();
+            var_types moveType = genIsValidFloatReg(firstReg) ? TYP_FLOAT : genActualType(argNode);
+            
+            // Move to the first target register
+            inst_Mov(moveType, firstReg, argNode->GetRegNum(), /* canSkip */ true);
+            continue;
+        }
+#endif
 
         // Should be a stack argument then.
         assert(!abiInfo.HasAnyRegisterSegment());

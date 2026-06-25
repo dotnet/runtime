@@ -1606,12 +1606,113 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
         }
         else
         {
+#ifdef TARGET_POWERPC64
+            // For PPC64LE, HFA-like structs may have their type changed to TYP_LONG by GetRegisterType(),
+            // so we need to get the layout from the local variable descriptor
+            ClassLayout* layout = nullptr;
+            if (!varTypeIsStruct(arg->TypeGet()))
+            {
+                if (arg->OperIs(GT_LCL_VAR))
+                {
+                    LclVarDsc* varDsc = comp->lvaGetDesc(arg->AsLclVar());
+                    if (varTypeIsStruct(varDsc->TypeGet()))
+                    {
+                        layout = varDsc->GetLayout();
+                    }
+                }
+                else if (arg->OperIs(GT_LCL_FLD))
+                {
+                    // GT_LCL_FLD also has a local number - get layout from the local variable descriptor
+                    LclVarDsc* varDsc = comp->lvaGetDesc(arg->AsLclFld()->GetLclNum());
+                    if (varTypeIsStruct(varDsc->TypeGet()))
+                    {
+                        layout = varDsc->GetLayout();
+                    }
+                }
+            }
+            
+            if (layout == nullptr)
+            {
+                layout = arg->GetLayout(comp);
+            }
+
+            // For PPC64LE split HFA arguments, create a field list if needed
+            bool createdHfaFieldList = false;
+            if (layout != nullptr && (arg->OperIs(GT_LCL_VAR) || arg->OperIs(GT_LCL_FLD)))
+            {
+                CORINFO_CLASS_HANDLE typeHnd = layout->GetClassHandle();
+                var_types hfaType = TYP_UNDEF;
+                unsigned hfaSlots = 0;
+                
+                if (IsPpc64leHfaLikeStruct(comp, typeHnd, &hfaType, &hfaSlots))
+                {
+                    printf("[PPC64LE HFA DEBUG] PUTARG_SPLIT: Creating field list for HFA struct (hfaType=%s, hfaSlots=%u)\n",
+                           varTypeName(hfaType), hfaSlots);
+                    
+                    // Create a field list with individual float/double fields
+                    GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList();
+                    unsigned lclNum = arg->OperIs(GT_LCL_VAR) ? arg->AsLclVar()->GetLclNum() : arg->AsLclFld()->GetLclNum();
+                    unsigned baseOffset = arg->OperIs(GT_LCL_FLD) ? arg->AsLclFld()->GetLclOffs() : 0;
+                    
+                    for (unsigned i = 0; i < hfaSlots; i++)
+                    {
+                        unsigned offset = i * genTypeSize(hfaType);
+                        GenTree* fieldAccess = comp->gtNewLclFldNode(lclNum, hfaType, baseOffset + offset);
+                        fieldList->AddField(comp, fieldAccess, offset, hfaType);
+                    }
+                    
+                    // Replace arg with the field list
+                    arg = fieldList;
+                    argSplit->gtOp1 = arg;
+                    
+                    // Set register types from the field list
+                    unsigned regIndex = 0;
+                    for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
+                    {
+                        if (regIndex >= callArg->AbiInfo.NumRegs)
+                        {
+                            break;
+                        }
+                        argSplit->m_regType[regIndex] = hfaType;
+                        regIndex++;
+                    }
+                    
+                    // Clear the register assignment on the fieldList node
+                    arg->SetRegNum(REG_NA);
+                    createdHfaFieldList = true;
+                }
+            }
+#else
             ClassLayout* layout = arg->GetLayout(comp);
+#endif
 
             // Set type of registers
             for (unsigned index = 0; index < callArg->AbiInfo.NumRegs; index++)
             {
+#ifdef TARGET_POWERPC64
+                // Skip if we already set them for HFA field list
+                if (!createdHfaFieldList)
+                {
+                    // On PPC64LE, check if this is an HFA struct
+                    // HFA structs should use the HFA element type (TYP_FLOAT or TYP_DOUBLE) for all registers
+                    var_types regType = layout->GetGCPtrType(index);
+                    if (regType == TYP_LONG || regType == TYP_I_IMPL)
+                    {
+                        CORINFO_CLASS_HANDLE typeHnd = layout->GetClassHandle();
+                        var_types hfaType = TYP_UNDEF;
+                        unsigned hfaSlots = 0;
+                        if (IsPpc64leHfaLikeStruct(comp, typeHnd, &hfaType, &hfaSlots))
+                        {
+                            printf("[PPC64LE HFA DEBUG] PUTARG_SPLIT: Overriding m_regType[%u] from %s to %s (hfaSlots=%u)\n",
+                                   index, varTypeName(regType), varTypeName(hfaType), hfaSlots);
+                            regType = hfaType;
+                        }
+                    }
+                    argSplit->m_regType[index] = regType;
+                }
+#else
                 argSplit->m_regType[index] = layout->GetGCPtrType(index);
+#endif
             }
         }
     }

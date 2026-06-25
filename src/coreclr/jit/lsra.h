@@ -1132,6 +1132,63 @@ private:
             LclVarDsc*     varDsc = compiler->lvaGetDesc(lclVar);
             type                  = varDsc->GetRegisterType(lclVar);
         }
+#ifdef TARGET_POWERPC64
+        // On PPC64LE, check if this is an HFA struct that needs float register type
+        else if (type == TYP_LONG)
+        {
+            unsigned lclNum = BAD_VAR_NUM;
+            const char* nodeType = nullptr;
+            
+            // Get local variable number from different node types
+            if (tree->OperIsPutArgReg())
+            {
+                GenTreeUnOp* putArgNode = tree->AsUnOp();
+                GenTree* op1 = putArgNode->gtGetOp1();
+                
+                if (op1->OperIs(GT_LCL_VAR))
+                {
+                    lclNum = op1->AsLclVar()->GetLclNum();
+                    nodeType = "PUTARG_REG";
+                }
+                else if (op1->OperIs(GT_LCL_FLD))
+                {
+                    lclNum = op1->AsLclFld()->GetLclNum();
+                    nodeType = "PUTARG_REG";
+                }
+            }
+            else if (tree->OperIs(GT_LCL_FLD))
+            {
+                lclNum = tree->AsLclFld()->GetLclNum();
+                nodeType = "GT_LCL_FLD";
+            }
+            
+            // Check if the local variable is an HFA struct
+            if (lclNum != BAD_VAR_NUM)
+            {
+                LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+                
+                if (varDsc->TypeGet() == TYP_STRUCT)
+                {
+                    ClassLayout* layout = varDsc->GetLayout();
+                    if (layout != nullptr)
+                    {
+                        CORINFO_CLASS_HANDLE typeHnd = layout->GetClassHandle();
+                        var_types hfaType = TYP_UNDEF;
+                        unsigned hfaSlots = 0;
+                        
+                        // Check if it's an HFA struct (up to 8 float/double fields = 64 bytes max)
+                        if (IsPpc64leHfaLikeStruct(compiler, typeHnd, &hfaType, &hfaSlots))
+                        {
+                            // Override type to HFA element type (TYP_FLOAT or TYP_DOUBLE)
+                            printf("[PPC64LE HFA DEBUG] getDefType: %s for V%02u, overriding type from %s to %s (hfaSlots=%u)\n",
+                                   nodeType, lclNum, varTypeName(type), varTypeName(hfaType), hfaSlots);
+                            type = hfaType;
+                        }
+                    }
+                }
+            }
+        }
+#endif
         assert(type != TYP_UNDEF && type != TYP_STRUCT);
         return type;
     }

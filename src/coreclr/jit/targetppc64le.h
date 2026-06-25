@@ -379,5 +379,26 @@
   #define REG_SWIFT_INTRET_ORDER REG_R0,REG_R1,REG_R2,REG_R3
   #define REG_SWIFT_FLOATRET_ORDER REG_V0,REG_V1,REG_V2,REG_V3
 #endif
+//------------------------------------------------------------------------
+// IsPpc64leHfaLikeStruct: Check if a struct is a Homogeneous Float Aggregate (HFA)
+//
+// Arguments:
+//    comp       - Compiler instance
+//    hClass     - Class handle for the struct
+//    pHfaType   - [out] Type of HFA elements (TYP_FLOAT or TYP_DOUBLE), or TYP_UNDEF if not HFA
+//    pNumFields - [out] Number of HFA fields
+//
+// Return Value:
+//    true if the struct is an HFA (all float or all double fields), false otherwise
+//
+// Notes:
+//    This function detects HFA structs without requiring FEATURE_HFA to be enabled.
+//    It calls the VM's getHFAType() directly to determine if a struct qualifies as HFA.
+//    Per PPC64LE ELFv2 ABI:
+//    - For parameters: HFA can use all 13 float registers (f1-f13)
+//    - For return values: HFA limited to 8 fields maximum
+//
+bool IsPpc64leHfaLikeStruct(Compiler* comp, CORINFO_CLASS_HANDLE hClass, var_types* pHfaType, unsigned* pNumFields);
+
   // clang-format on
 

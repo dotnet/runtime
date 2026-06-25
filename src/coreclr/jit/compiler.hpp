@@ -2684,25 +2684,42 @@ inline
             if (varDsc->lvIsSplit)
             {
                 // Split parameter: first part in register, second part on stack
-                // For PPC64LE, the register portion should be saved in the parameter save area
-                // which the caller has reserved at offsets 32-95 from the caller's SP.
-                // The parameter save area starts at callee's FP + calleeFrameSize + 32.
-                // For r10 (8th register), the offset is 32 + 7*8 = 88 from caller's SP.
-                // From callee's FP: calleeFrameSize + 88.
-                
-                // Get the register number to calculate the parameter save area offset
                 regNumber regNum = varDsc->GetArgReg();
-                assert(regNum >= REG_R3 && regNum <= REG_R10);
-                int paramSaveOffset = 32 + ((regNum - REG_R3) * 8);
                 
-                // Calculate the base address from callee's FP
-                // Example: For r10 with calleeFrameSize=224, paramSaveOffset=88
-                // Base = 224 + 88 = 312
-                // Field offset 0: 312 + 0 = 312 (r10 saved location)
-                // Field offset 8: 312 + 8 = 320 (stack portion location)
-                varOffset = codeGen->genTotalFrameSize() + paramSaveOffset;
-                *pFPbased = FPbased;
-                return varOffset;
+                // Check if this is a float register (HFA) or integer register (regular struct)
+                if (genIsValidFloatReg(regNum))
+                {
+                    // HFA split parameter in float registers (f1-f13)
+                    // For PPC64LE, float registers don't have a parameter save area
+                    // The stack portion starts at the calculated stack offset
+                    // HFAs should typically be handled via field lists, but if we get here,
+                    // just use the regular stack offset
+                    assert(regNum >= REG_F1 && regNum <= REG_F13);
+                    varOffset = varDsc->GetStackOffset() + codeGen->genTotalFrameSize();
+                    *pFPbased = FPbased;
+                    return varOffset;
+                }
+                else
+                {
+                    // Regular struct split parameter in integer registers (r3-r10)
+                    // For PPC64LE, the register portion should be saved in the parameter save area
+                    // which the caller has reserved at offsets 32-95 from the caller's SP.
+                    // The parameter save area starts at callee's FP + calleeFrameSize + 32.
+                    // For r10 (8th register), the offset is 32 + 7*8 = 88 from caller's SP.
+                    // From callee's FP: calleeFrameSize + 88.
+                    
+                    assert(regNum >= REG_R3 && regNum <= REG_R10);
+                    int paramSaveOffset = 32 + ((regNum - REG_R3) * 8);
+                    
+                    // Calculate the base address from callee's FP
+                    // Example: For r10 with calleeFrameSize=224, paramSaveOffset=88
+                    // Base = 224 + 88 = 312
+                    // Field offset 0: 312 + 0 = 312 (r10 saved location)
+                    // Field offset 8: 312 + 8 = 320 (stack portion location)
+                    varOffset = codeGen->genTotalFrameSize() + paramSaveOffset;
+                    *pFPbased = FPbased;
+                    return varOffset;
+                }
             }
             else if (!varDsc->lvIsRegArg)
             {

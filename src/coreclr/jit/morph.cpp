@@ -2235,6 +2235,13 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         else
         {
             assert(abiInfo.HasAnyStackSegment());
+#if defined(TARGET_POWERPC64)
+            // PPC64LE: Structs on stack can have multiple segments
+            // Set ByteOffset to the first segment's stack offset
+            m_hasStackArgs = true;
+            arg.AbiInfo.SetRegNum(0, REG_STK);
+            arg.AbiInfo.ByteOffset = abiInfo.Segment(0).GetStackOffset();
+#else
             // We only expect to see one stack segment in these cases.
             assert(abiInfo.NumSegments == 1);
             // This is a stack argument
@@ -2242,6 +2249,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             const ABIPassingSegment& segment = abiInfo.Segment(0);
             arg.AbiInfo.SetRegNum(0, REG_STK);
             arg.AbiInfo.ByteOffset = segment.GetStackOffset();
+#endif
         }
 
         // TODO-Cleanup: remove HFA information from VarDsc.
