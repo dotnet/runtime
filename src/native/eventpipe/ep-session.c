@@ -326,6 +326,14 @@ ep_session_alloc (
 		sequence_point_alloc_budget = 10 * 1024 * 1024;
 	}
 
+	// Block buffering parks a producer until the drain thread frees buffer capacity, so it only works for
+	// session types that have a continuous drain - the ones with a streaming thread (IPCSTREAM, FILESTREAM).
+	// FILE and LISTENER have a buffer manager but no streaming thread (FILE flushes only at disable; LISTENER
+	// is pumped by an in-proc managed poll), so a parked producer would stall until teardown. Degrade Block to
+	// Drop for those rather than risk a hang.
+	if (buffering_mode == EP_BUFFERING_MODE_BLOCK && !ep_session_type_uses_streaming_thread (session_type))
+		buffering_mode = EP_BUFFERING_MODE_DROP;
+
 	if (ep_session_type_uses_buffer_manager (session_type)) {
 		instance->buffer_manager = ep_buffer_manager_alloc (instance, ((size_t)circular_buffer_size_in_mb) << 20, sequence_point_alloc_budget, buffering_mode);
 		ep_raise_error_if_nok (instance->buffer_manager != NULL);
