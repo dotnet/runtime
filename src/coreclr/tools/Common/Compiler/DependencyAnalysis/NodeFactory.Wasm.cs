@@ -12,7 +12,7 @@ namespace ILCompiler.DependencyAnalysis
         // pay the allocation. Indexed by WasmWellKnownGlobal.
         private WasmWellKnownGlobalSymbolNode[] _wasmWellKnownGlobals;
 
-        public WasmWellKnownGlobalSymbolNode GetWasmGlobal(WasmWellKnownGlobal global)
+        public WasmWellKnownGlobalSymbolNode GetWellKnownWasmGlobal(WasmWellKnownGlobal global)
         {
             WasmWellKnownGlobalSymbolNode[] globals = _wasmWellKnownGlobals;
             if (globals is null)
@@ -24,7 +24,6 @@ namespace ILCompiler.DependencyAnalysis
                     new WasmWellKnownGlobalSymbolNode(WasmWellKnownGlobal.TableBase),
                 ];
 
-                // Ensure a single canonical array wins across threads; a loser's nodes are never handed out.
                 globals = Interlocked.CompareExchange(ref _wasmWellKnownGlobals, globals, null) ?? globals;
             }
 

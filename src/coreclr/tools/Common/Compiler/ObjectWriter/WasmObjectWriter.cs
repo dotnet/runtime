@@ -879,14 +879,11 @@ namespace ILCompiler.ObjectWriter
                     // For R2R these globals live at fixed indices supplied by the runtime loader, so we
                     // self-resolve them to the node's GlobalIndex here. They are intentionally absent from
                     // _definedSymbols.
-                    if (!WasmWellKnownGlobalSymbolNode.TryGetGlobalIndexForSymbol(reloc.SymbolName.ToString(), out int globalIndex))
-                    {
-                        throw new InvalidDataException($"Unexpected wasm well-known global symbol '{reloc.SymbolName}'");
-                    }
+                    var globalIndex = WasmWellKnownGlobal.FromSymbolName(reloc.SymbolName);
 
                     fixed (byte* pData = ReadRelocToDataSpan(reloc, relocScratchBuffer, sectionStart))
                     {
-                        Relocation.WriteValue(reloc.Type, pData, globalIndex);
+                        Relocation.WriteValue(reloc.Type, pData, (int)globalIndex);
                         WriteRelocFromDataSpan(reloc, pData, sectionStart);
                     }
 
