@@ -139,7 +139,7 @@ internal partial class StackWalk_1 : IStackWalk
     private void SetupContext(IPlatformAgnosticContext context, FrameIterator frameIterator, StackWalkState state, ref bool isFirst, out bool matchedIsInterrupted)
     {
         TargetPointer curSP = context.StackPointer;
-        TargetCodePointer curPc = context.InstructionPointer;
+        TargetCodePointer curPc = CodePointerUtils.CodePointerFromAddress(context.InstructionPointer.AsTargetPointer, _target);
         TargetPointer curFP = context.FramePointer;
         if (state == StackWalkState.Frameless)
         {
@@ -160,7 +160,7 @@ internal partial class StackWalk_1 : IStackWalk
                 }
 
                 // See https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/vm/stackwalk.cpp#L1238
-                if (frameIterator.GetCurrentReturnAddress() != curPc)
+                if (CodePointerUtils.CodePointerFromAddress(frameIterator.GetCurrentReturnAddress().AsTargetPointer, _target) != curPc)
                     break;
 
                 IPlatformAgnosticContext tmpContext = context.Clone();
@@ -169,7 +169,7 @@ internal partial class StackWalk_1 : IStackWalk
                     break;
             }
 
-            if (frameIterator.GetCurrentReturnAddress() == curPc)
+            if (CodePointerUtils.CodePointerFromAddress(frameIterator.GetCurrentReturnAddress().AsTargetPointer, _target) == curPc)
             {
                 matched = true;
                 matchedType = frameIterator.GetCurrentFrameType();
@@ -884,7 +884,7 @@ internal partial class StackWalk_1 : IStackWalk
                     // (interpreter virtual unwind manages the IP), but we still need
                     // UpdateContextFromFrame to transition to Frameless in the
                     // interpreted method.
-                    if (returnAddress != TargetPointer.Null
+                    if (returnAddress != TargetCodePointer.Null
                         || frameType == FrameType.InterpreterFrame)
                     {
                         handle.FrameIter.UpdateContextFromCurrentFrame(handle.Context);

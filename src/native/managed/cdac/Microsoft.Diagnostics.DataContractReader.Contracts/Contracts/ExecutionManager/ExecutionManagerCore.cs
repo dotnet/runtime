@@ -42,6 +42,16 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _codeInfos.Clear();
     }
 
+    private TargetCodePointer StripArm64PacForCodeLookup(TargetCodePointer codePointer)
+    {
+        if (_target.Contracts.PlatformMetadata.GetCodePointerFlags().HasFlag(CodePointerFlags.HasArm64PtrAuth))
+        {
+            return CodePointerUtils.CodePointerFromAddress(codePointer.AsTargetPointer, _target);
+        }
+
+        return codePointer;
+    }
+
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
     private sealed class CodeBlock
     {
@@ -216,10 +226,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     }
     CodeBlockHandle? IExecutionManager.GetCodeBlockHandle(TargetCodePointer ip)
     {
-        if (_target.Contracts.PlatformMetadata.GetCodePointerFlags().HasFlag(CodePointerFlags.HasArm64PtrAuth))
-        {
-            ip = CodePointerUtils.CodePointerFromAddress(ip.AsTargetPointer, _target);
-        }
+        ip = StripArm64PacForCodeLookup(ip);
 
         TargetPointer key = ip.AsTargetPointer; // FIXME: thumb bit. It's harmless (we potentialy have 2 cache entries per IP), but we should fix it
         if (_codeInfos.ContainsKey(key))
@@ -289,6 +296,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
     {
+        entrypoint = StripArm64PacForCodeLookup(entrypoint);
+
         if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints))
         {
             Data.PortableEntryPoint portableEntryPoint = _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(entrypoint.AsTargetPointer);
@@ -613,6 +622,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     public CodeKind GetCodeKind(TargetCodePointer codeAddress)
     {
+        codeAddress = StripArm64PacForCodeLookup(codeAddress);
+
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeAddress);
         if (range.Data == null)
             return CodeKind.Unknown;
