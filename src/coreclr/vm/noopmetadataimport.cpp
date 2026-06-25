@@ -165,9 +165,7 @@ STDAPI CreateNoopMetaDataImport2(IMetaDataImport2** ppImport)
     if (ppImport == NULL)
         return E_POINTER;
 
-    *ppImport = &g_NoopMetadataImport;
-    g_NoopMetadataImport.AddRef();
-    return S_OK;
+    return g_NoopMetadataImport.QueryInterface(IID_IMetaDataImport2, (void**)ppImport2);
 }
 
 #endif // !DACCESS_COMPILE
