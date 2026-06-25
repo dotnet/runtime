@@ -156,7 +156,7 @@ static bool AllComponentsEitherZeroOrAllBitsSet(Compiler* comp, ValueNum vn, var
         }
     }
 
-    VNFuncApp     funcApp;
+    VNFuncApp      funcApp;
     NamedIntrinsic intrinsicId;
     unsigned       simdSize;
     var_types      intrinsicSimdBaseType;
@@ -188,8 +188,7 @@ static bool AllComponentsEitherZeroOrAllBitsSet(Compiler* comp, ValueNum vn, var
         case GT_LE:
         case GT_LT:
         {
-            return varTypeIsIntegral(baseType) &&
-                   (genTypeSize(baseType) <= genTypeSize(intrinsicSimdBaseType));
+            return varTypeIsIntegral(baseType) && (genTypeSize(baseType) <= genTypeSize(intrinsicSimdBaseType));
         }
 
         case GT_NOT:
@@ -223,8 +222,7 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
 {
     NamedIntrinsic intrinsic = tree->GetHWIntrinsicId();
 
-    if ((intrinsic != NI_Vector64_ExtractMostSignificantBits) &&
-        (intrinsic != NI_Vector128_ExtractMostSignificantBits))
+    if ((intrinsic != NI_Vector64_ExtractMostSignificantBits) && (intrinsic != NI_Vector128_ExtractMostSignificantBits))
     {
         return;
     }
