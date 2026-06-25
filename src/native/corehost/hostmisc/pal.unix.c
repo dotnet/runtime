@@ -312,6 +312,11 @@ static bool is_path_fully_qualified(const pal_char_t* path)
     return path[0] == DIR_SEPARATOR;
 }
 
+// Two-level stringize so PATH_MAX's value (not its name) can be used as an
+// explicit sscanf field width below.
+#define PROC_MAPS_STR2(x) #x
+#define PROC_MAPS_STR(x) PROC_MAPS_STR2(x)
+
 // dlopen on some systems only finds a loaded library when given its full path.
 // As a fallback, scan /proc/self/maps for a mapped file whose name contains
 // library_name. On success sets *dll and *out_path (heap-allocated, caller
@@ -325,11 +330,11 @@ static bool get_loaded_library_from_proc_maps(const pal_char_t* library_name, pa
     char* line = NULL;
     size_t line_cap = 0;
     bool found = false;
-    char found_path[PATH_MAX];
+    char found_path[PATH_MAX + 1];
     while (getline(&line, &line_cap, file) != -1)
     {
-        char buf[PATH_MAX];
-        if (sscanf(line, "%*p-%*p %*[-rwxsp] %*p %*[:0-9a-f] %*d %s\n", buf) == 1)
+        char buf[PATH_MAX + 1]; // + 1 for the NUL terminator
+        if (sscanf(line, "%*p-%*p %*[-rwxsp] %*p %*[:0-9a-f] %*d %" PROC_MAPS_STR(PATH_MAX) "s\n", buf) == 1)
         {
             const char* last_sep = strrchr(buf, DIR_SEPARATOR);
             if (last_sep == NULL)

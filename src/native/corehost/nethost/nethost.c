@@ -27,7 +27,7 @@ static int get_hostfxr_path_internal(
     size_t min_parameters_size = offsetof(struct get_hostfxr_parameters, dotnet_root) + sizeof(const char_t*);
     if (parameters != NULL && parameters->size < min_parameters_size)
     {
-        trace_error(_X("Invalid size for get_hostfxr_parameters. Expected at least %d"), min_parameters_size);
+        trace_error(_X("Invalid size for get_hostfxr_parameters. Expected at least %zu"), min_parameters_size);
         return InvalidArgFailure;
     }
 

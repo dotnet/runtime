@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// C implementation of the fxr_resolver_* APIs (the C++ fxr_resolver:: namespace
-// in fxr_resolver.cpp now delegates here).
-
 #include "fxr_resolver.h"
 
 #include "fx_ver.h"
@@ -445,6 +442,7 @@ bool fxr_resolver_try_get_path_from_dotnet_root(
 
 bool fxr_resolver_try_get_existing_fxr(pal_dll_t* out_fxr, pal_char_t** out_fxr_path)
 {
+    *out_fxr = NULL;
     *out_fxr_path = NULL;
 
     if (!pal_get_loaded_library(LIBFXR_NAME, "hostfxr_main", out_fxr, out_fxr_path))
