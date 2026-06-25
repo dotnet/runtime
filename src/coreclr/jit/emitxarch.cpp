@@ -3811,32 +3811,13 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
 
         assert(prefixAdjustedSize != 0);
 
-        // In this case, opcode will contains escape prefix at least one byte,
-        // prefixAdjustedSize should be minus one.
+        // VEX/EVEX encodes the escape prefix and optional SIMD prefix, so remove them from the legacy opcode size.
         prefixAdjustedSize -= 1;
 
-        // Get the fourth byte in Opcode.
-        // If this byte is non-zero, then we should check whether the opcode contains SIMD prefix or not.
-        BYTE check = (code >> 24) & 0xFF;
-
-        if (check != 0)
+        BYTE sizePrefix = (code >> 16) & 0xFF;
+        if (sizePrefix != 0 && isPrefix(sizePrefix))
         {
-            // 3-byte opcode: with the bytes ordered as 0x2211RM33 or
-            // 4-byte opcode: with the bytes ordered as 0x22114433
-            // Simd prefix is at the first byte.
-            BYTE sizePrefix = (code >> 16) & 0xFF;
-
-            if (sizePrefix != 0 && isPrefix(sizePrefix))
-            {
-                prefixAdjustedSize -= 1;
-            }
-
-            // If the opcode size is 4 bytes, then the second escape prefix is at fourth byte in opcode.
-            // But in this case the opcode has not counted R\M part.
-            // opcodeSize + prefixAdjustedSize - extraEscapePrefixSize + modRMSize
-            //  = opcodeSize + prefixAdjustedSize -1 + 1
-            //  = opcodeSize + prefixAdjustedSize
-            // So although we may have second byte escape prefix, we won't decrease prefixAdjustedSize.
+            prefixAdjustedSize -= 1;
         }
 
         adjustedSize = prefixAdjustedSize;
@@ -5240,12 +5221,22 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 
     if ((code & 0xFF00) != 0)
     {
-        sz += (IsSimdInstruction(ins) || TakesApxExtendedEvexPrefix(id)) ? emitInsSize(id, code, includeRexPrefixSize)
-                                                                         : 5;
+        sz += emitInsSize(id, code, includeRexPrefixSize);
+        if (!IsSimdInstruction(ins) && !TakesApxExtendedEvexPrefix(id) && ((code & 0xFF00) != 0xC000))
+        {
+            // Non-SIMD two-byte opcodes generally emit a separate ModRM byte; 0xC000 already includes it.
+            sz++;
+        }
     }
     else
     {
         sz += emitInsSize(id, insEncodeRMreg(id, code), includeRexPrefixSize);
+    }
+
+    if (IsKInstruction(ins))
+    {
+        // K instructions add VEX before this helper; avoid counting the prefix once here and once in the adjustment.
+        sz -= emitGetVexPrefixSize(id);
     }
 
     return sz;
@@ -11503,7 +11494,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
                 // An absolute indir address that doesn't need reloc should fit within 32-bits
                 // to be encoded as offset relative to zero.  This addr mode requires an extra
                 // SIB byte
-                noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(params.addr)) == (size_t)params.addr);
+                noway_assert((size_t)static_cast<int>(reinterpret_cast<intptr_t>(params.addr)) == (size_t)params.addr);
                 sz++;
             }
 #endif // TARGET_AMD64
@@ -11537,7 +11528,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             // An absolute indir address that doesn't need reloc should fit within 32-bits
             // to be encoded as offset relative to zero.  This addr mode requires an extra
             // SIB byte
-            noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(params.addr)) == (size_t)params.addr);
+            noway_assert((size_t)static_cast<int>(reinterpret_cast<intptr_t>(params.addr)) == (size_t)params.addr);
             sz++;
         }
 #endif // TARGET_AMD64
@@ -15747,14 +15738,11 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             assert(isCompressed && dspInByte);
             dsp = (int)compressedDsp;
         }
-        else if (TakesEvexPrefix(id) && !IsBMIInstruction(ins))
+        else if (TakesEvexPrefix(id) && hasTupleTypeInfo(ins))
         {
 #if FEATURE_FIXED_OUT_ARGS
-            // TODO-AMD64-CQ: We should be able to accurately predict this when FEATURE_FIXED_OUT_ARGS
-            // is available. However, there's some nuance in how emitInsSizeSVCalcDisp does things
-            // compared to emitOutputSV here, so we will miss a few cases today.
-            //
-            // assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
+            // The estimator should mark all encodable compressed displacements before we reach output.
+            assert(!TryEvexCompressDisp8Byte(id, dsp, &compressedDsp, &dspInByte));
 #endif
             dspInByte = false;
         }
@@ -20192,6 +20180,22 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #endif // TARGET_AMD64
         {
             emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp));
+        }
+    }
+#endif
+
+#ifdef DEBUG
+    if (JitConfig.JitAssertOnEmitSizeMismatch() != 0)
+    {
+        // Labels and align pseudo-instructions can intentionally shrink after initial size estimation.
+        const bool skipSizeCheck =
+            (id->idIns() == INS_align) || (insFmt == IF_LABEL) || (insFmt == IF_RWR_LABEL) || (insFmt == IF_SWR_LABEL);
+        const UNATIVE_OFFSET actualCodeSize = static_cast<UNATIVE_OFFSET>(dst - *dp);
+        if (!skipSizeCheck && (id->idCodeSize() != actualCodeSize))
+        {
+            printf("Instruction size mismatch: estimated=%u actual=%u\n", id->idCodeSize(), actualCodeSize);
+            emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, actualCodeSize);
+            assert(!"Instruction size mismatch");
         }
     }
 #endif
