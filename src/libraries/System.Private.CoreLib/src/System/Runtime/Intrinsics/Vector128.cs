@@ -4401,8 +4401,14 @@ namespace System.Runtime.Intrinsics
             }
             else if (PackedSimd.IsSupported)
             {
-                return PackedSimd.Shuffle(left, right,
-                    Vector128.Create((byte)0, 16, 1, 17, 2, 18, 3, 19, 4, 20, 5, 21, 6, 22, 7, 23));
+                // Compose with two ShuffleNative (PackedSimd.Swizzle, which clamps indices >= 16 to 0)
+                // plus OR. PackedSimd.Shuffle (two-vector i8x16.shuffle) would require constant lane
+                // indices and is impractical to call portably from generic code paths.
+                Vector128<byte> leftPart = Vector128.ShuffleNative(left,
+                    Vector128.Create((byte)0, 0xFF, 1, 0xFF, 2, 0xFF, 3, 0xFF, 4, 0xFF, 5, 0xFF, 6, 0xFF, 7, 0xFF));
+                Vector128<byte> rightPart = Vector128.ShuffleNative(right,
+                    Vector128.Create((byte)0xFF, 0, 0xFF, 1, 0xFF, 2, 0xFF, 3, 0xFF, 4, 0xFF, 5, 0xFF, 6, 0xFF, 7));
+                return leftPart | rightPart;
             }
             ThrowHelper.ThrowNotSupportedException();
             return default;
@@ -4424,8 +4430,11 @@ namespace System.Runtime.Intrinsics
             }
             else if (PackedSimd.IsSupported)
             {
-                return PackedSimd.Shuffle(left, right,
-                    Vector128.Create((byte)8, 24, 9, 25, 10, 26, 11, 27, 12, 28, 13, 29, 14, 30, 15, 31));
+                Vector128<byte> leftPart = Vector128.ShuffleNative(left,
+                    Vector128.Create((byte)8, 0xFF, 9, 0xFF, 10, 0xFF, 11, 0xFF, 12, 0xFF, 13, 0xFF, 14, 0xFF, 15, 0xFF));
+                Vector128<byte> rightPart = Vector128.ShuffleNative(right,
+                    Vector128.Create((byte)0xFF, 8, 0xFF, 9, 0xFF, 10, 0xFF, 11, 0xFF, 12, 0xFF, 13, 0xFF, 14, 0xFF, 15));
+                return leftPart | rightPart;
             }
             ThrowHelper.ThrowNotSupportedException();
             return default;
