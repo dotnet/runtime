@@ -1413,13 +1413,13 @@ HRESULT CordbThread::FindFrame(ICorDebugFrame ** ppFrame, FramePointer fp)
 
 
 
-#if defined(CROSS_COMPILE) && (defined(TARGET_ARM64) || defined(TARGET_ARM))
+#if defined(CROSS_COMPILE) && (defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64))
 extern "C" double FPFillR8(void* pFillSlot)
 {
     _ASSERTE(!"nyi for platform");
     return 0;
 }
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 extern "C" double FPFillR8(void* pFillSlot);
 #endif
 
@@ -1549,11 +1549,11 @@ void CordbThread::Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int s
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 // CordbThread::GetRawFPRegisters
-// Copies the scalar 64-bit IEEE-754 value of each floating point register directly from the
-// context. On these platforms the floating point registers are already stored as raw doubles, so
-// no hardware conversion (FPFillR8) is needed. slotsPerRegister is the number of ULONGLONG slots
-// each register occupies in the context: 1 for RISC-V64, and 4 for LoongArch64, whose FPR64/LSX/LASX
-// layout stores the scalar value in the first 64-bit slot of each group.
+// Reads the scalar 64-bit IEEE-754 value of each floating point register from the context. These
+// platforms store the value as a raw double, so FPFillR8 simply loads it, matching how
+// Get64bitFPRegisters reads the other architectures. slotsPerRegister is the number of ULONGLONG
+// slots each register occupies in the context: 1 for RISC-V64, and 4 for LoongArch64, whose
+// FPR64/LSX/LASX layout stores the scalar value in the first 64-bit slot of each group.
 // Arguments:
 //     input:  pFPRegisters     - starting address of the floating point register storage of the CONTEXT
 //             slotsPerRegister - the number of ULONGLONG slots each register occupies
@@ -1564,7 +1564,7 @@ void CordbThread::GetRawFPRegisters(ULONGLONG * pFPRegisters, int slotsPerRegist
 {
     for (int reg = 0; reg < nRegisters; reg++)
     {
-        m_floatValues[reg] = *(double*)&(pFPRegisters[reg * slotsPerRegister]);
+        m_floatValues[reg] = FPFillR8(&(pFPRegisters[reg * slotsPerRegister]));
     }
 } // CordbThread::GetRawFPRegisters
 
