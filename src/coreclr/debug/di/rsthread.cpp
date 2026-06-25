@@ -1546,6 +1546,28 @@ void CordbThread::Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int s
     }
 } // CordbThread::Get64bitFPRegisters
 
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+
+// CordbThread::GetRawFPRegisters
+// Copies the scalar 64-bit IEEE-754 value of each floating point register directly from the
+// context. On these platforms the floating point registers are already stored as raw doubles, so
+// no hardware conversion (FPFillR8) is needed. slotsPerRegister is the number of ULONGLONG slots
+// each register occupies in the context: 1 for RISC-V64, and 4 for LoongArch64, whose FPR64/LSX/LASX
+// layout stores the scalar value in the first 64-bit slot of each group.
+// Arguments:
+//     input:  pFPRegisters     - starting address of the floating point register storage of the CONTEXT
+//             slotsPerRegister - the number of ULONGLONG slots each register occupies
+//             nRegisters       - the number of registers to be initialized
+//     output: none (initializes m_floatValues)
+
+void CordbThread::GetRawFPRegisters(ULONGLONG * pFPRegisters, int slotsPerRegister, int nRegisters)
+{
+    for (int reg = 0; reg < nRegisters; reg++)
+    {
+        m_floatValues[reg] = *(double*)&(pFPRegisters[reg * slotsPerRegister]);
+    }
+} // CordbThread::GetRawFPRegisters
+
 #endif // TARGET_X86
 
 // CordbThread::LoadFloatState
@@ -1580,6 +1602,13 @@ void CordbThread::LoadFloatState()
     Get64bitFPRegisters((FPRegister64*) &(tempContext.V), 0, 32);
 #elif defined (TARGET_ARM)
     Get64bitFPRegisters((FPRegister64*) &(tempContext.D), 0, 32);
+#elif defined(TARGET_RISCV64)
+    // RISC-V64 stores each F register as a single raw 64-bit IEEE-754 value in the context.
+    GetRawFPRegisters((ULONGLONG*) &(tempContext.F), 1, DebuggerIPCE_FloatCount);
+#elif defined(TARGET_LOONGARCH64)
+    // LoongArch64 stores floating point registers in a SIMD-capable layout (FPR64/LSX/LASX), where
+    // each F register occupies 4 ULONGLONG slots and the scalar value is the first 64-bit slot.
+    GetRawFPRegisters((ULONGLONG*) &(tempContext.F), 4, DebuggerIPCE_FloatCount);
 #else
     _ASSERTE(!"nyi for platform");
 #endif // !TARGET_X86
