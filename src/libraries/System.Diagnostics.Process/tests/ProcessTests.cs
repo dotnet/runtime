@@ -1330,7 +1330,7 @@ namespace System.Diagnostics.Tests
                         },
                         targetPid.ToString(),
                         ReadingsPerProcess.ToString(),
-                        new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } }))
+                        new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true, RedirectStandardError = true } }))
                     {
                         foreach (ProcessOutputLine line in handle.Process.ReadAllLines())
                         {
