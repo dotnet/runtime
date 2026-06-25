@@ -2232,7 +2232,7 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
     if (targetIp == NULL)
     {
         GCX_PREEMP();
-        (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+        (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Preemptive);
         targetIp = pMD->GetInterpreterCode();
     }
     // The g_ReverseThunks reverse thunk is only used for UnmanagedCallersOnly methods that are executed

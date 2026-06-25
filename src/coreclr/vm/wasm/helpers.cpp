@@ -1361,7 +1361,7 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
     _ASSERTE(pMD != NULL);
     _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
 
-    // Prefer R2R-compiled native code. An UnmanagedCallersOnly method compiled by crossgen2 is emitted
+    // Prefer R2R-compiled native code for UnmanagedCallersOnly methods since it is emitted
     // with the native (unmanaged) calling convention, so its R2R code is itself the directly-callable
     // unmanaged entrypoint. Resolve the method's code first and, if it has native (R2R) code, return that
     // entrypoint directly. The g_ReverseThunks interpreter fallback below is only required for methods
