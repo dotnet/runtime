@@ -5753,7 +5753,9 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
     noway_assert(lclNum != BAD_VAR_NUM);
 
     LclVarDsc* lcl = lvaGetDesc(lclNum);
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT) || defined(TARGET_WASM)
+    // Align >=8 byte locals to 8 bytes.
+    //
     // Before final frame layout, assume the worst case, that every >=8 byte local will need
     // maximum padding to be aligned. This is because we generate code based on the stack offset
     // computed during tentative frame layout. These offsets cannot get bigger during final
@@ -5825,7 +5827,7 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
         }
 #endif
     }
-#endif // TARGET_64BIT
+#endif // TARGET_64BIT || TARGET_WASM
 
     /* Reserve space on the stack by bumping the frame size */
 
@@ -6046,8 +6048,17 @@ void Compiler::lvaAlignFrame()
         }
     }
 #elif defined(TARGET_WASM)
-    // TODO-WASM: decide what the stack alignment strategy should be. In the native ABI, the alignment is 16, but that
-    // may be suboptimal for the managed ABI, since it may imply zeroing the padding slots.
+    // Keep the stack aligned to STACK_ALIGN.
+    if ((compLclFrameSize % STACK_ALIGN) != 0)
+    {
+        lvaIncrementFrameSize(STACK_ALIGN - (compLclFrameSize % STACK_ALIGN));
+    }
+    else if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
+    {
+        // Reserve a full STACK_ALIGN so the offsets computed now are upper bounds.
+        lvaIncrementFrameSize(STACK_ALIGN);
+    }
+    assert((compLclFrameSize % STACK_ALIGN) == 0);
 #else
     NYI("TARGET specific lvaAlignFrame");
 #endif
