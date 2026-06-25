@@ -11791,10 +11791,12 @@ bool Compiler::impWrapTopOfStackInAwait()
 
 //------------------------------------------------------------------------
 // impFoldAwaitedTopOfStack:
-//   Fold a few patterns where introducing a call to AsyncHelpers.TransparentAwaitWithResult is unnecessary.
+//   Fold a few patterns where introducing a call to
+//   AsyncHelpers.TransparentAwaitWithResult is unnecessary.
 //
 // Returns:
-//   True if the top of stack was folded and pushed on the stack.
+//   True if the top of stack was folded and the importer stack was updated
+//   appropriately.
 //
 // Remarks:
 //   In async versions this folds these cases:
@@ -11859,10 +11861,11 @@ bool Compiler::impFoldAwaitedTopOfStack()
             lvaSetStruct(returnLcl, info.compMethodInfo->args.retTypeClass, false);
             // Reuse the ValueTask zeroing
             lastTree->AsLclVar()->SetLclNum(returnLcl);
-            impPushOnStack(gtNewLclVarNode(returnLcl), typeInfo(TYP_STRUCT));
+            impPushOnStack(gtNewLclVarNode(returnLcl),
+                           makeTypeInfo(info.compMethodInfo->args.retType, info.compMethodInfo->args.retTypeClass));
         }
 
-        JITDUMP("Optimized \"return new ValueTask() to return default\n");
+        JITDUMP("Optimized \"return new ValueTask()\" to return default\n");
         return true;
     }
     else if (lastTree->IsCall() &&
@@ -11900,7 +11903,7 @@ bool Compiler::impFoldAwaitedTopOfStack()
 
         StackEntry se = impPopStack();
         impPushOnStack(value, se.seTypeInfo);
-        JITDUMP("Optimized \"return new ValueTask(value) to return value directly:\n");
+        JITDUMP("Optimized \"return new ValueTask(value)\" to return value directly:\n");
         DISPTREE(value);
 
         // Finally remove the old constructor call, which is unneeded.

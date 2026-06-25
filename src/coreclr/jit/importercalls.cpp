@@ -5099,6 +5099,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Threading_Tasks_Task_FromResult:
             case NI_System_Threading_Tasks_ValueTask_FromResult:
             {
+                assert(sig->sigInst.methInstCount == 1);
+
                 if ((sig->callConv & CORINFO_CALLCONV_ASYNCCALL) == 0)
                 {
                     break;
@@ -11675,10 +11677,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_CompletedTask") == 0)
                         {
                             result = NI_System_Threading_Tasks_ValueTask_get_CompletedTask;
-                        }
-                        else if (strcmp(methodName, ".ctor") == 0)
-                        {
-                            result = NI_System_Threading_Tasks_ValueTask__ctor;
                         }
                     }
                     else if (strcmp(className, "ValueTask`1") == 0)
