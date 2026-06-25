@@ -94,7 +94,7 @@ namespace System
         //   Return, in order of invocation, the invocation list
         //   of a MulticastDelegate
         // </summary>
-        public sealed override Delegate[] GetInvocationList()
+        internal new Delegate[] GetInvocationList()
         {
             if (delegates != null)
                 return (Delegate[])delegates.Clone();
@@ -126,7 +126,7 @@ namespace System
         //   thing should have better been a simple System.Delegate class.
         //   Compiler generated delegates are always MulticastDelegates.
         // </summary>
-        protected sealed override Delegate CombineImpl(Delegate? follow)
+        internal new Delegate CombineImpl(Delegate? follow)
         {
             if (follow == null)
                 return this;
@@ -197,7 +197,7 @@ namespace System
             return -1;
         }
 
-        protected sealed override Delegate? RemoveImpl(Delegate value)
+        internal new Delegate? RemoveImpl(Delegate? value)
         {
             if (value == null)
                 return this;
