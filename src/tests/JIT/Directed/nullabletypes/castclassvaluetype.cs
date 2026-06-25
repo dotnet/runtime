@@ -4695,7 +4695,7 @@ internal class NullableTest45
 
 public class Test_castclassvaluetype
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/129508", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/pull/129702", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {
