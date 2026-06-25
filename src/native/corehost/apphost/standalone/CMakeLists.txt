@@ -7,6 +7,7 @@ set(SOURCES
     ../apphost.c
     ../bundle_marker.c
     ./apphost_hostfxr_resolver.c
+    ../../fxr_resolver.c
 )
 
 set(HEADERS
@@ -35,10 +36,8 @@ target_include_directories(apphost PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 
-target_link_libraries(apphost PRIVATE hostmisc fxr_resolver)
-
 if(CLR_CMAKE_TARGET_WIN32)
-    target_link_libraries(apphost PRIVATE shell32)
+    target_link_libraries(apphost PRIVATE hostmisc shell32)
 
     # Disable manifest generation into the file .exe on Windows
     target_link_options(apphost PRIVATE "/MANIFEST:NO")
@@ -48,7 +47,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         target_link_options(apphost PRIVATE "/CETCOMPAT")
     endif()
 else()
-    target_link_libraries(apphost PRIVATE m)
+    target_link_libraries(apphost PRIVATE hostmisc_c minipal_objects m)
     disable_pax_mprotect(apphost)
 endif()
 
