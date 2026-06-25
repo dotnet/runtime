@@ -21,16 +21,17 @@ if(CLR_CMAKE_HOST_UNIX)
   if(CLR_CMAKE_TARGET_APPLE)
     add_definitions(-DFEATURE_OBJCMARSHAL)
   endif(CLR_CMAKE_TARGET_APPLE)
-
-  if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
-    # Allow 16 byte compare-exchange (cmpxchg16b)
-    add_compile_options(-mcx16)
-  endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
 endif (CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_TARGET_ANDROID)
     add_definitions(-DFEATURE_EMULATED_TLS)
     set(FEATURE_JAVAMARSHAL 1)
+endif()
+
+if(CLR_CMAKE_TARGET_OPENBSD)
+    # OpenBSD's ld.so cannot resolve native TLS relocations in shared objects and has no
+    # __tls_get_addr, so the runtime must use emulated TLS (like Android).
+    add_definitions(-DFEATURE_EMULATED_TLS)
 endif()
 
 if(NOT DEFINED FEATURE_JAVAMARSHAL)

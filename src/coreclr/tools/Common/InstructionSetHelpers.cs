@@ -31,7 +31,10 @@ namespace System.CommandLine
 
             if ((targetArchitecture == TargetArchitecture.X86) || (targetArchitecture == TargetArchitecture.X64))
             {
-                if (isReadyToRun && targetOS != TargetOS.OSX && targetOS != TargetOS.MacCatalyst)
+                bool isAppleOS = targetOS is TargetOS.OSX or TargetOS.MacCatalyst
+                    or TargetOS.iOSSimulator or TargetOS.tvOSSimulator;
+
+                if (isReadyToRun && !isAppleOS)
                 {
                     // ReadyToRun can presume AVX2, BMI1, BMI2, F16C, FMA, LZCNT, and MOVBE
                     instructionSetSupportBuilder.AddSupportedInstructionSet("x86-64-v3");

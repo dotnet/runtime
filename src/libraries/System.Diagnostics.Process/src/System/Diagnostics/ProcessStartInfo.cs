@@ -144,6 +144,27 @@ namespace System.Diagnostics
         public bool StartDetached { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the process should be started in a suspended state.
+        /// </summary>
+        /// <value><see langword="true" /> if the process should be started suspended; otherwise, <see langword="false" />. The default is <see langword="false" />.</value>
+        /// <remarks>
+        /// <para>
+        /// When set to <see langword="true" />, the process is created with its main thread suspended.
+        /// The process will not begin execution until <see cref="SafeProcessHandle.Resume" /> is called
+        /// on the <see cref="SafeProcessHandle" /> returned by <see cref="SafeProcessHandle.Start(ProcessStartInfo)" />.
+        /// </para>
+        /// <para>
+        /// On Windows, the process is started with the
+        /// <see href="https://learn.microsoft.com/windows/win32/procthread/process-creation-flags">CREATE_SUSPENDED</see> flag.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="UseShellExecute" /> set to <see langword="true" />.
+        /// </para>
+        /// </remarks>
+        [SupportedOSPlatform("windows")]
+        public bool StartSuspended { get; set; }
+
+        /// <summary>
         /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard input of the child process.
         /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardInput"/> must be <see langword="false"/>.
         /// </summary>
@@ -281,8 +302,13 @@ namespace System.Diagnostics
         /// On Windows, this is implemented using Job Objects with the
         /// <see href="https://learn.microsoft.com/windows/win32/api/winnt/ns-winnt-jobobject_basic_limit_information">JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE</see> flag.
         /// </para>
+        /// <para>
+        /// On Linux and Android, this is implemented using <c>prctl(PR_SET_PDEATHSIG)</c>.
+        /// </para>
         /// </remarks>
         /// <value><see langword="true"/> to terminate the child process when the parent exits; otherwise, <see langword="false"/>. The default is <see langword="false"/>.</value>
+        [SupportedOSPlatform("android")]
+        [SupportedOSPlatform("linux")]
         [SupportedOSPlatform("windows")]
         public bool KillOnParentExit { get; set; }
 
@@ -441,6 +467,11 @@ namespace System.Diagnostics
             if (StartDetached && UseShellExecute)
             {
                 throw new InvalidOperationException(SR.StartDetachedNotCompatible);
+            }
+
+            if (OperatingSystem.IsWindows() && StartSuspended && UseShellExecute)
+            {
+                throw new InvalidOperationException(SR.StartSuspendedNotCompatible);
             }
 
             if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))

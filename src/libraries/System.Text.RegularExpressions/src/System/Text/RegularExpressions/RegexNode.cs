@@ -1398,7 +1398,7 @@ namespace System.Text.RegularExpressions
                     return alternation;
                 }
 
-                Span<char> scratchChar = stackalloc char[1];
+                Span<char> scratchChar = ['\0'];
                 for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
                 {
                     // Process the first branch to get the maximum possible common string.
@@ -1567,7 +1567,7 @@ namespace System.Text.RegularExpressions
         /// <remarks>
         /// This method is used to determine if an alternation can be optimized using a switch on the first character.
         /// </remarks>
-        public bool TryGetAlternationStartingChars([NotNullWhen(true)] out HashSet<char>? seenChars)
+        public unsafe bool TryGetAlternationStartingChars([NotNullWhen(true)] out HashSet<char>? seenChars)
         {
             Debug.Assert(Kind is RegexNodeKind.Alternate);
             Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
@@ -1668,7 +1668,7 @@ namespace System.Text.RegularExpressions
         /// A tuple of data about the literal: only one of the Char/String/SetChars fields is relevant.
         /// The Negated value indicates whether the Char/SetChars should be considered exclusionary.
         /// </returns>
-        public StartingLiteralData? FindStartingLiteral()
+        public unsafe StartingLiteralData? FindStartingLiteral()
         {
             if (FindStartingLiteralNode() is RegexNode node)
             {
@@ -3100,14 +3100,14 @@ namespace System.Text.RegularExpressions
         /// characters the group's content matches at that position.
         /// </param>
         /// <returns>true if a sequence was found; otherwise, false.</returns>
-        public bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false, bool forPrefixAnalysis = false)
+        public unsafe bool TryGetOrdinalCaseInsensitiveString(int childIndex, int exclusiveChildBound, out int nodesConsumed, [NotNullWhen(true)] out string? caseInsensitiveString, bool consumeZeroWidthNodes = false, bool forPrefixAnalysis = false)
         {
             Debug.Assert(Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {Kind}");
 
             var vsb = new ValueStringBuilder(stackalloc char[32]);
 
             // We're looking in particular for sets of ASCII characters, so we focus only on sets with two characters in them, e.g. [Aa].
-            Span<char> twoChars = stackalloc char[2];
+            Span<char> twoChars = ['\0', '\0'];
 
             // Iterate from the child index to the exclusive upper bound.
             int i = childIndex;

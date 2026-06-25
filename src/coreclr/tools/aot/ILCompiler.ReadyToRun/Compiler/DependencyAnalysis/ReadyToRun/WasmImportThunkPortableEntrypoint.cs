@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.ReadyToRunConstants;
 using Internal.Text;
 using Internal.JitInterface;
+using Internal.TypeSystem;
 using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -53,8 +55,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_import, otherNode._import);
         }
 
-        private static readonly CorInfoWasmType[] _genericLookupTypes32Bit = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32, CorInfoWasmType.CORINFO_WASM_TYPE_I32 };
-        private static readonly CorInfoWasmType[] _genericLookupTypes64Bit = new CorInfoWasmType[] { CorInfoWasmType.CORINFO_WASM_TYPE_I64, CorInfoWasmType.CORINFO_WASM_TYPE_I64, CorInfoWasmType.CORINFO_WASM_TYPE_I64 };
+        private static readonly WasmSignature _genericLookupSignature32Bit = new WasmSignature(
+            new WasmFuncType(
+                new WasmResultType(new[] { WasmValueType.I32, WasmValueType.I32 }),
+                new WasmResultType(new[] { WasmValueType.I32 })),
+            "iii");
+        private static readonly WasmSignature _genericLookupSignature64Bit = new WasmSignature(
+            new WasmFuncType(
+                new WasmResultType(new[] { WasmValueType.I64, WasmValueType.I64 }),
+                new WasmResultType(new[] { WasmValueType.I64 })),
+            "lll");
 
         public override ObjectData GetData(NodeFactory factory, System.Boolean relocsOnly = false)
         {
@@ -62,19 +72,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
-            WasmTypeNode typeNode;
+            WasmSignature wasmSignature;
 
             RelocType tableIndexPointerRelocType = factory.Target.PointerSize == 4 ? RelocType.WASM_TABLE_INDEX_I32 : RelocType.WASM_TABLE_INDEX_I64;
 
             if (_import.Signature is GenericLookupSignature)
             {
-                typeNode = factory.WasmTypeNode(factory.Target.PointerSize == 4 ? _genericLookupTypes32Bit : _genericLookupTypes64Bit);
+                wasmSignature = factory.Target.PointerSize == 4 ? _genericLookupSignature32Bit : _genericLookupSignature64Bit;
             }
             else
             {
-                typeNode = factory.WasmTypeNode(((MethodFixupSignature)(_import.Signature)).Method);
+                MethodDesc method = ((MethodFixupSignature)(_import.Signature)).Method;
+                // The import thunk always uses managed calling convention ($sp + PE entrypoint)
+                // even if the underlying method is UnmanagedCallersOnly, because the thunk is
+                // called from R2R-generated managed code.
+                WasmLowering.LoweringFlags flags = WasmLowering.GetLoweringFlags(method) & ~WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
+                wasmSignature = WasmLowering.GetSignature(method.Signature, flags);
             }
-            builder.EmitReloc(factory.WasmImportThunk(typeNode, HelperId, _import.Table, UseVirtualCall, UseJumpableStub), tableIndexPointerRelocType);
+            builder.EmitReloc(factory.WasmImportThunk(wasmSignature, HelperId, _import.Table, UseVirtualCall, UseJumpableStub), tableIndexPointerRelocType);
             builder.EmitReloc(_import, RelocType.IMAGE_REL_BASED_ADDR32NB);
             if (factory.Target.PointerSize == 8)
             {

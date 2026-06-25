@@ -29,7 +29,7 @@ namespace System.Runtime.Loader
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_LoadFromPath", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void LoadFromPath(IntPtr ptrNativeAssemblyBinder, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
+        private static partial void LoadFromPath(IntPtr ptrNativeAssemblyBinder, string? ilPath, ObjectHandleOnStack retAssembly);
 
         internal static Assembly[] GetLoadedAssemblies()
         {
@@ -61,10 +61,10 @@ namespace System.Runtime.Loader
         internal static partial bool TraceSatelliteSubdirectoryPathProbed(string filePath, int hResult);
 
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
-        private RuntimeAssembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
+        private RuntimeAssembly InternalLoadFromPath(string? assemblyPath)
         {
             RuntimeAssembly? loadedAssembly = null;
-            LoadFromPath(_nativeAssemblyLoadContext, assemblyPath, nativeImagePath, ObjectHandleOnStack.Create(ref loadedAssembly));
+            LoadFromPath(_nativeAssemblyLoadContext, assemblyPath, ObjectHandleOnStack.Create(ref loadedAssembly));
             return loadedAssembly!;
         }
 
@@ -111,7 +111,6 @@ namespace System.Runtime.Loader
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe IntPtr ResolveUnmanagedDll(char* pUnmanagedDllName, IntPtr gchAssemblyLoadContext, Exception* pException)
         {
             try
@@ -129,7 +128,6 @@ namespace System.Runtime.Loader
         // This method is invoked by the VM to resolve a native library using the ResolvingUnmanagedDll event
         // after trying all other means of resolution.
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe IntPtr ResolveUnmanagedDllUsingEvent(char* pUnmanagedDllName, Assembly* pAssembly, IntPtr gchAssemblyLoadContext, Exception* pException)
         {
             try
@@ -203,7 +201,6 @@ namespace System.Runtime.Loader
         /// Called by the runtime to start an assembly load activity for tracing
         /// </summary>
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void StartAssemblyLoad(Guid* activityId, Guid* relatedActivityId, Exception* pException)
         {
             try
@@ -224,7 +221,6 @@ namespace System.Runtime.Loader
         /// Called by the runtime to stop an assembly load activity for tracing
         /// </summary>
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void StopAssemblyLoad(Guid* activityId, Exception* pException)
         {
             try
@@ -242,7 +238,6 @@ namespace System.Runtime.Loader
         /// Called by the runtime to make sure the default ALC is initialized
         /// </summary>
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InitializeDefaultContext(Exception* pException)
         {
             try

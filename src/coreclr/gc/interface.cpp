@@ -1,6 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 class NoGCRegionLockHolder
 {
 public:
@@ -14,6 +24,42 @@ public:
         leave_spin_lock_noinstru(&g_no_gc_lock);
     }
 };
+
+inline
+CObjectHeader* gc_heap::allocate (size_t jsize, alloc_context* acontext, uint32_t flags)
+{
+    size_t size = Align (jsize);
+    assert (size >= Align (min_obj_size));
+    {
+    retry:
+        uint8_t*  result = acontext->alloc_ptr;
+        acontext->alloc_ptr+=size;
+        if (acontext->alloc_ptr <= acontext->alloc_limit)
+        {
+            CObjectHeader* obj = (CObjectHeader*)result;
+            assert (obj != 0);
+            return obj;
+        }
+        else
+        {
+            acontext->alloc_ptr -= size;
+
+#ifdef _MSC_VER
+#pragma inline_depth(0)
+#endif //_MSC_VER
+
+            if (! allocate_more_space (acontext, size, flags, 0))
+                return 0;
+
+#ifdef _MSC_VER
+#pragma inline_depth(20)
+#endif //_MSC_VER
+
+            goto retry;
+        }
+    }
+}
+
 void GCHeap::Shutdown()
 {
     // This does not work for standalone GC on Windows because windows closed the file
@@ -2752,3 +2798,5 @@ int GCHeap::RefreshMemoryLimit()
 {
     return gc_heap::refresh_memory_limit();
 }
+
+} // namespace SVR/WKS

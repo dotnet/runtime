@@ -36,9 +36,10 @@ FailureCache *ApplicationContext::GetFailureCache()
 }
 
 HRESULT ApplicationContext::AddToFailureCache(SString &assemblyNameOrPath,
-                                              HRESULT  hrBindResult)
+                                              HRESULT  hrBindResult,
+                                              LPCWSTR  diagnosticInfo)
 {
-    HRESULT hr = GetFailureCache()->Add(assemblyNameOrPath, hrBindResult);
+    HRESULT hr = GetFailureCache()->Add(assemblyNameOrPath, hrBindResult, diagnosticInfo);
     IncrementVersion();
     return hr;
 }

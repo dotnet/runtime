@@ -30,6 +30,7 @@
 #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
 #define FEATURE_MULTIREG_ARGS         0  // Support for passing a single argument in more than one register
 #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
+#define FEATURE_HAS_ZERO_REG          0  // Target does not have a hardware "zero register" usable as a containable source
 #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (double).
 #define MAX_PASS_MULTIREG_BYTES       0  // No multireg arguments
 #define MAX_RET_MULTIREG_BYTES        8  // Maximum size of a struct that could be returned in more than one register
@@ -193,14 +194,6 @@
 //       (There is a separate write barrier for each of these source options.)
 //     On exit:
 //       edx: trashed
-// CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
-//     On entry:
-//       esi: the source address (points to object reference to write)
-//       edi: the destination address (object reference written here)
-//     On exit:
-//       ecx: trashed
-//       edi: incremented by 8
-//       esi: incremented by 8
 //
 
 #define REG_WRITE_BARRIER_DST          REG_ARG_0
@@ -232,13 +225,6 @@
 
 // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_REF and CORINFO_HELP_CHECKED_ASSIGN_REF.
 #define RBM_CALLEE_GCTRASH_WRITEBARRIER       RBM_EDX
-
-// Registers killed by CORINFO_HELP_ASSIGN_BYREF.
-#define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_ESI | RBM_EDI | RBM_ECX)
-
-// Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-// Note that RDI and RSI are still valid byref pointers after this helper call, despite their value being changed.
-#define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_ECX
 
 // GenericPInvokeCalliHelper unmanaged target parameter
 #define REG_PINVOKE_TARGET_PARAM REG_EAX

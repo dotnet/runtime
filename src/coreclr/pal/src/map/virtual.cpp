@@ -39,6 +39,8 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 #include <unistd.h>
 #include <limits.h>
 #include <dlfcn.h>
+#include <minipal/utils.h>
+#include <minipal/ospagesize.h>
 
 #if HAVE_VM_ALLOCATE
 #include <mach/vm_map.h>
@@ -165,7 +167,7 @@ extern "C"
 BOOL
 VIRTUALInitialize(bool initializeExecutableMemoryAllocator)
 {
-    s_virtualPageSize = getpagesize();
+    s_virtualPageSize = minipal_getpagesize();
 
     TRACE("Initializing the Virtual Critical Sections. \n");
 
@@ -531,7 +533,11 @@ static LPVOID VIRTUALReserveMemory(
         {
             ASSERT( "Unable to store the structure in the list.\n");
             pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
+#ifdef TARGET_WASM
+            free( pRetVal );
+#else
             munmap( pRetVal, MemSize );
+#endif
             pRetVal = NULL;
         }
     }
@@ -565,6 +571,32 @@ static LPVOID ReserveVirtualMemory(
 
     TRACE( "Reserving the memory now.\n");
 
+#ifdef TARGET_WASM
+    // WASM cannot honor address hints - ignore lpAddress and allocate
+    // at whatever address posix_memalign returns. Callers must handle
+    // getting a different address than requested (same as Linux with
+    // some SELinux settings).
+    (void)StartBoundary;
+    (void)fAllocationType; // Large pages / executable flags are N/A on WASM.
+
+    // WASM has no virtual memory - mmap(PROT_NONE) still consumes linear memory,
+    // munmap of partial ranges doesn't return memory, and MAP_FIXED is broken.
+    // Use posix_memalign/free instead.
+
+    LPVOID pRetVal = nullptr;
+    if (posix_memalign(&pRetVal, GetVirtualPageSize(), MemSize) != 0 || pRetVal == nullptr)
+    {
+        ERROR( "Failed due to insufficient memory.\n" );
+        pthrCurrent->SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+        return nullptr;
+    }
+
+    // posix_memalign may return either freshly grown linear memory (zeroed by the
+    // WASM spec) or a recycled block from the allocator's free list (which may
+    // contain stale data from a previous free()). Always zero to match the
+    // "reserved memory starts zeroed" contract of this function.
+    memset(pRetVal, 0, MemSize);
+#else // !TARGET_WASM
     // Most platforms will only commit memory if it is dirtied,
     // so this should not consume too much swap space.
     int mmapFlags = MAP_ANON | MAP_PRIVATE;
@@ -627,13 +659,14 @@ static LPVOID ReserveVirtualMemory(
     }
 #endif  // MMAP_ANON_IGNORES_PROTECTION
 
-#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
+#if defined(MADV_DONTDUMP)
     // Do not include reserved uncommitted memory in coredump.
     if (!(fAllocationType & MEM_COMMIT))
     {
         madvise(pRetVal, MemSize, MADV_DONTDUMP);
     }
 #endif
+#endif // !TARGET_WASM
 
     return pRetVal;
 }
@@ -714,16 +747,21 @@ VIRTUALCommitMemory(
 
     TRACE( "Committing the memory now..\n");
 
-    nProtect = W32toUnixAccessControl(flProtect);
     pRetVal = (void *) StartBoundary;
 
 #ifndef TARGET_WASM
+    nProtect = W32toUnixAccessControl(flProtect);
     // Commit the pages
     if (mprotect((void *) StartBoundary, MemSize, nProtect) != 0)
     {
         ERROR("mprotect() failed! Error(%d)=%s\n", errno, strerror(errno));
         goto error;
     }
+#else
+    // On WASM, reserve == commit — memory is accessible after posix_memalign.
+    // Memory is always zero here: either from ReserveVirtualMemory (initial
+    // allocation) or from the MEM_DECOMMIT path (which zeroes on decommit).
+    (void)MemSize;
 #endif
 
 #if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
@@ -738,7 +776,6 @@ VIRTUALCommitMemory(
 
 #ifndef TARGET_WASM
 error:
-#endif
     if ( flAllocationType & MEM_RESERVE || IsLocallyReserved )
     {
         munmap( pRetVal, MemSize );
@@ -753,6 +790,7 @@ error:
 
     pInformation = NULL;
     pRetVal = NULL;
+#endif // !TARGET_WASM
 done:
 
     LogVaOperation(
@@ -1077,10 +1115,9 @@ VirtualFree(
             goto VirtualFreeExit;
         }
 #else // TARGET_WASM
-        // We can't decommit the mapping (MAP_FIXED doesn't work in emscripten), and we can't
-        //  MADV_DONTNEED it (madvise doesn't work in emscripten), but we can at least zero
-        //  the memory so that if an attempt is made to reuse it later, the memory will be
-        //  empty as PAL tests expect it to be.
+        // On WASM, we cannot decommit (MAP_FIXED and madvise don't work in
+        // emscripten). Zero the range so it is clean for any future commit
+        // (which is a no-op).
         ZeroMemory((LPVOID) StartBoundary, MemSize);
 #endif // TARGET_WASM
     }
@@ -1108,25 +1145,26 @@ VirtualFree(
         TRACE( "Releasing the following memory %d to %d.\n",
                pMemoryToBeReleased->startBoundary, pMemoryToBeReleased->memSize );
 
+#ifdef TARGET_WASM
+        free( (LPVOID)pMemoryToBeReleased->startBoundary );
+#else // !TARGET_WASM
         if ( munmap( (LPVOID)pMemoryToBeReleased->startBoundary,
-                     pMemoryToBeReleased->memSize ) == 0 )
-        {
-            if ( VIRTUALReleaseMemory( pMemoryToBeReleased ) == FALSE )
-            {
-                ASSERT( "Unable to remove the PCMI entry from the list.\n" );
-                pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
-                bRetVal = FALSE;
-                goto VirtualFreeExit;
-            }
-            pMemoryToBeReleased = NULL;
-        }
-        else
+                     pMemoryToBeReleased->memSize ) != 0 )
         {
             ASSERT( "Unable to unmap the memory, munmap() returned an abnormal value.\n" );
             pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
             bRetVal = FALSE;
             goto VirtualFreeExit;
         }
+#endif // !TARGET_WASM
+        if ( VIRTUALReleaseMemory( pMemoryToBeReleased ) == FALSE )
+        {
+            ASSERT( "Unable to remove the PCMI entry from the list.\n" );
+            pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
+            bRetVal = FALSE;
+            goto VirtualFreeExit;
+        }
+        pMemoryToBeReleased = NULL;
     }
 
 VirtualFreeExit:
