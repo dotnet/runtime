@@ -28,8 +28,6 @@
 uint64_t ep_default_rundown_keyword = 0x80020139;
 
 static bool _ep_can_start_threads = false;
-
-static dn_vector_t *_ep_deferred_enable_session_ids = NULL;
 static dn_vector_t *_ep_deferred_disable_session_ids = NULL;
 
 static EventPipeIpcStreamFactorySuspendedPortsCallback _ep_ipc_stream_factory_suspended_ports_callback = NULL;
@@ -1431,12 +1429,10 @@ ep_start_streaming (EventPipeSessionID session_id)
 		// the lock and after the drain thread is running - not fired inline here.
 		enable_holding_lock (session, provider_callback_data_queue);
 
-		if (_ep_can_start_threads) {
-			ep_session_start_streaming (session);
-			streaming_started = true;
-		}
-		else
-			dn_vector_push_back (_ep_deferred_enable_session_ids, session_id);
+		// Session drain threads are native (no managed Thread / GC dependency), so start streaming
+		// immediately even during early startup instead of deferring to ep_finish_init.
+		ep_session_start_streaming (session);
+		streaming_started = true;
 	EP_LOCK_EXIT (section1)
 
 	// If we started the drain thread, wait until it is running before invoking the callbacks. A blocking
@@ -1648,10 +1644,9 @@ ep_init (void)
 	else
 		ep_sample_profiler_set_sampling_rate (default_profiler_sample_rate_in_nanoseconds);
 
-	_ep_deferred_enable_session_ids = dn_vector_alloc_t (EventPipeSessionID);
 	_ep_deferred_disable_session_ids = dn_vector_alloc_t (EventPipeSessionID);
 
-	ep_raise_error_if_nok (_ep_deferred_enable_session_ids && _ep_deferred_disable_session_ids);
+	ep_raise_error_if_nok (_ep_deferred_disable_session_ids);
 
 	_ep_rundown_execution_checkpoints = dn_vector_ptr_alloc ();
 	ep_raise_error_if_nok (_ep_rundown_execution_checkpoints);
@@ -1680,16 +1675,6 @@ ep_finish_init (void)
 	// Enable streaming for any deferred sessions
 	EP_LOCK_ENTER (section1)
 		_ep_can_start_threads = true;
-		if (ep_volatile_load_eventpipe_state () == EP_STATE_INITIALIZED) {
-			if (_ep_deferred_enable_session_ids) {
-				DN_VECTOR_FOREACH_BEGIN (EventPipeSessionID, session_id, _ep_deferred_enable_session_ids) {
-					if (is_session_id_in_collection (session_id))
-						ep_session_start_streaming ((EventPipeSession *)(uintptr_t)session_id);
-				} DN_VECTOR_FOREACH_END;
-				dn_vector_clear (_ep_deferred_enable_session_ids);
-			}
-		}
-
 		ep_sample_profiler_can_start_sampling ();
 	EP_LOCK_EXIT (section1)
 
@@ -1743,9 +1728,6 @@ ep_shutdown (void)
 		dn_vector_ptr_free (_ep_rundown_execution_checkpoints);
 		_ep_rundown_execution_checkpoints = NULL;
 	}
-
-	dn_vector_free (_ep_deferred_enable_session_ids);
-	_ep_deferred_enable_session_ids = NULL;
 
 	dn_vector_free (_ep_deferred_disable_session_ids);
 	_ep_deferred_disable_session_ids = NULL;

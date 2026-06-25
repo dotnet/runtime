@@ -100,7 +100,9 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 	if (!ep_session_type_uses_streaming_thread (session->session_type))
 		return 1;
 
-	if (!thread_params->thread || !ep_rt_thread_has_started (thread_params->thread))
+	// A native (non-managed) drain thread has no managed Thread handle (thread == NULL); only validate the
+	// handle when one exists (Mono sets it). A NULL handle (the native CoreCLR drain thread) proceeds.
+	if (thread_params->thread != NULL && !ep_rt_thread_has_started (thread_params->thread))
 		return 1;
 
 	session->streaming_thread = thread_params->thread;
@@ -109,7 +111,7 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
 
-	EP_GCX_PREEMP_ENTER
+	{ // The drain runs on a native thread, so no GC-mode transition is needed here.
 		if (ep_session_type_uses_buffer_manager (session->session_type)) {
 			ep_rt_wait_event_handle_t *wait_event = ep_session_get_wait_event (session);
 			while (ep_session_get_streaming_enabled (session)) {
@@ -146,7 +148,7 @@ EP_RT_DEFINE_THREAD_FUNC (streaming_thread)
 		}
 		session->streaming_thread = NULL;
 		ep_rt_wait_event_set (&session->rt_thread_shutdown_event);
-	EP_GCX_PREEMP_EXIT
+	}
 
 	if (!success)
 		ep_disable ((EventPipeSessionID)session);
