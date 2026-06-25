@@ -730,10 +730,6 @@ public:
     // DacDbi API: Get the context for a particular thread of the target process
     HRESULT STDMETHODCALLTYPE GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContextBuffer);
 
-    // This is a simple helper function to convert a CONTEXT to a DebuggerREGDISPLAY.  We need to do this
-    // inside DDI because the RS has no notion of REGDISPLAY.
-    HRESULT STDMETHODCALLTYPE ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * pInContext, DebuggerREGDISPLAY * pOutDRD, BOOL fActive);
-
     // Check if the given method is a DiagnosticHidden or an LCG method.
     HRESULT STDMETHODCALLTYPE IsDiagnosticsHiddenOrLCGMethod(VMPTR_MethodDesc vmMethodDesc, OUT DynamicMethodType * pRetVal);
 
