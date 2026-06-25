@@ -156,8 +156,12 @@ namespace System.Text.Json
             }
         }
 
-        private static void EscapeNextBytes(byte value, Span<byte> destination, ref int written)
+        private static void EscapeNextBytes(byte value, Span<byte> destination, ref int totalWritten)
         {
+            // Slice the span so the JIT can see that no bounds checks are needed below
+            destination = destination.Slice(totalWritten, JsonConstants.MaxExpansionFactorWhileEscaping);
+            int written = 0;
+
             destination[written++] = (byte)'\\';
             switch (value)
             {
@@ -196,6 +200,8 @@ namespace System.Text.Json
                     written += bytesWritten;
                     break;
             }
+
+            totalWritten += written;
         }
 
         private static bool IsAsciiValue(byte value) => value <= LastAsciiCharacter;
@@ -274,9 +280,13 @@ namespace System.Text.Json
             }
         }
 
-        private static void EscapeNextChars(char value, Span<char> destination, ref int written)
+        private static void EscapeNextChars(char value, Span<char> destination, ref int totalWritten)
         {
             Debug.Assert(IsAsciiValue(value));
+
+            // Slice the span so the JIT can see that no bounds checks are needed below
+            destination = destination.Slice(totalWritten, JsonConstants.MaxExpansionFactorWhileEscaping);
+            int written = 0;
 
             destination[written++] = '\\';
             switch ((byte)value)
@@ -319,6 +329,8 @@ namespace System.Text.Json
 #endif
                     break;
             }
+
+            totalWritten += written;
         }
 
 #if !NET
