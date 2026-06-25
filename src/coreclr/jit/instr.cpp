@@ -2014,7 +2014,8 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg, var_types
                 }
                 else
                 {
-                    // A TYP_INT value only needs its low 32 bits; mov Wd, Wn zero extends the rest.
+                    // A signed int/long value already fills its register width, so a plain mov
+                    // suffices; for int the EA_4BYTE mov also zero extends the unused upper bits.
                     ins = INS_mov;
                 }
             }

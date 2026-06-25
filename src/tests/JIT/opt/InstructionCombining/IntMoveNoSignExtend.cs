@@ -19,11 +19,11 @@ namespace TestIntMoveNoSignExtend
 
         // A reg-to-reg move of a TYP_INT value (here the call result kept in a callee-saved register
         // across the following call) must not be sign extended to 64 bits: the upper bits are never
-        // observed for an int, so a plain 'mov Wd, Wn' suffices instead of 'sxtw Wd, Wn'.
+        // observed for an int, so a plain 'mov' suffices instead of an 'sxtw'.
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int IntMove()
         {
-            //ARM64-NOT: sxtw {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-NOT: sxtw
             int a = GetInt();
             Sink(0);
             return a + GetInt();
