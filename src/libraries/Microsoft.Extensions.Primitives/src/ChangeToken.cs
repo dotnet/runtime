@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.Primitives
                 else
                 {
                     // Sets can never overlap with other SetDisposable calls so we should never get into this situation
-                    throw new InvalidOperationException("Somebody else set the _disposable field");
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_ConcurrentDisposableSet);
                 }
             }
 
@@ -245,7 +245,12 @@ namespace Microsoft.Extensions.Primitives
                 {
                     // The consumer is invoked synchronously here, so that synchronous exceptions from it are propagated
                     // to the code that triggers the change token, just like the sync overload does.
-                    Task consumerTask = _changeTokenConsumer(State) ?? throw new InvalidOperationException("The task returned by changeTokenConsumer must not be null.");
+                    Task consumerTask = _changeTokenConsumer(State);
+
+                    if (consumerTask is null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullConsumerTask);
+                    }
 
                     if (consumerTask.Status == TaskStatus.RanToCompletion)
                     {
