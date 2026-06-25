@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Security.Cryptography.Tests;
 using Test.Cryptography;
-
 using Xunit;
 
 namespace System.Security.Cryptography.EcDiffieHellman.Tests

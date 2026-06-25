@@ -14,6 +14,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
         public abstract bool ExplicitCurvesSupported { get; }
 
         // In OSSL 3+ we use EVP_PKEY APIs instead of EC_KEY APIs so import and export of explicit curves also fails for SymCrypt.
-        public bool ExplicitCurvesSupportFailOnUseOnly => PlatformDetection.IsSymCryptOpenSsl && SafeEvpPKeyHandle.OpenSslVersion < 0x3_00_00_00_0;
+        public static bool ExplicitCurvesSupportFailOnUseOnly => PlatformDetection.IsSymCryptOpenSsl && SafeEvpPKeyHandle.OpenSslVersion < 0x3_00_00_00_0;
     }
 }

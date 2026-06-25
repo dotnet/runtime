@@ -7,11 +7,11 @@ using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Security.Cryptography.Tests
 {
-    public static class ExceptionHelpers
+    internal static class ExceptionHelpers
     {
         extension (SkipTestException)
         {
-            public static void ThrowWhen([DoesNotReturnIf(true)] bool condition, [CallerArgumentExpression(nameof(condition))] string? conditionText = null)
+            internal static void ThrowWhen([DoesNotReturnIf(true)] bool condition, [CallerArgumentExpression(nameof(condition))] string? conditionText = null)
             {
                 if (condition)
                 {
@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Tests
                 }
             }
 
-            public static void ThrowUnless([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] string? conditionText = null)
+            internal static void ThrowUnless([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] string? conditionText = null)
             {
                 if (!condition)
                 {

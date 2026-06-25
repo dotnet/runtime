@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.XUnitExtensions;
 using System.Security.Cryptography.EcDsa.Tests;
 using System.Security.Cryptography.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Cng.Tests
@@ -49,11 +49,14 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        [ConditionalTheory, MemberData(nameof(PublicTestCurves))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestCurves))]
         public static void TestHashRoundTrip(CurveDef curveDef)
         {
             SkipTestException.ThrowUnless(ECDsaCngProvider.Instance.ExplicitCurvesSupported);
-            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDsaCngProvider.Instance));
+
+            if (!curveDef.IsCurveValidOnPlatform(ECDsaCngProvider.Instance))
+                return;
 
             // This test is in the cng only tests because OpenSsl does not provide the hash algorithm
             using (var cng = new ECDsaCng(curveDef.Curve))

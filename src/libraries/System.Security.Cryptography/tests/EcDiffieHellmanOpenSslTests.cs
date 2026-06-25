@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.XUnitExtensions;
 using System.Security.Cryptography.EcDiffieHellman.Tests;
 using System.Security.Cryptography.Tests;
 using Test.Cryptography;
@@ -11,8 +10,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
 {
     public static class EcDiffieHellmanOpenSslTests
     {
+        public static bool ECDsa224Available => ECDiffieHellmanOpenSslProvider.Instance.IsCurveValid(new Oid(EccTestBase.ECDSA_P224_OID_VALUE));
         public static bool ECExplicitCurvesSupported => ECDiffieHellmanOpenSslProvider.Instance.ExplicitCurvesSupported;
-        public static bool SupportsExplicitCurves => ECDiffieHellmanOpenSslProvider.Instance.ExplicitCurvesSupported || ECDiffieHellmanOpenSslProvider.Instance.ExplicitCurvesSupportFailOnUseOnly;
+        public static bool SupportsExplicitCurves => ECDiffieHellmanOpenSslProvider.Instance.ExplicitCurvesSupported || ECDiffieHellmanProvider.ExplicitCurvesSupportFailOnUseOnly;
 
         [Fact]
         public static void DefaultCtor()
@@ -61,11 +61,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
             }
         }
 
-        [ConditionalFact]
+        [ConditionalFact(typeof(EcDiffieHellmanOpenSslTests), nameof(ECDsa224Available))]
         public static void CtorHandle224()
         {
-            SkipTestException.ThrowUnless(ECDiffieHellmanOpenSslProvider.Instance.IsCurveValid(new Oid(EccTestBase.ECDSA_P224_OID_VALUE)));
-
             IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(EccTestBase.ECDSA_P224_OID_VALUE);
             Assert.NotEqual(IntPtr.Zero, ecKey);
             int success = Interop.Crypto.EcKeyGenerateKey(ecKey);
@@ -449,11 +447,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
             }
         }
 
-        [ConditionalFact]
+        [ConditionalFact(nameof(SupportsExplicitCurves))]
         public static void ExplicitCurveImportExportProducesSameExplicitParams()
         {
-            SkipTestException.ThrowUnless(SupportsExplicitCurves);
-
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
 
             using (ECDiffieHellman original = ECDiffieHellman.Create(explicitCurve))
@@ -470,11 +466,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
             }
         }
 
-        [ConditionalFact]
+        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
         public static void ExplicitCurveImportAndOriginalDeriveCrossCompatible()
         {
-            SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
-
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
 
             using (ECDiffieHellman key1 = ECDiffieHellman.Create(explicitCurve))

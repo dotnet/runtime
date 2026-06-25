@@ -7,10 +7,10 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public sealed class DefaultECDiffieHellmanTests
+    public static class DefaultECDiffieHellmanTests
     {
         [Fact]
-        public void ECCurve_ctor()
+        public static void ECCurve_ctor()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
             {
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData("1.3.132.0.35", 521)] //secp521r1
         [InlineData("1.3.132.0.34", 384)] //secp384r1
         [InlineData("1.2.840.10045.3.1.7", 256)] //secp256v1
-        public void ECCurve_ctor_SEC2_OID_From_Value(string oidValue, int expectedKeySize)
+        public static void ECCurve_ctor_SEC2_OID_From_Value(string oidValue, int expectedKeySize)
         {
             ECCurve ecCurve = ECCurve.CreateFromValue(oidValue);
             using (ECDiffieHellman ecdh = ECDiffieHellman.Create(ecCurve))
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Create_InvalidECCurveFriendlyName_ThrowsPlatformNotSupportedException()
+        public static void Create_InvalidECCurveFriendlyName_ThrowsPlatformNotSupportedException()
         {
             ECCurve curve = ECCurve.CreateFromFriendlyName("bad potato");
             PlatformNotSupportedException pnse = Assert.Throws<PlatformNotSupportedException>(() => ECDiffieHellman.Create(curve));
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void Equivalence_Hash()
+        public static void Equivalence_Hash()
         {
             using (ECDiffieHellman ecdh = ECDiffieHellman.Create())
             using (ECDiffieHellmanPublicKey publicKey = ecdh.PublicKey)

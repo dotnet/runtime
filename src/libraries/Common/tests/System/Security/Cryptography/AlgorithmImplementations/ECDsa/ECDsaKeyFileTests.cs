@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         protected override ECDsa CreateKey() => ECDsaFactory.Create();
         protected override void Exercise(ECDsa key) => key.Exercise();
         protected override bool SupportsExplicitCurves =>
-            ECDsaFactory.ExplicitCurvesSupported || ECDsaFactory.ExplicitCurvesSupportFailOnUseOnly;
+            ECDsaFactory.ExplicitCurvesSupported || ECDsaProvider.ExplicitCurvesSupportFailOnUseOnly;
         protected override bool IsCurveSupported(Oid oid) => ECDsaFactory.IsCurveValid(oid);
     }
 }

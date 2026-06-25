@@ -4,8 +4,8 @@
 using System.Formats.Asn1;
 using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.Dsa.Tests;
-using System.Security.Cryptography.EcDsa.Tests;
 using System.Security.Cryptography.EcDiffieHellman.Tests;
+using System.Security.Cryptography.EcDsa.Tests;
 using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;

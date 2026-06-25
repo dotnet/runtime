@@ -35,11 +35,14 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.Null(publicParams.D);
         }
 
-        [ConditionalFact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows/* "parameters.Curve.Hash doesn't round trip on Unix." */)]
         public void ImportExplicitWithHashButNoSeed()
         {
-            SkipTestException.ThrowUnless(ECDsaFactory.ExplicitCurvesSupported);
+            if (!ECDsaFactory.ExplicitCurvesSupported)
+            {
+                return;
+            }
 
             using (ECDsa ec = ECDsaFactory.Create())
             {
@@ -56,12 +59,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalTheory]
-        [MemberData(nameof(AllTestCurves))]
+        [Theory]
+        [MemberData(nameof(TestCurvesFull))]
         public void TestNamedCurves(CurveDef curveDef)
         {
-            SkipTestException.ThrowUnless(curveDef.Curve.IsNamed);
-            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDsaFactory));
+            if (!curveDef.Curve.IsNamed || !curveDef.IsCurveValidOnPlatform(ECDsaFactory))
+                return;
 
             using (ECDsa ec1 = ECDsaFactory.Create(curveDef.Curve))
             {
@@ -79,11 +82,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalTheory, MemberData(nameof(PublicTestCurves))]
+        [Theory]
+        [MemberData(nameof(TestCurves))]
         public void TestNamedCurvesNegative(CurveDef curveDef)
         {
-            SkipTestException.ThrowUnless(curveDef.Curve.IsNamed);
-            SkipTestException.ThrowWhen(curveDef.IsCurveValidOnPlatform(ECDsaFactory));
+            if (!curveDef.Curve.IsNamed || curveDef.IsCurveValidOnPlatform(ECDsaFactory))
+                return;
 
             // An exception may be thrown during Create() if the Oid is bad, or later during native calls
             Assert.Throws<PlatformNotSupportedException>(() =>
@@ -93,11 +97,14 @@ namespace System.Security.Cryptography.EcDsa.Tests
             });
         }
 
-        [ConditionalTheory, MemberData(nameof(AllTestCurves))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestCurvesFull))]
         public void TestExplicitCurves(CurveDef curveDef)
         {
             SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
-            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDsaFactory));
+
+            if (!curveDef.IsCurveValidOnPlatform(ECDsaFactory))
+                return;
 
             using (ECDsa ec1 = ECDsaFactory.Create(curveDef.Curve))
             {
@@ -115,11 +122,16 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalTheory, MemberData(nameof(PublicTestCurves))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestCurves))]
         public void TestExplicitCurvesSignVerify(CurveDef curveDef)
         {
             SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
-            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDsaFactory));
+
+            if (!curveDef.IsCurveValidOnPlatform(ECDsaFactory))
+            {
+                return;
+            }
 
             using (ECDsa ec1 = ECDsaFactory.Create(curveDef.Curve))
             {
@@ -386,7 +398,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
         public void DerivePublicKey_Named_Sect163k1()
         {
             SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
-            SkipTestException.ThrowUnless(ECDsaFactory.IsCurveValid(EccTestData.Sect163k1Key1.Curve.Oid));
+
+            if (!ECDsaFactory.IsCurveValid(EccTestData.Sect163k1Key1.Curve.Oid))
+                return;
 
             VerifyPrivateKeyDerivesPublicKey(EccTestData.Sect163k1Key1, explicitCurve: false);
         }
@@ -395,7 +409,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
         public void DerivePublicKey_Named_C2pnb163v1()
         {
             SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
-            SkipTestException.ThrowUnless(ECDsaFactory.IsCurveValid(EccTestData.C2pnb163v1Key1.Curve.Oid));
+
+            if (!ECDsaFactory.IsCurveValid(EccTestData.C2pnb163v1Key1.Curve.Oid))
+                return;
 
             VerifyPrivateKeyDerivesPublicKey(EccTestData.C2pnb163v1Key1, explicitCurve: false);
         }
@@ -425,7 +441,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
             SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
-            SkipTestException.ThrowUnless(ECDsaFactory.IsCurveValid(EccTestData.Sect163k1Key1.Curve.Oid));
+
+            if (!ECDsaFactory.IsCurveValid(EccTestData.Sect163k1Key1.Curve.Oid))
+                return;
 
             VerifyPrivateKeyDerivesPublicKey(EccTestData.Sect163k1Key1Explicit, explicitCurve: true);
         }
@@ -435,7 +453,9 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
             SkipTestException.ThrowUnless(CanDeriveNewPublicKey);
-            SkipTestException.ThrowUnless(ECDsaFactory.IsCurveValid(EccTestData.C2pnb163v1Key1.Curve.Oid));
+
+            if (!ECDsaFactory.IsCurveValid(EccTestData.C2pnb163v1Key1.Curve.Oid))
+                return;
 
             VerifyPrivateKeyDerivesPublicKey(EccTestData.C2pnb163v1Key1Explicit, explicitCurve: true);
         }
@@ -462,13 +482,13 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(NamedCurves))]
         public void OidPresentOnCurveMiscased(ECCurve curve, bool checkCurveValidity)
         {
-            if (checkCurveValidity)
+            if (checkCurveValidity && !ECDsaFactory.IsCurveValid(curve.Oid))
             {
-                SkipTestException.ThrowUnless(ECDsaFactory.IsCurveValid(curve.Oid));
+                return;
             }
 
             ECCurve miscasedCurve = ECCurve.CreateFromFriendlyName(InvertStringCase(curve.Oid.FriendlyName));

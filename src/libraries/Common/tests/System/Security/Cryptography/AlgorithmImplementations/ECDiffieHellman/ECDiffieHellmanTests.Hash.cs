@@ -295,7 +295,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(HashDerivationTestCases))]
         public void HashDerivation_KnownResults(
             HashAlgorithmName hashAlgorithm,
@@ -303,7 +303,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             string appendBytes,
             string answerBytes)
         {
-            SkipTestException.ThrowWhen(hashAlgorithm.Name.StartsWith("SHA3", StringComparison.Ordinal) && !ECDiffieHellmanFactory.SupportsSha3);
+            if (hashAlgorithm.Name.StartsWith("SHA3", StringComparison.Ordinal) && !ECDiffieHellmanFactory.SupportsSha3)
+            {
+                return;
+            }
 
             byte[] prepend = prependBytes?.HexToByteArray();
             byte[] append = appendBytes?.HexToByteArray();

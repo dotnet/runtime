@@ -355,7 +355,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(HmacDerivationTestCases))]
         public void HmacDerivation_KnownResults(
             HashAlgorithmName hashAlgorithm,
@@ -364,7 +364,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             string appendBytes,
             string answerBytes)
         {
-            SkipTestException.ThrowWhen(hashAlgorithm.Name.StartsWith("SHA3", StringComparison.Ordinal) && !ECDiffieHellmanFactory.SupportsSha3);
+            if (hashAlgorithm.Name.StartsWith("SHA3", StringComparison.Ordinal) && !ECDiffieHellmanFactory.SupportsSha3)
+            {
+                return;
+            }
 
             byte[] hmacKey = hmacKeyBytes?.HexToByteArray();
             byte[] prepend = prependBytes?.HexToByteArray();

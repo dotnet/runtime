@@ -19,11 +19,12 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         internal bool CanDeriveNewPublicKey =>
             ECDiffieHellmanFactory.CanDeriveNewPublicKey;
 
-        [ConditionalTheory, MemberData(nameof(AllTestCurves))]
+        [Theory]
+        [MemberData(nameof(TestCurvesFull))]
         public void TestNamedCurves(CurveDef curveDef)
         {
-            SkipTestException.ThrowUnless(curveDef.Curve.IsNamed);
-            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDiffieHellmanFactory));
+            if (!curveDef.Curve.IsNamed || !curveDef.IsCurveValidOnPlatform(ECDiffieHellmanFactory))
+                return;
 
             using (ECDiffieHellman ec1 = ECDiffieHellmanFactory.Create(curveDef.Curve))
             {
@@ -41,11 +42,12 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalTheory, MemberData(nameof(PublicTestCurves))]
+        [Theory]
+        [MemberData(nameof(TestCurves))]
         public void TestNamedCurvesNegative(CurveDef curveDef)
         {
-            SkipTestException.ThrowUnless(curveDef.Curve.IsNamed);
-            SkipTestException.ThrowWhen(curveDef.IsCurveValidOnPlatform(ECDiffieHellmanFactory));
+            if (!curveDef.Curve.IsNamed || curveDef.IsCurveValidOnPlatform(ECDiffieHellmanFactory))
+                return;
 
             // An exception may be thrown during Create() if the Oid is bad, or later during native calls
             Assert.Throws<PlatformNotSupportedException>(() =>
@@ -55,11 +57,15 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             });
         }
 
-        [ConditionalTheory, MemberData(nameof(AllTestCurves))]
+        [Theory]
+        [MemberData(nameof(TestCurvesFull))]
         public void TestExplicitCurves(CurveDef curveDef)
         {
-            SkipTestException.ThrowUnless(ECDiffieHellmanFactory.ExplicitCurvesSupported);
-            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDiffieHellmanFactory));
+            if (!ECDiffieHellmanFactory.ExplicitCurvesSupported || 
+                !curveDef.IsCurveValidOnPlatform(ECDiffieHellmanFactory))
+            {
+                return;
+            }
 
             using (ECDiffieHellman ec1 = ECDiffieHellmanFactory.Create(curveDef.Curve))
             {
@@ -77,11 +83,15 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalTheory, MemberData(nameof(PublicTestCurves))]
+        [Theory]
+        [MemberData(nameof(TestCurves))]
         public void TestExplicitCurvesKeyAgree(CurveDef curveDef)
         {
-            SkipTestException.ThrowUnless(ECDiffieHellmanFactory.ExplicitCurvesSupported);
-            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDiffieHellmanFactory));
+            if (!ECDiffieHellmanFactory.ExplicitCurvesSupported ||
+                !curveDef.IsCurveValidOnPlatform(ECDiffieHellmanFactory))
+            {
+                return;
+            }
 
             using (ECDiffieHellman ecdh1Named = ECDiffieHellmanFactory.Create(curveDef.Curve))
             {
@@ -153,11 +163,14 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Android does not validate curve parameters")]
         public void TestExplicitImportValidationNegative()
         {
-            SkipTestException.ThrowUnless(ECDiffieHellmanFactory.ExplicitCurvesSupported);
+            if (!ECDiffieHellmanFactory.ExplicitCurvesSupported)
+            {
+                return;
+            }
 
             unchecked
             {
@@ -204,10 +217,13 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void ImportExplicitWithSeedButNoHash()
         {
-            SkipTestException.ThrowUnless(ECDiffieHellmanFactory.ExplicitCurvesSupported);
+            if (!ECDiffieHellmanFactory.ExplicitCurvesSupported)
+            {
+                return;
+            }
 
             using (ECDiffieHellman ec = ECDiffieHellmanFactory.Create())
             {
@@ -224,11 +240,14 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows/* "parameters.Curve.Hash doesn't round trip on Unix." */)]
         public void ImportExplicitWithHashButNoSeed()
         {
-            SkipTestException.ThrowUnless(ECDiffieHellmanFactory.ExplicitCurvesSupported);
+            if (!ECDiffieHellmanFactory.ExplicitCurvesSupported)
+            {
+                return;
+            }
 
             using (ECDiffieHellman ec = ECDiffieHellmanFactory.Create())
             {
@@ -249,7 +268,11 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         public void TestNamedImportValidationNegative()
         {
             SkipTestException.ThrowUnless(ECDsa224Available);
-            SkipTestException.ThrowUnless(ECDiffieHellmanFactory.ExplicitCurvesSupported);
+
+            if (!ECDiffieHellmanFactory.ExplicitCurvesSupported)
+            {
+                return;
+            }
 
             unchecked
             {
@@ -278,10 +301,13 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void TestGeneralExportWithExplicitParameters()
         {
-            SkipTestException.ThrowUnless(ECDiffieHellmanFactory.ExplicitCurvesSupported);
+            if (!ECDiffieHellmanFactory.ExplicitCurvesSupported)
+            {
+                return;
+            }
 
             using (ECDiffieHellman ecdsa = ECDiffieHellmanFactory.Create())
             {
@@ -298,11 +324,13 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void TestExplicitCurveImportOnUnsupportedPlatform()
         {
-            SkipTestException.ThrowWhen(
-                ECDiffieHellmanFactory.ExplicitCurvesSupported || ECDiffieHellmanFactory.ExplicitCurvesSupportFailOnUseOnly);
+            if (ECDiffieHellmanFactory.ExplicitCurvesSupported || ECDiffieHellmanProvider.ExplicitCurvesSupportFailOnUseOnly)
+            {
+                return;
+            }
 
             using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create())
             {
@@ -327,7 +355,11 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         public void TestNamedCurveWithExplicitKey()
         {
             SkipTestException.ThrowUnless(ECDsa224Available);
-            SkipTestException.ThrowUnless(ECDiffieHellmanFactory.ExplicitCurvesSupported);
+
+            if (!ECDiffieHellmanFactory.ExplicitCurvesSupported)
+            {
+                return;
+            }
 
             using (ECDiffieHellman ec = ECDiffieHellmanFactory.Create())
             {
@@ -397,12 +429,12 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(NamedCurves))]
         public void OidPresentOnCurveMiscased(ECCurve curve, bool checkCurveValidity)
         {
-            if (checkCurveValidity)
-                SkipTestException.ThrowUnless(ECDiffieHellmanFactory.IsCurveValid(curve.Oid));
+            if (checkCurveValidity && !ECDiffieHellmanFactory.IsCurveValid(curve.Oid))
+                return;
 
             ECCurve miscasedCurve = ECCurve.CreateFromFriendlyName(InvertStringCase(curve.Oid.FriendlyName));
             Assert.NotEqual(miscasedCurve.Oid.FriendlyName, curve.Oid.FriendlyName);

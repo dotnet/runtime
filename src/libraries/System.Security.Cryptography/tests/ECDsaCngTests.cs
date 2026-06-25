@@ -167,7 +167,8 @@ namespace System.Security.Cryptography.Cng.Tests
             Verify256(e, true);
         }
 
-        [ConditionalTheory, MemberData(nameof(PublicTestCurves))]
+        [ConditionalTheory]
+        [MemberData(nameof(TestCurves))]
         public static void TestKeyPropertyFromNamedCurve(CurveDef curveDef)
         {
             SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDsaCngProvider.Instance));
@@ -204,7 +205,8 @@ namespace System.Security.Cryptography.Cng.Tests
             Assert.ThrowsAny<Exception>(() => CngKey.Create(alg));
         }
 
-        [Theory, MemberData(nameof(SpecialNistKeys))]
+        [Theory]
+        [MemberData(nameof(SpecialNistKeys))]
         public void TestSpecialNistKeys(int keySize, string curveName, CngAlgorithm algorithm)
         {
             using (ECDsaCng cng = (ECDsaCng)ECDsaFactory.Create(keySize))

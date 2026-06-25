@@ -5,21 +5,21 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
     public sealed class ECDiffieHellmanTests_OpenSsl : ECDiffieHellmanTests
     {
-        protected override ECDiffieHellmanProvider ECDiffieHellmanFactory { get; } = ECDiffieHellmanOpenSslProvider.Instance;
+        protected override ECDiffieHellmanProvider ECDiffieHellmanFactory => ECDiffieHellmanOpenSslProvider.Instance;
     }
 
     public sealed class ECDiffieHellmanFactoryTests_OpenSsl : ECDiffieHellmanFactoryTests
     {
-        protected override ECDiffieHellmanProvider ECDiffieHellmanFactory { get; } = ECDiffieHellmanOpenSslProvider.Instance;
+        protected override ECDiffieHellmanProvider ECDiffieHellmanFactory => ECDiffieHellmanOpenSslProvider.Instance;
     }
 
     public sealed class ECDhKeyFileTests_OpenSsl : ECDhKeyFileTests
     {
-        protected override ECDiffieHellmanProvider ECDiffieHellmanFactory { get; } = ECDiffieHellmanOpenSslProvider.Instance;
+        protected override ECDiffieHellmanProvider ECDiffieHellmanFactory => ECDiffieHellmanOpenSslProvider.Instance;
     }
 
     public sealed class ECDiffieHellmanKeyPemTests_OpenSsl : ECDiffieHellmanKeyPemTests
     {
-        protected override ECDiffieHellmanProvider ECDiffieHellmanFactory { get; } = ECDiffieHellmanOpenSslProvider.Instance;
+        protected override ECDiffieHellmanProvider ECDiffieHellmanFactory => ECDiffieHellmanOpenSslProvider.Instance;
     }
 }

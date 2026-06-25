@@ -22,15 +22,15 @@ namespace System.Security.Cryptography.Tests
         internal const string ECDSA_P521_OID_VALUE = "1.3.132.0.35"; // Also called nistP521 or secP521r1
         internal const string ECDSA_Sect193r1_OID_VALUE = "1.3.132.0.24"; //Char-2 curve
 
-        public static IEnumerable<object[]> AllTestCurves
+        public static IEnumerable<object[]> TestCurvesFull
         {
             get
             {
-                foreach (CurveDef cd in PublicTestCurvesRaw)
+                foreach (CurveDef cd in TestCurvesRaw)
                     yield return new[] { cd };
 
                 // return again with IncludePrivate = true
-                foreach (CurveDef cd in PublicTestCurvesRaw)
+                foreach (CurveDef cd in TestCurvesRaw)
                 {
                     cd.IncludePrivate = true;
                     yield return new[] { cd };
@@ -38,16 +38,16 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        public static IEnumerable<object[]> PublicTestCurves
+        public static IEnumerable<object[]> TestCurves
         {
             get
             {
-                foreach (CurveDef cd in PublicTestCurvesRaw)
+                foreach (CurveDef cd in TestCurvesRaw)
                     yield return new[] { cd };
             }
         }
 
-        protected static IEnumerable<CurveDef> PublicTestCurvesRaw
+        private static IEnumerable<CurveDef> TestCurvesRaw
         {
             get
             {

@@ -198,11 +198,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalTheory, MemberData(nameof(PublicTestCurves))]
+        [Theory]
+        [MemberData(nameof(TestCurves))]
         public void TestRegenKeyExplicit(CurveDef curveDef)
         {
-            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDsaFactory));
-            SkipTestException.ThrowWhen(curveDef.RequiredOnPlatform);
+            if (!curveDef.IsCurveValidOnPlatform(ECDsaFactory) || curveDef.RequiredOnPlatform)
+                return;
 
             ECParameters param, param2;
             ECDsa ec, newEc;
@@ -302,11 +303,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalTheory]
-        [MemberData(nameof(PublicTestCurves))]
+        [Theory]
+        [MemberData(nameof(TestCurves))]
         public void TestRegenKeyNamed(CurveDef curveDef)
         {
-            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDsaFactory));
+            if (!curveDef.IsCurveValidOnPlatform(ECDsaFactory))
+                return;
 
             ECParameters param, param2;
             ECDsa ec;
@@ -351,12 +353,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalTheory]
-        [MemberData(nameof(PublicTestCurves))]
+        [Theory]
+        [MemberData(nameof(TestCurves))]
         public void TestChangeFromNamedCurveToKeySize(CurveDef curveDef)
         {
-            SkipTestException.ThrowUnless(curveDef.Curve.IsNamed);
-            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDsaFactory));
+            if (!curveDef.Curve.IsNamed || !curveDef.IsCurveValidOnPlatform(ECDsaFactory))
+                return;
 
             using (ECDsa ec = ECDsaFactory.Create(curveDef.Curve))
             {
@@ -382,6 +384,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         public void TestPositive256WithExplicitParameters()
         {
             SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
+
             using (ECDsa ecdsa = ECDsaFactory.Create())
             {
                 ecdsa.ImportParameters(EccTestData.GetNistP256ExplicitTestData());
@@ -412,11 +415,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalTheory]
-        [MemberData(nameof(PublicTestCurves))]
+        [Theory]
+        [MemberData(nameof(TestCurves))]
         public void SignaturesAtZeroDoNotVerify_IEEEP1363(CurveDef curveDef)
         {
-            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDsaFactory));
+            if (!curveDef.IsCurveValidOnPlatform(ECDsaFactory))
+                return;
 
             using (ECDsa ec = ECDsaFactory.Create(curveDef.Curve))
             {
@@ -444,11 +448,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalTheory]
-        [MemberData(nameof(PublicTestCurves))]
+        [Theory]
+        [MemberData(nameof(TestCurves))]
         public void SignaturesAtZeroDoNotVerify_DER(CurveDef curveDef)
         {
-            SkipTestException.ThrowUnless(curveDef.IsCurveValidOnPlatform(ECDsaFactory));
+            if (!curveDef.IsCurveValidOnPlatform(ECDsaFactory))
+                return;
 
             using (ECDsa ec = ECDsaFactory.Create(curveDef.Curve))
             {
