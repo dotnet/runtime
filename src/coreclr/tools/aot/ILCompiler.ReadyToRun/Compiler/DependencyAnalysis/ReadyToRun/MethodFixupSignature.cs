@@ -85,11 +85,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // Because methods with generic parameters are already compiled in their canonical form, we are only interested in finding
                 // instantiations of virtual methods that have at least one non-canonical argument (aka a valuetype).
-                if (HasNonCanonicalInstantiationArguments(canonMethod))
+                if (HasNonCanonicalInstantiationArguments(canonMethod) && !factory.CanBeInGenericCycle(Method))
                 {
                     list = list ?? new DependencyList();
                     list.Add(factory.GVMDependencies(Method), "Virtual dispatch dependency");
                 }
+            }
+
+            // For non-GVM virtual method calls, mark the virtual slot as used so that
+            // conditional dependencies on InheritedVirtualMethodsNode can trigger compilation
+            // of concrete implementations.
+            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
+                Method.IsVirtual &&
+                !Method.HasInstantiation &&
+                !Method.IsFinal &&
+                !Method.OwningType.IsGenericDefinition)
+            {
+                list = list ?? new DependencyList();
+                list.Add(factory.VirtualMethodUse(canonMethod), "Non-GVM virtual slot use");
             }
 
             return list;

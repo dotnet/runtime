@@ -3769,6 +3769,7 @@ struct cdac_data<Thread>
     static constexpr size_t PreemptiveGCDisabled = offsetof(Thread, m_fPreemptiveGCDisabled);
     static constexpr size_t RuntimeThreadLocals = offsetof(Thread, m_pRuntimeThreadLocals);
     static constexpr size_t Frame = offsetof(Thread, m_pFrame);
+    static constexpr size_t GCFrame = offsetof(Thread, m_pGCFrame);
     static constexpr size_t CachedStackBase = offsetof(Thread, m_CacheStackBase);
     static constexpr size_t CachedStackLimit = offsetof(Thread, m_CacheStackLimit);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
@@ -3782,6 +3783,7 @@ struct cdac_data<Thread>
         "Thread::m_ExceptionState is of type ThreadExceptionState");
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
     static constexpr size_t DebuggerFilterContext = offsetof(Thread, m_debuggerFilterContext);
+    static constexpr size_t InteropDebuggingHijacked = offsetof(Thread, m_fInteropDebuggingHijacked);
 #ifdef TARGET_WINDOWS
     static constexpr size_t ThreadHandle = offsetof(Thread, m_ThreadHandle);
 #endif

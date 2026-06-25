@@ -725,6 +725,7 @@ RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 CONFIG_INTEGER(JitEnableFinallyCloning, "JitEnableFinallyCloning", 1)
 CONFIG_INTEGER(JitEnableRemoveEmptyTry, "JitEnableRemoveEmptyTry", 1)
 CONFIG_INTEGER(JitEnableRemoveEmptyTryCatchOrTryFault, "JitEnableRemoveEmptyTryCatchOrTryFault", 1)
+CONFIG_INTEGER(JitEnableRemoveUnreachableTry, "JitEnableRemoveUnreachableTry", 1)
 
 // Overall master enable for Guarded Devirtualization.
 RELEASE_CONFIG_INTEGER(JitEnableGuardedDevirtualization, "JitEnableGuardedDevirtualization", 1)
@@ -900,11 +901,13 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #if defined(TARGET_WASM)
 // Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
 RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
+RELEASE_CONFIG_INTEGER(JitWasmSimdNyiToR2RUnsupported, "JitWasmSimdNyiToR2RUnsupported", 0)
+
 // Specify methods that will fail with R2R unsupported after codegen.
 // Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.
 CONFIG_STRING(JitR2RUnsupportedRange, "JitR2RUnsupportedRange")
-// Enable processing methods with funclets.
-RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 0)
+// Enable processing methods with funclets. Set to 0 to bail to R2R unsupported before codegen.
+RELEASE_CONFIG_INTEGER(JitWasmFunclets, "JitWasmFunclets", 1)
 #endif // defined(TARGET_WASM)
 
 // Allow to enregister locals with struct type.

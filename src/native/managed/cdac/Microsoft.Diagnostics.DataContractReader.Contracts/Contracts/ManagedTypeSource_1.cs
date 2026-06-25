@@ -54,7 +54,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         }
 
         // Re-entrancy guard: if we're already searching for a type and we recurse
-        // (e.g., LayoutPair -> ManagedTypeSource -> IData -> LayoutPair), short-circuit
+        // (e.g., LayoutSet -> ManagedTypeSource -> IData -> LayoutSet), short-circuit
         // to break the cycle. Do NOT cache the negative result here — the outer search
         // may legitimately succeed for this same name once the recursion unwinds.
         if (_inSearch)

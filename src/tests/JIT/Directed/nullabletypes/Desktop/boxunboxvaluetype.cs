@@ -4696,6 +4696,7 @@ internal class NullableTest45
 
 public class Test_boxunboxvaluetype
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/pull/129702", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

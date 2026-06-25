@@ -410,7 +410,6 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
 #endif // TARGET_AMD64 && TARGET_WINDOWS
     SyncRegDisplayToCurrentContext(pRD);
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     return pRD->ControlPC;
 }
@@ -422,10 +421,6 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                                         EECodeInfo * pCodeInfo /*= NULL*/
                                         ARM64_ARG(TADDR * pSpForPacSign /*= NULL*/))
 {
-#ifdef TARGET_WASM
-    _ASSERTE("VirtualUnwindCallFrame is not supported on WebAssembly");
-    return 0;
-#else
     CONTRACTL
     {
         NOTHROW;
@@ -573,7 +568,6 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 #endif // !DACCESS_COMPILE
 
     return uControlPc;
-#endif // TARGET_WASM
 }
 
 #ifndef DACCESS_COMPILE

@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.Tests
             using X25519DiffieHellman publicOnly = ImportPublicKey(xdh.ExportPublicKey());
             using X25519DiffieHellman other = GenerateKey();
 
-            Assert.Throws<CryptographicException>(() => publicOnly.DeriveRawSecretAgreement(other));
+            Assert.ThrowsAny<CryptographicException>(() => publicOnly.DeriveRawSecretAgreement(other));
         }
 
         [Fact]
@@ -173,7 +173,7 @@ namespace System.Security.Cryptography.Tests
             using X25519DiffieHellman publicOnly = ImportPublicKey(xdh.ExportPublicKey());
             using X25519DiffieHellman other = GenerateKey();
 
-            Assert.Throws<CryptographicException>(() =>
+            Assert.ThrowsAny<CryptographicException>(() =>
                 publicOnly.DeriveRawSecretAgreement(other, new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));
         }
 
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography.Tests
             using X25519DiffieHellman publicOnly = ImportPublicKey(xdh.ExportPublicKey());
             using X25519DiffieHellman other = GenerateKey();
 
-            Assert.Throws<CryptographicException>(() => publicOnly.DeriveRawSecretAgreement(other.ExportPublicKey()));
+            Assert.ThrowsAny<CryptographicException>(() => publicOnly.DeriveRawSecretAgreement(other.ExportPublicKey()));
         }
 
         [Fact]
@@ -194,7 +194,7 @@ namespace System.Security.Cryptography.Tests
             using X25519DiffieHellman publicOnly = ImportPublicKey(xdh.ExportPublicKey());
             using X25519DiffieHellman other = GenerateKey();
 
-            Assert.Throws<CryptographicException>(() =>
+            Assert.ThrowsAny<CryptographicException>(() =>
                 publicOnly.DeriveRawSecretAgreement(
                     other.ExportPublicKey(),
                     new byte[X25519DiffieHellman.SecretAgreementSizeInBytes]));

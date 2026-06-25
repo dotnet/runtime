@@ -84,7 +84,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         }
 
         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
-        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
+        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->IconValue();
         emitAttr       attr   = emitActualTypeSize(childNode->TypeGet());
         emitAttr       size   = EA_SIZE(attr);
 #ifdef TARGET_ARM
@@ -270,7 +270,11 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
         }
 
         const ssize_t shiftAmount = shiftAmountNode->AsIntCon()->IconValue();
-        const ssize_t maxShift    = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_PER_BYTE) - 1;
+        // The contained shift's width is determined by its own type, which matches the parent's
+        // operand width. We cannot use genTypeSize(parentNode) here because for compare-like
+        // parents (e.g. GT_EQ/GT_NE/GT_TEST_EQ/GT_TEST_NE) the parent's type is TYP_INT even
+        // when the comparison's operands - and thus the contained shift - are TYP_LONG.
+        const ssize_t maxShift = (static_cast<ssize_t>(genTypeSize(childNode)) * BITS_PER_BYTE) - 1;
 
         if ((shiftAmount < 0x01) || (shiftAmount > maxShift))
         {
@@ -659,6 +663,14 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             {
                 return next;
             }
+
+            if (binOp->OperIs(GT_AND))
+            {
+                if (TryLowerAndRshToBFX(binOp, &next))
+                {
+                    return next;
+                }
+            }
         }
 
         if (binOp->OperIs(GT_SUB))
@@ -845,9 +857,9 @@ void Lowering::LowerRotate(GenTree* tree)
 
         if (rotateLeftIndexNode->IsCnsIntOrI())
         {
-            ssize_t rotateLeftIndex                    = rotateLeftIndexNode->AsIntCon()->gtIconVal;
-            ssize_t rotateRightIndex                   = rotatedValueBitSize - rotateLeftIndex;
-            rotateLeftIndexNode->AsIntCon()->gtIconVal = rotateRightIndex;
+            ssize_t rotateLeftIndex  = rotateLeftIndexNode->AsIntCon()->IconValue();
+            ssize_t rotateRightIndex = rotatedValueBitSize - rotateLeftIndex;
+            rotateLeftIndexNode->AsIntCon()->SetIconValue(rotateRightIndex);
         }
         else
         {
@@ -1930,7 +1942,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 
     if (op1->IsCnsIntOrI())
     {
-        const ssize_t dataValue = op1->AsIntCon()->gtIconVal;
+        const ssize_t dataValue = op1->AsIntCon()->IconValue();
         return m_compiler->GetEmitter()->emitIns_valid_imm_for_movi(dataValue,
                                                                     emitActualTypeSize(node->GetSimdBaseType()));
     }
@@ -3191,6 +3203,11 @@ void Lowering::TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond)
         return;
     }
 
+    if (nodeToRemove->OperMayOverflow() && nodeToRemove->gtOverflow())
+    {
+        return;
+    }
+
     // For Csinc candidates, the second argument of the GT_ADD must be +1 (increment).
     if (resultingOp == GT_SELECT_INC &&
         !(nodeToRemove->gtGetOp2()->IsCnsIntOrI() && nodeToRemove->gtGetOp2()->AsIntCon()->IconValue() == 1))
@@ -3356,17 +3373,20 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
         GenCondition::Code code     = select->AsOpCC()->gtCondition.GetCode();
         int64_t            constVal = 0;
         unsigned           lclNum   = 0;
+        GenTree*           lclNode  = nullptr;
 
         if (cond->gtGetOp1()->IsIntegralConst())
         {
             constVal = cond->gtGetOp1()->AsIntCon()->IntegralValue();
-            lclNum   = cond->gtGetOp2()->AsLclVar()->GetLclNum();
+            lclNode  = cond->gtGetOp2();
         }
         else
         {
             constVal = cond->gtGetOp2()->AsIntCon()->IntegralValue();
-            lclNum   = cond->gtGetOp1()->AsLclVar()->GetLclNum();
+            lclNode  = cond->gtGetOp1();
         }
+
+        lclNum = lclNode->AsLclVar()->GetLclNum();
 
         if (code != GenCondition::EQ && code != GenCondition::NE)
         {
@@ -3384,6 +3404,14 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
             return;
         }
 
+        var_types lclType    = genActualType(lclNode);
+        var_types selectType = genActualType(select);
+
+        if (lclType != selectType)
+        {
+            return;
+        }
+
         // The increment needs to occur along the false path,
         // reverse condition if that's not the case
         if (code == GenCondition::EQ)
@@ -3394,7 +3422,7 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
             falseVal = selectcc->gtOp2;
         }
 
-        GenTree* newLocal = m_compiler->gtNewLclvNode(lclNum, falseVal->TypeGet());
+        GenTree* newLocal = m_compiler->gtNewLclvNode(lclNum, lclType);
         BlockRange().InsertBefore(falseVal, newLocal);
         BlockRange().Remove(falseVal);
         select->gtOp2 = newLocal;

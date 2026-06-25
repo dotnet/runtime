@@ -387,7 +387,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
                     // debugger if it can find the metadata elsewhere.
                     // If this was live debugging, we should have just gotten the memory contents.
                     // Thus this code is for dump debugging, when you don't have the metadata in the dump.
-                    pMDII = LookupMetaDataFromDebugger(vmPEAssembly, pModule);
+                    pMDII = LookupMetaDataFromDebugger(pModule);
                 }
                 return pMDII;
             }
@@ -398,9 +398,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
 }
 
 
-IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
-    VMPTR_PEAssembly vmPEAssembly,
-    CordbModule * pModule)
+IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(CordbModule * pModule)
 {
     DWORD dwImageTimeStamp = 0;
     DWORD dwImageSize = 0;
@@ -409,7 +407,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
 
     // First, see if the debugger can locate the exact metadata we want.
     BOOL _metaDataFileInfoResult;
-    IfFailThrow(this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, &dwImageTimeStamp, &dwImageSize, &filePath, &_metaDataFileInfoResult));
+    IfFailThrow(this->GetDAC()->GetModuleMetaDataFileInfo(pModule->GetRuntimeModule(), &dwImageTimeStamp, &dwImageSize, &filePath, &_metaDataFileInfoResult));
     if (_metaDataFileInfoResult)
     {
         _ASSERTE(filePath.IsSet());
@@ -2280,10 +2278,12 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
                 _ASSERTE(pType != NULL);
                 _ASSERTE(cdbAppDomain != NULL);
 
-                DebuggerIPCE_ObjectData objData;
-                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, ELEMENT_TYPE_CLASS, &objData));
+                DacDbiObjectData objData = {};
+                BOOL isValidRef = FALSE;
 
-                NewHolder<CordbObjectValue> pNewObjectValue(new CordbObjectValue(cdbAppDomain, pType, TargetBuffer(addr, (ULONG)objData.objSize), &objData));
+                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, &isValidRef, &objData.objSize, &objData.objOffsetToVars, &objData.objTypeData));
+                objData.objRefBad = !isValidRef;
+                NewHolder<CordbObjectValue> pNewObjectValue(new CordbObjectValue(cdbAppDomain, pType, TargetBuffer(addr, objData.objSize), &objData));
                 hr = pNewObjectValue->Init();
 
                 if (SUCCEEDED(hr))
@@ -2552,13 +2552,13 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, C
 // CordbRefEnum
 // ******************************************
 CordbRefEnum::CordbRefEnum(CordbProcess *proc, BOOL walkWeakRefs)
-    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacksFQ(TRUE),
+    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacks(TRUE),
       mHandleMask((UINT32)(walkWeakRefs ? CorHandleAll : CorHandleStrongOnly))
 {
 }
 
 CordbRefEnum::CordbRefEnum(CordbProcess *proc, CorGCReferenceType types)
-    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacksFQ(FALSE),
+    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacks(FALSE),
       mHandleMask((UINT32)types)
 {
 }
@@ -2657,7 +2657,7 @@ HRESULT CordbRefEnum::Next(ULONG celt, COR_GC_REFERENCE refs[], ULONG *pceltFetc
     EX_TRY
     {
         if (!mRefHandle)
-            hr = process->GetDAC()->CreateRefWalk(&mRefHandle, mEnumStacksFQ, mEnumStacksFQ, mHandleMask);
+            hr = process->GetDAC()->CreateRefWalk(&mRefHandle, mEnumStacks, mHandleMask);
 
         if (SUCCEEDED(hr))
         {
@@ -6660,19 +6660,6 @@ HRESULT CordbProcess::FindPatchByAddress(CORDB_ADDRESS address, bool *pfPatchFou
             if (traceType == m_runtimeOffsets.m_traceTypeUnmanaged)
             {
                 *pfPatchIsUnmanaged = true;
-
-#if defined(_DEBUG)
-                HRESULT hrDac = S_OK;
-                EX_TRY
-                {
-                    // We should be able to double check w/ DAC that this really is outside of the runtime.
-                    IDacDbiInterface::AddressType addrType;
-                    IfFailThrow(GetDAC()->GetAddressType(address, &addrType));
-                    CONSISTENCY_CHECK_MSGF(addrType == IDacDbiInterface::kAddressUnrecognized, ("Bad address type = %d", addrType));
-                }
-                EX_CATCH_HRESULT(hrDac);
-                CONSISTENCY_CHECK_MSGF(SUCCEEDED(hrDac), ("DAC::GetAddressType failed, hr=0x%08x", hrDac));
-#endif
             }
 
             break;
@@ -11913,17 +11900,14 @@ Reaction CordbProcess::Triage1stChanceNonSpecial(CordbUnmanagedThread * pUnmanag
     // Use DAC to decide if it's ours or not w/o going inproc.
     CORDB_ADDRESS address = PTR_TO_CORDB_ADDRESS(pExAddress);
 
-    IDacDbiInterface::AddressType addrType;
+    BOOL fIsManaged;
 
-    IfFailThrow(GetDAC()->GetAddressType(address, &addrType));
-    bool fIsCorCode =((addrType == IDacDbiInterface::kAddressManagedMethod) ||
-                      (addrType == IDacDbiInterface::kAddressRuntimeManagedCode) ||
-                      (addrType == IDacDbiInterface::kAddressRuntimeUnmanagedCode));
+    IfFailThrow(GetDAC()->IsManagedCode(address, &fIsManaged));
 
-    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsCorCode(0x%p)=%d\n", address, fIsCorCode);
+    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsManagedCode(0x%p)=%d\n", address, fIsManaged);
 
 
-    if (fIsCorCode)
+    if (fIsManaged)
     {
         return REACTION(cCLR);
     }
