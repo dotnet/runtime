@@ -8276,6 +8276,30 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 			break;
 		}
+		case OP_XOP_X_X_X_X: {
+			IntrinsicId id = (IntrinsicId)ins->inst_c0;
+#if defined(TARGET_ARM64)
+			gboolean getLowerElement = FALSE;
+			int arg_idx = -1;
+			switch (id) {
+			case INTRINS_AARCH64_SHA1C:
+			case INTRINS_AARCH64_SHA1M:
+			case INTRINS_AARCH64_SHA1P:
+				getLowerElement = TRUE;
+				arg_idx = 1;
+				break;
+			default:
+				break;
+			}
+#endif
+			LLVMValueRef args [] = { lhs, rhs, arg3 };
+#if defined(TARGET_ARM64)
+			if (getLowerElement)
+				args [arg_idx] = LLVMBuildExtractElement (ctx->builder, args [arg_idx], const_int32 (0), "");
+#endif
+			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
 		case OP_XOP_OVR_BYSCALAR_X_X_X: {
 			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
@@ -10921,26 +10945,6 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			if (bitcast_result)
 				values [ins->dreg] = convert (ctx, values [ins->dreg], LLVMVectorType (LLVMInt64Type (), 2));
-			break;
-		}
-		case OP_XOP_X_X_X_X: {
-			IntrinsicId id = (IntrinsicId)ins->inst_c0;
-			gboolean getLowerElement = FALSE;
-			int arg_idx = -1;
-			switch (id) {
-			case INTRINS_AARCH64_SHA1C:
-			case INTRINS_AARCH64_SHA1M:
-			case INTRINS_AARCH64_SHA1P:
-				getLowerElement = TRUE;
-				arg_idx = 1;
-				break;
-			default:
-				break;
-			}
-			LLVMValueRef args [] = { lhs, rhs, arg3 };
-			if (getLowerElement)
-				args [arg_idx] = LLVMBuildExtractElement (ctx->builder, args [arg_idx], const_int32 (0), "");
-			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
 		case OP_XOP_X_X: {
@@ -15509,7 +15513,8 @@ MonoCPUFeatures mono_llvm_get_cpu_features (void)
 		{ "dotprod", MONO_CPU_ARM64_DP },
 #endif
 #if defined(TARGET_WASM)
-		{ "simd",	MONO_CPU_WASM_SIMD },
+		{ "simd",         MONO_CPU_WASM_SIMD },
+		{ "relaxed-simd", MONO_CPU_WASM_RELAXED_SIMD },
 #endif
 // flags_map cannot be zero length in MSVC, so add useless dummy entry for arm32
 #if defined(TARGET_ARM) && defined(HOST_WIN32)
