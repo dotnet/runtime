@@ -10612,7 +10612,7 @@ public:
 
 private:
     RefWalkHandle mRefHandle;
-    BOOL mEnumStacksFQ;
+    BOOL mEnumStacks;
     UINT32 mHandleMask;
 };
 

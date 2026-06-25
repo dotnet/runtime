@@ -135,6 +135,16 @@ public struct COR_HEAPOBJECT
     public COR_TYPEID type;
 }
 
+[StructLayout(LayoutKind.Explicit)]
+public struct DacGcReference
+{
+    [FieldOffset(0)] public ulong vmDomain;
+    [FieldOffset(8)] public ulong pObject;
+    [FieldOffset(8)] public ulong objHnd;
+    [FieldOffset(16)] public CorGCReferenceType dwType;
+    [FieldOffset(24)] public ulong i64ExtraData;
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public struct COR_SEGMENT
 {
@@ -388,6 +398,19 @@ public enum CorDebugGenerationTypes
 public enum IlNum : int
 {
     TYPECTXT_ILNUM = -3,
+}
+
+[Flags]
+public enum CorGCReferenceType : uint
+{
+    CorHandleStrong = 1 << 0,
+    CorHandleStrongPinning = 1 << 1,
+    CorHandleWeakShort = 1 << 2,
+    CorHandleWeakLong = 1 << 3,
+    CorHandleWeakRefCount = 1 << 4,
+    CorHandleStrongRefCount = 1 << 5,
+    CorHandleStrongDependent = 1 << 6,
+    CorReferenceStack = 0x80000001,
 }
 
 public enum CorDebugSetContextFlags
@@ -714,13 +737,13 @@ public unsafe partial interface IDacDbiInterface
     int IsValidObject(ulong obj, Interop.BOOL* pResult);
 
     [PreserveSig]
-    int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, Interop.BOOL walkFQ, uint handleWalkMask);
+    int CreateRefWalk(nuint* pHandle, Interop.BOOL walkStacks, CorGCReferenceType handleWalkMask);
 
     [PreserveSig]
     int DeleteRefWalk(nuint handle);
 
     [PreserveSig]
-    int WalkRefs(nuint handle, uint count, nint refs, uint* pFetched);
+    int WalkRefs(nuint handle, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] DacGcReference[] refs, uint* pFetched);
 
     [PreserveSig]
     int GetTypeID(ulong obj, COR_TYPEID* pType);
