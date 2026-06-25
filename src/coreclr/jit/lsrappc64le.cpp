@@ -733,12 +733,12 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
- case GT_IND:
-	{
+	case GT_NULLCHECK:
+        case GT_IND:
             assert(dstCount == (tree->OperIs(GT_NULLCHECK) ? 0 : 1));
             srcCount = BuildIndir(tree->AsIndir());
-	}
-        break;
+
+            break;
 
  case GT_STOREIND:
  {

@@ -4697,11 +4697,14 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
 #elif defined(TARGET_RISCV64)
     genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
                          compiler->lvaCachedGenericContextArgOffset(), rsGetRsvdReg());
-#else  // !ARM64 !ARM !LOONGARCH64 !RISCV64
+#elif defined(TARGET_POWERPC64)
+    genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+                         compiler->lvaCachedGenericContextArgOffset(), REG_SCRATCH);
+#else  // !ARM64 !ARM !LOONGARCH64 !RISCV64 !POWERPC64
     // mov [ebp-lvaCachedGenericContextArgOffset()], reg
     GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
                                compiler->lvaCachedGenericContextArgOffset());
-#endif // !ARM64 !ARM !LOONGARCH64 !RISCV64
+#endif // !ARM64 !ARM !LOONGARCH64 !RISCV64 !POWERPC64
 }
 
 /*****************************************************************************

@@ -5086,7 +5086,10 @@ VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** metho
             return {};
 
         pMD = CoreLibBinder::GetMethod(binderId);
-        PCODE pFunc = pMD->GetMultiCallableAddrOfCode();
+       // Ensure we get a callable address even if not yet JITted -> TODO VIKAS check if this is workaround.
+       PCODE pFunc = pMD->HasStableEntryPoint()
+            ? pMD->GetMultiCallableAddrOfCode()
+            : pMD->GetOrCreatePrecode()->GetEntryPoint();
         InterlockedCompareExchangeT<void*>(&hlpDynamicFuncTable[ftnNum].pfnHelper, (void*)pFunc, nullptr);
     }
 

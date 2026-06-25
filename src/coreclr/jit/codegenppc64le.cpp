@@ -437,6 +437,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 	case GT_COPY:
 	    // This is handled at the time we call genConsumeReg() on the GT_COPY
 	    break;
+	
+	case GT_NULLCHECK:
+	    genCodeForNullCheck(treeNode->AsIndir());
+	    break;
 
 	case GT_CATCH_ARG:
 
@@ -1883,8 +1887,13 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 //
 void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(tree->OperIs(GT_NULLCHECK));
+
+    genConsumeRegs(tree->gtOp1);
+
+    // Perform a load operation to trigger a null pointer exception if the address is null
+    // Use REG_R0 as a scratch register (zero register on PPC64LE)
+    GetEmitter()->emitInsLoadStoreOp(ins_Load(tree->TypeGet()), emitActualTypeSize(tree), REG_R0, tree);
 }
 
 //------------------------------------------------------------------------
@@ -2907,7 +2916,9 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     if (tree->IsVolatile())
     {
-        abort();
+	// Issue a full memory barrier before a volatile load
+	// PowerPC64: hwsync provides a full memory barrier
+	instGen(INS_hwsync);
     }
 
     GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), targetReg, tree);
@@ -2971,10 +2982,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
     if (tree->IsVolatile())
     {
-        // Issue a full memory barrier before a volatile store
-        // PowerPC uses sync instruction for memory barriers
-        //instGen(INS_sync);
-	abort();
+	// Issue a full memory barrier before a volatile store
+	// PowerPC64: hwsync provides a full memory barrier to ensure
+	// all previous memory operations complete before the store
+	instGen(INS_hwsync);
     }
 
     GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), dataReg, tree);
@@ -3589,6 +3600,11 @@ void CodeGen::genPushCalleeSavedRegisters()
 //    returns true if the immediate was small enough to be encoded inside instruction. If not,
 //    returns false meaning the immediate was too large and tmpReg was used and modified.
 //
+// Notes:
+//    PowerPC64 D-form instructions (ld, std, addi, etc.) use 16-bit signed immediates.
+//    For ld/std, the immediate must be a multiple of 4 (DS-form, 14-bit field).
+//    If the immediate doesn't fit, we load it into tmpReg and use indexed addressing.
+//
 bool CodeGen::genInstrWithConstant(instruction ins,
 				   emitAttr    attr,
 				   regNumber   reg1,
@@ -3597,8 +3613,133 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 				   regNumber   tmpReg,
 				   bool        inUnwindRegion /* = false */)
 {
-    //_ASSERTE("!NYI");
-    abort();
+    bool immFitsInIns = false;
+    emitAttr size = EA_SIZE(attr);
+
+    // reg1 is usually a dest register
+    // reg2 is always source register
+    assert(tmpReg != reg2); // tmpReg cannot match any source register
+
+    // Check if immediate fits in instruction encoding
+    switch (ins)
+    {
+        case INS_addi:
+            // addi uses 16-bit signed immediate (SIMM field)
+            immFitsInIns = (imm >= -32768 && imm <= 32767);
+            break;
+
+        case INS_std:
+        case INS_stw:
+        case INS_sth:
+        case INS_stb:
+        case INS_stfd:
+        case INS_stfs:
+            // reg1 is a source register for store instructions
+            assert(tmpReg != reg1); // tmpReg cannot match source register
+            FALLTHROUGH;
+
+        case INS_ld:
+        case INS_lwz:
+        case INS_lhz:
+        case INS_lbz:
+        case INS_lfd:
+        case INS_lfs:
+            // Load/store instructions use 16-bit signed immediate
+            // For ld/std (DS-form), immediate must be multiple of 4 (uses 14-bit field)
+            if (ins == INS_ld || ins == INS_std)
+            {
+                immFitsInIns = ((imm >= -32768) && (imm <= 32764) && ((imm & 3) == 0));
+            }
+            else
+            {
+                // Other loads/stores use full 16-bit signed immediate (D-form)
+                immFitsInIns = (imm >= -32768 && imm <= 32767);
+            }
+            break;
+
+        default:
+            assert(!"Unexpected instruction in genInstrWithConstant");
+            break;
+    }
+
+    if (immFitsInIns)
+    {
+        // Generate a single instruction that encodes the immediate directly
+        GetEmitter()->emitIns_R_R_I(ins, attr, reg1, reg2, imm);
+    }
+    else
+    {
+        // Caller can specify REG_NA for tmpReg when it "knows" the immediate will always fit
+        assert(tmpReg != REG_NA);
+
+        // Generate multiple instructions:
+        // 1. Load the immediate into tmpReg
+        // 2. Use indexed addressing (X-form instruction)
+
+        // Load immediate into tmpReg using li/lis/ori sequence
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, imm);
+        regSet.verifyRegUsed(tmpReg);
+
+        // When we are in an unwind code region, record the extra instructions
+        if (inUnwindRegion)
+        {
+            compiler->unwindPadding();
+        }
+
+        // Convert to indexed form and use three-register encoding
+        instruction insIndexed = ins;
+        switch (ins)
+        {
+            case INS_addi:
+                // addi rd, ra, imm -> add rd, ra, tmpReg
+                insIndexed = INS_add;
+                break;
+            case INS_ld:
+                insIndexed = INS_ldx;
+                break;
+            case INS_std:
+                insIndexed = INS_stdx;
+                break;
+            case INS_lwz:
+                insIndexed = INS_lwzx;
+                break;
+            case INS_stw:
+                insIndexed = INS_stwx;
+                break;
+            case INS_lhz:
+                insIndexed = INS_lhzx;
+                break;
+            case INS_sth:
+                insIndexed = INS_sthx;
+                break;
+            case INS_lbz:
+                insIndexed = INS_lbzx;
+                break;
+            case INS_stb:
+                insIndexed = INS_stbx;
+                break;
+            case INS_lfd:
+                insIndexed = INS_lfdx;
+                break;
+            case INS_stfd:
+                insIndexed = INS_stfdx;
+                break;
+            case INS_lfs:
+                insIndexed = INS_lfsx;
+                break;
+            case INS_stfs:
+                insIndexed = INS_stfsx;
+                break;
+            default:
+                assert(!"Unexpected instruction for indexed form");
+                break;
+        }
+
+        // Generate indexed instruction: insIndexed reg1, reg2, tmpReg
+        GetEmitter()->emitIns_R_R_R(insIndexed, attr, reg1, reg2, tmpReg);
+    }
+
+    return immFitsInIns;
 }
 
 //---------------------------------------------------------------------
@@ -3608,31 +3749,57 @@ bool CodeGen::genInstrWithConstant(instruction ins,
 //
 // There must be a frame pointer to call this function!
 //
+// Notes:
+//    PowerPC64 frame layout (after genPushCalleeSavedRegisters):
+//    - FP points to the bottom of the allocated frame (same as SP after stdu)
+//    - Total frame was allocated with: stdu sp, sp, -totalFrameSize
+//    - So FP is totalFrameSize bytes below Caller's SP
+//
 int CodeGenInterface::genCallerSPtoFPdelta() const
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(isFramePointerUsed());
+    
+    // FP = Caller-SP - totalFrameSize
+    // So delta = -totalFrameSize
+    int callerSPtoFPdelta = genCallerSPtoInitialSPdelta() + genSPtoFPdelta();
+    
+    assert(callerSPtoFPdelta <= 0);
+    return callerSPtoFPdelta;
 }
 
 //---------------------------------------------------------------------
 // genCallerSPtoInitialSPdelta - return the offset from Caller-SP to Initial SP.
 //
 // This number will be negative.
-
+//
+// Notes:
+//    PowerPC64: After stdu sp, sp, -totalFrameSize, Initial-SP is totalFrameSize
+//    bytes below Caller-SP.
+//
 int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
-    //_ASSERTE("!NYI");
-    abort();
+    // Initial-SP = Caller-SP - totalFrameSize
+    int callerSPtoSPdelta = -genTotalFrameSize();
+    
+    assert(callerSPtoSPdelta <= 0);
+    return callerSPtoSPdelta;
 }
 
 //---------------------------------------------------------------------
-// genSPtoFPdelta - return offset from the stack pointer (Initial-SP) to the frame pointer. The frame pointer
-// will point to the saved frame pointer slot (i.e., there will be frame pointer chaining).
+// genSPtoFPdelta - return offset from the stack pointer (Initial-SP) to the frame pointer.
+//
+// Notes:
+//    PowerPC64: FP is set equal to SP after frame allocation (line 3239 in genPushCalleeSavedRegisters)
+//    So FP = SP, meaning the delta is 0.
 //
 int CodeGenInterface::genSPtoFPdelta() const
 {
-    //_ASSERTE("!NYI");
-    abort();
+    assert(isFramePointerUsed());
+    
+    // In PowerPC64, after "stdu sp, sp, -totalFrameSize" and "mr fp, sp",
+    // FP points to the same location as SP (bottom of the frame).
+    // Therefore, SP to FP delta is 0.
+    return 0;
 }
 
 //---------------------------------------------------------------------

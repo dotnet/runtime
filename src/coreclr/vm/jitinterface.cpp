@@ -12377,6 +12377,148 @@ static CorJitResult CompileMethodWithEtwWrapper(EEJitManager *jitMgr,
 }
 #endif // FEATURE_INTERPRETER
 
+#if defined(TARGET_S390X) || defined(TARGET_POWERPC64)
+//
+// Helper function to check if a function name should use interpreter fallback
+//
+static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName)
+{
+    // List of function names that should use interpreter fallback
+    static const char* coreclrInitializationInterpreterFallbackFunctions[] = {
+        "ppc64leHelloWorldCallee",
+        "ppc64leHelloWorld",
+        "Setup",
+        "GetEnvironmentVariable",
+        "ThrowIfNull",
+        "GetReference",
+        "get_Length",
+        "get_Capacity",
+        "op_Equality",
+        "Initialize",
+        "ThrowIfNullOrEmpty",
+        "IsNullOrEmpty",
+        "Enter",
+        "CtorOpened",
+        "GetTypeFromHandle",
+        "AsPointer",
+        "GetUnderlyingNativeHandle",
+        "Unregister",
+        "Exchange",
+        "ThrowIfInvalid",
+        "GetHandleValue",
+        "InternalFree",
+        "Grow",
+        "CtorClosed",
+        "IsNullHandle",
+        "GetRuntimeFieldInfo",
+        "System.IRuntimeFieldInfo.get_Value",
+        "GetRVAFieldInfo",
+        "get_HasExtendedStrings",
+        "get_Key",
+        "GetControlCharacters",
+        "CheckTerminalSettingsInvalidated",
+        "InvalidateCachedCursorPosition",
+        "get_CurrentThread",
+        "InitializeCurrentThread",
+        "WriteLineIf",
+        "get_IsTypeDesc",
+        "IsPow2",
+        "KeepAlive",
+        "EqualsIgnoreCase_Scalar",
+        "As",
+        "get_Item",
+        "EqualsIgnoreCase",
+        "UInt32OrdinalIgnoreCaseAscii",
+        "GetTitle",
+	"IsAscii",
+	"LoadICU",
+	"IndexOfAnyChar",
+	"IndexOfAnyValueType",
+	"TryGetAppLocalIcuSwitchValue",
+	"get_Invariant",
+	"get_SupportsRandomAccess",
+	"get_Term",
+	"get_Invariant",
+
+    	"get_IsInputRedirected",
+	"get_State",
+	"get_BufferSize",
+	"get_Path",
+	"get_CanWrite",
+	"get_CanSeek",
+	"get_HasLeftoverData",
+	"get_IsOutputRedirected",
+	"IsBitwiseEquatable",
+	"AreSame",
+	"AreSameType",
+	"IsEntered",
+	"IsCompletedMethod",
+	"IsHandleRedirected",
+
+	"get_Chars",
+	"get_MaxValue",
+       	"get_Value",
+       	"get_Name",
+       	"get_Instance",
+       	"get_Log",
+       	"get_IsMeterSupported",
+       	"get_Out",
+       	"get_IsSupported",
+        "ReadUnaligned",
+	"WriteUnaligned",
+        "_Memmove",
+	".ctor",
+    };
+
+    // 2D array for class name and function name combinations to exclude from JIT compilation
+    struct JitExclusionEntry
+    {
+        const char* className;
+        const char* functionName;
+    };
+
+    static const JitExclusionEntry jitExclusionList[] = {
+       { "System.Diagnostics.Tracing.EventSource", "Initialize" },
+       { "System.Collections.Generic.Dictionary`2[__Canon,__Canon]", ".ctor"},
+       { "System.Collections.Generic.NonRandomizedStringEqualityComparer", ".ctor"},
+       { "System.Collections.Generic.List`1[__Canon]", ".ctor"},
+       { "System.Runtime.CompilerServices.QCallTypeHandle", ".ctor"},
+       { "System.Resources.ResourceManager", ".ctor"}, //Assertion failed 'Unhandled TARGET in getReturnTypeForStruct'
+       { "RuntimeTypeCache", ".ctor"},
+       { "System.Runtime.CompilerServices.QCallModule", ".ctor"},
+       { "System.Runtime.CompilerServices.ObjectHandleOnStack", ".ctor"},
+       { "System.Reflection.MetadataImport", ".ctor"},
+       { "System.Runtime.CompilerServices.DefaultInterpolatedStringHandler", ".ctor"}, //Assertion failed 'Unhandled TARGET in getReturnTypeForStruct'
+       { "System.Runtime.CompilerServices.ConditionalWeakTable`2[__Canon,__Canon]", ".ctor"},
+       { "Container[__Canon,__Canon]", ".ctor"},
+    };
+
+    const size_t numExclusions = sizeof(jitExclusionList) / sizeof(jitExclusionList[0]);
+
+    // Check if the current class/function combination should be excluded from JIT
+    for (size_t i = 0; i < numExclusions; i++)
+    {
+        if (!strcmp(ftnDesc->m_pszDebugClassName, jitExclusionList[i].className) &&
+            !strcmp(ftnName, jitExclusionList[i].functionName))
+        {
+            return false;
+        }
+    }
+
+    const size_t numFunctions = sizeof(coreclrInitializationInterpreterFallbackFunctions) / sizeof(coreclrInitializationInterpreterFallbackFunctions[0]);
+    
+    for (size_t i = 0; i < numFunctions; i++)
+    {
+        if (strcmp(ftnName, coreclrInitializationInterpreterFallbackFunctions[i]) == 0)
+        {
+            return true;
+        }
+    }
+    
+    return false;
+}
+#endif // defined(TARGET_S390X) || defined(TARGET_POWERPC64)
+
 //
 // Helper function because can't have dtors in BEGIN_SO_TOLERANT_CODE.
 //
@@ -12428,13 +12570,16 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     const char* ftnName = ftnDesc->GetName();
 
     forceInterpreter = true;
-    if (!strcmp(ftnName, "ppc64leHelloWorldCallee") || !strcmp(ftnName, "ppc64leHelloWorld") || !strcmp(ftnName, "Setup"))
+    if (ShouldUseInterpreterFallback(ftnDesc,ftnName))
     {
-	printf ("Function name is %s\n", ftnName);
+	printf ("Jitting -> %s:%s \n", ftnDesc->m_pszDebugClassName,ftnName);
 	interpreterFallback = true;
     }
     else
+    {
+	printf ("Interpreting -> %s:%s \n", ftnDesc->m_pszDebugClassName,ftnName);
         interpreterFallback = false;
+    }
 #endif
 
     if (interpreterFallback == false)

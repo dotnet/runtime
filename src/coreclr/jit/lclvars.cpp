@@ -6498,7 +6498,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // when lvaDoneFrameLayout == FINAL_FRAME_LAYOUT
             //
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+            stkOffs += TARGET_POINTER_SIZE;
+#else
             stkOffs -= TARGET_POINTER_SIZE;
+#endif
 
             // If we have any TYP_LONG, TYP_DOUBLE or double aligned structs
             // then we need to allocate a second pointer sized stack slot,
@@ -6508,14 +6512,22 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // be greater (or equal) to what they can be in the final layout.
             //
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+            stkOffs += TARGET_POINTER_SIZE;
+#else
             stkOffs -= TARGET_POINTER_SIZE;
+#endif
         }
         else // FINAL_FRAME_LAYOUT
         {
             if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
             {
                 lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+                stkOffs += TARGET_POINTER_SIZE;
+#else
                 stkOffs -= TARGET_POINTER_SIZE;
+#endif
             }
             // We should now have a double-aligned (stkOffs+preSpillSize)
             noway_assert(((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) == 0);
@@ -6554,7 +6566,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         {
             // For CORINFO_CALLCONV_PARAMTYPE (if needed)
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+            stkOffs += TARGET_POINTER_SIZE;
+#else
             stkOffs -= TARGET_POINTER_SIZE;
+#endif
             lvaCachedGenericContextArgOffs = stkOffs;
         }
     }
@@ -6577,7 +6593,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         {
             // When "this" is also used as generic context arg.
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+            stkOffs += TARGET_POINTER_SIZE;
+#else
             stkOffs -= TARGET_POINTER_SIZE;
+#endif
             lvaCachedGenericContextArgOffs = stkOffs;
         }
     }
@@ -6597,7 +6617,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 // In order to keep the gc info encoding smaller, the VM assumes that all methods with EH
                 // have also saved space for a ParamTypeArg, so we need to do that here
                 lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+                stkOffs += TARGET_POINTER_SIZE;
+#else
                 stkOffs -= TARGET_POINTER_SIZE;
+#endif
             }
         }
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaShadowSPslotsVar, lvaLclSize(lvaShadowSPslotsVar), stkOffs);
@@ -6899,14 +6923,22 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     // when lvaDoneFrameLayout == FINAL_FRAME_LAYOUT
                     //
                     lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+                    stkOffs += TARGET_POINTER_SIZE;
+#else
                     stkOffs -= TARGET_POINTER_SIZE;
+#endif
                 }
                 else
                 {
                     if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
                     {
                         lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+	                stkOffs += TARGET_POINTER_SIZE;
+#else
                         stkOffs -= TARGET_POINTER_SIZE;
+#endif
                     }
 
                     // We should now have a double-aligned (stkOffs+preSpillSize)
@@ -6969,7 +7001,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     if ((lvaGSSecurityCookie != BAD_VAR_NUM) && (lvaGetDesc(lvaGSSecurityCookie)->GetStackOffset() == stkOffs))
     {
         lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+        stkOffs += TARGET_POINTER_SIZE;
+#else
         stkOffs -= TARGET_POINTER_SIZE;
+#endif
     }
 #endif
 
@@ -6981,7 +7017,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // when lvaDoneFrameLayout == FINAL_FRAME_LAYOUT
             //
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+            stkOffs += TARGET_POINTER_SIZE;
+#else
             stkOffs -= TARGET_POINTER_SIZE;
+#endif
 
             if (have_LclVarDoubleAlign)
             {
@@ -6993,7 +7033,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 // be in the final layout.
                 //
                 lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+                stkOffs += TARGET_POINTER_SIZE;
+#else
                 stkOffs -= TARGET_POINTER_SIZE;
+#endif
             }
         }
         else // FINAL_FRAME_LAYOUT
@@ -7001,7 +7045,11 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             if (((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) != 0)
             {
                 lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+                stkOffs += TARGET_POINTER_SIZE;
+#else
                 stkOffs -= TARGET_POINTER_SIZE;
+#endif
             }
             // We should now have a double-aligned (stkOffs+preSpillSize)
             noway_assert(((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) == 0);
@@ -7528,7 +7576,11 @@ int Compiler::lvaAllocateTemps(int stkOffs, bool mustDoubleAlign)
                 {
                     spillTempSize += TARGET_POINTER_SIZE;
                     lvaIncrementFrameSize(TARGET_POINTER_SIZE);
+#ifdef TARGET_POWERPC64
+                    stkOffs += TARGET_POINTER_SIZE;
+#else
                     stkOffs -= TARGET_POINTER_SIZE;
+#endif
                 }
                 // We should now have a double-aligned (stkOffs+preSpillSize)
                 noway_assert(((stkOffs + preSpillSize) % (2 * TARGET_POINTER_SIZE)) == 0);
