@@ -59,8 +59,6 @@
 
 #include "staticcontract.h"
 
-#include <atomic>
-
 //
 // This code is extremely compiler- and CPU-specific, and will need to be altered to
 // support new compilers and/or CPUs.  Here we enforce that we can only compile using
@@ -325,18 +323,6 @@ void VolatileLoadBarrier()
 #else
     VOLATILE_MEMORY_BARRIER();
 #endif
-}
-
-//
-// Compiler reordering barrier. Prevents the compiler from moving memory accesses across this
-// point. It emits no instructions and provides no CPU or cross-thread ordering; use it only to
-// order accesses with respect to asynchronous interruption on the SAME thread, such as a signal
-// or hardware-exception handler.
-//
-inline
-void CompilerBarrier()
-{
-    std::atomic_signal_fence(std::memory_order_acq_rel);
 }
 
 //
