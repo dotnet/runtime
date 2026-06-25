@@ -3618,10 +3618,22 @@ namespace System.Threading.Tasks
 
             switch (continuationObject)
             {
+#if !MONO
+                // Runtime async continuation is very cheap to check for since
+                // it is sealed. Its semantics cannot be described by
+                // ITaskCompletionAction because it should be inlined when
+                // there is only one, but run in parallel when there are
+                // multiple.
+                case RuntimeAsyncTaskContinuation tc:
+                    tc.Execute(canInline: canInlineContinuations);
+                    LogFinishCompletionNotification();
+                    return;
+#endif
+
                 // Handle the single IAsyncStateMachineBox case.  This could be handled as part of the ITaskCompletionAction
                 // but we want to ensure that inlining is properly handled in the face of schedulers, so its behavior
-                // needs to be customized ala raw Actions.  This is also the most important case, as it represents the
-                // most common form of continuation, so we check it first.
+                // needs to be customized ala raw Actions.  This is also one of the most important cases, as it represents the
+                // most common form of continuation, so we check it early.
                 case IAsyncStateMachineBox stateMachineBox:
                     AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
                     LogFinishCompletionNotification();
@@ -3698,6 +3710,12 @@ namespace System.Threading.Tasks
                                 log.RunningContinuationList(Id, i, currentContinuation);
                             switch (currentContinuation)
                             {
+#if !MONO
+                                case RuntimeAsyncTaskContinuation tc:
+                                    tc.Execute(canInline: false);
+                                    break;
+#endif
+
                                 case IAsyncStateMachineBox stateMachineBox:
                                     AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, allowInlining: false);
                                     break;
@@ -3731,6 +3749,12 @@ namespace System.Threading.Tasks
 
                 switch (currentContinuation)
                 {
+#if !MONO
+                    case RuntimeAsyncTaskContinuation tc:
+                        tc.Execute(canInlineContinuations);
+                        break;
+#endif
+
                     case IAsyncStateMachineBox stateMachineBox:
                         AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
                         break;
@@ -4765,7 +4789,7 @@ namespace System.Threading.Tasks
 
         // Record a continuation task or action.
         // Return true if and only if we successfully queued a continuation.
-        private bool AddTaskContinuation(object tc, bool addBeforeOthers)
+        internal bool AddTaskContinuation(object tc, bool addBeforeOthers)
         {
             Debug.Assert(tc != null);
 
@@ -7199,6 +7223,8 @@ namespace System.Threading.Tasks
 
             return new UnwrapPromise<TResult>(outerTask, lookForOce);
         }
+
+        internal object? ContinuationForDiagnostics => m_continuationObject != this ? m_continuationObject : null;
 
         internal virtual Delegate[]? GetDelegateContinuationsForDebugger()
         {

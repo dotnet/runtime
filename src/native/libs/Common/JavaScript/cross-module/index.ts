@@ -179,6 +179,7 @@ export function dotnetUpdateInternalsSubscriber() {
             getWasmMemory: table[0],
             getWasmTable: table[1],
             SystemJS_ScheduleDiagnosticServer: table[2],
+            SystemJS_GetMethodName: table[3],
         };
         Object.assign(interop, interopLocal);
     }
@@ -193,6 +194,7 @@ export function dotnetUpdateInternalsSubscriber() {
             ds_rt_websocket_poll: table[4],
             ds_rt_websocket_recv: table[5],
             ds_rt_websocket_close: table[6],
+            ds_rt_browser_performance_measure: table[7],
         };
         Object.assign(interop, interopLocal);
     }

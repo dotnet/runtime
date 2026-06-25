@@ -63,6 +63,10 @@ if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     set(LIB_UNWINDER unwinder_wks)
 endif (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
+if (CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
+    set(LIB_UNWINDER unwinder_wks)
+endif (CLR_CMAKE_HOST_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
+
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared
 # library.
@@ -175,12 +179,14 @@ if(TARGET coreclr)
         $<TARGET_NAME_IF_EXISTS:coreclrpal>
         ${CLRJIT_STATIC}
         ${CLRINTERPRETER_STATIC}
+        vm_gc_wks
+        $<TARGET_NAME_IF_EXISTS:vm_gc_svr>
         cee_wks_core
         cee_wks
         ${FOUNDATION})
 endif()
 
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CORECLR_STATIC_CLRINTERPRETER_STATIC} cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CORECLR_STATIC_CLRINTERPRETER_STATIC} vm_gc_wks $<TARGET_NAME_IF_EXISTS:vm_gc_svr> cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)

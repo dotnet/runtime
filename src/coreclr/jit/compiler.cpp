@@ -398,7 +398,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
     // check that HelperCallProperties are initialized
     assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
 
-    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo();
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //
@@ -2981,6 +2981,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compScopeInfo = opts.compDbgInfo;
 
+#ifdef TARGET_WASM
+    // Wasm uses virtual registers that cannot be encoded in the
+    // ICorDebugInfo register scheme, and there is no native debugger
+    // to consume scope info, so disable it entirely.
+    opts.compScopeInfo = false;
+#endif
+
 #ifdef LATE_DISASM
     codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName,
                                                     info.compMethodInfo->args.pSig);
@@ -3137,6 +3144,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (compIsAsync())
         {
             printf("OPTIONS: compilation is an async state machine\n");
+        }
+
+        if (compIsAsyncVersion())
+        {
+            printf(
+                "OPTIONS: compilation is for an async version of a synchronous method; IL belongs to synchronous method\n");
         }
     }
 #endif
@@ -4453,6 +4466,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Trim dead code that follows no-return calls introduced by inlining,
+        // so subsequent phases see a cleaner flow graph.
+        //
+        DoPhase(this, PHASE_POST_INLINE_NORETURN, &Compiler::fgPostInlineNoReturnCleanup);
+
         // Try and resolve GDV checks if improved types were found during inlining
         //
         DoPhase(this, PHASE_RESOLVE_GDVS, &Compiler::fgResolveGDVs);
@@ -4513,10 +4531,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             return fgHeadTailMerge(true);
         });
 
-        // Merge common throw blocks
-        //
-        DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
-
         // Run an early flow graph simplification pass
         //
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
@@ -4560,6 +4574,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
+    // Unpin pinned locals whose value is provably non-movable.
+    //
+    DoPhase(this, PHASE_UNPIN_LOCALS, &Compiler::fgUnpinNonMovableLocals);
+
     // Expose candidates for implicit byref last-use copy elision.
     DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, &Compiler::fgMarkImplicitByRefCopyOmissionCandidates);
 
@@ -4587,9 +4605,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         fgMarkDemotedImplicitByRefArgs();
         lvaRefCountState       = RCS_INVALID;
         fgLocalVarLivenessDone = false;
-
-        // Decide the kind of code we want to generate
-        fgSetOptions();
 
         fgExpandQmarkNodes(/*early*/ false);
 
@@ -4674,6 +4689,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
     fgDebugCheckLinks();
 #endif
+
+    // Decide the kind of code we want to generate. Done here, after the second
+    // round of empty-EH removal above, so that EH eliminated post-morph doesn't
+    // force fully-interruptible codegen / a frame pointer.
+    //
+    fgSetOptions();
 
     // Morph multi-dimensional array operations.
     // (Consider deferring all array operation morphing, including single-dimensional array ops,
@@ -4813,6 +4834,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             if (doAssertionProp)
             {
+                // Coalesce groups of constant-indexed bounds checks.
+                //
+                DoPhase(this, PHASE_BOUNDS_CHECK_COALESCE, &Compiler::optBoundsCheckCoalesce);
+
                 // Assertion propagation
                 //
                 DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
@@ -4923,6 +4948,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Remove empty try regions (try/catch/fault)
     //
     DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_3, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
+
+    // Remove unreachable try regions
+    //
+    DoPhase(this, PHASE_REMOVE_UNREACHABLE_TRY, &Compiler::fgRemoveUnreachableTry);
 
     // Create funclets from the EH handlers.
     //
@@ -5041,6 +5070,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // keep the Virtual IP updated.
     //
     DoPhase(this, PHASE_WASM_VIRTUAL_IP, &Compiler::fgWasmVirtualIP);
+
+    // Ensure that any refs or byrefs live at call sites are spilled
+    // to pinned stack slots so the objects aren't moved.
+    //
+    DoPhase(this, PHASE_WASM_SPILL_REFS, &Compiler::fgWasmSpillRefs);
 #endif
 
     FinalizeEH();
@@ -5725,6 +5759,14 @@ void Compiler::generatePatchpointInfo()
         patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset() + offsetAdjust);
         JITDUMP("--OSR-- monitor acquired V%02u virtual offset is %d\n", lvaMonAcquired,
                 patchpointInfo->MonitorAcquiredOffset());
+    }
+
+    if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaAsyncThreadObjectVar);
+        patchpointInfo->SetAsyncThreadOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- async thread object V%02u virtual offset is %d\n", lvaAsyncThreadObjectVar,
+                patchpointInfo->AsyncThreadOffset());
     }
 
     if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
@@ -10438,7 +10480,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
         {
             // Sanity check for promoted fields of OSR locals.
             //
-            if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) &&
+            if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) && (varNum != lvaAsyncThreadObjectVar) &&
                 (varNum != lvaAsyncExecutionContextVar) && (varNum != lvaAsyncSynchronizationContextVar))
             {
                 assert(varDsc->lvIsStructField);
@@ -10472,6 +10514,10 @@ int Compiler::lvaOSRLocalTier0FrameOffset(unsigned varNum)
     if (varNum == lvaMonAcquired)
     {
         return info.compPatchpointInfo->MonitorAcquiredOffset();
+    }
+    if (varNum == lvaAsyncThreadObjectVar)
+    {
+        return info.compPatchpointInfo->AsyncThreadOffset();
     }
     if (varNum == lvaAsyncExecutionContextVar)
     {

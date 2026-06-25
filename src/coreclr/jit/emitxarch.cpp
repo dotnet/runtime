@@ -669,6 +669,18 @@ bool emitter::IsThreeOperandAVXInstruction(instruction ins) const
     return (flags & INS_Flags_Is3OperandInstructionMask) != 0;
 }
 
+// Returns true if the AVX instruction has op1/op2 being commutative
+bool emitter::IsAvxCommutative(instruction ins) const
+{
+    if (!UseVEXEncoding())
+    {
+        return false;
+    }
+
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_Flags_IsAvxCommutative) != 0;
+}
+
 //------------------------------------------------------------------------
 // HasRegularWideForm: Many x86/x64 instructions follow a regular encoding scheme where the
 // byte-sized version of an instruction has the lowest bit of the opcode cleared
@@ -2717,7 +2729,7 @@ regNumber AbsRegNumber(regNumber reg)
 // Since XMM registers overlap with YMM registers, this routine
 // can also be used to know whether a YMM register if the
 // instruction in question is AVX.
-bool IsExtendedReg(regNumber reg)
+bool emitter::IsExtendedReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
     return ((reg >= REG_R8) && (reg <= REG_R31)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
@@ -2749,7 +2761,7 @@ bool emitter::IsExtendedGPReg(regNumber reg) const
 }
 
 // Returns true if using this register, for the given EA_SIZE(attr), will require a REX.* prefix
-bool IsExtendedReg(regNumber reg, emitAttr attr)
+bool emitter::IsExtendedReg(regNumber reg, emitAttr attr)
 {
 #ifdef TARGET_AMD64
     // Not a register, so doesn't need a prefix
@@ -6180,7 +6192,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
     if ((memBase != nullptr) && memBase->IsIconHandle() && memBase->isContained())
     {
         id->idDebugOnlyInfo()->idFlags     = memBase->gtFlags;
-        id->idDebugOnlyInfo()->idMemCookie = memBase->AsIntCon()->gtTargetHandle;
+        id->idDebugOnlyInfo()->idMemCookie = memBase->AsIntCon()->GetTargetHandle();
     }
 #endif
 }
@@ -10024,6 +10036,16 @@ void emitter::emitIns_SIMD_R_R_R(
 {
     if (UseSimdEncoding())
     {
+        if (IsAvxCommutative(ins) && (instOptions == INS_OPTS_NONE))
+        {
+            if (!IsExtendedReg(op1Reg) && IsExtendedReg(op2Reg))
+            {
+                // We have a VEX encoded commutative instruction in which
+                // case we want to try to put the non-extended register as
+                // op2 since this may allow the 2-byte VEX prefix to be used.
+                std::swap(op1Reg, op2Reg);
+            }
+        }
         emitIns_R_R_R(ins, attr, targetReg, op1Reg, op2Reg, instOptions);
     }
     else
@@ -11351,12 +11373,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         printf("\n");
     }
 #endif
-
-    /* Managed RetVal: emit sequence point for the call */
-    if (m_compiler->opts.compDbgInfo && params.debugInfo.IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
-    }
 
     /*
         We need to allocate the appropriate instruction descriptor based

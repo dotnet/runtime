@@ -3,24 +3,27 @@
 
 import type { DiagnosticCommandOptions } from "../types";
 
-import { commandStopTracing, commandGcHeapDump, } from "./client-commands";
+import { commandResumeRuntime, commandStopTracing, commandGcHeapDump, } from "./client-commands";
 import { dotnetLoaderExports, Module } from "./cross-module";
 import { serverSession, setupJsClient } from "./diagnostic-server-js";
 import { IDiagnosticSession } from "./types";
 
-export function collectGcDump(options?: DiagnosticCommandOptions): Promise<Uint8Array[]> {
+export function collectGcDump(options?: DiagnosticCommandOptions, startup?: boolean): Promise<Uint8Array[]> {
     if (!options) options = {};
-    if (!serverSession) {
+    if (!startup && !serverSession) {
         throw new Error("No active JS diagnostic session");
     }
 
     const onClosePromise = dotnetLoaderExports.createPromiseCompletionSource<Uint8Array[]>();
     let stopDelayedAfterLastMessage = 0;
     let stopSent = false;
+    function onSessionStart(session: IDiagnosticSession): void {
+        session.sendCommand(commandResumeRuntime());
+    }
     function onData(session: IDiagnosticSession, message: Uint8Array): void {
         session.store(message);
         if (!stopSent) {
-            // stop 1000ms after last GC message on this session, there will be more messages after that
+            // stop durationSeconds (default 1s) after last GC message on this session, there will be more messages after that
             if (stopDelayedAfterLastMessage) {
                 clearTimeout(stopDelayedAfterLastMessage);
             }
@@ -35,7 +38,8 @@ export function collectGcDump(options?: DiagnosticCommandOptions): Promise<Uint8
         onClosePromise: onClosePromise,
         skipDownload: options.skipDownload,
         commandOnAdvertise: () => commandGcHeapDump(options),
+        onSessionStart,
         onData,
-    });
+    }, startup);
     return onClosePromise.promise;
 }

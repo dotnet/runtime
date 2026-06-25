@@ -1104,16 +1104,12 @@ void InitThreadManager()
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
         SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), "JIT_CheckedWriteBarrier");
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier));
-        SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), "JIT_ByRefWriteBarrier");
-        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
-        // On AMD64 the Checked/ByRef variants of the helpers jump through an indirection
-        // to the patched barrier, but are not part of the patched set of helpers.
+        // On AMD64 the Checked variant of the helper jumps through an indirection
+        // to the patched barrier, but is not part of the patched set of helpers.
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, (void*)JIT_CheckedWriteBarrier);
-        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, (void*)JIT_ByRefWriteBarrier);
 #endif // TARGET_AMD64
 
     }
@@ -1189,7 +1185,7 @@ Thread::Thread()
     CONTRACTL_END;
 
     m_pFrame                = FRAME_TOP;
-    m_pGCFrame              = GCFRAME_TOP;
+    m_pGCFrame              = NULL;
 
     m_fPreemptiveGCDisabled = 0;
 
@@ -6562,7 +6558,7 @@ InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -6570,6 +6566,13 @@ InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
     if (m_pInterpThreadContext == nullptr)
     {
         m_pInterpThreadContext = new InterpThreadContext();
+
+#ifdef DEBUGGING_SUPPORTED
+        if (CORDebuggerAttached() && g_pDebugInterface != NULL)
+        {
+            g_pDebugInterface->SendCreateThreadAtInterpreterEntry(this);
+        }
+#endif // DEBUGGING_SUPPORTED
     }
 
     return m_pInterpThreadContext;
@@ -6678,6 +6681,7 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         {
             bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
 
+            INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pPFrame);
             INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
             INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
@@ -6685,12 +6689,16 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
             UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         }
         EX_CATCH
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-            _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
+            // ohThrowable can be NULL when we've caught the ResumeAfterCatchException
+            if (ohThrowable != NULL)
+            {
+                StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodHnd, NULL);
+            }
             EX_RETHROW;
         }
         EX_END_CATCH
@@ -6756,7 +6764,7 @@ PTR_GCFrame Thread::GetGCFrame()
     {
         void* curSP;
         curSP = (void *)GetCurrentSP();
-        _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
+        _ASSERTE((m_pGCFrame == NULL) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
     }
 #endif
 
