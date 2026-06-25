@@ -841,7 +841,9 @@ namespace System.Reflection.Tests
         public void AssemblyLoadFromBytesNeg()
         {
             Assert.Throws<ArgumentNullException>(() => Assembly.Load((byte[])null));
-            Assert.Throws<BadImageFormatException>(() => Assembly.Load(new byte[0]));
+            
+            BadImageFormatException ex = Assert.Throws<BadImageFormatException>(() => Assembly.Load(new byte[0]));
+            Assert.Contains("empty", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.HasAssemblyFiles))]
@@ -946,6 +948,7 @@ namespace System.Reflection.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/77821", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
         public static void AssemblyGetForwardedTypesLoadFailure()
         {
             Assembly a = typeof(TypeInForwardedAssembly).Assembly;

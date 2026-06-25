@@ -47,10 +47,12 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
             // So there messages are should be present only when we are lazily loading satellites.
             expectedOutput.Add(m => Assert.Equal("default: hello", m));
             expectedOutput.Add(m => Assert.Equal("es-ES without satellite: hello", m));
+            expectedOutput.Add(m => Assert.Equal("fr-FR without satellite: hello", m));
         }
 
         expectedOutput.Add(m => Assert.Equal("default: hello", m));
         expectedOutput.Add(m => Assert.Equal("es-ES with satellite: hola", m));
+        expectedOutput.Add(m => Assert.Equal("fr-FR with satellite: bonjour", m));
 
         Assert.Collection(
             result.TestOutput,
@@ -68,7 +70,7 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
         var appCsprojPath = Path.Combine(_projectDir, "WasmBasicTestApp.csproj");
         var appCsproj = XDocument.Load(appCsprojPath);
 
-        var projectReference = appCsproj.Descendants("ProjectReference").Where(pr => pr.Attribute("Include")?.Value?.Contains("ResourceLibrary") ?? false).Single();
+        var projectReference = appCsproj.Descendants("ProjectReference").Single(pr => pr.Attribute("Include")?.Value?.Contains("ResourceLibrary") ?? false);
         var itemGroup = projectReference.Parent!;
         projectReference.Remove();
 
@@ -94,8 +96,37 @@ public class SatelliteLoadingTests : WasmTemplateTestsBase
             result.TestOutput,
             m => Assert.Equal("default: hello", m),
             m => Assert.Equal("es-ES without satellite: hello", m),
+            m => Assert.Equal("fr-FR without satellite: hello", m),
             m => Assert.Equal("default: hello", m),
-            m => Assert.Equal("es-ES with satellite: hola", m)
+            m => Assert.Equal("es-ES with satellite: hola", m),
+            m => Assert.Equal("fr-FR with satellite: bonjour", m)
         );
+    }
+
+    [Fact, TestCategory("no-fingerprinting")]
+    public void SatelliteAssembliesFromPackageReference()
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "SatelliteLoadingTestsFromPackageReference");
+        BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: "-p:TestSatelliteAssembliesFromPackage=true"));
+
+        // With CopyToOutputDirectory=Never, satellite assemblies are no longer in
+        // bin/_framework/. When webcil is enabled they're in obj/{config}/{tfm}/webcil/{locale}/;
+        // when disabled they're materialized in obj/{config}/{tfm}/fx/{name}/_framework/{locale}/.
+        string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework);
+        string satelliteBaseDir = UseWebcil
+            ? Path.Combine(objDir, "webcil")
+            : WasmSdkBasedProjectProvider.GetMaterializedFrameworkDir(objDir);
+
+        // Microsoft.CodeAnalysis.CSharp has satellite assemblies for multiple locales
+        string[] expectedLocales = ["cs", "de", "es", "fr", "it", "ja", "ko", "pl", "pt-BR", "ru", "tr", "zh-Hans", "zh-Hant"];
+        foreach (string locale in expectedLocales)
+        {
+            string satelliteDir = Path.Combine(satelliteBaseDir, locale);
+            Assert.True(Directory.Exists(satelliteDir), $"Expected satellite directory '{locale}' to exist in {satelliteBaseDir}");
+
+            string[] satelliteFiles = Directory.GetFiles(satelliteDir, "Microsoft.CodeAnalysis.CSharp.resources*");
+            Assert.True(satelliteFiles.Length > 0, $"Expected Microsoft.CodeAnalysis.CSharp.resources.dll in {satelliteDir}");
+        }
     }
 }

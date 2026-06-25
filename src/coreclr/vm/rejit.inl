@@ -22,16 +22,15 @@ inline void ReJitManager::InitStatic()
 
 static BOOL RejitOnAttachEnabled()
 {
-    LIMITED_METHOD_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
 
-    static ConfigDWORD rejitOnAttachEnabled;
-    return rejitOnAttachEnabled.val(CLRConfig::EXTERNAL_ProfAPI_RejitOnAttach) != 0;
+    return (&g_profControlBlock)->fRejitOnAttachEnabled;
 }
 
 // static
 inline BOOL ReJitManager::IsReJITEnabled()
 {
-    LIMITED_METHOD_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     static bool profilerStartupRejit = CORProfilerEnableRejit() != FALSE;
     return  profilerStartupRejit || RejitOnAttachEnabled();
@@ -39,7 +38,7 @@ inline BOOL ReJitManager::IsReJITEnabled()
 
 inline BOOL ReJitManager::IsReJITInlineTrackingEnabled()
 {
-    LIMITED_METHOD_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
     return RejitOnAttachEnabled();
 }
 

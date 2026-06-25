@@ -98,20 +98,21 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        public void SpecifiedInConfigAndDevConfig_ConfigWins()
+        public void SpecifiedInConfigAndDevConfig_DevConfigWins()
         {
             var app = sharedState.App.Copy();
 
+            const string devConfigValue = "VALUE_FROM_DEV_CONFIG";
             RuntimeConfig.FromFile(app.RuntimeDevConfigJson)
-                .WithProperty(SharedTestState.AppTestPropertyName, "VALUE_FROM_DEV_CONFIG")
+                .WithProperty(SharedTestState.AppTestPropertyName, devConfigValue)
                 .Save();
 
             sharedState.DotNet.Exec(app.AppDll, PrintProperties, SharedTestState.AppTestPropertyName)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {SharedTestState.AppTestPropertyValue}")
-                .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.AppTestPropertyName}) = {SharedTestState.AppTestPropertyValue}");
+                .And.HaveStdErrContaining($"Property {SharedTestState.AppTestPropertyName} = {devConfigValue}")
+                .And.HaveStdOutContaining($"AppContext.GetData({SharedTestState.AppTestPropertyName}) = {devConfigValue}");
         }
 
         public class SharedTestState : IDisposable
@@ -131,9 +132,9 @@ namespace HostActivation.Tests
             public SharedTestState()
             {
                 // Make a copy of the built .NET, as we will update the framework's runtime config
-                copiedDotnet = TestArtifact.CreateFromCopy("runtimeProperties", TestContext.BuiltDotNet.BinPath);
+                copiedDotnet = TestArtifact.CreateFromCopy("runtimeProperties", HostTestContext.BuiltDotNet.BinPath);
 
-                MockSDK = new DotNetBuilder(copiedDotnet.Location, TestContext.BuiltDotNet.BinPath, "mocksdk")
+                MockSDK = new DotNetBuilder(copiedDotnet.Location, HostTestContext.BuiltDotNet.BinPath, "mocksdk")
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr("9999.0.0")
                     .AddMockSDK("9999.0.0-dev", "9999.0.0")
                     .Build();

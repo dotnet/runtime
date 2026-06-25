@@ -49,7 +49,17 @@ jobs:
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    # Windows arm64 builds are slower than the 60 min ADO default,
+    # so enforce a floor of 75 minutes while still honoring any larger explicit value.
+    ${{ if eq(parameters.platform, 'windows_arm64') }}:
+      ${{ if eq(parameters.timeoutInMinutes, '') }}:
+        timeoutInMinutes: 75
+      ${{ elseif lt(75, parameters.timeoutInMinutes) }}:
+        timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      ${{ else }}:
+        timeoutInMinutes: 75
+    ${{ else }}:
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
     enableMicrobuild: ${{ parameters.isOfficialBuild }}
@@ -137,6 +147,10 @@ jobs:
       - name: _nativeSanitizersArg
         value: ''
 
+      # Capture MSBuild crash diagnostics so they are published with build logs
+      - name: MSBUILDDEBUGPATH
+        value: $(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/MsbuildDebugLogs
+
       - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
         - template: ${{ variableTemplate.template }}
           parameters:
@@ -167,31 +181,12 @@ jobs:
     - checkout: self
       clean: true
       fetchDepth: $(checkoutFetchDepth)
+      fetchTags: false
 
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.hostedOs, 'windows')) }}:
-        - task: Bash@3
-          displayName: Setup Private Feeds Credentials
-          inputs:
-            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.sh
-            arguments: $(Build.SourcesDirectory)/NuGet.config $Token
-          env:
-            Token: $(dn-bot-dnceng-artifact-feeds-rw)
-      - ${{ else }}:
-        - task: PowerShell@2
-          displayName: Setup Private Feeds Credentials
-          inputs:
-            filePath: $(Build.SourcesDirectory)/eng/common/SetupNugetSources.ps1
-            arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
-          env:
-            Token: $(dn-bot-dnceng-artifact-feeds-rw)
-        # Run the NuGetAuthenticate task after the internal feeds are added to the nuget.config
-        # This ensures that creds are set appropriately for all feeds in the config, and that the
-        # credential provider is installed.
-        - task: NuGetAuthenticate@1
+    - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
@@ -239,6 +234,15 @@ jobs:
         buildArgs: ${{ parameters.buildArgs }}
         useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+
+    - task: CopyFiles@2
+      displayName: Gather CMakeConfigureLog for publish to artifacts
+      inputs:
+        SourceFolder: 'artifacts/obj'
+        Contents: '**/CMakeConfigureLog.yaml'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/artifacts/log/cmake'
+      continueOnError: true
+      condition: always()
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
       - script: |

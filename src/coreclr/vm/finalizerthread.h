@@ -62,6 +62,9 @@ public:
     static void SignalFinalizationDone(int observedFullGcCount);
 
     static VOID FinalizerThreadWorker(void *args);
+
+    static VOID FinalizerThreadWorkerIteration(void *args);
+
     static DWORD WINAPI FinalizerThreadStart(void *args);
 
     static void FinalizerThreadCreate();

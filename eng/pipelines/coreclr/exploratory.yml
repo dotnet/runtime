@@ -11,6 +11,7 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/pipelines/helix-platforms.yml
   # Set toolName variable from pipeline name so we can use it during template expansion
   - name: toolName
     value: ${{ variables['Build.DefinitionName'] }}

@@ -79,6 +79,7 @@ class ReadyToRunJitManager;
 class ExecutionManager;
 class Thread;
 class CrawlFrame;
+class IExecutionControl;
 struct EE_ILEXCEPTION;
 struct EE_ILEXCEPTION_CLAUSE;
 typedef struct
@@ -88,10 +89,11 @@ typedef struct
 } EH_CLAUSE_ENUMERATOR;
 class EECodeInfo;
 
-#define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~((size_t)GetOsPageSize()-1))
-#define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (GetOsPageSize()-1)) & ~((size_t)GetOsPageSize()-1))
+#define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~((size_t)minipal_getpagesize()-1))
+#define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (minipal_getpagesize()-1)) & ~((size_t)minipal_getpagesize()-1))
 
 
+// [cDAC] [ExecutionManager]: Contract depends on the values in this enum.
 enum StubCodeBlockKind : int
 {
     STUB_CODE_BLOCK_UNKNOWN = 0,
@@ -106,13 +108,12 @@ enum StubCodeBlockKind : int
     STUB_CODE_BLOCK_VSD_LOOKUP_STUB = 8,
     STUB_CODE_BLOCK_VSD_VTABLE_STUB = 9,
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_TIERED_COMPILATION
+    STUB_CODE_BLOCK_CALLCOUNTING = 0xA,
+#endif // FEATURE_TIERED_COMPILATION
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
-    // Placeholders returned by code:GetStubCodeBlockKind
-    STUB_CODE_BLOCK_NOCODE = 0x10,
-    STUB_CODE_BLOCK_MANAGED = 0x11,
-    STUB_CODE_BLOCK_STUBLINK = 0x12,
-    // Placeholdes used by ReadyToRun images
+    // Placeholder used by ReadyToRun images
     STUB_CODE_BLOCK_METHOD_CALL_THUNK = 0x13,
 };
 
@@ -122,12 +123,12 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
         return "JumpStub";
-    case STUB_CODE_BLOCK_STUBLINK:
-        return "StubLinkStub";
-    case STUB_CODE_BLOCK_MANAGED:
-        return "Managed";
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return "MethodCallThunk";
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return "CallCountingStub";
+#endif
     case STUB_CODE_BLOCK_DYNAMICHELPER:
         return "MethodCallThunk";
     case STUB_CODE_BLOCK_FIXUPPRECODE:
@@ -179,10 +180,8 @@ public:
 
     PTR_MethodDesc      phdrMDesc;
 
-#ifdef FEATURE_EH_FUNCLETS
     DWORD               nUnwindInfos;
     T_RUNTIME_FUNCTION  unwindInfos[0];
-#endif // FEATURE_EH_FUNCLETS
 };
 
 struct InterpreterRealCodeHeader
@@ -278,7 +277,6 @@ public:
         pRealCodeHeader = (PTR_RealCodeHeader)kind;
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     UINT                    GetNumberOfUnwindInfos()
     {
         SUPPORTS_DAC;
@@ -301,7 +299,6 @@ public:
         return dac_cast<PTR_RUNTIME_FUNCTION>(
             PTR_TO_MEMBER_TADDR(RealCodeHeader, pRealCodeHeader, unwindInfos) + iUnwindInfo * sizeof(T_RUNTIME_FUNCTION));
     }
-#endif // FEATURE_EH_FUNCLETS
 
 
 #ifdef DACCESS_COMPILE
@@ -373,7 +370,6 @@ public:
         return FALSE;
     }
 
-#if defined(FEATURE_EH_FUNCLETS)
     bool MayHaveFunclets()
     {
         LIMITED_METHOD_CONTRACT;
@@ -386,7 +382,6 @@ public:
         _ASSERTE(!"Unexpected call to GetUnwindInfoZero");
         return NULL;
     }
-#endif
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJitMan);
@@ -478,7 +473,17 @@ class CodeHeap
 {
     VPTR_BASE_VTABLE_CLASS(CodeHeap)
 
+    friend struct ::cdac_data<CodeHeap>;
+
 public:
+    // [cDAC] [ExecutionManager] : Contract depends on these values.
+    enum class CodeHeapType : uint8_t
+    {
+        LoaderCodeHeap  = 0,
+        HostCodeHeap    = 1,
+        UnknownCodeHeap = 0xff,
+    };
+
     CodeHeap() = default;
 
     // virtual dtor. Clean up heap
@@ -491,6 +496,9 @@ public:
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) = 0;
 #endif
+
+protected:
+    CodeHeapType m_heapType = CodeHeapType::UnknownCodeHeap;
 };
 
 //-----------------------------------------------------------------------------
@@ -513,7 +521,7 @@ struct HeapList
     TADDR               startAddress;
     TADDR               endAddress;     // the current end of the used portion of the Heap
 
-    TADDR               mapBase;        // "startAddress" rounded down to GetOsPageSize(). pHdrMap is relative to this address
+    TADDR               mapBase;        // "startAddress" rounded down to minipal_getpagesize(). pHdrMap is relative to this address
     PTR_DWORD           pHdrMap;        // bit array used to find the start of methods
 
     size_t              maxCodeHeapSize;// Size of the entire contiguous block of memory
@@ -555,6 +563,8 @@ class LoaderCodeHeap final : public CodeHeap
 #endif
 
     VPTR_VTABLE_CLASS(LoaderCodeHeap, CodeHeap)
+
+    friend struct ::cdac_data<LoaderCodeHeap>;
 
 private:
     ExplicitControlLoaderHeap m_LoaderHeap;
@@ -602,7 +612,7 @@ public:
     // All public functions are thread-safe.
 
     // These are wrapper functions over the UnwindInfoTable functions that are specific to JIT compile code
-    static void PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* unwindInfo, int unwindInfoCount);
+    static void PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* methodUnwindData, int methodUnwindDataCount);
     static void UnpublishUnwindInfoForMethod(TADDR entryPoint);
 
     static void Initialize();
@@ -611,7 +621,7 @@ public:
 private:
     // These are lower level functions that assume you have found the list of UnwindInfoTable entries
     // These are used by the high-level method functions above
-    static void AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, T_RUNTIME_FUNCTION* data, TADDR rangeStart, TADDR rangeEnd);
+    void AddToUnwindInfoTable(T_RUNTIME_FUNCTION* data, int count);
     static void RemoveFromUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, TADDR baseAddress, TADDR entryPoint);
 
 public:
@@ -620,9 +630,12 @@ public:
 private:
     void UnRegister();
     void Register();
-    UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd, ULONG size);
+    UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd);
 
 private:
+    void FlushPendingEntries(LONG waitForSeq);
+    LONG FlushPendingEntriesUnderGate();
+
     PVOID               hHandle;          // OS handle for a published RUNTIME_FUNCTION table
     ULONG_PTR           iRangeStart;      // Start of memory described by this table
     ULONG_PTR           iRangeEnd;        // End of memory described by this table
@@ -630,6 +643,33 @@ private:
     ULONG               cTableCurCount;
     ULONG               cTableMaxCount;
     int                 cDeletedEntries;    // Number of slots we removed.
+
+    // Pending buffer for out-of-order entries that haven't been published to the OS yet.
+    // These entries are accumulated and batch-merged into pTable to amortize the cost of
+    // RtlDeleteGrowableFunctionTable + RtlAddGrowableFunctionTable.
+    static const ULONG  cPendingMaxCount = 32;
+    T_RUNTIME_FUNCTION  pendingTable[cPendingMaxCount];
+    ULONG               cPendingCount;
+
+    // Per-table locks. Each UnwindInfoTable corresponds to one RangeSection, and
+    // independent RangeSections can publish/unpublish concurrently.
+    Crst                m_publishLock; // Protects the main table and OS registration.
+    Crst                m_pendingLock; // Protects the pending table only.
+
+    Volatile<LONG>      m_flushInProgress;
+
+    // Sequence counters used to ensure callers wait until their entries are
+    // published to the OS before returning.
+    // m_flushLock + m_flushCV form a lightweight condition variable pair.
+    Volatile<LONG>      m_pendingSeq;
+    LONG                m_publishedSeq;   // Protected by m_flushLock.
+    SRWLOCK             m_flushLock;
+    CONDITION_VARIABLE  m_flushCV;
+
+    // Whether initial OS registration failed, used to return early in AddToUnwindInfoTable.
+    // We cannot just check if hHandle is null because it's temporarily set to NULL
+    // during the flusher's merge path.
+    Volatile<bool>      m_registrationFailed;
 #endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
 
@@ -694,6 +734,7 @@ struct RangeSection
         RANGE_SECTION_CODEHEAP      = 0x2,
         RANGE_SECTION_RANGELIST     = 0x4,
         RANGE_SECTION_INTERPRETER   = 0x8,
+        RANGE_SECTION_VIRTUALIP     = 0x10, // This range section contains virtual IPs (e.g. for ReadyToRun code) instead of actual code addresses in linear memory
     };
 
 #ifdef FEATURE_READYTORUN
@@ -767,6 +808,7 @@ template<> struct cdac_data<RangeSection>
     static constexpr size_t Flags = offsetof(RangeSection, _flags);
     static constexpr size_t HeapList = offsetof(RangeSection, _pHeapList);
     static constexpr size_t R2RModule = offsetof(RangeSection, _pR2RModule);
+    static constexpr size_t RangeList = offsetof(RangeSection, _pRangeList);
 };
 
 enum class RangeSectionLockState
@@ -1022,11 +1064,7 @@ class RangeSectionMap
         bool isCollectibleRangeSectionFragment; // RangeSectionFragments
     };
 
-#ifdef TARGET_64BIT
     static constexpr uintptr_t entriesPerMapLevel = 256;
-#else
-    static constexpr uintptr_t entriesPerMapLevel = 256;
-#endif
 
     typedef RangeSectionFragmentPointer RangeSectionList;
     typedef RangeSectionList RangeSectionL1[entriesPerMapLevel];
@@ -1555,7 +1593,7 @@ public:
 
         for (uintptr_t i = 0; i < entriesPerMapLevel; i++)
         {
-            if (level[i].IsNull())
+            if (!level[i].IsNull())
             {
                 EnumMemoryRangeSectionMapLevel(flags, *level[i].VolatileLoad(pLockState), pLockState);
             }
@@ -1748,9 +1786,9 @@ public:
         return GetGCInfoToken(MethodToken).Info;
     }
 
-    TADDR JitTokenToModuleBase(const METHODTOKEN& MethodToken);
+    TADDR JitTokenToModuleFunctionsBase(const METHODTOKEN& MethodToken);
+    TADDR JitTokenToModuleRVABase(const METHODTOKEN& MethodToken);
 
-#if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION LazyGetFunctionEntry(EECodeInfo * pCodeInfo) = 0;
 
     // GetFuncletStartAddress returns the starting address of the function or funclet indicated by the EECodeInfo address.
@@ -1760,7 +1798,6 @@ public:
 
     virtual BOOL LazyIsFunclet(EECodeInfo * pCodeInfo);
     virtual BOOL IsFilterFunclet(EECodeInfo * pCodeInfo);
-#endif // FEATURE_EH_FUNCLETS
 
     virtual StubCodeBlockKind   GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC) = 0;
 
@@ -1770,10 +1807,8 @@ public:
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo) = 0;
-#if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo) = 0;
-#endif // FEATURE_EH_FUNCLETS
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
@@ -1791,6 +1826,11 @@ public:
         return m_runtimeSupport;
     }
 
+#if !defined(DACCESS_COMPILE)
+    // Returns execution control, currently NULL outside of CoreCLR interpreter.
+    virtual IExecutionControl* GetExecutionControl() { return NULL; }
+#endif
+
 protected:
     PTR_ICodeManager m_runtimeSupport;
 };
@@ -1807,16 +1847,33 @@ class CodeHeapIterator final
         size_t MaxCodeHeapSize;
     };
 
-    EECodeGenManager* m_manager;
+    class EECodeGenManagerReleaseIteratorHolder
+    {
+        EECodeGenManager* m_manager;
+    public:
+        EECodeGenManagerReleaseIteratorHolder(EECodeGenManager* manager);
+        EECodeGenManagerReleaseIteratorHolder(EECodeGenManagerReleaseIteratorHolder const&) = delete;
+        EECodeGenManagerReleaseIteratorHolder& operator=(EECodeGenManagerReleaseIteratorHolder const&) = delete;
+        EECodeGenManagerReleaseIteratorHolder(EECodeGenManagerReleaseIteratorHolder&& other)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_manager = other.m_manager;
+            other.m_manager = NULL;
+        }
+        EECodeGenManagerReleaseIteratorHolder& operator=(EECodeGenManagerReleaseIteratorHolder&& other);
+        ~EECodeGenManagerReleaseIteratorHolder();
+    };
+
+    EECodeGenManagerReleaseIteratorHolder m_manager;
     MethodSectionIterator m_Iterator;
     CUnorderedArray<HeapListState, 64> m_Heaps;
     int32_t m_HeapsIndexNext;
     LoaderAllocator* m_pLoaderAllocatorFilter;
     MethodDesc* m_pCurrent;
+    DWORD m_codeType;
 
 public:
     CodeHeapIterator(EECodeGenManager* manager, HeapList* heapList, LoaderAllocator* pLoaderAllocatorFilter);
-    ~CodeHeapIterator();
 
     CodeHeapIterator(CodeHeapIterator const&) = delete;
     CodeHeapIterator& operator=(CodeHeapIterator const&) = delete;
@@ -1935,11 +1992,9 @@ public:
     void CleanupCodeHeaps();
 
     template<typename TCodeHeader>
-    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, CorJitAllocMemFlag flag, void** ppCodeHeader, void** ppCodeHeaderRW,
+    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
                    size_t* pAllocatedSize, HeapList** ppCodeHeap , BYTE** ppRealHeader
-#ifdef FEATURE_EH_FUNCLETS
                  , UINT nUnwindInfos
-#endif
                   );
 
     BYTE *AllocFromJitMetaHeap(MethodDesc *pMD, size_t blockSize);
@@ -1994,6 +2049,8 @@ protected:
     Crst m_CodeHeapLock;
     ULONG m_iteratorCount;
     bool m_storeRichDebugInfo;
+
+    friend struct ::cdac_data<EEJitManager>;
 };
 
 //-----------------------------------------------------------------------------
@@ -2172,16 +2229,13 @@ public:
     static CodeHeader * GetCodeHeader(const METHODTOKEN& MethodToken);
     static CodeHeader * GetCodeHeaderFromStartAddress(TADDR methodStartAddress);
 
-#if defined(FEATURE_EH_FUNCLETS)
     // Compute function entry lazily. Do not call directly. Use EECodeInfo::GetFunctionEntry instead.
     virtual PTR_RUNTIME_FUNCTION    LazyGetFunctionEntry(EECodeInfo * pCodeInfo);
 
     virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
-#endif // FEATURE_EH_FUNCLETS
 
     virtual StubCodeBlockKind       GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC);
 
-#if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
     {
@@ -2191,7 +2245,6 @@ public:
         // unwind information at dump generation time (since it's dynamic, it will not be otherwise
         // available at debug time).
     }
-#endif // FEATURE_EH_FUNCLETS
 
 #if !defined DACCESS_COMPILE
 protected:
@@ -2211,6 +2264,14 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_CPUCompileFlags;
     }
+
+#if defined(TARGET_ARM64)
+    inline bool UseScalableVectorT()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_CPUCompileFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_VectorT);
+    }
+#endif
 
 private :
     Crst                m_JitLoadLock;
@@ -2256,8 +2317,60 @@ template<>
 struct cdac_data<EEJitManager>
 {
     static constexpr size_t StoreRichDebugInfo = offsetof(EEJitManager, m_storeRichDebugInfo);
+    static constexpr size_t AllCodeHeaps = offsetof(EEJitManager, m_pAllCodeHeaps);
 };
 
+template<>
+struct cdac_data<CodeHeap>
+{
+    static constexpr size_t HeapType = offsetof(CodeHeap, m_heapType);
+};
+
+template<>
+struct cdac_data<LoaderCodeHeap>
+{
+    static constexpr size_t LoaderHeap = offsetof(LoaderCodeHeap, m_LoaderHeap);
+};
+
+
+//*****************************************************************************
+//
+// VirtualIPRangeSection: a linked list node tracking a range of virtual IPs
+// registered from a WASM R2R module.
+//
+//*****************************************************************************
+
+#ifdef TARGET_WASM
+struct VirtualIPRangeSection
+{
+    VirtualIPRangeSection(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_Module pR2RModule) : rangeSection(range, pJit, flags, pR2RModule), pNext(nullptr)
+    {
+    }
+
+    RangeSection        rangeSection;       // Synthetic RangeSection for compatibility with existing APIs
+    VirtualIPRangeSection* pNext;           // Next entry in the linked list
+};
+
+//*****************************************************************************
+//
+// FunctionTableIndexRangeSection: a linked list node tracking a range of
+// function table indices registered from a WASM R2R module.
+//
+//*****************************************************************************
+
+struct FunctionTableIndexRangeSection
+{
+    FunctionTableIndexRangeSection(DWORD minIndex, DWORD count, PTR_Module pModule)
+        : minFunctionTableIndex(minIndex), numRuntimeFunctions(count), pR2RModule(pModule), pNext(nullptr)
+    {
+    }
+
+    DWORD               minFunctionTableIndex;  // Start of the function table index range
+    DWORD               numRuntimeFunctions;    // Number of RUNTIME_FUNCTION entries
+    PTR_Module          pR2RModule;             // Module owning this range
+    FunctionTableIndexRangeSection* pNext;      // Next entry in the linked list
+};
+#endif // TARGET_WASM
 
 //*****************************************************************************
 //
@@ -2293,10 +2406,14 @@ public:
     };
 
     // Returns default scan flag for current thread
-    static ScanFlag GetScanFlags();
+    static ScanFlag GetScanFlags(Thread *pThread = NULL);
 
-    // Returns whether currentPC is in managed code. Returns false for jump stubs on WIN64.
+    // Returns whether currentPC is in managed code. Returns false for jump stubs.
     static BOOL IsManagedCode(PCODE currentPC);
+
+    // Returns whether currentPC is in managed code. Returns false for jump stubs.
+    // Does not acquire the reader lock. Caller must ensure it is safe.
+    static BOOL IsManagedCodeNoLock(PCODE currentPC);
 
     // Returns true if currentPC is ready to run codegen
     static BOOL IsReadyToRunCode(PCODE currentPC);
@@ -2393,6 +2510,41 @@ public:
                                        RangeSection::RangeSectionFlags flags,
                                        PTR_Module pModule);
 
+#ifdef TARGET_WASM
+    // Register a virtual IP range for a WASM R2R module.
+    // Returns the start virtual IP assigned to this module.
+    static TADDR         AddVirtualIPRange(UINT32 numVirtualIPs,
+                                            IJitManager* pJit,
+                                            PTR_Module pModule);
+
+    // Find the VirtualIPRangeSection for a given virtual IP.
+    static VirtualIPRangeSection* FindVirtualIPRangeSection(TADDR virtualIP);
+
+    // Returns true if the given PCODE is a virtual IP encoding (both low and high bits set).
+    static bool           IsVirtualIP(PCODE pc)
+    {
+#ifdef TARGET_64BIT
+        return (pc & 0x8000000000000001ULL) == 0x8000000000000001ULL;
+#else
+        return (pc & 0x80000001) == 0x80000001;
+#endif
+    }
+
+    // Register a function table index range for a WASM R2R module.
+    static void           AddFunctionTableIndexRange(DWORD minFunctionTableIndex,
+                                                     DWORD numRuntimeFunctions,
+                                                     PTR_Module pModule);
+
+    // Find the FunctionTableIndexRangeSection for a given function table index.
+    static FunctionTableIndexRangeSection* FindFunctionTableIndexRangeSection(DWORD functionIndex);
+
+    // Given a function table index, look up the corresponding Module and RUNTIME_FUNCTION,
+    // then compute and return the virtual IP for that the entrypoint for that function
+    // (which may require a walk back to find the main function if functionIndex represents a funclet)
+    static TADDR          GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex);
+    static TADDR          GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP);
+#endif // TARGET_WASM
+
     static void           DeleteRange(TADDR StartRange);
 
     static void           CleanupCodeHeaps();
@@ -2439,6 +2591,11 @@ private:
     SPTR_DECL(InterpreterJitManager, m_pInterpreterJitManager);
     SPTR_DECL(InterpreterCodeManager, m_pInterpreterCodeMan);
 #endif
+
+#ifdef TARGET_WASM
+    static VirtualIPRangeSection* s_pVirtualIPRangeList;
+    static FunctionTableIndexRangeSection* s_pFunctionTableIndexRangeList;
+#endif // TARGET_WASM
 
     static CrstStatic       m_JumpStubCrst;
     static CrstStatic       m_RangeCrst;        // Acquire before writing into m_CodeRangeList and m_DataRangeList
@@ -2569,6 +2726,7 @@ template<>
 struct cdac_data<ExecutionManager>
 {
     static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
+    static constexpr PTR_EEJitManager* EEJitManagerAddress = &ExecutionManager::m_pEEJitManager;
 };
 #endif
 
@@ -2635,6 +2793,7 @@ public:
                                          int EndIndex);
 };
 
+#ifdef FEATURE_COLD_R2R_CODE
 class HotColdMappingLookupTable
 {
 public:
@@ -2647,6 +2806,7 @@ public:
     //
     static int LookupMappingForMethod(ReadyToRunInfo* pInfo, ULONG MethodIndex);
 };
+#endif // FEATURE_COLD_R2R_CODE
 
 #endif // FEATURE_READYTORUN
 
@@ -2727,24 +2887,20 @@ public:
 
     virtual GCInfoToken  GetGCInfoToken(const METHODTOKEN& MethodToken);
 
-#if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION    LazyGetFunctionEntry(EECodeInfo * pCodeInfo);
 
     virtual TADDR                   GetFuncletStartAddress(EECodeInfo * pCodeInfo);
     virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
     virtual BOOL                    LazyIsFunclet(EECodeInfo * pCodeInfo);
     virtual BOOL                    IsFilterFunclet(EECodeInfo * pCodeInfo);
-#endif // FEATURE_EH_FUNCLETS
 
     virtual StubCodeBlockKind       GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC);
 
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
-#if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
-#endif //FEATURE_EH_FUNCLETS
 #endif //DACCESS_COMPILE
 };
 
@@ -2840,7 +2996,6 @@ public:
                                         CrawlFrame *pCf);
 #endif // #ifndef DACCESS_COMPILE
 
-#if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
     {
         // Not used for the interpreter
@@ -2861,25 +3016,26 @@ protected:
 public:
 #endif // !DACCESS_COMPILE
 
-#endif // FEATURE_EH_FUNCLETS
-
     virtual StubCodeBlockKind GetStubCodeBlockKind(RangeSection * pRangeSection, PCODE currentPC)
     {
         return STUB_CODE_BLOCK_UNKNOWN;
     }
 
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_WASM)
+    // Return execution control for interpreter bytecode breakpoints
+    virtual IExecutionControl* GetExecutionControl();
+#endif // !DACCESS_COMPILE && !TARGET_WASM
+
 #if defined(DACCESS_COMPILE)
 
     virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 
-#if defined(FEATURE_EH_FUNCLETS)
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
     {
         // Not used for the interpreter
         _ASSERTE(FALSE);
     }
 
-#endif // FEATURE_EH_FUNCLETS
 #endif // DACCESS_COMPILE
 private :
     Crst m_interpreterLoadLock;
@@ -2906,14 +3062,12 @@ class EECodeInfo
     friend BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
 #endif
 
-#if defined(FEATURE_EH_FUNCLETS)
     enum class IsFuncletCache : uint32_t
     {
         NotSet = 2,
         IsFunclet = 1,
         IsNotFunclet = 0
     };
-#endif // FEATURE_EH_FUNCLETS
 
 public:
     EECodeInfo();
@@ -2940,6 +3094,16 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pJM != NULL;
+    }
+
+    BOOL        IsInterpretedCode()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+#ifdef FEATURE_INTERPRETER
+        return IsValid() && m_pJM == ExecutionManager::GetInterpreterJitManager();
+#else
+        return FALSE;
+#endif
     }
 
     IJitManager* GetJitManager()
@@ -3003,14 +3167,18 @@ public:
     TADDR       GetModuleBase()
     {
         WRAPPER_NO_CONTRACT;
-        return GetJitManager()->JitTokenToModuleBase(GetMethodToken());
+        return GetJitManager()->JitTokenToModuleRVABase(GetMethodToken());
     }
 
-#ifdef FEATURE_EH_FUNCLETS
+    TADDR       GetModuleFunctionsBase()
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetJitManager()->JitTokenToModuleFunctionsBase(GetMethodToken());
+    }
+
     PTR_RUNTIME_FUNCTION GetFunctionEntry();
     BOOL        IsFunclet();
     EECodeInfo  GetMainFunctionInfo();
-#endif // FEATURE_EH_FUNCLETS
 
 #if defined(TARGET_X86)
     ULONG       GetFixedStackSize()
@@ -3053,10 +3221,8 @@ private:
     MethodDesc         *m_pMD;
     IJitManager        *m_pJM;
     DWORD               m_relOffset;
-#ifdef FEATURE_EH_FUNCLETS
     IsFuncletCache      m_isFuncletCache;
     PTR_RUNTIME_FUNCTION m_pFunctionEntry;
-#endif // FEATURE_EH_FUNCLETS
 
 #ifdef TARGET_X86
     PTR_CBYTE           m_hdrInfoTable;

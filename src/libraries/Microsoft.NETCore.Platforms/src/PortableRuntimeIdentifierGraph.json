@@ -64,6 +64,23 @@
           "unix-x64"
         ]
       },
+      "openbsd": {
+        "#import": [
+          "unix"
+        ]
+      },
+      "openbsd-arm64": {
+        "#import": [
+          "openbsd",
+          "unix-arm64"
+        ]
+      },
+      "openbsd-x64": {
+        "#import": [
+          "openbsd",
+          "unix-x64"
+        ]
+      },
       "haiku": {
         "#import": [
           "unix"

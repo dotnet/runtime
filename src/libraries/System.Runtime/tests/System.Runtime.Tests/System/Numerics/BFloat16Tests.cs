@@ -8,7 +8,6 @@ using System.Tests;
 using System.Text;
 using Xunit;
 using Xunit.Sdk;
-using static System.Tests.CreateDelegateTests;
 
 namespace System.Numerics.Tests
 {
@@ -16,66 +15,62 @@ namespace System.Numerics.Tests
     {
         private static BFloat16 CrossPlatformMachineEpsilon => (BFloat16)3.90625e-03f;
 
-        private static ushort BFloat16ToUInt16Bits(BFloat16 value) => Unsafe.BitCast<BFloat16, ushort>(value);
-
-        private static BFloat16 UInt16BitsToBFloat16(ushort value) => Unsafe.BitCast<ushort, BFloat16>(value);
-
         [Fact]
         public static void Epsilon()
         {
-            Assert.Equal(0x0001u, BFloat16ToUInt16Bits(BFloat16.Epsilon));
+            Assert.Equal(0x0001u, BitConverter.BFloat16ToUInt16Bits(BFloat16.Epsilon));
         }
 
         [Fact]
         public static void PositiveInfinity()
         {
-            Assert.Equal(0x7F80u, BFloat16ToUInt16Bits(BFloat16.PositiveInfinity));
+            Assert.Equal(0x7F80u, BitConverter.BFloat16ToUInt16Bits(BFloat16.PositiveInfinity));
         }
 
         [Fact]
         public static void NegativeInfinity()
         {
-            Assert.Equal(0xFF80u, BFloat16ToUInt16Bits(BFloat16.NegativeInfinity));
+            Assert.Equal(0xFF80u, BitConverter.BFloat16ToUInt16Bits(BFloat16.NegativeInfinity));
         }
 
         [Fact]
         public static void NaN()
         {
-            Assert.Equal(0xFFC0u, BFloat16ToUInt16Bits(BFloat16.NaN));
+            Assert.Equal(0xFFC0u, BitConverter.BFloat16ToUInt16Bits(BFloat16.NaN));
         }
 
         [Fact]
         public static void MinValue()
         {
-            Assert.Equal(0xFF7Fu, BFloat16ToUInt16Bits(BFloat16.MinValue));
+            Assert.Equal(0xFF7Fu, BitConverter.BFloat16ToUInt16Bits(BFloat16.MinValue));
         }
 
         [Fact]
         public static void MaxValue()
         {
-            Assert.Equal(0x7F7Fu, BFloat16ToUInt16Bits(BFloat16.MaxValue));
+            Assert.Equal(0x7F7Fu, BitConverter.BFloat16ToUInt16Bits(BFloat16.MaxValue));
         }
 
         [Fact]
         public static void Ctor_Empty()
         {
             var value = new BFloat16();
-            Assert.Equal(0x0000, BFloat16ToUInt16Bits(value));
+            Assert.Equal(0x0000, BitConverter.BFloat16ToUInt16Bits(value));
         }
 
         public static IEnumerable<object[]> IsFinite_TestData()
         {
             yield return new object[] { BFloat16.NegativeInfinity, false };                  // Negative Infinity
             yield return new object[] { BFloat16.MinValue, true };                           // Min Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x8400), true };   // Max Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x83FF), true };   // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x8001), true };   // Max Negative Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x8000), true };   // Negative Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8080), true };   // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x807F), true };   // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8001), true };   // Max Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8000), true };   // Negative Zero
             yield return new object[] { BFloat16.NaN, false };                               // NaN
-            yield return new object[] { UInt16BitsToBFloat16(0x0000), true };   // Positive Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0000), true };   // Positive Zero
             yield return new object[] { BFloat16.Epsilon, true };                            // Min Positive Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x03FF), true };   // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x0400), true };   // Min Positive Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x007F), true };   // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0080), true };   // Min Positive Normal
             yield return new object[] { BFloat16.MaxValue, true };                           // Max Positive Normal
             yield return new object[] { BFloat16.PositiveInfinity, false };                  // Positive Infinity
         }
@@ -91,15 +86,15 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NegativeInfinity, true };                   // Negative Infinity
             yield return new object[] { BFloat16.MinValue, false };                          // Min Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
-            yield return new object[] { UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
             yield return new object[] { BFloat16.NaN, false };                               // NaN
-            yield return new object[] { UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
             yield return new object[] { BFloat16.Epsilon, false };                           // Min Positive Subnormal (Positive Epsilon)
-            yield return new object[] { UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
             yield return new object[] { BFloat16.MaxValue, false };                          // Max Positive Normal
             yield return new object[] { BFloat16.PositiveInfinity, true };                   // Positive Infinity
         }
@@ -115,15 +110,15 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NegativeInfinity, false };                  // Negative Infinity
             yield return new object[] { BFloat16.MinValue, false };                          // Min Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
-            yield return new object[] { UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
             yield return new object[] { BFloat16.NaN, true };                                // NaN
-            yield return new object[] { UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
             yield return new object[] { BFloat16.Epsilon, false };                           // Min Positive Subnormal (Positive Epsilon)
-            yield return new object[] { UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
             yield return new object[] { BFloat16.MaxValue, false };                          // Max Positive Normal
             yield return new object[] { BFloat16.PositiveInfinity, false };                  // Positive Infinity
         }
@@ -139,15 +134,15 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NegativeInfinity, true };                   // Negative Infinity
             yield return new object[] { BFloat16.MinValue, true };                           // Min Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x8080), true };   // Max Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x807F), true };   // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x8001), true };   // Max Negative Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x8000), true };   // Negative Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8080), true };   // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x807F), true };   // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8001), true };   // Max Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8000), true };   // Negative Zero
             yield return new object[] { BFloat16.NaN, true };                                // NaN
-            yield return new object[] { UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
             yield return new object[] { BFloat16.Epsilon, false };                           // Min Positive Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
             yield return new object[] { BFloat16.MaxValue, false };                          // Max Positive Normal
             yield return new object[] { BFloat16.PositiveInfinity, false };                  // Positive Infinity
         }
@@ -163,15 +158,15 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NegativeInfinity, true };                   // Negative Infinity
             yield return new object[] { BFloat16.MinValue, false };                          // Min Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
-            yield return new object[] { UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
             yield return new object[] { BFloat16.NaN, false };                               // NaN
-            yield return new object[] { UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
             yield return new object[] { BFloat16.Epsilon, false };                           // Min Positive Subnormal (Positive Epsilon)
-            yield return new object[] { UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
             yield return new object[] { BFloat16.MaxValue, false };                          // Max Positive Normal
             yield return new object[] { BFloat16.PositiveInfinity, false };                  // Positive Infinity
         }
@@ -187,15 +182,15 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NegativeInfinity, false };                  // Negative Infinity
             yield return new object[] { BFloat16.MinValue, true };                           // Min Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x8080), true };   // Max Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8080), true };   // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
             yield return new object[] { BFloat16.NaN, false };                               // NaN
-            yield return new object[] { UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
             yield return new object[] { BFloat16.Epsilon, false };                           // Min Positive Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x0080), true };   // Min Positive Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0080), true };   // Min Positive Normal
             yield return new object[] { BFloat16.MaxValue, true };                           // Max Positive Normal
             yield return new object[] { BFloat16.PositiveInfinity, false };                  // Positive Infinity
         }
@@ -211,15 +206,15 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NegativeInfinity, false };                  // Negative Infinity
             yield return new object[] { BFloat16.MinValue, false };                          // Min Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
-            yield return new object[] { UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x807F), false };  // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8001), false };  // Max Negative Subnormal (Negative Epsilon)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
             yield return new object[] { BFloat16.NaN, false };                               // NaN
-            yield return new object[] { UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
             yield return new object[] { BFloat16.Epsilon, false };                           // Min Positive Subnormal (Positive Epsilon)
-            yield return new object[] { UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x007F), false };  // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
             yield return new object[] { BFloat16.MaxValue, false };                          // Max Positive Normal
             yield return new object[] { BFloat16.PositiveInfinity, true };                   // Positive Infinity
         }
@@ -235,15 +230,15 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.NegativeInfinity, false };                  // Negative Infinity
             yield return new object[] { BFloat16.MinValue, false };                          // Min Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
-            yield return new object[] { UInt16BitsToBFloat16(0x807F), true };   // Min Negative Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x8001), true };   // Max Negative Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8080), false };  // Max Negative Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x807F), true };   // Min Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8001), true };   // Max Negative Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8000), false };  // Negative Zero
             yield return new object[] { BFloat16.NaN, false };                               // NaN
-            yield return new object[] { UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0000), false };  // Positive Zero
             yield return new object[] { BFloat16.Epsilon, true };                            // Min Positive Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x007F), true };   // Max Positive Subnormal
-            yield return new object[] { UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x007F), true };   // Max Positive Subnormal
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0080), false };  // Min Positive Normal
             yield return new object[] { BFloat16.MaxValue, false };                          // Max Positive Normal
             yield return new object[] { BFloat16.PositiveInfinity, false };                  // Positive Infinity
         }
@@ -272,19 +267,19 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.MaxValue, BFloat16.MaxValue, 0 };
             yield return new object[] { BFloat16.MaxValue, BFloat16.MinValue, 1 };
-            yield return new object[] { BFloat16.Epsilon, UInt16BitsToBFloat16(0x8001), 1 };
-            yield return new object[] { BFloat16.MaxValue, UInt16BitsToBFloat16(0x0000), 1 };
+            yield return new object[] { BFloat16.Epsilon, BitConverter.UInt16BitsToBFloat16(0x8001), 1 };
+            yield return new object[] { BFloat16.MaxValue, BitConverter.UInt16BitsToBFloat16(0x0000), 1 };
             yield return new object[] { BFloat16.MaxValue, BFloat16.Epsilon, 1 };
             yield return new object[] { BFloat16.MaxValue, BFloat16.PositiveInfinity, -1 };
             yield return new object[] { BFloat16.MinValue, BFloat16.MaxValue, -1 };
             yield return new object[] { BFloat16.MaxValue, BFloat16.NaN, 1 };
             yield return new object[] { BFloat16.NaN, BFloat16.NaN, 0 };
-            yield return new object[] { BFloat16.NaN, UInt16BitsToBFloat16(0x0000), -1 };
+            yield return new object[] { BFloat16.NaN, BitConverter.UInt16BitsToBFloat16(0x0000), -1 };
             yield return new object[] { BFloat16.MaxValue, null, 1 };
             yield return new object[] { BFloat16.MinValue, BFloat16.NegativeInfinity, 1 };
             yield return new object[] { BFloat16.NegativeInfinity, BFloat16.MinValue, -1 };
-            yield return new object[] { UInt16BitsToBFloat16(0x8000), BFloat16.NegativeInfinity, 1 }; // Negative zero
-            yield return new object[] { BFloat16.NegativeInfinity, UInt16BitsToBFloat16(0x8000), -1 }; // Negative zero
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8000), BFloat16.NegativeInfinity, 1 }; // Negative zero
+            yield return new object[] { BFloat16.NegativeInfinity, BitConverter.UInt16BitsToBFloat16(0x8000), -1 }; // Negative zero
             yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NegativeInfinity, 0 };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0 };
             yield return new object[] { (BFloat16)(-180f), (BFloat16)(-180f), 0 };
@@ -341,7 +336,7 @@ namespace System.Numerics.Tests
         {
             yield return new object[] { BFloat16.MaxValue, BFloat16.MaxValue, true };
             yield return new object[] { BFloat16.MaxValue, BFloat16.MinValue, false };
-            yield return new object[] { BFloat16.MaxValue, UInt16BitsToBFloat16(0x0000), false };
+            yield return new object[] { BFloat16.MaxValue, BitConverter.UInt16BitsToBFloat16(0x0000), false };
             yield return new object[] { BFloat16.MaxValue, 789.0f, false };
             yield return new object[] { BFloat16.MaxValue, "789", false };
         }
@@ -357,41 +352,41 @@ namespace System.Numerics.Tests
         {
             (BFloat16 Original, float Expected)[] data = // Fraction is truncated for lower 16 bits
             {
-                (UInt16BitsToBFloat16(0b0_01111111_0000000), 1f), // 1
-                (UInt16BitsToBFloat16(0b1_01111111_0000000), -1f), // -1
+                (BitConverter.UInt16BitsToBFloat16(0b0_01111111_0000000), 1f), // 1
+                (BitConverter.UInt16BitsToBFloat16(0b1_01111111_0000000), -1f), // -1
                 (BFloat16.MaxValue, BitConverter.UInt32BitsToSingle(0x7F7F0000)), // 3.3895314E+38
                 (BFloat16.MinValue, BitConverter.UInt32BitsToSingle(0xFF7F0000)), // -3.3895314E+38
-                (UInt16BitsToBFloat16(0b0_01111011_1001101), 0.10009765625f), // 0.1ish
-                (UInt16BitsToBFloat16(0b1_01111011_1001101), -0.10009765625f), // -0.1ish
-                (UInt16BitsToBFloat16(0b0_10000100_0101000), 42f), // 42
-                (UInt16BitsToBFloat16(0b1_10000100_0101000), -42f), // -42
+                (BitConverter.UInt16BitsToBFloat16(0b0_01111011_1001101), 0.10009765625f), // 0.1ish
+                (BitConverter.UInt16BitsToBFloat16(0b1_01111011_1001101), -0.10009765625f), // -0.1ish
+                (BitConverter.UInt16BitsToBFloat16(0b0_10000100_0101000), 42f), // 42
+                (BitConverter.UInt16BitsToBFloat16(0b1_10000100_0101000), -42f), // -42
                 (BFloat16.PositiveInfinity, float.PositiveInfinity), // PosInfinity
                 (BFloat16.NegativeInfinity, float.NegativeInfinity), // NegInfinity
-                (UInt16BitsToBFloat16(0b0_11111111_1000000), BitConverter.UInt32BitsToSingle(0x7FC00000)), // Positive Quiet NaN
+                (BitConverter.UInt16BitsToBFloat16(0b0_11111111_1000000), BitConverter.UInt32BitsToSingle(0x7FC00000)), // Positive Quiet NaN
                 (BFloat16.NaN, float.NaN), // Negative Quiet NaN
-                (UInt16BitsToBFloat16(0b0_11111111_1010101), BitConverter.UInt32BitsToSingle(0x7FD50000)), // Positive Signalling NaN - Should preserve payload
-                (UInt16BitsToBFloat16(0b1_11111111_1010101), BitConverter.UInt32BitsToSingle(0xFFD50000)), // Negative Signalling NaN - Should preserve payload
+                (BitConverter.UInt16BitsToBFloat16(0b0_11111111_1010101), BitConverter.UInt32BitsToSingle(0x7FD50000)), // Positive Signalling NaN - Should preserve payload
+                (BitConverter.UInt16BitsToBFloat16(0b1_11111111_1010101), BitConverter.UInt32BitsToSingle(0xFFD50000)), // Negative Signalling NaN - Should preserve payload
                 (BFloat16.Epsilon, BitConverter.UInt32BitsToSingle(0x00010000)), // PosEpsilon = 9.1835E-41
-                (UInt16BitsToBFloat16(0), 0), // 0
-                (UInt16BitsToBFloat16(0b1_00000000_0000000), -0f), // -0
-                (UInt16BitsToBFloat16(0b0_10000000_1001001), 3.140625f), // 3.140625
-                (UInt16BitsToBFloat16(0b1_10000000_1001001), -3.140625f), // -3.140625
-                (UInt16BitsToBFloat16(0b0_10000000_0101110), 2.71875f), // 2.71875
-                (UInt16BitsToBFloat16(0b1_10000000_0101110), -2.71875f), // -2.71875
-                (UInt16BitsToBFloat16(0b0_01111111_1000000), 1.5f), // 1.5
-                (UInt16BitsToBFloat16(0b1_01111111_1000000), -1.5f), // -1.5
-                (UInt16BitsToBFloat16(0b0_01111111_1000001), 1.5078125f), // 1.5078125
-                (UInt16BitsToBFloat16(0b1_01111111_1000001), -1.5078125f), // -1.5078125
-                (UInt16BitsToBFloat16(0b0_00000001_0000000), BitConverter.UInt32BitsToSingle(0x00800000)), // smallest normal
-                (UInt16BitsToBFloat16(0b0_00000000_1111111), BitConverter.UInt32BitsToSingle(0x007F0000)), // largest subnormal
-                (UInt16BitsToBFloat16(0b0_00000000_1000000), BitConverter.UInt32BitsToSingle(0x00400000)), // middle subnormal
-                (UInt16BitsToBFloat16(0b0_00000000_0111111), BitConverter.UInt32BitsToSingle(0x003F0000)), // just below middle subnormal
-                (UInt16BitsToBFloat16(0b0_00000000_0000001), BitConverter.UInt32BitsToSingle(0x00010000)), // smallest subnormal
-                (UInt16BitsToBFloat16(0b1_00000000_0000001), BitConverter.UInt32BitsToSingle(0x80010000)), // highest negative subnormal
-                (UInt16BitsToBFloat16(0b1_00000000_0111111), BitConverter.UInt32BitsToSingle(0x803F0000)), // just above negative middle subnormal
-                (UInt16BitsToBFloat16(0b1_00000000_1000000), BitConverter.UInt32BitsToSingle(0x80400000)), // negative middle subnormal
-                (UInt16BitsToBFloat16(0b1_00000000_1111111), BitConverter.UInt32BitsToSingle(0x807F0000)), // lowest negative subnormal
-                (UInt16BitsToBFloat16(0b1_00000001_0000000), BitConverter.UInt32BitsToSingle(0x80800000)) // highest negative normal
+                (BitConverter.UInt16BitsToBFloat16(0), 0), // 0
+                (BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000000), -0f), // -0
+                (BitConverter.UInt16BitsToBFloat16(0b0_10000000_1001001), 3.140625f), // 3.140625
+                (BitConverter.UInt16BitsToBFloat16(0b1_10000000_1001001), -3.140625f), // -3.140625
+                (BitConverter.UInt16BitsToBFloat16(0b0_10000000_0101110), 2.71875f), // 2.71875
+                (BitConverter.UInt16BitsToBFloat16(0b1_10000000_0101110), -2.71875f), // -2.71875
+                (BitConverter.UInt16BitsToBFloat16(0b0_01111111_1000000), 1.5f), // 1.5
+                (BitConverter.UInt16BitsToBFloat16(0b1_01111111_1000000), -1.5f), // -1.5
+                (BitConverter.UInt16BitsToBFloat16(0b0_01111111_1000001), 1.5078125f), // 1.5078125
+                (BitConverter.UInt16BitsToBFloat16(0b1_01111111_1000001), -1.5078125f), // -1.5078125
+                (BitConverter.UInt16BitsToBFloat16(0b0_00000001_0000000), BitConverter.UInt32BitsToSingle(0x00800000)), // smallest normal
+                (BitConverter.UInt16BitsToBFloat16(0b0_00000000_1111111), BitConverter.UInt32BitsToSingle(0x007F0000)), // largest subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b0_00000000_1000000), BitConverter.UInt32BitsToSingle(0x00400000)), // middle subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b0_00000000_0111111), BitConverter.UInt32BitsToSingle(0x003F0000)), // just below middle subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b0_00000000_0000001), BitConverter.UInt32BitsToSingle(0x00010000)), // smallest subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000001), BitConverter.UInt32BitsToSingle(0x80010000)), // highest negative subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b1_00000000_0111111), BitConverter.UInt32BitsToSingle(0x803F0000)), // just above negative middle subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b1_00000000_1000000), BitConverter.UInt32BitsToSingle(0x80400000)), // negative middle subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b1_00000000_1111111), BitConverter.UInt32BitsToSingle(0x807F0000)), // lowest negative subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b1_00000001_0000000), BitConverter.UInt32BitsToSingle(0x80800000)) // highest negative normal
             };
 
             foreach ((BFloat16 original, float expected) in data)
@@ -412,41 +407,41 @@ namespace System.Numerics.Tests
         {
             (BFloat16 Original, double Expected)[] data =
             {
-                (UInt16BitsToBFloat16(0b0_01111111_0000000), 1d), // 1
-                (UInt16BitsToBFloat16(0b1_01111111_0000000), -1d), // -1
+                (BitConverter.UInt16BitsToBFloat16(0b0_01111111_0000000), 1d), // 1
+                (BitConverter.UInt16BitsToBFloat16(0b1_01111111_0000000), -1d), // -1
                 (BFloat16.MaxValue, BitConverter.UInt64BitsToDouble(0x47EFE000_00000000)), // 3.3895314E+38
                 (BFloat16.MinValue, BitConverter.UInt64BitsToDouble(0xC7EFE000_00000000)), // -3.3895314E+38
-                (UInt16BitsToBFloat16(0b0_01111011_1001101), 0.10009765625d), // 0.1ish
-                (UInt16BitsToBFloat16(0b1_01111011_1001101), -0.10009765625d), // -0.1ish
-                (UInt16BitsToBFloat16(0b0_10000100_0101000), 42d), // 42
-                (UInt16BitsToBFloat16(0b1_10000100_0101000), -42d), // -42
+                (BitConverter.UInt16BitsToBFloat16(0b0_01111011_1001101), 0.10009765625d), // 0.1ish
+                (BitConverter.UInt16BitsToBFloat16(0b1_01111011_1001101), -0.10009765625d), // -0.1ish
+                (BitConverter.UInt16BitsToBFloat16(0b0_10000100_0101000), 42d), // 42
+                (BitConverter.UInt16BitsToBFloat16(0b1_10000100_0101000), -42d), // -42
                 (BFloat16.PositiveInfinity, double.PositiveInfinity), // PosInfinity
                 (BFloat16.NegativeInfinity, double.NegativeInfinity), // NegInfinity
-                (UInt16BitsToBFloat16(0b0_11111111_1000000), BitConverter.UInt64BitsToDouble(0x7FF80000_00000000)), // Positive Quiet NaN
+                (BitConverter.UInt16BitsToBFloat16(0b0_11111111_1000000), BitConverter.UInt64BitsToDouble(0x7FF80000_00000000)), // Positive Quiet NaN
                 (BFloat16.NaN, double.NaN), // Negative Quiet NaN
-                (UInt16BitsToBFloat16(0b0_11111111_1010101), BitConverter.UInt64BitsToDouble(0x7FFAA000_00000000)), // Positive Signalling NaN - Should preserve payload
-                (UInt16BitsToBFloat16(0b1_11111111_1010101), BitConverter.UInt64BitsToDouble(0xFFFAA000_00000000)), // Negative Signalling NaN - Should preserve payload
+                (BitConverter.UInt16BitsToBFloat16(0b0_11111111_1010101), BitConverter.UInt64BitsToDouble(0x7FFAA000_00000000)), // Positive Signalling NaN - Should preserve payload
+                (BitConverter.UInt16BitsToBFloat16(0b1_11111111_1010101), BitConverter.UInt64BitsToDouble(0xFFFAA000_00000000)), // Negative Signalling NaN - Should preserve payload
                 (BFloat16.Epsilon, BitConverter.UInt64BitsToDouble(0x37A00000_00000000)), // PosEpsilon = 9.1835E-41
-                (UInt16BitsToBFloat16(0), 0d), // 0
-                (UInt16BitsToBFloat16(0b1_00000000_0000000), -0d), // -0
-                (UInt16BitsToBFloat16(0b0_10000000_1001001), 3.140625d), // 3.140625
-                (UInt16BitsToBFloat16(0b1_10000000_1001001), -3.140625d), // -3.140625
-                (UInt16BitsToBFloat16(0b0_10000000_0101110), 2.71875d), // 2.71875
-                (UInt16BitsToBFloat16(0b1_10000000_0101110), -2.71875d), // -2.71875
-                (UInt16BitsToBFloat16(0b0_01111111_1000000), 1.5d), // 1.5
-                (UInt16BitsToBFloat16(0b1_01111111_1000000), -1.5d), // -1.5
-                (UInt16BitsToBFloat16(0b0_01111111_1000001), 1.5078125d), // 1.5078125
-                (UInt16BitsToBFloat16(0b1_01111111_1000001), -1.5078125d), // -1.5078125
-                (UInt16BitsToBFloat16(0b0_00000001_0000000), BitConverter.UInt64BitsToDouble(0x3810000000000000)), // smallest normal
-                (UInt16BitsToBFloat16(0b0_00000000_1111111), BitConverter.UInt64BitsToDouble(0x380FC00000000000)), // largest subnormal
-                (UInt16BitsToBFloat16(0b0_00000000_1000000), BitConverter.UInt64BitsToDouble(0x3800000000000000)), // middle subnormal
-                (UInt16BitsToBFloat16(0b0_00000000_0111111), BitConverter.UInt64BitsToDouble(0x37FF800000000000)), // just below middle subnormal
-                (UInt16BitsToBFloat16(0b0_00000000_0000001), BitConverter.UInt64BitsToDouble(0x37A0000000000000)), // smallest subnormal
-                (UInt16BitsToBFloat16(0b1_00000000_0000001), BitConverter.UInt64BitsToDouble(0xB7A0000000000000)), // highest negative subnormal
-                (UInt16BitsToBFloat16(0b1_00000000_0111111), BitConverter.UInt64BitsToDouble(0xB7FF800000000000)), // just above negative middle subnormal
-                (UInt16BitsToBFloat16(0b1_00000000_1000000), BitConverter.UInt64BitsToDouble(0xB800000000000000)), // negative middle subnormal
-                (UInt16BitsToBFloat16(0b1_00000000_1111111), BitConverter.UInt64BitsToDouble(0xB80FC00000000000)), // lowest negative subnormal
-                (UInt16BitsToBFloat16(0b1_00000001_0000000), BitConverter.UInt64BitsToDouble(0xB810000000000000)) // highest negative normal
+                (BitConverter.UInt16BitsToBFloat16(0), 0d), // 0
+                (BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000000), -0d), // -0
+                (BitConverter.UInt16BitsToBFloat16(0b0_10000000_1001001), 3.140625d), // 3.140625
+                (BitConverter.UInt16BitsToBFloat16(0b1_10000000_1001001), -3.140625d), // -3.140625
+                (BitConverter.UInt16BitsToBFloat16(0b0_10000000_0101110), 2.71875d), // 2.71875
+                (BitConverter.UInt16BitsToBFloat16(0b1_10000000_0101110), -2.71875d), // -2.71875
+                (BitConverter.UInt16BitsToBFloat16(0b0_01111111_1000000), 1.5d), // 1.5
+                (BitConverter.UInt16BitsToBFloat16(0b1_01111111_1000000), -1.5d), // -1.5
+                (BitConverter.UInt16BitsToBFloat16(0b0_01111111_1000001), 1.5078125d), // 1.5078125
+                (BitConverter.UInt16BitsToBFloat16(0b1_01111111_1000001), -1.5078125d), // -1.5078125
+                (BitConverter.UInt16BitsToBFloat16(0b0_00000001_0000000), BitConverter.UInt64BitsToDouble(0x3810000000000000)), // smallest normal
+                (BitConverter.UInt16BitsToBFloat16(0b0_00000000_1111111), BitConverter.UInt64BitsToDouble(0x380FC00000000000)), // largest subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b0_00000000_1000000), BitConverter.UInt64BitsToDouble(0x3800000000000000)), // middle subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b0_00000000_0111111), BitConverter.UInt64BitsToDouble(0x37FF800000000000)), // just below middle subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b0_00000000_0000001), BitConverter.UInt64BitsToDouble(0x37A0000000000000)), // smallest subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000001), BitConverter.UInt64BitsToDouble(0xB7A0000000000000)), // highest negative subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b1_00000000_0111111), BitConverter.UInt64BitsToDouble(0xB7FF800000000000)), // just above negative middle subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b1_00000000_1000000), BitConverter.UInt64BitsToDouble(0xB800000000000000)), // negative middle subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b1_00000000_1111111), BitConverter.UInt64BitsToDouble(0xB80FC00000000000)), // lowest negative subnormal
+                (BitConverter.UInt16BitsToBFloat16(0b1_00000001_0000000), BitConverter.UInt64BitsToDouble(0xB810000000000000)) // highest negative normal
             };
 
             foreach ((BFloat16 original, double expected) in data)
@@ -467,76 +462,89 @@ namespace System.Numerics.Tests
         {
             (float, BFloat16)[] data =
             {
-                (MathF.PI, UInt16BitsToBFloat16(0b0_10000000_1001001)), // 3.140625
-                (MathF.E, UInt16BitsToBFloat16(0b0_10000000_0101110)), // 2.71875
-                (-MathF.PI, UInt16BitsToBFloat16(0b1_10000000_1001001)), // -3.140625
-                (-MathF.E, UInt16BitsToBFloat16(0b1_10000000_0101110)), // -2.71875
-                (float.MaxValue, UInt16BitsToBFloat16(0b0_11111111_0000000)), // Overflow
-                (float.MinValue, UInt16BitsToBFloat16(0b1_11111111_0000000)), // Overflow
+                (MathF.PI, BitConverter.UInt16BitsToBFloat16(0b0_10000000_1001001)), // 3.140625
+                (MathF.E, BitConverter.UInt16BitsToBFloat16(0b0_10000000_0101110)), // 2.71875
+                (-MathF.PI, BitConverter.UInt16BitsToBFloat16(0b1_10000000_1001001)), // -3.140625
+                (-MathF.E, BitConverter.UInt16BitsToBFloat16(0b1_10000000_0101110)), // -2.71875
+                (float.MaxValue, BitConverter.UInt16BitsToBFloat16(0b0_11111111_0000000)), // Overflow
+                (float.MinValue, BitConverter.UInt16BitsToBFloat16(0b1_11111111_0000000)), // Overflow
                 (float.PositiveInfinity, BFloat16.PositiveInfinity), // Overflow
                 (float.NegativeInfinity, BFloat16.NegativeInfinity), // Overflow
                 (float.NaN, BFloat16.NaN), // Quiet Negative NaN
-                (BitConverter.UInt32BitsToSingle(0x7FC00000), UInt16BitsToBFloat16(0b0_11111111_1000000)), // Quiet Positive NaN
-                (BitConverter.UInt32BitsToSingle(0xFFD55555), UInt16BitsToBFloat16(0b1_11111111_1010101)), // Signalling Negative NaN
-                (BitConverter.UInt32BitsToSingle(0x7FD55555), UInt16BitsToBFloat16(0b0_11111111_1010101)), // Signalling Positive NaN
-                (float.Epsilon, UInt16BitsToBFloat16(0)), // Underflow
-                (-float.Epsilon, UInt16BitsToBFloat16(0b1_00000000_0000000)), // Underflow
-                (1f, UInt16BitsToBFloat16(0b0_01111111_0000000)), // 1
-                (-1f, UInt16BitsToBFloat16(0b1_01111111_0000000)), // -1
-                (0f, UInt16BitsToBFloat16(0)), // 0
-                (-0f, UInt16BitsToBFloat16(0b1_00000000_0000000)), // -0
-                (42f, UInt16BitsToBFloat16(0b0_10000100_0101000)), // 42
-                (-42f, UInt16BitsToBFloat16(0b1_10000100_0101000)), // -42
-                (0.1f, UInt16BitsToBFloat16(0b0_01111011_1001101)), // 0.10009765625
-                (-0.1f, UInt16BitsToBFloat16(0b1_01111011_1001101)), // -0.10009765625
-                (1.5f, UInt16BitsToBFloat16(0b0_01111111_1000000)), // 1.5
-                (-1.5f, UInt16BitsToBFloat16(0b1_01111111_1000000)), // -1.5
-                (1.5078125f, UInt16BitsToBFloat16(0b0_01111111_1000001)), // 1.5078125
-                (-1.5078125f, UInt16BitsToBFloat16(0b1_01111111_1000001)), // -1.5078125
-                (BitConverter.UInt32BitsToSingle(0x00800000), UInt16BitsToBFloat16(0b0_00000001_0000000)), // smallest normal
-                (BitConverter.UInt32BitsToSingle(0x007F0000), UInt16BitsToBFloat16(0b0_00000000_1111111)), // largest subnormal
-                (BitConverter.UInt32BitsToSingle(0x00400000), UInt16BitsToBFloat16(0b0_00000000_1000000)), // middle subnormal
-                (BitConverter.UInt32BitsToSingle(0x003F0000), UInt16BitsToBFloat16(0b0_00000000_0111111)), // just below middle subnormal
-                (BitConverter.UInt32BitsToSingle(0x00010000), UInt16BitsToBFloat16(0b0_00000000_0000001)), // smallest subnormal
-                (BitConverter.UInt32BitsToSingle(0x80010000), UInt16BitsToBFloat16(0b1_00000000_0000001)), // highest negative subnormal
-                (BitConverter.UInt32BitsToSingle(0x803F0000), UInt16BitsToBFloat16(0b1_00000000_0111111)), // just above negative middle subnormal
-                (BitConverter.UInt32BitsToSingle(0x80400000), UInt16BitsToBFloat16(0b1_00000000_1000000)), // negative middle subnormal
-                (BitConverter.UInt32BitsToSingle(0x807F0000), UInt16BitsToBFloat16(0b1_00000000_1111111)), // lowest negative subnormal
-                (BitConverter.UInt32BitsToSingle(0x80800000), UInt16BitsToBFloat16(0b1_00000001_0000000)), // highest negative normal
+                (BitConverter.UInt32BitsToSingle(0x7FC00000), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1000000)), // Quiet Positive NaN
+                (BitConverter.UInt32BitsToSingle(0xFFD55555), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1010101)), // Signalling Negative NaN
+                (BitConverter.UInt32BitsToSingle(0x7FD55555), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1010101)), // Signalling Positive NaN
+                (float.Epsilon, BitConverter.UInt16BitsToBFloat16(0)), // Underflow
+                (-float.Epsilon, BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000000)), // Underflow
+                (1f, BitConverter.UInt16BitsToBFloat16(0b0_01111111_0000000)), // 1
+                (-1f, BitConverter.UInt16BitsToBFloat16(0b1_01111111_0000000)), // -1
+                (0f, BitConverter.UInt16BitsToBFloat16(0)), // 0
+                (-0f, BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000000)), // -0
+                (42f, BitConverter.UInt16BitsToBFloat16(0b0_10000100_0101000)), // 42
+                (-42f, BitConverter.UInt16BitsToBFloat16(0b1_10000100_0101000)), // -42
+                (0.1f, BitConverter.UInt16BitsToBFloat16(0b0_01111011_1001101)), // 0.10009765625
+                (-0.1f, BitConverter.UInt16BitsToBFloat16(0b1_01111011_1001101)), // -0.10009765625
+                (1.5f, BitConverter.UInt16BitsToBFloat16(0b0_01111111_1000000)), // 1.5
+                (-1.5f, BitConverter.UInt16BitsToBFloat16(0b1_01111111_1000000)), // -1.5
+                (1.5078125f, BitConverter.UInt16BitsToBFloat16(0b0_01111111_1000001)), // 1.5078125
+                (-1.5078125f, BitConverter.UInt16BitsToBFloat16(0b1_01111111_1000001)), // -1.5078125
+                (BitConverter.UInt32BitsToSingle(0x00800000), BitConverter.UInt16BitsToBFloat16(0b0_00000001_0000000)), // smallest normal
+                (BitConverter.UInt32BitsToSingle(0x007F0000), BitConverter.UInt16BitsToBFloat16(0b0_00000000_1111111)), // largest subnormal
+                (BitConverter.UInt32BitsToSingle(0x00400000), BitConverter.UInt16BitsToBFloat16(0b0_00000000_1000000)), // middle subnormal
+                (BitConverter.UInt32BitsToSingle(0x003F0000), BitConverter.UInt16BitsToBFloat16(0b0_00000000_0111111)), // just below middle subnormal
+                (BitConverter.UInt32BitsToSingle(0x00010000), BitConverter.UInt16BitsToBFloat16(0b0_00000000_0000001)), // smallest subnormal
+                (BitConverter.UInt32BitsToSingle(0x80010000), BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000001)), // highest negative subnormal
+                (BitConverter.UInt32BitsToSingle(0x803F0000), BitConverter.UInt16BitsToBFloat16(0b1_00000000_0111111)), // just above negative middle subnormal
+                (BitConverter.UInt32BitsToSingle(0x80400000), BitConverter.UInt16BitsToBFloat16(0b1_00000000_1000000)), // negative middle subnormal
+                (BitConverter.UInt32BitsToSingle(0x807F0000), BitConverter.UInt16BitsToBFloat16(0b1_00000000_1111111)), // lowest negative subnormal
+                (BitConverter.UInt32BitsToSingle(0x80800000), BitConverter.UInt16BitsToBFloat16(0b1_00000001_0000000)), // highest negative normal
                 (BitConverter.UInt32BitsToSingle(0b0_10001001_00000111000000000000001),
-                                  UInt16BitsToBFloat16(0b0_10001001_0000100)), // 1052+ULP rounds up
+                                  BitConverter.UInt16BitsToBFloat16(0b0_10001001_0000100)), // 1052+ULP rounds up
                 (BitConverter.UInt32BitsToSingle(0b0_10001001_00000111000000000000000),
-                                  UInt16BitsToBFloat16(0b0_10001001_0000100)), // 1052 rounds to even
+                                  BitConverter.UInt16BitsToBFloat16(0b0_10001001_0000100)), // 1052 rounds to even
                 (BitConverter.UInt32BitsToSingle(0b0_10001001_00000110111111111111111),
-                                  UInt16BitsToBFloat16(0b0_10001001_0000011)), // 1052-ULP rounds down
+                                  BitConverter.UInt16BitsToBFloat16(0b0_10001001_0000011)), // 1052-ULP rounds down
                 (BitConverter.UInt32BitsToSingle(0b0_10001001_00000101000000000000000),
-                                  UInt16BitsToBFloat16(0b0_10001001_0000010)), // 1044 rounds to even
+                                  BitConverter.UInt16BitsToBFloat16(0b0_10001001_0000010)), // 1044 rounds to even
                 (BitConverter.UInt32BitsToSingle(0b1_10001001_00000110111111111111111),
-                                  UInt16BitsToBFloat16(0b1_10001001_0000011)), // -1052+ULP rounds towards zero
+                                  BitConverter.UInt16BitsToBFloat16(0b1_10001001_0000011)), // -1052+ULP rounds towards zero
                 (BitConverter.UInt32BitsToSingle(0b1_10001001_00000111000000000000000),
-                                  UInt16BitsToBFloat16(0b1_10001001_0000100)), // -1052 rounds to even
+                                  BitConverter.UInt16BitsToBFloat16(0b1_10001001_0000100)), // -1052 rounds to even
                 (BitConverter.UInt32BitsToSingle(0b1_10001001_00000111000000000000001),
-                                  UInt16BitsToBFloat16(0b1_10001001_0000100)), // -1052-ULP rounds away from zero
+                                  BitConverter.UInt16BitsToBFloat16(0b1_10001001_0000100)), // -1052-ULP rounds away from zero
                 (BitConverter.UInt32BitsToSingle(0b1_10001001_00000101000000000000000),
-                                  UInt16BitsToBFloat16(0b1_10001001_0000010)), // -1044 rounds to even
+                                  BitConverter.UInt16BitsToBFloat16(0b1_10001001_0000010)), // -1044 rounds to even
                 (BitConverter.UInt32BitsToSingle(0b0_00000000_10000111000000000000001),
-                                  UInt16BitsToBFloat16(0b0_00000000_1000100)), // subnormal + ULP rounds up
+                                  BitConverter.UInt16BitsToBFloat16(0b0_00000000_1000100)), // subnormal + ULP rounds up
                 (BitConverter.UInt32BitsToSingle(0b0_00000000_10000111000000000000000),
-                                  UInt16BitsToBFloat16(0b0_00000000_1000100)), // subnormal rounds to even
+                                  BitConverter.UInt16BitsToBFloat16(0b0_00000000_1000100)), // subnormal rounds to even
                 (BitConverter.UInt32BitsToSingle(0b0_00000000_10000110111111111111111),
-                                  UInt16BitsToBFloat16(0b0_00000000_1000011)), // subnormal - ULP rounds down
+                                  BitConverter.UInt16BitsToBFloat16(0b0_00000000_1000011)), // subnormal - ULP rounds down
                 (BitConverter.UInt32BitsToSingle(0b1_00000000_10000110111111111111111),
-                                  UInt16BitsToBFloat16(0b1_00000000_1000011)), // neg subnormal + ULP rounds higher
+                                  BitConverter.UInt16BitsToBFloat16(0b1_00000000_1000011)), // neg subnormal + ULP rounds higher
                 (BitConverter.UInt32BitsToSingle(0b1_00000000_10000111000000000000000),
-                                  UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal rounds to even
+                                  BitConverter.UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal rounds to even
                 (BitConverter.UInt32BitsToSingle(0b1_00000000_10000111000000000000001),
-                                  UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal - ULP rounds lower,
+                                  BitConverter.UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal - ULP rounds lower,
                 (BitConverter.UInt32BitsToSingle(0b0_00000000_00000000110000000000000),
-                                  UInt16BitsToBFloat16(0b0_00000000_0000000)), // (BFloat16 minimum subnormal / 2) should underflow to zero
+                                  BitConverter.UInt16BitsToBFloat16(0b0_00000000_0000000)), // (BFloat16 minimum subnormal / 2) should underflow to zero
             };
 
             foreach ((float original, BFloat16 expected) in data)
             {
+                // WASM on Mono lowers `float.Min` / `float.Max` through `f32.min` / `f32.max`
+                // (and `float.IsNaN(...)` branches through `f32.add`). The WebAssembly spec
+                // permits NaN-payload canonicalization on these ops but doesn't require it --
+                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
+                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
+                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
+                // trip through the software conversion path in that environment. Gated on
+                // Mono specifically since other WASM runtimes don't share this lowering.
+                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
+                // be removed once the conversion path either avoids the canonicalizing ops
+                // or the host engines start preserving NaN payloads.
+                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && float.IsNaN(original))
+                    continue;
                 yield return new object[] { original, expected };
             }
         }
@@ -553,75 +561,88 @@ namespace System.Numerics.Tests
         {
             (double, BFloat16)[] data =
             {
-                (Math.PI, UInt16BitsToBFloat16(0b0_10000000_1001001)), // 3.140625
-                (Math.E, UInt16BitsToBFloat16(0b0_10000000_0101110)), // 2.71875
-                (-Math.PI, UInt16BitsToBFloat16(0b1_10000000_1001001)), // -3.140625
-                (-Math.E, UInt16BitsToBFloat16(0b1_10000000_0101110)), // -2.71875
+                (Math.PI, BitConverter.UInt16BitsToBFloat16(0b0_10000000_1001001)), // 3.140625
+                (Math.E, BitConverter.UInt16BitsToBFloat16(0b0_10000000_0101110)), // 2.71875
+                (-Math.PI, BitConverter.UInt16BitsToBFloat16(0b1_10000000_1001001)), // -3.140625
+                (-Math.E, BitConverter.UInt16BitsToBFloat16(0b1_10000000_0101110)), // -2.71875
                 (double.MaxValue, BFloat16.PositiveInfinity), // Overflow
                 (double.MinValue, BFloat16.NegativeInfinity), // Overflow
                 (double.PositiveInfinity, BFloat16.PositiveInfinity), // Overflow
                 (double.NegativeInfinity, BFloat16.NegativeInfinity), // Overflow
                 (double.NaN, BFloat16.NaN), // Quiet Negative NaN
-                (BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), UInt16BitsToBFloat16(0b0_11111111_1000000)), // Quiet Positive NaN
-                (BitConverter.UInt64BitsToDouble(0xFFFAAAAA_AAAAAAAA), UInt16BitsToBFloat16(0b1_11111111_1010101)), // Signalling Negative NaN
-                (BitConverter.UInt64BitsToDouble(0x7FFAAAAA_AAAAAAAA), UInt16BitsToBFloat16(0b0_11111111_1010101)), // Signalling Positive NaN
-                (double.Epsilon, UInt16BitsToBFloat16(0)), // Underflow
-                (-double.Epsilon, UInt16BitsToBFloat16(0b1_00000000_0000000)), // Underflow
-                (1f, UInt16BitsToBFloat16(0b0_01111111_0000000)), // 1
-                (-1d, UInt16BitsToBFloat16(0b1_01111111_0000000)), // -1
-                (0d, UInt16BitsToBFloat16(0)), // 0
-                (-0d, UInt16BitsToBFloat16(0b1_00000000_0000000)), // -0
-                (42d, UInt16BitsToBFloat16(0b0_10000100_0101000)), // 42
-                (-42d, UInt16BitsToBFloat16(0b1_10000100_0101000)), // -42
-                (0.1d, UInt16BitsToBFloat16(0b0_01111011_1001101)), // 0.10009765625
-                (-0.1d, UInt16BitsToBFloat16(0b1_01111011_1001101)), // -0.10009765625
-                (1.5d, UInt16BitsToBFloat16(0b0_01111111_1000000)), // 1.5
-                (-1.5d, UInt16BitsToBFloat16(0b1_01111111_1000000)), // -1.5
-                (1.5078125d, UInt16BitsToBFloat16(0b0_01111111_1000001)), // 1.5078125
-                (-1.5078125d, UInt16BitsToBFloat16(0b1_01111111_1000001)), // -1.5078125
-                (BitConverter.UInt64BitsToDouble(0x3810000000000000), UInt16BitsToBFloat16(0b0_00000001_0000000)), // smallest normal
-                (BitConverter.UInt64BitsToDouble(0x380FC00000000000), UInt16BitsToBFloat16(0b0_00000000_1111111)), // largest subnormal
-                (BitConverter.UInt64BitsToDouble(0x3800000000000000), UInt16BitsToBFloat16(0b0_00000000_1000000)), // middle subnormal
-                (BitConverter.UInt64BitsToDouble(0x37FF800000000000), UInt16BitsToBFloat16(0b0_00000000_0111111)), // just below middle subnormal
-                (BitConverter.UInt64BitsToDouble(0x37A0000000000000), UInt16BitsToBFloat16(0b0_00000000_0000001)), // smallest subnormal
-                (BitConverter.UInt64BitsToDouble(0xB7A0000000000000), UInt16BitsToBFloat16(0b1_00000000_0000001)), // highest negative subnormal
-                (BitConverter.UInt64BitsToDouble(0xB7FF800000000000), UInt16BitsToBFloat16(0b1_00000000_0111111)), // just above negative middle subnormal
-                (BitConverter.UInt64BitsToDouble(0xB800000000000000), UInt16BitsToBFloat16(0b1_00000000_1000000)), // negative middle subnormal
-                (BitConverter.UInt64BitsToDouble(0xB80FC00000000000), UInt16BitsToBFloat16(0b1_00000000_1111111)), // lowest negative subnormal
-                (BitConverter.UInt64BitsToDouble(0xB810000000000000), UInt16BitsToBFloat16(0b1_00000001_0000000)), // highest negative normal
+                (BitConverter.UInt64BitsToDouble(0x7FF80000_00000000), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1000000)), // Quiet Positive NaN
+                (BitConverter.UInt64BitsToDouble(0xFFFAAAAA_AAAAAAAA), BitConverter.UInt16BitsToBFloat16(0b1_11111111_1010101)), // Signalling Negative NaN
+                (BitConverter.UInt64BitsToDouble(0x7FFAAAAA_AAAAAAAA), BitConverter.UInt16BitsToBFloat16(0b0_11111111_1010101)), // Signalling Positive NaN
+                (double.Epsilon, BitConverter.UInt16BitsToBFloat16(0)), // Underflow
+                (-double.Epsilon, BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000000)), // Underflow
+                (1f, BitConverter.UInt16BitsToBFloat16(0b0_01111111_0000000)), // 1
+                (-1d, BitConverter.UInt16BitsToBFloat16(0b1_01111111_0000000)), // -1
+                (0d, BitConverter.UInt16BitsToBFloat16(0)), // 0
+                (-0d, BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000000)), // -0
+                (42d, BitConverter.UInt16BitsToBFloat16(0b0_10000100_0101000)), // 42
+                (-42d, BitConverter.UInt16BitsToBFloat16(0b1_10000100_0101000)), // -42
+                (0.1d, BitConverter.UInt16BitsToBFloat16(0b0_01111011_1001101)), // 0.10009765625
+                (-0.1d, BitConverter.UInt16BitsToBFloat16(0b1_01111011_1001101)), // -0.10009765625
+                (1.5d, BitConverter.UInt16BitsToBFloat16(0b0_01111111_1000000)), // 1.5
+                (-1.5d, BitConverter.UInt16BitsToBFloat16(0b1_01111111_1000000)), // -1.5
+                (1.5078125d, BitConverter.UInt16BitsToBFloat16(0b0_01111111_1000001)), // 1.5078125
+                (-1.5078125d, BitConverter.UInt16BitsToBFloat16(0b1_01111111_1000001)), // -1.5078125
+                (BitConverter.UInt64BitsToDouble(0x3810000000000000), BitConverter.UInt16BitsToBFloat16(0b0_00000001_0000000)), // smallest normal
+                (BitConverter.UInt64BitsToDouble(0x380FC00000000000), BitConverter.UInt16BitsToBFloat16(0b0_00000000_1111111)), // largest subnormal
+                (BitConverter.UInt64BitsToDouble(0x3800000000000000), BitConverter.UInt16BitsToBFloat16(0b0_00000000_1000000)), // middle subnormal
+                (BitConverter.UInt64BitsToDouble(0x37FF800000000000), BitConverter.UInt16BitsToBFloat16(0b0_00000000_0111111)), // just below middle subnormal
+                (BitConverter.UInt64BitsToDouble(0x37A0000000000000), BitConverter.UInt16BitsToBFloat16(0b0_00000000_0000001)), // smallest subnormal
+                (BitConverter.UInt64BitsToDouble(0xB7A0000000000000), BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000001)), // highest negative subnormal
+                (BitConverter.UInt64BitsToDouble(0xB7FF800000000000), BitConverter.UInt16BitsToBFloat16(0b1_00000000_0111111)), // just above negative middle subnormal
+                (BitConverter.UInt64BitsToDouble(0xB800000000000000), BitConverter.UInt16BitsToBFloat16(0b1_00000000_1000000)), // negative middle subnormal
+                (BitConverter.UInt64BitsToDouble(0xB80FC00000000000), BitConverter.UInt16BitsToBFloat16(0b1_00000000_1111111)), // lowest negative subnormal
+                (BitConverter.UInt64BitsToDouble(0xB810000000000000), BitConverter.UInt16BitsToBFloat16(0b1_00000001_0000000)), // highest negative normal
                 (BitConverter.UInt64BitsToDouble(0x4090700000000001),
-                    UInt16BitsToBFloat16(0b0_10001001_0000100)), // 1052+ULP rounds up
+                    BitConverter.UInt16BitsToBFloat16(0b0_10001001_0000100)), // 1052+ULP rounds up
                 (BitConverter.UInt64BitsToDouble(0x4090700000000000),
-                    UInt16BitsToBFloat16(0b0_10001001_0000100)), // 1052 rounds to even
+                    BitConverter.UInt16BitsToBFloat16(0b0_10001001_0000100)), // 1052 rounds to even
                 (BitConverter.UInt64BitsToDouble(0x40906FFFFFFFFFFF),
-                    UInt16BitsToBFloat16(0b0_10001001_0000011)), // 1052-ULP rounds down
+                    BitConverter.UInt16BitsToBFloat16(0b0_10001001_0000011)), // 1052-ULP rounds down
                 (BitConverter.UInt64BitsToDouble(0x4090500000000000),
-                    UInt16BitsToBFloat16(0b0_10001001_0000010)), // 1044 rounds to even
+                    BitConverter.UInt16BitsToBFloat16(0b0_10001001_0000010)), // 1044 rounds to even
                 (BitConverter.UInt64BitsToDouble(0xC0906FFFFFFFFFFF),
-                    UInt16BitsToBFloat16(0b1_10001001_0000011)), // -1052+ULP rounds towards zero
+                    BitConverter.UInt16BitsToBFloat16(0b1_10001001_0000011)), // -1052+ULP rounds towards zero
                 (BitConverter.UInt64BitsToDouble(0xC090700000000000),
-                    UInt16BitsToBFloat16(0b1_10001001_0000100)), // -1052 rounds to even
+                    BitConverter.UInt16BitsToBFloat16(0b1_10001001_0000100)), // -1052 rounds to even
                 (BitConverter.UInt64BitsToDouble(0xC090700000000001),
-                    UInt16BitsToBFloat16(0b1_10001001_0000100)), // -1052-ULP rounds away from zero
+                    BitConverter.UInt16BitsToBFloat16(0b1_10001001_0000100)), // -1052-ULP rounds away from zero
                 (BitConverter.UInt64BitsToDouble(0xC090500000000000),
-                    UInt16BitsToBFloat16(0b1_10001001_0000010)), // -1044 rounds to even
+                    BitConverter.UInt16BitsToBFloat16(0b1_10001001_0000010)), // -1044 rounds to even
                 (BitConverter.UInt64BitsToDouble(0x3800E00000000001),
-                    UInt16BitsToBFloat16(0b0_00000000_1000100)), // subnormal + ULP rounds up
+                    BitConverter.UInt16BitsToBFloat16(0b0_00000000_1000100)), // subnormal + ULP rounds up
                 (BitConverter.UInt64BitsToDouble(0x3800E00000000000),
-                    UInt16BitsToBFloat16(0b0_00000000_1000100)), // subnormal rounds to even
+                    BitConverter.UInt16BitsToBFloat16(0b0_00000000_1000100)), // subnormal rounds to even
                 (BitConverter.UInt64BitsToDouble(0x3800DFFFFFFFFFFF),
-                    UInt16BitsToBFloat16(0b0_00000000_1000011)), // subnormal - ULP rounds down
+                    BitConverter.UInt16BitsToBFloat16(0b0_00000000_1000011)), // subnormal - ULP rounds down
                 (BitConverter.UInt64BitsToDouble(0xB800DFFFFFFFFFFF),
-                    UInt16BitsToBFloat16(0b1_00000000_1000011)), // neg subnormal + ULP rounds higher
+                    BitConverter.UInt16BitsToBFloat16(0b1_00000000_1000011)), // neg subnormal + ULP rounds higher
                 (BitConverter.UInt64BitsToDouble(0xB800E00000000000),
-                    UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal rounds to even
+                    BitConverter.UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal rounds to even
                 (BitConverter.UInt64BitsToDouble(0xB800E00000000001),
-                    UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal - ULP rounds lower
-                (BitConverter.UInt64BitsToDouble(0x3788000000000000), UInt16BitsToBFloat16(0b0_00000000_0000000)), // (BFloat16 minimum subnormal / 2) should underflow to zero
+                    BitConverter.UInt16BitsToBFloat16(0b1_00000000_1000100)), // neg subnormal - ULP rounds lower
+                (BitConverter.UInt64BitsToDouble(0x3788000000000000), BitConverter.UInt16BitsToBFloat16(0b0_00000000_0000000)), // (BFloat16 minimum subnormal / 2) should underflow to zero
             };
 
             foreach ((double original, BFloat16 expected) in data)
             {
+                // WASM on Mono lowers `double.Min` / `double.Max` through `f64.min` / `f64.max`
+                // (and `double.IsNaN(...)` branches through `f64.add`). The WebAssembly spec
+                // permits NaN-payload canonicalization on these ops but doesn't require it --
+                // arch-native targets (Arm64, xArch) don't canonicalize, at most stripping
+                // the signaling bit per IEEE 754. The V8 engine used by the CI Helix queues
+                // does canonicalize, so the bit-strict NaN cases in this theory don't round-
+                // trip through the software conversion path in that environment. Gated on
+                // Mono specifically since other WASM runtimes don't share this lowering.
+                // Tracked in https://github.com/dotnet/runtime/issues/103347; this filter can
+                // be removed once the conversion path either avoids the canonicalizing ops
+                // or the host engines start preserving NaN payloads.
+                if (PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm && double.IsNaN(original))
+                    continue;
                 yield return new object[] { original, expected };
             }
         }
@@ -638,20 +659,20 @@ namespace System.Numerics.Tests
         {
             (int, BFloat16)[] data =
             {
-                (-0x103_0001, UInt16BitsToBFloat16(0xCB82)), // -16973824 - 1 rounds lower
-                (-0x103_0000, UInt16BitsToBFloat16(0xCB82)), // -16973824 rounds to even
-                (-0x102_FFFF, UInt16BitsToBFloat16(0xCB81)), // -16973824 + 1 rounds higher
-                (-0x101_0001, UInt16BitsToBFloat16(0xCB81)), // -16842752 - 1 rounds lower
-                (-0x101_0000, UInt16BitsToBFloat16(0xCB80)), // -16842752 rounds to even
-                (-0x100_FFFF, UInt16BitsToBFloat16(0xCB80)), // -16842752 + 1 rounds higher
+                (-0x103_0001, BitConverter.UInt16BitsToBFloat16(0xCB82)), // -16973824 - 1 rounds lower
+                (-0x103_0000, BitConverter.UInt16BitsToBFloat16(0xCB82)), // -16973824 rounds to even
+                (-0x102_FFFF, BitConverter.UInt16BitsToBFloat16(0xCB81)), // -16973824 + 1 rounds higher
+                (-0x101_0001, BitConverter.UInt16BitsToBFloat16(0xCB81)), // -16842752 - 1 rounds lower
+                (-0x101_0000, BitConverter.UInt16BitsToBFloat16(0xCB80)), // -16842752 rounds to even
+                (-0x100_FFFF, BitConverter.UInt16BitsToBFloat16(0xCB80)), // -16842752 + 1 rounds higher
                 (0, BFloat16.Zero),
-                (0x100_FFFF, UInt16BitsToBFloat16(0x4B80)), // 16842752 - 1 rounds lower
-                (0x101_0000, UInt16BitsToBFloat16(0x4B80)), // 16842752 rounds to even
-                (0x101_0001, UInt16BitsToBFloat16(0x4B81)), // 16842752 + 1 rounds higher
-                (0x102_FFFF, UInt16BitsToBFloat16(0x4B81)), // 16973824 - 1 rounds lower
-                (0x103_0000, UInt16BitsToBFloat16(0x4B82)), // 16973824 rounds to even
-                (0x103_0001, UInt16BitsToBFloat16(0x4B82)), // 16973824 + 1 rounds higher
-                (int.MinValue, UInt16BitsToBFloat16(0xCF00)),
+                (0x100_FFFF, BitConverter.UInt16BitsToBFloat16(0x4B80)), // 16842752 - 1 rounds lower
+                (0x101_0000, BitConverter.UInt16BitsToBFloat16(0x4B80)), // 16842752 rounds to even
+                (0x101_0001, BitConverter.UInt16BitsToBFloat16(0x4B81)), // 16842752 + 1 rounds higher
+                (0x102_FFFF, BitConverter.UInt16BitsToBFloat16(0x4B81)), // 16973824 - 1 rounds lower
+                (0x103_0000, BitConverter.UInt16BitsToBFloat16(0x4B82)), // 16973824 rounds to even
+                (0x103_0001, BitConverter.UInt16BitsToBFloat16(0x4B82)), // 16973824 + 1 rounds higher
+                (int.MinValue, BitConverter.UInt16BitsToBFloat16(0xCF00)),
             };
 
             foreach ((int original, BFloat16 expected) in data)
@@ -673,17 +694,17 @@ namespace System.Numerics.Tests
             (uint, BFloat16)[] data =
             {
                 (0, BFloat16.Zero),
-                (0x100_FFFF, UInt16BitsToBFloat16(0x4B80)), // 16842752 - 1 rounds lower
-                (0x101_0000, UInt16BitsToBFloat16(0x4B80)), // 16842752 rounds to even
-                (0x101_0001, UInt16BitsToBFloat16(0x4B81)), // 16842752 + 1 rounds higher
-                (0x102_FFFF, UInt16BitsToBFloat16(0x4B81)), // 16973824 - 1 rounds lower
-                (0x103_0000, UInt16BitsToBFloat16(0x4B82)), // 16973824 rounds to even
-                (0x103_0001, UInt16BitsToBFloat16(0x4B82)), // 16973824 + 1 rounds higher
-                (0x8000_0000, UInt16BitsToBFloat16(0x4F00)),
-                (0xFF7F_FFFF, UInt16BitsToBFloat16(0x4F7F)), // 4286578688 - 1 rounds lower
-                (0xFF80_0000, UInt16BitsToBFloat16(0x4F80)), // 4286578688 rounds to even
-                (0xFF80_0001, UInt16BitsToBFloat16(0x4F80)), // 4286578688 + 1 rounds higher
-                (0xFFFF_FFFF, UInt16BitsToBFloat16(0x4F80)),
+                (0x100_FFFF, BitConverter.UInt16BitsToBFloat16(0x4B80)), // 16842752 - 1 rounds lower
+                (0x101_0000, BitConverter.UInt16BitsToBFloat16(0x4B80)), // 16842752 rounds to even
+                (0x101_0001, BitConverter.UInt16BitsToBFloat16(0x4B81)), // 16842752 + 1 rounds higher
+                (0x102_FFFF, BitConverter.UInt16BitsToBFloat16(0x4B81)), // 16973824 - 1 rounds lower
+                (0x103_0000, BitConverter.UInt16BitsToBFloat16(0x4B82)), // 16973824 rounds to even
+                (0x103_0001, BitConverter.UInt16BitsToBFloat16(0x4B82)), // 16973824 + 1 rounds higher
+                (0x8000_0000, BitConverter.UInt16BitsToBFloat16(0x4F00)),
+                (0xFF7F_FFFF, BitConverter.UInt16BitsToBFloat16(0x4F7F)), // 4286578688 - 1 rounds lower
+                (0xFF80_0000, BitConverter.UInt16BitsToBFloat16(0x4F80)), // 4286578688 rounds to even
+                (0xFF80_0001, BitConverter.UInt16BitsToBFloat16(0x4F80)), // 4286578688 + 1 rounds higher
+                (0xFFFF_FFFF, BitConverter.UInt16BitsToBFloat16(0x4F80)),
             };
 
             foreach ((uint original, BFloat16 expected) in data)
@@ -771,6 +792,23 @@ namespace System.Numerics.Tests
             yield return new object[] { "NaN", NumberStyles.Any, invariantFormat, float.NaN };
             yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, float.PositiveInfinity };
             yield return new object[] { "-Infinity", NumberStyles.Any, invariantFormat, float.NegativeInfinity };
+
+            // Hex float
+            yield return new object[] { "0x1p0", NumberStyles.HexFloat, invariantFormat, 1.0f };
+            yield return new object[] { "0x1.8p0", NumberStyles.HexFloat, invariantFormat, 1.5f };
+            yield return new object[] { "0x1p1", NumberStyles.HexFloat, invariantFormat, 2.0f };
+            yield return new object[] { "0x1p-1", NumberStyles.HexFloat, invariantFormat, 0.5f };
+            yield return new object[] { "-0x1p0", NumberStyles.HexFloat, invariantFormat, -1.0f };
+            yield return new object[] { "0x0p0", NumberStyles.HexFloat, invariantFormat, 0.0f };
+            yield return new object[] { "0xAp0", NumberStyles.HexFloat, invariantFormat, 10.0f };
+            yield return new object[] { "0x1.4p3", NumberStyles.HexFloat, invariantFormat, 10.0f };
+            yield return new object[] { "0xFFp0", NumberStyles.HexFloat, invariantFormat, 255.0f };
+            yield return new object[] { " 0x1p0 ", NumberStyles.HexFloat, invariantFormat, 1.0f };
+            yield return new object[] { "0x.1p4", NumberStyles.HexFloat, invariantFormat, 1.0f };
+            yield return new object[] { "0x1.p4", NumberStyles.HexFloat, invariantFormat, 16.0f };
+            // Overflow to infinity
+            yield return new object[] { "0x1p128", NumberStyles.HexFloat, invariantFormat, float.PositiveInfinity };
+            yield return new object[] { "-0x1p128", NumberStyles.HexFloat, invariantFormat, float.NegativeInfinity };
         }
 
         [Theory]
@@ -835,6 +873,34 @@ namespace System.Numerics.Tests
 
             yield return new object[] { "ab", NumberStyles.None, null, typeof(FormatException) }; // Negative hex value
             yield return new object[] { "  123  ", NumberStyles.None, null, typeof(FormatException) }; // Trailing and leading whitespace
+
+            // Invalid hex float inputs
+            yield return new object[] { "", NumberStyles.HexFloat, null, typeof(FormatException) }; // Empty
+            yield return new object[] { " ", NumberStyles.HexFloat, null, typeof(FormatException) }; // Whitespace only
+            yield return new object[] { "0x", NumberStyles.HexFloat, null, typeof(FormatException) }; // Prefix only
+            yield return new object[] { "0x.p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // No significand digits
+            yield return new object[] { "0x1.0e5", NumberStyles.HexFloat, null, typeof(FormatException) }; // 'e' exponent instead of 'p'
+            yield return new object[] { "0x1.0p", NumberStyles.HexFloat, null, typeof(FormatException) }; // Exponent marker without digits
+            yield return new object[] { "0x1.8", NumberStyles.HexFloat, null, typeof(FormatException) }; // Fractional part without exponent
+            yield return new object[] { "0x.8", NumberStyles.HexFloat, null, typeof(FormatException) }; // Fractional-only without exponent
+            yield return new object[] { "0xFF", NumberStyles.HexFloat, null, typeof(FormatException) }; // Integer without exponent
+            yield return new object[] { "0xGp0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Invalid hex char
+            yield return new object[] { "0x1.Gp0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Invalid hex char in fraction
+            yield return new object[] { "0x1.0p0garbage", NumberStyles.HexFloat, null, typeof(FormatException) }; // Trailing garbage
+            yield return new object[] { "+-0x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double sign
+            yield return new object[] { "0x1.0p+-1", NumberStyles.HexFloat, null, typeof(FormatException) }; // Double exponent sign
+            yield return new object[] { "NaN", NumberStyles.HexFloat, null, typeof(FormatException) }; // NaN not valid for HexFloat
+            yield return new object[] { "Infinity", NumberStyles.HexFloat, null, typeof(FormatException) }; // Infinity not valid for HexFloat
+            yield return new object[] { "0xX1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double X
+            yield return new object[] { "x1.0p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0 before x
+            yield return new object[] { "0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
+            yield return new object[] { "1p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // missing 0x prefix
+            yield return new object[] { "0x1.0p 0", NumberStyles.HexFloat, null, typeof(FormatException) }; // internal whitespace in exponent
+            yield return new object[] { "0x1pa", NumberStyles.HexFloat, null, typeof(FormatException) }; // non-digit in exponent
+            yield return new object[] { "xyz", NumberStyles.HexFloat, null, typeof(FormatException) }; // no hex digits
+            yield return new object[] { "0x1.0.p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // double decimal point
+            yield return new object[] { "0x 1p0", NumberStyles.HexFloat, null, typeof(FormatException) }; // embedded whitespace after prefix
+            yield return new object[] { "0x1.8p0", NumberStyles.AllowHexSpecifier | NumberStyles.AllowExponent, null, typeof(FormatException) }; // decimal point not allowed without AllowDecimalPoint
         }
 
         [Theory]
@@ -1084,6 +1150,84 @@ namespace System.Numerics.Tests
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
         }
 
+        [Theory]
+        [InlineData(1.0f, "x", "0x1p+0")]
+        [InlineData(1.5f, "x", "0x1.8p+0")]
+        [InlineData(2.0f, "x", "0x1p+1")]
+        [InlineData(0.5f, "x", "0x1p-1")]
+        [InlineData(-1.0f, "x", "-0x1p+0")]
+        [InlineData(0.0f, "x", "0x0p+0")]
+        [InlineData(-0.0f, "x", "-0x0p+0")]
+        [InlineData(10.0f, "x", "0x1.4p+3")]
+        [InlineData(0.25f, "x", "0x1p-2")]
+        // Special values
+        [InlineData(float.NaN, "x", "NaN")]
+        [InlineData(float.PositiveInfinity, "x", "Infinity")]
+        [InlineData(float.NegativeInfinity, "x", "-Infinity")]
+        // Uppercase
+        [InlineData(3.25f, "X", "0X1.AP+1")]
+        // Precision
+        [InlineData(1.0f, "x0", "0x1p+0")]
+        [InlineData(1.5f, "x2", "0x1.80p+0")]
+        [InlineData(0.0f, "x0", "0x0p+0")]
+        [InlineData(0.0f, "x3", "0x0.000p+0")]
+        [InlineData(-0.0f, "x0", "-0x0p+0")]
+        public static void ToStringHexFloat(float f, string format, string expected)
+        {
+            BFloat16 b = (BFloat16)f;
+            Assert.Equal(expected, b.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(b, format, NumberFormatInfo.InvariantInfo, expected, formatCasingMatchesOutput: false);
+
+            if (!BFloat16.IsNaN(b) && !BFloat16.IsInfinity(b) && format.Length == 1)
+            {
+                BFloat16 parsed = BFloat16.Parse(expected, NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo);
+                Assert.Equal(b, parsed);
+            }
+        }
+
+        [Theory]
+        [InlineData("-0x0p0")]
+        [InlineData("-0x0.0p0")]
+        public static void ParseHexFloat_NegativeZero(string input)
+        {
+            BFloat16 result = BFloat16.Parse(input, NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo);
+            Assert.True(BFloat16.IsNegative(result) && result == (BFloat16)0.0f);
+
+            result = BFloat16.Parse(input.AsSpan(), NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo);
+            Assert.True(BFloat16.IsNegative(result) && result == (BFloat16)0.0f);
+
+            result = BFloat16.Parse(Encoding.UTF8.GetBytes(input), NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo);
+            Assert.True(BFloat16.IsNegative(result) && result == (BFloat16)0.0f);
+
+            Assert.True(BFloat16.TryParse(input, NumberStyles.HexFloat, NumberFormatInfo.InvariantInfo, out result));
+            Assert.True(BFloat16.IsNegative(result) && result == (BFloat16)0.0f);
+        }
+
+        [Fact]
+        public static void HexFloat_CustomNumberFormat()
+        {
+            var commaSep = new NumberFormatInfo { NumberDecimalSeparator = "," };
+            Assert.Equal((BFloat16)1.5f, BFloat16.Parse("0x1,8p0", NumberStyles.HexFloat, commaSep));
+            Assert.False(BFloat16.TryParse("0x1.8p0", NumberStyles.HexFloat, commaSep, out _));
+            Assert.Equal("0x1,8p+0", ((BFloat16)1.5f).ToString("x", commaSep));
+            NumberFormatTestHelper.TryFormatNumberTest((BFloat16)1.5f, "x", commaSep, "0x1,8p+0", formatCasingMatchesOutput: false);
+
+            var tildeMinus = new NumberFormatInfo { NegativeSign = "~" };
+            Assert.Equal("~0x1p+0", ((BFloat16)(-1.0f)).ToString("x", tildeMinus));
+            NumberFormatTestHelper.TryFormatNumberTest((BFloat16)(-1.0f), "x", tildeMinus, "~0x1p+0", formatCasingMatchesOutput: false);
+        }
+
+        [Theory]
+        [InlineData(NumberStyles.HexFloat | NumberStyles.AllowThousands)]
+        [InlineData(NumberStyles.HexFloat | NumberStyles.AllowCurrencySymbol)]
+        [InlineData(NumberStyles.AllowHexSpecifier)]
+        [InlineData(NumberStyles.AllowBinarySpecifier)]
+        public static void HexFloat_StyleValidation(NumberStyles style)
+        {
+            Assert.Throws<ArgumentException>(() => BFloat16.Parse("0x1p0", style));
+            Assert.Throws<ArgumentException>(() => BFloat16.TryParse("0x1p0", style, NumberFormatInfo.InvariantInfo, out _));
+        }
+
         [Fact]
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
@@ -1136,16 +1280,16 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.MaxValue };
             yield return new object[] { BFloat16.PositiveInfinity };
 
-            yield return new object[] { (UInt16BitsToBFloat16(0b0_00000001_0000000)) }; // smallest normal
-            yield return new object[] { (UInt16BitsToBFloat16(0b0_00000000_1111111)) }; // largest subnormal
-            yield return new object[] { (UInt16BitsToBFloat16(0b0_00000000_1000000)) }; // middle subnormal
-            yield return new object[] { (UInt16BitsToBFloat16(0b0_00000000_0111111)) }; // just below middle subnormal
-            yield return new object[] { (UInt16BitsToBFloat16(0b0_00000000_0000000)) }; // smallest subnormal
-            yield return new object[] { (UInt16BitsToBFloat16(0b1_00000000_0000000)) }; // highest negative subnormal
-            yield return new object[] { (UInt16BitsToBFloat16(0b1_00000000_0111111)) }; // just above negative middle subnormal
-            yield return new object[] { (UInt16BitsToBFloat16(0b1_00000000_1000000)) }; // negative middle subnormal
-            yield return new object[] { (UInt16BitsToBFloat16(0b1_00000000_1111111)) }; // lowest negative subnormal
-            yield return new object[] { (UInt16BitsToBFloat16(0b1_00000001_0000000)) }; // highest negative normal
+            yield return new object[] { (BitConverter.UInt16BitsToBFloat16(0b0_00000001_0000000)) }; // smallest normal
+            yield return new object[] { (BitConverter.UInt16BitsToBFloat16(0b0_00000000_1111111)) }; // largest subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToBFloat16(0b0_00000000_1000000)) }; // middle subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToBFloat16(0b0_00000000_0111111)) }; // just below middle subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToBFloat16(0b0_00000000_0000000)) }; // smallest subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToBFloat16(0b1_00000000_0000000)) }; // highest negative subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToBFloat16(0b1_00000000_0111111)) }; // just above negative middle subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToBFloat16(0b1_00000000_1000000)) }; // negative middle subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToBFloat16(0b1_00000000_1111111)) }; // lowest negative subnormal
+            yield return new object[] { (BitConverter.UInt16BitsToBFloat16(0b1_00000001_0000000)) }; // highest negative normal
         }
 
         [Theory]
@@ -1349,7 +1493,7 @@ namespace System.Numerics.Tests
             yield return new object[] { (BFloat16)(2.297f), (BFloat16)(8.938f), CrossPlatformMachineEpsilon * (BFloat16)10 };  // value:  (ln(10))
             yield return new object[] { (BFloat16)(2.719f), (BFloat16)(14.19f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (e)
             yield return new object[] { (BFloat16)(3.141f), (BFloat16)(22.12f), CrossPlatformMachineEpsilon * (BFloat16)100 }; // value:  (pi)
-            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0.0 };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
         [Theory]
@@ -1393,7 +1537,7 @@ namespace System.Numerics.Tests
             yield return new object[] { (BFloat16)(2.297f), (BFloat16)(4.906f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (ln(10))
             yield return new object[] { (BFloat16)(2.719f), (BFloat16)(6.594f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (e)
             yield return new object[] { (BFloat16)(3.141f), (BFloat16)(8.812f), CrossPlatformMachineEpsilon * (BFloat16)10 };   // value:  (pi)
-            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, 0.0f };
+            yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, (BFloat16)0.0f };
         }
 
         [Theory]
@@ -1555,8 +1699,8 @@ namespace System.Numerics.Tests
             yield return new object[] { (BFloat16)(-0.5078f), (BFloat16)(-0.707f), CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
             yield return new object[] { (BFloat16)(-0.5f), (BFloat16)(-0.6914f), CrossPlatformMachineEpsilon };             // expected: -(ln(2))
             yield return new object[] { (BFloat16)(-0.4707f), (BFloat16)(-0.6367f), CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
-            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), 0.0f };
-            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), 0.0f };
+            yield return new object[] { (BFloat16)(-0f), (BFloat16)(0f), (BFloat16)0.0f };
+            yield return new object[] { (BFloat16)(0f), (BFloat16)(0f), (BFloat16)0.0f };
             yield return new object[] { (BFloat16)(0.375f), (BFloat16)(0.3184f), CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
             yield return new object[] { (BFloat16)(0.543f), (BFloat16)(0.4336f), CrossPlatformMachineEpsilon };             // expected:  (log10(e))
             yield return new object[] { (BFloat16)(0.8906f), (BFloat16)(0.6367f), CrossPlatformMachineEpsilon };             // expected:  (2 / pi)
@@ -1719,7 +1863,7 @@ namespace System.Numerics.Tests
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.Zero, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.One, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.E, BFloat16.PositiveInfinity, BFloat16.Zero };
-            yield return new object[] { BFloat16.PositiveInfinity, 10.0f, BFloat16.PositiveInfinity, BFloat16.Zero };
+            yield return new object[] { BFloat16.PositiveInfinity, (BFloat16)10.0f, BFloat16.PositiveInfinity, BFloat16.Zero };
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.PositiveInfinity, BFloat16.Zero };
         }
 
@@ -2078,37 +2222,37 @@ namespace System.Numerics.Tests
         public static IEnumerable<object[]> BitDecrement_TestData()
         {
             yield return new object[] { BFloat16.NegativeInfinity, BFloat16.NegativeInfinity };
-            yield return new object[] { UInt16BitsToBFloat16(0xC049), UInt16BitsToBFloat16(0xC04A) };    // value: -(pi)
-            yield return new object[] { UInt16BitsToBFloat16(0xC02E), UInt16BitsToBFloat16(0xC02F) };    // value: -(e)
-            yield return new object[] { UInt16BitsToBFloat16(0xC013), UInt16BitsToBFloat16(0xC014) };    // value: -(ln(10))
-            yield return new object[] { UInt16BitsToBFloat16(0xBFC9), UInt16BitsToBFloat16(0xBFCA) };    // value: -(pi / 2)
-            yield return new object[] { UInt16BitsToBFloat16(0xBFB9), UInt16BitsToBFloat16(0xBFBA) };    // value: -(log2(e))
-            yield return new object[] { UInt16BitsToBFloat16(0xBFB5), UInt16BitsToBFloat16(0xBFB6) };    // value: -(sqrt(2))
-            yield return new object[] { UInt16BitsToBFloat16(0xBF90), UInt16BitsToBFloat16(0xBF91) };    // value: -(2 / sqrt(pi))
-            yield return new object[] { UInt16BitsToBFloat16(0xBF80), UInt16BitsToBFloat16(0xBF81) };
-            yield return new object[] { UInt16BitsToBFloat16(0xBF49), UInt16BitsToBFloat16(0xBF4A) };    // value: -(pi / 4)
-            yield return new object[] { UInt16BitsToBFloat16(0xBF35), UInt16BitsToBFloat16(0xBF36) };    // value: -(1 / sqrt(2))
-            yield return new object[] { UInt16BitsToBFloat16(0xBF31), UInt16BitsToBFloat16(0xBF32) };    // value: -(ln(2))
-            yield return new object[] { UInt16BitsToBFloat16(0xBF23), UInt16BitsToBFloat16(0xBF24) };    // value: -(2 / pi)
-            yield return new object[] { UInt16BitsToBFloat16(0xBEDE), UInt16BitsToBFloat16(0xBEDF) };    // value: -(log10(e))
-            yield return new object[] { UInt16BitsToBFloat16(0xBEA3), UInt16BitsToBFloat16(0xBEA4) };    // value: -(1 / pi)
-            yield return new object[] { UInt16BitsToBFloat16(0x8000), -BFloat16.Epsilon };
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xC049), BitConverter.UInt16BitsToBFloat16(0xC04A) };    // value: -(pi)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xC02E), BitConverter.UInt16BitsToBFloat16(0xC02F) };    // value: -(e)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xC013), BitConverter.UInt16BitsToBFloat16(0xC014) };    // value: -(ln(10))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBFC9), BitConverter.UInt16BitsToBFloat16(0xBFCA) };    // value: -(pi / 2)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBFB9), BitConverter.UInt16BitsToBFloat16(0xBFBA) };    // value: -(log2(e))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBFB5), BitConverter.UInt16BitsToBFloat16(0xBFB6) };    // value: -(sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBF90), BitConverter.UInt16BitsToBFloat16(0xBF91) };    // value: -(2 / sqrt(pi))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBF80), BitConverter.UInt16BitsToBFloat16(0xBF81) };
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBF49), BitConverter.UInt16BitsToBFloat16(0xBF4A) };    // value: -(pi / 4)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBF35), BitConverter.UInt16BitsToBFloat16(0xBF36) };    // value: -(1 / sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBF31), BitConverter.UInt16BitsToBFloat16(0xBF32) };    // value: -(ln(2))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBF23), BitConverter.UInt16BitsToBFloat16(0xBF24) };    // value: -(2 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBEDE), BitConverter.UInt16BitsToBFloat16(0xBEDF) };    // value: -(log10(e))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBEA3), BitConverter.UInt16BitsToBFloat16(0xBEA4) };    // value: -(1 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8000), -BFloat16.Epsilon };
             yield return new object[] { BFloat16.NaN, BFloat16.NaN };
-            yield return new object[] { UInt16BitsToBFloat16(0x0000), -BFloat16.Epsilon };
-            yield return new object[] { UInt16BitsToBFloat16(0x3EA3), UInt16BitsToBFloat16(0x3EA2) };    // value:  (1 / pi)
-            yield return new object[] { UInt16BitsToBFloat16(0x3EDE), UInt16BitsToBFloat16(0x3EDD) };    // value:  (log10(e))
-            yield return new object[] { UInt16BitsToBFloat16(0x3F23), UInt16BitsToBFloat16(0x3F22) };    // value:  (2 / pi)
-            yield return new object[] { UInt16BitsToBFloat16(0x3F31), UInt16BitsToBFloat16(0x3F30) };    // value:  (ln(2))
-            yield return new object[] { UInt16BitsToBFloat16(0x3F35), UInt16BitsToBFloat16(0x3F34) };    // value:  (1 / sqrt(2))
-            yield return new object[] { UInt16BitsToBFloat16(0x3F49), UInt16BitsToBFloat16(0x3F48) };    // value:  (pi / 4)
-            yield return new object[] { UInt16BitsToBFloat16(0x3F80), UInt16BitsToBFloat16(0x3F7F) };
-            yield return new object[] { UInt16BitsToBFloat16(0x3F90), UInt16BitsToBFloat16(0x3F8F) };    // value:  (2 / sqrt(pi))
-            yield return new object[] { UInt16BitsToBFloat16(0x3FB5), UInt16BitsToBFloat16(0x3FB4) };    // value:  (sqrt(2))
-            yield return new object[] { UInt16BitsToBFloat16(0x3FB9), UInt16BitsToBFloat16(0x3FB8) };    // value:  (log2(e))
-            yield return new object[] { UInt16BitsToBFloat16(0x3FC9), UInt16BitsToBFloat16(0x3FC8) };    // value:  (pi / 2)
-            yield return new object[] { UInt16BitsToBFloat16(0x4013), UInt16BitsToBFloat16(0x4012) };    // value:  (ln(10))
-            yield return new object[] { UInt16BitsToBFloat16(0x402E), UInt16BitsToBFloat16(0x402D) };    // value:  (e)
-            yield return new object[] { UInt16BitsToBFloat16(0x4049), UInt16BitsToBFloat16(0x4048) };    // value:  (pi)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0000), -BFloat16.Epsilon };
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3EA3), BitConverter.UInt16BitsToBFloat16(0x3EA2) };    // value:  (1 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3EDE), BitConverter.UInt16BitsToBFloat16(0x3EDD) };    // value:  (log10(e))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3F23), BitConverter.UInt16BitsToBFloat16(0x3F22) };    // value:  (2 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3F31), BitConverter.UInt16BitsToBFloat16(0x3F30) };    // value:  (ln(2))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3F35), BitConverter.UInt16BitsToBFloat16(0x3F34) };    // value:  (1 / sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3F49), BitConverter.UInt16BitsToBFloat16(0x3F48) };    // value:  (pi / 4)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3F80), BitConverter.UInt16BitsToBFloat16(0x3F7F) };
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3F90), BitConverter.UInt16BitsToBFloat16(0x3F8F) };    // value:  (2 / sqrt(pi))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3FB5), BitConverter.UInt16BitsToBFloat16(0x3FB4) };    // value:  (sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3FB9), BitConverter.UInt16BitsToBFloat16(0x3FB8) };    // value:  (log2(e))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3FC9), BitConverter.UInt16BitsToBFloat16(0x3FC8) };    // value:  (pi / 2)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x4013), BitConverter.UInt16BitsToBFloat16(0x4012) };    // value:  (ln(10))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x402E), BitConverter.UInt16BitsToBFloat16(0x402D) };    // value:  (e)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x4049), BitConverter.UInt16BitsToBFloat16(0x4048) };    // value:  (pi)
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.MaxValue };
         }
 
@@ -2122,37 +2266,37 @@ namespace System.Numerics.Tests
         public static IEnumerable<object[]> BitIncrement_TestData()
         {
             yield return new object[] { BFloat16.NegativeInfinity, BFloat16.MinValue };
-            yield return new object[] { UInt16BitsToBFloat16(0xC049), UInt16BitsToBFloat16(0xC048) };    // value: -(pi)
-            yield return new object[] { UInt16BitsToBFloat16(0xC02E), UInt16BitsToBFloat16(0xC02D) };    // value: -(e)
-            yield return new object[] { UInt16BitsToBFloat16(0xC013), UInt16BitsToBFloat16(0xC012) };    // value: -(ln(10))
-            yield return new object[] { UInt16BitsToBFloat16(0xBFC9), UInt16BitsToBFloat16(0xBFC8) };    // value: -(pi / 2)
-            yield return new object[] { UInt16BitsToBFloat16(0xBFB9), UInt16BitsToBFloat16(0xBFB8) };    // value: -(log2(e))
-            yield return new object[] { UInt16BitsToBFloat16(0xBFB5), UInt16BitsToBFloat16(0xBFB4) };    // value: -(sqrt(2))
-            yield return new object[] { UInt16BitsToBFloat16(0xBF90), UInt16BitsToBFloat16(0xBF8F) };    // value: -(2 / sqrt(pi))
-            yield return new object[] { UInt16BitsToBFloat16(0xBF80), UInt16BitsToBFloat16(0xBF7F) };
-            yield return new object[] { UInt16BitsToBFloat16(0xBF49), UInt16BitsToBFloat16(0xBF48) };    // value: -(pi / 4)
-            yield return new object[] { UInt16BitsToBFloat16(0xBF35), UInt16BitsToBFloat16(0xBF34) };    // value: -(1 / sqrt(2))
-            yield return new object[] { UInt16BitsToBFloat16(0xBF31), UInt16BitsToBFloat16(0xBF30) };    // value: -(ln(2))
-            yield return new object[] { UInt16BitsToBFloat16(0xBF23), UInt16BitsToBFloat16(0xBF22) };    // value: -(2 / pi)
-            yield return new object[] { UInt16BitsToBFloat16(0xBEDE), UInt16BitsToBFloat16(0xBEDD) };    // value: -(log10(e))
-            yield return new object[] { UInt16BitsToBFloat16(0xBEA3), UInt16BitsToBFloat16(0xBEA2) };    // value: -(1 / pi)
-            yield return new object[] { UInt16BitsToBFloat16(0x8000), BFloat16.Epsilon };
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xC049), BitConverter.UInt16BitsToBFloat16(0xC048) };    // value: -(pi)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xC02E), BitConverter.UInt16BitsToBFloat16(0xC02D) };    // value: -(e)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xC013), BitConverter.UInt16BitsToBFloat16(0xC012) };    // value: -(ln(10))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBFC9), BitConverter.UInt16BitsToBFloat16(0xBFC8) };    // value: -(pi / 2)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBFB9), BitConverter.UInt16BitsToBFloat16(0xBFB8) };    // value: -(log2(e))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBFB5), BitConverter.UInt16BitsToBFloat16(0xBFB4) };    // value: -(sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBF90), BitConverter.UInt16BitsToBFloat16(0xBF8F) };    // value: -(2 / sqrt(pi))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBF80), BitConverter.UInt16BitsToBFloat16(0xBF7F) };
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBF49), BitConverter.UInt16BitsToBFloat16(0xBF48) };    // value: -(pi / 4)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBF35), BitConverter.UInt16BitsToBFloat16(0xBF34) };    // value: -(1 / sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBF31), BitConverter.UInt16BitsToBFloat16(0xBF30) };    // value: -(ln(2))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBF23), BitConverter.UInt16BitsToBFloat16(0xBF22) };    // value: -(2 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBEDE), BitConverter.UInt16BitsToBFloat16(0xBEDD) };    // value: -(log10(e))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0xBEA3), BitConverter.UInt16BitsToBFloat16(0xBEA2) };    // value: -(1 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x8000), BFloat16.Epsilon };
             yield return new object[] { BFloat16.NaN, BFloat16.NaN };
-            yield return new object[] { UInt16BitsToBFloat16(0x0000), BFloat16.Epsilon };
-            yield return new object[] { UInt16BitsToBFloat16(0x3EA3), UInt16BitsToBFloat16(0x3EA4) };    // value:  (1 / pi)
-            yield return new object[] { UInt16BitsToBFloat16(0x3EDE), UInt16BitsToBFloat16(0x3EDF) };    // value:  (log10(e))
-            yield return new object[] { UInt16BitsToBFloat16(0x3F23), UInt16BitsToBFloat16(0x3F24) };    // value:  (2 / pi)
-            yield return new object[] { UInt16BitsToBFloat16(0x3F31), UInt16BitsToBFloat16(0x3F32) };    // value:  (ln(2))
-            yield return new object[] { UInt16BitsToBFloat16(0x3F35), UInt16BitsToBFloat16(0x3F36) };    // value:  (1 / sqrt(2))
-            yield return new object[] { UInt16BitsToBFloat16(0x3F49), UInt16BitsToBFloat16(0x3F4A) };    // value:  (pi / 4)
-            yield return new object[] { UInt16BitsToBFloat16(0x3F80), UInt16BitsToBFloat16(0x3F81) };
-            yield return new object[] { UInt16BitsToBFloat16(0x3F90), UInt16BitsToBFloat16(0x3F91) };    // value:  (2 / sqrt(pi))
-            yield return new object[] { UInt16BitsToBFloat16(0x3FB5), UInt16BitsToBFloat16(0x3FB6) };    // value:  (sqrt(2))
-            yield return new object[] { UInt16BitsToBFloat16(0x3FB9), UInt16BitsToBFloat16(0x3FBA) };    // value:  (log2(e))
-            yield return new object[] { UInt16BitsToBFloat16(0x3FC9), UInt16BitsToBFloat16(0x3FCA) };    // value:  (pi / 2)
-            yield return new object[] { UInt16BitsToBFloat16(0x4013), UInt16BitsToBFloat16(0x4014) };    // value:  (ln(10))
-            yield return new object[] { UInt16BitsToBFloat16(0x402E), UInt16BitsToBFloat16(0x402F) };    // value:  (e)
-            yield return new object[] { UInt16BitsToBFloat16(0x4049), UInt16BitsToBFloat16(0x404A) };    // value:  (pi)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x0000), BFloat16.Epsilon };
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3EA3), BitConverter.UInt16BitsToBFloat16(0x3EA4) };    // value:  (1 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3EDE), BitConverter.UInt16BitsToBFloat16(0x3EDF) };    // value:  (log10(e))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3F23), BitConverter.UInt16BitsToBFloat16(0x3F24) };    // value:  (2 / pi)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3F31), BitConverter.UInt16BitsToBFloat16(0x3F32) };    // value:  (ln(2))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3F35), BitConverter.UInt16BitsToBFloat16(0x3F36) };    // value:  (1 / sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3F49), BitConverter.UInt16BitsToBFloat16(0x3F4A) };    // value:  (pi / 4)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3F80), BitConverter.UInt16BitsToBFloat16(0x3F81) };
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3F90), BitConverter.UInt16BitsToBFloat16(0x3F91) };    // value:  (2 / sqrt(pi))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3FB5), BitConverter.UInt16BitsToBFloat16(0x3FB6) };    // value:  (sqrt(2))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3FB9), BitConverter.UInt16BitsToBFloat16(0x3FBA) };    // value:  (log2(e))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x3FC9), BitConverter.UInt16BitsToBFloat16(0x3FCA) };    // value:  (pi / 2)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x4013), BitConverter.UInt16BitsToBFloat16(0x4014) };    // value:  (ln(10))
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x402E), BitConverter.UInt16BitsToBFloat16(0x402F) };    // value:  (e)
+            yield return new object[] { BitConverter.UInt16BitsToBFloat16(0x4049), BitConverter.UInt16BitsToBFloat16(0x404A) };    // value:  (pi)
             yield return new object[] { BFloat16.PositiveInfinity, BFloat16.PositiveInfinity };
         }
 
@@ -2276,15 +2420,100 @@ namespace System.Numerics.Tests
             AssertEqual(+expectedResult, BFloat16.RadiansToDegrees(+value), allowedVariance);
         }
 
+        [Theory]
+        [InlineData(float.PositiveInfinity, int.MaxValue)]
+        [InlineData(float.NaN, int.MaxValue)]
+        [InlineData(0.0f, int.MinValue)]
+        [InlineData(1.0f, 0)]
+        [InlineData(2.0f, 1)]
+        [InlineData(4.0f, 2)]
+        [InlineData(0.5f, -1)]
+        public static void ILogB(float value, int expectedResult)
+        {
+            Assert.Equal(expectedResult, BFloat16.ILogB((BFloat16)value));
+        }
+
+        [Fact]
+        public static void ILogB_Subnormal()
+        {
+            // BFloat16.Epsilon is the smallest positive subnormal value
+            // Its ILogB should be -133
+            Assert.Equal(-133, BFloat16.ILogB(BFloat16.Epsilon));
+
+            // Test another subnormal value: 0x0040 (half of max subnormal)
+            BFloat16 subnormal = BitConverter.UInt16BitsToBFloat16(0x0040);
+            Assert.Equal(-127, BFloat16.ILogB(subnormal));
+        }
+
+        public static IEnumerable<object[]> TryWriteSignificandBigEndianTest_TestData() =>
+        [
+            [BFloat16.NegativeInfinity, 1, new byte[] { 0x80 }],
+            [BFloat16.MinValue, 1, new byte[] { 0xFF }],
+            [(BFloat16)(-1.0f), 1, new byte[] { 0x80 }],
+            [-BFloat16.Epsilon, 1, new byte[] { 0x01 }],
+            [BFloat16.NaN, 1, new byte[] { 0xC0 }],
+            [(BFloat16)0.0f, 1, new byte[] { 0x00 }],
+            [(BFloat16)1.0f, 1, new byte[] { 0x80 }],
+            [BFloat16.MaxValue, 1, new byte[] { 0xFF }],
+            [BFloat16.PositiveInfinity, 1, new byte[] { 0x80 }],
+        ];
+
+        [Theory]
+        [MemberData(nameof(TryWriteSignificandBigEndianTest_TestData))]
+        public static void TryWriteSignificandBigEndianTest(BFloat16 value, int expectedBytesWritten, byte[] expectedBytes)
+        {
+            Span<byte> destination = [0];
+            Assert.True(FloatingPointHelper<BFloat16>.TryWriteSignificandBigEndian(value, destination, out int bytesWritten));
+            Assert.Equal(expectedBytesWritten, bytesWritten);
+            Assert.Equal(expectedBytes, destination.ToArray());
+        }
+
+        [Fact]
+        public static void TryWriteSignificandBigEndianTest_EmptyDestination()
+        {
+            Assert.False(FloatingPointHelper<BFloat16>.TryWriteSignificandBigEndian(default, Span<byte>.Empty, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+        }
+
+        public static IEnumerable<object[]> TryWriteSignificandLittleEndianTest_TestData() =>
+        [
+            [BFloat16.NegativeInfinity, 1, new byte[] { 0x80 }],
+            [BFloat16.MinValue, 1, new byte[] { 0xFF }],
+            [(BFloat16)(-1.0f), 1, new byte[] { 0x80 }],
+            [-BFloat16.Epsilon, 1, new byte[] { 0x01 }],
+            [BFloat16.NaN, 1, new byte[] { 0xC0 }],
+            [(BFloat16)0.0f, 1, new byte[] { 0x00 }],
+            [(BFloat16)1.0f, 1, new byte[] { 0x80 }],
+            [BFloat16.MaxValue, 1, new byte[] { 0xFF }],
+            [BFloat16.PositiveInfinity, 1, new byte[] { 0x80 }],
+        ];
+
+        [Theory]
+        [MemberData(nameof(TryWriteSignificandLittleEndianTest_TestData))]
+        public static void TryWriteSignificandLittleEndianTest(BFloat16 value, int expectedBytesWritten, byte[] expectedBytes)
+        {
+            Span<byte> destination = [0];
+            Assert.True(FloatingPointHelper<BFloat16>.TryWriteSignificandLittleEndian(value, destination, out int bytesWritten));
+            Assert.Equal(expectedBytesWritten, bytesWritten);
+            Assert.Equal(expectedBytes, destination.ToArray());
+        }
+
+        [Fact]
+        public static void TryWriteSignificandLittleEndianTest_EmptyDestination()
+        {
+            Assert.False(FloatingPointHelper<BFloat16>.TryWriteSignificandLittleEndian(default, Span<byte>.Empty, out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+        }
+
         #region AssertExtentions
         static bool IsNegativeZero(BFloat16 value)
         {
-            return BFloat16ToUInt16Bits(value) == 0x8000;
+            return BitConverter.BFloat16ToUInt16Bits(value) == 0x8000;
         }
 
         static bool IsPositiveZero(BFloat16 value)
         {
-            return BFloat16ToUInt16Bits(value) == 0;
+            return BitConverter.BFloat16ToUInt16Bits(value) == 0;
         }
 
         static string ToStringPadded(BFloat16 value)
@@ -2321,7 +2550,7 @@ namespace System.Numerics.Tests
         /// <exception cref="EqualException">Thrown when the representations are not identical</exception>
         private static void AssertEqual(BFloat16 expected, BFloat16 actual)
         {
-            if (BFloat16ToUInt16Bits(expected) == BFloat16ToUInt16Bits(actual))
+            if (BitConverter.BFloat16ToUInt16Bits(expected) == BitConverter.BFloat16ToUInt16Bits(actual))
             {
                 return;
             }

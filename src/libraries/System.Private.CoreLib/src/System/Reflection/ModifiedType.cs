@@ -78,6 +78,7 @@ namespace System.Reflection
         public override bool ContainsGenericParameters => _unmodifiedType.ContainsGenericParameters;
         public override Type GetGenericTypeDefinition() => _unmodifiedType.GetGenericTypeDefinition();
         public override bool IsGenericType => _unmodifiedType.IsGenericType;
+        public override Type? GetNullableUnderlyingType() => _unmodifiedType.GetNullableUnderlyingType() is not null ? GetGenericArguments()[0] : null;
 
         [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,

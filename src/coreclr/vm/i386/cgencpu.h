@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 // CGENX86.H -
 //
 // Various helper routines for generating x86 assembly code.
 //
 // DO NOT INCLUDE THIS FILE DIRECTLY - ALWAYS USE CGENSYS.H INSTEAD
-//
-
 
 
 #ifndef TARGET_X86
@@ -31,12 +30,6 @@ class Module;
 class ComCallMethodDesc;
 
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
-
-#define COMMETHOD_PREPAD                        8   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-#ifdef FEATURE_COMINTEROP
-#define COMMETHOD_CALL_PRESTUB_SIZE             5   // x86: CALL(E8) xx xx xx xx
-#define COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET   1   // the offset of the call target address inside the prestub
-#endif // FEATURE_COMINTEROP
 
 #define STACK_ALIGN_SIZE                        4
 
@@ -135,57 +128,6 @@ struct ArgumentRegisters {
 struct REGDISPLAY;
 typedef REGDISPLAY *PREGDISPLAY;
 
-#ifndef FEATURE_EH_FUNCLETS
-// Sufficient context for Try/Catch restoration.
-struct EHContext {
-    INT32       Eax;
-    INT32       Ebx;
-    INT32       Ecx;
-    INT32       Edx;
-    INT32       Esi;
-    INT32       Edi;
-    INT32       Ebp;
-    INT32       Esp;
-    INT32       Eip;
-
-    void Setup(PCODE resumePC, PREGDISPLAY regs);
-    void UpdateFrame(PREGDISPLAY regs);
-
-    inline TADDR GetSP() {
-        LIMITED_METHOD_CONTRACT;
-        return (TADDR)Esp;
-    }
-    inline void SetSP(LPVOID esp) {
-        LIMITED_METHOD_CONTRACT;
-        Esp = (INT32)(size_t)esp;
-    }
-
-    inline LPVOID GetFP() {
-        LIMITED_METHOD_CONTRACT;
-        return (LPVOID)(UINT_PTR)Ebp;
-    }
-
-    inline void SetArg(LPVOID arg) {
-        LIMITED_METHOD_CONTRACT;
-        Eax = (INT32)(size_t)arg;
-    }
-
-    inline void Init()
-    {
-        LIMITED_METHOD_CONTRACT;
-        Eax = 0;
-        Ebx = 0;
-        Ecx = 0;
-        Edx = 0;
-        Esi = 0;
-        Edi = 0;
-        Ebp = 0;
-        Esp = 0;
-        Eip = 0;
-    }
-};
-#endif // !FEATURE_EH_FUNCLETS
-
 #define ARGUMENTREGISTERS_SIZE sizeof(ArgumentRegisters)
 
 //**********************************************************************
@@ -264,22 +206,6 @@ inline INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDe
     TADDR baseAddr = (TADDR)pRel32 + 4;
     return (INT32)(target - baseAddr);
 }
-
-#ifdef FEATURE_COMINTEROP
-inline void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    WRAPPER_NO_CONTRACT;
-
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    pBufferRW[0] = X86_INSTR_CALL_REL32; //CALLNEAR32
-    *((LPVOID*)(1+pBufferRW)) = (LPVOID) (((LPBYTE)target) - (pBufferRX+5));
-
-    _ASSERTE(IS_ALIGNED(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
-        *((SSIZE_T*)(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == ((LPBYTE)target - (LPBYTE)pCOMMethodRX));
-}
-#endif // FEATURE_COMINTEROP
 
 //------------------------------------------------------------------------
 WORD GetUnpatchedCodeData(LPCBYTE pAddr);
@@ -393,11 +319,6 @@ inline PCODE decodeBackToBackJump(PCODE pCode)
     CONSISTENCY_CHECK(*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32);
     return rel32Decode(pCode+1);
 }
-
-
-EXTERN_C void __stdcall setFPReturn(int fpSize, INT64 retVal);
-EXTERN_C void __stdcall getFPReturn(int fpSize, INT64 *pretval);
-
 
 // SEH info forward declarations
 

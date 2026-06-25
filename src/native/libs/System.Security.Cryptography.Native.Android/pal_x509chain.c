@@ -39,7 +39,7 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     JNIEnv* env = GetJNIEnv();
 
     X509ChainContext* ret = NULL;
-    INIT_LOCALS(loc, keyStoreType, keyStore, targetSel, params, certList, certStoreType, certStoreParams, certStore);
+    INIT_LOCALS(loc, keyStoreType, keyStore, targetSel, params, certList, certStoreType, certStoreParams, certStore, errorList);
 
     // String keyStoreType = "AndroidCAStore";
     // KeyStore keyStore = KeyStore.getInstance(keyStoreType);
@@ -53,7 +53,9 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     // X509CertSelector targetSel = new X509CertSelector();
     // targetSel.setCertificate(cert);
     loc[targetSel] = (*env)->NewObject(env, g_X509CertSelectorClass, g_X509CertSelectorCtor);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallVoidMethod(env, loc[targetSel], g_X509CertSelectorSetCertificate, cert);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // PKIXBuilderParameters params = new PKIXBuilderParameters(keyStore, targetSelector);
     loc[params] = (*env)->NewObject(
@@ -66,10 +68,13 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     //     certList.add(extraStore[i]);
     // }
     loc[certList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtorWithCapacity, extraStoreLen);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     (*env)->CallBooleanMethod(env, loc[certList], g_ArrayListAdd, cert);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     for (int i = 0; i < extraStoreLen; ++i)
     {
         (*env)->CallBooleanMethod(env, loc[certList], g_ArrayListAdd, extraStore[i]);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
     // String certStoreType = "Collection";
@@ -78,16 +83,21 @@ X509ChainContext* AndroidCryptoNative_X509ChainCreateContext(jobject /*X509Certi
     loc[certStoreType] = make_java_string(env, "Collection");
     loc[certStoreParams] = (*env)->NewObject(
         env, g_CollectionCertStoreParametersClass, g_CollectionCertStoreParametersCtor, loc[certList]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     loc[certStore] = (*env)->CallStaticObjectMethod(
         env, g_CertStoreClass, g_CertStoreGetInstance, loc[certStoreType], loc[certStoreParams]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // params.addCertStore(certStore);
     (*env)->CallVoidMethod(env, loc[params], g_PKIXBuilderParametersAddCertStore, loc[certStore]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[errorList] = (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     ret = xcalloc(1, sizeof(X509ChainContext));
     ret->params = AddGRef(env, loc[params]);
-    ret->errorList = ToGRef(env, (*env)->NewObject(env, g_ArrayListClass, g_ArrayListCtor));
+    ret->errorList = AddGRef(env, loc[errorList]);
 
 cleanup:
     RELEASE_LOCALS(loc, env);
@@ -255,8 +265,7 @@ enum
 static PAL_X509ChainStatusFlags ChainStatusFromValidatorExceptionReason(JNIEnv* env, jobject reason)
 {
     int value = (*env)->CallIntMethod(env, reason, g_EnumOrdinal);
-    if (g_CertPathExceptionBasicReasonClass != NULL &&
-        (*env)->IsInstanceOf(env, reason, g_CertPathExceptionBasicReasonClass))
+    if ((*env)->IsInstanceOf(env, reason, g_CertPathExceptionBasicReasonClass))
     {
         switch (value)
         {
@@ -275,7 +284,7 @@ static PAL_X509ChainStatusFlags ChainStatusFromValidatorExceptionReason(JNIEnv* 
                 return PAL_X509ChainPartialChain;
         }
     }
-    else if (g_PKIXReasonClass != NULL && (*env)->IsInstanceOf(env, reason, g_PKIXReasonClass))
+    else if ((*env)->IsInstanceOf(env, reason, g_PKIXReasonClass))
     {
         switch (value)
         {
@@ -309,13 +318,10 @@ static void PopulateValidationError(JNIEnv* env, jobject error, bool isRevocatio
     {
         index = (*env)->CallIntMethod(env, error, g_CertPathValidatorExceptionGetIndex);
 
-        // Get the reason (if the API is available) and convert it to a chain status flag
-        if (g_CertPathValidatorExceptionGetReason != NULL)
-        {
-            jobject reason = (*env)->CallObjectMethod(env, error, g_CertPathValidatorExceptionGetReason);
-            chainStatus = ChainStatusFromValidatorExceptionReason(env, reason);
-            (*env)->DeleteLocalRef(env, reason);
-        }
+        // Get the reason and convert it to a chain status flag.
+        jobject reason = (*env)->CallObjectMethod(env, error, g_CertPathValidatorExceptionGetReason);
+        chainStatus = ChainStatusFromValidatorExceptionReason(env, reason);
+        (*env)->DeleteLocalRef(env, reason);
     }
     else
     {
@@ -428,11 +434,6 @@ int32_t AndroidCryptoNative_X509ChainSetCustomTrustStore(X509ChainContext* ctx,
     return CheckJNIExceptions(env) ? FAIL : SUCCESS;
 }
 
-static bool X509ChainSupportsRevocationOptions(void)
-{
-    return g_CertPathValidatorGetRevocationChecker != NULL && g_PKIXRevocationCheckerClass != NULL;
-}
-
 static jobject /*CertPath*/ CreateCertPathFromAnchor(JNIEnv* env, jobject /*TrustAnchor*/ trustAnchor)
 {
     jobject ret = NULL;
@@ -507,24 +508,17 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
         else
         {
             certPathToUse = ctx->certPath;
-            if (X509ChainSupportsRevocationOptions())
-            {
-                // Only add the ONLY_END_ENTITY if we are not just checking the trust anchor. If ONLY_END_ENTITY is
-                // specified, revocation checking will skip the trust anchor even if it is the only certificate.
 
-                // HashSet<PKIXRevocationChecker.Option> options = new HashSet<PKIXRevocationChecker.Option>(3);
-                // options.add(PKIXRevocationChecker.Option.ONLY_END_ENTITY);
-                loc[options] = (*env)->NewObject(env, g_HashSetClass, g_HashSetCtorWithCapacity, 3);
-                jobject endOnly = (*env)->GetStaticObjectField(
-                    env, g_PKIXRevocationCheckerOptionClass, g_PKIXRevocationCheckerOptionOnlyEndEntity);
-                (*env)->CallBooleanMethod(env, loc[options], g_HashSetAdd, endOnly);
-                (*env)->DeleteLocalRef(env, endOnly);
-            }
-            else
-            {
-                LOG_INFO("Treating revocation flag 'EndCertificateOnly' as 'ExcludeRoot'. "
-                         "Revocation will be checked for non-end certificates.");
-            }
+            // Only add the ONLY_END_ENTITY if we are not just checking the trust anchor. If ONLY_END_ENTITY is
+            // specified, revocation checking will skip the trust anchor even if it is the only certificate.
+
+            // HashSet<PKIXRevocationChecker.Option> options = new HashSet<PKIXRevocationChecker.Option>(3);
+            // options.add(PKIXRevocationChecker.Option.ONLY_END_ENTITY);
+            loc[options] = (*env)->NewObject(env, g_HashSetClass, g_HashSetCtorWithCapacity, 3);
+            jobject endOnly = (*env)->GetStaticObjectField(
+                env, g_PKIXRevocationCheckerOptionClass, g_PKIXRevocationCheckerOptionOnlyEndEntity);
+            (*env)->CallBooleanMethod(env, loc[options], g_HashSetAdd, endOnly);
+            (*env)->DeleteLocalRef(env, endOnly);
         }
 
         (*env)->DeleteLocalRef(env, certPathList);
@@ -536,22 +530,20 @@ static int32_t ValidateWithRevocation(JNIEnv* env,
     }
 
     jobject params = ctx->params;
-    if (X509ChainSupportsRevocationOptions())
+
+    // PKIXRevocationChecker checker = validator.getRevocationChecker();
+    loc[checker] = (*env)->CallObjectMethod(env, validator, g_CertPathValidatorGetRevocationChecker);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    // Set any specific options
+    if (loc[options] != NULL)
     {
-        // PKIXRevocationChecker checker = validator.getRevocationChecker();
-        loc[checker] = (*env)->CallObjectMethod(env, validator, g_CertPathValidatorGetRevocationChecker);
-        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
-
-        // Set any specific options
-        if (loc[options] != NULL)
-        {
-            // checker.setOptions(options);
-            (*env)->CallVoidMethod(env, loc[checker], g_PKIXRevocationCheckerSetOptions, loc[options]);
-        }
-
-        // params.addCertPathChecker(checker);
-        (*env)->CallVoidMethod(env, params, g_PKIXBuilderParametersAddCertPathChecker, loc[checker]);
+        // checker.setOptions(options);
+        (*env)->CallVoidMethod(env, loc[checker], g_PKIXRevocationCheckerSetOptions, loc[options]);
     }
+
+    // params.addCertPathChecker(checker);
+    (*env)->CallVoidMethod(env, params, g_PKIXBuilderParametersAddCertPathChecker, loc[checker]);
 
     // params.setRevocationEnabled(true);
     // PKIXCertPathValidatorResult result = (PKIXCertPathValidatorResult)validator.validate(certPathToUse, params);

@@ -28,6 +28,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.Rethrow:
                     mangledName = "RhpRethrow";
                     break;
+                case ReadyToRunHelper.ThrowExact:
+                    mangledName = "RhpThrowExact";
+                    break;
 
                 case ReadyToRunHelper.Overflow:
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowOverflowException"u8);
@@ -75,9 +78,6 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.BulkWriteBarrier:
                     methodDesc = context.GetCoreLibEntryPoint("System"u8, "Buffer"u8, "BulkMoveWithWriteBarrier"u8, null);
-                    break;
-                case ReadyToRunHelper.ByRefWriteBarrier:
-                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpByRefAssignRefArm64" : "RhpByRefAssignRef";
                     break;
                 case ReadyToRunHelper.WriteBarrier_EAX:
                     mangledName = "RhpAssignRefEAX";
@@ -130,10 +130,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.NewMultiDimArr:
-                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers"u8, "NewObjArray"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Array"u8, "Ctor"u8, null);
                     break;
                 case ReadyToRunHelper.NewMultiDimArrRare:
-                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers"u8, "NewObjArrayRare"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Array"u8, "CtorRare"u8, null);
                     break;
 
                 case ReadyToRunHelper.NewArray:
@@ -164,10 +164,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.GetRuntimeTypeHandle:
-                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers"u8, "GetRuntimeTypeHandle"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "RuntimeTypeHandle"u8, "GetRuntimeTypeHandleFromMethodTable"u8, null);
                     break;
                 case ReadyToRunHelper.GetRuntimeType:
-                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers"u8, "GetRuntimeType"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTable"u8, null);
                     break;
                 case ReadyToRunHelper.GetRuntimeMethodHandle:
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers"u8, "GetRuntimeMethodHandle"u8);
@@ -322,17 +322,21 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.TypeHandleToRuntimeType:
-                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers"u8, "TypeHandleToRuntimeTypeMaybeNull"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTableMaybeNull"u8, null);
                     break;
                 case ReadyToRunHelper.GetRefAny:
-                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers"u8, "GetRefAny"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "TypedReference"u8, "GetRefAny"u8, null);
                     break;
                 case ReadyToRunHelper.TypeHandleToRuntimeTypeHandle:
-                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers"u8, "TypeHandleToRuntimeTypeHandleMaybeNull"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "RuntimeTypeHandle"u8, "GetRuntimeTypeHandleFromMethodTable"u8, null);
                     break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:
                     methodDesc = context.SystemModule.GetKnownType("System"u8, "Environment"u8).GetKnownMethod("get_CurrentManagedThreadId"u8, null);
+                    break;
+
+                case ReadyToRunHelper.AllocContinuation:
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null);
                     break;
 
                 default:

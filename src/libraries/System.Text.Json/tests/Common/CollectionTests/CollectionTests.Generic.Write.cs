@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
+            Assert.Equal("""[["1","2"],["3","4"]]""", json);
         }
 
         [Fact]
@@ -86,7 +86,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
+            Assert.Equal("""[["1","2"],["3","4"]]""", json);
         }
 
         [Fact]
@@ -141,7 +141,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
+            Assert.Equal("""[["1","2"],["3","4"]]""", json);
         }
 
         [Fact]
@@ -224,7 +224,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
+            Assert.Equal("""[["1","2"],["3","4"]]""", json);
         }
 
         [Fact]
@@ -280,7 +280,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
+            Assert.Equal("""[["1","2"],["3","4"]]""", json);
         }
 
         [Fact]
@@ -335,7 +335,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
+            Assert.Equal("""[["1","2"],["3","4"]]""", json);
         }
 
         [Fact]
@@ -523,6 +523,112 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(json == "[1,2]" || json == "[2,1]");
         }
 
+#if NET
+        [Fact]
+        public async Task GenericStructIReadOnlySetWrapperT()
+        {
+            {
+                GenericStructIReadOnlySetWrapper<int> obj = new GenericStructIReadOnlySetWrapper<int>().Initialize(new HashSet<int> { 10, 20 });
+                Assert.Equal("[10,20]", await Serializer.SerializeWrapper(obj));
+            }
+
+            {
+                GenericStructIReadOnlySetWrapper<int> obj = default;
+                Assert.Equal("[]", await Serializer.SerializeWrapper(obj));
+            }
+        }
+
+        [Fact]
+        public async Task WriteIReadOnlySetTOfHashSetT()
+        {
+            IReadOnlySet<HashSet<int>> input = new HashSet<HashSet<int>>
+            {
+                new HashSet<int>() { 1, 2 },
+                new HashSet<int>() { 3, 4 }
+            };
+
+            string json = await Serializer.SerializeWrapper(input);
+
+            // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
+            input = await Serializer.DeserializeWrapper<IReadOnlySet<HashSet<int>>>(json);
+
+            if (input.First().Contains(1))
+            {
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, input.First());
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, input.Last());
+            }
+            else
+            {
+                AssertExtensions.Equal(new HashSet<int> { 3, 4 }, input.First());
+                AssertExtensions.Equal(new HashSet<int> { 1, 2 }, input.Last());
+            }
+        }
+
+        [Fact]
+        public async Task WriteHashSetTOfIReadOnlySet()
+        {
+            HashSet<IReadOnlySet<int>> input = new HashSet<IReadOnlySet<int>>
+            {
+                new HashSet<int>() { 1, 2 },
+                new HashSet<int>() { 3, 4 }
+            };
+
+            string json = await Serializer.SerializeWrapper(input);
+
+            // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
+            input = await Serializer.DeserializeWrapper<HashSet<IReadOnlySet<int>>>(json);
+
+            if (input.First().Contains(1))
+            {
+                Assert.Equal(new HashSet<int> { 1, 2 }, input.First());
+                Assert.Equal(new HashSet<int> { 3, 4 }, input.Last());
+            }
+            else
+            {
+                Assert.Equal(new HashSet<int> { 3, 4 }, input.First());
+                Assert.Equal(new HashSet<int> { 1, 2 }, input.Last());
+            }
+        }
+
+        [Fact]
+        public async Task WriteIReadOnlySetTOfArray()
+        {
+            IReadOnlySet<int[]> input = new HashSet<int[]>
+            {
+                new int[] { 1, 2 },
+                new int[] { 3, 4 }
+            };
+
+            string json = await Serializer.SerializeWrapper(input);
+            Assert.Contains("[1,2]", json);
+            Assert.Contains("[3,4]", json);
+        }
+
+        [Fact]
+        public async Task WriteArrayOfIReadOnlySet()
+        {
+            IReadOnlySet<int>[] input = new HashSet<int>[2];
+            input[0] = new HashSet<int>() { 1, 2 };
+            input[1] = new HashSet<int>() { 3, 4 };
+
+            string json = await Serializer.SerializeWrapper(input);
+
+            // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
+            input = await Serializer.DeserializeWrapper<IReadOnlySet<int>[]>(json);
+            Assert.Equal(new HashSet<int> { 1, 2 }, input.First());
+            Assert.Equal(new HashSet<int> { 3, 4 }, input.Last());
+        }
+
+        [Fact]
+        public async Task WritePrimitiveIReadOnlySet()
+        {
+            IReadOnlySet<int> input = new HashSet<int> { 1, 2 };
+
+            string json = await Serializer.SerializeWrapper(input);
+            Assert.True(json == "[1,2]" || json == "[2,1]");
+        }
+#endif
+
         [Fact]
         public async Task WriteStackTOfStackT()
         {
@@ -542,7 +648,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal(@"[[""4"",""3""],[""2"",""1""]]", json);
+            Assert.Equal("""[["4","3"],["2","1"]]""", json);
         }
 
         [Fact]
@@ -597,7 +703,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
+            Assert.Equal("""[["1","2"],["3","4"]]""", json);
         }
 
         [Fact]
@@ -738,7 +844,7 @@ namespace System.Text.Json.Serialization.Tests
             });
 
             json = await Serializer.SerializeWrapper(input2);
-            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
+            Assert.Equal("""[["1","2"],["3","4"]]""", json);
         }
 
         [Fact]
@@ -802,12 +908,18 @@ namespace System.Text.Json.Serialization.Tests
             SimpleTestClassWithStringIReadOnlyCollectionWrapper obj3 = new SimpleTestClassWithStringIReadOnlyCollectionWrapper();
             SimpleTestClassWithStringIReadOnlyListWrapper obj4 = new SimpleTestClassWithStringIReadOnlyListWrapper();
             SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper obj5 = new SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper();
+#if NET
+            SimpleTestClassWithStringIReadOnlySetWrapper obj6 = new SimpleTestClassWithStringIReadOnlySetWrapper();
+#endif
 
             obj1.Initialize();
             obj2.Initialize();
             obj3.Initialize();
             obj4.Initialize();
             obj5.Initialize();
+#if NET
+            obj6.Initialize();
+#endif
 
             Assert.Equal(SimpleTestClassWithGenericCollectionWrappers.s_json.StripWhitespace(), await Serializer.SerializeWrapper(obj1));
             Assert.Equal(SimpleTestClassWithGenericCollectionWrappers.s_json.StripWhitespace(), await Serializer.SerializeWrapper<object>(obj1));
@@ -823,6 +935,11 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json.StripWhitespace(), await Serializer.SerializeWrapper(obj5));
             Assert.Equal(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json.StripWhitespace(), await Serializer.SerializeWrapper<object>(obj5));
+
+#if NET
+            Assert.Equal(SimpleTestClassWithStringIReadOnlySetWrapper.s_json.StripWhitespace(), await Serializer.SerializeWrapper(obj6));
+            Assert.Equal(SimpleTestClassWithStringIReadOnlySetWrapper.s_json.StripWhitespace(), await Serializer.SerializeWrapper<object>(obj6));
+#endif
         }
 
         [Fact]
@@ -881,7 +998,7 @@ namespace System.Text.Json.Serialization.Tests
             IEnumerable<ValueA> valueAs = Enumerable.Range(0, 5).Select(x => new ValueA { Value = x }).ToList();
             IEnumerable<ValueB> valueBs = valueAs.Select(x => new ValueB { Value = x.Value });
 
-            string expectedJson = @"[{""Value"":0},{""Value"":1},{""Value"":2},{""Value"":3},{""Value"":4}]";
+            string expectedJson = """[{"Value":0},{"Value":1},{"Value":2},{"Value":3},{"Value":4}]""";
             Assert.Equal(expectedJson, await Serializer.SerializeWrapper<IEnumerable<ValueB>>(valueBs));
         }
 
@@ -956,6 +1073,20 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(0, items.RefCount);
             }
         }
+
+#if NET
+        [Fact]
+        public async Task WriteIReadOnlySetT_DisposesEnumerators()
+        {
+            for (int count = 0; count < 5; count++)
+            {
+                var items = new RefCountedSet<int>(Enumerable.Range(1, count));
+                _ = await Serializer.SerializeWrapper((IReadOnlySet<int>)items);
+
+                Assert.Equal(0, items.RefCount);
+            }
+        }
+#endif
 
         [Fact]
         public async Task WriteIEnumerableT_ElementSerializationThrows_DisposesEnumerators()

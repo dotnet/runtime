@@ -13,6 +13,10 @@
 #include <pinvoke_override.hpp>
 #endif // TARGET_WASM
 
+#ifdef TARGET_BROWSER
+#include <emscripten/emscripten.h>
+#endif // TARGET_BROWSER
+
 #include <fstream>
 
 #if defined(TARGET_UNIX)
@@ -129,9 +133,7 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
 {
     static const char_t* const tpa_extensions[] =
     {
-        W(".ni.dll"),  // Probe for .ni.dll first so that it's preferred if ni and il coexist in the same dir
         W(".dll"),
-        W(".ni.exe"),
         W(".exe"),
         nullptr
     };
@@ -277,12 +279,34 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
         return len;
     }
 
+    // Look up user-defined properties passed to corerun via -p/--property.
+    assert(config->user_defined_keys.size() == config->user_defined_values.size());
+    pal::string_t key_native = pal::convert_from_utf8(key);
+    for (size_t i = 0; i < config->user_defined_keys.size(); ++i)
+    {
+        if (config->user_defined_keys[i] == key_native)
+        {
+            pal::string_utf8_t value_utf8 = pal::convert_to_utf8(config->user_defined_values[i].c_str());
+            size_t len = value_utf8.size() + 1;
+            if (value_buffer_size < len)
+                return len;
+
+            ::strncpy(value_buffer, value_utf8.c_str(), len - 1);
+            value_buffer[len - 1] = '\0';
+            return len;
+        }
+    }
+
     return -1;
 }
 
 // Paths for external assembly probe
 static char* s_core_libs_path = nullptr;
 static char* s_core_root_path = nullptr;
+
+#ifdef TARGET_BROWSER
+extern "C" bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
+#endif // TARGET_BROWSER
 
 static bool HOST_CONTRACT_CALLTYPE get_native_code_data(
     const host_runtime_contract_native_code_context* context,
@@ -341,6 +365,11 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
     void** data_start,
     int64_t* size)
 {
+#ifdef TARGET_BROWSER
+    if (BrowserHost_ExternalAssemblyProbe(path, data_start, size))
+        return true;
+#endif // TARGET_BROWSER
+
     // Get just the file name
     const char* name = path;
     const char* pos = strrchr(name, '/');
@@ -362,6 +391,9 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
 
     return false;
 }
+
+extern "C" int corerun_shutdown(int exit_code);
+static pal::mod_t coreclr_mod;
 
 static int run(const configuration& config)
 {
@@ -419,6 +451,9 @@ static int run(const configuration& config)
     string_t tpa_list;
     string_t app_assemblies_env = pal::getenv(envvar::appAssemblies);
     bool use_external_assembly_probe = false;
+#ifdef TARGET_BROWSER
+    use_external_assembly_probe = true;
+#endif // TARGET_BROWSER
     if (app_assemblies_env.empty() || app_assemblies_env == W("PROPERTY"))
     {
         // Use the TRUSTED_PLATFORM_ASSEMBLIES property to pass the app assemblies to the runtime.
@@ -428,6 +463,14 @@ static int run(const configuration& config)
     {
         // Use the external assembly probe to load assemblies from the app assembly paths.
         use_external_assembly_probe = true;
+    }
+    else
+    {
+        tpa_list = std::move(app_assemblies_env);
+    }
+
+    if (use_external_assembly_probe)
+    {
         if (!core_libs.empty())
         {
             pal::string_utf8_t core_libs_utf8 = pal::convert_to_utf8(core_libs.c_str());
@@ -441,10 +484,6 @@ static int run(const configuration& config)
             s_core_root_path = (char*)::malloc(core_root_utf8.length() + 1);
             ::strcpy(s_core_root_path, core_root_utf8.c_str());
         }
-    }
-    else
-    {
-        tpa_list = std::move(app_assemblies_env);
     }
 
     {
@@ -460,7 +499,6 @@ static int run(const configuration& config)
     actions.before_coreclr_load();
 
     // Attempt to load CoreCLR.
-    pal::mod_t coreclr_mod;
     if (!pal::try_load_coreclr(core_root, coreclr_mod))
     {
         return -1;
@@ -603,9 +641,28 @@ static int run(const configuration& config)
         actions.after_execute_assembly();
     }
 
-#if !defined(TARGET_BROWSER)
+#ifdef TARGET_BROWSER
+    // in NodeJS/Browser this is not really end of the process, JS keeps running.
+    // We want to keep the CoreCLR runtime alive to be able to process async work
+    // The NodeJS process is kept alive by pending async work via safeSetTimeout() -> runtimeKeepalivePush()
+    // The actual exit code would be set by SystemJS_ResolveMainPromise if the managed Main() is async.
+    // Or in Module.onExit handler when  managed Main() is synchronous.
+    return exit_code;
+#else // TARGET_BROWSER
+    return corerun_shutdown(exit_code);
+#endif // TARGET_BROWSER
+}
+
+extern "C" int corerun_shutdown(int exit_code)
+{
+    coreclr_shutdown_2_ptr coreclr_shutdown2_func = nullptr;
+    if (!try_get_export(coreclr_mod, "coreclr_shutdown_2", (void**)&coreclr_shutdown2_func))
+    {
+        return -1;
+    }
+
     int latched_exit_code = 0;
-    result = coreclr_shutdown2_func(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
+    int result = coreclr_shutdown2_func(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
     if (FAILED(result))
     {
         pal::fprintf(stderr, W("coreclr_shutdown_2 failed - Error: 0x%08x\n"), result);
@@ -618,10 +675,6 @@ static int run(const configuration& config)
     ::free((void*)s_core_libs_path);
     ::free((void*)s_core_root_path);
     return exit_code;
-#else // TARGET_BROWSER
-    // In browser we don't shutdown the runtime here as we want to keep it alive
-    return 0;
-#endif // TARGET_BROWSER
 }
 
 // Display the command line options

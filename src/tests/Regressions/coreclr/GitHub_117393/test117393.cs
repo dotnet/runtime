@@ -6,6 +6,7 @@ using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace Test117393
 {
@@ -45,6 +46,7 @@ namespace Test117393
         [DllImport("nativetest117393")]
         private static extern void TestFromNativeThread(IntPtr pUnknown);
 
+        [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
         [Fact]
         public static void TestEntryPoint()
         {

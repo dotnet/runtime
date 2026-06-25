@@ -58,13 +58,19 @@ namespace System.Formats.Tar
             else if (bytesToDiscard > 0)
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToDiscard));
-                while (bytesToDiscard > 0)
+                try
                 {
-                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
-                    archiveStream.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
-                    bytesToDiscard -= currentLengthToRead;
+                    while (bytesToDiscard > 0)
+                    {
+                        int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
+                        archiveStream.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
+                        bytesToDiscard -= currentLengthToRead;
+                    }
                 }
-                ArrayPool<byte>.Shared.Return(buffer);
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 
@@ -80,13 +86,19 @@ namespace System.Formats.Tar
             else if (bytesToDiscard > 0)
             {
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToDiscard));
-                while (bytesToDiscard > 0)
+                try
                 {
-                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
-                    await archiveStream.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
-                    bytesToDiscard -= currentLengthToRead;
+                    while (bytesToDiscard > 0)
+                    {
+                        int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
+                        await archiveStream.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
+                        bytesToDiscard -= currentLengthToRead;
+                    }
                 }
-                ArrayPool<byte>.Shared.Return(buffer);
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 
@@ -94,14 +106,20 @@ namespace System.Formats.Tar
         internal static void CopyBytes(Stream origin, Stream destination, long bytesToCopy)
         {
             byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToCopy));
-            while (bytesToCopy > 0)
+            try
             {
-                int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
-                origin.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
-                destination.Write(buffer.AsSpan(0, currentLengthToRead));
-                bytesToCopy -= currentLengthToRead;
+                while (bytesToCopy > 0)
+                {
+                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
+                    origin.ReadExactly(buffer.AsSpan(0, currentLengthToRead));
+                    destination.Write(buffer.AsSpan(0, currentLengthToRead));
+                    bytesToCopy -= currentLengthToRead;
+                }
             }
-            ArrayPool<byte>.Shared.Return(buffer);
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
         // Asynchronously helps copy a specific number of bytes from one stream into another.
@@ -110,15 +128,21 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(minimumLength: (int)Math.Min(MaxBufferLength, bytesToCopy));
-            while (bytesToCopy > 0)
+            try
             {
-                int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
-                Memory<byte> memory = buffer.AsMemory(0, currentLengthToRead);
-                await origin.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
-                await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
-                bytesToCopy -= currentLengthToRead;
+                while (bytesToCopy > 0)
+                {
+                    int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
+                    Memory<byte> memory = buffer.AsMemory(0, currentLengthToRead);
+                    await origin.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
+                    await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
+                    bytesToCopy -= currentLengthToRead;
+                }
             }
-            ArrayPool<byte>.Shared.Return(buffer);
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
         // Returns the number of bytes until the next multiple of the record size.
@@ -194,6 +218,9 @@ namespace System.Formats.Tar
             return false;
         }
 
+        // Chooses the compatible regular file entry type for the specified format.
+        internal static TarEntryType GetRegularFileEntryTypeForFormat(TarEntryFormat format) => format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+
         // When writing an entry that came from an archive of a different format, if its entry type happens to
         // be an incompatible regular file entry type, convert it to the compatible one.
         // No change for all other entry types.
@@ -268,7 +295,7 @@ namespace System.Formats.Tar
 
         [DoesNotReturn]
         private static void ThrowInvalidNumber() =>
-            throw new InvalidDataException(SR.Format(SR.TarInvalidNumber));
+            throw new InvalidDataException(SR.TarInvalidNumber);
 
         // Returns the null-terminated UTF8 string contained in the specified buffer.
         internal static string ParseUtf8String(ReadOnlySpan<byte> buffer)

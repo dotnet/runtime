@@ -179,6 +179,9 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun()]
+        // The test fetches WasmAppBuilder.dll from the Microsoft.NET.Runtime.WebAssembly.Sdk
+        // workload pack, which is not present in the NoWorkload (CoreCLR-Wasm) Helix payload.
+        [TestCategory("mono")]
         public void IcallWithOverloadedParametersAndEnum(Configuration config, bool aot)
         {
             string appendToTheEnd =
@@ -231,31 +234,30 @@ namespace Wasm.Build.Tests
             """;
             UpdateFile(Path.Combine(_projectDir, "runtime-icall-table.h"), icallTable);
 
-            string tasksDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
-                                                              "Microsoft.NET.Runtime.WebAssembly.Sdk",
-                                                              s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
-                                                              "tasks",
-                                                              BuildTestBase.TargetFrameworkForTasks); // not net472!
-            if (!Directory.Exists(tasksDir)) {
-                string? tasksDirParent = Path.GetDirectoryName (tasksDir);
-                if (!string.IsNullOrEmpty (tasksDirParent)) {
-                    if (!Directory.Exists(tasksDirParent)) {
-                        _testOutput.WriteLine($"Expected {tasksDirParent} to exist and contain TFM subdirectories");
-                    }
-                    _testOutput.WriteLine($"runtime pack tasks dir {tasksDir} contains subdirectories:");
-                    foreach (string subdir in Directory.EnumerateDirectories(tasksDirParent)) {
-                        _testOutput.WriteLine($"  - {subdir}");
-                    }
-                }
-                throw new DirectoryNotFoundException($"Could not find tasks directory {tasksDir}");
-            }
+            string tasksBaseDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
+                                                "Microsoft.NET.Runtime.WebAssembly.Sdk",
+                                                s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
+                                                "tasks");
+            if (!Directory.Exists(tasksBaseDir))
+                throw new DirectoryNotFoundException($"Could not find tasks base directory {tasksBaseDir}");
+
+            string[] taskDirectories = Directory.GetDirectories(tasksBaseDir);
+            // select the first non-net4.x directory
+            string? tasksDir = taskDirectories.FirstOrDefault(dir =>
+            {
+                string tfm = Path.GetFileName(dir);
+                return tfm.StartsWith("net", StringComparison.OrdinalIgnoreCase) && !tfm.StartsWith("net4", StringComparison.OrdinalIgnoreCase);
+            });
+
+            if (string.IsNullOrEmpty(tasksDir))
+                throw new DirectoryNotFoundException($"Could not find any valid TFM directories in {tasksBaseDir} : {string.Join(", ", taskDirectories)}");
 
             string? taskPath = Directory.EnumerateFiles(tasksDir, "WasmAppBuilder.dll", SearchOption.AllDirectories)
                                             .FirstOrDefault();
             if (string.IsNullOrEmpty(taskPath))
                 throw new FileNotFoundException($"Could not find WasmAppBuilder.dll in {tasksDir}");
 
-            _testOutput.WriteLine ("Using WasmAppBuilder.dll from {0}", taskPath);
+            _testOutput.WriteLine("Using WasmAppBuilder.dll from {0}", taskPath);
 
             string AddAssembly(string assemblyLocation, string name) => $"<WasmPInvokeAssembly Include=\"{Path.Combine(assemblyLocation, name + ".dll")}\" />";
             string frameworkDir = Path.Combine(GetBinFrameworkDir(config, isPublish));
@@ -288,6 +290,10 @@ namespace Wasm.Build.Tests
             ReplaceFile(programRelativePath, Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "BuildNative.cs"));
             string cCodeFilename = "simple.c";
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir, cCodeFilename));
+            // The BuildNative test program does not use JS interop, so the JS interop assembly
+            // would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which
+            // calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             var extraEnvVars = new Dictionary<string, string> {
                 { "LANG", culture },
@@ -328,10 +334,14 @@ namespace Wasm.Build.Tests
             // FIXME: Not possible in in-process mode for some reason, even with verbosity at "diagnostic"
             // Assert.Contains("Adding pinvoke signature FD for method 'Test.", output);
 
-            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, "pinvoke-table.h"));
+            string pinvokeTableFileName = IsCoreClrRuntime ? "pinvoke-table.cpp" : "pinvoke-table.h";
+            string pinvokeTable = File.ReadAllText(Path.Combine(objDir, pinvokeTableFileName));
             // Verify that the invoke is in the pinvoke table. Under various circumstances we will silently skip it,
             //  for example if the module isn't found
-            Assert.Contains("\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct", pinvokeTable);
+            string pinvokeTableEntry = IsCoreClrRuntime
+                ? "DllImportEntry(accept_double_struct_and_return_float_struct)"
+                : "\"accept_double_struct_and_return_float_struct\", accept_double_struct_and_return_float_struct";
+            Assert.Contains(pinvokeTableEntry, pinvokeTable);
             // Verify the signature of the C function prototype. Wasm ABI specifies that the structs should both decompose into scalars.
             Assert.Contains("float accept_double_struct_and_return_float_struct (double);", pinvokeTable);
             Assert.Contains("int64_t accept_and_return_i64_struct (int64_t);", pinvokeTable);
@@ -351,16 +361,19 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native-mono")]
         public async Task EnsureWasmAbiRulesAreFollowedInAOT(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: false)]
+        [TestCategory("native-mono")] // coreclr ActiveIssue: https://github.com/dotnet/runtime/issues/120897
         public async Task EnsureWasmAbiRulesAreFollowedInInterpreter(Configuration config, bool aot) =>
             await EnsureWasmAbiRulesAreFollowed(config, aot);
 
         [Theory]
         [BuildAndRun(aot: true, config: Configuration.Release)]
+        [TestCategory("native-mono")]
         public void EnsureComInteropCompilesInAOT(Configuration config, bool aot)
         {
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "com");
@@ -381,6 +394,10 @@ namespace Wasm.Build.Tests
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "UnmanagedCallback.cs"));
             string cCodeFilename = "local.c";
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", cCodeFilename), Path.Combine(_projectDir, cCodeFilename));
+            // The UnmanagedCallback test program does not use JS interop, so the JS interop assembly
+            // would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js (which
+            // calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             PublishProject(info, config, new PublishOptions(AOT: aot), isNativeBuild: true);
             RunResult result = await RunForPublishWithWebServer(new BrowserRunOptions(

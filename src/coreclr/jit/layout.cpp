@@ -699,6 +699,58 @@ const SegmentList& ClassLayout::GetNonPadding(Compiler* comp)
 }
 
 //------------------------------------------------------------------------
+// SliceLayout:
+//   Slice this class layout into the specified range.
+//
+// Parameters:
+//   compiler - The compiler instance
+//   offset   - Start offset of the slice
+//   size     - Size of the slice
+//
+// Returns:
+//   New layout of size 'size'
+//
+ClassLayout* ClassLayout::SliceLayout(Compiler* compiler, unsigned offset, unsigned size)
+{
+    if (offset == 0 && size == GetSize())
+    {
+        return this;
+    }
+
+    ClassLayoutBuilder builder(compiler, size);
+    INDEBUG(builder.SetName(compiler->printfAlloc("%s[%03u..%03u)", GetClassName(), offset, offset + size),
+                            compiler->printfAlloc("%s[%03u..%03u)", GetShortClassName(), offset, offset + size)));
+
+    if (((offset % TARGET_POINTER_SIZE) == 0) && ((size % TARGET_POINTER_SIZE) == 0) && HasGCPtr())
+    {
+        for (unsigned i = 0; i < size; i += TARGET_POINTER_SIZE)
+        {
+            builder.SetGCPtrType(i / TARGET_POINTER_SIZE, GetGCPtrType((offset + i) / TARGET_POINTER_SIZE));
+        }
+    }
+    else
+    {
+        assert(!HasGCPtr());
+    }
+
+    builder.AddPadding(SegmentList::Segment(0, size));
+
+    for (const SegmentList::Segment& nonPadding : GetNonPadding(compiler))
+    {
+        if ((nonPadding.End <= offset) || (nonPadding.Start >= offset + size))
+        {
+            continue;
+        }
+
+        unsigned start = nonPadding.Start <= offset ? 0 : (nonPadding.Start - offset);
+        unsigned end   = nonPadding.End >= (offset + size) ? size : (nonPadding.End - offset);
+
+        builder.RemovePadding(SegmentList::Segment(start, end));
+    }
+    return compiler->typGetCustomLayout(builder);
+}
+
+//------------------------------------------------------------------------
 // AreCompatible: check if 2 layouts are the same for copying.
 //
 // Arguments:
@@ -902,6 +954,31 @@ ClassLayoutBuilder::ClassLayoutBuilder(Compiler* compiler, unsigned size)
 }
 
 //------------------------------------------------------------------------
+// IsArrayTooLarge: check if an array of the specified length would exceed
+//    the specified maximum byte size for its payload.
+//
+// Arguments:
+//    compiler      - Compiler instance
+//    arrayHandle   - class handle for array
+//    length        - array length (in elements)
+//    maxByteSize   - maximum allowed byte size for the array payload
+//
+// Return value:
+//    true if the array would be too large
+//
+bool ClassLayoutBuilder::IsArrayTooLarge(Compiler*            compiler,
+                                         CORINFO_CLASS_HANDLE arrayHandle,
+                                         unsigned             length,
+                                         unsigned             maxByteSize)
+{
+    CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+    var_types            type = JITtype2varType(compiler->info.compCompHnd->getChildType(arrayHandle, &elemClsHnd));
+    unsigned elementSize = (type == TYP_STRUCT) ? compiler->typGetObjLayout(elemClsHnd)->GetSize() : genTypeSize(type);
+    uint64_t byteSize    = static_cast<uint64_t>(elementSize) * static_cast<uint64_t>(length);
+    return byteSize > maxByteSize;
+}
+
+//------------------------------------------------------------------------
 // BuildArray: Construct a builder for an array layout
 //
 // Arguments:
@@ -939,7 +1016,7 @@ ClassLayoutBuilder ClassLayoutBuilder::BuildArray(Compiler* compiler, CORINFO_CL
     totalSize *= static_cast<unsigned>(length);
     totalSize.AlignUp(TARGET_POINTER_SIZE);
     totalSize += static_cast<unsigned>(OFFSETOF__CORINFO_Array__data);
-    assert(!totalSize.IsOverflow());
+    assert(!totalSize.IsOverflow()); // should never overflow if caller used IsArrayTooLarge beforehand
 
     ClassLayoutBuilder builder(compiler, totalSize.Value());
 

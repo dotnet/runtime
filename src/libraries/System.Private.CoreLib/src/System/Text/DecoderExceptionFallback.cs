@@ -44,7 +44,7 @@ namespace System.Text
         [DoesNotReturn]
         private static void Throw(byte[] bytesUnknown, int index)
         {
-            bytesUnknown ??= Array.Empty<byte>();
+            bytesUnknown ??= [];
 
             // Create a string representation of our bytes.
             StringBuilder strBytes = new StringBuilder(bytesUnknown.Length * 4);

@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Hosting
     {
         private static bool IsRemoteExecutorSupportedAndPrivilegedProcess => RemoteExecutor.IsSupported && PlatformDetection.IsPrivilegedProcess;
 
-        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalFact(typeof(WindowsServiceLifetimeTests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void ServiceStops()
         {
             using var serviceTester = WindowsServiceTester.Create(async () =>
@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal(0, status.win32ExitCode);
         }
 
-        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalFact(typeof(WindowsServiceLifetimeTests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework is missing the fix from https://github.com/dotnet/corefx/commit/3e68d791066ad0fdc6e0b81828afbd9df00dd7f8")]
         public void ExceptionOnStartIsPropagated()
         {
@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal(Interop.Errors.ERROR_EXCEPTION_IN_SERVICE, status.win32ExitCode);
         }
 
-        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalFact(typeof(WindowsServiceLifetimeTests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void ExceptionOnStopIsPropagated()
         {
             using var serviceTester = WindowsServiceTester.Create(async () =>
@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal(Interop.Errors.ERROR_PROCESS_ABORTED, status.win32ExitCode);
         }
 
-        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalFact(typeof(WindowsServiceLifetimeTests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void CancelStopAsync()
         {
             using var serviceTester = WindowsServiceTester.Create(async () =>
@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal(Interop.Errors.ERROR_PROCESS_ABORTED, status.win32ExitCode);
         }
 
-        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalFact(typeof(WindowsServiceLifetimeTests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void ServiceCanStopItself()
         {
             using (var serviceTester = WindowsServiceTester.Create(async () =>
@@ -196,7 +196,7 @@ namespace Microsoft.Extensions.Hosting
 
         private static AutoResetEvent s_are = new AutoResetEvent(false);
 
-        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        [ConditionalFact(typeof(WindowsServiceLifetimeTests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         public void ServiceSequenceIsCorrect()
         {
             using (var serviceTester = WindowsServiceTester.Create(() =>

@@ -12,6 +12,13 @@ namespace ILCompiler
     {
         MethodDesc IPrefixMangledMethod.BaseMethod => _wrappedMethod;
 
-        string IPrefixMangledMethod.Prefix => "AsyncCallable";
+        ReadOnlySpan<byte> IPrefixMangledMethod.Prefix => "AsyncCallable"u8;
+    }
+
+    public partial class ReturnDroppingAsyncThunk : MethodDelegator, IPrefixMangledMethod
+    {
+        MethodDesc IPrefixMangledMethod.BaseMethod => _asyncVariant.Target;
+
+        ReadOnlySpan<byte> IPrefixMangledMethod.Prefix => "ReturnDroppingAsync"u8;
     }
 }

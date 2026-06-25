@@ -28,7 +28,6 @@
 #include "TypeManager.h"
 #include "MethodTable.h"
 #include "ObjectLayout.h"
-#include "slist.inl"
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 #include "volatile.h"
@@ -65,15 +64,6 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhYield()
         "You must p/invoke to RhYield");
 
     return PalSwitchToThread();
-}
-
-EXTERN_C void QCALLTYPE RhFlushProcessWriteBuffers()
-{
-    // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
-    ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
-        "You must p/invoke to RhFlushProcessWriteBuffers");
-
-    minipal_memory_barrier_process_wide();
 }
 
 // Get the list of currently loaded NativeAOT modules (as OS HMODULE handles). The caller provides a reference
@@ -485,13 +475,6 @@ FCIMPL2(uint32_t, RhGetKnobValues, char *** pResultKeys, char *** pResultValues)
     return g_pRhConfig->GetKnobCount();
 }
 FCIMPLEND
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-EXTERN_C void QCALLTYPE RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
-{
-    __cpuidex(cpuInfo, functionId, subFunctionId);
-}
-#endif
 
 FCIMPL3(int32_t, RhpLockCmpXchg32, int32_t * location, int32_t value, int32_t comparand)
 {

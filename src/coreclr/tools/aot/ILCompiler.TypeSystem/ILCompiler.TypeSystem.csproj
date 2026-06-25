@@ -5,7 +5,6 @@
     <AssemblyName>ILCompiler.TypeSystem</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <NoWarn>$(NoWarn);CA1866</NoWarn>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -35,6 +34,9 @@
   <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
       <Link>TypeSystem\Common\VersionResilientHashCode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\Internal\Text\Utf8Span.cs">
+      <Link>Common\Utf8Span.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\ArrayMethod.Diagnostic.cs">
       <Link>TypeSystem\Common\ArrayMethod.Diagnostic.cs</Link>
@@ -102,6 +104,9 @@
     <Compile Include="..\..\Common\TypeSystem\Canon\TypeDesc.Canon.cs">
       <Link>TypeSystem\Canon\TypeDesc.Canon.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Canon\TypeSystemConstraintsHelpers.Canon.cs">
+      <Link>TypeSystem\Canon\TypeSystemConstraintsHelpers.Canon.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Canon\TypeSystemContext.Canon.cs">
       <Link>TypeSystem\Canon\TypeSystemContext.Canon.cs</Link>
     </Compile>
@@ -128,6 +133,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\CastingHelper.cs">
       <Link>TypeSystem\Common\CastingHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Canon\CastingHelper.Canon.cs">
+      <Link>TypeSystem\Canon\CastingHelper.Canon.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\CastingHelper.TypeEquivalence.cs">
       <Link>TypeSystem\Common\CastingHelper.TypeEquivalence.cs</Link>

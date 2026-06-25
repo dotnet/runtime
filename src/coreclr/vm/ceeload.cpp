@@ -41,6 +41,11 @@
 #include "threads.h"
 #include "nativeimage.h"
 
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+#include <minipal/utf8.h>
+#include <minipal/getexepath.h>
+#endif // TARGET_UNIX && !DACCESS_COMPILE
+
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
 
@@ -171,6 +176,7 @@ void Module::DoInit(AllocMemTracker *pamTracker, LPCWSTR szName)
 
 #endif
 }
+#endif //!DACCESS_COMPILE
 
 // Set the given bit on m_dwTransientFlags. Return true if we won the race to set the bit.
 BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
@@ -186,6 +192,22 @@ BOOL Module::SetTransientFlagInterlocked(DWORD dwFlag)
             return TRUE;
     }
 }
+
+void Module::SetTransientFlagInterlockedWithMask(DWORD dwFlag, DWORD dwMask)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE((dwFlag & dwMask) == dwFlag);
+    for (;;)
+    {
+        DWORD dwTransientFlags = m_dwTransientFlags;
+        DWORD dwNewTransientFlags = (dwTransientFlags & ~dwMask) | dwFlag;
+        if ((DWORD)InterlockedCompareExchange((LONG*)&m_dwTransientFlags, dwNewTransientFlags, dwTransientFlags) == dwTransientFlags)
+            return;
+    }
+}
+
+#ifndef DACCESS_COMPILE
 
 #if defined(PROFILING_SUPPORTED) || defined(FEATURE_METADATA_UPDATER)
 void Module::UpdateNewlyAddedTypes()
@@ -424,7 +446,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     _ASSERTE(m_path != NULL);
     m_baseAddress = m_pPEAssembly->HasLoadedPEImage() ? m_pPEAssembly->GetLoadedLayout()->GetBase() : NULL;
     if (m_pPEAssembly->IsReflectionEmit())
-        m_dwTransientFlags |= IS_REFLECTION_EMIT;
+        m_dwTransientFlags = m_dwTransientFlags | IS_REFLECTION_EMIT;
 
     m_Crst.Init(CrstModule);
     m_LookupTableCrst.Init(CrstModuleLookupTable, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
@@ -432,17 +454,17 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     m_ISymUnmanagedReaderCrst.Init(CrstISymUnmanagedReader, CRST_DEBUGGER_THREAD);
 
     AllocateMaps();
-    m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
+    m_dwTransientFlags = m_dwTransientFlags & ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
 
     if (IsSystem())
-        m_dwPersistedFlags |= SKIP_TYPE_VALIDATION; // Skip type validation on System
+        m_dwPersistedFlags = m_dwPersistedFlags | SKIP_TYPE_VALIDATION; // Skip type validation on System
 
 #ifdef FEATURE_READYTORUN
     m_pNativeImage = NULL;
     if ((m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker)) != NULL)
     {
         if (m_pReadyToRunInfo->SkipTypeValidation())
-            m_dwPersistedFlags |= SKIP_TYPE_VALIDATION; // Skip type validation on System
+            m_dwPersistedFlags = m_dwPersistedFlags | SKIP_TYPE_VALIDATION; // Skip type validation on System
 
         m_pNativeImage = m_pReadyToRunInfo->GetNativeImage();
         if (m_pNativeImage != NULL)
@@ -480,21 +502,26 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         m_pInstMethodHashTable = InstMethodHashTable::Create(GetLoaderAllocator(), this, PARAMMETHODS_HASH_BUCKETS, pamTracker);
     }
 
+#ifdef PROFILING_SUPPORTED_DATA
     // These will be initialized in NotifyProfilerLoadFinished, set them to
     // a safe initial value now.
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
     m_dwCustomAttributeCount = 0;
+#endif // PROFILING_SUPPORTED_DATA
+
 #ifdef PROFILING_SUPPORTED
     // set profiler related JIT flags
     if (CORProfilerDisableInlining())
     {
-        m_dwTransientFlags |= PROF_DISABLE_INLINING;
+        m_dwTransientFlags = m_dwTransientFlags | PROF_DISABLE_INLINING;
     }
     if (CORProfilerDisableOptimizations())
     {
-        m_dwTransientFlags |= PROF_DISABLE_OPTIMIZATIONS;
+        m_dwTransientFlags = m_dwTransientFlags | PROF_DISABLE_OPTIMIZATIONS;
     }
+
+    UpdateJitOptimizationDisabledState();
 
     m_pJitInlinerTrackingMap = NULL;
     if (ReJitManager::IsReJITInlineTrackingEnabled())
@@ -517,13 +544,15 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
     _ASSERTE(((newBits << DEBUGGER_INFO_SHIFT_PRIV) &
               ~DEBUGGER_INFO_MASK_PRIV) == 0);
 
-    m_dwTransientFlags &= ~DEBUGGER_INFO_MASK_PRIV;
-    m_dwTransientFlags |= (newBits << DEBUGGER_INFO_SHIFT_PRIV);
+    SetTransientFlagInterlockedWithMask(newBits << DEBUGGER_INFO_SHIFT_PRIV, DEBUGGER_INFO_MASK_PRIV);
+    UpdateJitOptimizationDisabledState();
 
 #ifdef DEBUGGING_SUPPORTED
     if (IsEditAndContinueCapable())
     {
-        BOOL setEnC = (newBits & DACF_ENC_ENABLED) != 0 || g_pConfig->ForceEnc() || (g_pConfig->DebugAssembliesModifiable() && AreJITOptimizationsDisabled());
+        BOOL setEnC = (g_pConfig->ModifiableAssemblies() != MODIFIABLE_ASSM_NONE) &&
+                      ((newBits & DACF_ENC_ENABLED) != 0 ||
+                       (g_pConfig->ModifiableAssemblies() == MODIFIABLE_ASSM_DEBUG && AreJITOptimizationsDisabled()));
         if (setEnC)
         {
             EnableEditAndContinue();
@@ -590,6 +619,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
 
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(EditAndContinueModule))));
         pModule = new (pMemory) EditAndContinueModule(pAssembly, pPEAssembly);
+        pModule->SetTransientFlagInterlocked(IS_ENC_CAPABLE);
     }
     else
 #endif // FEATURE_METADATA_UPDATER
@@ -602,7 +632,7 @@ Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTra
     ModuleHolder pModuleSafe(pModule);
     pModuleSafe->DoInit(pamTracker, NULL);
 
-    RETURN pModuleSafe.Extract();
+    RETURN pModuleSafe.Detach();
 }
 
 void Module::ApplyMetaData()
@@ -837,13 +867,6 @@ BOOL Module::IsCollectible()
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return GetAssembly()->IsCollectible();
-}
-
-DomainAssembly* Module::GetDomainAssembly()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return m_pDomainAssembly;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1199,13 +1222,6 @@ BOOL Module::IsRuntimeMarshallingEnabled()
         (hr == S_OK ? 0 : RUNTIME_MARSHALLING_ENABLED));
 
     return hr != S_OK;
-}
-
-void Module::SetDomainAssembly(DomainAssembly *pDomainAssembly)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_pDomainAssembly = pDomainAssembly;
 }
 
 //---------------------------------------------------------------------------------------
@@ -2044,22 +2060,6 @@ void Module::BuildClassForModule()
 
 #endif // !DACCESS_COMPILE
 
-// Returns true iff the debugger should be notified about this module
-//
-// Notes:
-//   Debugger doesn't need to be notified about modules that can't be executed.
-//   (we do not have such cases at the moment)
-//
-//   This should be immutable for an instance of a module. That ensures that the debugger gets consistent
-//   notifications about it. It this value mutates, than the debugger may miss relevant notifications.
-BOOL Module::IsVisibleToDebugger()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    return TRUE;
-}
-
 ReadyToRunLoadedImage * Module::GetReadyToRunImage()
 {
     LIMITED_METHOD_CONTRACT;
@@ -2222,10 +2222,9 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
     }
     CONTRACTL_END;
 
-    BOOL fIs80Plus;
     DWORD dwCharCount;
     LPCWSTR pString;
-    if (FAILED(GetMDImport()->GetUserString(token, &dwCharCount, &fIs80Plus, &pString)) ||
+    if (FAILED(GetMDImport()->GetUserString(token, &dwCharCount, &pString)) ||
         (pString == NULL))
     {
         THROW_BAD_FORMAT(BFA_BAD_STRING_TOKEN_RANGE, this);
@@ -2245,12 +2244,7 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
     pstrData->SetStringBuffer(pSwapped);
 #endif // !!BIGENDIAN
 
-        // MD and String look at this bit in opposite ways.  Here's where we'll do the conversion.
-        // MD sets the bit to true if the string contains characters greater than 80.
-        // String sets the bit to true if the string doesn't contain characters greater than 80.
-
     pstrData->SetCharCount(dwCharCount);
-    pstrData->SetIsOnlyLowChars(!fIs80Plus);
 }
 
 
@@ -2934,14 +2928,6 @@ void Module::UpdateDynamicMetadataIfNeeded()
         return;
     }
 
-    // Since serializing metadata to an auxiliary buffer is only needed by the debugger,
-    // we should only be doing this for modules that the debugger can see.
-    if (!IsVisibleToDebugger())
-    {
-        return;
-    }
-
-
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -2964,18 +2950,14 @@ void Module::UpdateDynamicMetadataIfNeeded()
 
 #endif // DEBUGGING_SUPPORTED
 
-BOOL Module::NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int flags, BOOL attaching)
+BOOL Module::NotifyDebuggerLoad(Assembly * pAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
-
-    // We don't notify the debugger about modules that don't contain any code.
-    if (!IsVisibleToDebugger())
-        return FALSE;
 
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
-        Module * pModule = pDomainAssembly->GetAssembly()->GetModule();
+        Module * pModule = pAssembly->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
 
@@ -2994,8 +2976,7 @@ BOOL Module::NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int flags, BOO
         g_pDebugInterface->LoadModule(this,
                                       m_pPEAssembly->GetPath(),
                                       m_pPEAssembly->GetPath().GetCount(),
-                                      GetAssembly(),
-                                      pDomainAssembly,
+                                      pAssembly,
                                       attaching);
 
         result = TRUE;
@@ -3025,10 +3006,6 @@ void Module::NotifyDebuggerUnload()
     if (!pDomain->IsDebuggerAttached())
         return;
 
-    // We don't notify the debugger about modules that don't contain any code.
-    if (!IsVisibleToDebugger())
-        return;
-
     LookupMap<PTR_MethodTable>::Iterator typeDefIter(&m_TypeDefToMethodTableMap);
     while (typeDefIter.Next())
     {
@@ -3047,7 +3024,7 @@ using GetTokenForVTableEntry_t = mdToken(STDMETHODCALLTYPE*)(HMODULE module, BYT
 static HMODULE GetIJWHostForModule(Module* module)
 {
 #if !defined(TARGET_UNIX)
-    PEDecoder* pe = module->GetPEAssembly()->GetLoadedLayout();
+    PEImageLayout* pe = module->GetPEAssembly()->GetLoadedLayout();
 
     BYTE* baseAddress = (BYTE*)module->GetPEAssembly()->GetIJWBase();
 
@@ -3396,9 +3373,10 @@ void Module::FixupVTables()
 
                     UMEntryThunkData *pUMEntryThunkData = UMEntryThunkData::CreateUMEntryThunk();
 
-                    UMThunkMarshInfo *pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(UMThunkMarshInfo), CODE_SIZE_ALIGN));
+                    DelegateUMThunkMarshInfo *pUMThunkMarshInfo = (DelegateUMThunkMarshInfo*)(void*)(SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocAlignedMem(sizeof(DelegateUMThunkMarshInfo), CODE_SIZE_ALIGN));
 
-                    pUMThunkMarshInfo->LoadTimeInit(pMD);
+                    new (pUMThunkMarshInfo) DelegateUMThunkMarshInfo(pMD);
+
                     pUMEntryThunkData->LoadTimeInit((PCODE)0, NULL, pUMThunkMarshInfo, pMD);
 
                     SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunkData->GetCode());
@@ -3604,6 +3582,14 @@ void Module::RunEagerFixupsUnlocked()
             {
                 _ASSERTE(IsReadyToRun());
                 GetReadyToRunInfo()->DisableAllR2RCode();
+
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+                if (GetReadyToRunInfo()->HasStrippedILBodies())
+                {
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
+                        W("ReadyToRun code was disabled by a failed eager fixup, but the image has stripped IL bodies and this runtime has no JIT fallback."));
+                }
+#endif // !FEATURE_DYNAMIC_CODE_COMPILED
             }
             else
             {
@@ -3612,6 +3598,10 @@ void Module::RunEagerFixupsUnlocked()
         }
     }
 
+#ifdef TARGET_WASM
+    // For WASM, register virtual IP ranges instead of real code address ranges.
+    GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+#else
     TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
 
     ExecutionManager::AddCodeRange(
@@ -3619,6 +3609,7 @@ void Module::RunEagerFixupsUnlocked()
         ExecutionManager::GetReadyToRunJitManager(),
         RangeSection::RANGE_SECTION_NONE,
         this /* pHeapListOrZapModule */);
+#endif // TARGET_WASM
 }
 #endif // !DACCESS_COMPILE
 
@@ -3653,23 +3644,43 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
 
 static LPCWSTR s_pCommandLine = NULL;
 
-// Retrieve the full command line for the current process.
-LPCWSTR GetManagedCommandLine()
+#ifdef TARGET_UNIX
+static LPWSTR s_pExePath = NULL;
+
+static LPWSTR GetExePath()
 {
-    LIMITED_METHOD_CONTRACT;
-    return s_pCommandLine;
+    LPWSTR pExePath = VolatileLoadWithoutBarrier(&s_pExePath);
+
+    if (pExePath == nullptr)
+    {
+        char* exePath = minipal_getexepath();
+        size_t exePathLen = minipal_get_length_utf8_to_utf16(exePath, strlen(exePath), 0);
+        pExePath = new WCHAR[exePathLen + 1];
+        minipal_convert_utf8_to_utf16(exePath, strlen(exePath), (CHAR16_T*)pExePath, exePathLen + 1, 0);
+        pExePath[exePathLen] = W('\0');
+        free(exePath);
+        s_pExePath = pExePath;
+    }
+
+    return pExePath;
 }
+#endif // TARGET_UNIX
 
 LPCWSTR GetCommandLineForDiagnostics()
 {
     // Get the managed command line.
-    LPCWSTR pCmdLine = GetManagedCommandLine();
+    LPCWSTR pCmdLine = VolatileLoadWithoutBarrier(&s_pCommandLine);
 
-    // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
+    // GetCommandLineForDiagnostics can be called without s_pCommandLine being initialized
+    // when the runtime is hosted without entrypoint assembly
     if (pCmdLine == nullptr)
     {
+#ifdef TARGET_WINDOWS
         // Use the result from GetCommandLineW() instead
         pCmdLine = GetCommandLineW();
+#else
+        pCmdLine = GetExePath();
+#endif // TARGET_WINDOWS
     }
 
     return pCmdLine;
@@ -3713,18 +3724,17 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     }
     CONTRACTL_END;
 
-    // Get the command line.
-    LPCWSTR osCommandLine = GetCommandLineW();
-
 #ifndef TARGET_UNIX
-    // On Windows, osCommandLine contains the executable and all arguments.
-    s_pCommandLine = osCommandLine;
+    // On Windows, GetCommandLineW contains the executable and all arguments.
+    s_pCommandLine = GetCommandLineW();
 #else
     // On UNIX, the PAL doesn't have the command line arguments, so we must build the command line.
-    // osCommandLine contains the full path to the executable.
-    SIZE_T  commandLineLen = (u16_strlen(osCommandLine) + 1);
+    // exePath contains the full path to the executable.
+    LPCWSTR exePath = GetExePath();
+    SIZE_T  commandLineLen = (u16_strlen(exePath) + 1);
 
-    // We will append pwzAssemblyPath to the 'corerun' osCommandLine
+    // Append assembly path to approximate the command line for generic hosts like `dotnet`.
+    // This isn't quite correct for apphost, as the app name will be duplicated.
     commandLineLen += (u16_strlen(pwzAssemblyPath) + 1);
 
     for (int i = 0; i < argc; i++)
@@ -3738,7 +3748,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     SIZE_T remainingLen    = commandLineLen;
     LPWSTR pCursor         = pNewCommandLine;
 
-    Append_Next_Item(&pCursor, &remainingLen, osCommandLine,   true);
+    Append_Next_Item(&pCursor, &remainingLen, exePath,   true);
     Append_Next_Item(&pCursor, &remainingLen, pwzAssemblyPath, (argc > 0));
 
     for (int i = 0; i < argc; i++)
@@ -3802,7 +3812,7 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
     pModule->DoInit(pamTracker, szName);
     pModule->SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules();
 
-    RETURN pModule.Extract();
+    RETURN pModule.Detach();
 }
 
 
@@ -4543,79 +4553,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     {
         GetLoaderAllocator()->EnumMemoryRegions(flags);
     }
-    else if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
-    {
-        if (m_pAvailableClasses.IsValid())
-        {
-            m_pAvailableClasses->EnumMemoryRegions(flags);
-        }
-        if (m_pAvailableParamTypes.IsValid())
-        {
-            m_pAvailableParamTypes->EnumMemoryRegions(flags);
-        }
-        if (m_pInstMethodHashTable.IsValid())
-        {
-            m_pInstMethodHashTable->EnumMemoryRegions(flags);
-        }
-        if (m_pAvailableClassesCaseIns.IsValid())
-        {
-            m_pAvailableClassesCaseIns->EnumMemoryRegions(flags);
-        }
-
-        // Save the LookupMap structures.
-        m_MethodDefToDescMap.ListEnumMemoryRegions(flags);
-        m_FieldDefToDescMap.ListEnumMemoryRegions(flags);
-        m_MemberRefMap.ListEnumMemoryRegions(flags);
-        m_GenericParamToDescMap.ListEnumMemoryRegions(flags);
-        m_ManifestModuleReferencesMap.ListEnumMemoryRegions(flags);
-
-        LookupMap<PTR_MethodTable>::Iterator typeDefIter(&m_TypeDefToMethodTableMap);
-        while (typeDefIter.Next())
-        {
-            if (typeDefIter.GetElement())
-            {
-                typeDefIter.GetElement()->EnumMemoryRegions(flags);
-            }
-        }
-
-        LookupMap<PTR_TypeRef>::Iterator typeRefIter(&m_TypeRefToMethodTableMap);
-        while (typeRefIter.Next())
-        {
-            if (typeRefIter.GetElement())
-            {
-                TypeHandle th = TypeHandle::FromTAddr(dac_cast<TADDR>(typeRefIter.GetElement()));
-                th.EnumMemoryRegions(flags);
-            }
-        }
-
-        LookupMap<PTR_MethodDesc>::Iterator methodDefIter(&m_MethodDefToDescMap);
-        while (methodDefIter.Next())
-        {
-            if (methodDefIter.GetElement())
-            {
-                methodDefIter.GetElement()->EnumMemoryRegions(flags);
-            }
-        }
-
-        LookupMap<PTR_FieldDesc>::Iterator fieldDefIter(&m_FieldDefToDescMap);
-        while (fieldDefIter.Next())
-        {
-            if (fieldDefIter.GetElement())
-            {
-                fieldDefIter.GetElement()->EnumMemoryRegions(flags);
-            }
-        }
-
-        LookupMap<PTR_TypeVarTypeDesc>::Iterator genericParamIter(&m_GenericParamToDescMap);
-        while (genericParamIter.Next())
-        {
-            if (genericParamIter.GetElement())
-            {
-                genericParamIter.GetElement()->EnumMemoryRegions(flags);
-            }
-        }
-
-    }   // !CLRDATA_ENUM_MEM_MINI && !CLRDATA_ENUM_MEM_TRIAGE && !CLRDATA_ENUM_MEM_HEAP2
 
     LookupMap<PTR_Module>::Iterator asmRefIter(&m_ManifestModuleReferencesMap);
     while (asmRefIter.Next())

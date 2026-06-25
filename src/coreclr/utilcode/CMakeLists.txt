@@ -1,6 +1,7 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(UTILCODE_COMMON_SOURCES
+  dn_xxhash.cpp
   clrhost_nodependencies.cpp
   ccomprc.cpp
   ex.cpp
@@ -15,9 +16,6 @@ set(UTILCODE_COMMON_SOURCES
   collections.cpp
   posterror.cpp
   clrhelpers.cpp
-  stgpool.cpp
-  stgpooli.cpp
-  stgpoolreadonly.cpp
   utsem.cpp
   check.cpp
   log.cpp
@@ -25,6 +23,7 @@ set(UTILCODE_COMMON_SOURCES
   comex.cpp
   guidfromname.cpp
   memorypool.cpp
+  memorystreams.cpp
   loaderheap.cpp
   interleavedloaderheap.cpp
   loaderheap_shared.cpp
@@ -49,6 +48,7 @@ set(UTILCODE_COMMON_SOURCES
   stresslog.cpp
   debug.cpp
   pedecoder.cpp
+  webcildecoder.cpp
   winfix.cpp
   longfilepathwrappers.cpp
   yieldprocessornormalized.cpp
@@ -111,7 +111,9 @@ if(CLR_CMAKE_HOST_WIN32)
     target_compile_definitions(utilcodestaticnohost PRIVATE _CRTIMP=) # use static version of crt
 
     link_natvis_sources_for_target(utilcodestaticnohost INTERFACE utilcode.natvis)
-    link_natvis_sources_for_target(utilcode_dac INTERFACE utilcode.natvis)
+    if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+      link_natvis_sources_for_target(utilcode_dac INTERFACE utilcode.natvis)
+    endif()
     link_natvis_sources_for_target(utilcode INTERFACE utilcode.natvis)
 endif(CLR_CMAKE_HOST_WIN32)
 

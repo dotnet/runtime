@@ -5,12 +5,15 @@ using System;
 using System.Reflection;
 
 using Xunit;
+using TestLibrary;
 
 [ActiveIssue("https://github.com/dotnet/runtime/issues/107110", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoInterpreter))]
 public class Arrays
 {
     private class TestClass { }
 
+    [ActiveIssue("Function mismatch", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+    [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
     [Fact]
     public static void TypeMismatch_ArrayElement()
     {
@@ -21,6 +24,8 @@ public class Arrays
         Assert.IsType<ArrayTypeMismatchException>(e.InnerException);
     }
 
+    [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+    [ActiveIssue("Function mismatch", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TypeMismatch_MultidimensionalArrayElement()
     {
@@ -31,6 +36,8 @@ public class Arrays
         Assert.IsType<ArrayTypeMismatchException>(e.InnerException);
     }
 
+    [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
+    [ActiveIssue("Function mismatch", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [Fact]
     public static void TypeMismatch_ClassElement()
     {

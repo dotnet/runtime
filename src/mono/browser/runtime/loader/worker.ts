@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { MonoConfigInternal, PThreadInfo, WorkerToMainMessageType, monoMessageSymbol } from "../types/internal";
-import { MonoConfig } from "../types";
 import { deep_merge_config, normalizeConfig } from "./config";
-import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
+import { emscriptenModule, ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_debug } from "./logging";
 
 export function setupPreloadChannelToMainThread () {
@@ -12,9 +11,7 @@ export function setupPreloadChannelToMainThread () {
     const workerPort = channel.port1;
     const mainPort = channel.port2;
     workerPort.addEventListener("message", (event) => {
-        const config = JSON.parse(event.data.config) as MonoConfig;
-        const monoThreadInfo = JSON.parse(event.data.monoThreadInfo) as PThreadInfo;
-        onMonoConfigReceived(config, monoThreadInfo);
+        onMonoConfigReceived(event.data);
         workerPort.close();
         mainPort.close();
     }, { once: true });
@@ -31,7 +28,13 @@ export function setupPreloadChannelToMainThread () {
 let workerMonoConfigReceived = false;
 
 // called when the main thread sends us the mono config
-function onMonoConfigReceived (config: MonoConfigInternal, monoThreadInfo: PThreadInfo): void {
+function onMonoConfigReceived (data: any): void {
+    const config = JSON.parse(data.config) as MonoConfigInternal;
+    const monoThreadInfo = JSON.parse(data.monoThreadInfo) as PThreadInfo;
+    emscriptenModule.config = config;
+    emscriptenModule.wasmModule = data.wasmModule;
+    emscriptenModule.wasmMemory = data.wasmMemory;
+    emscriptenModule.handlers = data.handlers;
     if (workerMonoConfigReceived) {
         mono_log_debug("mono config already received");
         return;
@@ -43,7 +46,7 @@ function onMonoConfigReceived (config: MonoConfigInternal, monoThreadInfo: PThre
     workerMonoConfigReceived = true;
     loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
 
-    if (ENVIRONMENT_IS_WEB && config.forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
+    if (ENVIRONMENT_IS_WEB && config.forwardConsole && typeof globalThis.WebSocket != "undefined") {
         loaderHelpers.setup_proxy_console("worker-idle", console, globalThis.location.origin);
     }
 }

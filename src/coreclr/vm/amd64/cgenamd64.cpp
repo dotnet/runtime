@@ -43,6 +43,25 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
 #undef CALLEE_SAVED_REGISTER
 }
 
+#ifdef TARGET_WINDOWS
+void UpdateRegDisplayFromArgumentRegisters(REGDISPLAY * pRD, ArgumentRegisters* pRegs)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    T_CONTEXT * pContext = pRD->pCurrentContext;
+    pContext->Rcx = pRegs->RCX;
+    pContext->Rdx = pRegs->RDX;
+    pContext->R8 = pRegs->R8;
+    pContext->R9 = pRegs->R9;
+
+    KNONVOLATILE_CONTEXT_POINTERS * pContextPointers = pRD->pCurrentContextPointers;
+    pContextPointers->Rcx = (PULONG64)&pRegs->RCX;
+    pContextPointers->Rdx = (PULONG64)&pRegs->RDX;
+    pContextPointers->R8 = (PULONG64)&pRegs->R8;
+    pContextPointers->R9 = (PULONG64)&pRegs->R9;
+}
+#endif
+
 void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
 {
     LIMITED_METHOD_CONTRACT;
@@ -69,13 +88,10 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
     if (updateFloats)
     {
         UpdateFloatingPointRegisters(pRD, GetSP());
-        _ASSERTE(pRD->pCurrentContext->Rip == GetReturnAddress());
-        _ASSERTE(pRD->pCurrentContext->Rsp == GetSP());
     }
 #endif // DACCESS_COMPILE
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = GetReturnAddress();
     pRD->pCurrentContext->Rsp = GetSP();
@@ -87,6 +103,58 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
+
+#ifdef FEATURE_RESOLVE_HELPER_DISPATCH
+void ResolveHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef DACCESS_COMPILE
+    if (updateFloats)
+    {
+        UpdateFloatingPointRegisters(pRD, GetSP());
+        _ASSERTE(pRD->pCurrentContext->Rip == GetReturnAddress());
+        _ASSERTE(pRD->pCurrentContext->Rsp == GetSP());
+    }
+#endif // DACCESS_COMPILE
+
+    pRD->IsCallerContextValid = FALSE;
+
+    pRD->pCurrentContext->Rip = GetReturnAddress();
+    pRD->pCurrentContext->Rsp = GetSP();
+
+    UpdateRegDisplayFromCalleeSavedRegisters(pRD, GetCalleeSavedRegisters());
+    ClearRegDisplayArgumentAndScratchRegisters(pRD);
+
+    UpdateRegDisplayFromArgumentRegisters(pRD, GetArgumentRegisters());
+
+    SyncRegDisplayToCurrentContext(pRD);
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResolveHelperFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
+}
+#endif // FEATURE_RESOLVE_HELPER_DISPATCH
+
+#ifdef FEATURE_INTERPRETER
+#ifndef DACCESS_COMPILE
+void InterpreterFrame::UpdateFloatingPointRegisters_Impl(const PREGDISPLAY pRD, TADDR)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifndef UNIX_AMD64_ABI
+    // The interpreter frame saves the floating point registers in the TransitionBlock, so we need to update them in the REGDISPLAY when we update the REGDISPLAY for an interpreter frame.
+    // Note: Unix AMD64 ABI has no callee-saved floating point registers, so this is Windows-only.
+    // FP callee-saved are at TransitionBlock - 232 (8 for stack alignment + 4 * 16 for FP argument registers + 10 * 16 for callee saved floating point registers).
+    TADDR pTransitionBlock = GetTransitionBlock();
+    M128A *pCalleeSavedFloats = (M128A*)((BYTE*)pTransitionBlock - 232);
+    for (int i = 0; i < 10; i++)
+    {
+        (&pRD->pCurrentContext->Xmm6)[i] = pCalleeSavedFloats[i];
+        (&pRD->pCurrentContextPointers->Xmm6)[i] = &pCalleeSavedFloats[i];
+    }
+#endif // !UNIX_AMD64_ABI
+}
+#endif // DACCESS_COMPILE
+#endif // FEATURE_INTERPRETER
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
@@ -111,7 +179,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
+        UpdateFloatingPointRegisters(pRD, dac_cast<TADDR>(GetCallSiteSP()));
         // The float updating unwinds the stack so the pRD->pCurrentContext->Rip contains correct unwound Rip
         // This is used for exception handling and the Rip extracted from m_pCallerReturnAddress is slightly
         // off, which causes problem with searching for the return address on shadow stack on x64, so
@@ -124,7 +192,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     }
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rsp = *(DWORD64 *)&m_pCallSiteSP;
     pRD->pCurrentContext->Rbp = *(DWORD64 *)&m_pCalleeSavedFP;
@@ -140,7 +207,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     SyncRegDisplayToCurrentContext(pRD);
 
 #ifdef FEATURE_INTERPRETER
-    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    if ((m_Next != FRAME_TOP) && (m_Next != NULL) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
     {
         // If the next frame is an interpreter frame, we also need to set the first argument register to point to the interpreter frame.
         SetFirstArgReg(pRD->pCurrentContext, dac_cast<TADDR>(m_Next));
@@ -168,24 +235,32 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->SSP = m_SSP;
 #endif
 
-    pRD->pCurrentContextPointers->Rax = &m_ctx.Rax;
-    pRD->pCurrentContextPointers->Rcx = &m_ctx.Rcx;
-    pRD->pCurrentContextPointers->Rdx = &m_ctx.Rdx;
-    pRD->pCurrentContextPointers->Rbx = &m_ctx.Rbx;
-    pRD->pCurrentContextPointers->Rbp = &m_ctx.Rbp;
-    pRD->pCurrentContextPointers->Rsi = &m_ctx.Rsi;
-    pRD->pCurrentContextPointers->Rdi = &m_ctx.Rdi;
-    pRD->pCurrentContextPointers->R8  = &m_ctx.R8;
-    pRD->pCurrentContextPointers->R9  = &m_ctx.R9;
-    pRD->pCurrentContextPointers->R10 = &m_ctx.R10;
-    pRD->pCurrentContextPointers->R11 = &m_ctx.R11;
-    pRD->pCurrentContextPointers->R12 = &m_ctx.R12;
-    pRD->pCurrentContextPointers->R13 = &m_ctx.R13;
-    pRD->pCurrentContextPointers->R14 = &m_ctx.R14;
-    pRD->pCurrentContextPointers->R15 = &m_ctx.R15;
+#ifdef DACCESS_COMPILE
+    // &m_ctx.Xxx resolves through the DAC cache and the entry can be evicted
+    // before context pointers are consumed. Point at the local copy in
+    // pCurrentContext instead (values were already copied above).
+    CONTEXT *pContext = pRD->pCurrentContext;
+#else
+    CONTEXT *pContext = &m_ctx;
+#endif
+
+    pRD->pCurrentContextPointers->Rax = &pContext->Rax;
+    pRD->pCurrentContextPointers->Rcx = &pContext->Rcx;
+    pRD->pCurrentContextPointers->Rdx = &pContext->Rdx;
+    pRD->pCurrentContextPointers->Rbx = &pContext->Rbx;
+    pRD->pCurrentContextPointers->Rbp = &pContext->Rbp;
+    pRD->pCurrentContextPointers->Rsi = &pContext->Rsi;
+    pRD->pCurrentContextPointers->Rdi = &pContext->Rdi;
+    pRD->pCurrentContextPointers->R8  = &pContext->R8;
+    pRD->pCurrentContextPointers->R9  = &pContext->R9;
+    pRD->pCurrentContextPointers->R10 = &pContext->R10;
+    pRD->pCurrentContextPointers->R11 = &pContext->R11;
+    pRD->pCurrentContextPointers->R12 = &pContext->R12;
+    pRD->pCurrentContextPointers->R13 = &pContext->R13;
+    pRD->pCurrentContextPointers->R14 = &pContext->R14;
+    pRD->pCurrentContextPointers->R15 = &pContext->R15;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 }
 
 #ifdef FEATURE_HIJACK
@@ -231,7 +306,6 @@ void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFlo
     pRD->pCurrentContextPointers->R15 = &m_Regs->R15;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     RETURN;
 }
@@ -247,7 +321,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     CONTRACTL_END;
 
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     pRD->pCurrentContext->Rip = m_ReturnAddress;
 #ifdef TARGET_WINDOWS
@@ -356,42 +429,6 @@ void EncodeLoadAndJumpThunk (LPBYTE pBuffer, LPVOID pv, LPVOID pTarget)
     pBuffer[21] = 0xE0;
 
     _ASSERTE(DbgIsExecutable(pBuffer, 22));
-}
-
-void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
-    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
-
-    // We need the target to be in a 64-bit aligned memory location and the call instruction
-    // to immediately precede the ComCallMethodDesc. We'll generate an indirect call to avoid
-    // consuming 3 qwords for this (mov rax, | target | nops & call rax).
-
-    // dq 123456789abcdef0h
-    // nop                              90
-    // nop                              90
-    // call [$ - 10]                    ff 15 f0 ff ff ff
-
-    SET_UNALIGNED_64(&pBufferRW[COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET], target);
-
-    pBufferRW[-2]  = 0x90;
-    pBufferRW[-1]  = 0x90;
-
-    pBufferRW[0] = 0xFF;
-    pBufferRW[1] = 0x15;
-    *((UINT32 UNALIGNED *)&pBufferRW[2]) = (UINT32)(COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET - COMMETHOD_CALL_PRESTUB_SIZE);
-
-    _ASSERTE(DbgIsExecutable(pBufferRX, COMMETHOD_CALL_PRESTUB_SIZE));
-
-    RETURN;
 }
 
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)

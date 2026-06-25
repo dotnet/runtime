@@ -530,7 +530,8 @@ namespace ILCompiler
         public static string GetMethodSignature(MethodDesc meth, bool includeGenericParameters)
         {
             StringBuilder sb = new StringBuilder();
-            CecilTypeNameFormatter.Instance.AppendName(sb, meth.Signature.ReturnType);
+            var formatter = new CecilTypeNameFormatter(meth);
+            formatter.AppendName(sb, meth.Signature.ReturnType);
             sb.Append(' ');
             sb.Append(meth.GetName());
             if (includeGenericParameters && meth.HasInstantiation)
@@ -545,7 +546,7 @@ namespace ILCompiler
                 if (i > 0)
                     sb.Append(',');
 
-                CecilTypeNameFormatter.Instance.AppendName(sb, meth.Signature[i]);
+                formatter.AppendName(sb, meth.Signature[i]);
             }
 
             sb.Append(')');
@@ -572,7 +573,14 @@ namespace ILCompiler
 
         private sealed class CecilTypeNameFormatter : TypeNameFormatter
         {
-            public static readonly CecilTypeNameFormatter Instance = new CecilTypeNameFormatter();
+            public static readonly CecilTypeNameFormatter Instance = new CecilTypeNameFormatter(null);
+
+            private readonly MethodDesc? _method;
+
+            public CecilTypeNameFormatter(MethodDesc? method)
+            {
+                _method = method;
+            }
 
             public override void AppendName(StringBuilder sb, ArrayType type)
             {
@@ -620,9 +628,21 @@ namespace ILCompiler
             }
             public override void AppendName(StringBuilder sb, SignatureMethodVariable type)
             {
+                if (_method is not null &&
+                    type.Index < _method.Instantiation.Length &&
+                    _method.Instantiation[type.Index] is GenericParameterDesc genericParameter)
+                {
+                    sb.Append(genericParameter.Name);
+                }
             }
             public override void AppendName(StringBuilder sb, SignatureTypeVariable type)
             {
+                if (_method is not null &&
+                    type.Index < _method.OwningType.Instantiation.Length &&
+                    _method.OwningType.Instantiation[type.Index] is GenericParameterDesc genericParameter)
+                {
+                    sb.Append(genericParameter.Name);
+                }
             }
             protected override void AppendNameForInstantiatedType(StringBuilder sb, DefType type)
             {
@@ -785,7 +805,7 @@ namespace ILCompiler
             MetadataType typeReference = (MetadataType)type;
             for (int i = 1; i < names.Length; i++)
             {
-                var nested_type = typeReference.GetNestedType(names[i]);
+                var nested_type = typeReference.GetNestedType(Encoding.UTF8.GetBytes(names[i]));
                 if (nested_type == null)
                     return null;
 

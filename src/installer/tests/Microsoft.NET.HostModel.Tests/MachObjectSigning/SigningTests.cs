@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System.Security.AccessControl;
 using Microsoft.NET.HostModel.Bundle;
-using Xunit.Abstractions;
 
 namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 {
@@ -81,9 +80,9 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         [Theory(Skip = "Temporarily disabled due to macOS 26 codesign behavior change - only hashing __TEXT segment")]
-        [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
         [PlatformSpecific(TestPlatforms.OSX)]
-        void MatchesCodesignOutput(string filePath, TestArtifact _)
+        [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
+        public void MatchesCodesignOutput(string filePath, TestArtifact _)
         {
             string fileName = Path.GetFileName(filePath);
             string originalFilePath = filePath;

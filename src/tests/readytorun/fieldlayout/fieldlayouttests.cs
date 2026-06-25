@@ -1,11 +1,13 @@
 using System;
 using System.Runtime.Intrinsics;
 using Xunit;
+using TestLibrary;
 
 public class Test
 {
     // This test uses the same set of types as the type system unittests use, and attempts to validate that the R2R usage of said types works well.
     // This is done by touching the various types, and then relying on the verification logic in R2R images to detect failures.
+    [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
     [Fact]
     public static void TestEntryPoint()
     {

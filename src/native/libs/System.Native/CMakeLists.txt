@@ -1,17 +1,15 @@
 project(System.Native C)
 
-if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_WASI)
+if (NOT CLR_CMAKE_TARGET_APPLE_MOBILE AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     add_definitions(-DHAS_CONSOLE_SIGNALS)
 endif ()
 
 set(NATIVE_SOURCES
     pal_errno.c
-    pal_interfaceaddresses.c
+    pal_getosinfo.c
     pal_io.c
     pal_maphardwaretype.c
     pal_memory.c
-    pal_networking.c
-    pal_networkstatistics.c
     pal_random.c
     pal_runtimeinformation.c
     pal_string.c
@@ -21,27 +19,49 @@ set(NATIVE_SOURCES
     pal_sysctl.c
 )
 
-if (NOT CLR_CMAKE_TARGET_WASI)
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     list (APPEND NATIVE_SOURCES
         pal_dynamicload.c
+        pal_interfaceaddresses.c
         pal_mount.c
+        pal_networking.c
+        pal_networkstatistics.c
         pal_process.c
         pal_signal.c
         pal_threading.c
         pal_uid.c
     )
-else()
+elseif (CLR_CMAKE_TARGET_BROWSER)
     list (APPEND NATIVE_SOURCES
-        pal_dynamicload_wasi.c
+        pal_dynamicload_wasm.c
+        pal_interfaceaddresses_browser.c
+        pal_mount.c
+        pal_networking_browser.c
+        pal_networkstatistics_wasm.c
+        pal_process.c
+        pal_signal_wasm.c
+        pal_threading.c
+        pal_uid.c
+    )
+else() # WASI
+    list (APPEND NATIVE_SOURCES
+        pal_dynamicload_wasm.c
+        pal_interfaceaddresses.c
         pal_mount_wasi.c
+        pal_networking.c
+        pal_networkstatistics_wasm.c
         pal_process_wasi.c
-        pal_signal_wasi.c
+        pal_signal_wasm.c
         pal_threading_wasi.c
         pal_uid_wasi.c
     )
 endif()
 
-if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+if (CLR_CMAKE_TARGET_APPLE OR CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI OR CLR_CMAKE_TARGET_OPENBSD OR CLR_CMAKE_TARGET_HAIKU)
+    # These platforms do not support robust mutexes.
+    # Keep an OS list instead of CMake configure checks since we also need to synchronize this with
+    # the compile-time guards on the managed code side at
+    # src/libraries/System.Private.CoreLib/src/System/Threading/NamedMutex.Unix.cs.
     list (APPEND NATIVE_SOURCES
         pal_crossprocessmutex_unsupported.c)
 else()
@@ -57,7 +77,7 @@ if (CLR_CMAKE_TARGET_APPLE)
         pal_searchpath.m
         pal_datetime.m)
 
-    if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE_MOBILE)
         list (APPEND NATIVE_SOURCES_OBJC_NO_ARC pal_log.m)
 
         if (CLR_CMAKE_TARGET_MACCATALYST)
@@ -84,8 +104,8 @@ else()
         pal_log.c
         pal_iossupportversion.c)
 
-    if (CLR_CMAKE_TARGET_WASI)
-        list (APPEND NATIVE_SOURCES pal_console_wasi.c)
+    if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+        list (APPEND NATIVE_SOURCES pal_console_wasm.c)
     else()
         list (APPEND NATIVE_SOURCES pal_console.c)
     endif()
@@ -100,14 +120,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 set(NATIVE_LIBS_EXTRA)
 append_extra_system_libs(NATIVE_LIBS_EXTRA)
 
-if (CLR_CMAKE_TARGET_ANDROID AND NOT HAVE_GETIFADDRS)
-    add_definitions(-DANDROID_GETIFADDRS_WORKAROUND)
-    add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
-
-    list (APPEND NATIVE_LIBS_EXTRA -llog)
-    list (APPEND NATIVE_SOURCES pal_ifaddrs.c)
-endif ()
-
 if (GEN_SHARED_LIB)
     add_library(System.Native
         SHARED
@@ -121,7 +133,7 @@ if (GEN_SHARED_LIB)
         ${NATIVE_LIBS_EXTRA}
     )
 
-    if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
+    if (NOT CLR_CMAKE_TARGET_APPLE_MOBILE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
         add_custom_command(TARGET System.Native POST_BUILD
             COMMENT "Verifying System.Native entry points against entrypoints.c "
             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
@@ -135,7 +147,7 @@ if (GEN_SHARED_LIB)
     install_with_stripped_symbols (System.Native PROGRAMS .)
 endif ()
 
-if (NOT GEN_PINVOKE AND NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
+if (NOT GEN_PINVOKE AND NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_APPLE_MOBILE AND NOT CLR_CMAKE_TARGET_ANDROID)
     set(NATIVE_SOURCES ${NATIVE_SOURCES} entrypoints.c)
 endif()
 

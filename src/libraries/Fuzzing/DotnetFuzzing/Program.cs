@@ -64,6 +64,15 @@ public static class Program
             return;
         }
 
+        if (args.ElementAtOrDefault(1) == "--get-instrumented-assemblies")
+        {
+            foreach ((string assembly, string? prefixes) in GetInstrumentationTargets(fuzzer))
+            {
+                Console.WriteLine($"{assembly} {prefixes}");
+            }
+            return;
+        }
+
         RunFuzzer(fuzzer, inputFiles: args.Length > 1 ? args[1] : null);
     }
 

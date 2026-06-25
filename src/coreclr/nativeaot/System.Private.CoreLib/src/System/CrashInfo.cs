@@ -6,8 +6,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-using Internal.DeveloperExperience;
-
 namespace System
 {
     internal unsafe struct CrashInfo
@@ -257,7 +255,7 @@ namespace System
             if (!WriteHexValue("offset"u8, frame.GetNativeOffset()))
                 return false;
 
-            string method = DeveloperExperience.GetMethodName(ip, out _, out _);
+            string method = frame.GetCrashInfoString();
             if (method != null)
             {
                 if (!WriteStringValue("name"u8, method, maxNameSize))

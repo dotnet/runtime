@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 
 project(mono)
 
@@ -274,13 +274,13 @@ elseif(CLR_CMAKE_HOST_OS STREQUAL "windows")
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GF>) # enable string pooling
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/GL>) # whole program optimization
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zi>) # enable debugging information
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT ProgramDatabase) # enable debugging information
     add_link_options(/LTCG)    # link-time code generation
     add_link_options(/DEBUG)   # enable debugging information
     add_link_options(/DEBUGTYPE:CV,FIXUP)   # enable fixup debug information
     add_link_options(/OPT:REF) # optimize: remove unreferenced functions & data
     add_link_options(/OPT:ICF) # optimize: enable COMDAT folding
-    # the combination of /Zi compiler flag and /DEBUG /OPT:REF /OPT:ICF
+    # the combination of ProgramDatabase debug info format and /DEBUG /OPT:REF /OPT:ICF
     # linker flags is needed to create .pdb output on release builds
   endif()
 elseif(CLR_CMAKE_HOST_OS STREQUAL "sunos")
@@ -324,6 +324,7 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "ios" OR TARGET_SYSTEM_NAME STREQUAL "tvos")
   endif()
 elseif(TARGET_SYSTEM_NAME STREQUAL "android")
   set(TARGET_UNIX 1)
+  set(TARGET_LINUX 1)
   set(TARGET_LINUX_BIONIC 1)
   set(TARGET_ANDROID 1)
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -496,6 +497,19 @@ else()
   message(FATAL_ERROR "TARGET_ARCH='${TARGET_ARCH}' not supported.")
 endif()
 
+# Default stack size: 2MB for 64-bit, 1MB for 32-bit.
+# Use large (8MB) stack size for s390x/ppc64le due to limited tail call optimization support.
+# On Windows, use 0 to defer to the OS/PE header default.
+if(TARGET_WIN32)
+  set(MONO_DEFAULT_STACKSIZE 0)
+elseif(TARGET_S390X OR TARGET_POWERPC64)
+  set(MONO_DEFAULT_STACKSIZE 8388608)
+elseif(TARGET_SIZEOF_VOID_P EQUAL 4)
+  set(MONO_DEFAULT_STACKSIZE 1048576)
+else()
+  set(MONO_DEFAULT_STACKSIZE 2097152)
+endif()
+
 # arm64 MacCatalyst runtime host or AOT target is more like Apple mobile targets than x64
 if ((HOST_MACCAT AND HOST_ARM64) OR (TARGET_MACCAT AND TARGET_ARM64))
   set(TARGET_APPLE_MOBILE 1)
@@ -623,21 +637,21 @@ if(LLVM_PREFIX)
   string(REGEX REPLACE ".*MONO_API_VERSION ([0-9]+)" "\\1" llvm_api_version ${llvm_api_version_line})
 
   # IMPORTANT: when bumping LLVM make sure to rerun the llvm-config commands below and update the variables accordingly
-  if (NOT ${llvm_api_version} EQUAL 1900)
+  if (NOT ${llvm_api_version} EQUAL 2300)
     message(FATAL_ERROR "Unexpected LLVM version: ${llvm_api_version}.")
   endif()
 
   # llvm-config --libs analysis core bitwriter mcjit orcjit
-  set(MONO_llvm_core_libs "LLVMOrcJIT" "LLVMPasses" "LLVMIRPrinter" "LLVMHipStdPar" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMLinker" "LLVMFrontendOpenMP" "LLVMFrontendOffloading" "LLVMCodeGen" "LLVMScalarOpts" "LLVMInstCombine" "LLVMObjCARCOpts" "LLVMCodeGenTypes" "LLVMCFGuard" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMWindowsDriver" "LLVMJITLink" "LLVMOption" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMOrcTargetProcess" "LLVMOrcShared" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoDWARF" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
+  set(MONO_llvm_core_libs "LLVMOrcJIT" "LLVMPasses" "LLVMIRPrinter" "LLVMHipStdPar" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMSandboxIR" "LLVMLinker" "LLVMFrontendOpenMP" "LLVMFrontendDirective" "LLVMFrontendAtomic" "LLVMFrontendOffloading" "LLVMObjectYAML" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCodeGen" "LLVMScalarOpts" "LLVMInstCombine" "LLVMObjCARCOpts" "LLVMCodeGenTypes" "LLVMCGData" "LLVMCFGuard" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMWindowsDriver" "LLVMJITLink" "LLVMOption" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMOrcTargetProcess" "LLVMOrcShared" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoCodeView" "LLVMDebugInfoGSYM" "LLVMDebugInfoDWARF" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMMC" "LLVMDebugInfoDWARFLowLevel" "LLVMBitReader" "LLVMFrontendHLSL" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
 
   # llvm-config --libs x86codegen
-  set(MONO_llvm_extra_libs_x86codegen "LLVMX86CodeGen" "LLVMX86Desc" "LLVMX86Info" "LLVMMCDisassembler" "LLVMInstrumentation" "LLVMIRPrinter" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCFGuard" "LLVMAsmPrinter" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMObjCARCOpts" "LLVMTransformUtils" "LLVMCodeGenTypes" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoDWARF" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
+  set(MONO_llvm_extra_libs_x86codegen "LLVMX86CodeGen" "LLVMX86Desc" "LLVMX86Info" "LLVMMCDisassembler" "LLVMInstrumentation" "LLVMIRPrinter" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCFGuard" "LLVMAsmPrinter" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMObjCARCOpts" "LLVMTransformUtils" "LLVMCodeGenTypes" "LLVMCGData" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoCodeView" "LLVMDebugInfoGSYM" "LLVMDebugInfoDWARF" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMMC" "LLVMDebugInfoDWARFLowLevel" "LLVMBitReader" "LLVMFrontendHLSL" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
 
   # llvm-config --libs armcodegen
-  set(MONO_llvm_extra_libs_armcodegen "LLVMARMCodeGen" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMLinker" "LLVMFrontendOpenMP" "LLVMFrontendOffloading" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCFGuard" "LLVMAsmPrinter" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMObjCARCOpts" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoDWARF" "LLVMARMDesc" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMMCDisassembler" "LLVMCodeGenTypes" "LLVMARMUtils" "LLVMARMInfo" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
+  set(MONO_llvm_extra_libs_armcodegen "LLVMARMCodeGen" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMSandboxIR" "LLVMLinker" "LLVMFrontendOpenMP" "LLVMFrontendDirective" "LLVMFrontendAtomic" "LLVMFrontendOffloading" "LLVMObjectYAML" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCFGuard" "LLVMAsmPrinter" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMObjCARCOpts" "LLVMTransformUtils" "LLVMCGData" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoCodeView" "LLVMDebugInfoGSYM" "LLVMDebugInfoDWARF" "LLVMFrontendHLSL" "LLVMARMDesc" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMMCDisassembler" "LLVMCodeGenTypes" "LLVMARMUtils" "LLVMARMInfo" "LLVMMC" "LLVMDebugInfoDWARFLowLevel" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
 
   # llvm-config --libs aarch64codegen
-  set(MONO_llvm_extra_libs_aarch64codegen "LLVMAArch64CodeGen" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCFGuard" "LLVMAsmPrinter" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMObjCARCOpts" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoDWARF" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMBitReader" "LLVMAArch64Desc" "LLVMCodeGenTypes" "LLVMAArch64Utils" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Info" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
+  set(MONO_llvm_extra_libs_aarch64codegen "LLVMAArch64CodeGen" "LLVMPasses" "LLVMIRPrinter" "LLVMHipStdPar" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMSandboxIR" "LLVMLinker" "LLVMFrontendOpenMP" "LLVMFrontendDirective" "LLVMFrontendAtomic" "LLVMFrontendOffloading" "LLVMObjectYAML" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMCFGuard" "LLVMAsmPrinter" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMObjCARCOpts" "LLVMTransformUtils" "LLVMCGData" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMSymbolize" "LLVMDebugInfoBTF" "LLVMDebugInfoPDB" "LLVMDebugInfoMSF" "LLVMDebugInfoCodeView" "LLVMDebugInfoGSYM" "LLVMDebugInfoDWARF" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMIRReader" "LLVMAsmParser" "LLVMBitReader" "LLVMFrontendHLSL" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Desc" "LLVMCodeGenTypes" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMMC" "LLVMDebugInfoDWARFLowLevel" "LLVMBinaryFormat" "LLVMTargetParser" "LLVMSupport" "LLVMDemangle")
 
   if(HOST_LINUX AND NOT HOST_WASM AND NOT HOST_WASI)
     set(MONO_stdlib "-nostdinc++ -nostdlib++")
@@ -843,7 +857,13 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   endif()
 else()
   if(NOT EXISTS "${VERSION_FILE_PATH}")
-    file(WRITE "${VERSION_FILE_PATH}" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+    file(WRITE "${VERSION_FILE_PATH}"
+      "#if defined(__GNUC__) && !defined(__clang__) && defined(TARGET_SUNOS) && defined(TARGET_AMD64)\n"
+      "char sccsid[] __attribute__((used, weak)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n"
+      "__asm__(\".pushsection .init_array; .reloc ., R_X86_64_NONE, sccsid; .popsection\");\n"
+      "#else\n"
+      "static char sccsid[] __attribute__((used, retain)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n"
+      "#endif\n")
   endif()
 endif()
 if (NOT EXISTS "${RUNTIME_VERSION_HEADER_PATH}")

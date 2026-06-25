@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -648,7 +648,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        protected virtual bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        protected virtual unsafe bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
         {
             // Private key size for SLH-DSA is at most 128 bytes so we can stack allocate it.
             int privateKeySizeInBytes = Algorithm.PrivateKeySizeInBytes;
@@ -1226,7 +1226,7 @@ namespace System.Security.Cryptography
             Debug.Assert(read == source.Length);
             return slhDsa;
 
-            static void SubjectPublicKeyReader(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn identifier, out SlhDsa slhDsa)
+            static void SubjectPublicKeyReader(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn identifier, out SlhDsa slhDsa)
             {
                 SlhDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
 
@@ -1235,7 +1235,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                 }
 
-                slhDsa = SlhDsaImplementation.ImportPublicKey(algorithm, key.Span);
+                slhDsa = SlhDsaImplementation.ImportPublicKey(algorithm, key);
             }
         }
 
@@ -1288,17 +1288,16 @@ namespace System.Security.Cryptography
             KeyFormatHelper.ReadPkcs8(
                 s_knownOids,
                 source,
-                (ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn algId, out SlhDsa ret) =>
+                (ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn algId, out SlhDsa ret) =>
                 {
                     SlhDsaAlgorithm info = GetAlgorithmIdentifier(in algId);
-                    ReadOnlySpan<byte> privateKey = key.Span;
 
-                    if (privateKey.Length != info.PrivateKeySizeInBytes)
+                    if (key.Length != info.PrivateKeySizeInBytes)
                     {
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     }
 
-                    ret = ImportSlhDsaPrivateKey(info, key.Span);
+                    ret = ImportSlhDsaPrivateKey(info, key);
                 },
                 out int read,
                 out SlhDsa slhDsa);
@@ -1863,7 +1862,7 @@ namespace System.Security.Cryptography
         /// </param>
         protected abstract void ExportSlhDsaPrivateKeyCore(Span<byte> destination);
 
-        private AsnWriter ExportSubjectPublicKeyInfoCore()
+        private unsafe AsnWriter ExportSubjectPublicKeyInfoCore()
         {
             // Public key size for SLH-DSA is at most 64 bytes so we can stack allocate it.
             int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
@@ -1960,6 +1959,7 @@ namespace System.Security.Cryptography
 
             while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
             {
+                size = buffer.Length;
                 CryptoPool.Return(buffer);
                 size = checked(size * 2);
                 buffer = CryptoPool.Rent(size);
@@ -1982,16 +1982,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static SlhDsaAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
+        private static SlhDsaAlgorithm GetAlgorithmIdentifier(ref readonly ValueAlgorithmIdentifierAsn identifier)
         {
             SlhDsaAlgorithm? algorithm = SlhDsaAlgorithm.GetAlgorithmFromOid(identifier.Algorithm);
             Debug.Assert(algorithm is not null, "Algorithm identifier should have been pre-validated by KeyFormatHelper.");
 
-            if (identifier.Parameters.HasValue)
+            if (identifier.HasParameters)
             {
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                identifier.Encode(writer);
-                throw Helpers.CreateAlgorithmUnknownException(writer);
+                throw Helpers.CreateAlgorithmUnknownException(in identifier);
             }
 
             return algorithm;

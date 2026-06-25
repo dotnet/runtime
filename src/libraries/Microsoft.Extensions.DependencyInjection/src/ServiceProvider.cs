@@ -169,14 +169,31 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal bool IsDisposed() => _disposed;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Disposes the service provider and all resolved services that implement <see cref="IDisposable"/>.
+        /// </summary>
+        /// <remarks>
+        /// Prefer calling <see cref="DisposeAsync"/> over this method. If any resolved service implements
+        /// <see cref="IAsyncDisposable"/> but not <see cref="IDisposable"/>, this method throws an
+        /// <see cref="InvalidOperationException"/>. Use <see cref="DisposeAsync"/> to properly handle all
+        /// disposable services, or explicitly perform sync-over-async on the caller side if synchronous
+        /// disposal is required.
+        /// </remarks>
         public void Dispose()
         {
             DisposeCore();
             Root.Dispose();
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Asynchronously disposes the service provider and all resolved services that implement <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/>.
+        /// </summary>
+        /// <remarks>
+        /// Awaiting individual <see cref="IAsyncDisposable.DisposeAsync"/> calls uses <c>ConfigureAwait(false)</c>,
+        /// so when an asynchronous dispose operation yields, its continuations do not attempt to resume on the original
+        /// synchronization context. Services should not rely on disposal continuations running on any particular context.
+        /// </remarks>
+        /// <returns>A value task that represents the asynchronous operation.</returns>
         public ValueTask DisposeAsync()
         {
             DisposeCore();
@@ -313,7 +330,22 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             public List<ServiceDescriptor> ServiceDescriptors => new List<ServiceDescriptor>(_serviceProvider.Root.RootProvider.CallSiteFactory.Descriptors);
-            public List<object> Disposables => new List<object>(_serviceProvider.Root.Disposables);
+            public List<object> Disposables
+            {
+                get
+                {
+                    IList<object?> source = _serviceProvider.Root.Disposables;
+                    var result = new List<object>(source.Count);
+                    for (int i = 0; i < source.Count; i++)
+                    {
+                        if (source[i] is object item)
+                        {
+                            result.Add(item);
+                        }
+                    }
+                    return result;
+                }
+            }
             public bool Disposed => _serviceProvider.Root.Disposed;
             public bool IsScope => !_serviceProvider.Root.IsRootScope;
         }

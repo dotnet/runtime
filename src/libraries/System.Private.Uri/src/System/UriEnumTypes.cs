@@ -73,7 +73,6 @@ namespace System
 
         // derived class controlled
         BadHostName,
-        NonEmptyHost, // unix only
         BadPort,
         BadAuthorityTerminator,
 

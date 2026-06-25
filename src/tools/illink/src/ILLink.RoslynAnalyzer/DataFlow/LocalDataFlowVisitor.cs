@@ -257,16 +257,21 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         {
             switch (targetOperation)
             {
-                case IFieldReferenceOperation:
-                case IParameterReferenceOperation:
+                case IFieldReferenceOperation fieldRef:
+                {
+                    // Visit the instance to ensure that method calls or other operations
+                    // used as the instance are properly analyzed for diagnostics.
+                    Visit(fieldRef.Instance, state);
+                    var current = state.Current;
+                    TValue targetValue = GetFieldTargetValue(fieldRef, in current.Context);
+                    TValue value = Visit(valueOperation, state);
+                    HandleAssignment(value, targetValue, assignmentOperation, in current.Context);
+                    return value;
+                }
+                case IParameterReferenceOperation parameterRef:
                 {
                     var current = state.Current;
-                    TValue targetValue = targetOperation switch
-                    {
-                        IFieldReferenceOperation fieldRef => GetFieldTargetValue(fieldRef, in current.Context),
-                        IParameterReferenceOperation parameterRef => GetParameterTargetValue(parameterRef.Parameter),
-                        _ => throw new InvalidOperationException()
-                    };
+                    TValue targetValue = GetParameterTargetValue(parameterRef.Parameter);
                     TValue value = Visit(valueOperation, state);
                     HandleAssignment(value, targetValue, assignmentOperation, in current.Context);
                     return value;
@@ -934,6 +939,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 instanceValue = TopValue;
             }
 
+            // Build a map from parameter to argument so we can handle named/out-of-order arguments correctly
+            var parameters = method.Parameters;
+            var argumentsByParameter = new TValue?[parameters.Length];
+
             foreach (var argument in arguments)
             {
                 // For __arglist argument there might not be any parameter
@@ -943,7 +952,19 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 if (argument?.Parameter == null)
                     break;
 
-                argumentsBuilder.Add(VisitArgument(argument, state));
+                var parameter = argument.Parameter;
+                // Use Ordinal to get the parameter's position
+                int parameterIndex = parameter.Ordinal;
+                if (parameterIndex >= 0 && parameterIndex < parameters.Length)
+                {
+                    argumentsByParameter[parameterIndex] = VisitArgument(argument, state);
+                }
+            }
+
+            // Add arguments in parameter order, using TopValue for missing arguments (e.g., optional parameters)
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                argumentsBuilder.Add(argumentsByParameter[i] ?? TopValue);
             }
 
             // For local functions with generic arguments, the substituted method symbol's containing

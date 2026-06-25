@@ -54,56 +54,9 @@ namespace System.Numerics.Tensors
 
             public static bool Invoke(T x) => T.IsInfinity(x);
 
-#if NET10_0_OR_GREATER
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsInfinity(x);
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsInfinity(x);
             public static Vector512<T> Invoke(Vector512<T> x) => Vector512.IsInfinity(x);
-#else
-            public static Vector128<T> Invoke(Vector128<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return Vector128.Equals(Vector128.Abs(x), Vector128.Create(float.PositiveInfinity).As<float, T>());
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    return Vector128.Equals(Vector128.Abs(x), Vector128.Create(double.PositiveInfinity).As<double, T>());
-                }
-
-                return Vector128<T>.Zero;
-            }
-
-            public static Vector256<T> Invoke(Vector256<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return Vector256.Equals(Vector256.Abs(x), Vector256.Create(float.PositiveInfinity).As<float, T>());
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    return Vector256.Equals(Vector256.Abs(x), Vector256.Create(double.PositiveInfinity).As<double, T>());
-                }
-
-                return Vector256<T>.Zero;
-            }
-
-            public static Vector512<T> Invoke(Vector512<T> x)
-            {
-                if (typeof(T) == typeof(float))
-                {
-                    return Vector512.Equals(x, Vector512.Create(float.PositiveInfinity).As<float, T>());
-                }
-
-                if (typeof(T) == typeof(double))
-                {
-                    return Vector512.Equals(x, Vector512.Create(double.PositiveInfinity).As<double, T>());
-                }
-
-                return Vector512<T>.Zero;
-            }
-#endif
         }
     }
 }

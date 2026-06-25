@@ -55,12 +55,12 @@ namespace System.Net.NetworkInformation.Tests
             Assert.InRange(stopWatch.ElapsedMilliseconds, timeout - 10, 5000);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(50)]
         [InlineData(1000)]
-        [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests un-priviledged Ping support on Unix
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests un-privileged Ping support on Unix
         public static async Task PacketSizeIsRespected(int payloadSize)
         {
             var stdOutLines = new List<string>();

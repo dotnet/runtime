@@ -66,21 +66,33 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new MyBoolEnumConverter());
 
             {
-                MyBoolEnum value = JsonSerializer.Deserialize<MyBoolEnum>(@"""TRUE""", options);
+                MyBoolEnum value = JsonSerializer.Deserialize<MyBoolEnum>("""
+                    "TRUE"
+                    """, options);
                 Assert.Equal(MyBoolEnum.True, value);
-                Assert.Equal(@"""TRUE""", JsonSerializer.Serialize(value, options));
+                Assert.Equal("""
+                    "TRUE"
+                    """, JsonSerializer.Serialize(value, options));
             }
 
             {
-                MyBoolEnum value = JsonSerializer.Deserialize<MyBoolEnum>(@"""FALSE""", options);
+                MyBoolEnum value = JsonSerializer.Deserialize<MyBoolEnum>("""
+                    "FALSE"
+                    """, options);
                 Assert.Equal(MyBoolEnum.False, value);
-                Assert.Equal(@"""FALSE""", JsonSerializer.Serialize(value, options));
+                Assert.Equal("""
+                    "FALSE"
+                    """, JsonSerializer.Serialize(value, options));
             }
 
             {
-                MyBoolEnum value = JsonSerializer.Deserialize<MyBoolEnum>(@"""?""", options);
+                MyBoolEnum value = JsonSerializer.Deserialize<MyBoolEnum>("""
+                    "?"
+                    """, options);
                 Assert.Equal(MyBoolEnum.Unknown, value);
-                Assert.Equal(@"""?""", JsonSerializer.Serialize(value, options));
+                Assert.Equal("""
+                    "?"
+                    """, JsonSerializer.Serialize(value, options));
             }
         }
 
@@ -96,21 +108,33 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                MyBoolEnum? value = JsonSerializer.Deserialize<MyBoolEnum?>(@"""TRUE""", options);
+                MyBoolEnum? value = JsonSerializer.Deserialize<MyBoolEnum?>("""
+                    "TRUE"
+                    """, options);
                 Assert.Equal(MyBoolEnum.True, value);
-                Assert.Equal(@"""TRUE""", JsonSerializer.Serialize(value, options));
+                Assert.Equal("""
+                    "TRUE"
+                    """, JsonSerializer.Serialize(value, options));
             }
 
             {
-                MyBoolEnum? value = JsonSerializer.Deserialize<MyBoolEnum?>(@"""FALSE""", options);
+                MyBoolEnum? value = JsonSerializer.Deserialize<MyBoolEnum?>("""
+                    "FALSE"
+                    """, options);
                 Assert.Equal(MyBoolEnum.False, value);
-                Assert.Equal(@"""FALSE""", JsonSerializer.Serialize(value, options));
+                Assert.Equal("""
+                    "FALSE"
+                    """, JsonSerializer.Serialize(value, options));
             }
 
             {
-                MyBoolEnum? value = JsonSerializer.Deserialize<MyBoolEnum?>(@"""?""", options);
+                MyBoolEnum? value = JsonSerializer.Deserialize<MyBoolEnum?>("""
+                    "?"
+                    """, options);
                 Assert.Equal(MyBoolEnum.Unknown, value);
-                Assert.Equal(@"""?""", JsonSerializer.Serialize(value, options));
+                Assert.Equal("""
+                    "?"
+                    """, JsonSerializer.Serialize(value, options));
             }
         }
 
@@ -224,8 +248,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(@"[""PC"",""Tablet""]")]
-        [InlineData(@"[""Tablet"",""PC""]")]
+        [InlineData("""["PC","Tablet"]""")]
+        [InlineData("""["Tablet","PC"]""")]
         public static void EnumValue(string json)
         {
             eDevice obj;
@@ -255,8 +279,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(@"{""Connections"":[{""Device"":[""PC"",""Tablet""]},{""Device"":[""PC"",""Laptop""]}]}")]
-        [InlineData(@"{""Connections"":[{""Device"":[""Tablet"",""PC""]},{""Device"":[""Laptop"",""PC""]}]}")]
+        [InlineData("""{"Connections":[{"Device":["PC","Tablet"]},{"Device":["PC","Laptop"]}]}""")]
+        [InlineData("""{"Connections":[{"Device":["Tablet","PC"]},{"Device":["Laptop","PC"]}]}""")]
         public static void EnumArray(string json)
         {
             ConnectionList obj;

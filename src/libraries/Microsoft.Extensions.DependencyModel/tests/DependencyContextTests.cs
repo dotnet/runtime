@@ -13,7 +13,6 @@ namespace Microsoft.Extensions.DependencyModel.Tests
     {
         [Theory]
         [InlineData("System.Collections.dll", "System.Collections")]
-        [InlineData("System.Collections.ni.dll", "System.Collections")]
         [InlineData("mscorlib", "mscorlib")]
         public void GetRuntimeAssemblyNamesExtractsCorrectAssemblyName(string path, string expected)
         {
