@@ -571,6 +571,18 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
     //
     while (!wasmControlFlowStack->Empty() && (wasmControlFlowStack->Top()->End() == cursor))
     {
+        WasmInterval* const topInterval = wasmControlFlowStack->Top();
+
+        // The [exnref]-wrapper is only meant to be reached via catch_ref; any
+        // normal-flow fall-through into its `end` would fail to provide the
+        // required [exnref]. Emit `unreachable` right before the wrapper's end
+        // so the fall-through path is polymorphic.
+        //
+        if (topInterval->IsExnRefWrapper())
+        {
+            instGen(INS_unreachable);
+        }
+
         instGen(INS_end);
         WasmInterval* interval = wasmControlFlowStack->Pop();
 
@@ -619,16 +631,30 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
                 assert(jTrue->OperIs(GT_WASM_JEXCEPT));
 
                 // try_table uses void result sig; the paired [exnref]-wrapper
-                // just outside it provides the depth-0 target for catch_ref.
+                // provides the catch_ref target. Find its depth on the control
+                // flow stack: any plain Blocks emitted between the wrapper and
+                // this try_table sit inside the wrapper and shift its index.
                 //
                 GetEmitter()->emitIns_Ty_I(INS_try_table, WasmValueType::Invalid, 1);
 
-                // One catch clause targeting the wrapper at depth 0. The true
-                // target of GT_WASM_JEXCEPT is passed only for disasm readability.
+                int const stackHeight  = wasmControlFlowStack->Height();
+                unsigned  wrapperDepth = UINT_MAX;
+                for (int i = 0; i < stackHeight; i++)
+                {
+                    if (wasmControlFlowStack->Top(i)->IsExnRefWrapper())
+                    {
+                        wrapperDepth = (unsigned)i;
+                        break;
+                    }
+                }
+                assert(wrapperDepth != UINT_MAX);
+
+                // One catch clause targeting the wrapper. The true target of
+                // GT_WASM_JEXCEPT is passed only for disasm readability.
                 //
                 assert(block->GetFalseTarget() == block->Next());
                 BasicBlock* const target = block->GetTrueTarget();
-                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, 0, target);
+                GetEmitter()->emitIns_J(INS_catch_ref, EA_4BYTE, wrapperDepth, target);
             }
             else
             {
@@ -674,6 +700,54 @@ void CodeGen::genEmitStartBlock(BasicBlock* block)
             chain    = interval->Chain();
         }
     }
+}
+
+//------------------------------------------------------------------------
+// genEmitFunctionEnd: close still-open control flow intervals and emit the
+//   function-body terminator.
+//
+// Arguments:
+//   emitTerminalUnreachable - if true, emit `unreachable` before the closing
+//     `end` so the implicit return is polymorphic. Callers that have already
+//     emitted a terminator (e.g. BBJ_THROW) pass false.
+//
+// Notes:
+//   Per-interval bookkeeping mirrors genEmitStartBlock: Try needs a trailing
+//   `unreachable`; ExnRefWrapper needs a preceding `unreachable` and a
+//   trailing `local.set` of the per-funclet exnref local.
+//
+void CodeGen::genEmitFunctionEnd(bool emitTerminalUnreachable)
+{
+    while (!wasmControlFlowStack->Empty())
+    {
+        WasmInterval* const topInterval = wasmControlFlowStack->Top();
+
+        if (topInterval->IsExnRefWrapper())
+        {
+            instGen(INS_unreachable);
+        }
+
+        instGen(INS_end);
+        WasmInterval* interval = wasmControlFlowStack->Pop();
+
+        if (interval->IsTry())
+        {
+            instGen(INS_unreachable);
+        }
+
+        if (interval->IsExnRefWrapper())
+        {
+            unsigned const exnRefIdx = m_compiler->funCurrentFunc()->funWasmExnRefLocalIndex;
+            assert(exnRefIdx != UINT_MAX);
+            GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, exnRefIdx);
+        }
+    }
+
+    if (emitTerminalUnreachable)
+    {
+        instGen(INS_unreachable);
+    }
+    instGen(INS_end);
 }
 
 //------------------------------------------------------------------------
@@ -2716,6 +2790,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             assert(seg.IsPassedInRegister());
             WasmValueType wvt = WasmRegToType(seg.GetRegister());
             assert(wvt < WasmValueType::Count);
+            if (wvt == WasmValueType::V128)
+            {
+                // Passing a 16-byte SIMD value by value through a call is not yet correctly
+                // implemented: the argument is materialized as an i32 (by-ref) while the call
+                // signature requires v128, producing an invalid module. Bail for now.
+                NYI_WASM_SIMD("SIMD16 call argument");
+            }
             typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
         }
     }

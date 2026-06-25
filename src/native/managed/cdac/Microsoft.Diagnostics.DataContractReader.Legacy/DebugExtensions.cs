@@ -23,6 +23,11 @@ internal enum HResultValidationMode
     AllowDivergentFailures,
 
     /// <summary>
+    /// Allows divergent success HRESULTs, but failing HRESULTs must match exactly.
+    /// </summary>
+    AllowDivergentSuccess,
+
+    /// <summary>
     /// Like <see cref="AllowDivergentFailures"/>, but also allows the cDAC to succeed when the native DAC fails.
     /// The native DAC's MetaSig constructor traverses MethodDesc -> Module -> MDImport -> signature blob via
     /// DAC host pointers, and any intermediate read can throw under EX_TRY on certain frames (e.g., EH dispatch).
@@ -95,6 +100,7 @@ internal static class DebugExtensions
             {
                 HResultValidationMode.Exact => cdacHr == dacHr,
                 HResultValidationMode.AllowDivergentFailures => cdacHr == dacHr || (cdacHr < 0 && dacHr < 0),
+                HResultValidationMode.AllowDivergentSuccess => cdacHr == dacHr || (cdacHr >= 0 && dacHr >= 0),
                 HResultValidationMode.AllowCdacSuccess => cdacHr == dacHr || (cdacHr < 0 && dacHr < 0) || (cdacHr >= 0 && dacHr < 0),
                 _ => cdacHr == dacHr,
             };

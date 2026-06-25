@@ -629,7 +629,7 @@ int CEEInfo::getStringLiteral (
     {
         ULONG dwCharCount;
         LPCWSTR pString;
-        if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
+        if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, &pString)))
         {
             _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
             int length = (int)dwCharCount;
