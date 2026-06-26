@@ -95,12 +95,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         // The following PackedSimd intrinsics are not yet implemented on WASM. Because they are must-expand,
         // when we return nullptr here the importer will insert a PlatformNotSupportedException throw.
-        case NI_PackedSimd_CompareGreaterThan:
-        case NI_PackedSimd_CompareGreaterThanOrEqual:
-        case NI_PackedSimd_CompareLessThan:
-        case NI_PackedSimd_CompareLessThanOrEqual:
-            break;
-
         case NI_PackedSimd_ExtractScalar:
             break;
 

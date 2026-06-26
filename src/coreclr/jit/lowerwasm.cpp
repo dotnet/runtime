@@ -825,7 +825,19 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
 //
 GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(node->GetHWIntrinsicId());
+    NamedIntrinsic id = node->GetHWIntrinsicId();
+
+    // Wasm SIMD has no unsigned i64x2 ordered compare. Rewrite
+    // Vector128<ulong> CompareLessThan / CompareGreaterThan (etc.) into an
+    // equivalent signed compare.
+    if ((node->GetSimdBaseType() == TYP_ULONG) &&
+        ((id == NI_PackedSimd_CompareLessThan) || (id == NI_PackedSimd_CompareLessThanOrEqual) ||
+         (id == NI_PackedSimd_CompareGreaterThan) || (id == NI_PackedSimd_CompareGreaterThanOrEqual)))
+    {
+        return LowerHWIntrinsicCompareUnsignedLong(node);
+    }
+
+    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(id);
     switch (category)
     {
         case HWIntrinsicCategory::HW_Category_SIMD:
@@ -835,6 +847,57 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         default:
             NYI_WASM_SIMD("Lowering::LowerHWIntrinsic");
     }
+    return node->gtNext;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerHWIntrinsicCompareUnsignedLong: Rewrite a PackedSimd ordered ulong compare into a
+// signed compare on sign-bit-flipped operands.
+//
+// Wasm SIMD does not provide unsigned i64x2 relative comparison opcodes. So we apply the 
+// rewrite of
+//     cmp_u(a, b)  ==  cmp_s(a VECTOR_XOR signbit_vec, b VECTOR_XOR signbit_vec)
+//
+// After this rewrite the node's base type is TYP_LONG, so the table-driven codegen path
+// can select the signed compare variants i64x2_{lt,le,gt,ge}_s.
+//
+// Arguments:
+//    node - The PackedSimd ordered compare with SimdBaseType TYP_ULONG.
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node)
+{
+    assert(node->GetSimdBaseType() == TYP_ULONG);
+    assert(node->GetSimdSize() == 16);
+
+    GenTree* op1 = node->Op(1);
+    GenTree* op2 = node->Op(2);
+
+    // Create two independent 2-element constant vectors, with each element set to the sign bit.
+    GenTreeVecCon* signMaskA      = m_compiler->gtNewVconNode(TYP_SIMD16);
+    signMaskA->gtSimdVal.u64[0]   = 0x8000000000000000ULL;
+    signMaskA->gtSimdVal.u64[1]   = 0x8000000000000000ULL;
+
+    GenTreeVecCon* signMaskB      = m_compiler->gtNewVconNode(TYP_SIMD16);
+    signMaskB->gtSimdVal.u64[0]   = 0x8000000000000000ULL;
+    signMaskB->gtSimdVal.u64[1]   = 0x8000000000000000ULL;
+
+    GenTreeHWIntrinsic* xorA =
+        m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, signMaskA, NI_PackedSimd_Xor, TYP_LONG, 16);
+    GenTreeHWIntrinsic* xorB =
+        m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, signMaskB, NI_PackedSimd_Xor, TYP_LONG, 16);
+
+    // The original LIR execution order is:  ... op1 ... op2 ... node ...
+    // After rewrite we need:                ... op1 ... signMaskA xorA op2 ... signMaskB xorB node ...
+    BlockRange().InsertAfter(op1, signMaskA, xorA);
+    BlockRange().InsertAfter(op2, signMaskB, xorB);
+
+    node->Op(1) = xorA;
+    node->Op(2) = xorB;
+    node->SetSimdBaseType(TYP_LONG);
+
     return node->gtNext;
 }
 
