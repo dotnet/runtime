@@ -2652,6 +2652,12 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     genConsumeAddress(tree->Addr());
 
+    if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
+    {
+        regNumber addrReg = GetMultiUseOperandReg(tree->Addr());
+        genEmitNullCheck(addrReg);
+    }
+
     // TODO-WASM: Memory barriers
 
     GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
@@ -2790,6 +2796,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             assert(seg.IsPassedInRegister());
             WasmValueType wvt = WasmRegToType(seg.GetRegister());
             assert(wvt < WasmValueType::Count);
+            if (wvt == WasmValueType::V128)
+            {
+                // Passing a 16-byte SIMD value by value through a call is not yet correctly
+                // implemented: the argument is materialized as an i32 (by-ref) while the call
+                // signature requires v128, producing an invalid module. Bail for now.
+                NYI_WASM_SIMD("SIMD16 call argument");
+            }
             typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
         }
     }
@@ -3587,6 +3600,19 @@ void CodeGen::genCallFinally(BasicBlock* block)
         {
             GetEmitter()->emitIns(INS_end);
         }
+
+        return;
+    }
+
+    // Branch to the continuation block if it's not the next block.
+    assert(block->isBBCallFinallyPair());
+    BasicBlock* const callFinallyRet = block->Next();
+    assert(callFinallyRet->KindIs(BBJ_CALLFINALLYRET));
+    BasicBlock* const continuation = callFinallyRet->GetTarget();
+
+    if (continuation != callFinallyRet->Next())
+    {
+        inst_JMP(EJ_jmp, continuation);
     }
 }
 

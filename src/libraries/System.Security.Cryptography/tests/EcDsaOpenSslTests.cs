@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.EcDsa.Tests;
 using System.Security.Cryptography.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -13,7 +14,9 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
 {
     public class EcDsaOpenSslTests : ECDsaTestsBase
     {
-        public static bool SupportsExplicitCurves => ECDsaFactory.ExplicitCurvesSupported || ECDsaFactory.ExplicitCurvesSupportFailOnUseOnly;
+        protected override ECDsaProvider ECDsaFactory { get; } = ECDsaOpenSslProvider.Instance;
+
+        public bool SupportsExplicitCurves => ECDsaFactory.ExplicitCurvesSupported || ECDsaProvider.ExplicitCurvesSupportFailOnUseOnly;
 
         [Fact]
         public void DefaultCtor()
@@ -62,9 +65,11 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             }
         }
 
-        [ConditionalFact(typeof(EcDsaOpenSslTests), nameof(ECDsa224Available))]
+        [ConditionalFact]
         public void CtorHandle224()
         {
+            SkipTestException.ThrowUnless(ECDsa224Available);
+
             IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(ECDSA_P224_OID_VALUE);
             Assert.NotEqual(IntPtr.Zero, ecKey);
             int success = Interop.Crypto.EcKeyGenerateKey(ecKey);
@@ -391,7 +396,7 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
 
         private const string ECDSA_WTLS7_OID_VALUE = "2.23.43.1.4.7";
 
-        private static bool IsWtls7Available => ECDsaFactory.IsCurveValid(new Oid(ECDSA_WTLS7_OID_VALUE));
+        private bool IsWtls7Available => ECDsaFactory.IsCurveValid(new Oid(ECDSA_WTLS7_OID_VALUE));
 
         [Theory]
         [InlineData(ECDSA_P256_OID_VALUE, 256)]
@@ -402,9 +407,11 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             VerifyCtorEcKeyNamedCurveExport(oid, expectedKeySize);
         }
 
-        [ConditionalFact(nameof(IsWtls7Available))]
+        [ConditionalFact]
         public void CtorEcKeyFieldDegreeNotEqualOrderBits()
         {
+            SkipTestException.ThrowUnless(IsWtls7Available);
+
             // wap-wsg-idm-ecid-wtls7 has field=160 bits but order=161 bits.
             // Verify KeySize uses field degree (160), not EVP_PKEY_bits (161).
             VerifyCtorEcKeyNamedCurveExport(ECDSA_WTLS7_OID_VALUE, 160);
@@ -476,9 +483,11 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             }
         }
 
-        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        [ConditionalFact]
         public void CtorEcKeyExplicitPrimeCurveExportIsCorrect()
         {
+            SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
+
             ECParameters testData = EccTestData.GetNistP256ReferenceKeyExplicit();
             ECCurve curve = testData.Curve;
 
@@ -525,9 +534,11 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             }
         }
 
-        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        [ConditionalFact]
         public void CtorEcKeyExplicitChar2CurveExportIsCorrect()
         {
+            SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
+
             ECParameters testData = EccTestData.Sect163k1Key1Explicit;
 
             if (!ECDsaFactory.IsCurveValid(EccTestData.Sect163k1Key1.Curve.Oid))
@@ -697,9 +708,11 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsExplicitCurves))]
+        [ConditionalFact]
         public void ExplicitCurveImportExportProducesSameExplicitParams()
         {
+            SkipTestException.ThrowUnless(SupportsExplicitCurves);
+
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
 
             using (ECDsa original = ECDsa.Create(explicitCurve))
@@ -716,9 +729,11 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             }
         }
 
-        [ConditionalFact(nameof(ECExplicitCurvesSupported))]
+        [ConditionalFact]
         public void ExplicitCurveImportAndOriginalSignVerifyCrossCompatible()
         {
+            SkipTestException.ThrowUnless(ECExplicitCurvesSupported);
+
             byte[] data = ByteUtils.RepeatByte(0x42, 64);
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
 
@@ -769,9 +784,6 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByOid")]
-        internal static extern IntPtr EcKeyCreateByOid(string oid);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters")]
         internal static extern int EcKeyCreateByKeyParameters(
             out IntPtr key,
@@ -782,9 +794,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyGenerateKey")]
         internal static extern int EcKeyGenerateKey(IntPtr ecKey);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyDestroy")]
-        internal static extern void EcKeyDestroy(IntPtr r);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_OpenSslVersionNumber")]
         internal static extern uint OpenSslVersionNumber();
