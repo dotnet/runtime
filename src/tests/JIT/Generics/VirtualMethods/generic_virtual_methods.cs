@@ -244,12 +244,16 @@ internal class RuntimeLookupDelegateGenericVirtual
         Delegate m2 = test4.Foo<List<List<T>>>;
         Assert.Equal(m1, m2);
 
-        IBase test5 = new DerivedStruct();
-        Delegate m3 = test5.Foo<List<T>>();
-        Delegate m4 = test5.Foo<List<List<T>>>;
-        Assert.Equal(m3.Method, m4.Method);
+        // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
+        if (RuntimeFeature.IsDynamicCodeSupported)
+        {
+            IBase test5 = new DerivedStruct();
+            Delegate m3 = test5.Foo<List<T>>();
+            Delegate m4 = test5.Foo<List<List<T>>>;
+            Assert.Equal(m3.Method, m4.Method);
+        }
     }
-    
+
     internal static void TestGenericMethodOnGenericType<T, U>()
     {
         Console.WriteLine("Testing {0}: {1}, {2}...", nameof(TestGenericMethodOnGenericType), typeof(T), typeof(U));
@@ -277,12 +281,16 @@ internal class RuntimeLookupDelegateGenericVirtual
         Delegate m2 = test4.Foo<List<List<T>>>;
         Assert.Equal(m1, m2);
 
-        IBase<U> test5 = new DerivedStruct<U>();
-        Delegate m3 = test5.Foo<List<T>>();
-        Delegate m4 = test5.Foo<List<List<T>>>;
-        Assert.Equal(m3.Method, m4.Method);
+        // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
+        if (RuntimeFeature.IsDynamicCodeSupported)
+        {
+            IBase<U> test5 = new DerivedStruct<U>();
+            Delegate m3 = test5.Foo<List<T>>();
+            Delegate m4 = test5.Foo<List<List<T>>>;
+            Assert.Equal(m3.Method, m4.Method);
+        }
     }
-    
+
     internal static void TestGenericMethodOnStringType<T>()
     {
         Console.WriteLine("Testing {0}: {1}...", nameof(TestGenericMethodOnStringType), typeof(T));
@@ -310,10 +318,14 @@ internal class RuntimeLookupDelegateGenericVirtual
         Delegate m2 = test4.Foo<List<List<T>>>;
         Assert.Equal(m1, m2);
 
-        IBase<string> test5 = new DerivedStructString();
-        Delegate m3 = test5.Foo<List<T>>();
-        Delegate m4 = test5.Foo<List<List<T>>>;
-        Assert.Equal(m3.Method, m4.Method);
+        // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
+        if (RuntimeFeature.IsDynamicCodeSupported)
+        {
+            IBase<string> test5 = new DerivedStructString();
+            Delegate m3 = test5.Foo<List<T>>();
+            Delegate m4 = test5.Foo<List<List<T>>>;
+            Assert.Equal(m3.Method, m4.Method);
+        }
     }
 }
 
