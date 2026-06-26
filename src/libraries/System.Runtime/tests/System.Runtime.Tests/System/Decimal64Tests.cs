@@ -383,8 +383,10 @@ namespace System.Tests
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
                 yield return new object[] { Decimal64.Parse("-0"), "G", defaultFormat, "-0" };
+                yield return new object[] { Decimal64.NegativeZero, "G", defaultFormat, "-0" };
                 yield return new object[] { Decimal64.Parse("-0.0000"), "G", defaultFormat, "-0.0000" };
                 yield return new object[] { Decimal64.Parse("0"), "G", defaultFormat, "0" };
+                yield return new object[] { Decimal64.Zero, "G", defaultFormat, "0" };
                 yield return new object[] { Decimal64.Parse("0.0000"), "G", defaultFormat, "0.0000" };
                 yield return new object[] { Decimal64.Parse($"{long.MinValue}"), "G", defaultFormat, "-9223372036854776000" };
                 yield return new object[] { Decimal64.Parse($"{long.MaxValue}"), "G", defaultFormat, "9223372036854776000" };

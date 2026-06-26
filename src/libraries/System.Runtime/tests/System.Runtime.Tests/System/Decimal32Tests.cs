@@ -377,8 +377,10 @@ namespace System.Tests
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
                 yield return new object[] { Decimal32.Parse("-0"), "G", defaultFormat, "-0" };
+                yield return new object[] { Decimal32.NegativeZero, "G", defaultFormat, "-0" };
                 yield return new object[] { Decimal32.Parse("-0.0000"), "G", defaultFormat, "-0.0000" };
                 yield return new object[] { Decimal32.Parse("0"), "G", defaultFormat, "0" };
+                yield return new object[] { Decimal32.Zero, "G", defaultFormat, "0" };
                 yield return new object[] { Decimal32.Parse("0.0000"), "G", defaultFormat, "0.0000" };
                 yield return new object[] { Decimal32.Parse($"{int.MinValue}"), "G", defaultFormat, "-2147484000" };
                 yield return new object[] { Decimal32.Parse($"{int.MaxValue}"), "G", defaultFormat, "2147484000" };
