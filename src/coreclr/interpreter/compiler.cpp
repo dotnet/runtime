@@ -8340,13 +8340,10 @@ void InterpCompiler::CreateSynchronizedRetValVar()
         retClsHnd = (retType == InterpTypeVT) ? m_methodInfo->args.retTypeClass : NULL;
     }
 
-    if (retType != InterpTypeVoid)
-    {
-        PushInterpType(retType, retClsHnd);
-        m_synchronizedOrAsyncRetValVarIndex = m_pStackPointer[-1].var;
-        m_pStackPointer--;
-        INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
-    }
+    PushInterpType(retType, retClsHnd);
+    m_synchronizedOrAsyncRetValVarIndex = m_pStackPointer[-1].var;
+    m_pStackPointer--;
+    INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
 }
 
 void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
