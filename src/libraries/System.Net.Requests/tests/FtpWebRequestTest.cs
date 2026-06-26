@@ -228,12 +228,21 @@ namespace System.Net.Tests
             Assert.Throws<FormatException>(() => WebRequest.Create($"{uri}\r\n{WebRequestMethods.Ftp.AppendFile} {Guid.NewGuid().ToString()}"));
         }
 
-        [ConditionalFact(typeof(FtpWebRequestTest), nameof(LocalServerAvailable))]
-        public void Ftp_Ignore_NewLine_GetRequestStream_And_GetResponse_Throws_FormatException_As_InnerException()
+        [ConditionalTheory(typeof(FtpWebRequestTest), nameof(LocalServerAvailable))]
+        [InlineData("test\r\ntest2")]
+        [InlineData("test\rtest2")]
+        [InlineData("test\ntest2")]
+        [InlineData("test%0D%0Atest2")]
+        [InlineData("test%0d%0atest2")]
+        [InlineData("test%0Dtest2")]
+        [InlineData("test%0dtest2")]
+        [InlineData("test%0Atest2")]
+        [InlineData("test%0atest2")]
+        public void Ftp_Ignore_NewLine_GetRequestStream_And_GetResponse_Throws_FormatException_As_InnerException(string credential)
         {
             FtpWebRequest ftpWebRequest = (FtpWebRequest)WebRequest.Create(absoluteUri + Guid.NewGuid().ToString());
             ftpWebRequest.Method = "APPE";
-            ftpWebRequest.Credentials = new NetworkCredential("test\r\ntest2", "test\r\ntest2");
+            ftpWebRequest.Credentials = new NetworkCredential(credential, credential);
             var requestException = Assert.Throws<WebException>(() => ftpWebRequest.GetRequestStream());
             Assert.True(requestException.InnerException is FormatException);
 
