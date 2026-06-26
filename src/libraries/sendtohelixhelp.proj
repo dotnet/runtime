@@ -348,4 +348,20 @@
           DestinationFiles="@(_FilesToStage -> '$(HelixDependenciesStagingPath)\%(DirName)\%(RecursiveDir)%(FileName)%(Extension)')"
           SkipUnchangedFiles="true" />
   </Target>
+
+  <!--
+    When a build sets FailOnWorkItemFailure/FailOnTestFailure to false (e.g. scheduled outerloop runs,
+    which must end up 'succeeded' so AzDO's always:false scheduler doesn't keep re-queueing the same
+    commit) the Helix SDK's CheckHelixJobStatus no longer reports failed work items, which hides them
+    from the build. Setting WarnOnHelixTestFailure=true surfaces each failed work item as a build
+    warning instead, keeping the failures visible in the Azure DevOps timeline without failing the
+    build. The "Send to Helix" step disables warnaserror (see _warnAsErrorParamHelixOverride), so
+    these warnings are not promoted back into build-failing errors.
+  -->
+  <Target Name="WarnOnHelixWorkItemFailure"
+          AfterTargets="CheckHelixJobStatus"
+          Condition="'$(WarnOnHelixTestFailure)' == 'true' and '$(WaitForWorkItemCompletion)' == 'true'">
+    <Warning Condition="'%(CompletedWorkItem.Failed)' == 'true'"
+             Text="Work item %(CompletedWorkItem.WorkItemName) in job %(CompletedWorkItem.JobName) has failed. Failure log: %(CompletedWorkItem.ConsoleOutputUri)" />
+  </Target>
 </Project>
