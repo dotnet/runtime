@@ -890,11 +890,20 @@ void FinalizerThread::FinalizerThreadWait()
     // returns. Single-threaded WASI has no host event loop at all, so this is
     // the only drain path outside of the shutdown hook in RaiseShutdownEvents.
     //
-    // One iteration is sufficient under standard semantics: the managed
-    // GC.RunFinalizers helper invoked by FinalizeAllObjects walks the
-    // F-reachable queue until empty. Objects resurrected by user finalizers
-    // require a subsequent GC.Collect() + WaitForPendingFinalizers() pair,
-    // mirroring the contract on every other target.
+    // Re-entry guard: a user finalizer may itself call
+    // GC.WaitForPendingFinalizers() (transitively via Dispose or similar).
+    // The non-WASM branch above skips re-entry with IsCurrentThreadFinalizer();
+    // on WASM the same thread is always "the finalizer thread", so we track
+    // an explicit nesting flag. Inner calls become no-ops; the outer
+    // FinalizeAllObjects loop will continue draining whatever the user
+    // finalizer pushes onto the queue when it returns.
+    static thread_local bool s_inDrain = false;
+    if (s_inDrain)
+    {
+        return;
+    }
+    s_inDrain = true;
+
     EX_TRY
     {
         INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
@@ -912,5 +921,7 @@ void FinalizerThread::FinalizerThreadWait()
         // every other target where the finalizer thread quietly swallows it.
     }
     EX_END_CATCH
+
+    s_inDrain = false;
 #endif // !TARGET_WASM
 }

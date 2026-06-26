@@ -231,20 +231,34 @@ OutputDebugStringW(IN LPCWSTR lpOutputString)
 }
 
 // PAL exception-record allocation — normally in seh-unwind.cpp which we
-// exclude on WASI. Stubs satisfy linker references; the WASI interpreter
-// throws PAL_SEHException directly without using these.
+// exclude on WASI. Both records share a single allocation (mirroring the
+// Unix layout) so the matching free is a single free() of the combined
+// memory, keyed off the contextRecord pointer.
+struct WasiExceptionRecords
+{
+    CONTEXT          ContextRecord;
+    EXCEPTION_RECORD ExceptionRecord;
+};
+
 extern "C" PALIMPORT VOID PALAPI
 PAL_FreeExceptionRecords(IN EXCEPTION_RECORD *exceptionRecord, IN CONTEXT *contextRecord)
 {
     (void)exceptionRecord;
+    // contextRecord is the start of the combined WasiExceptionRecords allocation.
     free(contextRecord);
 }
 
 VOID
 AllocateExceptionRecords(EXCEPTION_RECORD** exceptionRecord, CONTEXT** contextRecord)
 {
-    *exceptionRecord = (EXCEPTION_RECORD*)calloc(1, sizeof(EXCEPTION_RECORD));
-    *contextRecord = (CONTEXT*)calloc(1, sizeof(CONTEXT));
+    WasiExceptionRecords* records = (WasiExceptionRecords*)calloc(1, sizeof(WasiExceptionRecords));
+    if (records == nullptr)
+    {
+        // No fallback pool on WASI (single-threaded, no async signals).
+        abort();
+    }
+    *contextRecord = &records->ContextRecord;
+    *exceptionRecord = &records->ExceptionRecord;
 }
 
 extern "C" PALIMPORT BOOL PALAPI
