@@ -533,22 +533,15 @@ namespace System.Reflection.PortableExecutable
                 segment = segment.Slice(1);
             }
 
-            if (segment.Length % 2 != 0)
-            {
-                pendingByte = segment[segment.Length - 1];
-                segment = segment.Slice(0, segment.Length - 1);
-            }
-            else
-            {
-                pendingByte = -1;
-            }
-
             while (segment.Length >= sizeof(ushort))
             {
                 // little-endian encoding:
                 checksum = AggregateChecksum(checksum, BinaryPrimitives.ReadUInt16LittleEndian(segment));
                 segment = segment.Slice(sizeof(ushort));
             }
+
+            // Carry a trailing odd byte over to the next segment.
+            pendingByte = segment.IsEmpty ? -1 : segment[0];
         }
 
         private static uint AggregateChecksum(uint checksum, ushort value)
