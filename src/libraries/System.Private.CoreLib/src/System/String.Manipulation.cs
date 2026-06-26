@@ -2040,7 +2040,7 @@ namespace System
         internal static void MakeSeparatorListAny(ReadOnlySpan<char> source, ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
         {
             // Special-case the common cases of 1, 2 and 3 separators.
-            else if (separators.Length <= 3)
+            if (separators.Length <= 3)
             {
                 // Special-case the common cases of 1 separator, the most common case, with manual comparisons against it.
                 if (separators.Length == 1)
