@@ -13762,7 +13762,7 @@ void Compiler::gtDispConst(GenTree* tree)
                     const simdscalable_t& simdVal      = vecCon->gtSimdScalableVal;
                     const var_types       simdBaseType = simdVal.gtSimdScalableBaseType;
 
-                    auto printElement = [&](unsigned element) {
+                    auto printElement = [&](unsigned elementIndex) {
                         switch (simdBaseType)
                         {
                             case TYP_BYTE:
@@ -13771,10 +13771,10 @@ void Compiler::gtDispConst(GenTree* tree)
                                 uint8_t element = simdVal.gtSimdScalableIndexU8[0];
                                 if (simdVal.gtSimdScalableKind == SimdScalableSequence)
                                 {
-                                    element =
-                                        static_cast<uint8_t>(element + (element * simdVal.gtSimdScalableStepU8[0]));
+                                    element = static_cast<uint8_t>(
+                                        element + (elementIndex * simdVal.gtSimdScalableStepU8[0]));
                                 }
-                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (element != 0))
+                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (elementIndex != 0))
                                 {
                                     element = 0;
                                 }
@@ -13788,10 +13788,10 @@ void Compiler::gtDispConst(GenTree* tree)
                                 uint16_t element = simdVal.gtSimdScalableIndexU16[0];
                                 if (simdVal.gtSimdScalableKind == SimdScalableSequence)
                                 {
-                                    element =
-                                        static_cast<uint16_t>(element + (element * simdVal.gtSimdScalableStepU16[0]));
+                                    element = static_cast<uint16_t>(
+                                        element + (elementIndex * simdVal.gtSimdScalableStepU16[0]));
                                 }
-                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (element != 0))
+                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (elementIndex != 0))
                                 {
                                     element = 0;
                                 }
@@ -13805,10 +13805,10 @@ void Compiler::gtDispConst(GenTree* tree)
                                 uint32_t element = simdVal.gtSimdScalableIndexU32[0];
                                 if (simdVal.gtSimdScalableKind == SimdScalableSequence)
                                 {
-                                    element =
-                                        static_cast<uint32_t>(element + (element * simdVal.gtSimdScalableStepU32[0]));
+                                    element = static_cast<uint32_t>(
+                                        element + (elementIndex * simdVal.gtSimdScalableStepU32[0]));
                                 }
-                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (element != 0))
+                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (elementIndex != 0))
                                 {
                                     element = 0;
                                 }
@@ -13822,9 +13822,9 @@ void Compiler::gtDispConst(GenTree* tree)
                                 uint64_t element = simdVal.gtSimdScalableIndexU64[0];
                                 if (simdVal.gtSimdScalableKind == SimdScalableSequence)
                                 {
-                                    element += element * simdVal.gtSimdScalableStepU64[0];
+                                    element += elementIndex * simdVal.gtSimdScalableStepU64[0];
                                 }
-                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (element != 0))
+                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (elementIndex != 0))
                                 {
                                     element = 0;
                                 }
@@ -13837,9 +13837,9 @@ void Compiler::gtDispConst(GenTree* tree)
                                 float element = simdVal.gtSimdScalableIndexF32[0];
                                 if (simdVal.gtSimdScalableKind == SimdScalableSequence)
                                 {
-                                    element += element * simdVal.gtSimdScalableStepF32[0];
+                                    element += elementIndex * simdVal.gtSimdScalableStepF32[0];
                                 }
-                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (element != 0))
+                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (elementIndex != 0))
                                 {
                                     element = 0.0;
                                 }
@@ -13852,9 +13852,9 @@ void Compiler::gtDispConst(GenTree* tree)
                                 double element = simdVal.gtSimdScalableIndexF64[0];
                                 if (simdVal.gtSimdScalableKind == SimdScalableSequence)
                                 {
-                                    element += element * simdVal.gtSimdScalableStepF64[0];
+                                    element += elementIndex * simdVal.gtSimdScalableStepF64[0];
                                 }
-                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (element != 0))
+                                else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (elementIndex != 0))
                                 {
                                     element = 0.0;
                                 }
