@@ -2742,11 +2742,15 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         PTR_READYTORUN_IMPORT_SECTION pImportSection;
         if (sectionIndex != (DWORD)-1)
         {
+            // On some platforms (everywhere except wasm) we can get the section index from the callsite,
+            // so we don't have to search for it.
             pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
             _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
         }
         else
         {
+            // On some platforms (currently only wasm) we would need to bloat the R2R binary a bit to store
+            // the section index, so we search for it instead.
             pImportSection = pModule->GetImportSectionForRVA(rva);
         }
         _ASSERTE(pImportSection != NULL);
@@ -3365,11 +3369,14 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     PTR_READYTORUN_IMPORT_SECTION pImportSection;
     if (sectionIndex != (DWORD)-1)
     {
+        // On some platforms (everywhere except wasm) we can get the section index from the callsite,
+        // so we don't have to search for it.
         pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
-        _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
     }
     else
     {
+        // On some platforms (currently only wasm) we would need to bloat the R2R binary a bit to store
+        // the section index, so we search for it instead.
         pImportSection = pModule->GetImportSectionForRVA(rva);
     }
 
