@@ -8467,15 +8467,16 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
         break;
 
     case ICorDebugInfo::VLT_FPSTK:
-#if defined(TARGET_ARM) // @ARMTODO
-        hr = E_NOTIMPL;
-#else
-        /*
-        @TODO [Microsoft] We have to make this work!!!!!!!!!!!!!
+#if defined(TARGET_X86)
+        // On x86 floating-point values (including return values) live on the x87
+        // FP stack. vlfReg is the depth from the top of the stack, so add the base
+        // register to form the CorDebugRegister index expected by the helper.
         hr = m_nativeFrame->GetLocalFloatingPointValue(
                          pNativeVarInfo->loc.vlFPstk.vlfReg + REGISTER_X86_FPSTACK_0,
                          type, ppValue);
-                         */
+#elif defined(TARGET_ARM) // @ARMTODO
+        hr = E_NOTIMPL;
+#else
         hr = CORDBG_E_IL_VAR_NOT_AVAILABLE;
 #endif
         break;
