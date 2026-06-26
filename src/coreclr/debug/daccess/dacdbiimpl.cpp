@@ -606,8 +606,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeftSideInitialized(OUT BOOL * 
 }
 
 
-// Gets the type of 'address'.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal)
+// Gets whether the specified address is managed code.
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsManagedCode(CORDB_ADDRESS address, OUT BOOL * pIsManaged)
 {
     DD_ENTER_MAY_THROW;
 
@@ -615,25 +615,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAddressType(CORDB_ADDRESS addr
     EX_TRY
     {
         TADDR taAddr = CORDB_ADDRESS_TO_TADDR(address);
+        *pIsManaged = FALSE;
 
-        if (IsPossibleCodeAddress(taAddr) == S_OK)
+        if (IsPossibleCodeAddress(taAddr) == S_OK && ExecutionManager::IsManagedCode(taAddr))
         {
-            if (ExecutionManager::IsManagedCode(taAddr))
-            {
-                *pRetVal = kAddressManagedMethod;
-            }
-            else if (StubManager::IsStub(taAddr))
-            {
-                *pRetVal = kAddressRuntimeUnmanagedStub;
-            }
-            else
-            {
-                *pRetVal = kAddressUnrecognized;
-            }
-        }
-        else
-        {
-            *pRetVal = kAddressUnrecognized;
+            *pIsManaged = TRUE;
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -1125,7 +1111,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
 }
 
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetModuleMetaDataFileInfo(VMPTR_Module vmModule, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult)
 {
     if (pTimeStamp == NULL || pImageSize == NULL || pStrFilename == NULL || pResult == NULL)
         return E_POINTER;
@@ -1138,9 +1124,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMP
 
         DWORD dwDataSize;
         DWORD dwRvaHint;
-        PEAssembly * pPEAssembly = vmPEAssembly.GetDacPtr();
-        _ASSERTE(pPEAssembly != NULL);
-        if (pPEAssembly == NULL)
+        Module * pModule = vmModule.GetDacPtr();
+        _ASSERTE(pModule != NULL);
+        if (pModule == NULL)
         {
             *pResult = FALSE;
             return E_FAIL;
@@ -1149,7 +1135,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMP
         {
         WCHAR wszFilePath[MAX_LONGPATH] = {0};
         DWORD cchFilePath = MAX_LONGPATH;
-        bool ret = ClrDataAccess::GetMetaDataFileInfoFromPEFile(pPEAssembly,
+        bool ret = ClrDataAccess::GetMetaDataFileInfoFromModule(pModule,
                                                                 *pTimeStamp,
                                                                 *pImageSize,
                                                                 dwDataSize,
@@ -3678,7 +3664,7 @@ void DacDbiInterfaceImpl::InitFieldData(const FieldDesc *           pFD,
 // GENERICS: TODO: this method will need to be modified if we ever support EnC on
 // generic classes.
 //-----------------------------------------------------------------------------
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData, OUT BOOL * pfStatic)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData)
 {
     DD_ENTER_MAY_THROW;
 
@@ -3704,8 +3690,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetEnCHangingFieldInfo(const EnCH
     #endif // FEATURE_METADATA_UPDATER
 
         InitFieldData(pFD, pORField, pEnCFieldInfo, pFieldData);
-        *pfStatic = (pFD->IsStatic() != 0);
-
     }
     EX_CATCH_HRESULT(hr);
     return hr;
@@ -5814,34 +5798,6 @@ bool DacDbiInterfaceImpl::CheckRef(PTR_Object objPtr)
     return objRefBad;
 } // DacDbiInterfaceImpl::CheckRef
 
-// DacDbiInterfaceImpl::InitObjectData
-// Initialize basic object information: type handle, object size, offset to fields and expanded type
-// information.
-// Arguments:
-//     input:  objPtr      - address of object of interest
-//     output: pObjectData - object information
-// Note: It is assumed that pObjectData is non-null.
-void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr,
-                                         DebuggerIPCE_ObjectData * pObjectData)
-{
-    _ASSERTE(pObjectData != NULL);
-    // Save basic object info.
-    pObjectData->objSize = objPtr->GetSize();
-    pObjectData->objOffsetToVars = dac_cast<TADDR>((objPtr)->GetData()) - dac_cast<TADDR>(objPtr);
-
-    IfFailThrow(TypeHandleToExpandedTypeInfo(AllBoxed, (CORDB_ADDRESS)objPtr->GetGCSafeTypeHandle().AsTAddr(), &(pObjectData->objTypeData)));
-
-    // If this is a string object, set the type to ELEMENT_TYPE_STRING.
-    if (objPtr->GetGCSafeMethodTable() == g_pStringClass)
-    {
-        pObjectData->objTypeData.elementType = ELEMENT_TYPE_STRING;
-        if(pObjectData->objSize < MIN_OBJECT_SIZE)
-        {
-            pObjectData->objSize = PtrAlign(pObjectData->objSize);
-        }
-    }
-} // DacDbiInterfaceImpl::InitObjectData
-
 // DAC/DBI API
 
 // Get object information for a TypedByRef object (System.TypedReference).
@@ -5886,7 +5842,7 @@ void DacDbiInterfaceImpl::InitObjectData(PTR_Object                objPtr,
 // }
 
 // Initializes the objRef and typedByRefType fields of pObjectData (type info for the referent).
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, DebuggerIPCE_ObjectData * pObjectData)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypedByRefInfo(CORDB_ADDRESS pTypedByRef, CORDB_ADDRESS * pObjRef, DebuggerIPCE_BasicTypeData * pTypedByRefType)
 {
      DD_ENTER_MAY_THROW;
 
@@ -5899,31 +5855,30 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetTypedByRefInfo(CORDB_ADDRESS p
         PTR_TypedByRef refAddr = PTR_TypedByRef(TADDR(pTypedByRef));
 
         _ASSERTE(refAddr != NULL);
-        _ASSERTE(pObjectData != NULL);
+        _ASSERTE(pObjRef != NULL);
+        _ASSERTE(pTypedByRefType != NULL);
 
         // The type of the referent is in the type field of the TypedByRef. We need to initialize the object
         // data type information.
-        TypeHandleToBasicTypeInfo(refAddr->type,
-                                  &(pObjectData->typedByrefInfo.typedByrefType));
+        TypeHandleToBasicTypeInfo(refAddr->type, pTypedByRefType);
 
         // The reference to the object is in the data field of the TypedByRef.
-        CORDB_ADDRESS tempRef = dac_cast<TADDR>(refAddr->data);
-        pObjectData->objRef = CORDB_ADDRESS_TO_PTR(tempRef);
+        *pObjRef = dac_cast<TADDR>(refAddr->data);
 
         LOG((LF_CORDB, LL_INFO10000, "D::GASOI: sending REFANY result: "
              "ref=0x%08x, cls=0x%08x, mod=0x%p\n",
-             pObjectData->objRef,
-             pObjectData->typedByrefType.metadataToken,
-             pObjectData->typedByrefType.vmAssembly.GetDacPtr()));
+             *pObjRef,
+             pTypedByRefType->metadataToken,
+             pTypedByRefType->vmAssembly.GetDacPtr()));
     }
     EX_CATCH_HRESULT(hr);
     return hr;
 }
 
-// Get the string data associated withn obj and put it into the pointers
+// Get the string data associated with obj and put it into the pointers
 // DAC/DBI API
 // Get the string length and offset to string base for a string object
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStringData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStringData(CORDB_ADDRESS objectAddress, UINT * pLength, UINT * pOffsetToStringBase)
 {
     DD_ENTER_MAY_THROW;
 
@@ -5942,8 +5897,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStringData(CORDB_ADDRESS objec
         PTR_StringObject pStrObj = dac_cast<PTR_StringObject>(objPtr);
 
         _ASSERTE(pStrObj != NULL);
-        pObjectData->stringInfo.length = pStrObj->GetStringLength();
-        pObjectData->stringInfo.offsetToStringBase = (UINT_PTR) pStrObj->GetBufferOffset();
+        *pLength = pStrObj->GetStringLength();
+        *pOffsetToStringBase = (UINT_PTR) pStrObj->GetBufferOffset();
 
     }
     EX_CATCH_HRESULT(hr);
@@ -5954,7 +5909,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStringData(CORDB_ADDRESS objec
 // DAC/DBI API
 // Get information for an array type referent of an objRef, including rank, upper and lower
 // bounds, element size and type, and the number of elements.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetArrayData(CORDB_ADDRESS objectAddress, DebuggerIPCE_ObjectData * pObjectData)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetArrayData(CORDB_ADDRESS objectAddress, BOOL * pIsValidArray, DacDbiArrayInfo * pArrayInfo)
 {
     DD_ENTER_MAY_THROW;
 
@@ -5970,42 +5925,41 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetArrayData(CORDB_ADDRESS object
             LOG((LF_CORDB, LL_INFO10000,
                  "D::GASOI: object should be an array.\n"));
 
-            pObjectData->objRefBad = true;
+            *pIsValidArray = FALSE;
         }
         else
         {
+            *pIsValidArray = TRUE;
             PTR_ArrayBase arrPtr = dac_cast<PTR_ArrayBase>(objPtr);
 
             // this is also returned in the type information for the array - we return both for sanity checking...
-            pObjectData->arrayInfo.rank = arrPtr->GetRank();
-            pObjectData->arrayInfo.componentCount = arrPtr->GetNumComponents();
-            pObjectData->arrayInfo.offsetToArrayBase = arrPtr->GetDataPtrOffset(pMT);
+            pArrayInfo->rank = arrPtr->GetRank();
+            pArrayInfo->componentCount = arrPtr->GetNumComponents();
+            pArrayInfo->offsetToArrayBase = arrPtr->GetDataPtrOffset(pMT);
 
             if (arrPtr->IsMultiDimArray())
             {
-                pObjectData->arrayInfo.offsetToUpperBounds = SIZE_T(arrPtr->GetBoundsOffset(pMT));
+                pArrayInfo->offsetToUpperBounds = SIZE_T(arrPtr->GetBoundsOffset(pMT));
 
-                pObjectData->arrayInfo.offsetToLowerBounds = SIZE_T(arrPtr->GetLowerBoundsOffset(pMT));
+                pArrayInfo->offsetToLowerBounds = SIZE_T(arrPtr->GetLowerBoundsOffset(pMT));
             }
             else
             {
-                pObjectData->arrayInfo.offsetToUpperBounds = 0;
-                pObjectData->arrayInfo.offsetToLowerBounds = 0;
+                pArrayInfo->offsetToUpperBounds = 0;
+                pArrayInfo->offsetToLowerBounds = 0;
             }
 
-            pObjectData->arrayInfo.elementSize = arrPtr->GetComponentSize();
+            pArrayInfo->elementSize = (UINT)arrPtr->GetComponentSize();
 
             LOG((LF_CORDB, LL_INFO10000, "D::GOI: array info: "
-                "baseOff=%d, lowerOff=%d, upperOff=%d, cnt=%d, rank=%d, rank (2) = %d,"
-                 "eleSize=%d, eleType=0x%02x\n",
-                 pObjectData->arrayInfo.offsetToArrayBase,
-                 pObjectData->arrayInfo.offsetToLowerBounds,
-                 pObjectData->arrayInfo.offsetToUpperBounds,
-                 pObjectData->arrayInfo.componentCount,
-                 pObjectData->arrayInfo.rank,
-                 pObjectData->objTypeData.ArrayTypeData.arrayRank,
-                 pObjectData->arrayInfo.elementSize,
-                 pObjectData->objTypeData.ArrayTypeData.arrayTypeArg.elementType));
+                "baseOff=%u, lowerOff=%u, upperOff=%u, cnt=%u, rank=%u, "
+                 "eleSize=%u\n",
+                 pArrayInfo->offsetToArrayBase,
+                 pArrayInfo->offsetToLowerBounds,
+                 pArrayInfo->offsetToUpperBounds,
+                 pArrayInfo->componentCount,
+                 pArrayInfo->rank,
+                 pArrayInfo->elementSize));
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -6014,7 +5968,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetArrayData(CORDB_ADDRESS object
 
 // DAC/DBI API: Get information about an object for which we have a reference, including the object size and
 // type information.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetBasicObjectInfo(CORDB_ADDRESS objectAddress, CorElementType type, DebuggerIPCE_ObjectData * pObjectData)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetBasicObjectInfo(CORDB_ADDRESS objectAddress, BOOL * pIsValidRef, UINT * pObjSize, UINT * pObjOffsetToVars, DebuggerIPCE_ExpandedTypeData * pObjTypeData)
 {
     DD_ENTER_MAY_THROW;
 
@@ -6023,12 +5977,22 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetBasicObjectInfo(CORDB_ADDRESS 
     {
 
         PTR_Object objPtr = PTR_Object(TADDR(objectAddress));
-        pObjectData->objRefBad = CheckRef(objPtr);
-        if (pObjectData->objRefBad != true)
+        BOOL objRefBad = CheckRef(objPtr);
+        *pIsValidRef = !objRefBad;
+        if (!objRefBad)
         {
             // initialize object type, size, offset information. Note: We may have a different element type
             // after this. For example, we may start with E_T_CLASS but return with something more specific.
-            InitObjectData(objPtr, pObjectData);
+            *pObjSize = (UINT)objPtr->GetSize();
+            *pObjOffsetToVars = (UINT)(dac_cast<TADDR>((objPtr)->GetData()) - dac_cast<TADDR>(objPtr));
+
+            IfFailThrow(TypeHandleToExpandedTypeInfo(AllBoxed, (CORDB_ADDRESS)objPtr->GetGCSafeTypeHandle().AsTAddr(), pObjTypeData));
+
+            // If this is a string object, set the type to ELEMENT_TYPE_STRING.
+            if (objPtr->GetGCSafeMethodTable() == g_pStringClass)
+            {
+                pObjTypeData->elementType = ELEMENT_TYPE_STRING;
+            }
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -6803,11 +6767,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsValidObject(CORDB_ADDRESS obj, 
     return hr;
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL walkStacks, UINT32 handleWalkMask)
 {
     DD_ENTER_MAY_THROW;
 
-    DacRefWalker *walker = new (nothrow) DacRefWalker(this, walkStacks, walkFQ, handleWalkMask, TRUE);
+    DacRefWalker *walker = new (nothrow) DacRefWalker(this, walkStacks, handleWalkMask, TRUE);
 
     if (walker == NULL)
         return E_OUTOFMEMORY;
@@ -7185,9 +7149,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetILCodeVersionNodeData(VMPTR_IL
     DD_ENTER_MAY_THROW;
 #ifdef FEATURE_REJIT
     ILCodeVersion ilCode(vmILCodeVersionNode.GetDacPtr());
-    pData->m_state = static_cast<DWORD>(ilCode.GetRejitState());
     pData->m_pbIL = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(ilCode.GetIL()));
-    pData->m_dwCodegenFlags = ilCode.GetJitFlags();
     const InstrumentedILOffsetMapping* pMapping = ilCode.GetInstrumentedILMap();
     if (pMapping)
     {
@@ -7353,9 +7315,11 @@ static BYTE* DebugInfoStoreNew(void * pData, size_t cBytes)
     return new (nothrow) BYTE[cBytes];
 }
 
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, OUT DacDbiArrayList<AsyncLocalData>* pAsyncLocals)
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData)
 {
     DD_ENTER_MAY_THROW;
+
+    _ASSERTE(fpCallback != NULL);
 
     HRESULT hr = S_OK;
     EX_TRY
@@ -7408,13 +7372,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetAsyncLocals(VMPTR_MethodDesc v
         }
 
         UINT32 varCount = asyncSuspensionPoints[state].NumContinuationVars;
-        pAsyncLocals->Alloc(varCount);
 
         _ASSERTE(varBeginIndex + varCount <= cAsyncVars);
         for (UINT32 i = 0; i < varCount; i++)
         {
-            (*pAsyncLocals)[i].offset = asyncVars[varBeginIndex + i].Offset;
-            (*pAsyncLocals)[i].ilVarNum = asyncVars[varBeginIndex + i].VarNumber;
+            AsyncLocalData local;
+            local.offset   = asyncVars[varBeginIndex + i].Offset;
+            local.ilVarNum = asyncVars[varBeginIndex + i].VarNumber;
+            fpCallback(&local, pUserData);
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -7448,9 +7413,9 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetGenericArgTokenIndex(VMPTR_Met
     return S_OK;
 }
 
-DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask, BOOL resolvePointers)
-    : mDac(dac), mWalkStacks(walkStacks), mWalkFQ(walkFQ), mHandleMask(handleMask), mStackWalker(NULL),
-      mResolvePointers(resolvePointers), mHandleWalker(NULL), mFQStart(PTR_NULL), mFQEnd(PTR_NULL), mFQCurr(PTR_NULL)
+DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers)
+    : mDac(dac), mWalkStacks(walkStacks), mHandleMask(handleMask), mStackWalker(NULL),
+      mResolvePointers(resolvePointers), mHandleWalker(NULL)
 {
 }
 
@@ -7542,21 +7507,6 @@ HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetch
 
             if (FAILED(hr))
                 return hr;
-        }
-    }
-
-    if (total < celt)
-    {
-        while (total < celt && mFQCurr < mFQEnd)
-        {
-            DacGcReference &ref = roots[total++];
-
-            ref.vmDomain = VMPTR_AppDomain::NullPtr();
-            ref.objHnd.SetDacTargetPtr(mFQCurr.GetAddr());
-            ref.dwType = (DWORD)CorReferenceFinalizer;
-            ref.i64ExtraData = 0;
-
-            mFQCurr++;
         }
     }
 

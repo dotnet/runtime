@@ -1185,7 +1185,7 @@ Thread::Thread()
     CONTRACTL_END;
 
     m_pFrame                = FRAME_TOP;
-    m_pGCFrame              = GCFRAME_TOP;
+    m_pGCFrame              = NULL;
 
     m_fPreemptiveGCDisabled = 0;
 
@@ -6558,7 +6558,7 @@ InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -6566,6 +6566,13 @@ InterpThreadContext* Thread::GetOrCreateInterpThreadContext()
     if (m_pInterpThreadContext == nullptr)
     {
         m_pInterpThreadContext = new InterpThreadContext();
+
+#ifdef DEBUGGING_SUPPORTED
+        if (CORDebuggerAttached() && g_pDebugInterface != NULL)
+        {
+            g_pDebugInterface->SendCreateThreadAtInterpreterEntry(this);
+        }
+#endif // DEBUGGING_SUPPORTED
     }
 
     return m_pInterpThreadContext;
@@ -6757,7 +6764,7 @@ PTR_GCFrame Thread::GetGCFrame()
     {
         void* curSP;
         curSP = (void *)GetCurrentSP();
-        _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
+        _ASSERTE((m_pGCFrame == NULL) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
     }
 #endif
 

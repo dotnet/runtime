@@ -160,7 +160,7 @@
           DependsOnTargets="PublishTrimmedProjects"
           Inputs="%(TestConsoleApps.Identity)"
           Outputs="_unused"
-          Condition="'$(ArchiveTests)' != 'true'">
+          Condition="'$(ArchiveTests)' != 'true' and '$(SkipTrimmingTestsRun)' != 'true'">
 
     <Message Importance="High" Text="[Trimming Tests] Running test: %(TestConsoleApps.ProjectCompileItems) ..." />
     <Exec IgnoreExitCode="true" Command="%(TestConsoleApps.TestCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.TestExecutionDirectory)">

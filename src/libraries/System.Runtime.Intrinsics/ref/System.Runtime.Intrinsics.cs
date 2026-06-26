@@ -171,6 +171,20 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<ulong> CreateScalarUnsafe(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> CreateScalarUnsafe<T>(T value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> CreateSequence<T>(T start, T step) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> CreateHarmonicSequence<T>(T start, T step) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> ZipLower<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> ZipUpper<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        public static (System.Runtime.Intrinsics.Vector128<T> Lower, System.Runtime.Intrinsics.Vector128<T> Upper) Zip<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> UnzipEven<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> UnzipOdd<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        public static (System.Runtime.Intrinsics.Vector128<T> Even, System.Runtime.Intrinsics.Vector128<T> Odd) Unzip<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> ConcatLowerLower<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> ConcatUpperLower<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> ConcatUpperUpper<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> ConcatLowerUpper<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> Reverse<T>(System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Create<T>(System.Runtime.Intrinsics.Vector64<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Create<T>(System.Runtime.Intrinsics.Vector64<T> lower, System.Runtime.Intrinsics.Vector64<T> upper) { throw null; }
@@ -436,6 +450,7 @@ namespace System.Runtime.Intrinsics
         extension<T>(System.Runtime.Intrinsics.Vector128<T>) where T : System.Numerics.ISignedNumber<T>
         {
             public static System.Runtime.Intrinsics.Vector128<T> NegativeOne { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<T> SignSequence { get { throw null; } }
         }
     }
     public readonly partial struct Vector128<T> : System.IEquatable<System.Runtime.Intrinsics.Vector128<T>>
@@ -622,6 +637,20 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<ulong> CreateScalarUnsafe(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> CreateScalarUnsafe<T>(T value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> CreateSequence<T>(T start, T step) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> CreateHarmonicSequence<T>(T start, T step) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> ZipLower<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> ZipUpper<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        public static (System.Runtime.Intrinsics.Vector256<T> Lower, System.Runtime.Intrinsics.Vector256<T> Upper) Zip<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> UnzipEven<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> UnzipOdd<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        public static (System.Runtime.Intrinsics.Vector256<T> Even, System.Runtime.Intrinsics.Vector256<T> Odd) Unzip<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> ConcatLowerLower<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> ConcatUpperLower<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> ConcatUpperUpper<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> ConcatLowerUpper<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> Reverse<T>(System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Create<T>(System.Runtime.Intrinsics.Vector64<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Create<T>(System.Runtime.Intrinsics.Vector128<T> value) { throw null; }
@@ -888,6 +917,7 @@ namespace System.Runtime.Intrinsics
         extension<T>(System.Runtime.Intrinsics.Vector256<T>) where T : System.Numerics.ISignedNumber<T>
         {
             public static System.Runtime.Intrinsics.Vector256<T> NegativeOne { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector256<T> SignSequence { get { throw null; } }
         }
     }
     public readonly partial struct Vector256<T> : System.IEquatable<System.Runtime.Intrinsics.Vector256<T>>
@@ -1074,6 +1104,20 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<ulong> CreateScalarUnsafe(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> CreateScalarUnsafe<T>(T value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> CreateSequence<T>(T start, T step) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> CreateHarmonicSequence<T>(T start, T step) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> ZipLower<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> ZipUpper<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static (System.Runtime.Intrinsics.Vector512<T> Lower, System.Runtime.Intrinsics.Vector512<T> Upper) Zip<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> UnzipEven<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> UnzipOdd<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static (System.Runtime.Intrinsics.Vector512<T> Even, System.Runtime.Intrinsics.Vector512<T> Odd) Unzip<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> ConcatLowerLower<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> ConcatUpperLower<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> ConcatUpperUpper<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> ConcatLowerUpper<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<T> Reverse<T>(System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> Create<T>(System.Runtime.Intrinsics.Vector64<T> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> Create<T>(System.Runtime.Intrinsics.Vector128<T> value) { throw null; }
@@ -1339,6 +1383,7 @@ namespace System.Runtime.Intrinsics
         extension<T>(System.Runtime.Intrinsics.Vector512<T>) where T : System.Numerics.ISignedNumber<T>
         {
             public static System.Runtime.Intrinsics.Vector512<T> NegativeOne { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector512<T> SignSequence { get { throw null; } }
         }
     }
     public readonly partial struct Vector512<T> : System.IEquatable<System.Runtime.Intrinsics.Vector512<T>>
@@ -1502,6 +1547,20 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<ulong> CreateScalarUnsafe(ulong value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> CreateScalarUnsafe<T>(T value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> CreateSequence<T>(T start, T step) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> CreateGeometricSequence<T>(T initial, [System.Diagnostics.CodeAnalysis.ConstantExpected] T multiplier) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> CreateAlternatingSequence<T>(T even, T odd) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> CreateHarmonicSequence<T>(T start, T step) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> ZipLower<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> ZipUpper<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        public static (System.Runtime.Intrinsics.Vector64<T> Lower, System.Runtime.Intrinsics.Vector64<T> Upper) Zip<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> UnzipEven<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> UnzipOdd<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        public static (System.Runtime.Intrinsics.Vector64<T> Even, System.Runtime.Intrinsics.Vector64<T> Odd) Unzip<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> ConcatLowerLower<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> ConcatUpperLower<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> ConcatUpperUpper<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> ConcatLowerUpper<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> Reverse<T>(System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Create<T>(System.ReadOnlySpan<T> values) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Create<T>(T value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Create<T>(T[] values) { throw null; }
@@ -1753,6 +1812,7 @@ namespace System.Runtime.Intrinsics
         extension<T>(System.Runtime.Intrinsics.Vector64<T>) where T : System.Numerics.ISignedNumber<T>
         {
             public static System.Runtime.Intrinsics.Vector64<T> NegativeOne { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector64<T> SignSequence { get { throw null; } }
         }
     }
     public readonly partial struct Vector64<T> : System.IEquatable<System.Runtime.Intrinsics.Vector64<T>>
@@ -6541,6 +6601,16 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ushort> CreateWhileReadAfterWriteMaskUInt16(ushort* left, ushort* right) { throw null; }
         public static unsafe System.Numerics.Vector<uint> CreateWhileReadAfterWriteMaskUInt32(uint* left, uint* right) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> CreateWhileReadAfterWriteMaskUInt64(ulong* left, ulong* right) { throw null; }
+        public static unsafe System.Numerics.Vector<byte> CreateWhileWriteAfterReadMaskByte(byte* left, byte* right) { throw null; }
+        public static unsafe System.Numerics.Vector<double> CreateWhileWriteAfterReadMaskDouble(double* left, double* right) { throw null; }
+        public static unsafe System.Numerics.Vector<short> CreateWhileWriteAfterReadMaskInt16(short* left, short* right) { throw null; }
+        public static unsafe System.Numerics.Vector<int> CreateWhileWriteAfterReadMaskInt32(int* left, int* right) { throw null; }
+        public static unsafe System.Numerics.Vector<long> CreateWhileWriteAfterReadMaskInt64(long* left, long* right) { throw null; }
+        public static unsafe System.Numerics.Vector<sbyte> CreateWhileWriteAfterReadMaskSByte(sbyte* left, sbyte* right) { throw null; }
+        public static unsafe System.Numerics.Vector<float> CreateWhileWriteAfterReadMaskSingle(float* left, float* right) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> CreateWhileWriteAfterReadMaskUInt16(ushort* left, ushort* right) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> CreateWhileWriteAfterReadMaskUInt32(uint* left, uint* right) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> CreateWhileWriteAfterReadMaskUInt64(ulong* left, ulong* right) { throw null; }
         public static System.Numerics.Vector<int> DotProductRotateComplex(System.Numerics.Vector<int> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
         public static System.Numerics.Vector<long> DotProductRotateComplex(System.Numerics.Vector<long> addend, System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
         public static System.Numerics.Vector<int> DotProductRotateComplexBySelectedIndex(System.Numerics.Vector<int> addend, System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw null; }
@@ -6880,6 +6950,24 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<uint> ReciprocalEstimate(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<uint> ReciprocalSqrtEstimate(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> SaturatingExtractNarrowingLower(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<short> SaturatingExtractNarrowingLower(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<int> SaturatingExtractNarrowingLower(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<byte> SaturatingExtractNarrowingLower(System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<ushort> SaturatingExtractNarrowingLower(System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<uint> SaturatingExtractNarrowingLower(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<sbyte> SaturatingExtractNarrowingUpper(System.Numerics.Vector<sbyte> even, System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<short> SaturatingExtractNarrowingUpper(System.Numerics.Vector<short> even, System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<int> SaturatingExtractNarrowingUpper(System.Numerics.Vector<int> even, System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<byte> SaturatingExtractNarrowingUpper(System.Numerics.Vector<byte> even, System.Numerics.Vector<ushort> value) { throw null; }
+        public static System.Numerics.Vector<ushort> SaturatingExtractNarrowingUpper(System.Numerics.Vector<ushort> even, System.Numerics.Vector<uint> value) { throw null; }
+        public static System.Numerics.Vector<uint> SaturatingExtractNarrowingUpper(System.Numerics.Vector<uint> even, System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<byte> SaturatingExtractUnsignedNarrowingLower(System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<ushort> SaturatingExtractUnsignedNarrowingLower(System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<uint> SaturatingExtractUnsignedNarrowingLower(System.Numerics.Vector<long> value) { throw null; }
+        public static System.Numerics.Vector<byte> SaturatingExtractUnsignedNarrowingUpper(System.Numerics.Vector<byte> even, System.Numerics.Vector<short> value) { throw null; }
+        public static System.Numerics.Vector<ushort> SaturatingExtractUnsignedNarrowingUpper(System.Numerics.Vector<ushort> even, System.Numerics.Vector<int> value) { throw null; }
+        public static System.Numerics.Vector<uint> SaturatingExtractUnsignedNarrowingUpper(System.Numerics.Vector<uint> even, System.Numerics.Vector<long> value) { throw null; }
         // public static unsafe void Scatter16BitNarrowingNonTemporal(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses, System.Numerics.Vector<int> data) { throw null; }
         public static unsafe void Scatter16BitNarrowingNonTemporal(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses, System.Numerics.Vector<long> data) { throw null; }
         // public static unsafe void Scatter16BitNarrowingNonTemporal(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses, System.Numerics.Vector<uint> data) { throw null; }

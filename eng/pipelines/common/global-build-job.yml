@@ -49,7 +49,17 @@ jobs:
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
-    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    # Windows arm64 builds are slower than the 60 min ADO default,
+    # so enforce a floor of 75 minutes while still honoring any larger explicit value.
+    ${{ if eq(parameters.platform, 'windows_arm64') }}:
+      ${{ if eq(parameters.timeoutInMinutes, '') }}:
+        timeoutInMinutes: 75
+      ${{ elseif lt(75, parameters.timeoutInMinutes) }}:
+        timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      ${{ else }}:
+        timeoutInMinutes: 75
+    ${{ else }}:
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
     enableMicrobuild: ${{ parameters.isOfficialBuild }}

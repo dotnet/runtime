@@ -1,3 +1,31 @@
+# runtime-diagnostics.yml
+#
+# Pipeline overview:
+#
+#   SOSTests           windows_x64 Release. One shared coreclr+libs build (-c Debug
+#                      -rc release -lc release -clrinterpreter) consumed by 4 SOS
+#                      legs that run on top of it: cDAC, cDAC_fallback, cDAC_verify, DAC.
+#                      Each leg sets testInterpreter: true so interpreter coverage
+#                      is exercised inline (no separate Interpreter leg).
+#
+#   CdacUnitTests      linux_x64 Debug. Builds + tests the cDAC managed-side
+#                      UnitTests + DataGeneratorTests projects (tools.cdactests
+#                      subset). Independent of every other stage.
+#
+#   CdacTests          Per-platform CdacBuild + per-platform Dump / Stress /
+#                      XPlatDumpGen / XPlatDumpTest legs in one stage. Each
+#                      test leg uses job-level dependsOnGlobalBuilds: CdacBuild,
+#                      so e.g. linux_x64 dump tests start as soon as linux_x64
+#                      CdacBuild finishes (no waiting on the slowest platform).
+#                      The cross-platform XPlatDumpTest legs additionally
+#                      depend on every source platform's XPlatDumpGen via
+#                      explicit per-job dependsOn.
+#                      Mode gating:
+#                        CdacDumpTest       single-leg mode AND not Schedule
+#                        CdacStressTest     always
+#                        CdacXPlatDumpGen   xplat mode OR Schedule
+#                        CdacXPlatDumpTest  xplat mode OR Schedule
+
 trigger: none
 
 parameters:
@@ -45,6 +73,7 @@ parameters:
     - linux_x64
     - windows_arm64
     - linux_arm64
+    - linux_arm
 
 resources:
   repositories:
@@ -80,8 +109,18 @@ extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
     stages:
-    - stage: Build
+
+    # ----------------------------------------------------------------------
+    # SOS tests: shared windows_x64 build + 3 SOS legs that consume it.
+    # ----------------------------------------------------------------------
+    - stage: SOSTests
       jobs:
+      # Shared coreclr+libs+host+packs build. -clrinterpreter compiles
+      # FEATURE_INTERPRETER into the Release CoreCLR so the SOS legs below
+      # (which all set testInterpreter: true via sos-test-leg.yml) get
+      # interpreter coverage without needing a separate Checked drop
+      # (see review on dotnet/runtime#127840 -- -clrinterpreter enables
+      # the interpreter in Release too).
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -89,11 +128,6 @@ extends:
           platforms:
           - windows_x64
           jobParameters:
-            # Pass -clrinterpreter so FEATURE_INTERPRETER is compiled into the Release
-            # CoreCLR. This lets the Interpreter SOS leg below share a single build with
-            # the cDAC/cDAC_no_fallback/DAC legs instead of producing a separate Checked
-            # drop. (Note from review on dotnet/runtime#127840: -clrinterpreter enables
-            # the interpreter in Release as well.)
             buildArgs: -s clr+libs+tools.cdac+host+packs -c Debug -rc $(_BuildConfig) -lc $(_BuildConfig) -clrinterpreter
             nameSuffix: AllSubsets_CoreCLR
             isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -112,341 +146,214 @@ extends:
                 tarCompression: $(tarCompression)
                 artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
                 displayName: Build Assets
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
-          buildConfig: release
-          platforms:
-          - windows_x64
-          # Workaround: microsoft/azure-pipelines-tasks#21871
-          # PublishTestResults v2.270.0 garbles parameterized xUnit test names containing dots.
-          # Unsetting this feature flag restores v2.262.0 behavior until a permanent fix ships.
-          variables:
-            - name: AllowPtrToDetectTestRunRetryFiles
-              value: false
-          jobParameters:
-            name: cDAC
-            useCdac: true
-            testInterpreter: true
-            methodFilter: SOS*
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
-            timeoutInMinutes: 360
-            dependsOn:
-            - build_windows_x64_release_AllSubsets_CoreCLR
-            preBuildSteps:
-              - template: /eng/pipelines/common/download-artifact-step.yml
-                parameters:
-                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
-                  artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
-                  unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
-                  displayName: 'Runtime Build Artifacts'
-            postBuildSteps:
-            - task: PublishTestResults@2
-              inputs:
-                testResultsFormat: xUnit
-                testResultsFiles: '**/*.xml'
-                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
-                testRunTitle: 'Tests $(_PhaseName)'
-                failTaskOnFailedTests: true
-                publishRunAttachments: true
-                mergeTestResults: true
-                buildConfiguration: $(_BuildConfig)
-              continueOnError: true
-              condition: always()
-            - task: PublishPipelineArtifact@1
-              inputs:
-                targetPath: '$(Build.SourcesDirectory)/artifacts/tmp/$(_BuildConfig)/dumps'
-                artifactName: 'Dumps_cDAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
-              displayName: 'Publish Crash Dumps'
-              continueOnError: true
-              condition: failed()
-            - task: PublishPipelineArtifact@1
-              inputs:
-                targetPath: '$(Build.SourcesDirectory)/artifacts/TestResults'
-                artifactName: 'TestResults_cDAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
-              displayName: 'Publish Test Results and SOS Logs'
-              continueOnError: true
-              condition: failed()
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
-          buildConfig: release
-          platforms:
-          - windows_x64
-          # Workaround: microsoft/azure-pipelines-tasks#21871
-          variables:
-            - name: AllowPtrToDetectTestRunRetryFiles
-              value: false
-          jobParameters:
-            name: cDAC_no_fallback
-            useCdac: true
-            noFallback: true
-            testInterpreter: true
-            methodFilter: SOS*
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
-            timeoutInMinutes: 360
-            dependsOn:
-            - build_windows_x64_release_AllSubsets_CoreCLR
-            preBuildSteps:
-              - template: /eng/pipelines/common/download-artifact-step.yml
-                parameters:
-                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
-                  artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
-                  unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
-                  displayName: 'Runtime Build Artifacts'
-            postBuildSteps:
-            - task: PublishTestResults@2
-              inputs:
-                testResultsFormat: xUnit
-                testResultsFiles: '**/*.xml'
-                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
-                testRunTitle: 'Tests $(_PhaseName)'
-                failTaskOnFailedTests: true
-                publishRunAttachments: true
-                mergeTestResults: true
-                buildConfiguration: $(_BuildConfig)
-              continueOnError: true
-              condition: always()
-            - task: PublishPipelineArtifact@1
-              inputs:
-                targetPath: '$(Build.SourcesDirectory)/artifacts/tmp/$(_BuildConfig)/dumps'
-                artifactName: 'Dumps_cDAC_no_fallback_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
-              displayName: 'Publish Crash Dumps'
-              continueOnError: true
-              condition: failed()
-            - task: PublishPipelineArtifact@1
-              inputs:
-                targetPath: '$(Build.SourcesDirectory)/artifacts/TestResults'
-                artifactName: 'TestResults_cDAC_no_fallback_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
-              displayName: 'Publish Test Results and SOS Logs'
-              continueOnError: true
-              condition: failed()
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
-          buildConfig: release
-          platforms:
-          - windows_x64
-          # Workaround: microsoft/azure-pipelines-tasks#21871
-          variables:
-            - name: AllowPtrToDetectTestRunRetryFiles
-              value: false
-          jobParameters:
-            name: DAC
-            useCdac: false
-            testInterpreter: true
-            methodFilter: SOS*
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
-            timeoutInMinutes: 360
-            dependsOn:
-            - build_windows_x64_release_AllSubsets_CoreCLR
-            preBuildSteps:
-              - template: /eng/pipelines/common/download-artifact-step.yml
-                parameters:
-                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
-                  artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
-                  unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
-                  displayName: 'Runtime Build Artifacts'
-            postBuildSteps:
-            - task: PublishTestResults@2
-              inputs:
-                testResultsFormat: xUnit
-                testResultsFiles: '**/*.xml'
-                searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
-                testRunTitle: 'Tests $(_PhaseName)'
-                failTaskOnFailedTests: true
-                publishRunAttachments: true
-                mergeTestResults: true
-                buildConfiguration: $(_BuildConfig)
-              continueOnError: true
-              condition: always()
-            - task: PublishPipelineArtifact@1
-              inputs:
-                targetPath: '$(Build.SourcesDirectory)/artifacts/tmp/$(_BuildConfig)/dumps'
-                artifactName: 'Dumps_DAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
-              displayName: 'Publish Crash Dumps'
-              continueOnError: true
-              condition: failed()
-            - task: PublishPipelineArtifact@1
-              inputs:
-                targetPath: '$(Build.SourcesDirectory)/artifacts/TestResults'
-                artifactName: 'TestResults_DAC_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
-              displayName: 'Publish Test Results and SOS Logs'
-              continueOnError: true
-              condition: failed()
+            # The cDAC (mscordaccore_universal) is built by tools.cdac but is not part of the shared
+            # framework (testhost), so upload it separately for the cDAC-only SOS leg to consume.
+            - powershell: |
+                $cdacDir = Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)\artifacts\bin\mscordaccore_universal\*\win-$(archType)\publish" | Select-Object -ExpandProperty FullName -First 1
+                Write-Host "##vso[task.setvariable variable=cdacDir]$cdacDir"
+              displayName: 'Set Path to cDAC Artifacts'
+            - template: /eng/pipelines/common/upload-artifact-step.yml
+              parameters:
+                rootFolder: $(cdacDir)
+                includeRootFolder: false
+                archiveType: $(archiveType)
+                archiveExtension: $(archiveExtension)
+                tarCompression: $(tarCompression)
+                artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac
+                displayName: cDAC Assets
 
+      # SOS test legs: each depends on the shared build above. Differ only in
+      # name (artifact namespace) and the cDAC/DAC load mode.
+
+      # cDAC: the runtime-under-test's own standalone cDAC (mscordaccore_universal) loaded through SOS's
+      # standard cDAC hosting path (overlaying the freshly built cDAC next to sos.dll).
+      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
+        parameters:
+          name: cDAC
+          dacMode: cdac
+
+      # cDAC_fallback / cDAC_verify: the in-box DAC hosts the cDAC contract reader, with per-API fallback
+      # to the legacy DAC (fallback) or no fallback but still verifying against it (verify).
+      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
+        parameters:
+          name: cDAC_fallback
+          dacMode: cdacfallback
+
+      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
+        parameters:
+          name: cDAC_verify
+          dacMode: cdacverify
+
+      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
+        parameters:
+          name: DAC
+          dacMode: dac
+
+    # ----------------------------------------------------------------------
+    # cDAC managed-side unit tests + DataGenerator tests. Standalone, no
+    # native runtime needed; runs every trigger.
+    # ----------------------------------------------------------------------
+    - stage: CdacUnitTests
+      dependsOn: []
+      jobs:
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: debug
+          platforms:
+          - linux_x64
+          jobParameters:
+            nameSuffix: CdacUnitTests
+            # tools.cdactests subset builds both the UnitTests and
+            # DataGeneratorTests projects (wired in eng/Subsets.props). -test
+            # runs them through their xunit harness.
+            buildArgs: -s tools.cdactests -c $(_BuildConfig) -test
+            timeoutInMinutes: 120
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
+
+    # ----------------------------------------------------------------------
+    # cDAC dump + stress + xplat-dump-gen tests.
     #
-    # cDAC Dump Tests — Build, generate dumps, and run tests on Helix (single-leg mode)
+    # All three test families live in this one stage so they can use
+    # job-level dependsOnGlobalBuilds against the shared CdacBuild jobs
+    # (also in this stage) -- linux_x64 test legs start as soon as
+    # linux_x64 CdacBuild finishes, no waiting on slower platforms.
     #
-    - ${{ if and(eq(parameters.cdacDumpTestMode, 'single-leg'), ne(variables['Build.Reason'], 'Schedule')) }}:
-      - stage: CdacDumpTests
-        dependsOn: []
-        jobs:
-        - template: /eng/pipelines/common/platform-matrix.yml
+    # Runtime is built Checked. The cDAC native shim ships in the Release
+    # testhost CdacBuild publishes -- stress tests load it in-process.
+    # Dump tests load the managed cDAC assemblies directly and rebuild them
+    # at /p:Configuration=Debug during payload prep.
+    # ----------------------------------------------------------------------
+    - stage: CdacTests
+      dependsOn: []
+      jobs:
+      # Shared per-platform build. Downstream jobs in this stage depend on
+      # the per-platform build_<plat>_release_CdacBuild via job-level
+      # dependsOnGlobalBuilds: - nameSuffix: CdacBuild.
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms: ${{ parameters.cdacDumpPlatforms }}
+          jobParameters:
+            nameSuffix: CdacBuild
+            buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            timeoutInMinutes: 180
+            postBuildSteps:
+            - template: /eng/pipelines/common/upload-artifact-step.yml
+              parameters:
+                rootFolder: $(Build.SourcesDirectory)/artifacts/bin
+                includeRootFolder: false
+                archiveType: $(archiveType)
+                archiveExtension: $(archiveExtension)
+                tarCompression: $(tarCompression)
+                artifactName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)
+                displayName: cDAC Shared Build Artifacts
+
+      # cDAC Dump Tests -- single-leg mode, not on schedule.
+      - ${{ if and(eq(parameters.cdacDumpTestMode, 'single-leg'), ne(variables['Build.Reason'], 'Schedule')) }}:
+        - template: /eng/pipelines/cdac/cdac-helix-test-leg.yml
           parameters:
-            jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
+            nameSuffix: CdacDumpTest
             platforms: ${{ parameters.cdacDumpPlatforms }}
-            shouldContinueOnError: true
-            jobParameters:
-              nameSuffix: CdacDumpTest
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
-              timeoutInMinutes: 180
-              postBuildSteps:
-              - template: /eng/pipelines/cdac/prepare-cdac-helix-steps.yml
-              - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
-                parameters:
-                  displayName: 'Send cDAC Dump Tests to Helix'
-                  sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
-                  environment:
-                    _Creator: dotnet-bot
-                    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-                    NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
-              - task: PublishPipelineArtifact@1
-                inputs:
-                  targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
-                  artifactName: CdacDumps_$(osGroup)_$(archType)
-                displayName: 'Publish Dump Artifacts'
-                condition: and(always(), ne(variables['Agent.JobStatus'], 'Succeeded'))
-                continueOnError: true
-              - pwsh: |
-                  if ("$(Agent.JobStatus)" -ne "Succeeded") {
-                    Write-Error "One or more cDAC dump test failures were detected. Failing the job."
-                    exit 1
-                  }
-                displayName: 'Fail on test errors'
-                condition: always()
+            prepareParameters:
+              cdacTestConfig: Debug
+            sendDisplayName: 'Send cDAC Dump Tests to Helix'
+            sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
+            failErrorMessage: 'One or more cDAC dump test failures were detected. Failing the job.'
+            publishDumpsArtifactName: CdacDumps_$(osGroup)_$(archType)
 
-    #
-    # cDAC GC Stress Tests — runs in-process cDAC vs runtime stack-ref
-    # verification at GC stress points. Independent stage with its own build
-    # so its status/failures don't get conflated with the dump tests.
-    #
-    - ${{ if ne(variables['Build.Reason'], 'Schedule') }}:
-      - stage: CdacStressTests
-        dependsOn: []
-        jobs:
-        - template: /eng/pipelines/common/platform-matrix.yml
-          parameters:
-            jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
-            platforms: ${{ parameters.cdacStressPlatforms }}
-            shouldContinueOnError: true
-            jobParameters:
-              nameSuffix: CdacStressTest
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig)
-              timeoutInMinutes: 180
-              postBuildSteps:
-              - template: /eng/pipelines/cdac/prepare-cdac-stress-helix-steps.yml
-              - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
-                parameters:
-                  displayName: 'Send cDAC Stress Tests to Helix'
-                  sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/StressTests/cdac-stress-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacStressHelixQueue)" /p:TestHostPayload=$(StressTestHostRootDir) /p:StressTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac-stress /bl:$(Build.SourcesDirectory)/artifacts/log/SendStressToHelix.binlog
-                  environment:
-                    _Creator: dotnet-bot
-                    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-                    NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
-              - pwsh: |
-                  if ("$(Agent.JobStatus)" -ne "Succeeded") {
-                    Write-Error "One or more cDAC stress test failures were detected. Failing the job."
-                    exit 1
-                  }
-                displayName: 'Fail on test errors'
-                condition: always()
-              # On failure, publish the binaries needed to symbolicate the
-              # core dumps Helix collects automatically. Without these the
-              # dumps are unreadable -- libcoreclr.so, mscordaccore_universal,
-              # corerun and their .dbg/.pdb side files are required.
-              - task: PublishPipelineArtifact@1
-                inputs:
-                  targetPath: '$(StressTestHostRootDir)'
-                  artifactName: 'TestHost_CdacStress_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
-                displayName: 'Publish TestHost for crash dump symbolication'
-                continueOnError: true
-                condition: failed()
+      # cDAC GC Stress Tests. Inline (uses prepare-cdac-stress-helix-steps.yml
+      # rather than the dump-side prepare template, and adds a unique testhost
+      # artifact for crash-dump symbolication).
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms: ${{ parameters.cdacStressPlatforms }}
+          shouldContinueOnError: true
+          jobParameters:
+            nameSuffix: CdacStressTest
+            buildArgs: -s tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig)
+            timeoutInMinutes: 180
+            dependsOnGlobalBuilds:
+            - nameSuffix: CdacBuild
+            preBuildSteps:
+            - template: /eng/pipelines/cdac/download-cdac-build-artifact.yml
+            postBuildSteps:
+            - template: /eng/pipelines/cdac/prepare-cdac-stress-helix-steps.yml
+            - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
+              parameters:
+                displayName: 'Send cDAC Stress Tests to Helix'
+                sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/StressTests/cdac-stress-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacStressHelixQueue)" /p:TestHostPayload=$(StressTestHostRootDir) /p:StressTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac-stress /bl:$(Build.SourcesDirectory)/artifacts/log/SendStressToHelix.binlog
+                environment:
+                  _Creator: dotnet-bot
+                  SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+                  NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
+            - pwsh: |
+                if ("$(Agent.JobStatus)" -ne "Succeeded") {
+                  Write-Error "One or more cDAC stress test failures were detected. Failing the job."
+                  exit 1
+                }
+              displayName: 'Fail on test errors'
+              condition: always()
+            # On failure, publish the testhost so the crash dumps Helix
+            # collects can be symbolicated (needs libcoreclr.so,
+            # mscordaccore_universal, corerun + their .dbg/.pdb side files).
+            - task: PublishPipelineArtifact@1
+              inputs:
+                targetPath: '$(StressTestHostRootDir)'
+                artifactName: 'TestHost_CdacStress_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+              displayName: 'Publish TestHost for crash dump symbolication'
+              continueOnError: true
+              condition: failed()
 
-    #
-    # cDAC X-Plat Dump Generation and Testing — Two-stage flow:
-    # 1. Generate dumps on each platform via Helix, download and publish as artifacts
-    # 2. Download all platforms' dumps and run tests on each target platform
-    #
-    - ${{ if or(eq(parameters.cdacDumpTestMode, 'xplat'), eq(variables['Build.Reason'], 'Schedule')) }}:
-      - stage: CdacXPlatDumpGen
-        dependsOn: []
-        jobs:
-        - template: /eng/pipelines/common/platform-matrix.yml
+      # cDAC X-Plat Dump Generation -- xplat mode or schedule. Same template
+      # as the single-leg dump tests, plus /p:DumpOnly=true so Helix only
+      # generates and returns dumps (no in-process tests).
+      - ${{ if or(eq(parameters.cdacDumpTestMode, 'xplat'), eq(variables['Build.Reason'], 'Schedule')) }}:
+        - template: /eng/pipelines/cdac/cdac-helix-test-leg.yml
           parameters:
-            jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
+            nameSuffix: CdacXPlatDumpGen
             platforms: ${{ parameters.cdacXPlatDumpPlatforms }}
-            shouldContinueOnError: true
-            jobParameters:
-              nameSuffix: CdacXPlatDumpGen
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
-              timeoutInMinutes: 180
-              postBuildSteps:
-              - template: /eng/pipelines/cdac/prepare-cdac-helix-steps.yml
-              - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
-                parameters:
-                  displayName: 'Send cDAC Dump Gen to Helix'
-                  sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:DumpOnly=true /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendDumpGenToHelix.binlog
-                  environment:
-                    _Creator: dotnet-bot
-                    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-                    NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
-              # After Helix completes and DownloadFilesFromResults runs, publish the dump tar
-              - pwsh: |
-                  $resultsDir = "$(Build.SourcesDirectory)/artifacts/helixresults"
-                  Write-Host "Helix results directory contents:"
-                  if (Test-Path $resultsDir) {
-                      Get-ChildItem -Recurse $resultsDir | Select-Object -ExpandProperty FullName | ForEach-Object { Write-Host "  $_" }
-                  } else {
-                      Write-Host "  Directory not found: $resultsDir"
-                  }
-                displayName: 'List Helix Results'
-              - task: PublishPipelineArtifact@1
-                inputs:
-                  targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
-                  artifactName: CdacDumps_$(osGroup)_$(archType)
-                displayName: 'Publish Dump Artifacts'
-              - pwsh: |
-                  if ("$(Agent.JobStatus)" -ne "Succeeded") {
-                    Write-Error "One or more cDAC dump generation failures were detected. Failing the job."
-                    exit 1
-                  }
-                displayName: 'Fail on dump generation errors'
-                condition: always()
+            prepareParameters:
+              cdacTestConfig: Debug
+            sendDisplayName: 'Send cDAC Dump Gen to Helix'
+            sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:DumpOnly=true /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendDumpGenToHelix.binlog
+            failDisplayName: 'Fail on dump generation errors'
+            failErrorMessage: 'One or more cDAC dump generation failures were detected. Failing the job.'
+            publishDumpsArtifactName: CdacDumps_$(osGroup)_$(archType)
+            publishDumpsCondition: 'always()'
 
-      - stage: CdacXPlatDumpTests
-        dependsOn:
-        - CdacXPlatDumpGen
-        jobs:
-        - template: /eng/pipelines/common/platform-matrix.yml
+      # cDAC X-Plat Dump Tests -- runs DumpTests against every source platform's
+      # dumps. Cross-platform fan-in: each target's test depends on every source
+      # platform's CdacXPlatDumpGen via explicit per-job dependsOn (platform
+      # names follow the build_<plat>_release_<suffix> convention). Stays in
+      # this stage so it starts as soon as all xplat-gens are done, without
+      # waiting on stress tests in the same stage.
+      - ${{ if or(eq(parameters.cdacDumpTestMode, 'xplat'), eq(variables['Build.Reason'], 'Schedule')) }}:
+        - template: /eng/pipelines/cdac/cdac-helix-test-leg.yml
           parameters:
-            jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
+            nameSuffix: CdacXPlatDumpTest
             platforms: ${{ parameters.cdacXPlatDumpPlatforms }}
-            shouldContinueOnError: true
-            jobParameters:
-              nameSuffix: CdacXPlatDumpTest
-              buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
-              timeoutInMinutes: 180
-              postBuildSteps:
-              - template: /eng/pipelines/cdac/prepare-cdac-helix-steps.yml
-                parameters:
-                  buildDebuggees: false
-                  skipDebuggeeCopy: true
-              # Download dump artifacts from all source platforms
+            extraDependsOn:
+              - ${{ each src in parameters.cdacXPlatDumpPlatforms }}:
+                - build_${{ src }}_release_CdacXPlatDumpGen
+            prepareParameters:
+              buildDebuggees: false
+              skipDebuggeeCopy: true
+              cdacTestConfig: Debug
+            extraStepsBeforeSend:
+              # Download dump artifacts from all source platforms.
               - ${{ each platform in parameters.cdacXPlatDumpPlatforms }}:
                 - task: DownloadPipelineArtifact@2
                   inputs:
                     artifactName: CdacDumps_${{ platform }}
                     targetPath: $(Build.SourcesDirectory)/artifacts/xplatDumps/${{ platform }}
                   displayName: 'Download dumps from ${{ platform }}'
-              # Extract dump tars into the Helix payload
+              # Extract dump tars into the Helix payload.
               - pwsh: |
                   $platforms = "${{ join(';', parameters.cdacXPlatDumpPlatforms) }}".Split(';')
                   $payloadDumpsDir = "$(Build.SourcesDirectory)/artifacts/helixPayload/cdac/dumps"
@@ -465,19 +372,6 @@ extends:
                   Write-Host "Dump payload contents:"
                   Get-ChildItem -Recurse $payloadDumpsDir -Filter "*.dmp" | Select-Object -ExpandProperty FullName | ForEach-Object { Write-Host "  $_" }
                 displayName: 'Extract Dump Artifacts into Payload'
-              - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
-                parameters:
-                  displayName: 'Send cDAC X-Plat Dump Tests to Helix'
-                  sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-xplat-test-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:TestPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac/tests /p:DumpPayloadBase=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac/dumps /bl:$(Build.SourcesDirectory)/artifacts/log/SendXPlatTestToHelix.binlog
-                  environment:
-                    _Creator: dotnet-bot
-                    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-                    NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
-                    SourcePlatforms: ${{ join(';', parameters.cdacXPlatDumpPlatforms) }}
-              - pwsh: |
-                  if ("$(Agent.JobStatus)" -ne "Succeeded") {
-                    Write-Error "One or more cDAC x-plat dump test failures were detected. Failing the job."
-                    exit 1
-                  }
-                displayName: 'Fail on test errors'
-                condition: always()
+            sendDisplayName: 'Send cDAC X-Plat Dump Tests to Helix'
+            sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-xplat-test-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:TestPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac/tests /p:DumpPayloadBase=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac/dumps /bl:$(Build.SourcesDirectory)/artifacts/log/SendXPlatTestToHelix.binlog
+            failErrorMessage: 'One or more cDAC x-plat dump test failures were detected. Failing the job.'

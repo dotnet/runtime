@@ -336,7 +336,12 @@ elseif(CLR_CMAKE_HOST_OPENBSD)
   # The PAL's hand-written asm lacks endbr64 landing pads, so disable branch-target CFI.
   add_linker_flag("-Wl,-z,nobtcfi")
 elseif(CLR_CMAKE_HOST_SUNOS)
-  add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+  # llvm's assembler crashes with noexecstack with solaris triplet;
+  # bug report with minimal repro at: https://github.com/llvm/llvm-project/issues/202953
+  if (CMAKE_C_COMPILER_ID MATCHES "GNU")
+    add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
+  endif()
+
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
   add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT)
@@ -382,13 +387,15 @@ elseif(CLR_CMAKE_HOST_HAIKU)
     set(CMAKE_LINK_LIBRARY_USING_WHOLE_ARCHIVE_SUPPORTED TRUE)
     set(CMAKE_LINK_LIBRARY_WHOLE_ARCHIVE_ATTRIBUTES LIBRARY_TYPE=STATIC DEDUPLICATION=YES OVERRIDE=DEFAULT)
   endif()
-  # Haiku uses the GNU toolchain, which supports RESCAN, but only CMake 4.4.0+ recognizes this.
-  if(CMAKE_VERSION VERSION_LESS 4.4)
-    set(CMAKE_LINK_GROUP_USING_RESCAN "LINKER:--start-group" "LINKER:--end-group")
-    set(CMAKE_LINK_GROUP_USING_RESCAN_SUPPORTED TRUE)
-  endif()
+
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   add_linker_flag("-Wl,--build-id=sha1")
+endif()
+
+if((CLR_CMAKE_HOST_HAIKU OR CLR_CMAKE_HOST_SUNOS) AND CMAKE_VERSION VERSION_LESS 4.4)
+  # Haiku and illumos uses the GNU toolchain, which supports RESCAN, but only CMake 4.4.0+ recognizes this.
+  set(CMAKE_LINK_GROUP_USING_RESCAN "LINKER:--start-group" "LINKER:--end-group")
+  set(CMAKE_LINK_GROUP_USING_RESCAN_SUPPORTED TRUE)
 endif()
 
 #------------------------------------

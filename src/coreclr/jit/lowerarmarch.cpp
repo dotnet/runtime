@@ -663,6 +663,14 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             {
                 return next;
             }
+
+            if (binOp->OperIs(GT_AND))
+            {
+                if (TryLowerAndRshToBFX(binOp, &next))
+                {
+                    return next;
+                }
+            }
         }
 
         if (binOp->OperIs(GT_SUB))
@@ -3195,6 +3203,11 @@ void Lowering::TryLowerCselToCSOp(GenTreeOp* select, GenTree* cond)
         return;
     }
 
+    if (nodeToRemove->OperMayOverflow() && nodeToRemove->gtOverflow())
+    {
+        return;
+    }
+
     // For Csinc candidates, the second argument of the GT_ADD must be +1 (increment).
     if (resultingOp == GT_SELECT_INC &&
         !(nodeToRemove->gtGetOp2()->IsCnsIntOrI() && nodeToRemove->gtGetOp2()->AsIntCon()->IconValue() == 1))
@@ -3360,17 +3373,20 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
         GenCondition::Code code     = select->AsOpCC()->gtCondition.GetCode();
         int64_t            constVal = 0;
         unsigned           lclNum   = 0;
+        GenTree*           lclNode  = nullptr;
 
         if (cond->gtGetOp1()->IsIntegralConst())
         {
             constVal = cond->gtGetOp1()->AsIntCon()->IntegralValue();
-            lclNum   = cond->gtGetOp2()->AsLclVar()->GetLclNum();
+            lclNode  = cond->gtGetOp2();
         }
         else
         {
             constVal = cond->gtGetOp2()->AsIntCon()->IntegralValue();
-            lclNum   = cond->gtGetOp1()->AsLclVar()->GetLclNum();
+            lclNode  = cond->gtGetOp1();
         }
+
+        lclNum = lclNode->AsLclVar()->GetLclNum();
 
         if (code != GenCondition::EQ && code != GenCondition::NE)
         {
@@ -3388,6 +3404,14 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
             return;
         }
 
+        var_types lclType    = genActualType(lclNode);
+        var_types selectType = genActualType(select);
+
+        if (lclType != selectType)
+        {
+            return;
+        }
+
         // The increment needs to occur along the false path,
         // reverse condition if that's not the case
         if (code == GenCondition::EQ)
@@ -3398,7 +3422,7 @@ void Lowering::TryLowerCnsIntCselToCinc(GenTreeOp* select, GenTree* cond)
             falseVal = selectcc->gtOp2;
         }
 
-        GenTree* newLocal = m_compiler->gtNewLclvNode(lclNum, falseVal->TypeGet());
+        GenTree* newLocal = m_compiler->gtNewLclvNode(lclNum, lclType);
         BlockRange().InsertBefore(falseVal, newLocal);
         BlockRange().Remove(falseVal);
         select->gtOp2 = newLocal;

@@ -2110,6 +2110,49 @@ void PutArm64Rel12(UINT32 * pCode, INT32 imm12)
 }
 
 //*****************************************************************************
+//  Extract the 12-bit page offset from an LDR instruction (unsigned immediate).
+//  For a 64-bit LDR the encoded immediate is scaled by 8 bytes.
+//*****************************************************************************
+INT32 GetArm64Rel12Ldr(UINT32 * pCode)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    UINT32 ldrInstr = *pCode;
+
+    // 21-10 contains the scaled immediate. Mask 12 bits and shift by 10 bits.
+    INT32 scaledImm12 = (INT32)(ldrInstr & 0x003FFC00) >> 10;
+
+    // Scale back to a byte offset (multiply by 8).
+    return scaledImm12 << 3;
+}
+
+//*****************************************************************************
+//  Deposit the PC-Relative page offset 'imm12' into an LDR instruction (unsigned
+//  immediate). For a 64-bit LDR the immediate represents offset/8 (scaled by 8).
+//*****************************************************************************
+void PutArm64Rel12Ldr(UINT32 * pCode, INT32 imm12)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // Verify that we got a valid offset that is aligned to 8 bytes.
+    _ASSERTE(FitsInRel12(imm12));
+    _ASSERTE((imm12 & 7) == 0);
+
+    UINT32 ldrInstr = *pCode;
+    // Check ldr opcode: 1111 1001 0100 .... (LDR 64-bit, unsigned immediate)
+    _ASSERTE((ldrInstr & 0xFFC00000) == 0xF9400000);
+
+    INT32 scaledImm12 = imm12 >> 3;       // scale the offset by the access size (8)
+
+    ldrInstr &= 0xFFC003FF;               // keep bits 31-22, 9-0
+    ldrInstr |= (scaledImm12 << 10);      // Occupy 21-10.
+
+    *pCode = ldrInstr;                    // write the assembled instruction
+
+    _ASSERTE(GetArm64Rel12Ldr(pCode) == imm12);
+}
+
+//*****************************************************************************
 //  Extract the PC-Relative page address and page offset from pcalau12i+add/ld
 //*****************************************************************************
 INT64 GetLoongArch64PC12(UINT32 * pCode)

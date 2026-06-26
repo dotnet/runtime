@@ -167,7 +167,7 @@ static int EcPointGetAffineCoordinates(const EC_GROUP *group, const EC_POINT *p,
     return EC_POINT_get_affine_coordinates(group, p, x, y, NULL) ? 1 : 0;
 }
 
-int32_t CryptoNative_GetECKeyParameters(
+static int32_t CryptoNative_GetECKeyParameters(
     const EC_KEY* key,
     int32_t includePrivate,
     const BIGNUM** qx, int32_t* cbQx,
@@ -243,7 +243,7 @@ error:
     return rc;
 }
 
-int32_t CryptoNative_GetECCurveParameters(
+static int32_t CryptoNative_GetECCurveParameters(
     const EC_KEY* key,
     int32_t includePrivate,
     ECCurveType* curveType,
@@ -560,7 +560,7 @@ int32_t CryptoNative_EvpPKeyEcHasExplicitEncoding(EVP_PKEY* pkey)
         char encoding[32] = {0};
         if (!EVP_PKEY_get_utf8_string_param(pkey, OSSL_PKEY_PARAM_EC_ENCODING, encoding, sizeof(encoding), NULL))
             return 0;
-        
+
         return (strcmp(encoding, OSSL_PKEY_EC_ENCODING_EXPLICIT) == 0) ? 1 : 0;
     }
 #endif
@@ -654,7 +654,8 @@ int32_t CryptoNative_EvpPKeyGetEcKeySize(EVP_PKEY* pkey)
     return 0;
 }
 
-int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
+#ifdef NEED_OPENSSL_3_0
+static int32_t EvpPKeyGetEcKeyParameters(
     const EVP_PKEY* pkey,
     int32_t includePrivate,
     BIGNUM** qx, int32_t* cbQx,
@@ -668,22 +669,23 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
     assert(d != NULL);
     assert(cbD != NULL);
 
+    if (
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (!API_EXISTS(EVP_PKEY_get_bn_param) ||
+        !API_EXISTS(EVP_PKEY_get_bn_param) ||
         !API_EXISTS(EVP_PKEY_get_octet_string_param) ||
-        !API_EXISTS(EVP_PKEY_get_utf8_string_param))
+        !API_EXISTS(EVP_PKEY_get_utf8_string_param) ||
+        !API_EXISTS(EVP_PKEY_get0_provider) ||
+#endif
+        !EVP_PKEY_get0_provider(pkey))
     {
         *cbQx = *cbQy = 0;
-        *qx = *qy = 0;
-        if (d) *d = NULL;
-        if (cbD) *cbD = 0;
-        return 0;
+        *qx = *qy = NULL;
+        *d = NULL;
+        *cbD = 0;
+        return 2;
     }
-#endif
 
     int rc = 0;
-
-#ifdef NEED_OPENSSL_3_0
     BIGNUM *xBn = NULL;
     BIGNUM *yBn = NULL;
     BIGNUM *dBn = NULL;
@@ -809,9 +811,9 @@ int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
 
 error:
     *cbQx = *cbQy = 0;
-    *qx = *qy = 0;
-    if (d) *d = NULL;
-    if (cbD) *cbD = 0;
+    *qx = *qy = NULL;
+    *d = NULL;
+    *cbD = 0;
 
 exit:
     if (xBn) BN_free(xBn);
@@ -824,15 +826,99 @@ exit:
     if (ecA) BN_free(ecA);
     if (ecB) BN_free(ecB);
     return rc;
-#else
-    (void)pkey;
-    (void)includePrivate;
-    *cbQx = *cbQy = 0;
-    *qx = *qy = 0;
-    if (d) *d = NULL;
-    if (cbD) *cbD = 0;
-    return 0;
+}
 #endif
+
+// Legacy path: extract EC_KEY from the EVP_PKEY and use EC_KEY APIs.
+// Returns 1 on success, -1 if private key missing, 0 on failure.
+static int32_t EvpPKeyGetEcKeyParameters_Legacy(
+    EVP_PKEY* pkey,
+    int32_t includePrivate,
+    BIGNUM** qx, int32_t* cbQx,
+    BIGNUM** qy, int32_t* cbQy,
+    BIGNUM** d, int32_t* cbD)
+{
+    EC_KEY* ecKey = EVP_PKEY_get1_EC_KEY(pkey);
+    if (!ecKey)
+        return 0;
+
+    const BIGNUM* qxBorrowed = NULL;
+    const BIGNUM* qyBorrowed = NULL;
+    const BIGNUM* dBorrowed = NULL;
+    int32_t cbQxLocal = 0, cbQyLocal = 0, cbDLocal = 0;
+
+    int32_t result = CryptoNative_GetECKeyParameters(
+        ecKey, includePrivate,
+        &qxBorrowed, &cbQxLocal,
+        &qyBorrowed, &cbQyLocal,
+        &dBorrowed, &cbDLocal);
+
+    if (result == 1)
+    {
+        // CryptoNative_GetECKeyParameters returns newly allocated BIGNUMs for qx/qy,
+        // and a borrowed pointer for d. Transfer qx/qy ownership and dup d.
+        *qx = (BIGNUM*)(uintptr_t)qxBorrowed;
+        *cbQx = cbQxLocal;
+        *qy = (BIGNUM*)(uintptr_t)qyBorrowed;
+        *cbQy = cbQyLocal;
+
+        if (includePrivate && dBorrowed)
+        {
+            *d = BN_dup(dBorrowed);
+            if (*d == NULL)
+            {
+                BN_free(*qx);
+                BN_free(*qy);
+                *qx = *qy = NULL;
+                *cbQx = *cbQy = 0;
+                *d = NULL;
+                *cbD = 0;
+                EC_KEY_free(ecKey);
+                return 0;
+            }
+            *cbD = cbDLocal;
+        }
+        else
+        {
+            *d = NULL;
+            *cbD = 0;
+        }
+    }
+    else
+    {
+        *qx = *qy = NULL;
+        *cbQx = *cbQy = 0;
+        *d = NULL;
+        *cbD = 0;
+    }
+
+    EC_KEY_free(ecKey);
+    return result;
+}
+
+// Driver function: tries the OpenSSL 3.0 provider-based API first, then falls back
+// to the legacy EC_KEY path. Returns 1 on success, -1 if private key missing, 0 on failure.
+int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
+    EVP_PKEY* pkey,
+    int32_t includePrivate,
+    BIGNUM** qx, int32_t* cbQx,
+    BIGNUM** qy, int32_t* cbQy,
+    BIGNUM** d, int32_t* cbD)
+{
+    assert(qx != NULL);
+    assert(cbQx != NULL);
+    assert(qy != NULL);
+    assert(cbQy != NULL);
+    assert(d != NULL);
+    assert(cbD != NULL);
+
+#ifdef NEED_OPENSSL_3_0
+    int32_t rc = EvpPKeyGetEcKeyParameters(pkey, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
+    if (rc != 2)
+        return rc;
+#endif
+
+    return EvpPKeyGetEcKeyParameters_Legacy(pkey, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
 }
 
 EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
@@ -1009,11 +1095,8 @@ static ECCurveType NIDToCurveType(int fieldType)
     return Unspecified;
 }
 
-#ifdef NEED_OPENSSL_3_0
-// Extracts EC curve parameters from a legacy EC_KEY-backed EVP_PKEY by getting
-// the EC_KEY and delegating to CryptoNative_GetECCurveParameters.
-// On success, the caller owns the returned BIGNUMs and must free them.
-static int32_t EvpPKeyGetEcCurveParameters_FromEcKey(
+// Legacy path: extract EC_KEY from the EVP_PKEY and use EC_KEY APIs for curve params.
+static int32_t EvpPKeyGetEcCurveParameters_Legacy(
     EVP_PKEY* pkey,
     int32_t includePrivate,
     ECCurveType* curveType,
@@ -1033,8 +1116,6 @@ static int32_t EvpPKeyGetEcCurveParameters_FromEcKey(
     if (!ecKey)
         return 0;
 
-    // CryptoNative_GetECCurveParameters returns freshly-allocated BIGNUMs for everything
-    // except d, which is a borrowed reference into the EC_KEY (EC_KEY_get0_private_key).
     const BIGNUM* qxOwned = NULL;
     const BIGNUM* qyOwned = NULL;
     const BIGNUM* dBorrowed = NULL;
@@ -1063,7 +1144,6 @@ static int32_t EvpPKeyGetEcCurveParameters_FromEcKey(
 
     if (rc == 1)
     {
-        // Transfer ownership of the allocated BIGNUMs (cast away const via uintptr_t to avoid -Wcast-qual).
         *qx = (BIGNUM*)(uintptr_t)qxOwned;
         *qy = (BIGNUM*)(uintptr_t)qyOwned;
         *p = (BIGNUM*)(uintptr_t)pOwned;
@@ -1075,7 +1155,6 @@ static int32_t EvpPKeyGetEcCurveParameters_FromEcKey(
         *cofactor = (BIGNUM*)(uintptr_t)cofactorOwned;
         *seed = (BIGNUM*)(uintptr_t)seedOwned;
 
-        // d is borrowed from the EC_KEY, so we must duplicate before EC_KEY_free below.
         if (includePrivate && dBorrowed)
         {
             *d = BN_dup(dBorrowed);
@@ -1086,7 +1165,7 @@ static int32_t EvpPKeyGetEcCurveParameters_FromEcKey(
                 if (*seed) BN_free(*seed);
                 *qx = *qy = *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
                 *cbQx = *cbQy = *cbP = *cbA = *cbB = *cbGx = *cbGy = *cbOrder = *cbCofactor = *cbSeed = 0;
-                if (cbD) *cbD = 0;
+                *cbD = 0;
                 rc = 0;
             }
         }
@@ -1099,9 +1178,9 @@ static int32_t EvpPKeyGetEcCurveParameters_FromEcKey(
     EC_KEY_free(ecKey);
     return rc;
 }
-#endif
 
-int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
+#ifdef NEED_OPENSSL_3_0
+static int32_t EvpPKeyGetEcCurveParameters(
     EVP_PKEY* pkey,
     int32_t includePrivate,
     ECCurveType* curveType,
@@ -1134,35 +1213,32 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     assert(seed != NULL);
     assert(cbSeed != NULL);
 
+    // For legacy EC_KEY-backed EVP_PKEYs, the OSSL 3.0 params API (get_bn_param etc.)
+    // does not expose curve parameters. Signal to caller to use legacy path.
+    if (
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (!API_EXISTS(EC_GROUP_get_field_type) ||
+        !API_EXISTS(EC_GROUP_get_field_type) ||
         !API_EXISTS(EVP_PKEY_get_octet_string_param) ||
         !API_EXISTS(EVP_PKEY_get_utf8_string_param) ||
         !API_EXISTS(EVP_PKEY_get_bn_param) ||
-        !API_EXISTS(EVP_PKEY_get0_provider))
-    {
-        return 0;
-    }
+        !API_EXISTS(EVP_PKEY_get0_provider) ||
 #endif
-
-#ifdef NEED_OPENSSL_3_0
-    // For legacy EC_KEY-backed EVP_PKEYs, the OSSL 3.0 params API (get_bn_param etc.)
-    // does not expose curve parameters. Use EC_KEY APIs directly instead.
-    if (!EVP_PKEY_get0_provider(pkey))
+        !EVP_PKEY_get0_provider(pkey))
     {
-        return EvpPKeyGetEcCurveParameters_FromEcKey(
-            pkey, includePrivate, curveType,
-            qx, cbQx, qy, cbQy, d, cbD,
-            p, cbP, a, cbA, b, cbB,
-            gx, cbGx, gy, cbGy,
-            order, cbOrder, cofactor, cbCofactor,
-            seed, cbSeed);
+        *cbQx = *cbQy = 0;
+        *qx = *qy = NULL;
+        *d = NULL;
+        *cbD = 0;
+        *curveType = Unspecified;
+        *cbP = *cbA = *cbB = *cbGx = *cbGy = *cbOrder = *cbCofactor = *cbSeed = 0;
+        *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
+        return 2;
     }
 
     ERR_clear_error();
 
     // Provider-backed key: use OSSL 3.0 params API
-    int32_t rc = CryptoNative_EvpPKeyGetEcKeyParameters(pkey, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
+    int32_t rc = EvpPKeyGetEcKeyParameters(pkey, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
 
     EC_POINT* G = NULL;
     BIGNUM* xBn = BN_new();
@@ -1180,7 +1256,7 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     int curveTypeNID;
     int fieldTypeNID;
 
-    // Exit if CryptoNative_EvpPKeyGetEcKeyParameters failed
+    // Exit if EvpPKeyGetEcKeyParameters failed
     if (rc != 1)
         goto error;
 
@@ -1318,7 +1394,7 @@ int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
     goto exit;
 
 error:
-    // Clear out variables from CryptoNative_EvpPKeyGetEcKeyParameters
+    // Clear out variables from EvpPKeyGetEcKeyParameters
     if (*qx) BN_free((BIGNUM*)*qx);
     if (*qy) BN_free(*qy);
     if (d && *d) BN_clear_free(*d);
@@ -1349,18 +1425,63 @@ exit:
     if (seedBuffer) OPENSSL_free(seedBuffer);
 
     return rc;
-#else
-    (void)pkey;
-    (void)includePrivate;
-    *cbQx = *cbQy = 0;
-    *qx = *qy = NULL;
-    if (d) *d = NULL;
-    if (cbD) *cbD = 0;
-    *curveType = Unspecified;
-    *cbP = *cbA = *cbB = *cbGx = *cbGy = *cbOrder = *cbCofactor = *cbSeed = 0;
-    *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
-    return 0;
+}
 #endif
+
+// Driver function: tries the OpenSSL 3.0 provider-based API first, then falls back
+// to the legacy EC_KEY path. Returns 1 on success, -1 if private key missing, 0 on failure.
+int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
+    EVP_PKEY* pkey,
+    int32_t includePrivate,
+    ECCurveType* curveType,
+    BIGNUM** qx, int32_t* cbQx,
+    BIGNUM** qy, int32_t* cbQy,
+    BIGNUM** d, int32_t* cbD,
+    BIGNUM** p, int32_t* cbP,
+    BIGNUM** a, int32_t* cbA,
+    BIGNUM** b, int32_t* cbB,
+    BIGNUM** gx, int32_t* cbGx,
+    BIGNUM** gy, int32_t* cbGy,
+    BIGNUM** order, int32_t* cbOrder,
+    BIGNUM** cofactor, int32_t* cbCofactor,
+    BIGNUM** seed, int32_t* cbSeed)
+{
+    assert(p != NULL);
+    assert(cbP != NULL);
+    assert(a != NULL);
+    assert(cbA != NULL);
+    assert(b != NULL);
+    assert(cbB != NULL);
+    assert(gx != NULL);
+    assert(cbGx != NULL);
+    assert(gy != NULL);
+    assert(cbGy != NULL);
+    assert(order != NULL);
+    assert(cbOrder != NULL);
+    assert(cofactor != NULL);
+    assert(cbCofactor != NULL);
+    assert(seed != NULL);
+    assert(cbSeed != NULL);
+
+#ifdef NEED_OPENSSL_3_0
+    int32_t rc = EvpPKeyGetEcCurveParameters(
+        pkey, includePrivate, curveType,
+        qx, cbQx, qy, cbQy, d, cbD,
+        p, cbP, a, cbA, b, cbB,
+        gx, cbGx, gy, cbGy,
+        order, cbOrder, cofactor, cbCofactor,
+        seed, cbSeed);
+    if (rc != 2)
+        return rc;
+#endif
+
+    return EvpPKeyGetEcCurveParameters_Legacy(
+        pkey, includePrivate, curveType,
+        qx, cbQx, qy, cbQy, d, cbD,
+        p, cbP, a, cbA, b, cbB,
+        gx, cbGx, gy, cbGy,
+        order, cbOrder, cofactor, cbCofactor,
+        seed, cbSeed);
 }
 
 #ifdef NEED_OPENSSL_1_1
@@ -1511,7 +1632,7 @@ int32_t CryptoNative_EvpPKeyGenerateByEcCurveOid(
 
 #ifdef NEED_OPENSSL_1_1
     // The portable build should only use the legacy OSSL 1.1 code path if OSSL 3.0+ APIs aren't present.
-#if FEATURE_DISTRO_AGNOSTIC_SSL
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (rc == 3)
 #endif
     {
@@ -1718,7 +1839,7 @@ int32_t CryptoNative_EvpPKeyCreateByEcParameters(
 
 #ifdef NEED_OPENSSL_1_1
     // The portable build should only use the legacy OSSL 1.1 code path if OSSL 3.0+ APIs aren't present.
-#if FEATURE_DISTRO_AGNOSTIC_SSL
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (rc == 3)
 #endif
     {
@@ -2085,7 +2206,7 @@ int32_t CryptoNative_EvpPKeyCreateByEcExplicitParameters(
 
 #ifdef NEED_OPENSSL_1_1
     // The portable build should only use the legacy OSSL 1.1 code path if OSSL 3.0+ APIs aren't present.
-#if FEATURE_DISTRO_AGNOSTIC_SSL
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
     if (rc == 3)
 #endif
     {

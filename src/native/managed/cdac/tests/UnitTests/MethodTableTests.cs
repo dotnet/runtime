@@ -656,7 +656,7 @@ public class MethodTableTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void IsObjRef_ReturnsExpectedValues(MockTarget.Architecture arch)
+    public void IsCorElementTypeObjRef_ReturnsExpectedValues(MockTarget.Architecture arch)
     {
         TargetPointer objectTypePtr = default;
         TargetPointer stringTypePtr = default;
@@ -703,10 +703,10 @@ public class MethodTableTests
             });
 
         IRuntimeTypeSystem contract = target.Contracts.RuntimeTypeSystem;
-        Assert.True(contract.IsObjRef(contract.GetTypeHandle(objectTypePtr)));
-        Assert.True(contract.IsObjRef(contract.GetTypeHandle(stringTypePtr)));
-        Assert.True(contract.IsObjRef(contract.GetTypeHandle(szArrayTypePtr)));
-        Assert.False(contract.IsObjRef(contract.GetTypeHandle(truePrimitiveTypePtr)));
+        Assert.True(contract.IsCorElementTypeObjRef(contract.GetInternalCorElementType(contract.GetTypeHandle(objectTypePtr))));
+        Assert.True(contract.IsCorElementTypeObjRef(contract.GetInternalCorElementType(contract.GetTypeHandle(stringTypePtr))));
+        Assert.True(contract.IsCorElementTypeObjRef(contract.GetInternalCorElementType(contract.GetTypeHandle(szArrayTypePtr))));
+        Assert.False(contract.IsCorElementTypeObjRef(contract.GetInternalCorElementType(contract.GetTypeHandle(truePrimitiveTypePtr))));
     }
 
     [Theory]
@@ -1245,5 +1245,80 @@ public class MethodTableTests
         Assert.Equal((uint)target.PointerSize, series2[0].Size);
         Assert.Equal(startOff + elemSize, series2[1].Offset);
         Assert.Equal((uint)target.PointerSize, series2[1].Size);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetTypedByRefInfo_ReadsDataAndTypeHandle(MockTarget.Architecture arch)
+    {
+        const ulong ExpectedData = 0xDDDD_DDD0;
+        const ulong ExpectedTypeHandle = 0xEEEE_EEE0;
+        const ulong TypedByRefAddress = 0x4900_0000;
+
+        TestPlaceholderTarget target = CreateTargetWithTypedByRef(
+            arch,
+            TypedByRefAddress,
+            data: ExpectedData,
+            type: ExpectedTypeHandle);
+
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+        TypedByRefInfo info = rts.GetTypedByRefInfo(TypedByRefAddress);
+
+        Assert.Equal(ExpectedData, info.Data.Value);
+        Assert.Equal(ExpectedTypeHandle, info.TypeHandle.Value);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void GetTypedByRefInfo_ZeroFields_ReturnsNullPointers(MockTarget.Architecture arch)
+    {
+        const ulong TypedByRefAddress = 0x4900_0000;
+
+        TestPlaceholderTarget target = CreateTargetWithTypedByRef(
+            arch,
+            TypedByRefAddress,
+            data: 0,
+            type: 0);
+
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+        TypedByRefInfo info = rts.GetTypedByRefInfo(TypedByRefAddress);
+
+        Assert.Equal(TargetPointer.Null, info.Data);
+        Assert.Equal(TargetPointer.Null, info.TypeHandle);
+    }
+
+    private static TestPlaceholderTarget CreateTargetWithTypedByRef(
+        MockTarget.Architecture arch,
+        ulong typedByRefAddress,
+        ulong data,
+        ulong type)
+    {
+        var targetBuilder = new TestPlaceholderTarget.Builder(arch);
+        MockRTS rtsBuilder = new(targetBuilder.MemoryBuilder);
+
+        Layout typedByRefLayout = new SequentialLayoutBuilder("TypedByRef", arch)
+            .AddPointerField("Data")
+            .AddPointerField("Type")
+            .Build();
+
+        TargetTestHelpers helpers = rtsBuilder.Builder.TargetTestHelpers;
+        byte[] bytes = new byte[typedByRefLayout.Size];
+        helpers.WritePointer(bytes.AsSpan(typedByRefLayout.GetField("Data").Offset, helpers.PointerSize), data);
+        helpers.WritePointer(bytes.AsSpan(typedByRefLayout.GetField("Type").Offset, helpers.PointerSize), type);
+        rtsBuilder.Builder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Name = "TypedByRef",
+            Address = typedByRefAddress,
+            Data = bytes,
+        });
+
+        Dictionary<DataType, Target.TypeInfo> types = CreateContractTypes(rtsBuilder);
+        types[DataType.TypedByRef] = TargetTestHelpers.CreateTypeInfo(typedByRefLayout);
+
+        return targetBuilder
+            .AddTypes(types)
+            .AddGlobals(CreateContractGlobals(rtsBuilder))
+            .AddContract<IRuntimeTypeSystem>(version: "c1")
+            .Build();
     }
 }

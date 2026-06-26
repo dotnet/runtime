@@ -403,7 +403,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+                    impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, di);
 
                     if (compDonotInline())
                     {
@@ -572,11 +572,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         /* Set the delegate flag */
         call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DELEGATE_INV;
 
-        if (callInfo->wrapperDelegateInvoke)
-        {
-            call->AsCall()->gtCallMoreFlags |= GTF_CALL_M_WRAPPER_DELEGATE_INV;
-        }
-
         if (opcode == CEE_CALLVIRT)
         {
             assert(mflags & CORINFO_FLG_FINAL);
@@ -703,7 +698,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+        impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, di);
 
         if (compDonotInline())
         {
@@ -1636,6 +1631,35 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
         impStoreToTemp(boxedValTmp, value, CHECK_SPILL_ALL);
         impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
         gtTryRemoveBoxUpstreamEffects(value, BR_REMOVE_AND_NARROW);
+        return gtNewNothingNode();
+    }
+
+    // Case 1b: value-type (non-nullable) boxed via CORINFO_HELP_BOX helper.
+    // In Tier0 (and other size-constrained modes) struct boxes are emitted as a
+    // direct helper call rather than GT_BOX. The helper always returns non-null,
+    // so the ThrowIfNull is a no-op aside from the side effects of computing the
+    // helper's address argument and the valueName.
+    //
+    //  ArgumentNullException_ThrowIfNull(CORINFO_HELP_BOX(clsHnd, addr), valueName)
+    //    ->
+    //  NOP (with side-effects of addr and valueName preserved)
+    //
+    if (value->IsHelperCall(CORINFO_HELP_BOX))
+    {
+        GenTree* boxHelperClsArg  = value->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
+        GenTree* boxHelperAddrArg = value->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+        if ((boxHelperClsArg->gtFlags & GTF_SIDE_EFFECT) != 0)
+        {
+            // The class handle is normally a constant; bail if not.
+            return call;
+        }
+
+        // Spill addr then valueName to preserve evaluation order of any side effects.
+        unsigned boxedAddrTmp    = lvaGrabTemp(true DEBUGARG("boxedAddr spilled"));
+        unsigned boxedArgNameTmp = lvaGrabTemp(true DEBUGARG("boxedArg spilled"));
+        impStoreToTemp(boxedAddrTmp, boxHelperAddrArg, CHECK_SPILL_ALL);
+        impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
         return gtNewNothingNode();
     }
 
@@ -3291,6 +3315,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
 
             if (ni < LAST_NI_Vector128)
+#elif defined(TARGET_WASM)
+            NYI_WASM_SIMD("impHWIntrinsic");
+            if (ni < LAST_NI_Vector128)
 #else
 #error Unsupported platform
 #endif
@@ -3489,6 +3516,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_SpanHelpers_SequenceEqual:
                 // We're going to instrument these
                 betterToExpand = opts.IsInstrumented();
+                break;
+
+            // Lightweight runtime async intrinsics
+            case NI_System_Threading_Tasks_Task_FromResult:
+            case NI_System_Threading_Tasks_Task_get_CompletedTask:
+            case NI_System_Threading_Tasks_ValueTask_FromResult:
+            case NI_System_Threading_Tasks_ValueTask_get_CompletedTask:
+                betterToExpand = (sig->callConv & CORINFO_CALLCONV_ASYNCCALL) != 0;
                 break;
 
             default:
@@ -5061,6 +5096,56 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_Threading_Tasks_Task_FromResult:
+            case NI_System_Threading_Tasks_ValueTask_FromResult:
+            {
+                assert(sig->sigInst.methInstCount == 1);
+
+                if ((sig->callConv & CORINFO_CALLCONV_ASYNCCALL) == 0)
+                {
+                    break;
+                }
+
+                CORINFO_CLASS_HANDLE typeHnd = sig->sigInst.methInst[0];
+                ClassLayout*         layout  = nullptr;
+                var_types            type    = TypeHandleToVarType(typeHnd, &layout);
+
+                GenTree* value = impPopStack().val;
+                if (varTypeIsStruct(value))
+                {
+                    value = impNormStructVal(value, CHECK_SPILL_ALL);
+                }
+                else
+                {
+                    value = impImplicitR4orR8Cast(value, type);
+                    value = impImplicitIorI4Cast(value, type);
+                }
+
+                if (varTypeIsSmall(type) && fgCastNeeded(value, type))
+                {
+                    value = gtNewCastNode(TYP_INT, value, false, type);
+                }
+
+                retNode = value;
+                break;
+            }
+            case NI_System_Threading_Tasks_Task_get_CompletedTask:
+            case NI_System_Threading_Tasks_ValueTask_get_CompletedTask:
+            {
+                if ((sig->callConv & CORINFO_CALLCONV_ASYNCCALL) == 0)
+                {
+                    break;
+                }
+
+                retNode = gtNewNothingNode();
+                break;
+            }
+            case NI_System_Threading_Tasks_ValueTask_1__ctor:
+            {
+                // We fold this when we try to wrap it in await in async versions
+                isSpecial = compIsAsyncVersion();
+                break;
+            }
             default:
                 break;
         }
@@ -5302,17 +5387,16 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 
         case NI_SRCS_UNSAFE_As:
         {
-            assert((sig->sigInst.methInstCount == 1) || (sig->sigInst.methInstCount == 2));
+            GenTree* op = impPopStack().val;
 
             if (sig->sigInst.methInstCount == 1)
             {
+                assert(op->TypeIs(TYP_REF));
+
                 CORINFO_SIG_INFO exactSig;
                 info.compCompHnd->getMethodSig(pResolvedToken->hMethod, &exactSig);
                 const CORINFO_CLASS_HANDLE inst = exactSig.sigInst.methInst[0];
                 assert(inst != nullptr);
-
-                GenTree* op = impPopStack().val;
-                assert(op->TypeIs(TYP_REF));
 
                 JITDUMP("Expanding Unsafe.As<%s>(...)\n", eeGetClassName(inst));
 
@@ -5335,10 +5419,33 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 return gtNewLclvNode(localNum, TYP_REF);
             }
 
+            assert(sig->sigInst.methInstCount == 2);
+
             // ldarg.0
             // ret
 
-            return impPopStack().val;
+#if defined(FEATURE_SIMD)
+            GenTree* addr = op->gtEffectiveVal();
+
+            if (addr->IsLclVarAddr())
+            {
+                CORINFO_CLASS_HANDLE toTypeHnd = sig->sigInst.methInst[1];
+                var_types            toType    = TypeHandleToVarType(toTypeHnd);
+
+                if (varTypeIsSIMD(toType))
+                {
+                    CORINFO_CLASS_HANDLE fromTypeHnd = sig->sigInst.methInst[0];
+                    ClassLayout*         fromLayout  = nullptr;
+                    TypeHandleToVarType(fromTypeHnd, &fromLayout);
+
+                    if ((fromLayout != nullptr) && (fromLayout->GetSize() == genTypeSize(toType)))
+                    {
+                        lvaGetDesc(addr->AsLclFld())->lvIsBitcastToSimd = true;
+                    }
+                }
+            }
+#endif // FEATURE_SIMD
+            return op;
         }
 
         case NI_SRCS_UNSAFE_AsPointer:
@@ -5484,6 +5591,13 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             else
             {
                 addr = impGetNodeAddr(op1, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, &indirFlags);
+
+#if defined(FEATURE_SIMD)
+                if (varTypeIsSIMD(toType) && addr->IsLclVarAddr())
+                {
+                    lvaGetDesc(addr->AsLclFld())->lvIsBitcastToSimd = true;
+                }
+#endif // FEATURE_SIMD
             }
 
             if (info.compCompHnd->getClassAlignmentRequirement(fromTypeHnd) <
@@ -6202,7 +6316,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 #endif // !TARGET_64BIT
-#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_WASM)
             impPopStack();
 
             GenTree* op1Dup = nullptr;
@@ -7052,33 +7166,53 @@ void Compiler::impCheckForPInvokeCall(
 //
 // Arguments:
 //    call        - The call
+//    methHnd     - Method handle being called
 //    opcode      - The IL opcode for the call
 //    prefixFlags - Flags containing context handling information from IL
 //    callDI      - Debug info for the async call
 //
-void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
+void Compiler::impSetupAsyncCall(
+    GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
 {
     AsyncCallInfo asyncInfo;
 
     if (compIsForInlining())
     {
-        if (!m_nextAwaitIsTail)
+        if (!m_nextAwaitIsTail && !compIsAsyncVersion())
         {
             compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
             return;
         }
 
+        // For async versions of synchronous methods all async calls are in
+        // tail position. Inlining is simple for these cases: we can just
+        // inherit all context handling from the inlining call.
+        assert(!compIsAsyncVersion() || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
+
         GenTreeCall* inlCall = impInlineInfo->iciCall;
-        JITDUMP("Call [%06u] is to call with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
+        JITDUMP("Call [%06u] is to function with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
 
         assert(inlCall->IsAsync());
 
         asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
         // Validate that below code won't override the handling
         assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
-        m_nextAwaitIsTail = false;
 
-        asyncInfo.IsTailAwait = inlCall->GetAsyncInfo().IsTailAwait;
+        asyncInfo.IsTailAwait =
+            inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
+        m_nextAwaitIsTail = false;
+    }
+    else
+    {
+        if (opts.OptimizationEnabled() && ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0) &&
+            (call->gtReturnType == info.compRetType))
+        {
+            CORINFO_METHOD_HANDLE exactCalleeHnd =
+                ((call->AsCall()->gtCallType != CT_USER_FUNC) || call->AsCall()->IsVirtual()) ? nullptr : methHnd;
+
+            asyncInfo.IsTailAwait =
+                info.compCompHnd->canTailCall(info.compMethodHnd, methHnd, exactCalleeHnd, /* fIsTailPrefix */ false);
+        }
     }
 
     unsigned newSourceTypes = ICorDebugInfo::ASYNC;
@@ -8161,7 +8295,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     InlineCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo;
 
     pInfo->guardedMethodHandle               = methodHandle;
-    pInfo->guardedMethodUnboxedEntryHandle   = nullptr;
     pInfo->guardedMethodInstParamLookup      = {};
     pInfo->guardedMethodResolvedToken        = {};
     pInfo->guardedMethodUnboxedResolvedToken = {};
@@ -8179,22 +8312,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     {
         pInfo->guardedMethodResolvedToken        = *pResolvedToken;
         pInfo->guardedMethodUnboxedResolvedToken = *pUnboxedResolvedToken;
-    }
-
-    // If the guarded class is a value class, look for an unboxed entry point.
-    //
-    if ((classAttr & CORINFO_FLG_VALUECLASS) != 0)
-    {
-        JITDUMP("    ... class is a value class, looking for unboxed entry\n");
-        bool                  requiresInstMethodTableArg = false;
-        CORINFO_METHOD_HANDLE unboxedEntryMethodHandle =
-            info.compCompHnd->getUnboxedEntry(methodHandle, &requiresInstMethodTableArg);
-
-        if (unboxedEntryMethodHandle != nullptr)
-        {
-            JITDUMP("    ... updating GDV candidate with unboxed entry info\n");
-            pInfo->guardedMethodUnboxedEntryHandle = unboxedEntryMethodHandle;
-        }
     }
 
     call->AddGDVCandidateInfo(this, pInfo);
@@ -8472,9 +8589,9 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (call->IsGuardedDevirtualizationCandidate())
     {
         InlineCandidateInfo* gdvCandidate = call->GetGDVCandidateInfo(candidateIndex);
-        if (gdvCandidate->guardedMethodUnboxedEntryHandle != nullptr)
+        if (gdvCandidate->guardedMethodUnboxedResolvedToken.hMethod != nullptr)
         {
-            fncHandle = gdvCandidate->guardedMethodUnboxedEntryHandle;
+            fncHandle = gdvCandidate->guardedMethodUnboxedResolvedToken.hMethod;
         }
         else
         {
@@ -9411,61 +9528,62 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
         {
             JITDUMP("Have a direct call to boxed entry point. Trying to optimize to call an unboxed entry point\n");
 
-            // Note for some shared methods the unboxed entry point requires an extra parameter.
-            bool                  requiresInstMethodTableArg = false;
-            CORINFO_METHOD_HANDLE unboxedEntryMethod =
-                info.compCompHnd->getUnboxedEntry(derivedMethod, &requiresInstMethodTableArg);
+            CORINFO_METHOD_HANDLE const unboxedEntryMethod =
+                (dcInfo->pUnboxedResolvedToken == nullptr) ? nullptr : dcInfo->pUnboxedResolvedToken->hMethod;
 
             if (unboxedEntryMethod != nullptr)
             {
-                // Rewrite the call to target the unboxed entry on the box payload. Keep the heap box,
-                // since the callee may return an interior managed pointer into it; object stack allocation
-                // can later promote the box to the stack when escape analysis proves the receiver does not
-                // escape.
-                //
-                if (requiresInstMethodTableArg)
-                {
-                    // Get the method table from the boxed object.
-                    //
-                    // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
-                    GenTree* const clonedThisArg = gtClone(thisArg->GetEarlyNode());
+                CORINFO_SIG_INFO unboxedEntrySig;
+                info.compCompHnd->getMethodSig(unboxedEntryMethod, &unboxedEntrySig);
 
-                    if (clonedThisArg == nullptr)
+                bool canUseUnboxedEntry = true;
+
+                if (unboxedEntrySig.hasTypeArg())
+                {
+                    if (((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
                     {
-                        JITDUMP("unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
+                        CORINFO_METHOD_HANDLE exactMethodHandle =
+                            (CORINFO_METHOD_HANDLE)((SIZE_T)dcInfo->tokenLookupContext & ~CORINFO_CONTEXTFLAGS_MASK);
+
+                        instParam = getLookupTree(dcInfo->pInstParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+                        JITDUMP("revising call to invoke unboxed entry with additional method desc arg\n");
                     }
                     else
                     {
-                        JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
+                        assert(((SIZE_T)dcInfo->tokenLookupContext & CORINFO_CONTEXTFLAGS_MASK) ==
+                               CORINFO_CONTEXTFLAGS_CLASS);
 
-                        instParam = gtNewMethodTableLookup(clonedThisArg);
-
-                        // Update the 'this' pointer to refer to the box payload
+                        // Get the method table from the boxed object.
                         //
-                        GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
-                        GenTree* const boxPayload =
-                            gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
+                        // TODO-CallArgs-REVIEW: Use thisObj here? Differs by gtEffectiveVal.
+                        GenTree* const clonedThisArg = gtClone(thisArg->GetEarlyNode());
 
-                        assert(thisObj == thisArg->GetEarlyNode());
-                        thisArg->SetEarlyNode(boxPayload);
-                        call->gtCallMethHnd = unboxedEntryMethod;
-                        INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
-
-                        // Method attributes will differ because unboxed entry point is shared
-                        //
-                        const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
-                        JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
-                                unboxedMethodAttribs);
-                        derivedMethod         = unboxedEntryMethod;
-                        pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
-                        derivedMethodAttribs  = unboxedMethodAttribs;
-                        Metrics.DevirtualizedCallUnboxedEntry++;
+                        if (clonedThisArg == nullptr)
+                        {
+                            JITDUMP(
+                                "unboxed entry needs MT arg, but `this` was too complex to clone. Deferring update.\n");
+                            canUseUnboxedEntry = false;
+                        }
+                        else
+                        {
+                            instParam = gtNewMethodTableLookup(clonedThisArg);
+                            assert(thisObj == thisArg->GetEarlyNode());
+                            JITDUMP("revising call to invoke unboxed entry with additional method table arg\n");
+                        }
                     }
                 }
                 else
                 {
                     JITDUMP("revising call to invoke unboxed entry\n");
+                }
 
+                if (canUseUnboxedEntry)
+                {
+                    // Rewrite the call to target the unboxed entry on the box payload. Keep the heap box,
+                    // since the callee may return an interior managed pointer into it; object stack allocation
+                    // can later promote the box to the stack when escape analysis proves the receiver does not
+                    // escape.
+                    //
                     GenTree* const payloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                     GenTree* const boxPayload =
                         gtNewOperNode(GT_ADD, TYP_BYREF, thisArg->GetEarlyNode(), payloadOffset);
@@ -9473,6 +9591,17 @@ void Compiler::impTransformDevirtualizedCall(GenTreeCall*            call,
                     thisArg->SetEarlyNode(boxPayload);
                     call->gtCallMethHnd = unboxedEntryMethod;
                     INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_UNBOXED);
+
+                    if (unboxedEntrySig.hasTypeArg())
+                    {
+                        // Method attributes will differ because unboxed entry point is shared.
+                        //
+                        const DWORD unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
+                        JITDUMP("Updating method attribs from 0x%08x to 0x%08x\n", derivedMethodAttribs,
+                                unboxedMethodAttribs);
+                        derivedMethodAttribs = unboxedMethodAttribs;
+                    }
+
                     derivedMethod         = unboxedEntryMethod;
                     pDerivedResolvedToken = dcInfo->pUnboxedResolvedToken;
                     Metrics.DevirtualizedCallUnboxedEntry++;
@@ -10068,7 +10197,6 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             //
             pInfo->guardedClassHandle                = nullptr;
             pInfo->guardedMethodHandle               = nullptr;
-            pInfo->guardedMethodUnboxedEntryHandle   = nullptr;
             pInfo->guardedMethodInstParamLookup      = {};
             pInfo->guardedMethodResolvedToken        = {};
             pInfo->guardedMethodUnboxedResolvedToken = {};
@@ -11359,6 +11487,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         platformNamespaceName = ".X86";
 #elif defined(TARGET_ARM64)
                         platformNamespaceName = ".Arm";
+#elif defined(TARGET_WASM)
+                        platformNamespaceName = ".Wasm";
 #else
 #error Unsupported platform
 #endif
@@ -11554,6 +11684,35 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             strcmp(className, "ValueTask`1") == 0 || strcmp(className, "ValueTask") == 0)
                         {
                             result = NI_System_Threading_Tasks_Task_ConfigureAwait;
+                        }
+                    }
+                    else if (strcmp(className, "Task") == 0)
+                    {
+                        if (strcmp(methodName, "FromResult") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_Task_FromResult;
+                        }
+                        else if (strcmp(methodName, "get_CompletedTask") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_Task_get_CompletedTask;
+                        }
+                    }
+                    else if (strcmp(className, "ValueTask") == 0)
+                    {
+                        if (strcmp(methodName, "FromResult") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_FromResult;
+                        }
+                        else if (strcmp(methodName, "get_CompletedTask") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_get_CompletedTask;
+                        }
+                    }
+                    else if (strcmp(className, "ValueTask`1") == 0)
+                    {
+                        if (strcmp(methodName, ".ctor") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_1__ctor;
                         }
                     }
                 }
