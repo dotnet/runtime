@@ -280,60 +280,114 @@ namespace System.Threading
         // back-off as it favors micro-contention scenario, which we expect.
         //
 
-        // Returs:
-        // -1 - success
-        // 0 - failed
-        // syncIndex - retry with the Lock
-        //
-        // The public entry point spins by default (e.g. a blocking Monitor.Enter). Callers that want a
-        // single attempt (e.g. Monitor.TryEnter) pass isOneShot: true to succeed only if the lock is
-        // currently unowned.
+        // Try acquiring the thin-lock.
+        // The common cases (free lock, fat lock) are handled inline. A thread id that doesn't fit,
+        // recursive acquisition, contention and lost races are rarer and less performance sensitive,
+        // so they are handled out of line in AcquireUncommon to keep this inlined fast path small.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int AcquireThinLock(object obj, int currentThreadID, bool isOneShot = false)
+        public static unsafe bool TryAcquireThinLock(object obj, int millisecondsTimeout = 0)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
             // for an object used in locking there are two common cases:
             // - header bits are unused or
             // - there is a sync entry
+            int oldBits;
             fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
-                int oldBits = *pHeader;
-                // if unused for anything, try setting our thread id
-                // N.B. hashcode, thread ID and sync index are never 0, and hashcode is largest of all
+                oldBits = *pHeader;
+
+                // Common case: the header is clean. Take it by storing our thread id with a single CAS.
                 if (oldBits == 0)
                 {
                     // Thread IDs are allocated sequentially starting from 1 and recycled, so it's
                     // unusual to have a thread ID that doesn't fit in the thin-lock field.
                     // Check here rather than at entry to keep the hot path as tight as possible.
                     // The uninitialized 0 id is also ruled out by this check.
-                    // If the id doesn't fit, we fall through and call TryAcquireUncommon outside the
-                    // fixed block to avoid keeping the object pinned while potentially spinning.
+                    int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
                     if ((uint)(currentThreadID - 1) < (uint)SBLK_MASK_LOCK_THREADID)
                     {
                         if (Interlocked.CompareExchange(pHeader, currentThreadID, oldBits) == oldBits)
                         {
-                            return -1;
+                            return true;
                         }
                     }
                 }
-                else if (GetSyncEntryIndex(oldBits, out int syncIndex))
-                {
-                    if (SyncTable.GetLockObject(syncIndex).TryEnterOneShot(currentThreadID))
-                    {
-                        return -1;
-                    }
+            }
 
-                    // has sync entry -> slow path
-                    return syncIndex;
+            // Before checking uncommon cases, check if the lock is fat (or becoming fat).
+            // This is another common case.
+            int resultOrIndex = 0;
+            if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) == 0)
+            {
+                resultOrIndex = TryAcquireUncommon(obj, millisecondsTimeout == 0);
+
+                // If we acquired (or recursively re-acquired) the thin lock, we are done,
+                // regardless of the timeout.
+                if (resultOrIndex == -1)
+                {
+                    return true;
+                }
+
+                // With no timeout, a Failure (lock owned by someone else) is definitive.
+                if (resultOrIndex == 0 && millisecondsTimeout == 0)
+                {
+                    return false;
                 }
             }
 
-            // Everything else (id doesn't fit, lost race, hashcode, etc.) is handled by uncommon.
-            // This call is outside the fixed block to avoid keeping the object pinned while
-            // potentially spinning.
-            return TryAcquireUncommon(obj, currentThreadID, isOneShot);
+            Lock lck = resultOrIndex == 0 ?
+                ObjectHeader.GetLockObject(obj) :
+                SyncTable.GetLockObject(resultOrIndex);
+
+            return lck.TryEnter_Outlined(millisecondsTimeout);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void AcquireThinLock(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+
+            // for an object used in locking there are two common cases:
+            // - header bits are unused or
+            // - there is a sync entry
+            int oldBits;
+            fixed (MethodTable** ppMethodTable = &obj.GetMethodTableRef())
+            {
+                int* pHeader = GetHeaderPtr(ppMethodTable);
+                oldBits = *pHeader;
+
+                // Common case: the header is clean. Take it by storing our thread id with a single CAS.
+                if (oldBits == 0)
+                {
+                    // Thread IDs are allocated sequentially starting from 1 and recycled, so it's
+                    // unusual to have a thread ID that doesn't fit in the thin-lock field.
+                    // Check here rather than at entry to keep the hot path as tight as possible.
+                    // The uninitialized 0 id is also ruled out by this check.
+                    int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+                    if ((uint)(currentThreadID - 1) < (uint)SBLK_MASK_LOCK_THREADID)
+                    {
+                        if (Interlocked.CompareExchange(pHeader, currentThreadID, oldBits) == oldBits)
+                        {
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // Before checking uncommon cases, check if the lock is fat (or becoming fat).
+            // This is another common case.
+            int resultOrIndex = 0;
+            if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0 ||
+                (resultOrIndex = TryAcquireUncommon(obj, false)) != -1)
+            {
+                Lock lck = resultOrIndex == 0 ?
+                    ObjectHeader.GetLockObject(obj) :
+                    SyncTable.GetLockObject(resultOrIndex);
+
+                lck.TryEnter_Outlined(Timeout.Infinite);
+            }
         }
 
         // handling uncommon cases here - recursive lock, contention, retries
@@ -341,7 +395,7 @@ namespace System.Threading
         // 0 - failed
         // syncIndex - retry with the Lock
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe int TryAcquireUncommon(object obj, int currentThreadID, bool isOneShot)
+        private static unsafe int TryAcquireUncommon(object obj, bool isOneShot)
         {
             // A one-shot acquire does not spin while the lock is owned by another thread, but it still
             // retries the rare CAS failures below where the lock is not owned by somebody else: a caller
@@ -350,12 +404,10 @@ namespace System.Threading
             // is false and we assume a multicore machine.
             int retries = isOneShot || Lock.IsSingleProcessor ? 0 : 16;
 
-            if (currentThreadID == 0)
-                currentThreadID = ManagedThreadId.Current;
-
+            int currentThreadID = ManagedThreadId.Current;
             // A thin lock can only store a thread id that fits in the thread-id field.
             // This check is deferred to here (rather than at entry) because it is unusual to be true.
-            if (currentThreadID > SBLK_MASK_LOCK_THREADID)
+            if ((uint)currentThreadID > (uint)SBLK_MASK_LOCK_THREADID)
                 return GetSyncIndex(obj);
 
             // retry when the lock is owned by somebody else.

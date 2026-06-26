@@ -36,59 +36,20 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Enter(object obj)
         {
-            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
-            int resultOrIndex = ObjectHeader.AcquireThinLock(obj, currentThreadID);
-            if (resultOrIndex < 0)
-                return;
-
-            Lock lck = resultOrIndex == 0 ?
-                ObjectHeader.GetLockObject(obj) :
-                SyncTable.GetLockObject(resultOrIndex);
-
-            lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
+            ObjectHeader.AcquireThinLock(obj);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj)
         {
-            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
-            int resultOrIndex = ObjectHeader.AcquireThinLock(obj, currentThreadID, isOneShot: true);
-            if (resultOrIndex < 0)
-                return true;
-
-            if (resultOrIndex == 0)
-                return false;
-
-            Lock lck = SyncTable.GetLockObject(resultOrIndex);
-
-            // The one-shot fast path is not covered by the slow path below for a zero timeout when the thread ID is
-            // initialized, so cover it here in case it wasn't already done
-            if (currentThreadID != Lock.UninitializedThreadId && lck.TryEnterOneShot(currentThreadID))
-                return true;
-
-            return lck.TryEnterSlow(0, currentThreadID) != Lock.UninitializedThreadId;
+            return ObjectHeader.TryAcquireThinLock(obj);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
-
-            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
-            int resultOrIndex = ObjectHeader.AcquireThinLock(obj, currentThreadID, isOneShot: true);
-            if (resultOrIndex < 0)
-                return true;
-
-            Lock lck = resultOrIndex == 0 ?
-                ObjectHeader.GetLockObject(obj) :
-                SyncTable.GetLockObject(resultOrIndex);
-
-            // The one-shot fast path is not covered by the slow path below for a zero timeout when the thread ID is
-            // initialized, so cover it here in case it wasn't already done
-            if (millisecondsTimeout == 0 && currentThreadID != Lock.UninitializedThreadId && lck.TryEnterOneShot(currentThreadID))
-                return true;
-
-            return lck.TryEnterSlow(millisecondsTimeout, currentThreadID) != Lock.UninitializedThreadId;
+            return ObjectHeader.TryAcquireThinLock(obj, millisecondsTimeout);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -108,20 +69,7 @@ namespace System.Threading
 
         private static void SynchronizedMethodEnter(object obj, ref bool lockTaken)
         {
-            // Inlined Monitor.Enter with a few tweaks
-            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
-            int resultOrIndex = ObjectHeader.AcquireThinLock(obj, currentThreadID);
-            if (resultOrIndex < 0)
-            {
-                lockTaken = true;
-                return;
-            }
-
-            Lock lck = resultOrIndex == 0 ?
-                ObjectHeader.GetLockObject(obj) :
-                SyncTable.GetLockObject(resultOrIndex);
-
-            lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
+            ObjectHeader.AcquireThinLock(obj);
             lockTaken = true;
         }
 

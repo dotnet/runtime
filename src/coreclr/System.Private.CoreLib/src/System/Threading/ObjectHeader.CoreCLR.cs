@@ -101,6 +101,9 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(obj);
 
+            // for an object used in locking there are two common cases:
+            // - header bits are unused or
+            // - there is a sync entry
             int oldBits;
             fixed (nint* ppMethodTable = &obj.GetMethodTableRef())
             {
@@ -113,8 +116,6 @@ namespace System.Threading
                     // Thread IDs are allocated sequentially starting from 1 and recycled, so it's
                     // unusual to have a thread ID that doesn't fit in the thin-lock field.
                     // Check here rather than at entry to keep the hot path as tight as possible.
-                    // If the id doesn't fit, we fall through and call AcquireUncommon outside the
-                    // fixed block to avoid keeping the object pinned while potentially spinning.
                     int currentThreadID = ManagedThreadId.Current;
                     if ((uint)currentThreadID <= (uint)SBLK_MASK_LOCK_THREADID)
                     {
@@ -130,15 +131,24 @@ namespace System.Threading
             // This is another common case.
             if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) == 0)
             {
-                HeaderLockResult result = AcquireUncommon(obj, millisecondsTimeout == 0);
-                if (result != HeaderLockResult.UseSlowPath && millisecondsTimeout == 0)
+                HeaderLockResult result = TryAcquireUncommon(obj, millisecondsTimeout == 0);
+
+                // If we acquired (or recursively re-acquired) the thin lock, we are done,
+                // regardless of the timeout.
+                if (result == HeaderLockResult.Success)
                 {
-                    // if no timeout and no ask for slow path, then failure means failure.
-                    return result == HeaderLockResult.Success;
+                    return true;
+                }
+
+                // With no timeout, a Failure (lock owned by someone else) is definitive.
+                if (result == HeaderLockResult.Failure && millisecondsTimeout == 0)
+                {
+                    return false;
                 }
             }
 
-            return Monitor.GetLockObject(obj).TryEnter(millisecondsTimeout);
+            Lock lck = Monitor.GetLockObject(obj);
+            return lck.TryEnter_Outlined(millisecondsTimeout);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -146,6 +156,9 @@ namespace System.Threading
         {
             ArgumentNullException.ThrowIfNull(obj);
 
+            // for an object used in locking there are two common cases:
+            // - header bits are unused or
+            // - there is a sync entry
             int oldBits;
             fixed (nint* ppMethodTable = &obj.GetMethodTableRef())
             {
@@ -174,9 +187,10 @@ namespace System.Threading
             // Before checking uncommon cases, check if the lock is fat (or becoming fat).
             // This is another common case.
             if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0 ||
-                AcquireUncommon(obj, false) != HeaderLockResult.Success)
+                TryAcquireUncommon(obj, false) != HeaderLockResult.Success)
             {
-                Monitor.GetLockObject(obj).Enter();
+                Lock lck = Monitor.GetLockObject(obj);
+                lck.Enter();
             }
         }
 
@@ -185,7 +199,7 @@ namespace System.Threading
         // single attempt (e.g. Monitor.TryEnter) pass isOneShot: true to succeed only if the lock is
         // currently unowned.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static unsafe HeaderLockResult AcquireUncommon(object obj, bool isOneShot)
+        private static unsafe HeaderLockResult TryAcquireUncommon(object obj, bool isOneShot)
         {
             // A one-shot acquire does not spin while the lock is owned by another thread, but it still
             // retries the rare CAS failures below where the lock is not owned by somebody else: a caller
