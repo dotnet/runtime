@@ -124,8 +124,8 @@ internal class ARM64Unwinder(Target target)
         }
         else
         {
-            TargetCodePointer strippedControlPc = CodePointerUtils.CodePointerFromAddress(context.InstructionPointer.AsTargetPointer, _target);
-            TargetPointer controlPcAddress = CodePointerUtils.AddressFromCodePointer(strippedControlPc, _target);
+            TargetCodePointer controlPc = CodePointerUtils.CodePointerFromAddress(context.InstructionPointer.AsTargetPointer, _target);
+            TargetPointer controlPcAddress = CodePointerUtils.AddressFromCodePointer(controlPc, _target);
             controlPcRva = (uint)(controlPcAddress - imageBase);
         }
 

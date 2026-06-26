@@ -42,16 +42,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _codeInfos.Clear();
     }
 
-    private TargetCodePointer StripArm64PacForCodeLookup(TargetCodePointer codePointer)
-    {
-        if (_target.Contracts.PlatformMetadata.GetCodePointerFlags().HasFlag(CodePointerFlags.HasArm64PtrAuth))
-        {
-            return CodePointerUtils.CodePointerFromAddress(codePointer.AsTargetPointer, _target);
-        }
-
-        return codePointer;
-    }
-
     // Note, because of RelativeOffset, this code info is per code pointer, not per method
     private sealed class CodeBlock
     {
@@ -226,14 +216,12 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     }
     CodeBlockHandle? IExecutionManager.GetCodeBlockHandle(TargetCodePointer ip)
     {
-        TargetCodePointer strippedIp = StripArm64PacForCodeLookup(ip);
-
-        TargetPointer key = strippedIp.AsTargetPointer; // FIXME: thumb bit. It's harmless (we potentialy have 2 cache entries per IP), but we should fix it
+        TargetPointer key = ip.AsTargetPointer; // FIXME: thumb bit. It's harmless (we potentialy have 2 cache entries per IP), but we should fix it
         if (_codeInfos.ContainsKey(key))
         {
             return new CodeBlockHandle(key);
         }
-        CodeBlock? info = GetCodeBlock(strippedIp);
+        CodeBlock? info = GetCodeBlock(ip);
         if (info == null || !info.Valid)
         {
             return null;
@@ -296,14 +284,12 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     TargetPointer IExecutionManager.NonVirtualEntry2MethodDesc(TargetCodePointer entrypoint)
     {
-        TargetCodePointer strippedEntrypoint = StripArm64PacForCodeLookup(entrypoint);
-
         if (_target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.PortableEntrypoints))
         {
-            Data.PortableEntryPoint portableEntryPoint = _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(strippedEntrypoint.AsTargetPointer);
+            Data.PortableEntryPoint portableEntryPoint = _target.ProcessedData.GetOrAdd<Data.PortableEntryPoint>(entrypoint.AsTargetPointer);
             return portableEntryPoint.MethodDesc;
         }
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, strippedEntrypoint);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, entrypoint);
         if (range.Data == null)
             return TargetPointer.Null;
         if (range.IsRangeList)
@@ -316,7 +302,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
             try
             {
-                return precodeStubs.GetMethodDescFromStubAddress(strippedEntrypoint);
+                return precodeStubs.GetMethodDescFromStubAddress(entrypoint);
             }
             catch (InvalidOperationException)
             {
@@ -326,7 +312,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         else
         {
             JitManager? jitManager = GetJitManager(range);
-            if (jitManager?.GetMethodInfo(range, strippedEntrypoint, out CodeBlock? info) == true && info != null)
+            if (jitManager?.GetMethodInfo(range, entrypoint, out CodeBlock? info) == true && info != null)
             {
                 return info.MethodDescAddress;
             }
@@ -622,9 +608,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     public CodeKind GetCodeKind(TargetCodePointer codeAddress)
     {
-        TargetCodePointer strippedCodeAddress = StripArm64PacForCodeLookup(codeAddress);
-
-        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, strippedCodeAddress);
+        RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeAddress);
         if (range.Data == null)
             return CodeKind.Unknown;
 
@@ -635,6 +619,6 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             CodeRangeMapRangeList rangeList = _target.ProcessedData.GetOrAdd<Data.CodeRangeMapRangeList>(range.Data.RangeList);
             return GetStubKind((StubKind)rangeList.RangeListType);
         }
-        return jitManager.GetCodeKind(range, strippedCodeAddress);
+        return jitManager.GetCodeKind(range, codeAddress);
     }
 }

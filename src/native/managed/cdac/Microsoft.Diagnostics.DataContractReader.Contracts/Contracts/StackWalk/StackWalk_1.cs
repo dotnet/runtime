@@ -1085,7 +1085,7 @@ internal partial class StackWalk_1 : IStackWalk
                 IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
 
                 Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(framePtr);
-                TargetCodePointer returnAddress = icf.CallerReturnAddress;
+                TargetCodePointer returnAddress = CodePointerUtils.CodePointerFromAddress(icf.CallerReturnAddress.AsTargetPointer, _target);
                 if (returnAddress != TargetCodePointer.Null && _eman.GetCodeBlockHandle(returnAddress) is CodeBlockHandle cbh)
                 {
                     MethodDescHandle returnMethodDesc = rts.GetMethodDescHandle(_eman.GetMethodDesc(cbh));
@@ -1214,7 +1214,8 @@ internal partial class StackWalk_1 : IStackWalk
 
     private bool IsManaged(TargetCodePointer ip, [NotNullWhen(true)] out CodeBlockHandle? codeBlockHandle)
     {
-        if (_eman.GetCodeBlockHandle(ip) is CodeBlockHandle cbh && cbh.Address != TargetPointer.Null)
+        TargetCodePointer strippedIp = CodePointerUtils.CodePointerFromAddress(ip.AsTargetPointer, _target);
+        if (_eman.GetCodeBlockHandle(strippedIp) is CodeBlockHandle cbh && cbh.Address != TargetPointer.Null)
         {
             codeBlockHandle = cbh;
             return true;
@@ -1255,7 +1256,8 @@ internal partial class StackWalk_1 : IStackWalk
     /// </summary>
     private bool IsInterpreterCode(TargetCodePointer ip)
     {
-        return _eman.GetCodeKind(ip) == CodeKind.Interpreter;
+        TargetCodePointer strippedIp = CodePointerUtils.CodePointerFromAddress(ip.AsTargetPointer, _target);
+        return _eman.GetCodeKind(strippedIp) == CodeKind.Interpreter;
     }
 
     #endregion Interpreter
