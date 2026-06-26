@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509RevocationFlag revocationFlag,
             X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode,
-            DateTime verificationTime,
+            DateTimeOffset verificationTime,
             TimeSpan timeout,
             bool disableAia)
         {
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509RevocationFlag revocationFlag,
             X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode,
-            DateTime verificationTime,
+            DateTimeOffset verificationTime,
             TimeSpan timeout,
             bool disableAia)
         {
@@ -98,8 +98,6 @@ namespace System.Security.Cryptography.X509Certificates
                 timeout = s_maxUrlRetrievalTimeout;
             }
 
-            DateTimeOffset verificationInstant = new DateTimeOffset(verificationTime);
-
             // Until we support the Disallowed store, ensure it's empty (which is done by the ctor)
             using (new X509Store(StoreName.Disallowed, StoreLocation.CurrentUser, OpenFlags.ReadOnly))
             {
@@ -111,7 +109,7 @@ namespace System.Security.Cryptography.X509Certificates
                 ((OpenSslX509CertificateReader)cert).SafeHandle,
                 customTrustStore,
                 trustMode,
-                verificationInstant,
+                verificationTime,
                 downloadTimeout);
 
             Interop.Crypto.X509VerifyStatusCode status = chainPal.FindFirstChain(extraStore);

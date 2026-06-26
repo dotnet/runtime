@@ -31,21 +31,15 @@ internal static partial class Interop
             internal uint ftTimeLow;
             internal uint ftTimeHigh;
 
-            internal DateTime ToDateTime()
-            {
-                long fileTime = (((long)ftTimeHigh) << 32) + ftTimeLow;
-                return DateTime.FromFileTime(fileTime);
-            }
-
             internal DateTimeOffset ToDateTimeOffset()
             {
                 long fileTime = (((long)ftTimeHigh) << 32) + ftTimeLow;
                 return new DateTimeOffset(DateTime.FromFileTimeUtc(fileTime));
             }
 
-            internal static FILETIME FromDateTime(DateTime dt)
+            internal static FILETIME FromDateTimeOffset(DateTimeOffset instant)
             {
-                long fileTime = dt.ToFileTime();
+                long fileTime = instant.UtcDateTime.ToFileTimeUtc();
 
                 unchecked
                 {

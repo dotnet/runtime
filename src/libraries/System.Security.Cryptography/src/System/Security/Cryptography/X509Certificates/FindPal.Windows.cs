@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         private unsafe void FindByTime(DateTimeOffset instant, int compareResult)
         {
-            Interop.Crypt32.FILETIME fileTime = Interop.Crypt32.FILETIME.FromDateTime(instant.UtcDateTime);
+            Interop.Crypt32.FILETIME fileTime = Interop.Crypt32.FILETIME.FromDateTimeOffset(instant);
 
             FindCore(
                 (fileTime, compareResult),
