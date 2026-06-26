@@ -18,6 +18,10 @@ parameters:
   # partiallySucceeded), this produces a fully successful build. Scheduled builds with
   # always:false set this so that flaky tests don't cause AzDO to re-queue the same commit daily.
   failOnTestFailures: true
+  # When true, failed Helix work items are surfaced as build warnings (visible in the AzDO
+  # timeline) instead of being silently ignored. Intended to be paired with failOnTestFailures:
+  # false so that failures stay visible without failing the build.
+  warnOnTestFailures: false
 
 steps:
   - script: $(_msbuildCommand) $(_warnAsErrorParamHelixOverride) -restore
@@ -33,6 +37,7 @@ steps:
             /p:HelixBuild=$(Build.BuildNumber)
             /p:FailOnWorkItemFailure=${{ parameters.failOnTestFailures }}
             /p:FailOnTestFailure=${{ parameters.failOnTestFailures }}
+            /p:WarnOnHelixTestFailure=${{ parameters.warnOnTestFailures }}
             ${{ parameters.extraHelixArguments }}
             /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: Send to Helix
