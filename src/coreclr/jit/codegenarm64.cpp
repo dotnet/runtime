@@ -2514,19 +2514,15 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                                 // Use NEON instructions to load the constant (to avoid using predicates)
                                 if (info.CanEncodeScalar<emitter>(simdVal, emitSize))
                                 {
-                                    if (varTypeIsIntegral(baseType))
+                                    if (baseType == TYP_FLOAT)
                                     {
-                                        emit->emitIns_R_I(INS_mov, EA_16BYTE, targetReg, info.indexImm);
-                                    }
-                                    else if (baseType == TYP_FLOAT)
-                                    {
-                                        emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg,
+                                        emit->emitIns_R_F(INS_fmov, emitSize, targetReg,
                                                           static_cast<double>(simdVal.gtSimdScalableIndexF32[0]));
                                     }
                                     else
                                     {
                                         assert(baseType == TYP_DOUBLE);
-                                        emit->emitIns_R_F(INS_fmov, EA_16BYTE, targetReg,
+                                        emit->emitIns_R_F(INS_fmov, emitSize, targetReg,
                                                           simdVal.gtSimdScalableIndexF64[0]);
                                     }
                                 }
@@ -2534,7 +2530,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                                 {
                                     regNumber indexReg = internalRegisters.Extract(tree, RBM_ALLINT);
                                     loadConstantHelper(indexReg, info.indexVal);
-                                    emit->emitIns_R_R(INS_ins, emitSize, targetReg, indexReg, INS_OPTS_16B);
+                                    emit->emitIns_R_R_I(INS_ins, emitSize, targetReg, indexReg, 0);
                                 }
                                 break;
                             }

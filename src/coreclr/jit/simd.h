@@ -2723,7 +2723,8 @@ struct Arm64SimdScalableConstInfo
     {
         if (varTypeIsIntegral(baseType))
         {
-            return indexHasImm && TEmitter::emitIns_valid_imm_for_mov(indexImm, emitSize);
+            // There is no integral scalar immediate form for a SIMD element, only vector-wide immediates.
+            return false;
         }
 
         if (baseType == TYP_FLOAT)
