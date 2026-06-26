@@ -60,27 +60,27 @@ function mergeResources(target: Assets, source: Assets): Assets {
     // no need to merge the same object
     if (target === source || source === undefined || source === null) return target;
 
-    target.hash = source.hash ?? target.hash;
-    target.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly || []];
-    target.assembly = [...target.assembly!, ...source.assembly || []];
-    target.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly || []];
-    target.corePdb = [...target.corePdb!, ...source.corePdb || []];
-    target.pdb = [...target.pdb!, ...source.pdb || []];
-    target.jsModuleWorker = [...target.jsModuleWorker!, ...source.jsModuleWorker || []];
-    target.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative || []];
-    target.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics || []];
-    target.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime || []];
-    target.wasmSymbols = [...target.wasmSymbols!, ...source.wasmSymbols || []];
-    target.wasmNative = [...target.wasmNative!, ...source.wasmNative || []];
-    target.icu = [...target.icu!, ...source.icu || []];
-    target.vfs = [...target.vfs!, ...source.vfs || []];
-    target.coreVfs = [...target.coreVfs!, ...source.coreVfs || []];
-    target.modulesAfterConfigLoaded = [...target.modulesAfterConfigLoaded!, ...source.modulesAfterConfigLoaded || []];
-    target.modulesAfterRuntimeReady = [...target.modulesAfterRuntimeReady!, ...source.modulesAfterRuntimeReady || []];
-    target.extensions = { ...target.extensions!, ...source.extensions || {} };
-    for (const key in source.satelliteResources || {}) {
-        target.satelliteResources![key] = [...target.satelliteResources![key] || [], ...source.satelliteResources![key] || []];
+    source.hash = source.hash ?? target.hash;
+    source.coreAssembly = [...target.coreAssembly!, ...source.coreAssembly || []];
+    source.assembly = [...target.assembly!, ...source.assembly || []];
+    source.lazyAssembly = [...target.lazyAssembly!, ...source.lazyAssembly || []];
+    source.corePdb = [...target.corePdb!, ...source.corePdb || []];
+    source.pdb = [...target.pdb!, ...source.pdb || []];
+    source.jsModuleNative = [...target.jsModuleNative!, ...source.jsModuleNative || []];
+    source.jsModuleDiagnostics = [...target.jsModuleDiagnostics!, ...source.jsModuleDiagnostics || []];
+    source.jsModuleRuntime = [...target.jsModuleRuntime!, ...source.jsModuleRuntime || []];
+    source.wasmSymbols = [...target.wasmSymbols!, ...source.wasmSymbols || []];
+    source.wasmNative = [...target.wasmNative!, ...source.wasmNative || []];
+    source.icu = [...target.icu!, ...source.icu || []];
+    source.vfs = [...target.vfs!, ...source.vfs || []];
+    source.coreVfs = [...target.coreVfs!, ...source.coreVfs || []];
+    source.modulesAfterConfigLoaded = [...target.modulesAfterConfigLoaded!, ...source.modulesAfterConfigLoaded || []];
+    source.modulesAfterRuntimeReady = [...target.modulesAfterRuntimeReady!, ...source.modulesAfterRuntimeReady || []];
+    source.extensions = { ...target.extensions!, ...source.extensions || {} };
+    for (const key in { ...target.satelliteResources!, ...source.satelliteResources || {} }) {
+        source.satelliteResources![key] = [...target.satelliteResources![key] || [], ...source.satelliteResources![key] || []];
     }
+    Object.assign(target, source);
     return target;
 }
 
@@ -118,7 +118,6 @@ function normalizeResources(target: Assets) {
     if (!target.lazyAssembly) target.lazyAssembly = [];
     if (!target.corePdb) target.corePdb = [];
     if (!target.pdb) target.pdb = [];
-    if (!target.jsModuleWorker) target.jsModuleWorker = [];
     if (!target.jsModuleNative) target.jsModuleNative = [];
     if (!target.jsModuleDiagnostics) target.jsModuleDiagnostics = [];
     if (!target.jsModuleRuntime) target.jsModuleRuntime = [];

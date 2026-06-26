@@ -575,7 +575,7 @@ public unsafe class DacDbiImplTests
 
         fixed (byte* pCtx = bytes)
         {
-            int hr = dacDbi.CheckContext(ThreadAddr, (nint)pCtx);
+            int hr = dacDbi.CheckContext(ThreadAddr, pCtx);
             Assert.Equal(expectedHr, hr);
         }
     }
@@ -601,7 +601,7 @@ public unsafe class DacDbiImplTests
 
         fixed (byte* pCtx = bytes)
         {
-            int hr = dacDbi.CheckContext(ThreadAddr, (nint)pCtx);
+            int hr = dacDbi.CheckContext(ThreadAddr, pCtx);
             Assert.Equal(System.HResults.S_OK, hr);
         }
 
