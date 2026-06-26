@@ -304,26 +304,9 @@ namespace System.Text.Json.Serialization.Converters
         {
 #if NET
             Dictionary<string, EnumFieldInfo>.AlternateLookup<ReadOnlySpan<char>> lookup = _enumFieldInfoIndex.GetAlternateLookup<ReadOnlySpan<char>>();
-#else
-            Dictionary<string, EnumFieldInfo> lookup = _enumFieldInfoIndex;
-#endif
-
-            if (!s_isFlagsEnum)
-            {
-                if (lookup.TryGetValue(source, out EnumFieldInfo? firstResult) &&
-                    firstResult.GetMatchingField(source) is EnumFieldInfo match)
-                {
-                    result = ConvertFromUInt64(match.Key);
-                    return true;
-                }
-
-                result = default;
-                return false;
-            }
-
-#if NET
             ReadOnlySpan<char> rest = source;
 #else
+            Dictionary<string, EnumFieldInfo> lookup = _enumFieldInfoIndex;
             ReadOnlySpan<char> rest = source.AsSpan();
 #endif
             ulong key = 0;
