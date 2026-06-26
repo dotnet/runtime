@@ -144,8 +144,8 @@ namespace System
             // copy _methodPtr and _methodPtrAux fields rather than calling into the EE to get them
             if (thisIsMultiCastAlready)
             {
-                result._methodPtr = this._methodPtr;
-                result._methodPtrAux = this._methodPtrAux;
+                result._methodPtr = _methodPtr;
+                result._methodPtrAux = _methodPtrAux;
             }
             else
             {
@@ -167,12 +167,12 @@ namespace System
         internal void StoreDynamicMethod(MethodInfo dynamicMethod)
         {
             Debug.Assert(_invocationCount == 0);
-            _methodBase = dynamicMethod;
+            _helperObject = dynamicMethod;
         }
 
         // This method will combine this delegate with the passed delegate
         //    to form a new delegate.
-        protected sealed override Delegate CombineImpl(Delegate? follow)
+        internal new Delegate CombineImpl(Delegate? follow)
         {
             if (follow is null)
                 return this;
@@ -290,21 +290,21 @@ namespace System
         //    look at the invocation list.)  If this is found we remove it from
         //    this list and return a new delegate.  If its not found a copy of the
         //    current list is returned.
-        protected sealed override Delegate? RemoveImpl(Delegate value)
+        internal new Delegate? RemoveImpl(Delegate? value)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
             //
             MulticastDelegate? v = value as MulticastDelegate;
-
             if (v == null)
                 return this;
+
             if (v._invocationList is not object[])
             {
                 if (_invocationList is not object[] invocationList)
                 {
                     // they are both not real Multicast
-                    if (this.Equals(value))
+                    if (Equals(v))
                         return null;
                 }
                 else
@@ -312,7 +312,7 @@ namespace System
                     int invocationCount = (int)_invocationCount;
                     for (int i = invocationCount; --i >= 0;)
                     {
-                        if (value.Equals(invocationList[i]))
+                        if (v.Equals(invocationList[i]))
                         {
                             if (invocationCount == 2)
                             {
@@ -362,7 +362,7 @@ namespace System
         }
 
         // This method returns the Invocation list of this multicast delegate.
-        public sealed override Delegate[] GetInvocationList()
+        internal new Delegate[] GetInvocationList()
         {
             Delegate[] del;
             if (_invocationList is not object[] invocationList)
@@ -455,7 +455,7 @@ namespace System
             {
                 // we handle unmanaged function pointers here because the generic ones (used for WinRT) would otherwise
                 // be treated as open delegates by the base implementation, resulting in failure to get the MethodInfo
-                if (_methodBase is MethodInfo methodInfo)
+                if (_helperObject is MethodInfo methodInfo)
                 {
                     return methodInfo;
                 }
@@ -466,13 +466,13 @@ namespace System
                 // need a proper declaring type instance method on a generic type
                 if (declaringType.IsGenericType)
                 {
-                    // we are returning the 'Invoke' method of this delegate so use this.GetType() for the exact type
+                    // we are returning the 'Invoke' method of this delegate so use GetType() for the exact type
                     RuntimeType reflectedType = (RuntimeType)GetType();
                     declaringType = reflectedType;
                 }
 
-                _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
-                return (MethodInfo)_methodBase;
+                _helperObject = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
+                return (MethodInfo)_helperObject;
             }
 
             return base.GetMethodImpl();
@@ -491,16 +491,16 @@ namespace System
         {
             if (target == null)
                 ThrowNullThisInDelegateToInstance();
-            this._target = target;
-            this._methodPtr = methodPtr;
+            _target = target;
+            _methodPtr = methodPtr;
         }
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
         private void CtorClosedStatic(object target, IntPtr methodPtr)
         {
-            this._target = target;
-            this._methodPtr = methodPtr;
+            _target = target;
+            _methodPtr = methodPtr;
         }
 
         [DebuggerNonUserCode]
@@ -509,55 +509,55 @@ namespace System
         {
             if (target == null)
                 ThrowNullThisInDelegateToInstance();
-            this._target = target;
-            this._methodPtr = AdjustTarget(target, methodPtr);
+            _target = target;
+            _methodPtr = AdjustTarget(target, methodPtr);
         }
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
         private void CtorOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
-            this._target = this;
-            this._methodPtr = shuffleThunk;
-            this._methodPtrAux = methodPtr;
+            _target = this;
+            _methodPtr = shuffleThunk;
+            _methodPtrAux = methodPtr;
         }
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
         private void CtorVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
-            this._target = this;
-            this._methodPtr = shuffleThunk;
-            this.InitializeVirtualCallStub(methodPtr);
+            _target = this;
+            _methodPtr = shuffleThunk;
+            InitializeVirtualCallStub(methodPtr);
         }
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
         private void CtorCollectibleClosedStatic(object target, IntPtr methodPtr, IntPtr gchandle)
         {
-            this._target = target;
-            this._methodPtr = methodPtr;
-            this._methodBase = GCHandle.InternalGet(gchandle);
+            _target = target;
+            _methodPtr = methodPtr;
+            _helperObject = GCHandle.InternalGet(gchandle);
         }
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
         private void CtorCollectibleOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
-            this._target = this;
-            this._methodPtr = shuffleThunk;
-            this._methodPtrAux = methodPtr;
-            this._methodBase = GCHandle.InternalGet(gchandle);
+            _target = this;
+            _methodPtr = shuffleThunk;
+            _methodPtrAux = methodPtr;
+            _helperObject = GCHandle.InternalGet(gchandle);
         }
 
         [DebuggerNonUserCode]
         [DebuggerStepThrough]
         private void CtorCollectibleVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
-            this._target = this;
-            this._methodPtr = shuffleThunk;
-            this._methodBase = GCHandle.InternalGet(gchandle);
-            this.InitializeVirtualCallStub(methodPtr);
+            _target = this;
+            _methodPtr = shuffleThunk;
+            _helperObject = GCHandle.InternalGet(gchandle);
+            InitializeVirtualCallStub(methodPtr);
         }
 #pragma warning restore IDE0060
     }

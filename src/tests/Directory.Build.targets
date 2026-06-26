@@ -493,13 +493,17 @@
   </Target>
 
   <Target Name="DiscoverProcessIsolatedTestProjectReferences" BeforeTargets="AssignProjectConfiguration" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
-    <MSBuild Projects="@(ProjectReference)" Targets="GetRequiresProcessIsolation" SkipNonexistentTargets="true">
+    <ItemGroup>
+      <_ProjectReferenceFullPath Include="@(ProjectReference->'%(FullPath)')" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_ProjectReferenceFullPath)" Targets="GetRequiresProcessIsolation" SkipNonexistentTargets="true">
       <Output TaskParameter="TargetOutputs" ItemName="ReferencedProjectRequiringProcessIsolation" />
     </MSBuild>
 
     <ItemGroup>
-      <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" />
-      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(OriginalItemSpec)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" Private="False" />
+      <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation)" MatchOnMetadata="FullPath" />
+      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(FullPath)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" Private="False" />
     </ItemGroup>
   </Target>
 

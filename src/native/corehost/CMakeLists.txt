@@ -43,6 +43,8 @@ if("${CLI_CMAKE_FALLBACK_OS}" STREQUAL "${CLR_CMAKE_TARGET_OS}")
     add_compile_definitions(FALLBACK_OS_IS_SAME_AS_TARGET_OS)
 endif()
 
+string(TOUPPER "${CLR_CMAKE_TARGET_ARCH}" CLR_CMAKE_TARGET_ARCH_UPPER)
+
 # Find support libraries that we need if they're present on the system.
 find_library(PTHREAD_LIB pthread)
 
@@ -81,7 +83,7 @@ endif()
 
 if(NOT CLR_CMAKE_TARGET_BROWSER)
     add_library(fxr_resolver INTERFACE)
-    target_sources(fxr_resolver INTERFACE fxr_resolver.cpp)
+    target_sources(fxr_resolver INTERFACE fxr_resolver.cpp fxr_resolver.c)
     target_include_directories(fxr_resolver INTERFACE fxr)
 
     add_compile_definitions(RAPIDJSON_HAS_CXX17)

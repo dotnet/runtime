@@ -7,7 +7,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class ImageOptionalHeader : IData<ImageOptionalHeader>
 {
     private const int SectionAlignmentOffset = 32;
+    private const int SizeOfImageOffset = 56;
 
     [RawOffset(SectionAlignmentOffset, LittleEndian = true)]
     public uint SectionAlignment { get; }
+
+    [RawOffset(SizeOfImageOffset, LittleEndian = true)]
+    public uint SizeOfImage { get; }
 }
