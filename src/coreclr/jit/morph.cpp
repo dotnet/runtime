@@ -8583,17 +8583,16 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
             // in other cases we discard the cast without modifying src
             // so the VN doesn't change.
 
-            src->ChangeType(castToType);
+            effectiveSrc->ChangeType(castToType);
 
             // Propagate the new VN through any COMMA wrappers so that it stays
-            // consistent with ChangeType's type propagation.
-            for (GenTree* cur = src;; cur = cur->AsOp()->gtOp2)
+            // consistent with the type propagation.
+            effectiveSrc->SetVNsFromNode(cast);
+
+            for (GenTree* cur = src; cur != effectiveSrc; cur = cur->AsOp()->gtOp2)
             {
+                cur->ChangeType(castToType);
                 cur->SetVNsFromNode(cast);
-                if (cur == effectiveSrc)
-                {
-                    break;
-                }
 
                 assert(cur->OperIs(GT_COMMA));
             }
@@ -13707,7 +13706,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 //
 Compiler::MorphUnreachableInfo::MorphUnreachableInfo(Compiler* comp)
     : m_traits(comp->m_dfsTree->GetPostOrderCount(), comp)
-    , m_vec(BitVecOps::MakeEmpty(&m_traits)){};
+    , m_vec(BitVecOps::MakeEmpty(&m_traits)) {};
 
 //------------------------------------------------------------------------
 // SetUnreachable: during morph, mark a block as unreachable
