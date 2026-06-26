@@ -760,6 +760,8 @@ private:
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
     int32_t GetDataForHelperFtn(CorInfoHelpFunc ftn);
 
+    void CreateSynchronizedRetValVar();
+
     void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
     InterpBasicBlock* GenerateCodeForLeaveChainIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
@@ -910,6 +912,8 @@ private:
     int32_t m_synchronizedFlagVarIndex = -1; // If the method is synchronized, this is the index of the argument that flag indicating if the lock was taken
     int32_t m_synchronizedOrAsyncRetValVarIndex = -1; // If the method is synchronized, ret instructions are replaced with a store to this var and a leave to an epilog instruction.
     int32_t m_synchronizedFinallyStartOffset = -1; // If the method is synchronized, this is the offset of the start of the finally epilog
+    InterpType m_synchronizedRetValType = InterpType::InterpTypeVoid;
+    CORINFO_CLASS_HANDLE m_synchronizedRetValClsHnd = NULL;
 
     int32_t m_threadObjVarIndex = -1; // If the method is async, this is the var index of the Thread local
     int32_t m_execContextVarIndex = -1; // If the method is async, this is the var index of the ExecutionContext local
