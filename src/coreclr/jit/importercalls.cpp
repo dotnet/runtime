@@ -597,13 +597,23 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // call_indirect signature matches the callee; omitting it traps at runtime.
                 if (sig->hasTypeArg())
                 {
-                    GenTree* wasmInstParam =
-                        impGetInstParamArg(pResolvedToken, callInfo, exactContextHnd, exactContextNeedsRuntimeLookup,
-                                           clsFlags, isReadonlyCall);
-                    if (wasmInstParam == nullptr)
+                    GenTree* wasmInstParam;
+                    if (lvaNextCallGenericContext != BAD_VAR_NUM)
                     {
-                        assert(compDonotInline());
-                        return TYP_UNDEF;
+                        // An explicit generic context was provided (RuntimeHelpers.SetNextCallGenericContext);
+                        // honor and consume it just like the shared hasTypeArg() handling does.
+                        wasmInstParam             = gtNewLclVarNode(lvaNextCallGenericContext);
+                        lvaNextCallGenericContext = BAD_VAR_NUM;
+                    }
+                    else
+                    {
+                        wasmInstParam = impGetInstParamArg(pResolvedToken, callInfo, exactContextHnd,
+                                                           exactContextNeedsRuntimeLookup, clsFlags, isReadonlyCall);
+                        if (wasmInstParam == nullptr)
+                        {
+                            assert(compDonotInline());
+                            return TYP_UNDEF;
+                        }
                     }
 
                     call->AsCall()->gtArgs.InsertInstParam(this, wasmInstParam);
