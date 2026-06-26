@@ -2000,12 +2000,12 @@ struct NaturalLoopIterInfo
     // limit flags.
     bool HasMDArrayLengthLimit : 1;
 
-    // Whether the loop iterates the full valid index range for a single
+    // Whether the loop iterates within the valid index range for a single
     // dimension of a multi-dimensional array. Specifically the loop test
     // limit has the form `MDARR_LOWER_BOUND(arr,d,r) + MDARR_LENGTH(arr,d,r) - 1`
     // and the iter var's init is `MDARR_LOWER_BOUND(arr,d,r)` with all of
-    // arr/d/r matching. This is the form produced by C# `foreach` over MD
-    // arrays when the bounds expressions aren't cached (issue #103321).
+    // arr/d/r matching. The test may be inclusive or exclusive of the upper
+    // bound.
     // When set, any per-dim BOUNDS_CHECK on the same (arr, d, r) using the
     // iter var (after the morph-time `effIdx = i - LOWER` subtract) is
     // trivially safe.
@@ -2138,7 +2138,7 @@ class FlowGraphNaturalLoop
     GenTreeLclVarCommon* FindDef(unsigned lclNum);
 
     bool MatchLimit(unsigned iterVar, GenTree* test, NaturalLoopIterInfo* info);
-    bool TryMatchMDArrayUpperBoundLimit(GenTree* limitOp, NaturalLoopIterInfo* info, GenTree** outArrayLclVar);
+    bool TryMatchMDArrayUpperBoundLimit(GenTree* limitOp, NaturalLoopIterInfo* info);
     bool MDArrayBoundedRangeInitMatches(unsigned iterVar, BasicBlock* initBlock, NaturalLoopIterInfo* info);
     bool FindConstInit(BasicBlock* preheader, NaturalLoopIterInfo* info);
     bool CheckLoopConditionBaseCase(BasicBlock* initBlock, NaturalLoopIterInfo* info);

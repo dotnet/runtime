@@ -5983,7 +5983,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
 
         info->HasMDArrayLengthLimit = true;
     }
-    else if (GenTree * upperArr; TryMatchMDArrayUpperBoundLimit(limitOp, info, &upperArr))
+    else if (TryMatchMDArrayUpperBoundLimit(limitOp, info))
     {
         // Recognized the GetUpperBound(d) shape (LOWER + LENGTH - 1).
         // TryMatchMDArrayUpperBoundLimit has already verified the array
@@ -6021,17 +6021,11 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
 // Parameters:
 //   limitOp        - the recognized limit subtree
 //   info           - [in, out] info; on match, fills BoundedRangeArrLcl/Dim/Rank
-//   outArrayLclVar - [out] the array LCL_VAR node, for use by the caller
-//
 // Returns:
 //   True if the limit shape matches and the array is a loop-invariant local.
 //
-bool FlowGraphNaturalLoop::TryMatchMDArrayUpperBoundLimit(GenTree*             limitOp,
-                                                          NaturalLoopIterInfo* info,
-                                                          GenTree**            outArrayLclVar)
+bool FlowGraphNaturalLoop::TryMatchMDArrayUpperBoundLimit(GenTree* limitOp, NaturalLoopIterInfo* info)
 {
-    *outArrayLclVar = nullptr;
-
     // After offset-peel we may see one of:
     //   SUB(ADD(LOWER, LEN), 1)            -- LimitOffset still 0
     //   ADD(LOWER, LEN)  with LimitOffset == -1  (peeled '-1' constant)
@@ -6110,7 +6104,6 @@ bool FlowGraphNaturalLoop::TryMatchMDArrayUpperBoundLimit(GenTree*             l
     info->BoundedRangeArrLcl = arrLcl;
     info->BoundedRangeDim    = lowerNode->Dim();
     info->BoundedRangeRank   = lowerNode->Rank();
-    *outArrayLclVar          = arr1;
     return true;
 }
 

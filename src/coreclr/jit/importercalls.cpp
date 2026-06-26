@@ -4813,6 +4813,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                 // We're about to emit GT_MDARR_LENGTH / GT_MDARR_LOWER_BOUND,
                                 // which assert that this flag was set by the importer.
                                 optMethodFlags |= OMF_HAS_MDARRAYREF;
+                                compCurBB->SetFlags(BBF_HAS_MDARRAYREF);
 
                                 // Make sure there are no global effects in the array (such as it being a function
                                 // call), so we can mark the generated indirection with GTF_IND_INVARIANT. In the
