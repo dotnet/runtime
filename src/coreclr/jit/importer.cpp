@@ -11785,6 +11785,10 @@ bool Compiler::impWrapTopOfStackInAwait()
     if (impInlineRoot()->compIsAsyncVersion())
     {
         asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
+        if (asyncInfo->IsTailAwait)
+        {
+            awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
+        }
     }
     else
     {
