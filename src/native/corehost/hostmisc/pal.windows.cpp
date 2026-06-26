@@ -807,8 +807,12 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
     if (len <= 0)
         return false;
 
+    out->resize(static_cast<size_t>(len));
+    if (!pal_utf8_to_palstr(cstr, &(*out)[0], static_cast<size_t>(len)))
+        return false;
+
     out->resize(static_cast<size_t>(len) - 1);
-    return pal_utf8_to_palstr(cstr, &(*out)[0], static_cast<size_t>(len));
+    return true;
 }
 
 typedef std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&::CloseHandle)> SmartHandle;
