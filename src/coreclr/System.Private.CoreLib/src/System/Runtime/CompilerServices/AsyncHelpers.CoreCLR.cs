@@ -424,81 +424,6 @@ namespace System.Runtime.CompilerServices
             return default!;
         }
 
-        [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void Suspend(IValueTaskSource source, short token, bool continueOnCapturedContext)
-        {
-            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
-
-            ValueTaskSourceContinuation? vtsCont = state.CachedValueTaskSourceContinuation;
-            if (vtsCont != null)
-            {
-                state.CachedValueTaskSourceContinuation = null;
-            }
-            else
-            {
-                vtsCont = new ValueTaskSourceContinuation();
-            }
-
-            vtsCont.Initialize(source, token);
-
-            if (continueOnCapturedContext)
-            {
-                // We only need to capture flags.
-                // If needed, VTS will use the scheduling context captured in the "state".
-                CaptureContinuationContextFlags(ref vtsCont.Flags, state.CurrentThread!);
-            }
-            else
-            {
-                vtsCont.Flags |= ContinuationFlags.ContinueOnThreadPool;
-            }
-
-            sentinelContinuation.Next = vtsCont;
-            state.StackState->ValueTaskSourceContinuation = vtsCont;
-
-            state.CaptureContexts();
-            AsyncSuspend(vtsCont);
-        }
-
-        [BypassReadyToRun]
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe T Suspend<T>(IValueTaskSource<T> source, short token, bool continueOnCapturedContext)
-        {
-            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
-            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
-
-            ValueTaskSourceContinuation? vtsCont = state.CachedValueTaskSourceContinuation;
-            if (vtsCont != null)
-            {
-                state.CachedValueTaskSourceContinuation = null;
-            }
-            else
-            {
-                vtsCont = new ValueTaskSourceContinuation();
-            }
-
-            vtsCont.Initialize<T>(source, token);
-
-            if (continueOnCapturedContext)
-            {
-                // We only need to capture flags.
-                // If needed, VTS will use the scheduling context captured in the "state".
-                CaptureContinuationContextFlags(ref vtsCont.Flags, state.CurrentThread!);
-            }
-            else
-            {
-                vtsCont.Flags |= ContinuationFlags.ContinueOnThreadPool;
-            }
-
-            sentinelContinuation.Next = vtsCont;
-            state.StackState->ValueTaskSourceContinuation = vtsCont;
-
-            state.CaptureContexts();
-            AsyncSuspend(vtsCont);
-            return default!;
-        }
-
         /// <summary>
         /// Used by internal thunks that implement awaiting on ValueTask.
         /// A ValueTask may wrap:
@@ -560,6 +485,43 @@ namespace System.Runtime.CompilerServices
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        private static unsafe void Suspend(IValueTaskSource source, short token, bool continueOnCapturedContext)
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+
+            ValueTaskSourceContinuation? vtsCont = state.CachedValueTaskSourceContinuation;
+            if (vtsCont != null)
+            {
+                state.CachedValueTaskSourceContinuation = null;
+            }
+            else
+            {
+                vtsCont = new ValueTaskSourceContinuation();
+            }
+
+            vtsCont.Initialize(source, token);
+
+            if (continueOnCapturedContext)
+            {
+                // We only need to capture flags.
+                // If needed, VTS will use the scheduling context captured in the "state".
+                CaptureContinuationContextFlags(ref vtsCont.Flags, state.CurrentThread!);
+            }
+            else
+            {
+                vtsCont.Flags |= ContinuationFlags.ContinueOnThreadPool;
+            }
+
+            sentinelContinuation.Next = vtsCont;
+            state.StackState->ValueTaskSourceContinuation = vtsCont;
+
+            state.CaptureContexts();
+            AsyncSuspend(vtsCont);
+        }
+
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         private static unsafe T TransparentSuspend<T>(ValueTask<T> valueTask)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
@@ -604,6 +566,44 @@ namespace System.Runtime.CompilerServices
             sentinelContinuation.Next = nextCont;
             state.CaptureContexts();
             AsyncSuspend(nextCont);
+            return default!;
+        }
+
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        private static unsafe T Suspend<T>(IValueTaskSource<T> source, short token, bool continueOnCapturedContext)
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+
+            ValueTaskSourceContinuation? vtsCont = state.CachedValueTaskSourceContinuation;
+            if (vtsCont != null)
+            {
+                state.CachedValueTaskSourceContinuation = null;
+            }
+            else
+            {
+                vtsCont = new ValueTaskSourceContinuation();
+            }
+
+            vtsCont.Initialize<T>(source, token);
+
+            if (continueOnCapturedContext)
+            {
+                // We only need to capture flags.
+                // If needed, VTS will use the scheduling context captured in the "state".
+                CaptureContinuationContextFlags(ref vtsCont.Flags, state.CurrentThread!);
+            }
+            else
+            {
+                vtsCont.Flags |= ContinuationFlags.ContinueOnThreadPool;
+            }
+
+            sentinelContinuation.Next = vtsCont;
+            state.StackState->ValueTaskSourceContinuation = vtsCont;
+
+            state.CaptureContexts();
+            AsyncSuspend(vtsCont);
             return default!;
         }
 
