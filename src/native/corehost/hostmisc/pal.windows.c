@@ -513,10 +513,12 @@ pal_char_t* pal_get_default_installation_dir(void)
 
 bool pal_is_path_fully_qualified(const pal_char_t* path)
 {
+    if (path == NULL)
+        return false;
+
     size_t len = pal_strlen(path);
     if (len < 2)
         return false;
-
     // UNC and DOS device paths (e.g. \\server\share or \\?\C:\).
     if (is_dir_separator(path[0]))
         return path[1] == _X('?') || is_dir_separator(path[1]);
