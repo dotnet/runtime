@@ -93,7 +93,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
     //     if (AsyncHelpers.AsyncCallContinuation() == null)
     //       return Task.FromResult(result);
     //
-    //     return FinalizeTaskReturningThunk(ref awaitState);
+    //     return CreateRuntimeAsyncTask(ref awaitState);
     //   }
     //   catch (Exception ex)
     //   {
@@ -229,29 +229,29 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& 
 
         pCode->EmitLabel(suspendedLabel);
 
-        int finalizeTaskReturningThunkToken;
+        int createRuntimeAsyncTaskToken;
         if (logicalResultLocal != UINT_MAX)
         {
             MethodDesc* md;
             if (isValueTask)
-                md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINALIZE_VALUETASK_RETURNING_THUNK_1);
+                md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CREATE_RUNTIME_ASYNC_VALUE_TASK_1);
             else
-                md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINALIZE_TASK_RETURNING_THUNK_1);
+                md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CREATE_RUNTIME_ASYNC_TASK_1);
 
             md = FindOrCreateAssociatedMethodDesc(md, md->GetMethodTable(), FALSE, Instantiation(&thLogicalRetType, 1), FALSE);
-            finalizeTaskReturningThunkToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, md);
+            createRuntimeAsyncTaskToken = GetTokenForGenericMethodCallWithAsyncReturnType(pCode, md);
         }
         else
         {
             MethodDesc* md;
             if (isValueTask)
-                md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINALIZE_VALUETASK_RETURNING_THUNK);
+                md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CREATE_RUNTIME_ASYNC_VALUE_TASK);
             else
-                md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINALIZE_TASK_RETURNING_THUNK);
-            finalizeTaskReturningThunkToken = pCode->GetToken(md);
+                md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CREATE_RUNTIME_ASYNC_TASK);
+            createRuntimeAsyncTaskToken = pCode->GetToken(md);
         }
         pCode->EmitLDLOC(refAwaitStateLocal);
-        pCode->EmitCALL(finalizeTaskReturningThunkToken, 1, 1);
+        pCode->EmitCALL(createRuntimeAsyncTaskToken, 1, 1);
         pCode->EmitSTLOC(returnTaskLocal);
         pCode->EmitLEAVE(returnTaskLabel);
 
