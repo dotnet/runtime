@@ -2552,13 +2552,13 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, C
 // CordbRefEnum
 // ******************************************
 CordbRefEnum::CordbRefEnum(CordbProcess *proc, BOOL walkWeakRefs)
-    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacksFQ(TRUE),
+    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacks(TRUE),
       mHandleMask((UINT32)(walkWeakRefs ? CorHandleAll : CorHandleStrongOnly))
 {
 }
 
 CordbRefEnum::CordbRefEnum(CordbProcess *proc, CorGCReferenceType types)
-    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacksFQ(FALSE),
+    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacks(FALSE),
       mHandleMask((UINT32)types)
 {
 }
@@ -2657,7 +2657,7 @@ HRESULT CordbRefEnum::Next(ULONG celt, COR_GC_REFERENCE refs[], ULONG *pceltFetc
     EX_TRY
     {
         if (!mRefHandle)
-            hr = process->GetDAC()->CreateRefWalk(&mRefHandle, mEnumStacksFQ, mEnumStacksFQ, mHandleMask);
+            hr = process->GetDAC()->CreateRefWalk(&mRefHandle, mEnumStacks, mHandleMask);
 
         if (SUCCEEDED(hr))
         {
