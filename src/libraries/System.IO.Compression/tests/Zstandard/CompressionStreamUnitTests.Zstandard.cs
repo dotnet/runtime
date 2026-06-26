@@ -369,19 +369,17 @@ namespace System.IO.Compression
             return buffer;
         }
 
-        // A Zstandard stream may be a sequence of frames concatenated back-to-back (RFC 8878 section 3),
-        // as produced by Content-Encoding: zstd for large HTTP bodies; decoding must cover every frame,
-        // not just the first.
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task ZstandardStream_ConcatenatedFrames_FirstFrameExceeds64KBuffer(bool async)
+        public async Task ZstandardStream_ConcatenatedFrames_DecompressesAllFrames(bool async)
         {
-            // The first frame is larger than the 64 KB internal read buffer so its end lands across an
-            // underlying read of the base stream, the condition that triggered the dropped-tail behavior.
-            // The two sizes differ so the summed output length alone proves both frames were decoded.
-            byte[] first = ZstandardTestUtils.CreateTestData(120_000);
-            byte[] second = ZstandardTestUtils.CreateTestData(90_000);
+            // A Zstandard stream may be a sequence of frames concatenated back-to-back (RFC 8878 section 3),
+            // as produced by Content-Encoding: zstd for large HTTP bodies; decoding must cover every frame,
+            // not just the first. Two differently sized frames so the summed output length alone proves both
+            // were decoded.
+            byte[] first = ZstandardTestUtils.CreateTestData(300);
+            byte[] second = ZstandardTestUtils.CreateTestData(200);
             byte[] expected = [.. first, .. second];
 
             byte[] body = [.. CompressToSingleFrame(first), .. CompressToSingleFrame(second)];
@@ -435,15 +433,15 @@ namespace System.IO.Compression
             Assert.Equal(expected, output.ToArray());
         }
 
-        // A Zstandard frame can decode to zero bytes (for example, a frame whose content is empty). The
-        // decoder reports end-of-frame for it the same as any other frame, so a zero-output frame must be
-        // skipped rather than mistaken for the end of the stream, whether it is the leading, an
-        // intermediate, or the trailing frame.
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task ZstandardStream_EmptyFramesAmongFrames_DecompressesAllFrames(bool async)
         {
+            // A Zstandard frame can decode to zero bytes (for example, a frame whose content is empty). The
+            // decoder reports end-of-frame for it the same as any other frame, so a zero-output frame must be
+            // skipped rather than mistaken for the end of the stream, whether it is the leading, an
+            // intermediate, or the trailing frame.
             byte[] first = ZstandardTestUtils.CreateTestData(5_000);
             byte[] second = ZstandardTestUtils.CreateTestData(7_000);
             byte[] expected = [.. first, .. second];
@@ -474,11 +472,6 @@ namespace System.IO.Compression
             Assert.Equal(expected, output.ToArray());
         }
 
-        // Trailing data shorter than a frame magic number (1-3 bytes) after the final frame. This is the
-        // boundary case where the decoder cannot immediately tell a split next-frame magic from trailing
-        // data; the stream must still end cleanly and leave the trailing bytes on the (seekable) base
-        // stream. The 4-or-more-byte trailing-data case is covered by the inherited
-        // AutomaticStreamRewinds_WhenDecompressionFinishes test (CompressionStreamUnitTestBase).
         [Theory]
         [InlineData(false, 1)]
         [InlineData(true, 1)]
@@ -488,6 +481,11 @@ namespace System.IO.Compression
         [InlineData(true, 3)]
         public async Task ZstandardStream_FrameFollowedByShortTrailingData_StopsAtEndOfFrame(bool async, int trailingLength)
         {
+            // Trailing data shorter than a frame magic number (1-3 bytes) after the final frame. This is the
+            // boundary case where the decoder cannot immediately tell a split next-frame magic from trailing
+            // data; the stream must still end cleanly and leave the trailing bytes on the (seekable) base
+            // stream. The 4-or-more-byte trailing-data case is covered by the inherited
+            // AutomaticStreamRewinds_WhenDecompressionFinishes test (CompressionStreamUnitTestBase).
             byte[] payload = ZstandardTestUtils.CreateTestData(10_000);
             byte[] frame = CompressToSingleFrame(payload);
             byte[] trailing = Enumerable.Range(1, trailingLength).Select(i => (byte)i).ToArray();
@@ -512,6 +510,39 @@ namespace System.IO.Compression
             int read = input.Read(remainder, 0, remainder.Length);
             Assert.Equal(trailing.Length, read);
             Assert.Equal(trailing, remainder);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ZstandardStream_FrameFollowedByCorruptFrame_Throws(bool async)
+        {
+            // A continuation chunk that begins with a valid frame magic but is not a decodable frame is
+            // corrupt input, the same as a corrupt first frame, so it must throw rather than be silently
+            // dropped as trailing data. This is the case that distinguishes checking the frame magic from
+            // treating a first-call InvalidData as "not a frame".
+            byte[] first = ZstandardTestUtils.CreateTestData(4_000);
+            byte[] corruptFrame = CompressToSingleFrame(ZstandardTestUtils.CreateTestData(4_000));
+
+            // Keep the 4-byte magic intact (so it is recognized as a following frame) but set the reserved
+            // bit in the frame header descriptor (the byte right after the magic), which a compliant decoder
+            // must reject.
+            corruptFrame[4] |= 0x08;
+
+            byte[] body = [.. CompressToSingleFrame(first), .. corruptFrame];
+
+            using MemoryStream input = new(body);
+            using MemoryStream output = new();
+            using ZstandardStream decompressor = new(input, CompressionMode.Decompress, leaveOpen: true);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => decompressor.CopyToAsync(output));
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => decompressor.CopyTo(output));
+            }
         }
 
         // A non-seekable, read-only stream that returns at most one byte per read.

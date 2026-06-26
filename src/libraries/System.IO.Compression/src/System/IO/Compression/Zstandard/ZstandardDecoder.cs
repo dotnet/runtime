@@ -157,12 +157,12 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">When this method returns, contains the number of bytes written to the destination.</param>
         /// <returns>An <see cref="OperationStatus"/> indicating the result of the operation.</returns>
         /// <remarks>
-        /// <see cref="OperationStatus.Done"/> marks the end of a single Zstandard frame, which is not
-        /// necessarily the end of the input: a stream may be several frames concatenated back-to-back
-        /// (RFC 8878 section 3). It can be returned with <paramref name="bytesWritten"/> equal to zero (for example,
-        /// a frame whose content is empty), so a caller decoding a concatenated stream must not treat a
-        /// zero-length <see cref="OperationStatus.Done"/> as the end of the input while data remains. To
-        /// continue with the following frame, call <see cref="Reset"/> and then <see cref="Decompress"/> again.
+        /// The method returns <see cref="OperationStatus.Done"/> after all
+        /// contents of a single Zstandard frame are decoded and returned. However,
+        /// Zstandard data streams may consist of multiple concatenated frames
+        /// (some of which may even be empty). To allow processing further
+        /// frames on the same <see cref="ZstandardDecoder" /> instance, call
+        /// <see cref="Reset" /> before calling <see cref="Decompress" /> on the rest of the data.
         /// </remarks>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="IOException">An error occurred during decompression.</exception>
@@ -352,14 +352,7 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Resets the decoder session, allowing reuse for the next decompression operation.</summary>
-        /// <remarks>
-        /// This also readies the decoder for the next frame of a stream that contains multiple Zstandard
-        /// frames concatenated back-to-back (RFC 8878 section 3), after <see cref="Decompress"/> has reported
-        /// <see cref="OperationStatus.Done"/> for the previous frame. The reset is session-only: the window
-        /// size and any referenced dictionary are preserved, while a single-use prefix set via
-        /// <see cref="SetPrefix"/> is released.
-        /// </remarks>
+        /// <summary>Resets the decoder session, allowing reuse for decompressing the next Zstandard frame.</summary>
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         /// <exception cref="IOException">Failed to reset the decoder session.</exception>
         public void Reset()

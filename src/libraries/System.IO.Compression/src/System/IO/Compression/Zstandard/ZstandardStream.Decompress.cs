@@ -206,7 +206,8 @@ namespace System.IO.Compression
 
                     // A frame finished. A zstd stream may be frames concatenated back-to-back (RFC 8878
                     // section 3), so decide whether another frame follows before reporting end-of-stream.
-                    if (!AdvanceToNextFrame(buffer.IsEmpty, hasPendingOutput: bytesWritten != 0))
+                    // async: false completes synchronously (it only ever takes the synchronous read path).
+                    if (!AdvanceToNextFrame(buffer.IsEmpty, hasPendingOutput: bytesWritten != 0, async: false, cancellationToken: default).GetAwaiter().GetResult())
                     {
                         return bytesWritten;
                     }
@@ -222,8 +223,8 @@ namespace System.IO.Compression
         // concatenated frame follows: returns true (after resetting the decoder) when the caller should loop
         // to decode it, or false when the stream is complete and the caller should return. Uses only buffered
         // bytes when there is pending output to hand back; otherwise reads up to a frame magic to tell a split
-        // next-frame magic from end-of-stream. The sync variant; ReadAsync uses AdvanceToNextFrameAsync.
-        private bool AdvanceToNextFrame(bool zeroByteRead, bool hasPendingOutput)
+        // next-frame magic from end-of-stream. Shared by Read (async: false) and ReadAsync (async: true).
+        private async ValueTask<bool> AdvanceToNextFrame(bool zeroByteRead, bool hasPendingOutput, bool async, CancellationToken cancellationToken)
         {
             if (hasPendingOutput)
             {
@@ -259,72 +260,9 @@ namespace System.IO.Compression
                 // Not enough buffered to tell a split next-frame magic from end-of-stream; read more.
                 int needed = ZstdFrameMagicLength - _buffer.ActiveLength;
                 _buffer.EnsureAvailableSpace(needed);
-                int peeked = _stream.ReadAtLeast(_buffer.AvailableSpan, needed, throwOnEndOfStream: false);
-                if (peeked > 0)
-                {
-                    _nonEmptyInput = true;
-                    _buffer.Commit(peeked);
-                }
-            }
-
-            if (_buffer.ActiveLength >= ZstdFrameMagicLength && StartsWithZstdFrame(_buffer.ActiveSpan))
-            {
-                // Another frame follows. Reset readies the decoder for it (a session-only native reset that
-                // keeps the window size and any dictionary, and releases a single-use prefix).
-                Debug.Assert(_decoder != null);
-                _decoder.Reset();
-                return true;
-            }
-
-            // Trailing non-zstd data or end of input after the final frame: the stream is complete. Leave any
-            // trailing bytes on a seekable base stream by rewinding to the end of the compressed data,
-            // mirroring how DeflateStream handles data after the last gzip member.
-            if (_stream.CanSeek)
-            {
-                TryRewindStream(_stream);
-            }
-
-            return false;
-        }
-
-        // Asynchronous counterpart of AdvanceToNextFrame, used by ReadAsync.
-        private async ValueTask<bool> AdvanceToNextFrameAsync(bool zeroByteRead, bool hasPendingOutput, CancellationToken cancellationToken)
-        {
-            if (hasPendingOutput)
-            {
-                // There is output to hand back now. If the next frame's header is already buffered, ready the
-                // decoder for it now (no read needed) so the next read decodes it directly; if this was instead
-                // the final frame (trailing non-zstd data) rewind a seekable base stream. With fewer than
-                // ZstdFrameMagicLength bytes buffered we can't tell yet, so defer the decision to the next read
-                // rather than block on the next frame's header before returning data we already have.
-                if (_buffer.ActiveLength >= ZstdFrameMagicLength)
-                {
-                    if (StartsWithZstdFrame(_buffer.ActiveSpan))
-                    {
-                        Debug.Assert(_decoder != null);
-                        _decoder.Reset();
-                    }
-                    else if (_stream.CanSeek)
-                    {
-                        TryRewindStream(_stream);
-                    }
-                }
-
-                return false;
-            }
-
-            if (zeroByteRead)
-            {
-                // Zero-byte read: don't block peeking the next frame; the next read resolves it.
-                return false;
-            }
-
-            if (_buffer.ActiveLength < ZstdFrameMagicLength)
-            {
-                // Not enough buffered to tell a split next-frame magic from end-of-stream; read more.
-                int needed = ZstdFrameMagicLength - _buffer.ActiveLength;
-                _buffer.EnsureAvailableSpace(needed);
-                int peeked = await _stream.ReadAtLeastAsync(_buffer.AvailableMemory, needed, throwOnEndOfStream: false, cancellationToken: cancellationToken).ConfigureAwait(false);
+                int peeked = async
+                    ? await _stream.ReadAtLeastAsync(_buffer.AvailableMemory, needed, throwOnEndOfStream: false, cancellationToken: cancellationToken).ConfigureAwait(false)
+                    : _stream.ReadAtLeast(_buffer.AvailableSpan, needed, throwOnEndOfStream: false);
                 if (peeked > 0)
                 {
                     _nonEmptyInput = true;
@@ -431,7 +369,7 @@ namespace System.IO.Compression
 
                     // A frame finished. A zstd stream may be frames concatenated back-to-back (RFC 8878
                     // section 3), so decide whether another frame follows before reporting end-of-stream.
-                    if (!await AdvanceToNextFrameAsync(buffer.IsEmpty, hasPendingOutput: bytesWritten != 0, cancellationToken: cancellationToken).ConfigureAwait(false))
+                    if (!await AdvanceToNextFrame(buffer.IsEmpty, hasPendingOutput: bytesWritten != 0, async: true, cancellationToken: cancellationToken).ConfigureAwait(false))
                     {
                         return bytesWritten;
                     }
