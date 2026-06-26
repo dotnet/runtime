@@ -238,25 +238,49 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void Rounding()
+        [Theory]
+        [MemberData(nameof(Rounding_TestData))]
+        public static void Rounding(string s1, string s2)
         {
-            var number = Decimal32.Parse("12345678");
-            Assert.Equal(Decimal32.Parse("12345680"), number);
-
-            number = Decimal32.Parse("12345671");
-            Assert.Equal(Decimal32.Parse("12345670"), number);
-
-            number = Decimal32.Parse("12345685");
-            Assert.Equal(Decimal32.Parse("12345680"), number);
+            Assert.Equal(Decimal32.Parse(s1), Decimal32.Parse(s2));
         }
 
-        [Fact]
-        public static void MaxValue_Rounding()
+        public static IEnumerable<object[]> Rounding_TestData()
         {
-            Assert.Equal(Decimal32.MaxValue, Decimal32.Parse(new string('9', 7) + '4' + new string('9', 89)));
-            Assert.Equal(Decimal32.PositiveInfinity, Decimal32.Parse(new string('9', 7) + '5' + new string('0', 89)));
-            Assert.Equal(Decimal32.PositiveInfinity, Decimal32.Parse(new string('9', 7) + '5' + new string('0', 88) + '1'));
+            yield return new object[] { "12345678", "12345680" };
+            yield return new object[] { "12345671", "12345670" };
+            yield return new object[] { "12345675", "12345680" };
+            yield return new object[] { "12345685", "12345680" };
+            yield return new object[] { "123456850001", "123456900000" };
+            yield return new object[] { "99999991", "99999990" };
+            yield return new object[] { "99999995", "100000000" };
+            yield return new object[] { "99999996", "100000000" };
+            yield return new object[] { "9999999001", "9999999000" };
+        }
+
+        [Theory]
+        [MemberData(nameof(MaxValue_Rounding_TestData))]
+        public static void MaxValue_Rounding(string value, Decimal32 expected)
+        {
+            Assert.Equal(expected, Decimal32.Parse(value));
+        }
+
+        public static IEnumerable<object[]> MaxValue_Rounding_TestData()
+        {
+            yield return new object[] { new string('9', 7) + '1' + new string('9', 89), Decimal32.MaxValue };
+            yield return new object[] { new string('9', 7) + '4' + new string('9', 89), Decimal32.MaxValue };
+
+            yield return new object[] { new string('9', 7) + '5' + new string('0', 89), Decimal32.PositiveInfinity };
+            yield return new object[] { new string('9', 7) + '5' + new string('0', 88) + '1', Decimal32.PositiveInfinity };
+            yield return new object[] { "1e97", Decimal32.PositiveInfinity };
+            yield return new object[] { "10e96", Decimal32.PositiveInfinity };
+            yield return new object[] { "100.3e95", Decimal32.PositiveInfinity };
+            
+            yield return new object[] { '-' + new string('9', 7) + '5' + new string('0', 89), Decimal32.NegativeInfinity };
+            yield return new object[] { '-' + new string('9', 7) + '5' + new string('0', 88) + '1', Decimal32.NegativeInfinity };
+            yield return new object[] { "-1e97", Decimal32.NegativeInfinity };
+            yield return new object[] { "-10e96", Decimal32.NegativeInfinity };
+            yield return new object[] { "-100.3e95", Decimal32.NegativeInfinity };
         }
 
         [Theory]
@@ -305,6 +329,8 @@ namespace System.Tests
             yield return new object[] { Decimal32.Parse("5.00001e-102"), Decimal32.Epsilon, 0 };
             yield return new object[] { Decimal32.Parse("5." + new string('0', 300) + "1e-102"), Decimal32.Epsilon, 0 };
             yield return new object[] { Decimal32.Parse("6e-102"), Decimal32.Parse("1e-101"), 0 };
+            yield return new object[] { Decimal32.Parse("1000000001e-110"), Decimal32.Epsilon, 0 };
+            yield return new object[] { Decimal32.Parse("-1000000001e-110"), Decimal32.Parse("-1e-101"), 0 };
             for (int i = 1; i < 7; i++)
             {
                 var d1 = Decimal32.Parse("1e" + i);
@@ -323,14 +349,15 @@ namespace System.Tests
         [Fact]
         public static void CompareToZero()
         {
-            var n = Decimal32.Parse("0.00100000000000000000000322");
-            var i = Decimal32.Parse("0.0010020000000000000000");
             var zero = Decimal32.Parse("0e1");
             Assert.Equal(zero, Decimal32.Parse("0e20"));
             Assert.Equal(zero, Decimal32.Parse("1e-102"));
             Assert.Equal(zero, Decimal32.Parse("234e-1000"));
             Assert.Equal(zero, Decimal32.Parse("-1e-102"));
             Assert.Equal(zero, Decimal32.Parse("-234e-1000"));
+            Assert.Equal(zero, Decimal32.Zero);
+            Assert.Equal(zero, Decimal32.NegativeZero);
+            Assert.Equal(Decimal32.Zero, Decimal32.NegativeZero);
         }
 
         public static IEnumerable<object[]> GetHashCode_TestData()
@@ -349,6 +376,10 @@ namespace System.Tests
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
+                yield return new object[] { Decimal32.Parse("-0"), "G", defaultFormat, "-0" };
+                yield return new object[] { Decimal32.Parse("-0.0000"), "G", defaultFormat, "-0.0000" };
+                yield return new object[] { Decimal32.Parse("0"), "G", defaultFormat, "0" };
+                yield return new object[] { Decimal32.Parse("0.0000"), "G", defaultFormat, "0.0000" };
                 yield return new object[] { Decimal32.Parse($"{int.MinValue}"), "G", defaultFormat, "-2147484000" };
                 yield return new object[] { Decimal32.Parse($"{int.MaxValue}"), "G", defaultFormat, "2147484000" };
                 yield return new object[] { Decimal32.Parse("3" + new string('0', 96)), "G", defaultFormat, "3" + new string('0', 96) };
@@ -362,6 +393,8 @@ namespace System.Tests
                 yield return new object[] { Decimal32.Parse("2468"), "N", defaultFormat, "2,468.00" };
 
                 yield return new object[] { Decimal32.Parse("2467"), "[#-##-#]", defaultFormat, "[2-46-7]" };
+                yield return new object[] { Decimal32.Parse("-4e-102"), "G", defaultFormat, "-0." + new string('0', 101) };
+                yield return new object[] { Decimal32.Parse("-5e-102"), "G", defaultFormat, "-0." + new string('0', 101) };
 
             }
         }

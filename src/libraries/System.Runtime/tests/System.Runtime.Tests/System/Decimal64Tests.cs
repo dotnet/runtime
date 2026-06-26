@@ -240,25 +240,53 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void Rounding()
+        [Theory]
+        [MemberData(nameof(Rounding_TestData))]
+        public static void Rounding(string s1, string s2)
         {
-            var number = Decimal64.Parse("12345678912345678");
-            Assert.Equal(Decimal64.Parse("12345678912345680"), number);
-
-            number = Decimal64.Parse("12345678912345671");
-            Assert.Equal(Decimal64.Parse("12345678912345670"), number);
-
-            number = Decimal64.Parse("12345678912345685");
-            Assert.Equal(Decimal64.Parse("12345678912345680"), number);
+            Assert.Equal(Decimal64.Parse(s1), Decimal64.Parse(s2));
         }
 
-        [Fact]
-        public static void MaxValue_Rounding()
+        public static IEnumerable<object[]> Rounding_TestData()
         {
-            Assert.Equal(Decimal64.MaxValue, Decimal64.Parse(new string('9', 16) + '4' + new string('0', 368)));
-            Assert.Equal(Decimal64.PositiveInfinity, Decimal64.Parse(new string('9', 16) + '5' + new string('0', 368)));
-            Assert.Equal(Decimal64.PositiveInfinity, Decimal64.Parse(new string('9', 16) + '5' + new string('0', 367) + '1'));
+            yield return new object[] { "12345678912345678", "12345678912345680" };
+            yield return new object[] { "12345678912345671", "12345678912345670" };
+            yield return new object[] { "12345678912345675", "12345678912345680" };
+            yield return new object[] { "12345678912345685", "12345678912345680" };
+            yield return new object[] { "123456789123456850001", "123456789123456900000" };
+            yield return new object[] { "99999999999999991", "99999999999999990" };
+            yield return new object[] { "99999999999999995", "100000000000000000" };
+            yield return new object[] { "99999999999999996", "100000000000000000" };
+            yield return new object[] { "9999999999999999001", "9999999999999999000" };
+        }
+
+        [Theory]
+        [MemberData(nameof(MaxValue_Rounding_TestData))]
+        public static void MaxValue_Rounding(string value, Decimal64 expected)
+        {
+            Assert.Equal(expected, Decimal64.Parse(value));
+        }
+
+        public static IEnumerable<object[]> MaxValue_Rounding_TestData()
+        {
+            yield return new object[] { new string('9', 16) + '4' + new string('0', 368), Decimal64.MaxValue };
+            yield return new object[] { new string('9', 16) + '5' + new string('0', 368), Decimal64.PositiveInfinity };
+            yield return new object[] { new string('9', 16) + '5' + new string('0', 367) + '1', Decimal64.PositiveInfinity };
+
+            yield return new object[] { new string('9', 16) + '1' + new string('9', 368), Decimal64.MaxValue };
+            yield return new object[] { new string('9', 16) + '4' + new string('9', 368), Decimal64.MaxValue };
+
+            yield return new object[] { new string('9', 16) + '5' + new string('0', 368), Decimal64.PositiveInfinity };
+            yield return new object[] { new string('9', 16) + '5' + new string('0', 367) + '1', Decimal64.PositiveInfinity };
+            yield return new object[] { "1e397", Decimal64.PositiveInfinity };
+            yield return new object[] { "10e395", Decimal64.PositiveInfinity };
+            yield return new object[] { "100.3e394", Decimal64.PositiveInfinity };
+
+            yield return new object[] { '-' + new string('9', 16) + '5' + new string('0', 368), Decimal64.NegativeInfinity };
+            yield return new object[] { '-' + new string('9', 16) + '5' + new string('0', 367) + '1', Decimal64.NegativeInfinity };
+            yield return new object[] { "-1e397", Decimal64.NegativeInfinity };
+            yield return new object[] { "-10e395", Decimal64.NegativeInfinity };
+            yield return new object[] { "-100.3e394", Decimal64.NegativeInfinity };
         }
 
         [Theory]
@@ -307,6 +335,8 @@ namespace System.Tests
             yield return new object[] { Decimal64.Parse("5.00001e-399"), Decimal64.Epsilon, 0 };
             yield return new object[] { Decimal64.Parse("5." + new string('0', 300) + "1e-399"), Decimal64.Epsilon, 0 };
             yield return new object[] { Decimal64.Parse("6e-399"), Decimal64.Parse("1e-398"), 0 };
+            yield return new object[] { Decimal64.Parse("1" + new string('0', 21) + "1e-420"), Decimal64.Epsilon, 0 };
+            yield return new object[] { Decimal64.Parse("-1" + new string('0', 21) + "1e-420"), Decimal64.Parse("-1e-398"), 0 };
             for (int i = 1; i < 16; i++)
             {
                 var d1 = Decimal64.Parse("1e" + i);
@@ -343,12 +373,19 @@ namespace System.Tests
             Assert.Equal(zero, Decimal64.Parse("234e-1000"));
             Assert.Equal(zero, Decimal64.Parse("-1e-399"));
             Assert.Equal(zero, Decimal64.Parse("-234e-1000"));
+            Assert.Equal(zero, Decimal64.Zero);
+            Assert.Equal(zero, Decimal64.NegativeZero);
+            Assert.Equal(Decimal64.Zero, Decimal64.NegativeZero);
         }
 
         public static IEnumerable<object[]> ToString_TestData()
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
+                yield return new object[] { Decimal64.Parse("-0"), "G", defaultFormat, "-0" };
+                yield return new object[] { Decimal64.Parse("-0.0000"), "G", defaultFormat, "-0.0000" };
+                yield return new object[] { Decimal64.Parse("0"), "G", defaultFormat, "0" };
+                yield return new object[] { Decimal64.Parse("0.0000"), "G", defaultFormat, "0.0000" };
                 yield return new object[] { Decimal64.Parse($"{long.MinValue}"), "G", defaultFormat, "-9223372036854776000" };
                 yield return new object[] { Decimal64.Parse($"{long.MaxValue}"), "G", defaultFormat, "9223372036854776000" };
                 yield return new object[] { Decimal64.Parse("3e384"), "G", defaultFormat, "3" + new string('0', 384) };
@@ -362,6 +399,8 @@ namespace System.Tests
                 yield return new object[] { Decimal64.Parse("2468e0"), "N", defaultFormat, "2,468.00" };
 
                 yield return new object[] { Decimal64.Parse("2467e0"), "[#-##-#]", defaultFormat, "[2-46-7]" };
+                yield return new object[] { Decimal64.Parse("-4e-399"), "G", defaultFormat, "-0." + new string('0', 398) };
+                yield return new object[] { Decimal64.Parse("-5e-399"), "G", defaultFormat, "-0." + new string('0', 398) };
 
             }
         }
