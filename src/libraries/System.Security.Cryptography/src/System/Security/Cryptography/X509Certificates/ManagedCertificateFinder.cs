@@ -110,32 +110,19 @@ namespace System.Security.Cryptography.X509Certificates
                 });
         }
 
-        private static DateTimeOffset NormalizeDateTime(DateTime dateTime)
+        public void FindByTimeValid(DateTimeOffset instant)
         {
-            // DateTime.Kind.Unspecified is assumed to be Local, matching the implicit
-            // DateTime -> DateTimeOffset conversion.
-            return dateTime;
+            FindCore(instant, static (instant, cert) => cert.GetNotBeforeUtc() <= instant && instant <= cert.GetNotAfterUtc());
         }
 
-        public void FindByTimeValid(DateTime dateTime)
+        public void FindByTimeNotYetValid(DateTimeOffset instant)
         {
-            DateTimeOffset normalized = NormalizeDateTime(dateTime);
-
-            FindCore(normalized, static (normalized, cert) => cert.GetNotBeforeUtc() <= normalized && normalized <= cert.GetNotAfterUtc());
+            FindCore(instant, static (instant, cert) => cert.GetNotBeforeUtc() > instant);
         }
 
-        public void FindByTimeNotYetValid(DateTime dateTime)
+        public void FindByTimeExpired(DateTimeOffset instant)
         {
-            DateTimeOffset normalized = NormalizeDateTime(dateTime);
-
-            FindCore(normalized, static (normalized, cert) => cert.GetNotBeforeUtc() > normalized);
-        }
-
-        public void FindByTimeExpired(DateTime dateTime)
-        {
-            DateTimeOffset normalized = NormalizeDateTime(dateTime);
-
-            FindCore(normalized, static (normalized, cert) => cert.GetNotAfterUtc() < normalized);
+            FindCore(instant, static (instant, cert) => cert.GetNotAfterUtc() < instant);
         }
 
         public void FindByTemplateName(string templateName)
