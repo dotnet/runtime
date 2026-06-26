@@ -13,12 +13,12 @@ internal static partial class Interop
         internal unsafe struct DNS_QUERY_REQUEST
         {
             public uint Version;
-            public IntPtr QueryName;    // PCWSTR
+            public char* QueryName;    // PCWSTR
             public ushort QueryType;
             public ulong QueryOptions;
             public DNS_ADDR_ARRAY* pDnsServerList;
             public uint InterfaceIndex;
-            public IntPtr pQueryCompletionCallback; // PDNS_QUERY_COMPLETION_ROUTINE
+            public delegate* unmanaged[Stdcall]<nint, nint, void> pQueryCompletionCallback; // PDNS_QUERY_COMPLETION_ROUTINE
             public IntPtr pQueryContext;
         }
 
@@ -27,12 +27,12 @@ internal static partial class Interop
         internal unsafe struct DNS_QUERY_REQUEST3
         {
             public uint Version;
-            public IntPtr QueryName;
+            public char* QueryName;
             public ushort QueryType;
             public ulong QueryOptions;
             public DNS_ADDR_ARRAY* pDnsServerList;
             public uint InterfaceIndex;
-            public IntPtr pQueryCompletionCallback;
+            public delegate* unmanaged[Stdcall]<nint, nint, void> pQueryCompletionCallback;
             public IntPtr pQueryContext;
             public int IsNetworkQueryRequired;   // BOOL
             public uint RequiredNetworkIndex;
@@ -94,7 +94,7 @@ internal static partial class Interop
         {
             public uint dwServerType;       // DNS_CUSTOM_SERVER_TYPE_*
             public ulong ullFlags;
-            public IntPtr pwszTemplate;     // PCWSTR (DoH only)
+            public char* pwszTemplate;      // PCWSTR (DoH only)
             public fixed byte ServerAddr[32]; // SOCKADDR
         }
 
@@ -105,10 +105,10 @@ internal static partial class Interop
         // the pointer width - 24 bytes on 32-bit and 32 bytes on 64-bit. Callers must use
         // Unsafe.SizeOf<DNS_RECORD_HEADER>() rather than a hard-coded offset.
         [StructLayout(LayoutKind.Sequential)]
-        internal struct DNS_RECORD_HEADER
+        internal unsafe struct DNS_RECORD_HEADER
         {
             public IntPtr pNext;        // DNS_RECORD*
-            public IntPtr pName;        // PCWSTR
+            public char* pName;         // PCWSTR
             public ushort wType;
             public ushort wDataLength;  // not always reliable; use type to interpret
             public uint Flags;          // contains Section in the low bits
@@ -145,37 +145,37 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct DNS_PTR_DATA
+        internal unsafe struct DNS_PTR_DATA
         {
-            public IntPtr pNameHost; // PCWSTR
+            public char* pNameHost; // PCWSTR
         }
 
         // Same shape as DNS_PTR_DATA — Windows uses DNS_PTR_DATA for NS/CNAME too,
         // but typed aliases keep call sites self-documenting.
 #pragma warning disable CS0649 // fields populated via native marshalling
-        internal struct DNS_CNAME_DATA
+        internal unsafe struct DNS_CNAME_DATA
         {
-            public IntPtr pNameHost;
+            public char* pNameHost;
         }
 
-        internal struct DNS_NS_DATA
+        internal unsafe struct DNS_NS_DATA
         {
-            public IntPtr pNameHost;
+            public char* pNameHost;
         }
 #pragma warning restore CS0649
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct DNS_MX_DATA
+        internal unsafe struct DNS_MX_DATA
         {
-            public IntPtr pNameExchange; // PCWSTR
+            public char* pNameExchange; // PCWSTR
             public ushort wPreference;
             public ushort Pad;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct DNS_SRV_DATA
+        internal unsafe struct DNS_SRV_DATA
         {
-            public IntPtr pNameTarget; // PCWSTR
+            public char* pNameTarget; // PCWSTR
             public ushort wPriority;
             public ushort wWeight;
             public ushort wPort;
@@ -190,10 +190,10 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct DNS_SOA_DATA
+        internal unsafe struct DNS_SOA_DATA
         {
-            public IntPtr pNamePrimaryServer;   // PCWSTR
-            public IntPtr pNameAdministrator;   // PCWSTR
+            public char* pNamePrimaryServer;    // PCWSTR
+            public char* pNameAdministrator;    // PCWSTR
             public uint dwSerialNo;
             public uint dwRefresh;
             public uint dwRetry;

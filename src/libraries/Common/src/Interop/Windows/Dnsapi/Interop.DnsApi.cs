@@ -53,8 +53,6 @@ internal static partial class Interop
         internal const int DnsFreeRecordList = 1;
         internal const int DnsFreeParsedMessageFields = 2;
 
-        internal delegate void DnsQueryCompletionRoutine(IntPtr pQueryContext, IntPtr pQueryResults);
-
         [LibraryImport(Libraries.Dnsapi, EntryPoint = "DnsQueryEx")]
         internal static unsafe partial int DnsQueryEx(
             DNS_QUERY_REQUEST* pQueryRequest,

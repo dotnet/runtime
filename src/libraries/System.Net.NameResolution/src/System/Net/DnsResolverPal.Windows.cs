@@ -76,26 +76,38 @@ namespace System.Net
 
         private static readonly Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, MxRecord> s_parseMx = static (hdr, dataPtr) =>
         {
-            Interop.Dnsapi.DNS_MX_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_MX_DATA>(dataPtr);
-            return new MxRecord(PtrToString(data.pNameExchange) ?? string.Empty, data.wPreference, TimeSpan.FromSeconds(hdr.dwTtl));
+            unsafe
+            {
+                Interop.Dnsapi.DNS_MX_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_MX_DATA>(dataPtr);
+                return new MxRecord(PtrToString(data.pNameExchange) ?? string.Empty, data.wPreference, TimeSpan.FromSeconds(hdr.dwTtl));
+            }
         };
 
         private static readonly Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, CNameRecord> s_parseCName = static (hdr, dataPtr) =>
         {
-            Interop.Dnsapi.DNS_CNAME_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_CNAME_DATA>(dataPtr);
-            return new CNameRecord(PtrToString(data.pNameHost) ?? string.Empty, TimeSpan.FromSeconds(hdr.dwTtl));
+            unsafe
+            {
+                Interop.Dnsapi.DNS_CNAME_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_CNAME_DATA>(dataPtr);
+                return new CNameRecord(PtrToString(data.pNameHost) ?? string.Empty, TimeSpan.FromSeconds(hdr.dwTtl));
+            }
         };
 
         private static readonly Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, PtrRecord> s_parsePtr = static (hdr, dataPtr) =>
         {
-            Interop.Dnsapi.DNS_PTR_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_PTR_DATA>(dataPtr);
-            return new PtrRecord(PtrToString(data.pNameHost) ?? string.Empty, TimeSpan.FromSeconds(hdr.dwTtl));
+            unsafe
+            {
+                Interop.Dnsapi.DNS_PTR_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_PTR_DATA>(dataPtr);
+                return new PtrRecord(PtrToString(data.pNameHost) ?? string.Empty, TimeSpan.FromSeconds(hdr.dwTtl));
+            }
         };
 
         private static readonly Func<Interop.Dnsapi.DNS_RECORD_HEADER, IntPtr, NsRecord> s_parseNs = static (hdr, dataPtr) =>
         {
-            Interop.Dnsapi.DNS_NS_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_NS_DATA>(dataPtr);
-            return new NsRecord(PtrToString(data.pNameHost) ?? string.Empty, TimeSpan.FromSeconds(hdr.dwTtl));
+            unsafe
+            {
+                Interop.Dnsapi.DNS_NS_DATA data = Marshal.PtrToStructure<Interop.Dnsapi.DNS_NS_DATA>(dataPtr);
+                return new NsRecord(PtrToString(data.pNameHost) ?? string.Empty, TimeSpan.FromSeconds(hdr.dwTtl));
+            }
         };
 
         private static ushort AddressFamilyToQueryType(AddressFamily addressFamily) =>
@@ -149,7 +161,7 @@ namespace System.Net
             return new DnsResult<AddressRecord>(DnsResponseCode.NoError, records, raw.NegativeCacheTtl);
         }
 
-        private static DnsResult<SrvRecord> ParseSrv(DnsQueryRawResult raw)
+        private static unsafe DnsResult<SrvRecord> ParseSrv(DnsQueryRawResult raw)
         {
             if (raw.ResponseCode != DnsResponseCode.NoError)
             {
@@ -299,7 +311,7 @@ namespace System.Net
             return false;
         }
 
-        private static void ParseAdditionalAddresses(IntPtr head, ref Dictionary<string, List<AddressRecord>>? glue)
+        private static unsafe void ParseAdditionalAddresses(IntPtr head, ref Dictionary<string, List<AddressRecord>>? glue)
         {
             for (IntPtr cur = head; cur != IntPtr.Zero; )
             {
@@ -344,6 +356,9 @@ namespace System.Net
         private static string? PtrToString(IntPtr p) =>
             p == IntPtr.Zero ? null : Marshal.PtrToStringUni(p);
 
+        private static unsafe string? PtrToString(char* p) =>
+            p == null ? null : new string(p);
+
         // Reinterprets native memory (records and result structures returned by
         // DnsQueryEx) as a managed read-only reference. The structures are blittable
         // and remain valid until the record list / result is freed, so this avoids the
@@ -353,11 +368,6 @@ namespace System.Net
             ref Unsafe.AsRef<T>((void*)ptr);
 
         // ---- Asynchronous DnsQueryEx state machine ----
-
-        // Cached callback so we don't allocate a new delegate per query.
-        private static readonly Interop.Dnsapi.DnsQueryCompletionRoutine s_completionCallback = QueryCompletionCallback;
-        private static readonly IntPtr s_completionCallbackPtr =
-            Marshal.GetFunctionPointerForDelegate(s_completionCallback);
 
         /// <summary>
         /// Holds the unmanaged state for a single DnsQueryEx invocation, including
@@ -411,11 +421,11 @@ namespace System.Net
                     NativeMemory.Clear((void*)_requestPtr, (nuint)sizeof(Interop.Dnsapi.DNS_QUERY_REQUEST));
                     Interop.Dnsapi.DNS_QUERY_REQUEST* req = (Interop.Dnsapi.DNS_QUERY_REQUEST*)_requestPtr;
                     req->Version = Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION1;
-                    req->QueryName = _namePtr;
+                    req->QueryName = (char*)_namePtr;
                     req->QueryType = _queryType;
                     req->QueryOptions = Interop.Dnsapi.DNS_QUERY_STANDARD;
                     req->InterfaceIndex = 0;
-                    req->pQueryCompletionCallback = s_completionCallbackPtr;
+                    req->pQueryCompletionCallback = &QueryCompletionCallback;
                     req->pQueryContext = GCHandle<DnsQueryAsyncState>.ToIntPtr(_selfHandle);
 
                     if (_servers is { Count: > 0 })
@@ -546,10 +556,13 @@ namespace System.Net
             }
         }
 
-        // Native callback. Marshaled to a function pointer once at startup.
-        // We use a managed delegate (no UnmanagedCallersOnly) because callers
-        // currently pass it via Marshal.GetFunctionPointerForDelegate.
-        private static void QueryCompletionCallback(IntPtr pQueryContext, IntPtr pQueryResults)
+        // Native completion callback, invoked by DnsQueryEx on a thread pool thread.
+        // Marked [UnmanagedCallersOnly] so it can be passed directly as a function
+        // pointer without an intermediate marshalled delegate.
+#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+#pragma warning restore CS3016
+        private static void QueryCompletionCallback(nint pQueryContext, nint pQueryResults)
         {
             try
             {
@@ -606,7 +619,7 @@ namespace System.Net
 
                 Interop.Dnsapi.DNS_QUERY_REQUEST request = default;
                 request.Version = Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION1;
-                request.QueryName = namePtr;
+                request.QueryName = (char*)namePtr;
                 request.QueryType = queryType;
                 request.QueryOptions = Interop.Dnsapi.DNS_QUERY_STANDARD;
                 // No completion callback => synchronous execution.
