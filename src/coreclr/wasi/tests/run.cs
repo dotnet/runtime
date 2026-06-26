@@ -23,7 +23,8 @@
 //   CONFIG        - Release (default) | Debug | Checked
 //   CORE_ROOT     - explicit path to a CORE_ROOT layout (default: derived)
 //   TESTROOT      - explicit path to a test-bin root (default: derived)
-//   WASMTIME      - directory containing wasmtime (default: probe $PATH then ~/.wasmtime/bin)
+//   WASMTIME      - path to wasmtime binary, or directory containing it
+//                   (default: probe $PATH then ~/.wasmtime/bin)
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -220,9 +221,18 @@ static string FindRepoRoot()
 
 static string ProbeWasmtime()
 {
-    foreach (string candidate in new[]
+    // Resolve $WASMTIME whether it's a directory or a full binary path.
+    string? envWasmtime = Environment.GetEnvironmentVariable("WASMTIME");
+    string? envBinary = envWasmtime switch
     {
-        Environment.GetEnvironmentVariable("WASMTIME"),
+        null or "" => null,
+        string s when Directory.Exists(s) => Path.Combine(s, "wasmtime"),
+        string s => s,
+    };
+
+    foreach (string? candidate in new[]
+    {
+        envBinary,
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".wasmtime", "bin", "wasmtime"),
     })
     {

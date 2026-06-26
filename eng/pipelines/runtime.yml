@@ -164,6 +164,8 @@ extends:
           platforms:
           - wasi_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
+
+      - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked

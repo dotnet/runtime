@@ -113,7 +113,7 @@ static inline char* minipal_getexepath(void)
         return strdup("/");
     }
     size_t coreRootLen = strlen(coreRoot);
-    const char* suffix = "/corerun.wasm";
+    const char* suffix = "/corerun";
     size_t suffixLen = strlen(suffix);
     char* result = (char*)malloc(coreRootLen + suffixLen + 1);
     if (result == NULL)

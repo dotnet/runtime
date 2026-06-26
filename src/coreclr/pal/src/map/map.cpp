@@ -467,8 +467,11 @@ CorUnix::InternalCreateFileMapping(
             //
 
 #ifdef TARGET_WASI
-            // WASI has no dup(); re-open by path so the mapping owns its own fd.
-            UnixFd = open(pFileLocalData->unix_filename, O_RDONLY);
+            // WASI has no dup(); re-open by path with the same access mode
+            // so writable mappings still work. O_CLOEXEC isn't meaningful
+            // on WASI (no exec).
+            UnixFd = open(pFileLocalData->unix_filename,
+                          pFileLocalData->open_flags & O_ACCMODE);
 #else
             UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
 #endif
