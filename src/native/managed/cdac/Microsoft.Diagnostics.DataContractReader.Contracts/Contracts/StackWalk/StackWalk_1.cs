@@ -814,7 +814,7 @@ internal partial class StackWalk_1 : IStackWalk
                 // Reset interrupted state after processing a managed frame.
                 // Native stackwalk.cpp: isInterrupted = false; hasFaulted = false;
                 handle.IsInterrupted = false;
-                TargetCodePointer preUnwindIp = new(handle.Context.InstructionPointer.Value);
+                TargetCodePointer preUnwindIp = CodePointerUtils.CodePointerFromAddress(handle.Context.InstructionPointer.AsTargetPointer, _target);
                 if (_target.Contracts.ExecutionManager.GetCodeBlockHandle(preUnwindIp) is CodeBlockHandle cbh)
                 {
                     handle.LastFramelessStackParameterSize = _target.Contracts.ExecutionManager.GetStackParameterSize(cbh);
@@ -848,7 +848,7 @@ internal partial class StackWalk_1 : IStackWalk
             case StackWalkState.InitialNativeContext:
             case StackWalkState.NativeMarker:
             {
-                TargetCodePointer ip = handle.Context.InstructionPointer;
+                TargetCodePointer ip = CodePointerUtils.CodePointerFromAddress(handle.Context.InstructionPointer.AsTargetPointer, _target);
                 HijackKind hijackKind = _target.Contracts.Debugger.GetHijackKind(ip);
                 if (hijackKind != HijackKind.None)
                 {
