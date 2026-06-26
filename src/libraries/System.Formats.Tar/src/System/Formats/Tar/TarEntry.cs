@@ -416,6 +416,8 @@ namespace System.Formats.Tar
         }
 
         // Check if the file destination path or the link target path escapes the destination directory, by walking through the relative path components and resolving symlinks at each step.
+        // This validation is intended only to prevent archive entries from escaping the extraction root through symbolic links or junctions that are introduced by the archive itself.
+        // If a symbolic link or junction already exists on disk as part of the destination path, extraction follows that link and writes to its resolved target location.
         private static bool FilePathEscapesDirectory(string destinationDirectoryPath, string fileDestinationPath)
         {
             // Windows is case insensitive while Linux is case sensitive
