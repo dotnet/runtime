@@ -2257,7 +2257,6 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
     InterpByteCodeStart* targetIp = pMD->GetInterpreterCode();
     if (targetIp == NULL)
     {
-        GCX_PREEMP();
         (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Preemptive);
         targetIp = pMD->GetInterpreterCode();
     }
