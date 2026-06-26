@@ -3042,28 +3042,24 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
         gtUpdateStmtSideEffects(totalSizeStmt);
         fgInsertStmtBefore(block, stmt, totalSizeStmt);
 
-        // Check the length against a JIT-time-precomputed safe upper bound,
-        // using an unsigned compare so that negative lengths (which signed
-        // would treat as "small") are routed to the heap-fallback helper. The
-        // helper validates length and raises OverflowException for negatives
-        // or when (length * elemSize) overflows.
+        // Check the length against a JIT-time-precomputed safe upper bound using
+        // an unsigned compare so that negative lengths are routed to the
+        // heap-fallback helper. The helper validates length and raises the
+        // appropriate exception. This is not the stack/heap policy; it only
+        // ensures the size expression passed to the policy helper did not wrap.
         //
-        // maxSafeLength is the largest length for which:
-        //   base + payload (+ optional align8 pad) <= stackLimit
-        // and for which no intermediate I_IMPL multiply/add can wrap.
-        //
-        size_t const stackLimit = (size_t)(unsigned)JitConfig.JitObjectStackAllocationSize();
-        size_t const baseBytes  = (size_t)OFFSETOF__CORINFO_Array__data;
+        size_t const baseBytes = (size_t)OFFSETOF__CORINFO_Array__data;
 #ifndef TARGET_64BIT
         size_t const align8Pad = isAlign8 ? 4 : 0;
 #else
         size_t const align8Pad = 0;
 #endif
-        size_t maxSafeLength = 0;
-        if (stackLimit > baseBytes + align8Pad)
+        size_t maxSafeLength = CORINFO_Array_MaxLength;
+#ifndef TARGET_64BIT
+        if (SIZE_MAX > baseBytes + align8Pad)
         {
             assert(elemSizeValue > 0);
-            maxSafeLength = (stackLimit - baseBytes - align8Pad) / elemSizeValue;
+            maxSafeLength = min(maxSafeLength, (SIZE_MAX - baseBytes - align8Pad) / elemSizeValue);
             // The pointer-size round-up below can add up to (TPS - 1) bytes;
             // trim one element to absorb that slack.
             if (((elemSizeValue % TARGET_POINTER_SIZE) != 0) && (maxSafeLength > 0))
@@ -3071,6 +3067,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
                 maxSafeLength--;
             }
         }
+#endif
 
         GenTree* const  lengthForCheck = gtNewLclVarNode(lengthTemp);
         var_types const lengthType     = genActualType(lengthForCheck);
@@ -3086,6 +3083,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
         {
             frameRunningTotalLclNum                  = lvaGrabTemp(false DEBUGARG("stack alloc frame running total"));
             lvaTable[frameRunningTotalLclNum].lvType = TYP_I_IMPL;
+            lvaSetVarAddrExposed(frameRunningTotalLclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
 
             GenTree* const   zeroInit     = gtNewStoreLclVarNode(frameRunningTotalLclNum, gtNewIconNode(0, TYP_I_IMPL));
             Statement* const zeroInitStmt = fgNewStmtFromTree(zeroInit);
@@ -3095,23 +3093,21 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
                     fgFirstBB->bbNum);
         }
 
-        // Build the second check: running + totalSize > frameLimit (unsigned).
-        // Note: when the length check fails the totalSize value computed in
-        // the temp is irrelevant; OR'ing the two compares preserves correct
-        // dispatch (the length check forces heap regardless of the second).
+        // Ask the managed helper to decide if this request should use the stack.
+        // The helper accounts for request size, current stack usage, and the
+        // per-frame running total.
         //
-        size_t const   frameLimit      = (size_t)(unsigned)JitConfig.JitObjectStackAllocationFrameSize();
-        GenTree* const runningForCheck = gtNewLclVarNode(frameRunningTotalLclNum);
-        GenTree* const totalSizeForSum = gtNewLclVarNode(totalSizeTemp);
-        GenTree* const newRunningTotal = gtNewOperNode(GT_ADD, TYP_I_IMPL, runningForCheck, totalSizeForSum);
-        GenTree* const frameLimitNode  = gtNewIconNode((ssize_t)frameLimit, TYP_I_IMPL);
-        GenTree* const frameCompare    = gtNewOperNode(GT_GT, TYP_INT, newRunningTotal, frameLimitNode);
-        frameCompare->gtFlags |= GTF_UNSIGNED;
+        GenTreeCall* stackAllocHelperCall =
+            gtNewHelperCallNode(CORINFO_HELP_CAN_STACK_ALLOCATE, TYP_INT, gtNewLclVarNode(totalSizeTemp),
+                                gtNewLclVarAddrNode(frameRunningTotalLclNum, TYP_I_IMPL));
+        stackAllocHelperCall = fgMorphArgs(stackAllocHelperCall);
 
-        // Combine the two compares. JTRUE requires a relop child, so wrap
-        // the OR with NE 0.
+        GenTree* const helperFailed = gtNewOperNode(GT_EQ, TYP_INT, stackAllocHelperCall, gtNewIconNode(0, TYP_INT));
+
+        // Combine the validity and helper checks. JTRUE requires a relop child,
+        // so wrap the OR with NE 0.
         //
-        GenTree* const combinedOr       = gtNewOperNode(GT_OR, TYP_INT, lengthCompare, frameCompare);
+        GenTree* const combinedOr       = gtNewOperNode(GT_OR, TYP_INT, lengthCompare, helperFailed);
         GenTree* const combinedCond     = gtNewOperNode(GT_NE, TYP_INT, combinedOr, gtNewIconNode(0, TYP_INT));
         GenTree* const runtimeSizeCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, combinedCond);
 
@@ -3189,17 +3185,6 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
 
         gtUpdateStmtSideEffects(locallocStmt);
         fgInsertStmtBefore(locallocBlock, stmt, locallocStmt);
-
-        // Update the per-frame running total. Only the localloc path
-        // consumes frame space, so do it here and not on the heap path.
-        //
-        GenTree* const   runningOld   = gtNewLclVarNode(frameRunningTotalLclNum);
-        GenTree* const   totalSizeAdd = gtNewLclVarNode(totalSizeTemp);
-        GenTree* const   runningSum   = gtNewOperNode(GT_ADD, TYP_I_IMPL, runningOld, totalSizeAdd);
-        GenTree* const   runningStore = gtNewStoreLclVarNode(frameRunningTotalLclNum, runningSum);
-        Statement* const runningStmt  = fgNewStmtFromTree(runningStore);
-        gtUpdateStmtSideEffects(runningStmt);
-        fgInsertStmtBefore(locallocBlock, locallocStmt, runningStmt);
 
         // Array address is the result of the localloc
         //
