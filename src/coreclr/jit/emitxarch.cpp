@@ -5244,7 +5244,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
         sz += emitInsSize(id, insEncodeRMreg(id, code), includeRexPrefixSize);
     }
 
-    if (IsKInstruction(ins))
+    if (IsKInstruction(ins) && !TakesEvexPrefix(id))
     {
         // K instructions add VEX before this helper; avoid counting the prefix once here and once in the adjustment.
         sz -= emitGetVexPrefixSize(id);
