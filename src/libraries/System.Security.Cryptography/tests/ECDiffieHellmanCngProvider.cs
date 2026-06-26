@@ -3,30 +3,34 @@
 
 namespace System.Security.Cryptography.EcDiffieHellman.Tests
 {
-    public class ECDiffieHellmanProvider : IECDiffieHellmanProvider
+    public sealed class ECDiffieHellmanCngProvider : ECDiffieHellmanProvider
     {
-        public ECDiffieHellman Create()
+        public static readonly ECDiffieHellmanCngProvider Instance = new ECDiffieHellmanCngProvider();
+
+        private ECDiffieHellmanCngProvider() { }
+
+        public override ECDiffieHellman Create()
         {
             return new ECDiffieHellmanCng();
         }
 
-        public ECDiffieHellman Create(int keySize)
+        public override ECDiffieHellman Create(int keySize)
         {
             return new ECDiffieHellmanCng(keySize);
         }
 
-        public ECDiffieHellman Create(ECCurve curve)
+        public override ECDiffieHellman Create(ECCurve curve)
         {
             return new ECDiffieHellmanCng(curve);
         }
 
-        public bool IsCurveValid(Oid oid)
+        public override bool IsCurveValid(Oid oid)
         {
             // Friendly name required for windows
             return NativeOidFriendlyNameExists(oid.FriendlyName);
         }
 
-        public bool ExplicitCurvesSupported
+        public override bool ExplicitCurvesSupported
         {
             get
             {
@@ -34,9 +38,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
-        public bool CanDeriveNewPublicKey => true;
-        public bool SupportsRawDerivation => PlatformDetection.IsWindows10OrLater;
-        public bool SupportsSha3 => PlatformDetection.SupportsSha3;
+        public override bool CanDeriveNewPublicKey => true;
+        public override bool SupportsRawDerivation => PlatformDetection.IsWindows10OrLater;
+        public override bool SupportsSha3 => PlatformDetection.SupportsSha3;
 
         private static bool NativeOidFriendlyNameExists(string oidFriendlyName)
         {
@@ -57,8 +61,4 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         }
     }
 
-    public partial class ECDiffieHellmanFactory
-    {
-        private static readonly IECDiffieHellmanProvider s_provider = new ECDiffieHellmanProvider();
-    }
 }
