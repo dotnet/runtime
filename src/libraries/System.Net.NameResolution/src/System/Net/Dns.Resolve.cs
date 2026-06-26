@@ -10,11 +10,10 @@ namespace System.Net
     public static partial class Dns
     {
         // Shared DnsResolver instance used by the static Resolve* methods.
-        // Uses the system-configured DNS servers.
-        private static DnsResolver? s_defaultResolver;
-
-        private static DnsResolver DefaultResolver =>
-            LazyInitializer.EnsureInitialized(ref s_defaultResolver, static () => new DnsResolver());
+        // Uses the system-configured DNS servers. A benign race may construct more
+        // than one instance, but only one is published; DnsResolver holds no
+        // unmanaged state, so the extra instance is simply collected.
+        private static DnsResolver DefaultResolver => field ??= new();
 
         /// <summary>
         /// Resolves the IPv4 (A) and IPv6 (AAAA) addresses for the specified host name using the system-configured DNS servers.
