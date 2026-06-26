@@ -333,6 +333,63 @@ public class StackWalkDumpTests : DumpTestBase
         Assert.Fail("Expected to find a frame with a valid entry point");
     }
 
+    /// <summary>
+    /// Exercises <see cref="ISOSDacInterface.GetCodeHeaderData"/> for the IL stub MethodDesc
+    /// that ships a vararg P/Invoke, passing the live instruction pointer of an executing
+    /// IL stub frame. This is the path SOS <c>!clru</c> uses after <c>!IP2MD</c>: the IP is
+    /// inside the JIT-emitted code body, so <c>GetCodeHeaderData</c> takes the full path
+    /// through <c>IGCInfo.GetCodeLength</c> rather than the precode/stub fallback. Regression
+    /// coverage for the x86 cDAC GetCodeHeaderData failure where the IGCInfo contract had no
+    /// x86 implementation and threw NotImplementedException, breaking <c>!clru</c> on .NET 11.
+    /// </summary>
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    [SkipOnOS(IncludeOnly = "windows", Reason = "VarargPInvoke debuggee uses msvcrt.dll (Windows only)")]
+    public unsafe void VarargPInvoke_GetCodeHeaderDataForILStub_ReturnsMethodSize(TestConfiguration config)
+    {
+        InitializeDumpTest(config, "VarargPInvoke", "full");
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null);
+
+        ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
+        IEnumerable<IStackDataFrameHandle> frames = DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread);
+
+        foreach (IStackDataFrameHandle frame in frames)
+        {
+            if (frame.State != StackWalkState.Frameless)
+                continue;
+
+            TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
+            if (methodDescPtr == TargetPointer.Null)
+                continue;
+
+            MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
+            if (!rts.IsILStub(mdHandle))
+                continue;
+
+            TargetCodePointer ip = stackWalk.GetInstructionPointer(frame);
+            Assert.NotEqual(TargetCodePointer.Null, ip);
+
+            DacpCodeHeaderData codeHeaderData;
+            int hr = sosDac.GetCodeHeaderData(new ClrDataAddress(ip.Value), &codeHeaderData);
+            AssertHResult(HResults.S_OK, hr);
+
+            Assert.Equal(JitTypes.TYPE_JIT, codeHeaderData.JITType);
+            Assert.Equal(methodDescPtr.ToClrDataAddress(Target), codeHeaderData.MethodDescPtr);
+            Assert.True(codeHeaderData.MethodSize > 0,
+                $"Expected non-zero MethodSize for IL stub (was {codeHeaderData.MethodSize}). " +
+                "On x86 this asserts that the GCInfo contract returns a valid X86GCInfo decoder " +
+                "rather than the default IGCInfo whose GetCodeLength throws NotImplementedException.");
+            Assert.NotEqual(default, codeHeaderData.MethodStart);
+
+            return;
+        }
+
+        Assert.Fail("Expected to find an IL stub Frameless frame on the crashing thread stack");
+    }
+
     // ========== GetContext API tests ==========
 
     [ConditionalTheory]
@@ -351,6 +408,6 @@ public class StackWalkDumpTests : DumpTestBase
 
         var ctx = Contracts.StackWalkHelpers.IPlatformAgnosticContext.GetContextForPlatform(Target);
         ctx.FillFromBuffer(context);
-        Assert.NotEqual(TargetPointer.Null, ctx.InstructionPointer);
+        Assert.NotEqual(TargetCodePointer.Null, ctx.InstructionPointer);
     }
 }

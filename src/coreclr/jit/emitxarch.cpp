@@ -6192,7 +6192,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
     if ((memBase != nullptr) && memBase->IsIconHandle() && memBase->isContained())
     {
         id->idDebugOnlyInfo()->idFlags     = memBase->gtFlags;
-        id->idDebugOnlyInfo()->idMemCookie = memBase->AsIntCon()->gtTargetHandle;
+        id->idDebugOnlyInfo()->idMemCookie = memBase->AsIntCon()->GetTargetHandle();
     }
 #endif
 }

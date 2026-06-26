@@ -45,6 +45,7 @@ public enum DataType
     AppDomain,
     Debugger,
     DebuggerRCThread,
+    MemoryRange,
     SystemDomain,
     Assembly,
     LoaderAllocator,
@@ -79,6 +80,7 @@ public enum DataType
     StressMsgHeader,
     Object,
     ContinuationObject,
+    AsyncResumeInfo,
     NativeObjectWrapperObject,
     ManagedObjectWrapperHolderObject,
     ManagedObjectWrapperLayout,
@@ -98,6 +100,7 @@ public enum DataType
     InterpMethodContextFrame,
     Array,
     Delegate,
+    TypedByRef,
     StackTraceArrayHeader,
     StackTraceElement,
     SyncBlock,
@@ -127,6 +130,7 @@ public enum DataType
     NativeCodeVersionNode,
     ProfControlBlock,
     ILCodeVersionNode,
+    InstrumentedILOffsetMapping,
     ReadyToRunInfo,
     ReadyToRunHeader,
     ReadyToRunSection,
@@ -161,6 +165,7 @@ public enum DataType
     HijackArgs,
 
     Frame,
+    GCFrame,
     InlinedCallFrame,
     SoftwareExceptionFrame,
     FramedMethodFrame,
@@ -203,6 +208,10 @@ public enum DataType
 
     EnCEEClassData,
     EnCAddedFieldElement,
+    EnCFieldDesc,
+    EnCAddedField,
+    EnCAddedStaticField,
+    EnCSyncBlockInfo,
     UnorderedArrayBase,
 }
 

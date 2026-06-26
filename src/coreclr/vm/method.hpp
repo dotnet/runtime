@@ -1546,7 +1546,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         // methods with transient IL bodies do not have IL headers
-        return IsIL() && !IsUnboxingStub() && !IsAsyncThunkMethod();
+        return IsIL() && !IsUnboxingStub() && (!IsAsyncThunkMethod() || SupportsAsyncVersionCodegen());
     }
 
     ULONG GetRVA();
@@ -2075,6 +2075,12 @@ public:
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnDroppingThunk);
     }
 
+    inline bool SupportsAsyncVersionCodegen() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return IsAsyncThunkMethod() && IsAsyncVariantMethod() && !IsReturnDroppingThunk();
+    }
+
     inline bool MatchesAsyncVariantLookup(AsyncVariantLookup lookup) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2303,13 +2309,11 @@ private:
     bool TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     void EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
-    void EmitAsyncMethodThunk(MethodDesc* pTaskReturningVariant, MetaSig& msig, ILStubLinker* pSL);
     void EmitReturnDroppingThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
-    SigPointer GetAsyncThunkResultTypeSig();
     int GetTokenForThunkTarget(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
-    int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
 public:
+    SigPointer GetAsyncThunkResultTypeSig();
     static void CreateDerivedTargetSig(MetaSig& msig, SigBuilder* stubSigBuilder);
     bool TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     void GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
@@ -2928,21 +2932,20 @@ public:
         StubStructMarshalInterop = 8,
         StubArrayOp = 9,
         StubMulticastDelegate = 10,
-        StubWrapperDelegate = 11,
-        StubUnboxingIL = 12,
-        StubInstantiating = 13,
-        StubTailCallStoreArgs = 14,
-        StubTailCallCallTarget = 15,
+        StubUnboxingIL = 11,
+        StubInstantiating = 12,
+        StubTailCallStoreArgs = 13,
+        StubTailCallCallTarget = 14,
 
-        StubVirtualStaticMethodDispatch = 16,
-        StubDelegateShuffleThunk = 17,
+        StubVirtualStaticMethodDispatch = 15,
+        StubDelegateShuffleThunk = 16,
 
-        StubDelegateInvokeMethod = 18,
+        StubDelegateInvokeMethod = 17,
 
-        StubAsyncResume = 19,
+        StubAsyncResume = 18,
 
-        StubCLRToCOMEvent = 20,
-        StubLast = 21
+        StubCLRToCOMEvent = 19,
+        StubLast = 20
     };
 
     enum Flag : DWORD
@@ -3126,12 +3129,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubDelegateInvokeMethod;
-    }
-    bool IsWrapperDelegateStub() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(IsILStub());
-        return GetILStubType() == DynamicMethodDesc::StubWrapperDelegate;
     }
     bool IsUnboxingILStub() const
     {
@@ -3802,7 +3799,7 @@ public:
     PTR_DictionaryLayout GetDictLayoutRaw()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pDictLayout;
+        return VolatileLoad(&m_pDictLayout);
     }
 
     PTR_MethodDesc IMD_GetWrappedMethodDesc()
@@ -3821,10 +3818,10 @@ public:
         if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
         {
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
-            return pIMD->m_pDictLayout;
+            return VolatileLoad(&pIMD->m_pDictLayout);
         }
         else if (IMD_IsSharedByGenericMethodInstantiations())
-            return m_pDictLayout;
+            return VolatileLoad(&m_pDictLayout);
         else
             return NULL;
     }
@@ -3835,11 +3832,11 @@ public:
         if (IMD_IsWrapperStubWithInstantiations() && IMD_HasMethodInstantiation())
         {
             InstantiatedMethodDesc* pIMD = IMD_GetWrappedMethodDesc()->AsInstantiatedMethodDesc();
-            pIMD->m_pDictLayout = pNewLayout;
+            VolatileStore(&pIMD->m_pDictLayout, pNewLayout);
         }
         else if (IMD_IsSharedByGenericMethodInstantiations())
         {
-            m_pDictLayout = pNewLayout;
+            VolatileStore(&m_pDictLayout, pNewLayout);
         }
     }
 #endif // !DACCESS_COMPILE

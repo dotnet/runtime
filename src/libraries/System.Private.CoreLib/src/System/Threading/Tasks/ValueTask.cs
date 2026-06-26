@@ -110,12 +110,17 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Gets a task that has already completed successfully.</summary>
-        public static ValueTask CompletedTask => default;
+        public static ValueTask CompletedTask
+        {
+            [Intrinsic]
+            get => default;
+        }
 
         /// <summary>Creates a <see cref="ValueTask{TResult}"/> that's completed successfully with the specified result.</summary>
         /// <typeparam name="TResult">The type of the result returned by the task.</typeparam>
         /// <param name="result">The result to store into the completed task.</param>
         /// <returns>The successfully completed task.</returns>
+        [Intrinsic]
         public static ValueTask<TResult> FromResult<TResult>(TResult result) =>
             new ValueTask<TResult>(result);
 
@@ -479,6 +484,7 @@ namespace System.Threading.Tasks
         /// <summary>Initialize the <see cref="ValueTask{TResult}"/> with a <typeparamref name="TResult"/> result value.</summary>
         /// <param name="result">The result.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public ValueTask(TResult result)
         {
             _result = result;

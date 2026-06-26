@@ -5127,6 +5127,29 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
     ArrayStack<PredInfo>    matchedPredInfo(getAllocator(CMK_ArrayStack));
     ArrayStack<BasicBlock*> retryBlocks(getAllocator(CMK_ArrayStack));
 
+    auto tryRemoveAndFixFlow = [&](BasicBlock* emptyBlock, BasicBlock* newTarget) -> bool {
+        assert(emptyBlock->isEmpty());
+        assert(emptyBlock->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_ALWAYS));
+
+        // Try to remove emptyBlock and make its preds jump directly to newTarget
+        //
+        bool canRemove =
+            !emptyBlock->HasFlag(BBF_DONT_REMOVE) && (emptyBlock != fgFirstBB) && (emptyBlock != fgOSREntryBB);
+        if (canRemove)
+        {
+            for (BasicBlock* const pred : emptyBlock->PredBlocksEditing())
+            {
+                fgReplaceJumpTarget(pred, emptyBlock, newTarget);
+            }
+
+            // We don't want removal to decrease weight of successor, so make it weightless.
+            emptyBlock->bbWeight = BB_ZERO_WEIGHT;
+            fgRemoveBlock(emptyBlock, true);
+        }
+
+        return canRemove;
+    };
+
     // Try tail merging a block.
     // If return value is true, retry.
     // May also add to retryBlocks.
@@ -5218,6 +5241,11 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
                     BasicBlock* const predBlock = info.m_block;
 
                     fgUnlinkStmt(predBlock, stmt);
+
+                    if (predBlock->isEmpty())
+                    {
+                        tryRemoveAndFixFlow(predBlock, commSucc);
+                    }
 
                     // Add one of the matching stmts to block, and
                     // update its flags.
@@ -5351,22 +5379,26 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
 
                 // Fix up the flow.
                 //
-                if (commSucc != nullptr)
-                {
-                    assert(predBlock->KindIs(BBJ_ALWAYS));
-                    fgRedirectEdge(predBlock->TargetEdgeRef(), crossJumpTarget);
-                }
-                else
-                {
-                    FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
-                    predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
-                }
 
                 // For tail merge we have a common successor of predBlock and
                 // crossJumpTarget, so the profile update can be done locally.
                 if (crossJumpTarget->hasProfileWeight())
                 {
                     crossJumpTarget->increaseBBProfileWeight(predBlock->bbWeight);
+                }
+
+                if (!(predBlock->isEmpty() && tryRemoveAndFixFlow(predBlock, crossJumpTarget)))
+                {
+                    if (commSucc != nullptr)
+                    {
+                        assert(predBlock->KindIs(BBJ_ALWAYS));
+                        fgRedirectEdge(predBlock->TargetEdgeRef(), crossJumpTarget);
+                    }
+                    else
+                    {
+                        FlowEdge* const newEdge = fgAddRefPred(crossJumpTarget, predBlock);
+                        predBlock->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                    }
                 }
             }
 
@@ -5405,6 +5437,13 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         for (BasicBlock* const predBlock : block->PredBlocks())
         {
             if (predBlock->GetUniqueSucc() != block)
+            {
+                continue;
+            }
+
+            // If this block was already processed, skip it
+            //
+            if (predBlock->isEmpty())
             {
                 continue;
             }
@@ -5505,9 +5544,9 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         predInfo.Reset();
         for (BasicBlock* const block : retOrThrowBlocks.BottomUpOrder())
         {
-            // If this block was already merged, skip it
+            // If this block was already processed, skip it
             //
-            if (!block->KindIs(BBJ_RETURN, BBJ_THROW))
+            if (!block->KindIs(BBJ_RETURN, BBJ_THROW) || block->isEmpty())
             {
                 continue;
             }

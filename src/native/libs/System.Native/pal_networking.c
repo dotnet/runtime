@@ -3370,9 +3370,11 @@ static int32_t TryChangeSocketEventRegistrationInner(
                0,
                0,
                GetKeventUdata(data));
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
         // Issue: #30698
-        // FreeBSD seems to have some issue when setting read/write events together.
+        // FreeBSD and OpenBSD have an issue when setting read/write events together
+        // in a single kevent() call: the second (write) filter is silently not armed,
+        // so connect-completion is never delivered and async connect hangs.
         // As a workaround use separate kevent() calls.
         if (writeChanged)
         {
