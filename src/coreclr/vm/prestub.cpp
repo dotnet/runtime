@@ -509,10 +509,6 @@ bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
     _ASSERTE(HasUnmanagedCallersOnlyAttribute());
 
 #ifdef FEATURE_READYTORUN
-    // Only plain IL/NoMetadata/PInvoke methods are eligible for R2R precompilation.
-    if (!(IsIL() || IsNoMetadata() || (IsPInvoke() && !IsVarArg())))
-        return false;
-
     PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
     config.SetCallerGCMode(CallerGCMode::Preemptive);
 
