@@ -67,7 +67,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04@sha256:f25b32a4cea16ae65aed36ca88092de7ab8381b04749818bcacee37472fdbf38
 
       linux_musl_x64_dev_innerloop:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.23-amd64@sha256:e2d14416a6640c78f480a4605a56515ea04a9dc877e22434aed97b8f3f1920ef
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-amd64@sha256:810424ef4eee16d457f308d6d1b018fb02f4301c14ac5f8dc39f7b53da77be03
 
       linux_x64_sanitizer:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-amd64-sanitizer@sha256:0696ace4604db1d2c2f290f435810acd2fb01398580b5918f93cbe9e01be3bc7

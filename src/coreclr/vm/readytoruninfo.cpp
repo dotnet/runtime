@@ -453,7 +453,11 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
         return;
 
     SString assemblyPath{ pPEAssembly->GetPath() };
-    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, assemblyPath.GetUTF8());
+    // On some hosts (e.g. wasm) assemblies are loaded from memory and have no
+    // file path, which would otherwise log as an empty string. Fall back to the
+    // assembly simple name so the log identifies which module the entry is for.
+    LPCUTF8 assemblyName = assemblyPath.IsEmpty() ? pPEAssembly->GetSimpleName() : assemblyPath.GetUTF8();
+    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, assemblyName);
     fflush(r2rLogFile);
 }
 
@@ -1678,7 +1682,7 @@ bool ReadyToRunInfo::MayHaveCustomAttribute(WellKnownAttribute attribute, mdToke
             s_wellKnownAttributeHashes[(DWORD)attribute] = wellKnownHash = ComputeNameHashCode(GetWellKnownAttributeName(attribute));
         }
 
-        hash = CombineTwoValuesIntoHash(wellKnownHash, token);
+        hash = CombineTwoValuesIntoHash<xxHashVersionResilientTraits>(wellKnownHash, token);
         fingerprint = hash >> 16;
     }
 
