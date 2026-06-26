@@ -120,7 +120,7 @@ public class LocallocStackAlloc
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int VariableLengthLarge()
     {
-        int n = OpaqueLength(10_000);
+        int n = OpaqueLength(100_000);
         int[] array = new int[n];
         int sum = 0;
         for (int i = 0; i < array.Length; i++)
@@ -201,7 +201,7 @@ public class LocallocStackAlloc
     public static int TestLarge()
     {
         VariableLengthLarge();
-        return CallTestAndVerifyAllocation(VariableLengthLarge, 10_000, HeapAllocation());
+        return CallTestAndVerifyAllocation(VariableLengthLarge, 100_000, HeapAllocation());
     }
 
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
