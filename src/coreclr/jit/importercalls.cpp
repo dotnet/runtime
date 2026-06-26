@@ -1063,8 +1063,7 @@ DEVIRT:
                 INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
                 // Is it an inline candidate?
-                impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                       compInlineContext);
+                impMarkInlineCandidate(call, exactContextHnd, callInfo, compInlineContext);
             }
 
             // append the call node.
@@ -1279,7 +1278,7 @@ DONE:
         INDEBUG(call->AsCall()->gtRawILOffset = rawILOffset);
 
         // Is it an inline candidate?
-        impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo, compInlineContext);
+        impMarkInlineCandidate(call, exactContextHnd, callInfo, compInlineContext);
 
         // If the call is virtual, extra information for possible use during late devirt inlining.
         //
@@ -8347,7 +8346,7 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
         CORINFO_CALL_INFO hCallInfo = {};
         hCallInfo.hMethod           = managedCallHnd;
         hCallInfo.methodFlags       = info.compCompHnd->getMethodAttribs(hCallInfo.hMethod);
-        impMarkInlineCandidate(call, nullptr, false, &hCallInfo, compInlineContext);
+        impMarkInlineCandidate(call, nullptr, &hCallInfo, compInlineContext);
 
 #if DEBUG
         CORINFO_METHOD_HANDLE existingValue = NO_METHOD_HANDLE;
@@ -8370,7 +8369,6 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
 // Arguments:
 //    callNode -- call under scrutiny
 //    exactContextHnd -- context handle for inlining
-//    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
 //    inlinersContext -- the inliner's context
 //
@@ -8381,7 +8379,6 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
 
 void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                      bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
                                       InlineContext*         inlinersContext)
 {
@@ -8405,8 +8402,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
             InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate for GDV");
 
             // Do the actual evaluation
-            impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                         inlinersContext, &inlineResult);
+            impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, callInfo, inlinersContext, &inlineResult);
             // Ignore non-inlineable candidates
             // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
             // calls on NativeAOT, but that requires more changes elsewhere too.
@@ -8429,8 +8425,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         const uint8_t candidatesCount = call->GetInlineCandidatesCount();
         assert(candidatesCount <= 1);
         InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
-        impMarkInlineCandidateHelper(call, 0, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
-                                     inlinersContext, &inlineResult);
+        impMarkInlineCandidateHelper(call, 0, exactContextHnd, callInfo, inlinersContext, &inlineResult);
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization
@@ -8461,7 +8456,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 //    callNode -- call under scrutiny
 //    candidateIndex -- index of the inline candidate to evaluate
 //    exactContextHnd -- context handle for inlining
-//    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
 //    inlinersContext -- the inliner's context
 //
@@ -8478,7 +8472,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
                                             uint8_t                candidateIndex,
                                             CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                            bool                   exactContextNeedsRuntimeLookup,
                                             CORINFO_CALL_INFO*     callInfo,
                                             InlineContext*         inlinersContext,
                                             InlineResult*          inlineResult)
@@ -8718,7 +8711,6 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     // The new value should not be null.
     assert(inlineCandidateInfo != nullptr);
-    inlineCandidateInfo->exactContextNeedsRuntimeLookup = exactContextNeedsRuntimeLookup;
 
     // If we're in an inlinee compiler, and have a return spill temp, and this inline candidate
     // is also a tail call candidate, it can use the same return spill temp.
@@ -10204,17 +10196,16 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             pInfo->likelihood                        = 0;
         }
 
-        pInfo->methInfo                       = methInfo;
-        pInfo->ilCallerHandle                 = pParam->pThis->info.compMethodHnd;
-        pInfo->clsHandle                      = clsHandle;
-        pInfo->exactContextHandle             = pParam->exactContextHnd;
-        pInfo->retExpr                        = nullptr;
-        pInfo->preexistingSpillTemp           = BAD_VAR_NUM;
-        pInfo->clsAttr                        = clsAttr;
-        pInfo->methAttr                       = pParam->methAttr;
-        pInfo->initClassResult                = initClassResult;
-        pInfo->exactContextNeedsRuntimeLookup = false;
-        pInfo->inlinersContext                = pParam->inlinersContext;
+        pInfo->methInfo             = methInfo;
+        pInfo->ilCallerHandle       = pParam->pThis->info.compMethodHnd;
+        pInfo->clsHandle            = clsHandle;
+        pInfo->exactContextHandle   = pParam->exactContextHnd;
+        pInfo->retExpr              = nullptr;
+        pInfo->preexistingSpillTemp = BAD_VAR_NUM;
+        pInfo->clsAttr              = clsAttr;
+        pInfo->methAttr             = pParam->methAttr;
+        pInfo->initClassResult      = initClassResult;
+        pInfo->inlinersContext      = pParam->inlinersContext;
 
         // Note exactContextNeedsRuntimeLookup is reset later on,
         // over in impMarkInlineCandidate.
