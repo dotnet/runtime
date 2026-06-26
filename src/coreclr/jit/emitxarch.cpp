@@ -7516,11 +7516,6 @@ void emitter::emitIns_A(instruction ins, emitAttr attr, GenTreeIndir* indir)
     emitHandleMemOp(indir, id, fmt, ins);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
-    if (ins == INS_idiv)
-    {
-        printf("emitIns_A idiv sz=%u attr=%x code=%llx fmt=%u reloc=%u reg1=%u reg2=%u\n", sz, attr, insCodeMR(ins),
-               id->idInsFmt(), id->idIsDspReloc(), id->idReg1(), id->idReg2());
-    }
     id->idCodeSize(sz);
 
     dispIns(id);
