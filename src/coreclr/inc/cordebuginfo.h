@@ -51,6 +51,7 @@ public:
 
     };
 
+    // [cDAC]: Mirrored in managed code (IDacDbiInterface.cs).
     struct OffsetMapping
     {
         uint32_t        nativeOffset;
@@ -248,6 +249,7 @@ public:
 
     // VarLoc describes the location of a native variable.  Note that currently, VLT_REG_BYREF and VLT_STK_BYREF
     // are only used for value types on X64.
+    // [cDAC]: Mirrored in managed code (IDacDbiInterface.cs).
 
     enum VarLocType
     {
@@ -352,14 +354,7 @@ public:
         unsigned        vlfvOffset;
     };
 
-    // VLT_MEMORY
-
-    struct vlMemory
-    {
-        void        *rpValue; // pointer to the in-process
-        // location of the value.
-    };
-
+    // [cDAC]: Mirrored in managed code (IDacDbiInterface.cs).
     struct VarLoc
     {
         VarLocType      vlType;
@@ -374,7 +369,6 @@ public:
             ICorDebugInfo::vlStk2          vlStk2;
             ICorDebugInfo::vlFPstk         vlFPstk;
             ICorDebugInfo::vlFixedVarArg   vlFixedVarArg;
-            ICorDebugInfo::vlMemory        vlMemory;
         };
     };
 
@@ -401,6 +395,7 @@ public:
         uint32_t        varNumber;
     };
 
+    // [cDAC]: Mirrored in managed code (IDacDbiInterface.cs).
     struct NativeVarInfo
     {
         uint32_t        startOffset;

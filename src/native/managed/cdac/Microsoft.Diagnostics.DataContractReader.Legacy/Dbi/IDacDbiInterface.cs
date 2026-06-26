@@ -44,6 +44,95 @@ public struct FieldData
     public ulong m_vmFieldDesc;
 }
 
+public enum VarLocType
+{
+    VLT_REG,
+    VLT_REG_BYREF,
+    VLT_REG_FP,
+    VLT_STK,
+    VLT_STK_BYREF,
+    VLT_REG_REG,
+    VLT_REG_STK,
+    VLT_STK_REG,
+    VLT_STK2,
+    VLT_FPSTK,
+    VLT_FIXED_VA,
+    VLT_COUNT,
+    VLT_INVALID,
+}
+
+// Mirrors the native ICorDebugInfo::VarLoc tagged union: a VarLocType selector
+// followed by a union of location variants. The union begins at offset 4 and the
+// struct is 16 bytes: the union contains only 4-byte members, so it is 4-byte aligned.
+[StructLayout(LayoutKind.Explicit, Size = 16)]
+public struct VarLoc
+{
+    [FieldOffset(0)] public VarLocType vlType;
+
+    // Union data: three positional slots covering all union variants.
+    // Different VarLocType values interpret these as different named fields.
+    [FieldOffset(4)] private uint _field1;
+    [FieldOffset(8)] private int _field2;
+    [FieldOffset(12)] private int _field3;
+
+    // vlReg / vlReg_BYREF
+    public uint vlrReg { get => _field1; set => _field1 = value; }
+
+    // vlStk / vlStk_BYREF / vlStk2
+    public uint vlsBaseReg { get => _field1; set => _field1 = value; }
+    public int vlsOffset { get => _field2; set => _field2 = value; }
+
+    // vlRegReg
+    public uint vlrrReg1 { get => _field1; set => _field1 = value; }
+    public uint vlrrReg2 { get => (uint)_field2; set => _field2 = (int)value; }
+
+    // vlRegStk
+    public uint vlrsReg { get => _field1; set => _field1 = value; }
+    public uint vlrssBaseReg { get => (uint)_field2; set => _field2 = (int)value; }
+    public int vlrssOffset { get => _field3; set => _field3 = value; }
+
+    // vlStkReg
+    public uint vlsrsBaseReg { get => _field1; set => _field1 = value; }
+    public int vlsrsOffset { get => _field2; set => _field2 = value; }
+    public uint vlsrReg { get => (uint)_field3; set => _field3 = (int)value; }
+
+    // vlFPstk
+    public uint vlfReg { get => _field1; set => _field1 = value; }
+
+    // vlFixedVarArg
+    public uint vlfvOffset { get => _field1; set => _field1 = value; }
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct NativeVarInfo
+{
+    public uint startOffset;
+    public uint endOffset;
+    public uint callReturnValueILOffset;
+    public uint varNumber;
+    public VarLoc loc;
+}
+
+[Flags]
+public enum DbiSourceTypes : uint
+{
+    SourceTypeInvalid = 0x00,
+    SequencePoint = 0x01,
+    StackEmpty = 0x02,
+    CallSite = 0x04,
+    NativeEndOffsetUnknown = 0x08,
+    CallInstruction = 0x10,
+    Async = 0x20,
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DbiOffsetMapping
+{
+    public uint nativeOffset;
+    public uint ilOffset;
+    public DbiSourceTypes source;
+}
+
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 
 [StructLayout(LayoutKind.Sequential)]
@@ -548,7 +637,7 @@ public unsafe partial interface IDacDbiInterface
     int ResolveAssembly(ulong vmScope, uint tkAssemblyRef, ulong* pRetVal);
 
     [PreserveSig]
-    int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, Interop.BOOL fCodeAvailable, nint pNativeVarData, nint pSequencePoints);
+    int GetNativeCodeSequencePointsAndVarInfo(ulong vmMethodDesc, ulong startAddress, Interop.BOOL fCodeAvailable, uint* pFixedArgCount, delegate* unmanaged<NativeVarInfo*, void*, void> fpVarInfoCallback, delegate* unmanaged<DbiOffsetMapping*, void*, void> fpSeqPointCallback, nint pUserData);
 
     [PreserveSig]
     int GetManagedStoppedContext(ulong vmThread, ulong* pRetVal);

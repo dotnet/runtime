@@ -140,8 +140,12 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         try
         {
             *numArgs = 0;
-            GetMethodInfo(out _, out MetadataReader mdReader, out MethodDefinition methodDef, out _, out _);
-            GetMethodSignatureInfo(mdReader, methodDef, out _, out uint numArgsResult);
+            MethodDescHandle mdh = GetFrameMethodDesc(out _);
+
+            if (!_target.Contracts.RuntimeTypeSystem.TryGetMethodSignature(mdh, out ReadOnlySpan<byte> signature))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            MethodSignatureHelpers.GetSignatureInfo(signature, out _, out uint numArgsResult);
             *numArgs = numArgsResult;
             if (*numArgs == 0)
                 hr = HResults.S_FALSE;
@@ -189,8 +193,13 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             if (nameLen is not null)
                 *nameLen = 0;
 
-            GetMethodInfo(out MethodDescHandle mdh, out MetadataReader mdReader, out MethodDefinition methodDef, out Contracts.ModuleHandle moduleHandle, out _);
-            GetMethodSignatureInfo(mdReader, methodDef, out SignatureHeader header, out uint numArgs);
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle mdh = GetFrameMethodDesc(out Contracts.ModuleHandle moduleHandle);
+
+            if (!rts.TryGetMethodSignature(mdh, out ReadOnlySpan<byte> signature))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            MethodSignatureHelpers.GetSignatureInfo(signature, out SignatureHeader header, out uint numArgs);
 
             if (index >= numArgs)
                 throw Marshal.GetExceptionForHR(HResults.E_INVALIDARG)!;
@@ -198,7 +207,6 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             // Resolve parameter name
             if ((bufLen > 0 && name is not null) || nameLen is not null)
             {
-                IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
                 if (index == 0 && header.IsInstance)
                 {
                     OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, "this");
@@ -208,8 +216,23 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                     // Param indexing is 1-based in metadata. 'this' isn't in the
                     // signature, so for instance methods adjust the index down.
                     int mdIndex = (int)(header.IsInstance ? index : index + 1);
-                    string? paramName = GetParameterName(mdReader, methodDef, mdIndex);
-                    OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, paramName ?? string.Empty);
+                    uint token = rts.GetMethodToken(mdh);
+                    // Array Get/Set/Address methods aren't no-metadata methods but still
+                    // carry a nil MethodDef token. Resolving a name for one would throw, so
+                    // name resolution is skipped in that case to match native behavior.
+                    MetadataReader? mdReader = (EcmaMetadataUtils.GetRowId(token) != 0)
+                        ? _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)
+                        : null;
+                    if (mdReader is not null)
+                    {
+                        MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token)));
+                        string? paramName = GetParameterName(mdReader, methodDef, mdIndex);
+                        OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, paramName ?? string.Empty);
+                    }
+                    else
+                    {
+                        OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, string.Empty);
+                    }
                 }
                 else
                 {
@@ -246,7 +269,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
         try
         {
             *numLocals = 0;
-            GetMethodInfo(out MethodDescHandle mdh, out _, out _, out Contracts.ModuleHandle moduleHandle, out _);
+            MethodDescHandle mdh = GetFrameMethodDesc(out Contracts.ModuleHandle moduleHandle);
             *numLocals = GetLocalVariableCount(mdh, moduleHandle);
         }
         catch (System.Exception ex)
@@ -292,8 +315,13 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
             if (nameLen is not null)
                 *nameLen = 0;
 
-            GetMethodInfo(out MethodDescHandle mdh, out MetadataReader mdReader, out MethodDefinition methodDef, out Contracts.ModuleHandle moduleHandle, out _);
-            GetMethodSignatureInfo(mdReader, methodDef, out SignatureHeader argHeader, out uint numArgs);
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            MethodDescHandle mdh = GetFrameMethodDesc(out Contracts.ModuleHandle moduleHandle);
+
+            if (!rts.TryGetMethodSignature(mdh, out ReadOnlySpan<byte> signature))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            MethodSignatureHelpers.GetSignatureInfo(signature, out SignatureHeader argHeader, out uint numArgs);
 
             uint numLocals = GetLocalVariableCount(mdh, moduleHandle);
 
@@ -348,15 +376,8 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
         try
         {
-            IStackWalk stackWalk = _target.Contracts.StackWalk;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-
-            TargetPointer methodDesc = stackWalk.GetMethodDescPtr(_dataFrame);
-
-            if (methodDesc == TargetPointer.Null)
-                throw new InvalidCastException(); // E_NOINTERFACE
-
-            MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
+            MethodDescHandle mdh = GetFrameMethodDesc(out _);
             TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
             method.Interface = new ClrDataMethodInstance(_target, mdh, appDomain, legacyMethod);
@@ -397,48 +418,24 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     // ========== Metadata resolution helpers ==========
 
     /// <summary>
-    /// Resolves the frame's MethodDesc into its module-level metadata objects.
-    /// Throws on failure (no MethodDesc, no metadata, etc.).
+    /// Resolves the frame's MethodDesc and its containing module.
+    /// Throws on failure (no MethodDesc).
     /// </summary>
-    private void GetMethodInfo(out MethodDescHandle mdh, out MetadataReader mdReader, out MethodDefinition methodDef, out Contracts.ModuleHandle moduleHandle, out uint token)
+    private MethodDescHandle GetFrameMethodDesc(out Contracts.ModuleHandle moduleHandle)
     {
-        IStackWalk stackWalk = _target.Contracts.StackWalk;
-        TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(_dataFrame);
+        TargetPointer methodDescPtr = _target.Contracts.StackWalk.GetMethodDescPtr(_dataFrame);
         if (methodDescPtr == TargetPointer.Null)
             throw new InvalidCastException(); // E_NOINTERFACE
 
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-        mdh = rts.GetMethodDescHandle(methodDescPtr);
+        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
+
         TargetPointer mtAddr = rts.GetMethodTable(mdh);
         TypeHandle typeHandle = rts.GetTypeHandle(mtAddr);
         TargetPointer modulePtr = rts.GetModule(typeHandle);
-        ILoader loader = _target.Contracts.Loader;
-        moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-        token = rts.GetMethodToken(mdh);
+        moduleHandle = _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePtr);
 
-        IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-        MetadataReader? reader = ecmaMetadataContract.GetMetadata(moduleHandle);
-        if (reader is null)
-            throw new NotImplementedException();
-        mdReader = reader;
-
-        MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)token);
-        methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-    }
-
-    /// <summary>
-    /// Parses the method signature to determine argument count and signature header.
-    /// </summary>
-    private static void GetMethodSignatureInfo(MetadataReader mdReader, MethodDefinition methodDef, out SignatureHeader header, out uint numArgs)
-    {
-        BlobReader blobReader = mdReader.GetBlobReader(methodDef.Signature);
-        header = blobReader.ReadSignatureHeader();
-        if (header.Kind != SignatureKind.Method)
-            throw new BadImageFormatException();
-        if (header.IsGeneric)
-            blobReader.ReadCompressedInteger(); // skip generic arity
-        uint paramCount = (uint)blobReader.ReadCompressedInteger();
-        numArgs = paramCount + (header.IsInstance ? 1u : 0u);
+        return mdh;
     }
 
     /// <summary>
@@ -574,7 +571,9 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     {
         try
         {
-            GetMethodInfo(out _, out MetadataReader mdReader, out MethodDefinition methodDef, out _, out _);
+            MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle) ?? throw new NotImplementedException();
+            uint token = _target.Contracts.RuntimeTypeSystem.GetMethodToken(mdh);
+            MethodDefinition methodDef = mdReader.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle((int)EcmaMetadataUtils.GetRowId(token)));
             FlagSignatureTypeProvider provider = new(_target, moduleHandle);
             SignatureDecoder<(uint Flags, int Size), MethodDescHandle> decoder = new(provider, mdReader, mdh);
 

@@ -16,8 +16,8 @@ struct TypeRefData;
 struct TargetBuffer;
 struct ModuleInfo;
 struct DacThreadAllocInfo;
-struct NativeVarData;
-struct SequencePoints;
+struct NativeVarInfo;
+struct OffsetMapping;
 struct Debugger_STRData;
 struct NativeCodeFunctionData;
 struct FieldData;
@@ -144,6 +144,8 @@ typedef void (*FP_RCW_INTERFACE_CALLBACK)(CORDB_ADDRESS itfPtr, CALLBACK_DATA pU
 typedef void (*FP_EXCEPTION_STACK_FRAME_CALLBACK)(VMPTR_AppDomain vmAppDomain, VMPTR_Assembly vmAssembly, CORDB_ADDRESS ip, mdMethodDef methodDef, BOOL isLastForeignExceptionFrame, CALLBACK_DATA pUserData);
 typedef void (*FP_ASYNC_LOCAL_CALLBACK)(AsyncLocalData *pLocal, CALLBACK_DATA pUserData);
 typedef void (*FP_FIELDDATA_CALLBACK)(struct FieldData * pFieldData, CALLBACK_DATA pUserData);
+typedef void (*FP_NATIVEVARINFO_CALLBACK)(struct NativeVarInfo * pVarInfo, CALLBACK_DATA pUserData);
+typedef void (*FP_SEQUENCEPOINT_CALLBACK)(struct OffsetMapping * pMapping, CALLBACK_DATA pUserData);
 
 
 //
@@ -266,8 +268,10 @@ interface IDacDbiInterface : IUnknown
         [in] VMPTR_MethodDesc vmMethodDesc,
         [in] CORDB_ADDRESS startAddress,
         [in] BOOL fCodeAvailable,
-        [out] struct NativeVarData * pNativeVarData,
-        [out] struct SequencePoints * pSequencePoints);
+        [out] ULONG32 * pFixedArgCount,
+        [in] FP_NATIVEVARINFO_CALLBACK fpVarInfoCallback,
+        [in] FP_SEQUENCEPOINT_CALLBACK fpSeqPointCallback,
+        [in] CALLBACK_DATA pUserData);
 
     // Context and Stack Walking
     HRESULT GetManagedStoppedContext([in] VMPTR_Thread vmThread, [out] VMPTR_CONTEXT * pRetVal);
