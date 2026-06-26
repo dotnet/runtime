@@ -1672,7 +1672,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         /// the binder must bind the collection once (through the constructor) and must not bind it again
         /// through the property, which would otherwise duplicate the collection items.
         /// </summary>
-        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83803", typeof(TestHelpers), nameof(TestHelpers.SourceGenMode))]
         public void CanBindOnParametersAndProperties_GetterOnlyCollectionWithCaseMismatchedConstructorParameter()
         {
             string json = """
