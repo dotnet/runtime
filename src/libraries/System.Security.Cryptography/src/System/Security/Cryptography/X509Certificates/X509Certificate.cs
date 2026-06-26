@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Threading;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
@@ -24,8 +25,13 @@ namespace System.Security.Cryptography.X509Certificates
         private byte[]? _lazyPublicKey;
         private byte[]? _lazyRawData;
         private volatile bool _lazyKeyAlgorithmParametersCreated;
-        private DateTimeOffset _lazyNotBefore = DateTimeOffset.MinValue;
-        private DateTimeOffset _lazyNotAfter = DateTimeOffset.MinValue;
+
+        // Cached as UTC ticks (read/written via Volatile) rather than DateTimeOffset directly:
+        // DateTimeOffset is larger than a pointer-sized atomic, so unsynchronized access could
+        // observe a torn value. 0 (DateTimeOffset.MinValue's UTC ticks) means "not yet cached",
+        // since no real certificate has a validity date in year 1.
+        private long _lazyNotBeforeUtcTicks;
+        private long _lazyNotAfterUtcTicks;
 
         public virtual void Reset()
         {
@@ -37,8 +43,8 @@ namespace System.Security.Cryptography.X509Certificates
             _lazyKeyAlgorithmParameters = null;
             _lazyPublicKey = null;
             _lazyRawData = null;
-            _lazyNotBefore = DateTimeOffset.MinValue;
-            _lazyNotAfter = DateTimeOffset.MinValue;
+            Volatile.Write(ref _lazyNotBeforeUtcTicks, 0);
+            Volatile.Write(ref _lazyNotAfterUtcTicks, 0);
             _lazyKeyAlgorithmParametersCreated = false;
 
             ICertificatePalCore? pal = Pal;
@@ -697,27 +703,34 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ThrowIfInvalid();
 
-            DateTimeOffset notAfter = _lazyNotAfter;
+            long ticks = Volatile.Read(ref _lazyNotAfterUtcTicks);
 
-            if (notAfter == DateTimeOffset.MinValue)
+            if (ticks == 0)
             {
-                notAfter = _lazyNotAfter = Pal.NotAfter;
+                DateTimeOffset notAfter = Pal.NotAfter;
+                ticks = notAfter.UtcTicks;
+                Volatile.Write(ref _lazyNotAfterUtcTicks, ticks);
+                return notAfter;
             }
 
-            return notAfter;
+            return new DateTimeOffset(ticks, TimeSpan.Zero);
         }
 
         internal DateTimeOffset GetNotBeforeUtc()
         {
             ThrowIfInvalid();
 
-            DateTimeOffset notBefore = _lazyNotBefore;
+            long ticks = Volatile.Read(ref _lazyNotBeforeUtcTicks);
 
-            if (notBefore == DateTimeOffset.MinValue)
+            if (ticks == 0)
             {
-                notBefore = _lazyNotBefore = Pal.NotBefore;
+                DateTimeOffset notBefore = Pal.NotBefore;
+                ticks = notBefore.UtcTicks;
+                Volatile.Write(ref _lazyNotBeforeUtcTicks, ticks);
+                return notBefore;
             }
-            return notBefore;
+
+            return new DateTimeOffset(ticks, TimeSpan.Zero);
         }
 
         [MemberNotNull(nameof(Pal))]
