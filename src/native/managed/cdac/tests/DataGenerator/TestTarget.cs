@@ -36,6 +36,7 @@ internal sealed class TestTarget : Target
         IsLittleEndian = isLittleEndian;
         ManagedTypeSourceMock = new Mock<IManagedTypeSource>();
         _contracts = new TestContractRegistry(ManagedTypeSourceMock.Object);
+        _contracts.SetTarget(this);
         _processedData = new TestDataCache(this);
     }
 
@@ -262,11 +263,16 @@ internal sealed class TestTarget : Target
     private sealed class TestContractRegistry : ContractRegistry
     {
         private readonly IManagedTypeSource _managedTypeSource;
+        private readonly Dictionary<(Type, string), Func<Target, IContract>> _creators = new();
+        private readonly Dictionary<Type, IContract> _resolved = new();
+        private Target? _target;
 
         public TestContractRegistry(IManagedTypeSource managedTypeSource)
         {
             _managedTypeSource = managedTypeSource;
         }
+
+        public void SetTarget(Target target) => _target = target;
 
         public override IManagedTypeSource ManagedTypeSource => _managedTypeSource;
 
@@ -278,13 +284,31 @@ internal sealed class TestTarget : Target
                 failureReason = null;
                 return true;
             }
+            if (_resolved.TryGetValue(typeof(TContract), out IContract? cached))
+            {
+                contract = (TContract)cached;
+                failureReason = null;
+                return true;
+            }
+            // No target-declared versions in this stub — fall through directly
+            // to the empty-string "default" registration.
+            if (_creators.TryGetValue((typeof(TContract), string.Empty), out Func<Target, IContract>? fallback))
+            {
+                if (_target is null)
+                    throw new InvalidOperationException("TestContractRegistry: SetTarget must be called before TryGetContract.");
+                IContract created = fallback(_target);
+                _resolved[typeof(TContract)] = created;
+                contract = (TContract)created;
+                failureReason = null;
+                return true;
+            }
             contract = default!;
             failureReason = "Not registered in TestContractRegistry.";
             return false;
         }
 
         public override void Register<TContract>(string version, Func<Target, TContract> creator)
-            => throw new NotImplementedException();
+            => _creators[(typeof(TContract), version)] = t => creator(t);
 
         public override void Flush(FlushScope scope) { }
     }

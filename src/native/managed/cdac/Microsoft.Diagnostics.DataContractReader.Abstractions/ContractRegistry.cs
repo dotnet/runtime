@@ -172,8 +172,9 @@ public abstract class ContractRegistry
     }
 
     /// <summary>
-    /// Register a contract implementation for a specific version.
-    /// External packages use this to add contract versions or entirely new contract interfaces.
+    /// Register a contract implementation for a specific version. An empty
+    /// <paramref name="version"/> is used as the fallback when the target
+    /// does not advertise a version for the contract.
     /// </summary>
     public abstract void Register<TContract>(string version, Func<Target, TContract> creator)
         where TContract : IContract;

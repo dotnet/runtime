@@ -34,10 +34,11 @@ public sealed class CdacGenerator : IIncrementalGenerator
         // sees Contracts' copy via [InternalsVisibleTo] and shouldn't emit its own).
         // Each helper is gated independently to handle version-skew scenarios where
         // one helper is present but the other is not.
-        IncrementalValueProvider<(bool EmitLayoutSet, bool EmitTypeNameResolver)> shouldEmitHelpers = context.CompilationProvider
+        IncrementalValueProvider<(bool EmitLayoutSet, bool EmitTypeNameResolver, bool EmitGeneratedTypeCacheContract)> shouldEmitHelpers = context.CompilationProvider
             .Select(static (compilation, _) => (
                 EmitLayoutSet: !IsTypeAccessible(compilation, LayoutSetSource.FullyQualifiedName),
-                EmitTypeNameResolver: !IsTypeAccessible(compilation, TypeNameResolverSource.FullyQualifiedName)));
+                EmitTypeNameResolver: !IsTypeAccessible(compilation, TypeNameResolverSource.FullyQualifiedName),
+                EmitGeneratedTypeCacheContract: !IsTypeAccessible(compilation, GeneratedTypeCacheContractSource.FullyQualifiedName)));
 
         context.RegisterSourceOutput(shouldEmitHelpers, static (ctx, flags) =>
         {
@@ -53,6 +54,13 @@ public sealed class CdacGenerator : IIncrementalGenerator
                 ctx.AddSource(
                     TypeNameResolverSource.HintName,
                     SourceText.From(TypeNameResolverSource.Source, Encoding.UTF8));
+            }
+
+            if (flags.EmitGeneratedTypeCacheContract)
+            {
+                ctx.AddSource(
+                    GeneratedTypeCacheContractSource.HintName,
+                    SourceText.From(GeneratedTypeCacheContractSource.Source, Encoding.UTF8));
             }
         });
 
