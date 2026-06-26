@@ -8324,7 +8324,7 @@ void InterpCompiler::CreateSynchronizedRetValVar()
         // The actual type of the return value will be the Task<T> or
         // ValueTask<T> type, so get it from the await call signature
         CORINFO_LOOKUP instArg;
-        CORINFO_METHOD_HANDLE awaitCall = m_compHnd->getAwaitReturnCall(m_methodInfo->ftn, &instArg);
+        CORINFO_METHOD_HANDLE awaitCall = m_compHnd->getAwaitReturnCall(m_methodHnd, &instArg);
         CORINFO_SIG_INFO awaitCallSig;
         m_compHnd->getMethodSig(awaitCall, &awaitCallSig);
 
