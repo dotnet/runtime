@@ -23,6 +23,16 @@ extern "C" void SamplingProfiler_OnSamplepoint();
 // for numeric_limits
 #include <limits>
 #include <functional>
+#include <atomic>
+
+// Compiler reordering barrier. Prevents the compiler from moving memory accesses across this
+// point. It emits no instructions and provides no CPU or cross-thread ordering; use it only to
+// order accesses with respect to asynchronous interruption on the SAME thread, such as a stack
+// overflow or other hardware-exception handler.
+static inline void CompilerBarrier()
+{
+    std::atomic_signal_fence(std::memory_order_acq_rel);
+}
 
 struct InterpDispatchCacheEntry
 {
@@ -3411,7 +3421,11 @@ SWITCH_OPCODE:
                                 if (!pChildFrame)
                                 {
                                     pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                                    // We make sure that a new frame can't be seen with invalid ip/next when a stack
+                                    // overflow is triggered at a location outside of our control.
+                                    pChildFrame->ip = NULL;
                                     pChildFrame->pNext = NULL;
+                                    CompilerBarrier();
                                     pFrame->pNext = pChildFrame;
                                 }
                                 pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, LOCAL_VAR_ADDR(callArgsOffset, int8_t));
@@ -3516,7 +3530,11 @@ CALL_INTERP_METHOD:
                             if (!pChildFrame)
                             {
                                 pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                                // We make sure that a new frame can't be seen with invalid ip/next when a stack
+                                // overflow is triggered at a location outside of our control.
+                                pChildFrame->ip = NULL;
                                 pChildFrame->pNext = NULL;
+                                CompilerBarrier();
                                 pFrame->pNext = pChildFrame;
                             }
                             pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, callArgsAddress);
@@ -4363,7 +4381,11 @@ do                                                                      \
                         if (!pChildFrame)
                         {
                             pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                            // We make sure that a new frame can't be seen with invalid ip/next when a stack
+                            // overflow is triggered at a location outside of our control.
+                            pChildFrame->ip = NULL;
                             pChildFrame->pNext = NULL;
+                            CompilerBarrier();
                             pFrame->pNext = pChildFrame;
                         }
                         // Set the frame to the same values as the caller frame.
