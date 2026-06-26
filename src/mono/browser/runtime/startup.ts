@@ -5,7 +5,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import BuildConfiguration from "consts:configuration";
 
 import { DotnetModuleInternal, CharPtrNull, MainToWorkerMessageType } from "./types/internal";
-import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert, browserVirtualAppBase } from "./globals";
+import { exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, mono_assert, browserVirtualAppBase } from "./globals";
 import cwraps, { init_c_exports, threads_c_functions as tcwraps } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -25,7 +25,7 @@ import { mono_log_debug, mono_log_error, mono_log_info, mono_log_warn } from "./
 // threads
 import { populateEmscriptenPool, mono_wasm_init_threads } from "./pthreads";
 import { currentWorkerThreadEvents, dotnetPthreadCreated, initWorkerThreadEvents, monoThreadInfo } from "./pthreads";
-import { mono_wasm_pthread_ptr, update_thread_info } from "./pthreads";
+import { update_thread_info } from "./pthreads";
 import { jiterpreter_allocate_tables } from "./jiterpreter-support";
 import { localHeapViewU8, malloc, setU32, fixupPointer } from "./memory";
 import { assertNoProxies } from "./gc-handles";
@@ -83,7 +83,7 @@ export function configureEmscriptenStartup (module: DotnetModuleInternal): void 
         mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
     if (runtimeHelpers.emscriptenBuildOptions.wasmEnableEH) {
-        mono_assert(runtimeHelpers.featureWasmEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
+        mono_assert(runtimeHelpers.featureWasmFinalEh, "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     }
     module.mainScriptUrlOrBlob = loaderHelpers.scriptUrl;// this is needed by worker threads
 
@@ -144,8 +144,10 @@ async function instantiateWasmWorker (
     // Instantiate from the module posted from the main thread.
     // We can just use sync instantiation in the worker.
     const instance = new WebAssembly.Instance(Module.wasmModule!, imports);
-    successCallback(instance, undefined);
     Module.wasmModule = null;
+
+    successCallback(instance, undefined);
+    preRunWorker();
 }
 
 
@@ -157,7 +159,6 @@ export function preRunWorker () {
         mono_log_debug("preRunWorker");
         init_c_exports();
         cwraps_internal(INTERNAL);
-        jiterpreter_allocate_tables(); // this will return quickly if already allocated
         runtimeHelpers.nativeExit = nativeExit;
         runtimeHelpers.nativeAbort = nativeAbort;
         runtimeHelpers.runtimeReady = true;
@@ -345,7 +346,6 @@ export function postRunWorker () {
 
         // signal next stage
         runtimeHelpers.runtimeReady = false;
-        runtimeHelpers.afterPreRun = createPromiseController<void>();
         endMeasure(mark, MeasuredBlock.postRunWorker);
     } catch (err) {
         mono_log_error("postRunWorker() failed", err);
@@ -424,10 +424,10 @@ async function instantiate_wasm_module (
 async function ensureUsedWasmFeatures () {
     const simd = loaderHelpers.simd();
     const relaxedSimd = loaderHelpers.relaxedSimd();
-    const exceptions = loaderHelpers.exceptions();
+    const exceptions = loaderHelpers.exceptionsFinal();
     runtimeHelpers.featureWasmSimd = await simd;
     runtimeHelpers.featureWasmRelaxedSimd = await relaxedSimd;
-    runtimeHelpers.featureWasmEh = await exceptions;
+    runtimeHelpers.featureWasmFinalEh = await exceptions;
 }
 
 export async function start_runtime () {
@@ -473,7 +473,7 @@ export async function start_runtime () {
             monoThreadInfo.isAttached = true;
             monoThreadInfo.isRunning = true;
             monoThreadInfo.isRegistered = true;
-            runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = mono_wasm_pthread_ptr();
+            runtimeHelpers.currentThreadTID = monoThreadInfo.pthreadId = runtimeHelpers.managedThreadTID = tcwraps.pthread_self();
             update_thread_info();
             runtimeHelpers.isManagedRunningOnCurrentThread = true;
         }
