@@ -246,7 +246,7 @@ internal class RuntimeLookupDelegateGenericVirtual
 
         IBase test5 = new DerivedStructNoRecursion();
         Delegate m3 = test5.Foo<List<T>>();
-        Delegate m4 = test5.Foo<List<List<T>>>;
+        Delegate m4 = test5.Foo<List<T>>;
         Assert.Equal(m4.Method, m3.Method);
 
         // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
