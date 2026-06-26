@@ -36,8 +36,8 @@ public class Runtime_128062
         Assert.Equal(1024, Validate(1024));
 
         // Zero and negatives (other than -1) still throw.
-        Assert.Throws<ArgumentOutOfRangeException>(() => Validate(0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => Validate(-2));
-        Assert.Throws<ArgumentOutOfRangeException>(() => Validate(int.MinValue));
+        Assert.Throws<ArgumentOutOfRangeException>(() => { Validate(0); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { Validate(-2); });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { Validate(int.MinValue); });
     }
 }
