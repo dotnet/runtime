@@ -5458,8 +5458,14 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         JITDUMP("\nRemoving redundant (%s) bounds check in " FMT_BB ":\n", reason, compCurBB->bbNum);
         DISPTREE(tree);
 
-        // Extract the side-effects of idx and len without taking the root (GT_BOUNDS_CHECK itself) into account.
-        GenTree* nothing = gtWrapWithSideEffects(gtNewNothingNode(), tree, GTF_ALL_EFFECT, /*ignoreRoot*/ true);
+        // Extract the side effects of idx and len. We deliberately ignore the potential null-check
+        // exception of the length (e.g. GT_ARR_LENGTH): having proven the bounds check redundant, we
+        // have also proven the length load is non-faulting. This mirrors the hack in optRemoveRangeCheck.
+        GenTree* sideEffList = nullptr;
+        gtExtractSideEffList(arrBndsChkLen, &sideEffList, GTF_ASG);
+        gtExtractSideEffList(arrBndsChkIdx, &sideEffList);
+
+        GenTree* nothing = (sideEffList != nullptr) ? sideEffList : gtNewNothingNode();
         return optAssertionProp_Update(nothing, arrBndsChk, stmt);
     };
 
