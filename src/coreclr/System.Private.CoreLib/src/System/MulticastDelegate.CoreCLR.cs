@@ -29,11 +29,6 @@ namespace System
             return _invocationCount == -1;
         }
 
-        internal bool InvocationListLogicallyNull()
-        {
-            return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is DynamicResolver);
-        }
-
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -65,7 +60,7 @@ namespace System
                 // 2- Unmanaged FntPtr (_invocationList == null)
                 // 3- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
 
-                if (InvocationListLogicallyNull())
+                if (HasSingleTarget)
                 {
                     if (IsUnmanagedFunctionPtr())
                     {
@@ -376,7 +371,7 @@ namespace System
             return del;
         }
 
-        internal new bool HasSingleTarget => _invocationList is not object[];
+        internal new bool HasSingleTarget => _invocationList is null;
 
         // Used by delegate invocation list enumerator
         internal object? /* Delegate? */ TryGetAt(int index)
@@ -412,29 +407,15 @@ namespace System
             }
         }
 
-        internal override object? GetTarget()
+        internal new object? GetTarget()
         {
-            if (_invocationCount != 0)
+            if (_invocationList is object[] invocationList)
             {
-                // _invocationCount != 0 we are in one of these cases:
-                // - Multicast -> return the target of the last delegate in the list
-                // - unmanaged function pointer - return null
-                // - virtual open delegate - return null
-                if (InvocationListLogicallyNull())
-                {
-                    // both open virtual and ftn pointer return null for the target
-                    return null;
-                }
-                else
-                {
-                    if (_invocationList is object[] invocationList)
-                    {
-                        int invocationCount = (int)_invocationCount;
-                        return ((Delegate)invocationList[invocationCount - 1]).GetTarget();
-                    }
-                }
+                // Multicast -> return the target of the last delegate in the list
+                int invocationCount = (int)_invocationCount;
+                return ((Delegate)invocationList[invocationCount - 1]).GetTarget();
             }
-            return base.GetTarget();
+            return _methodPtrAux == 0 ? _target : null;
         }
 
         protected override MethodInfo GetMethodImpl()

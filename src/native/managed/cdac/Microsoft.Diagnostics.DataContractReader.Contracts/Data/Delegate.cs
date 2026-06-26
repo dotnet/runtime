@@ -9,6 +9,11 @@ internal sealed partial class Delegate : IData<Delegate>
     [Field] public TargetPointer Target { get; }
     [Field] public TargetCodePointer MethodPtr { get; }
     [Field] public TargetCodePointer MethodPtrAux { get; }
+}
+
+[CdacType(nameof(DataType.MulticastDelegate))]
+internal sealed partial class MulticastDelegate : IData<MulticastDelegate>
+{
     [Field] public TargetPointer InvocationList { get; }
     [Field] public TargetNInt InvocationCount { get; }
 }

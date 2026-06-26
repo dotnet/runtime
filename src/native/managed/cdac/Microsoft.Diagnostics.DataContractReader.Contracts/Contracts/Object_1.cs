@@ -162,9 +162,10 @@ internal readonly struct Object_1 : IObject
     public DelegateInfo GetDelegateInfo(TargetPointer address)
     {
         Data.Delegate del = _target.ProcessedData.GetOrAdd<Data.Delegate>(address);
+        Data.MulticastDelegate multicast = _target.ProcessedData.GetOrAdd<Data.MulticastDelegate>(address);
 
         DelegateType delegateType = DelegateType.Unknown;
-        if (del.InvocationList == TargetPointer.Null && del.InvocationCount.Value != -1)
+        if (multicast.InvocationList == TargetPointer.Null && multicast.InvocationCount.Value != -1)
         {
             delegateType = del.MethodPtrAux == TargetCodePointer.Null ? DelegateType.Closed : DelegateType.Open;
         }

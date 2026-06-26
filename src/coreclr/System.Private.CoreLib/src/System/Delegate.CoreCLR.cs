@@ -219,7 +219,7 @@ namespace System
             return (MethodInfo)_helperObject;
         }
 
-        public object? Target => GetTarget();
+        internal object? GetTarget() => Unsafe.As<MulticastDelegate>(this).GetTarget();
 
         // V1 API.
         [RequiresUnreferencedCode("The target method might be removed")]
@@ -549,11 +549,6 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InitializeVirtualCallStub")]
         private static partial void InitializeVirtualCallStub(ObjectHandleOnStack d, IntPtr methodPtr);
-
-        internal virtual object? GetTarget()
-        {
-            return (_methodPtrAux == IntPtr.Zero) ? _target : null;
-        }
     }
 
     // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their
