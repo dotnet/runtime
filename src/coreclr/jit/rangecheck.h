@@ -616,22 +616,26 @@ struct RangeOps
         // and we have to be careful by not masking possible overflows.
 
         // Widen Upper Limit => Max(k, ($bnd + n)) yields ($bnd + n),
-        // This is correct if k >= 0 and n >= k, since $bnd always >= 0
+        // This is correct if n >= k, since $bnd always >= 0 (so $bnd + n >= n >= k).
         // ($bnd + n) could overflow, but the result ($bnd + n) also
         // preserves the overflow.
         //
-        if (r1hi.IsConstant() && r1hi.GetConstant() >= 0 && r2hi.IsBinOpArray() &&
-            r2hi.GetConstant() >= r1hi.GetConstant())
+        if (r1hi.IsConstant() && r2hi.IsBinOpArray() && r2hi.GetConstant() >= r1hi.GetConstant())
         {
             result.uLimit = r2hi;
         }
-        if (r2hi.IsConstant() && r2hi.GetConstant() >= 0 && r1hi.IsBinOpArray() &&
-            r1hi.GetConstant() >= r2hi.GetConstant())
+        if (r2hi.IsConstant() && r1hi.IsBinOpArray() && r1hi.GetConstant() >= r2hi.GetConstant())
         {
             result.uLimit = r1hi;
         }
 
         // Rule: <$bnd + cns1, ...> U <cns2, ...> = <min(cns1, cns2), ...> when cns1 <= 0
+        //
+        // $bnd is always >= 0, so when cns1 <= 0 the expression ($bnd + cns1) cannot overflow and
+        // its smallest value is exactly cns1, making min(cns1, cns2) a sound lower bound. We must
+        // keep the cns1 <= 0 guard: for cns1 > 0, ($bnd + cns1) can overflow (e.g. a Span length is
+        // bounded by INT_MAX, so $bnd + 1 may wrap to INT_MIN), which would make the collapsed
+        // constant an unsound (too-high) lower bound.
         //
         // Example: <$bnd - 3, ...> U <0, ...> = <-3, ...>
         //
@@ -814,11 +818,16 @@ public:
     // Constructor
     RangeCheck(Compiler* pCompiler);
 
+    void SetBudget(int budget)
+    {
+        m_nVisitBudget = budget;
+    }
+
     // Entry point to optimize range checks in the method. Assumes value numbering
     // and assertion prop phases are completed.
     bool OptimizeRangeChecks();
 
-    bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange);
+    bool TryGetRange(BasicBlock* block, GenTree* expr, Range* pRange, ValueNum preferredBoundVN = ValueNumStore::NoVN);
 
     // Cheaper version of TryGetRange that is based only on incoming assertions.
     static Range GetRangeFromAssertions(Compiler* comp, GenTree* tree, ASSERT_VALARG_TP assertions, int budget = 10);
@@ -827,7 +836,6 @@ public:
     static Range GetRangeFromType(var_types type);
 
 private:
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, bool>        OverflowMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, Range*>      RangeMap;
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, BasicBlock*> SearchPath;
 
@@ -915,8 +923,6 @@ private:
     bool DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl, const Range& range);
 
     // Does the current "expr", which is a use, involve a definition that overflows.
-    bool DoesOverflow(BasicBlock* block, GenTree* tree, const Range& range);
-
     bool ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range);
 
     // Widen the range by first checking if the induction variable is monotonically increasing.
@@ -939,11 +945,6 @@ private:
 
     // When we have this bound and a constant, we prefer to use this bound (if set)
     ValueNum m_preferredBound;
-
-    // Get the cached overflow values.
-    OverflowMap* GetOverflowMap();
-    void         ClearOverflowMap();
-    OverflowMap* m_pOverflowMap;
 
     // Get the cached range values.
     RangeMap* GetRangeMap();

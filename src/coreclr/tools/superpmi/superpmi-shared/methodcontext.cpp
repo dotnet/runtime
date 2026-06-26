@@ -1452,7 +1452,6 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
         value.instParamLookup.accessType = (DWORD)pResult->instParamLookup.accessType;
         value.instParamLookup.handle     = CastHandle(pResult->instParamLookup.handle);
-        value.wrapperDelegateInvoke      = (DWORD)pResult->wrapperDelegateInvoke;
     }
 
     value.exceptionCode = (DWORD)exceptionCode;
@@ -1475,7 +1474,6 @@ void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnost
         " ecnrl-%u (%s)"
         " stubLookup{%s}"
         " ipl{at-%08X (%s) hnd-%016" PRIX64 "}"
-        " wdi-%u (%s)"
         " excp-%08X",
         // input
         SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(),
@@ -1504,8 +1502,6 @@ void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnost
         value.instParamLookup.accessType,
         toString((InfoAccessType)value.instParamLookup.accessType),
         value.instParamLookup.handle,
-        value.wrapperDelegateInvoke,
-        (bool)value.wrapperDelegateInvoke ? "true" : "false",
         value.exceptionCode);
 }
 void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -1578,7 +1574,6 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         }
         pResult->instParamLookup.accessType = (InfoAccessType)value.instParamLookup.accessType;
         pResult->instParamLookup.handle = (CORINFO_GENERIC_HANDLE)value.instParamLookup.handle;
-        pResult->wrapperDelegateInvoke = (bool)value.wrapperDelegateInvoke;
     }
 
     *exceptionCode = (DWORD)value.exceptionCode;
@@ -3318,90 +3313,6 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     return result.returnValue;
 }
 
-void MethodContext::recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn,
-                                       bool*                 requiresInstMethodTableArg,
-                                       CORINFO_METHOD_HANDLE result)
-{
-    if (GetUnboxedEntry == nullptr)
-    {
-        GetUnboxedEntry = new LightWeightMap<DWORDLONG, DLD>();
-    }
-
-    DWORDLONG key = CastHandle(ftn);
-    DLD       value;
-    value.A = CastHandle(result);
-    if (requiresInstMethodTableArg != nullptr)
-    {
-        value.B = (DWORD)*requiresInstMethodTableArg ? 1 : 0;
-    }
-    else
-    {
-        value.B = 0;
-    }
-    GetUnboxedEntry->Add(key, value);
-    DEBUG_REC(dmpGetUnboxedEntry(key, value));
-}
-
-void MethodContext::dmpGetUnboxedEntry(DWORDLONG key, DLD value)
-{
-    printf("GetUnboxedEntry ftn-%016" PRIX64 ", result-%016" PRIX64 ", requires-inst-%u", key, value.A, value.B);
-}
-
-CORINFO_METHOD_HANDLE MethodContext::repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
-{
-    DWORDLONG key = CastHandle(ftn);
-
-    DLD value = LookupByKeyOrMiss(GetUnboxedEntry, key, ": key %016" PRIX64 "", key);
-
-    DEBUG_REP(dmpGetUnboxedEntry(key, value));
-
-    if (requiresInstMethodTableArg != nullptr)
-    {
-        *requiresInstMethodTableArg = (value.B == 1);
-    }
-    return (CORINFO_METHOD_HANDLE)(value.A);
-}
-
-void MethodContext::recGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn,
-    CORINFO_METHOD_HANDLE methodHandle,
-    CORINFO_CLASS_HANDLE classHandle,
-    CORINFO_METHOD_HANDLE result)
-{
-    if (GetInstantiatedEntry == nullptr)
-    {
-        GetInstantiatedEntry = new LightWeightMap<DWORDLONG, Agnostic_GetInstantiatedEntryResult>();
-    }
-
-    DWORDLONG key = CastHandle(ftn);
-    Agnostic_GetInstantiatedEntryResult value;
-    value.methodHandle = CastHandle(methodHandle);
-    value.classHandle = CastHandle(classHandle);
-    value.result = CastHandle(result);
-
-    GetInstantiatedEntry->Add(key, value);
-    DEBUG_REC(dmpGetUnboxedEntry(key, value));
-}
-
-void MethodContext::dmpGetInstantiatedEntry(DWORDLONG key, const Agnostic_GetInstantiatedEntryResult& value)
-{
-    printf("GetUnboxedEntry ftn-%016" PRIX64 ", methodHnd-%016" PRIX64 ", classHnd-%016" PRIX64 ", result-%016" PRIX64 "\n",
-        key, value.methodHandle, value.classHandle, value.result);
-}
-
-CORINFO_METHOD_HANDLE MethodContext::repGetInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodHandle, CORINFO_CLASS_HANDLE* classHandle)
-{
-    DWORDLONG key = CastHandle(ftn);
-
-    Agnostic_GetInstantiatedEntryResult value = LookupByKeyOrMiss(GetInstantiatedEntry, key, ": key %016" PRIX64 "", key);
-
-    DEBUG_REP(dmpGetInstantiatedEntryEntry(key, value));
-
-    *methodHandle = (CORINFO_METHOD_HANDLE)value.methodHandle;
-    *classHandle = (CORINFO_CLASS_HANDLE)value.classHandle;
-
-    return (CORINFO_METHOD_HANDLE)(value.result);
-}
-
 void MethodContext::recGetAsyncOtherVariant(CORINFO_METHOD_HANDLE ftn,
                                             bool                  variantIsThunk,
                                             CORINFO_METHOD_HANDLE result)
@@ -4414,7 +4325,6 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     value.offsetOfGCState                            = (DWORD)pEEInfoOut->offsetOfGCState;
     value.offsetOfDelegateInstance                   = (DWORD)pEEInfoOut->offsetOfDelegateInstance;
     value.offsetOfDelegateFirstTarget                = (DWORD)pEEInfoOut->offsetOfDelegateFirstTarget;
-    value.offsetOfWrapperDelegateIndirectCell        = (DWORD)pEEInfoOut->offsetOfWrapperDelegateIndirectCell;
     value.sizeOfReversePInvokeFrame                  = (DWORD)pEEInfoOut->sizeOfReversePInvokeFrame;
     value.osPageSize                                 = (DWORD)pEEInfoOut->osPageSize;
     value.maxUncheckedOffsetForNullObject            = (DWORD)pEEInfoOut->maxUncheckedOffsetForNullObject;
@@ -4427,14 +4337,14 @@ void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
 void MethodContext::dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& value)
 {
     printf("GetEEInfo key %u, value icfi{sz-%u sz-witharg-%u ofl-%u ocsp-%u ocsfp-%u oct-%u ora-%u ossa-%u osap-%u} "
-           "otf-%u ogcs-%u odi-%u odft-%u osdic-%u srpf-%u osps-%u muono-%u tabi-%u osType-%u",
+           "otf-%u ogcs-%u odi-%u odft-%u srpf-%u osps-%u muono-%u tabi-%u osType-%u",
            key, value.inlinedCallFrameInfo.size, value.inlinedCallFrameInfo.sizeWithSecretStubArg,
            value.inlinedCallFrameInfo.offsetOfFrameLink,
            value.inlinedCallFrameInfo.offsetOfCallSiteSP, value.inlinedCallFrameInfo.offsetOfCalleeSavedFP,
            value.inlinedCallFrameInfo.offsetOfCallTarget, value.inlinedCallFrameInfo.offsetOfReturnAddress,
            value.inlinedCallFrameInfo.offsetOfSecretStubArg, value.inlinedCallFrameInfo.offsetOfSPAfterProlog,
            value.offsetOfThreadFrame, value.offsetOfGCState, value.offsetOfDelegateInstance,
-           value.offsetOfDelegateFirstTarget, value.offsetOfWrapperDelegateIndirectCell,
+           value.offsetOfDelegateFirstTarget,
            value.sizeOfReversePInvokeFrame, value.osPageSize, value.maxUncheckedOffsetForNullObject, value.targetAbi,
            value.osType);
 }
@@ -4455,16 +4365,15 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         (unsigned)value.inlinedCallFrameInfo.offsetOfReturnAddress;
     pEEInfoOut->inlinedCallFrameInfo.offsetOfSecretStubArg = (unsigned)value.inlinedCallFrameInfo.offsetOfSecretStubArg;
     pEEInfoOut->inlinedCallFrameInfo.offsetOfSPAfterProlog = (unsigned)value.inlinedCallFrameInfo.offsetOfSPAfterProlog;
-    pEEInfoOut->offsetOfThreadFrame                = (unsigned)value.offsetOfThreadFrame;
-    pEEInfoOut->offsetOfGCState                    = (unsigned)value.offsetOfGCState;
-    pEEInfoOut->offsetOfDelegateInstance           = (unsigned)value.offsetOfDelegateInstance;
-    pEEInfoOut->offsetOfDelegateFirstTarget        = (unsigned)value.offsetOfDelegateFirstTarget;
-    pEEInfoOut->offsetOfWrapperDelegateIndirectCell= (unsigned)value.offsetOfWrapperDelegateIndirectCell;
-    pEEInfoOut->sizeOfReversePInvokeFrame          = (unsigned)value.sizeOfReversePInvokeFrame;
-    pEEInfoOut->osPageSize                         = (size_t)value.osPageSize;
-    pEEInfoOut->maxUncheckedOffsetForNullObject    = (size_t)value.maxUncheckedOffsetForNullObject;
-    pEEInfoOut->targetAbi                          = (CORINFO_RUNTIME_ABI)value.targetAbi;
-    pEEInfoOut->osType                             = (CORINFO_OS)value.osType;
+    pEEInfoOut->offsetOfThreadFrame             = (unsigned)value.offsetOfThreadFrame;
+    pEEInfoOut->offsetOfGCState                 = (unsigned)value.offsetOfGCState;
+    pEEInfoOut->offsetOfDelegateInstance        = (unsigned)value.offsetOfDelegateInstance;
+    pEEInfoOut->offsetOfDelegateFirstTarget     = (unsigned)value.offsetOfDelegateFirstTarget;
+    pEEInfoOut->sizeOfReversePInvokeFrame       = (unsigned)value.sizeOfReversePInvokeFrame;
+    pEEInfoOut->osPageSize                      = (size_t)value.osPageSize;
+    pEEInfoOut->maxUncheckedOffsetForNullObject = (size_t)value.maxUncheckedOffsetForNullObject;
+    pEEInfoOut->targetAbi                       = (CORINFO_RUNTIME_ABI)value.targetAbi;
+    pEEInfoOut->osType                          = (CORINFO_OS)value.osType;
 }
 
 void MethodContext::recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo)
@@ -4514,6 +4423,33 @@ void MethodContext::repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->finishSuspensionNoContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.finishSuspensionNoContinuationContextMethHnd;
     pAsyncInfoOut->finishSuspensionWithContinuationContextMethHnd = (CORINFO_METHOD_HANDLE)value.finishSuspensionWithContinuationContextMethHnd;
     DEBUG_REP(dmpGetAsyncInfo(0, value));
+}
+
+void MethodContext::recGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_LOOKUP* instArg, CORINFO_METHOD_HANDLE methHnd)
+{
+    if (GetAwaitReturnCall == nullptr)
+        GetAwaitReturnCall = new LightWeightMap<DWORDLONG, Agnostic_GetAwaitReturnCallResult>();
+
+    Agnostic_GetAwaitReturnCallResult value;
+    ZeroMemory(&value, sizeof(value));
+    value.methodHnd = CastHandle(methHnd);
+    value.instArg = SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(instArg);
+
+    GetAwaitReturnCall->Add(CastHandle(callerHnd), value);
+    DEBUG_REC(dmpGetAwaitReturnCall(CastHandle(callerHnd), value));
+}
+void MethodContext::dmpGetAwaitReturnCall(DWORDLONG key, Agnostic_GetAwaitReturnCallResult& value)
+{
+    printf("GetAwaitReturnCall key %016" PRIX64 " value methodHnd-%016" PRIX64 " instArg %s",
+        key,
+        value.methodHnd,
+        SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP(value.instArg).c_str());
+}
+CORINFO_METHOD_HANDLE MethodContext::repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_LOOKUP* instArg)
+{
+    const Agnostic_GetAwaitReturnCallResult& result = LookupByKeyOrMissNoMessage(GetAwaitReturnCall, CastHandle(callerHnd));
+    *instArg = SpmiRecordsHelper::RestoreCORINFO_LOOKUP(result.instArg);
+    return (CORINFO_METHOD_HANDLE)result.methodHnd;
 }
 
 void MethodContext::recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal)
