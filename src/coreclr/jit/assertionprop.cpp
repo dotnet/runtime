@@ -2527,6 +2527,79 @@ bool Compiler::optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT
     }) == AssertVisit::Continue;
 }
 
+//------------------------------------------------------------------------
+// optAssertionVNIsNotExactType: see if a VN's runtime type is known to never
+//    be exactly "typeHndVN", using subtype/exact-type assertions and assertions
+//    that reach via PHI definitions.
+//
+// Arguments:
+//   objVN      - VN of the object whose exact type is being tested
+//   typeHndVN  - VN representing the type handle being compared against
+//   assertions - set of live assertions
+//   budget     - limits the depth of recursion when chasing assertions across
+//                phi-def reaching VNs.
+//
+// Return Value:
+//   True if the object's exact runtime type can never be "typeHndVN".
+//
+// Notes:
+//   Used to fold exact type tests of the form "obj->pMT ==/!= typeHnd". If obj
+//   is known (via an assertion) to be an instance of some class "cls" that
+//   "typeHnd" can never be cast to, then obj's exact type can never be "typeHnd".
+//   For example, after "if (o is Test)" we know "o" is a "Test", so an inner
+//   "o is int" test (comparing o's method table to System.Int32) is always false.
+//
+bool Compiler::optAssertionVNIsNotExactType(ValueNum objVN, ValueNum typeHndVN, ASSERT_VALARG_TP assertions, int budget)
+{
+    if ((budget <= 0) || (objVN == ValueNumStore::NoVN))
+    {
+        return false;
+    }
+
+    CORINFO_CLASS_HANDLE exactCls;
+    if (!vnStore->IsVNTypeHandle(typeHndVN, &exactCls))
+    {
+        return false;
+    }
+    assert(exactCls != NO_CLASS_HANDLE);
+
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        bvIndex = 0;
+    while (iter.NextElem(&bvIndex))
+    {
+        AssertionIndex const index        = GetAssertionIndex(bvIndex);
+        const AssertionDsc&  curAssertion = optGetAssertion(index);
+
+        if (!curAssertion.KindIs(OAK_EQUAL) || !curAssertion.GetOp1().KindIs(O1K_SUBTYPE, O1K_EXACT_TYPE) ||
+            (curAssertion.GetOp1().GetVN() != objVN))
+        {
+            continue;
+        }
+
+        // Extract CORINFO_CLASS_HANDLE from curAssertion.GetOp2()
+        CORINFO_CLASS_HANDLE cls;
+        if (!vnStore->IsVNTypeHandle(curAssertion.GetOp2().GetVN(), &cls))
+        {
+            continue;
+        }
+
+        // We have "objVN is (exactly/subtype of) cls". If "exactCls" can never be cast to
+        // "cls", then objVN's exact runtime type can never be "exactCls".
+        if (info.compCompHnd->compareTypesForCast(exactCls, cls) == TypeCompareState::MustNot)
+        {
+            return true;
+        }
+    }
+
+    // For PHI-defs, walk reaching assertions/VNs and recursively check.
+    return optVisitReachingAssertions(objVN,
+                                      [this, typeHndVN, budget](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
+        return optAssertionVNIsNotExactType(reachingVN, typeHndVN, reachingAssertions, budget - 1)
+                   ? AssertVisit::Continue
+                   : AssertVisit::Abort;
+    }) == AssertVisit::Continue;
+}
+
 //------------------------------------------------------------------------------
 // optVNBasedFoldExpr_Call_Memcmp: Folds NI_System_SpanHelpers_SequenceEqual for immutable data.
 //
@@ -4533,6 +4606,34 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     if (!tree->OperIs(GT_EQ, GT_NE))
     {
         return nullptr;
+    }
+
+    // See if we can fold an exact type test "IND(obj) ==/!= TypeHandle" using subtype/exact-type
+    // assertions about "obj". If "obj" is known to be an instance of some class that the target
+    // type handle can never be cast to, then obj's exact type can never be that type handle, so
+    // the test folds to a constant. E.g. inside "if (o is Test)", an "o is int" test is always false.
+    {
+        GenTree* indir     = nullptr;
+        ValueNum typeHndVN = ValueNumStore::NoVN;
+        if (op1->OperIs(GT_IND) && op1->gtGetOp1()->TypeIs(TYP_REF))
+        {
+            indir     = op1;
+            typeHndVN = op2VN;
+        }
+        else if (op2->OperIs(GT_IND) && op2->gtGetOp1()->TypeIs(TYP_REF))
+        {
+            indir     = op2;
+            typeHndVN = op1VN;
+        }
+
+        if ((indir != nullptr) &&
+            optAssertionVNIsNotExactType(optConservativeNormalVN(indir->gtGetOp1()), typeHndVN, assertions))
+        {
+            // "IND(obj) == TypeHandle" --> false, "IND(obj) != TypeHandle" --> true
+            newTree = tree->OperIs(GT_EQ) ? gtNewFalse() : gtNewTrue();
+            newTree = gtWrapWithSideEffects(newTree, tree, GTF_ALL_EFFECT);
+            return optAssertionProp_Update(newTree, tree, stmt);
+        }
     }
 
     // Bail out if op1 is not side effect free. Note we'll be bashing it below, unlike op2.

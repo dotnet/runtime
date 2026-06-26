@@ -9173,6 +9173,7 @@ public:
     // Used for respective assertion propagations.
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     bool optAssertionVNIsSubtype(ValueNum objVN, ValueNum castToVN, ASSERT_VALARG_TP assertions, int budget = 10);
+    bool optAssertionVNIsNotExactType(ValueNum objVN, ValueNum typeHndVN, ASSERT_VALARG_TP assertions, int budget = 10);
     bool optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget = 10);
     bool optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions);
 
