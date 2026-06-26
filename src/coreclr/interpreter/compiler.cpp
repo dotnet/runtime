@@ -8312,7 +8312,7 @@ void InterpCompiler::CreateSynchronizedRetValVar()
         return;
     }
 
-    if (m_methodInfo->args.retType == InterpTypeVoid && !m_isAsyncVersionOfSyncMethod)
+    if (m_methodInfo->args.retType == CORINFO_TYPE_VOID && !m_isAsyncVersionOfSyncMethod)
     {
         return;
     }
