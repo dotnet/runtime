@@ -24,8 +24,8 @@ namespace System.Security.Cryptography.X509Certificates
         private byte[]? _lazyPublicKey;
         private byte[]? _lazyRawData;
         private volatile bool _lazyKeyAlgorithmParametersCreated;
-        private DateTime _lazyNotBefore = DateTime.MinValue;
-        private DateTime _lazyNotAfter = DateTime.MinValue;
+        private DateTimeOffset _lazyNotBefore = DateTimeOffset.MinValue;
+        private DateTimeOffset _lazyNotAfter = DateTimeOffset.MinValue;
 
         public virtual void Reset()
         {
@@ -37,8 +37,8 @@ namespace System.Security.Cryptography.X509Certificates
             _lazyKeyAlgorithmParameters = null;
             _lazyPublicKey = null;
             _lazyRawData = null;
-            _lazyNotBefore = DateTime.MinValue;
-            _lazyNotAfter = DateTime.MinValue;
+            _lazyNotBefore = DateTimeOffset.MinValue;
+            _lazyNotAfter = DateTimeOffset.MinValue;
             _lazyKeyAlgorithmParametersCreated = false;
 
             ICertificatePalCore? pal = Pal;
@@ -476,12 +476,12 @@ namespace System.Security.Cryptography.X509Certificates
 
         public virtual string GetEffectiveDateString()
         {
-            return GetNotBefore().ToString();
+            return GetNotBeforeUtc().LocalDateTime.ToString();
         }
 
         public virtual string GetExpirationDateString()
         {
-            return GetNotAfter().ToString();
+            return GetNotAfterUtc().LocalDateTime.ToString();
         }
 
         public virtual string GetFormat()
@@ -635,13 +635,13 @@ namespace System.Security.Cryptography.X509Certificates
             sb.AppendLine();
             sb.AppendLine("[Not Before]");
             sb.Append("  ");
-            sb.AppendLine(FormatDate(GetNotBefore()));
+            sb.AppendLine(FormatDate(GetNotBeforeUtc().LocalDateTime));
 
             // NotAfter
             sb.AppendLine();
             sb.AppendLine("[Not After]");
             sb.Append("  ");
-            sb.AppendLine(FormatDate(GetNotAfter()));
+            sb.AppendLine(FormatDate(GetNotAfterUtc().LocalDateTime));
 
             // Thumbprint
             sb.AppendLine();
@@ -693,13 +693,13 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal ICertificatePalCore? Pal { get; private set; }
 
-        internal DateTime GetNotAfter()
+        internal DateTimeOffset GetNotAfterUtc()
         {
             ThrowIfInvalid();
 
-            DateTime notAfter = _lazyNotAfter;
+            DateTimeOffset notAfter = _lazyNotAfter;
 
-            if (notAfter == DateTime.MinValue)
+            if (notAfter == DateTimeOffset.MinValue)
             {
                 notAfter = _lazyNotAfter = Pal.NotAfter;
             }
@@ -707,13 +707,13 @@ namespace System.Security.Cryptography.X509Certificates
             return notAfter;
         }
 
-        internal DateTime GetNotBefore()
+        internal DateTimeOffset GetNotBeforeUtc()
         {
             ThrowIfInvalid();
 
-            DateTime notBefore = _lazyNotBefore;
+            DateTimeOffset notBefore = _lazyNotBefore;
 
-            if (notBefore == DateTime.MinValue)
+            if (notBefore == DateTimeOffset.MinValue)
             {
                 notBefore = _lazyNotBefore = Pal.NotBefore;
             }

@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates
         private SafeX509ChainHandle? _chainHandle;
         public X509ChainElement[]? ChainElements { get; private set; }
         public X509ChainStatus[]? ChainStatus { get; private set; }
-        private DateTime _verificationTime;
+        private DateTimeOffset _verificationTime;
         private X509RevocationMode _revocationMode;
 
         internal SecTrustChainPal()

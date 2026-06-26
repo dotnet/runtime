@@ -37,6 +37,12 @@ internal static partial class Interop
                 return DateTime.FromFileTime(fileTime);
             }
 
+            internal DateTimeOffset ToDateTimeOffset()
+            {
+                long fileTime = (((long)ftTimeHigh) << 32) + ftTimeLow;
+                return new DateTimeOffset(DateTime.FromFileTimeUtc(fileTime));
+            }
+
             internal static FILETIME FromDateTime(DateTime dt)
             {
                 long fileTime = dt.ToFileTime();

@@ -110,39 +110,32 @@ namespace System.Security.Cryptography.X509Certificates
                 });
         }
 
-        private static DateTime NormalizeDateTime(DateTime dateTime)
+        private static DateTimeOffset NormalizeDateTime(DateTime dateTime)
         {
-            // If it's explicitly UTC, convert it to local before a comparison, since the
-            // NotBefore and NotAfter are in Local time.
-            //
-            // If it was Unknown, assume it was Local.
-            if (dateTime.Kind == DateTimeKind.Utc)
-            {
-                return dateTime.ToLocalTime();
-            }
-
+            // DateTime.Kind.Unspecified is assumed to be Local, matching the implicit
+            // DateTime -> DateTimeOffset conversion.
             return dateTime;
         }
 
         public void FindByTimeValid(DateTime dateTime)
         {
-            DateTime normalized = NormalizeDateTime(dateTime);
+            DateTimeOffset normalized = NormalizeDateTime(dateTime);
 
-            FindCore(normalized, static (normalized, cert) => cert.NotBefore <= normalized && normalized <= cert.NotAfter);
+            FindCore(normalized, static (normalized, cert) => cert.GetNotBeforeUtc() <= normalized && normalized <= cert.GetNotAfterUtc());
         }
 
         public void FindByTimeNotYetValid(DateTime dateTime)
         {
-            DateTime normalized = NormalizeDateTime(dateTime);
+            DateTimeOffset normalized = NormalizeDateTime(dateTime);
 
-            FindCore(normalized, static (normalized, cert) => cert.NotBefore > normalized);
+            FindCore(normalized, static (normalized, cert) => cert.GetNotBeforeUtc() > normalized);
         }
 
         public void FindByTimeExpired(DateTime dateTime)
         {
-            DateTime normalized = NormalizeDateTime(dateTime);
+            DateTimeOffset normalized = NormalizeDateTime(dateTime);
 
-            FindCore(normalized, static (normalized, cert) => cert.NotAfter < normalized);
+            FindCore(normalized, static (normalized, cert) => cert.GetNotAfterUtc() < normalized);
         }
 
         public void FindByTemplateName(string templateName)
