@@ -3,30 +3,34 @@
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
-    public class ECDsaProvider : IECDsaProvider
+    public class ECDsaCngProvider : ECDsaProvider
     {
-        public ECDsa Create()
+        public static readonly ECDsaCngProvider Instance = new ECDsaCngProvider();
+
+        private ECDsaCngProvider() { }
+
+        public override ECDsa Create()
         {
             return new ECDsaCng();
         }
 
-        public ECDsa Create(int keySize)
+        public override ECDsa Create(int keySize)
         {
             return new ECDsaCng(keySize);
         }
 
-        public ECDsa Create(ECCurve curve)
+        public override ECDsa Create(ECCurve curve)
         {
             return new ECDsaCng(curve);
         }
 
-        public bool IsCurveValid(Oid oid)
+        public override bool IsCurveValid(Oid oid)
         {
             // Friendly name required for windows
             return NativeOidFriendlyNameExists(oid.FriendlyName);
         }
 
-        public bool ExplicitCurvesSupported
+        public override bool ExplicitCurvesSupported
         {
             get
             {
@@ -51,10 +55,5 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 return false;
             }
         }
-    }
-
-    public partial class ECDsaFactory
-    {
-        private static readonly IECDsaProvider s_provider = new ECDsaProvider();
     }
 }
