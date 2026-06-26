@@ -20,7 +20,7 @@ public class Async2Synchronized
         Task t = p.Foo();
         // Returning the task from the [MethodImpl(MethodImplOptions.Synchronized)]
         // method Bar must release the lock it acquired, so it should not be held here.
-        Assert.False(Monitor.IsEntered(typeof(Async2Synchronized)));
+        Assert.False(Monitor.IsEntered(p));
         await t;
     }
 
@@ -47,7 +47,7 @@ public class Async2Synchronized
         ValueTask t = p.FooValueTask();
         // Returning the ValueTask from the [MethodImpl(MethodImplOptions.Synchronized)]
         // method Bar must release the lock it acquired, so it should not be held here.
-        Assert.False(Monitor.IsEntered(typeof(Async2Synchronized)));
+        Assert.False(Monitor.IsEntered(p));
         await t;
     }
 
