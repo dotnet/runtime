@@ -14,7 +14,7 @@ namespace System.IO.Compression.Tests
     {
         public static string bad(string filename) => Path.Combine("ZipTestData", "badzipfiles", filename);
         public static string compat(string filename) => Path.Combine("ZipTestData", "compat", filename);
-        public static string passwordProtected(string filename) => Path.Combine("ZipTestData", "PasswordProtectedZipArchives", filename);
+        public static string passwordProtected(string filename) => Path.Combine("PasswordProtectedZipArchives", filename);
         public static string strange(string filename) => Path.Combine("ZipTestData", "StrangeZipFiles", filename);
         public static string zfile(string filename) => Path.Combine("ZipTestData", "refzipfiles", filename);
         public static string zfolder(string filename) => Path.Combine("ZipTestData", "refzipfolders", filename);

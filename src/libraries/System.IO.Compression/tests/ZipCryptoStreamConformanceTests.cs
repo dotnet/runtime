@@ -14,7 +14,7 @@ namespace System.IO.Compression.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
     public class ZipCryptoStreamConformanceTests : StandaloneStreamConformanceTests
     {
-        private const string TestPassword = "test-password";
+        private const string TestPassword = "PLACEHOLDER";
         private const ushort PasswordVerifier = 0x1234;
 
         private delegate object CreateKeyDelegate(ReadOnlySpan<char> password);

@@ -34,7 +34,7 @@ namespace System.IO.Compression.Tests
     /// </summary>
     public abstract class WinZipAesStreamConformanceTests : StandaloneStreamConformanceTests
     {
-        private const string TestPassword = "test-password";
+        private const string TestPassword = "PLACEHOLDER";
 
         private delegate object CreateKeyDelegate(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits);
         private static readonly CreateKeyDelegate s_createKey;

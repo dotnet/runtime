@@ -799,15 +799,20 @@ public partial class ZipArchiveEntry
                             ZipCompressionMethod savedMethod = CompressionMethod;
                             CompressionMethod = useDeflate ? ZipCompressionMethod.Deflate : ZipCompressionMethod.Stored;
 
-                            var crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream);
-                            await using (crcStream.ConfigureAwait(false))
+                            try
                             {
-                                _storedUncompressedData.Seek(0, SeekOrigin.Begin);
-                                await _storedUncompressedData.CopyToAsync(crcStream, cancellationToken).ConfigureAwait(false);
+                                var crcStream = GetDataCompressor(encryptionStream, leaveBackingStreamOpen: true, onClose: null, streamForPosition: _archive.ArchiveStream);
+                                await using (crcStream.ConfigureAwait(false))
+                                {
+                                    _storedUncompressedData.Seek(0, SeekOrigin.Begin);
+                                    await _storedUncompressedData.CopyToAsync(crcStream, cancellationToken).ConfigureAwait(false);
+                                }
                             }
-
-                            // Restore CompressionMethod - AesCompressionMethodValue is used directly when writing headers
-                            CompressionMethod = savedMethod;
+                            finally
+                            {
+                                // Restore CompressionMethod - AesCompressionMethodValue is used directly when writing headers
+                                CompressionMethod = savedMethod;
+                            }
                         }
                         else
                         {
@@ -859,39 +864,44 @@ public partial class ZipArchiveEntry
                 ZipEncryptionMethod savedEncryption = Encryption;
                 ZipCompressionMethod savedCompressionMethod = CompressionMethod;
 
-                // For AES entries: set CompressionMethod to Aes so header writes method 99,
-                // but clear _encryptionMethod so WriteLocalFileHeaderAsync doesn't create a new
-                // AES extra field (the original one in _lhUnknownExtraFields will be used).
-                if (savedEncryption is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256)
+                try
                 {
-                    CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
-                    Encryption = ZipEncryptionMethod.None;
+                    // For AES entries: set CompressionMethod to Aes so header writes method 99,
+                    // but clear _encryptionMethod so WriteLocalFileHeaderAsync doesn't create a new
+                    // AES extra field (the original one in _lhUnknownExtraFields will be used).
+                    if (savedEncryption is ZipEncryptionMethod.Aes128 or ZipEncryptionMethod.Aes192 or ZipEncryptionMethod.Aes256)
+                    {
+                        CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
+                        Encryption = ZipEncryptionMethod.None;
+                    }
+
+                    await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
+
+                    // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
+                    // (because Encryption was temporarily set to None and the stream is seekable).
+                    // If the original entry had a data descriptor, patch the general-purpose bit
+                    // flags in the already-written local header to match, so the header on disk
+                    // is consistent with the data descriptor we conditionally write below.
+                    if ((savedFlags & BitFlagValues.DataDescriptor) != 0 &&
+                        (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
+                    {
+                        long currentPos = _archive.ArchiveStream.Position;
+                        _archive.ArchiveStream.Seek(
+                            _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags,
+                            SeekOrigin.Begin);
+                        byte[] flagBytes = new byte[2];
+                        BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)savedFlags);
+                        await _archive.ArchiveStream.WriteAsync(flagBytes, cancellationToken).ConfigureAwait(false);
+                        _archive.ArchiveStream.Seek(currentPos, SeekOrigin.Begin);
+                    }
                 }
-
-                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
-
-                // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
-                // (because Encryption was temporarily set to None and the stream is seekable).
-                // If the original entry had a data descriptor, patch the general-purpose bit
-                // flags in the already-written local header to match, so the header on disk
-                // is consistent with the data descriptor we conditionally write below.
-                if ((savedFlags & BitFlagValues.DataDescriptor) != 0 &&
-                    (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
+                finally
                 {
-                    long currentPos = _archive.ArchiveStream.Position;
-                    _archive.ArchiveStream.Seek(
-                        _offsetOfLocalHeader + ZipLocalFileHeader.FieldLocations.GeneralPurposeBitFlags,
-                        SeekOrigin.Begin);
-                    byte[] flagBytes = new byte[2];
-                    BinaryPrimitives.WriteUInt16LittleEndian(flagBytes, (ushort)savedFlags);
-                    await _archive.ArchiveStream.WriteAsync(flagBytes, cancellationToken).ConfigureAwait(false);
-                    _archive.ArchiveStream.Seek(currentPos, SeekOrigin.Begin);
+                    // Restore original state
+                    _generalPurposeBitFlag = savedFlags;
+                    Encryption = savedEncryption;
+                    CompressionMethod = savedCompressionMethod;
                 }
-
-                // Restore original state
-                _generalPurposeBitFlag = savedFlags;
-                Encryption = savedEncryption;
-                CompressionMethod = savedCompressionMethod;
 
                 // according to ZIP specs, zero-byte files MUST NOT include file data
                 if (_uncompressedSize != 0)
