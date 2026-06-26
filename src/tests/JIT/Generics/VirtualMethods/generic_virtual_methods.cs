@@ -242,15 +242,20 @@ internal class RuntimeLookupDelegateGenericVirtual
         Base test4 = new DerivedClass();
         Delegate m1 = test4.Foo<List<T>>();
         Delegate m2 = test4.Foo<List<List<T>>>;
-        Assert.Equal(m1, m2);
+        Assert.Equal(m2, m1);
+
+        IBase test5 = new DerivedStructNoRecursion();
+        Delegate m3 = test5.Foo<List<T>>();
+        Delegate m4 = test5.Foo<List<List<T>>>;
+        Assert.Equal(m4.Method, m3.Method);
 
         // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
         if (!TestLibrary.Utilities.IsNativeAot)
         {
-            IBase test5 = new DerivedStruct();
-            Delegate m3 = test5.Foo<List<T>>();
-            Delegate m4 = test5.Foo<List<List<T>>>;
-            Assert.Equal(m3.Method, m4.Method);
+            IBase test6 = new DerivedStruct();
+            Delegate m5 = test6.Foo<List<T>>();
+            Delegate m6 = test6.Foo<List<List<T>>>;
+            Assert.Equal(m6.Method, m5.Method);
         }
     }
 
@@ -279,15 +284,20 @@ internal class RuntimeLookupDelegateGenericVirtual
         Base<U> test4 = new DerivedClass<U>();
         Delegate m1 = test4.Foo<List<T>>();
         Delegate m2 = test4.Foo<List<List<T>>>;
-        Assert.Equal(m1, m2);
+        Assert.Equal(m2, m1);
+
+        IBase<U> test5 = new DerivedStructNoRecursion<U>();
+        Delegate m3 = test5.Foo<List<T>>();
+        Delegate m4 = test5.Foo<List<T>>;
+        Assert.Equal(m4.Method, m3.Method);
 
         // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
         if (!TestLibrary.Utilities.IsNativeAot)
         {
-            IBase<U> test5 = new DerivedStruct<U>();
-            Delegate m3 = test5.Foo<List<T>>();
-            Delegate m4 = test5.Foo<List<List<T>>>;
-            Assert.Equal(m3.Method, m4.Method);
+            IBase<U> test6 = new DerivedStruct<U>();
+            Delegate m5 = test6.Foo<List<T>>();
+            Delegate m6 = test6.Foo<List<List<T>>>;
+            Assert.Equal(m6.Method, m5.Method);
         }
     }
 
@@ -316,15 +326,20 @@ internal class RuntimeLookupDelegateGenericVirtual
         Base<string> test4 = new DerivedClassString();
         Delegate m1 = test4.Foo<List<T>>();
         Delegate m2 = test4.Foo<List<List<T>>>;
-        Assert.Equal(m1, m2);
+        Assert.Equal(m2, m1);
+
+        IBase<string> test5 = new DerivedStructStringNoRecursion();
+        Delegate m3 = test5.Foo<List<T>>();
+        Delegate m4 = test5.Foo<List<T>>;
+        Assert.Equal(m4.Method, m3.Method);
 
         // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
         if (!TestLibrary.Utilities.IsNativeAot)
         {
-            IBase<string> test5 = new DerivedStructString();
-            Delegate m3 = test5.Foo<List<T>>();
-            Delegate m4 = test5.Foo<List<List<T>>>;
-            Assert.Equal(m3.Method, m4.Method);
+            IBase<string> test6 = new DerivedStructString();
+            Delegate m5 = test6.Foo<List<T>>();
+            Delegate m6 = test6.Foo<List<List<T>>>;
+            Assert.Equal(m6.Method, m5.Method);
         }
     }
 }
@@ -379,6 +394,14 @@ internal struct DerivedStruct : IBase
     }
 }
 
+internal struct DerivedStructNoRecursion : IBase
+{
+    public Delegate Foo<U>()
+    {
+        return Foo<U>;
+    }
+}
+
 internal class Base<T>
 {
     public virtual Delegate Foo<U>()
@@ -429,6 +452,14 @@ internal struct DerivedStruct<T> : IBase<T>
     }
 }
 
+internal struct DerivedStructNoRecursion<T> : IBase<T>
+{
+    public Delegate Foo<U>()
+    {
+        return Foo<U>;
+    }
+}
+
 internal class DerivedClassString : Base<string>
 {
     public override Delegate Foo<U1>()
@@ -450,6 +481,14 @@ internal struct DerivedStructString : IBase<string>
     public Delegate Foo<U>()
     {
         return Foo<List<U>>;
+    }
+}
+
+internal struct DerivedStructStringNoRecursion : IBase<string>
+{
+    public Delegate Foo<U>()
+    {
+        return Foo<U>;
     }
 }
 
