@@ -58,36 +58,20 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void Enter(object obj)
         {
-            ObjectHeader.HeaderLockResult result = ObjectHeader.AcquireThinLock(obj);
-            if (result == ObjectHeader.HeaderLockResult.Success)
-                return;
-
-            GetLockObject(obj).Enter();
+            ObjectHeader.AcquireThinLock(obj);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj)
         {
-            ObjectHeader.HeaderLockResult result = ObjectHeader.AcquireThinLock(obj, isOneShot: true);
-            if (result == ObjectHeader.HeaderLockResult.Success)
-                return true;
-
-            if (result == ObjectHeader.HeaderLockResult.Failure)
-                return false;
-
-            return GetLockObject(obj).TryEnter();
+            return ObjectHeader.TryAcquireThinLock(obj);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
-
-            ObjectHeader.HeaderLockResult result = ObjectHeader.AcquireThinLock(obj, isOneShot: true);
-            if (result == ObjectHeader.HeaderLockResult.Success)
-                return true;
-
-            return GetLockObject(obj).TryEnter(millisecondsTimeout);
+            return ObjectHeader.TryAcquireThinLock(obj, millisecondsTimeout);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -114,14 +98,7 @@ namespace System.Threading
 
         internal static void SynchronizedMethodEnter(object obj, ref bool lockTaken)
         {
-            ObjectHeader.HeaderLockResult result = ObjectHeader.AcquireThinLock(obj);
-            if (result == ObjectHeader.HeaderLockResult.Success)
-            {
-                lockTaken = true;
-                return;
-            }
-
-            GetLockObject(obj).Enter();
+            ObjectHeader.AcquireThinLock(obj);
             lockTaken = true;
         }
 
