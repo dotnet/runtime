@@ -3095,6 +3095,25 @@ namespace Internal.JitInterface
                 }
                 // ENCODE_NONE
             }
+            else if (_compilation.CompilationModuleGroup.TypeLayoutCompilationUnits(pMT).HasMultipleInexactCompilationUnits)
+            {
+                PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
+
+                // The layout of this type spans multiple inexact compilation units (assemblies that version
+                // with the current compilation but whose grouping into composite images is not fixed at
+                // compile time). When that is the case the offset of this field relative to its base class is
+                // unknowable: depending on whether those modules are ultimately bound as a single composite
+                // image or as individual assemblies, the runtime may either insert alignment before this
+                // type's fields or back-fill them into the base type's trailing alignment padding. Neither the
+                // relative ENCODE_FIELD_BASE_OFFSET encoding nor a baked absolute offset (with a relative
+                // field-offset verification) is valid for both layouts, so fall back to an indirect,
+                // runtime-resolved field offset, which is correct regardless of how the modules are grouped.
+
+                // ENCODE_FIELD_OFFSET
+                pResult->offset = 0;
+                pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
+                pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldOffset(ComputeFieldWithToken(field, ref pResolvedToken)));
+            }
             else if (_compilation.IsInheritanceChainLayoutFixedInCurrentVersionBubble(pMT.BaseType))
             {
                 if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))

@@ -52,6 +52,7 @@ pr:
       - src/mono/mono/mini/mini-exceptions.*
       - src/mono/mono/mini/exceptions-*.*
       - src/mono/mono/mini/mini-runtime.*
+      - src/mono/mono/metadata/assembly-load-context.*
 
 variables:
   - template: /eng/pipelines/common/variables.yml
