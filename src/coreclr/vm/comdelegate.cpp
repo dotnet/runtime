@@ -1816,7 +1816,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     {
         // this is one of the following:
         // - multicast - _invocationList is Array && _invocationCount != 0
-        // - unamanaged ftn ptr - _invocationList == NULL && _invocationCount == -1
+        // - unamanaged ftn ptr - _invocationList == null && _invocationCount == -1
         // - virtual delegate - _invocationList == null && _invocationCount == (target MethodDesc)
 
         // we return the method desc for the invoke for the first two cases
@@ -1831,7 +1831,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     PCODE code = thisDel->GetMethodPtrAux();
     if (code == (PCODE)NULL)
     {
-        // Must be a normal delegate
+        // Must be a closed delegate
         code = thisDel->GetMethodPtr();
     }
 
