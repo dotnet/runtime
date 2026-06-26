@@ -59,6 +59,9 @@ namespace Internal.JitInterface
         RiscV64_Zba = InstructionSet_RiscV64.Zba,
         RiscV64_Zbb = InstructionSet_RiscV64.Zbb,
         RiscV64_Zbs = InstructionSet_RiscV64.Zbs,
+        Wasm32_WasmBase = InstructionSet_Wasm32.WasmBase,
+        Wasm32_PackedSimd = InstructionSet_Wasm32.PackedSimd,
+        Wasm32_Vector128 = InstructionSet_Wasm32.Vector128,
         X64_X86Base = InstructionSet_X64.X86Base,
         X64_AVX = InstructionSet_X64.AVX,
         X64_AVX2 = InstructionSet_X64.AVX2,
@@ -206,6 +209,15 @@ namespace Internal.JitInterface
         Zbs = 4,
     }
 
+    public enum InstructionSet_Wasm32
+    {
+        ILLEGAL = InstructionSet.ILLEGAL,
+        NONE = InstructionSet.NONE,
+        WasmBase = 1,
+        PackedSimd = 2,
+        Vector128 = 3,
+    }
+
     public enum InstructionSet_X64
     {
         ILLEGAL = InstructionSet.ILLEGAL,
@@ -319,6 +331,8 @@ namespace Internal.JitInterface
 
         public IEnumerable<InstructionSet_RiscV64> RiscV64Flags => this.Select((x) => (InstructionSet_RiscV64)x);
 
+        public IEnumerable<InstructionSet_Wasm32> Wasm32Flags => this.Select((x) => (InstructionSet_Wasm32)x);
+
         public IEnumerable<InstructionSet_X64> X64Flags => this.Select((x) => (InstructionSet_X64)x);
 
         public IEnumerable<InstructionSet_X86> X86Flags => this.Select((x) => (InstructionSet_X86)x);
@@ -430,30 +444,36 @@ namespace Internal.JitInterface
         {
             switch (architecture)
             {
-            case TargetArchitecture.ARM64:
-                switch (input)
-                {
-                case InstructionSet.ARM64_Vector64: return InstructionSet.ARM64_AdvSimd;
-                case InstructionSet.ARM64_Vector128: return InstructionSet.ARM64_AdvSimd;
-                case InstructionSet.ARM64_VectorT: return InstructionSet.ARM64_Sve;
-                }
-                break;
-            case TargetArchitecture.X64:
-                switch (input)
-                {
-                case InstructionSet.X64_Vector128: return InstructionSet.X64_X86Base;
-                case InstructionSet.X64_Vector256: return InstructionSet.X64_AVX;
-                case InstructionSet.X64_Vector512: return InstructionSet.X64_AVX512;
-                }
-                break;
-            case TargetArchitecture.X86:
-                switch (input)
-                {
-                case InstructionSet.X86_Vector128: return InstructionSet.X86_X86Base;
-                case InstructionSet.X86_Vector256: return InstructionSet.X86_AVX;
-                case InstructionSet.X86_Vector512: return InstructionSet.X86_AVX512;
-                }
-                break;
+                case TargetArchitecture.ARM64:
+                    switch (input)
+                    {
+                        case InstructionSet.ARM64_Vector64: return InstructionSet.ARM64_AdvSimd;
+                        case InstructionSet.ARM64_Vector128: return InstructionSet.ARM64_AdvSimd;
+                        case InstructionSet.ARM64_VectorT: return InstructionSet.ARM64_Sve;
+                    }
+                    break;
+                case TargetArchitecture.Wasm32:
+                    switch (input)
+                    {
+                        case InstructionSet.Wasm32_Vector128: return InstructionSet.Wasm32_PackedSimd;
+                    }
+                    break;
+                case TargetArchitecture.X64:
+                    switch (input)
+                    {
+                        case InstructionSet.X64_Vector128: return InstructionSet.X64_X86Base;
+                        case InstructionSet.X64_Vector256: return InstructionSet.X64_AVX;
+                        case InstructionSet.X64_Vector512: return InstructionSet.X64_AVX512;
+                    }
+                    break;
+                case TargetArchitecture.X86:
+                    switch (input)
+                    {
+                        case InstructionSet.X86_Vector128: return InstructionSet.X86_X86Base;
+                        case InstructionSet.X86_Vector256: return InstructionSet.X86_AVX;
+                        case InstructionSet.X86_Vector512: return InstructionSet.X86_AVX512;
+                    }
+                    break;
             }
             return input;
         }
@@ -467,314 +487,320 @@ namespace Internal.JitInterface
                 oldflags = resultflags;
                 switch (architecture)
                 {
+                    case TargetArchitecture.ARM64:
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Aes_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Dp))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Dp_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Dp_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Dp);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Rdm))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Rdm_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Rdm_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Rdm);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha1))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha1_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha256))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha256_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha256_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha256);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve2))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve2_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Dp))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Rdm))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha1))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha256))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Vector64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Vector128))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_VectorT))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_VectorT128))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve2))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
+                        break;
 
-                case TargetArchitecture.ARM64:
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Aes_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Dp))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Dp_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Dp_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Dp);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Rdm))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Rdm_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Rdm_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Rdm);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha1))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha1_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha256))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha256_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha256_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha256);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve2))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve2_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4_Arm64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Dp))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Rdm))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha1))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha256))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Vector64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Vector128))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_VectorT))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_VectorT128))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve2))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
-                    break;
+                    case TargetArchitecture.RiscV64:
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zbb))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zba))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zbs))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
+                        break;
 
-                case TargetArchitecture.RiscV64:
-                    if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zbb))
-                        resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zba))
-                        resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zbs))
-                        resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
-                    break;
+                    case TargetArchitecture.Wasm32:
+                        if (resultflags.HasInstructionSet(InstructionSet.Wasm32_Vector128))
+                            resultflags.AddInstructionSet(InstructionSet.Wasm32_PackedSimd);
+                        if (resultflags.HasInstructionSet(InstructionSet.Wasm32_PackedSimd))
+                            resultflags.AddInstructionSet(InstructionSet.Wasm32_WasmBase);
+                        break;
 
-                case TargetArchitecture.X64:
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Base_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXIFMA))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVXIFMA_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXIFMA_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVXIFMA);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI))
-                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_SHA))
-                        resultflags.AddInstructionSet(InstructionSet.X64_SHA_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_SHA_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_SHA);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_WAITPKG))
-                        resultflags.AddInstructionSet(InstructionSet.X64_WAITPKG_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_WAITPKG_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_WAITPKG);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Serialize))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Serialize_X64);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Serialize_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Serialize);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXIFMA))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_SHA))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_WAITPKG))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Serialize))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNIINT))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNIINT_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_Vector128))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_Vector256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_Vector512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_VectorT128))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_VectorT256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_VectorT512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
-                    break;
+                    case TargetArchitecture.X64:
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Base_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX2_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AES))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AES_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AES_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AES);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVXIFMA))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVXIFMA_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVXIFMA_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVXIFMA);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI))
+                            resultflags.AddInstructionSet(InstructionSet.X64_GFNI_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_GFNI);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_SHA))
+                            resultflags.AddInstructionSet(InstructionSet.X64_SHA_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_SHA_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_SHA);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_WAITPKG))
+                            resultflags.AddInstructionSet(InstructionSet.X64_WAITPKG_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_WAITPKG_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_WAITPKG);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Serialize))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Serialize_X64);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Serialize_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Serialize);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AES))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AES);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVXIFMA))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V256))
+                            resultflags.AddInstructionSet(InstructionSet.X64_GFNI);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V256))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_SHA))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_WAITPKG))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Serialize))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNIINT))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNIINT_V512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_Vector128))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_Vector256))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_Vector512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_VectorT128))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_VectorT256))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_VectorT512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
+                        break;
 
-                case TargetArchitecture.X86:
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512v2))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512v3))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512v2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX10v1))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512v3);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX10v2))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX10v1);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES))
-                        resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512VP2INTERSECT))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVXIFMA))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVXVNNI))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI))
-                        resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_GFNI);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_SHA))
-                        resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_WAITPKG))
-                        resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_X86Serialize))
-                        resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVXVNNIINT))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVXVNNIINT_V512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX10v2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_Vector128))
-                        resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_Vector256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_Vector512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_VectorT128))
-                        resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_VectorT256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_VectorT512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
-                    break;
+                    case TargetArchitecture.X86:
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                            resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512v2))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512v3))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX512v2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX10v1))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX512v3);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX10v2))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX10v1);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AES))
+                            resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AES);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512VP2INTERSECT))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVXIFMA))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVXVNNI))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI))
+                            resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V256))
+                            resultflags.AddInstructionSet(InstructionSet.X86_GFNI);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V256))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_SHA))
+                            resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_WAITPKG))
+                            resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_X86Serialize))
+                            resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVXVNNIINT))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVXVNNIINT_V512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX10v2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_Vector128))
+                            resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_Vector256))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_Vector512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_VectorT128))
+                            resultflags.AddInstructionSet(InstructionSet.X86_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_VectorT256))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_VectorT512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
+                        break;
                 }
             } while (!oldflags.Equals(resultflags));
 
@@ -796,251 +822,258 @@ namespace Internal.JitInterface
                 switch (architecture)
                 {
 
-                case TargetArchitecture.ARM64:
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Dp_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Dp);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Rdm_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Rdm);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha1_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha256_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha256);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve2_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4_Arm64))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Dp);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Rdm);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha256);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Vector64);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Vector128);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_VectorT);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_VectorT128);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
-                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4))
-                        resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
-                    break;
+                    case TargetArchitecture.ARM64:
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Crc32_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Dp_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Dp);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Rdm_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Rdm);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha1_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha256_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha256);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve2_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Crc32);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Dp);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Rdm);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha1);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha256);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Vector64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Vector128);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_VectorT);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_VectorT128);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sha3);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
+                        break;
 
-                case TargetArchitecture.RiscV64:
-                    if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
-                        resultflags.AddInstructionSet(InstructionSet.RiscV64_Zbb);
-                    if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
-                        resultflags.AddInstructionSet(InstructionSet.RiscV64_Zba);
-                    if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
-                        resultflags.AddInstructionSet(InstructionSet.RiscV64_Zbs);
-                    break;
+                    case TargetArchitecture.RiscV64:
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_Zbb);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_Zba);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_Zbs);
+                        break;
 
-                case TargetArchitecture.X64:
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXIFMA_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVXIFMA);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_SHA_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_SHA);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_WAITPKG_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_WAITPKG);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Serialize_X64))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Serialize);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AES_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVXIFMA);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI))
-                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X64_SHA);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X64_WAITPKG);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X64_X86Serialize);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNIINT);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNIINT_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X64_Vector128);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X64_Vector256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_Vector512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X64_VectorT128);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X64_VectorT256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X64_VectorT512);
-                    break;
+                    case TargetArchitecture.Wasm32:
+                        if (resultflags.HasInstructionSet(InstructionSet.Wasm32_PackedSimd))
+                            resultflags.AddInstructionSet(InstructionSet.Wasm32_Vector128);
+                        if (resultflags.HasInstructionSet(InstructionSet.Wasm32_WasmBase))
+                            resultflags.AddInstructionSet(InstructionSet.Wasm32_PackedSimd);
+                        break;
 
-                case TargetArchitecture.X86:
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512v2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512v2))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512v3);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512v3))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX10v1);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX10v1))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX10v2);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AES_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVX512VP2INTERSECT);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVXIFMA);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVXVNNI);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X86_GFNI);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI))
-                        resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X86_SHA);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X86_WAITPKG);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X86_X86Serialize);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVXVNNIINT);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX10v2))
-                        resultflags.AddInstructionSet(InstructionSet.X86_AVXVNNIINT_V512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X86_Vector128);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
-                        resultflags.AddInstructionSet(InstructionSet.X86_Vector256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_Vector512);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
-                        resultflags.AddInstructionSet(InstructionSet.X86_VectorT128);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
-                        resultflags.AddInstructionSet(InstructionSet.X86_VectorT256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
-                        resultflags.AddInstructionSet(InstructionSet.X86_VectorT512);
-                    break;
+                    case TargetArchitecture.X64:
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AES_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AES);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVXIFMA_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVXIFMA);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_GFNI);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_SHA_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_SHA);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_WAITPKG_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_WAITPKG);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Serialize_X64))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Serialize);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512v2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512v3);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512v3))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX10v1);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v1))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX10v2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AES);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AES))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AES_V256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AES_V256))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AES_V512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AES_V512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVX512VP2INTERSECT);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVXIFMA);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X64_GFNI);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI))
+                            resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                            resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_GFNI_V256))
+                            resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_GFNI_V512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X64_SHA);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X64_WAITPKG);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X64_X86Serialize);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNIINT);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX10v2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNIINT_V512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X64_Vector128);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
+                            resultflags.AddInstructionSet(InstructionSet.X64_Vector256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_Vector512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X64_VectorT128);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X64_VectorT256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X64_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X64_VectorT512);
+                        break;
+
+                    case TargetArchitecture.X86:
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX512v2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512v2))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX512v3);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512v3))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX10v1);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX10v1))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX10v2);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AES);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AES))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AES_V256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AES_V256))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AES_V512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AES_V512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVX512VP2INTERSECT);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVXIFMA);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVXVNNI);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X86_GFNI);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI))
+                            resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                            resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_GFNI_V256))
+                            resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_GFNI_V512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X86_SHA);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X86_WAITPKG);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X86_X86Serialize);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVXVNNIINT);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX10v2))
+                            resultflags.AddInstructionSet(InstructionSet.X86_AVXVNNIINT_V512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X86_Vector128);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
+                            resultflags.AddInstructionSet(InstructionSet.X86_Vector256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_Vector512);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_X86Base))
+                            resultflags.AddInstructionSet(InstructionSet.X86_VectorT128);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
+                            resultflags.AddInstructionSet(InstructionSet.X86_VectorT256);
+                        if (resultflags.HasInstructionSet(InstructionSet.X86_AVX512))
+                            resultflags.AddInstructionSet(InstructionSet.X86_VectorT512);
+                        break;
                 }
             } while (!oldflags.Equals(resultflags));
 
@@ -1123,6 +1156,12 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("zba", "", InstructionSet.RiscV64_Zba, true);
                     yield return new InstructionSetInfo("zbb", "", InstructionSet.RiscV64_Zbb, true);
                     yield return new InstructionSetInfo("zbs", "", InstructionSet.RiscV64_Zbs, true);
+                    break;
+
+                case TargetArchitecture.Wasm32:
+                    yield return new InstructionSetInfo("base", "WasmBase", InstructionSet.Wasm32_WasmBase, true);
+                    yield return new InstructionSetInfo("simd128", "PackedSimd", InstructionSet.Wasm32_PackedSimd, true);
+                    yield return new InstructionSetInfo("Vector128", "", InstructionSet.Wasm32_Vector128, false);
                     break;
 
                 case TargetArchitecture.X64:
@@ -1316,6 +1355,9 @@ namespace Internal.JitInterface
                 case TargetArchitecture.RiscV64:
                     break;
 
+                case TargetArchitecture.Wasm32:
+                    break;
+
                 case TargetArchitecture.X64:
                     if (HasInstructionSet(InstructionSet.X64_X86Base))
                         AddInstructionSet(InstructionSet.X64_X86Base_X64);
@@ -1380,6 +1422,9 @@ namespace Internal.JitInterface
                     break;
 
                 case TargetArchitecture.RiscV64:
+                    break;
+
+                case TargetArchitecture.Wasm32:
                     break;
 
                 case TargetArchitecture.X64:
@@ -1450,6 +1495,10 @@ namespace Internal.JitInterface
                     platformIntrinsicNamespace = "System.Runtime.Intrinsics.Arm";
                     break;
 
+                case TargetArchitecture.Wasm32:
+                    platformIntrinsicNamespace = "System.Runtime.Intrinsics.Wasm";
+                    break;
+
                 case TargetArchitecture.X64:
                     platformIntrinsicNamespace = "System.Runtime.Intrinsics.X86";
                     break;
@@ -1469,492 +1518,500 @@ namespace Internal.JitInterface
             {
 
                 case TargetArchitecture.ARM64:
-                switch (typeName)
-                {
+                    switch (typeName)
+                    {
+                        case "ArmBase":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_ArmBase_Arm64;
+                            else
+                                return InstructionSet.ARM64_ArmBase;
 
-                    case "ArmBase":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_ArmBase_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_ArmBase; }
+                        case "AdvSimd":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_AdvSimd_Arm64;
+                            else
+                                return InstructionSet.ARM64_AdvSimd;
 
-                    case "AdvSimd":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_AdvSimd_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_AdvSimd; }
+                        case "Aes":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_Aes_Arm64;
+                            else
+                                return InstructionSet.ARM64_Aes;
 
-                    case "Aes":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_Aes_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_Aes; }
+                        case "Crc32":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_Crc32_Arm64;
+                            else
+                                return InstructionSet.ARM64_Crc32;
 
-                    case "Crc32":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_Crc32_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_Crc32; }
+                        case "Dp":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_Dp_Arm64;
+                            else
+                                return InstructionSet.ARM64_Dp;
 
-                    case "Dp":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_Dp_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_Dp; }
+                        case "Rdm":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_Rdm_Arm64;
+                            else
+                                return InstructionSet.ARM64_Rdm;
 
-                    case "Rdm":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_Rdm_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_Rdm; }
+                        case "Sha1":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_Sha1_Arm64;
+                            else
+                                return InstructionSet.ARM64_Sha1;
 
-                    case "Sha1":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_Sha1_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_Sha1; }
+                        case "Sha256":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_Sha256_Arm64;
+                            else
+                                return InstructionSet.ARM64_Sha256;
 
-                    case "Sha256":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_Sha256_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_Sha256; }
+                        case "Sve":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_Sve_Arm64;
+                            else
+                                return InstructionSet.ARM64_Sve;
 
-                    case "Sve":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_Sve_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_Sve; }
+                        case "Sve2":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_Sve2_Arm64;
+                            else
+                                return InstructionSet.ARM64_Sve2;
 
-                    case "Sve2":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_Sve2_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_Sve2; }
+                        case "Sha3":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_Sha3_Arm64;
+                            else
+                                return InstructionSet.ARM64_Sha3;
 
-                    case "Sha3":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_Sha3_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_Sha3; }
+                        case "Sm4":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_Sm4_Arm64;
+                            else
+                                return InstructionSet.ARM64_Sm4;
 
-                    case "Sm4":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_Sm4_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_Sm4; }
+                        case "SveAes":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_SveAes_Arm64;
+                            else
+                                return InstructionSet.ARM64_SveAes;
 
-                    case "SveAes":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_SveAes_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_SveAes; }
+                        case "SveSha3":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_SveSha3_Arm64;
+                            else
+                                return InstructionSet.ARM64_SveSha3;
 
-                    case "SveSha3":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_SveSha3_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_SveSha3; }
+                        case "SveSm4":
+                            if (nestedTypeName == "Arm64")
+                                return InstructionSet.ARM64_SveSm4_Arm64;
+                            else
+                                return InstructionSet.ARM64_SveSm4;
 
-                    case "SveSm4":
-                        if (nestedTypeName == "Arm64")
-                        { return InstructionSet.ARM64_SveSm4_Arm64; }
-                        else
-                        { return InstructionSet.ARM64_SveSm4; }
-
-                    default:
-                        return InstructionSet.ILLEGAL;
-                }
+                        default:
+                            return InstructionSet.ILLEGAL;
+                    }
                 case TargetArchitecture.RiscV64:
-                switch (typeName)
-                {
+                    switch (typeName)
+                    {
+                        default:
+                            return InstructionSet.ILLEGAL;
+                    }
+                case TargetArchitecture.Wasm32:
+                    switch (typeName)
+                    {
+                        case "WasmBase":
+                            return InstructionSet.Wasm32_WasmBase;
 
-                    default:
-                        return InstructionSet.ILLEGAL;
-                }
+                        case "PackedSimd":
+                            return InstructionSet.Wasm32_PackedSimd;
+
+                        default:
+                            return InstructionSet.ILLEGAL;
+                    }
                 case TargetArchitecture.X64:
-                switch (typeName)
-                {
+                    switch (typeName)
+                    {
+                        case "X86Base":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_X86Base_X64;
+                            else
+                                return InstructionSet.X64_X86Base;
 
-                    case "X86Base":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_X86Base_X64; }
-                        else
-                        { return InstructionSet.X64_X86Base; }
+                        case "Sse":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_X86Base_X64;
+                            else
+                                return InstructionSet.X64_X86Base;
 
-                    case "Sse":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_X86Base_X64; }
-                        else
-                        { return InstructionSet.X64_X86Base; }
+                        case "Sse2":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_X86Base_X64;
+                            else
+                                return InstructionSet.X64_X86Base;
 
-                    case "Sse2":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_X86Base_X64; }
-                        else
-                        { return InstructionSet.X64_X86Base; }
+                        case "Sse42":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_X86Base_X64;
+                            else
+                                return InstructionSet.X64_X86Base;
 
-                    case "Sse42":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_X86Base_X64; }
-                        else
-                        { return InstructionSet.X64_X86Base; }
+                        case "Sse3":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_X86Base_X64;
+                            else
+                                return InstructionSet.X64_X86Base;
 
-                    case "Sse3":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_X86Base_X64; }
-                        else
-                        { return InstructionSet.X64_X86Base; }
+                        case "Ssse3":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_X86Base_X64;
+                            else
+                                return InstructionSet.X64_X86Base;
 
-                    case "Ssse3":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_X86Base_X64; }
-                        else
-                        { return InstructionSet.X64_X86Base; }
+                        case "Sse41":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_X86Base_X64;
+                            else
+                                return InstructionSet.X64_X86Base;
 
-                    case "Sse41":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_X86Base_X64; }
-                        else
-                        { return InstructionSet.X64_X86Base; }
+                        case "Popcnt":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_X86Base_X64;
+                            else
+                                return InstructionSet.X64_X86Base;
 
-                    case "Popcnt":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_X86Base_X64; }
-                        else
-                        { return InstructionSet.X64_X86Base; }
+                        case "Avx":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX_X64;
+                            else
+                                return InstructionSet.X64_AVX;
 
-                    case "Avx":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX_X64; }
-                        else
-                        { return InstructionSet.X64_AVX; }
+                        case "Avx2":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX2_X64;
+                            else
+                                return InstructionSet.X64_AVX2;
 
-                    case "Avx2":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX2_X64; }
-                        else
-                        { return InstructionSet.X64_AVX2; }
+                        case "Bmi1":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX2_X64;
+                            else
+                                return InstructionSet.X64_AVX2;
 
-                    case "Bmi1":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX2_X64; }
-                        else
-                        { return InstructionSet.X64_AVX2; }
+                        case "Bmi2":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX2_X64;
+                            else
+                                return InstructionSet.X64_AVX2;
 
-                    case "Bmi2":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX2_X64; }
-                        else
-                        { return InstructionSet.X64_AVX2; }
+                        case "Fma":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX2_X64;
+                            else
+                                return InstructionSet.X64_AVX2;
 
-                    case "Fma":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX2_X64; }
-                        else
-                        { return InstructionSet.X64_AVX2; }
+                        case "Lzcnt":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX2_X64;
+                            else
+                                return InstructionSet.X64_AVX2;
 
-                    case "Lzcnt":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX2_X64; }
-                        else
-                        { return InstructionSet.X64_AVX2; }
+                        case "Avx512F":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX512_X64;
+                            else
+                                if (nestedTypeName == "VL_X64")
+                                    return InstructionSet.X64_AVX512_X64;
+                                else
+                                    if (nestedTypeName == "VL")
+                                        return InstructionSet.X64_AVX512;
+                                    else
+                                        return InstructionSet.X64_AVX512;
 
-                    case "Avx512F":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX512_X64; }
-                        else
-                        if (nestedTypeName == "VL_X64")
-                        { return InstructionSet.X64_AVX512_X64; }
-                        else
-                        if (nestedTypeName == "VL")
-                        { return InstructionSet.X64_AVX512; }
-                        else
-                        { return InstructionSet.X64_AVX512; }
+                        case "Avx512BW":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX512_X64;
+                            else
+                                if (nestedTypeName == "VL_X64")
+                                    return InstructionSet.X64_AVX512_X64;
+                                else
+                                    if (nestedTypeName == "VL")
+                                        return InstructionSet.X64_AVX512;
+                                    else
+                                        return InstructionSet.X64_AVX512;
 
-                    case "Avx512BW":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX512_X64; }
-                        else
-                        if (nestedTypeName == "VL_X64")
-                        { return InstructionSet.X64_AVX512_X64; }
-                        else
-                        if (nestedTypeName == "VL")
-                        { return InstructionSet.X64_AVX512; }
-                        else
-                        { return InstructionSet.X64_AVX512; }
+                        case "Avx512CD":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX512_X64;
+                            else
+                                if (nestedTypeName == "VL_X64")
+                                    return InstructionSet.X64_AVX512_X64;
+                                else
+                                    if (nestedTypeName == "VL")
+                                        return InstructionSet.X64_AVX512;
+                                    else
+                                        return InstructionSet.X64_AVX512;
 
-                    case "Avx512CD":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX512_X64; }
-                        else
-                        if (nestedTypeName == "VL_X64")
-                        { return InstructionSet.X64_AVX512_X64; }
-                        else
-                        if (nestedTypeName == "VL")
-                        { return InstructionSet.X64_AVX512; }
-                        else
-                        { return InstructionSet.X64_AVX512; }
+                        case "Avx512DQ":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX512_X64;
+                            else
+                                if (nestedTypeName == "VL_X64")
+                                    return InstructionSet.X64_AVX512_X64;
+                                else
+                                    if (nestedTypeName == "VL")
+                                        return InstructionSet.X64_AVX512;
+                                    else
+                                        return InstructionSet.X64_AVX512;
 
-                    case "Avx512DQ":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX512_X64; }
-                        else
-                        if (nestedTypeName == "VL_X64")
-                        { return InstructionSet.X64_AVX512_X64; }
-                        else
-                        if (nestedTypeName == "VL")
-                        { return InstructionSet.X64_AVX512; }
-                        else
-                        { return InstructionSet.X64_AVX512; }
+                        case "Avx512Vbmi":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX512v2_X64;
+                            else
+                                if (nestedTypeName == "VL_X64")
+                                    return InstructionSet.X64_AVX512v2_X64;
+                                else
+                                    if (nestedTypeName == "VL")
+                                        return InstructionSet.X64_AVX512v2;
+                                    else
+                                        return InstructionSet.X64_AVX512v2;
 
-                    case "Avx512Vbmi":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX512v2_X64; }
-                        else
-                        if (nestedTypeName == "VL_X64")
-                        { return InstructionSet.X64_AVX512v2_X64; }
-                        else
-                        if (nestedTypeName == "VL")
-                        { return InstructionSet.X64_AVX512v2; }
-                        else
-                        { return InstructionSet.X64_AVX512v2; }
+                        case "Avx512Vbmi2":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX512v3_X64;
+                            else
+                                if (nestedTypeName == "VL_X64")
+                                    return InstructionSet.X64_AVX512v3_X64;
+                                else
+                                    if (nestedTypeName == "VL")
+                                        return InstructionSet.X64_AVX512v3;
+                                    else
+                                        return InstructionSet.X64_AVX512v3;
 
-                    case "Avx512Vbmi2":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX512v3_X64; }
-                        else
-                        if (nestedTypeName == "VL_X64")
-                        { return InstructionSet.X64_AVX512v3_X64; }
-                        else
-                        if (nestedTypeName == "VL")
-                        { return InstructionSet.X64_AVX512v3; }
-                        else
-                        { return InstructionSet.X64_AVX512v3; }
+                        case "Avx10v1":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX10v1_X64;
+                            else
+                                if (nestedTypeName == "V512_X64")
+                                    return InstructionSet.X64_AVX10v1_X64;
+                                else
+                                    if (nestedTypeName == "V512")
+                                        return InstructionSet.X64_AVX10v1;
+                                    else
+                                        return InstructionSet.X64_AVX10v1;
 
-                    case "Avx10v1":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX10v1_X64; }
-                        else
-                        if (nestedTypeName == "V512_X64")
-                        { return InstructionSet.X64_AVX10v1_X64; }
-                        else
-                        if (nestedTypeName == "V512")
-                        { return InstructionSet.X64_AVX10v1; }
-                        else
-                        { return InstructionSet.X64_AVX10v1; }
+                        case "Avx10v2":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVX10v2_X64;
+                            else
+                                if (nestedTypeName == "V512_X64")
+                                    return InstructionSet.X64_AVX10v2_X64;
+                                else
+                                    if (nestedTypeName == "V512")
+                                        return InstructionSet.X64_AVX10v2;
+                                    else
+                                        return InstructionSet.X64_AVX10v2;
 
-                    case "Avx10v2":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVX10v2_X64; }
-                        else
-                        if (nestedTypeName == "V512_X64")
-                        { return InstructionSet.X64_AVX10v2_X64; }
-                        else
-                        if (nestedTypeName == "V512")
-                        { return InstructionSet.X64_AVX10v2; }
-                        else
-                        { return InstructionSet.X64_AVX10v2; }
+                        case "Aes":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AES_X64;
+                            else
+                                return InstructionSet.X64_AES;
 
-                    case "Aes":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AES_X64; }
-                        else
-                        { return InstructionSet.X64_AES; }
+                        case "Pclmulqdq":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AES_X64;
+                            else
+                                if (nestedTypeName == "V256")
+                                    return InstructionSet.X64_AES_V256;
+                                else
+                                    if (nestedTypeName == "V512")
+                                        return InstructionSet.X64_AES_V512;
+                                    else
+                                        return InstructionSet.X64_AES;
 
-                    case "Pclmulqdq":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AES_X64; }
-                        else
-                        if (nestedTypeName == "V256")
-                        { return InstructionSet.X64_AES_V256; }
-                        else
-                        if (nestedTypeName == "V512")
-                        { return InstructionSet.X64_AES_V512; }
-                        else
-                        { return InstructionSet.X64_AES; }
+                        case "AvxVnni":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_AVXVNNI_X64;
+                            else
+                                return InstructionSet.X64_AVXVNNI;
 
-                    case "AvxVnni":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_AVXVNNI_X64; }
-                        else
-                        { return InstructionSet.X64_AVXVNNI; }
+                        case "Avx512Bmm":
+                            return InstructionSet.X64_AVX512BMM;
 
-                    case "Avx512Bmm":
-                        { return InstructionSet.X64_AVX512BMM; }
+                        case "Gfni":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_GFNI_X64;
+                            else
+                                if (nestedTypeName == "V256")
+                                    return InstructionSet.X64_GFNI_V256;
+                                else
+                                    if (nestedTypeName == "V512")
+                                        return InstructionSet.X64_GFNI_V512;
+                                    else
+                                        return InstructionSet.X64_GFNI;
 
-                    case "Gfni":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_GFNI_X64; }
-                        else
-                        if (nestedTypeName == "V256")
-                        { return InstructionSet.X64_GFNI_V256; }
-                        else
-                        if (nestedTypeName == "V512")
-                        { return InstructionSet.X64_GFNI_V512; }
-                        else
-                        { return InstructionSet.X64_GFNI; }
+                        case "X86Serialize":
+                            if (nestedTypeName == "X64")
+                                return InstructionSet.X64_X86Serialize_X64;
+                            else
+                                return InstructionSet.X64_X86Serialize;
 
-                    case "X86Serialize":
-                        if (nestedTypeName == "X64")
-                        { return InstructionSet.X64_X86Serialize_X64; }
-                        else
-                        { return InstructionSet.X64_X86Serialize; }
+                        case "AvxVnniInt8":
+                            if (nestedTypeName == "V512")
+                                return InstructionSet.X64_AVXVNNIINT_V512;
+                            else
+                                return InstructionSet.X64_AVXVNNIINT;
 
-                    case "AvxVnniInt8":
-                        if (nestedTypeName == "V512")
-                        { return InstructionSet.X64_AVXVNNIINT_V512; }
-                        else
-                        { return InstructionSet.X64_AVXVNNIINT; }
+                        case "AvxVnniInt16":
+                            if (nestedTypeName == "V512")
+                                return InstructionSet.X64_AVXVNNIINT_V512;
+                            else
+                                return InstructionSet.X64_AVXVNNIINT;
 
-                    case "AvxVnniInt16":
-                        if (nestedTypeName == "V512")
-                        { return InstructionSet.X64_AVXVNNIINT_V512; }
-                        else
-                        { return InstructionSet.X64_AVXVNNIINT; }
-
-                    default:
-                        return InstructionSet.ILLEGAL;
-                }
+                        default:
+                            return InstructionSet.ILLEGAL;
+                    }
                 case TargetArchitecture.X86:
-                switch (typeName)
-                {
+                    switch (typeName)
+                    {
+                        case "X86Base":
+                            return InstructionSet.X86_X86Base;
 
-                    case "X86Base":
-                        { return InstructionSet.X86_X86Base; }
+                        case "Sse":
+                            return InstructionSet.X86_X86Base;
 
-                    case "Sse":
-                        { return InstructionSet.X86_X86Base; }
+                        case "Sse2":
+                            return InstructionSet.X86_X86Base;
 
-                    case "Sse2":
-                        { return InstructionSet.X86_X86Base; }
+                        case "Sse42":
+                            return InstructionSet.X86_X86Base;
 
-                    case "Sse42":
-                        { return InstructionSet.X86_X86Base; }
+                        case "Sse3":
+                            return InstructionSet.X86_X86Base;
 
-                    case "Sse3":
-                        { return InstructionSet.X86_X86Base; }
+                        case "Ssse3":
+                            return InstructionSet.X86_X86Base;
 
-                    case "Ssse3":
-                        { return InstructionSet.X86_X86Base; }
+                        case "Sse41":
+                            return InstructionSet.X86_X86Base;
 
-                    case "Sse41":
-                        { return InstructionSet.X86_X86Base; }
+                        case "Popcnt":
+                            return InstructionSet.X86_X86Base;
 
-                    case "Popcnt":
-                        { return InstructionSet.X86_X86Base; }
+                        case "Avx":
+                            return InstructionSet.X86_AVX;
 
-                    case "Avx":
-                        { return InstructionSet.X86_AVX; }
+                        case "Avx2":
+                            return InstructionSet.X86_AVX2;
 
-                    case "Avx2":
-                        { return InstructionSet.X86_AVX2; }
+                        case "Bmi1":
+                            return InstructionSet.X86_AVX2;
 
-                    case "Bmi1":
-                        { return InstructionSet.X86_AVX2; }
+                        case "Bmi2":
+                            return InstructionSet.X86_AVX2;
 
-                    case "Bmi2":
-                        { return InstructionSet.X86_AVX2; }
+                        case "Fma":
+                            return InstructionSet.X86_AVX2;
 
-                    case "Fma":
-                        { return InstructionSet.X86_AVX2; }
+                        case "Lzcnt":
+                            return InstructionSet.X86_AVX2;
 
-                    case "Lzcnt":
-                        { return InstructionSet.X86_AVX2; }
+                        case "Avx512F":
+                            if (nestedTypeName == "VL")
+                                return InstructionSet.X86_AVX512;
+                            else
+                                return InstructionSet.X86_AVX512;
 
-                    case "Avx512F":
-                        if (nestedTypeName == "VL")
-                        { return InstructionSet.X86_AVX512; }
-                        else
-                        { return InstructionSet.X86_AVX512; }
+                        case "Avx512BW":
+                            if (nestedTypeName == "VL")
+                                return InstructionSet.X86_AVX512;
+                            else
+                                return InstructionSet.X86_AVX512;
 
-                    case "Avx512BW":
-                        if (nestedTypeName == "VL")
-                        { return InstructionSet.X86_AVX512; }
-                        else
-                        { return InstructionSet.X86_AVX512; }
+                        case "Avx512CD":
+                            if (nestedTypeName == "VL")
+                                return InstructionSet.X86_AVX512;
+                            else
+                                return InstructionSet.X86_AVX512;
 
-                    case "Avx512CD":
-                        if (nestedTypeName == "VL")
-                        { return InstructionSet.X86_AVX512; }
-                        else
-                        { return InstructionSet.X86_AVX512; }
+                        case "Avx512DQ":
+                            if (nestedTypeName == "VL")
+                                return InstructionSet.X86_AVX512;
+                            else
+                                return InstructionSet.X86_AVX512;
 
-                    case "Avx512DQ":
-                        if (nestedTypeName == "VL")
-                        { return InstructionSet.X86_AVX512; }
-                        else
-                        { return InstructionSet.X86_AVX512; }
+                        case "Avx512Vbmi":
+                            if (nestedTypeName == "VL")
+                                return InstructionSet.X86_AVX512v2;
+                            else
+                                return InstructionSet.X86_AVX512v2;
 
-                    case "Avx512Vbmi":
-                        if (nestedTypeName == "VL")
-                        { return InstructionSet.X86_AVX512v2; }
-                        else
-                        { return InstructionSet.X86_AVX512v2; }
+                        case "Avx512Vbmi2":
+                            if (nestedTypeName == "VL")
+                                return InstructionSet.X86_AVX512v3;
+                            else
+                                return InstructionSet.X86_AVX512v3;
 
-                    case "Avx512Vbmi2":
-                        if (nestedTypeName == "VL")
-                        { return InstructionSet.X86_AVX512v3; }
-                        else
-                        { return InstructionSet.X86_AVX512v3; }
+                        case "Avx10v1":
+                            if (nestedTypeName == "V512")
+                                return InstructionSet.X86_AVX10v1;
+                            else
+                                return InstructionSet.X86_AVX10v1;
 
-                    case "Avx10v1":
-                        if (nestedTypeName == "V512")
-                        { return InstructionSet.X86_AVX10v1; }
-                        else
-                        { return InstructionSet.X86_AVX10v1; }
+                        case "Avx10v2":
+                            if (nestedTypeName == "V512")
+                                return InstructionSet.X86_AVX10v2;
+                            else
+                                return InstructionSet.X86_AVX10v2;
 
-                    case "Avx10v2":
-                        if (nestedTypeName == "V512")
-                        { return InstructionSet.X86_AVX10v2; }
-                        else
-                        { return InstructionSet.X86_AVX10v2; }
+                        case "Aes":
+                            return InstructionSet.X86_AES;
 
-                    case "Aes":
-                        { return InstructionSet.X86_AES; }
+                        case "Pclmulqdq":
+                            if (nestedTypeName == "V256")
+                                return InstructionSet.X86_AES_V256;
+                            else
+                                if (nestedTypeName == "V512")
+                                    return InstructionSet.X86_AES_V512;
+                                else
+                                    return InstructionSet.X86_AES;
 
-                    case "Pclmulqdq":
-                        if (nestedTypeName == "V256")
-                        { return InstructionSet.X86_AES_V256; }
-                        else
-                        if (nestedTypeName == "V512")
-                        { return InstructionSet.X86_AES_V512; }
-                        else
-                        { return InstructionSet.X86_AES; }
+                        case "AvxVnni":
+                            return InstructionSet.X86_AVXVNNI;
 
-                    case "AvxVnni":
-                        { return InstructionSet.X86_AVXVNNI; }
+                        case "Avx512Bmm":
+                            return InstructionSet.X86_AVX512BMM;
 
-                    case "Avx512Bmm":
-                        { return InstructionSet.X86_AVX512BMM; }
+                        case "Gfni":
+                            if (nestedTypeName == "V256")
+                                return InstructionSet.X86_GFNI_V256;
+                            else
+                                if (nestedTypeName == "V512")
+                                    return InstructionSet.X86_GFNI_V512;
+                                else
+                                    return InstructionSet.X86_GFNI;
 
-                    case "Gfni":
-                        if (nestedTypeName == "V256")
-                        { return InstructionSet.X86_GFNI_V256; }
-                        else
-                        if (nestedTypeName == "V512")
-                        { return InstructionSet.X86_GFNI_V512; }
-                        else
-                        { return InstructionSet.X86_GFNI; }
+                        case "X86Serialize":
+                            return InstructionSet.X86_X86Serialize;
 
-                    case "X86Serialize":
-                        { return InstructionSet.X86_X86Serialize; }
+                        case "AvxVnniInt8":
+                            if (nestedTypeName == "V512")
+                                return InstructionSet.X86_AVXVNNIINT_V512;
+                            else
+                                return InstructionSet.X86_AVXVNNIINT;
 
-                    case "AvxVnniInt8":
-                        if (nestedTypeName == "V512")
-                        { return InstructionSet.X86_AVXVNNIINT_V512; }
-                        else
-                        { return InstructionSet.X86_AVXVNNIINT; }
+                        case "AvxVnniInt16":
+                            if (nestedTypeName == "V512")
+                                return InstructionSet.X86_AVXVNNIINT_V512;
+                            else
+                                return InstructionSet.X86_AVXVNNIINT;
 
-                    case "AvxVnniInt16":
-                        if (nestedTypeName == "V512")
-                        { return InstructionSet.X86_AVXVNNIINT_V512; }
-                        else
-                        { return InstructionSet.X86_AVXVNNIINT; }
-
-                    default:
-                        return InstructionSet.ILLEGAL;
-                }
+                        default:
+                            return InstructionSet.ILLEGAL;
+                    }
             }
             return InstructionSet.ILLEGAL;
         }
@@ -2244,6 +2301,26 @@ namespace Internal.JitInterface
                                 yield return nestedType;
                             }
                         }
+                    }
+                }
+                break;
+
+                case (InstructionSet.Wasm32_WasmBase, TargetArchitecture.Wasm32):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Wasm"u8, "WasmBase"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
+                    }
+                }
+                break;
+
+                case (InstructionSet.Wasm32_PackedSimd, TargetArchitecture.Wasm32):
+                {
+                    var type = context.SystemModule.GetType("System.Runtime.Intrinsics.Wasm"u8, "PackedSimd"u8, false);
+                    if (type != null)
+                    {
+                        yield return type;
                     }
                 }
                 break;

@@ -103,6 +103,7 @@ namespace System.IO.Compression
             // This incidentally also protects against concurrent modifications of the sampleLengths that could cause
             // access violations later in native code.
             byte[] lengthsArray = ArrayPool<byte>.Shared.Rent(sampleLengths.Length * Unsafe.SizeOf<nuint>());
+            byte[]? dictionaryBuffer = null;
             try
             {
                 Span<nuint> lengthsAsNuint = MemoryMarshal.Cast<byte, nuint>(lengthsArray.AsSpan(0, sampleLengths.Length * Unsafe.SizeOf<nuint>()));
@@ -127,8 +128,7 @@ namespace System.IO.Compression
 
                 ArgumentOutOfRangeException.ThrowIfLessThan(maxDictionarySize, 256, nameof(maxDictionarySize));
 
-                byte[] dictionaryBuffer = new byte[maxDictionarySize];
-
+                dictionaryBuffer = ArrayPool<byte>.Shared.Rent(maxDictionarySize);
                 nuint dictSize;
 
                 unsafe
@@ -148,6 +148,10 @@ namespace System.IO.Compression
             }
             finally
             {
+                if (dictionaryBuffer is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(dictionaryBuffer);
+                }
                 ArrayPool<byte>.Shared.Return(lengthsArray);
             }
         }

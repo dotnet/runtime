@@ -37,6 +37,13 @@ public enum ThreadState
     Detached            = unchecked((int)0x80000000), // Thread was detached
 }
 
+[Flags]
+public enum DebuggerControlledThreadState
+{
+    None                        = 0x00000000, // Threads are initialized this way
+    UserSuspend                 = 0x00000001, // Marked "suspended" by the debugger
+}
+
 public record struct ThreadData(
     TargetPointer ThreadAddress,
     uint Id,
@@ -52,12 +59,18 @@ public record struct ThreadData(
     TargetPointer CurrentCustomDebuggerNotificationHandle,
     bool LastThrownObjectIsUnhandled,
     bool HasUnhandledException,
-    TargetPointer NextThread);
+    TargetPointer NextThread,
+    TargetPointer ThreadHandle,
+    bool IsInteropDebuggingHijacked,
+    TargetPointer DebuggerFilterContext,
+    TargetPointer GCFrame);
 
 public interface IThread : IContract
 {
     static string IContract.Name { get; } = nameof(Thread);
 
+    void SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state) => throw new NotImplementedException();
+    void ResetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state) => throw new NotImplementedException();
     ThreadStoreData GetThreadStoreData() => throw new NotImplementedException();
     ThreadStoreCounts GetThreadCounts() => throw new NotImplementedException();
     ThreadData GetThreadData(TargetPointer thread) => throw new NotImplementedException();
@@ -68,7 +81,6 @@ public interface IThread : IContract
     TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointer tlsIndexPtr) => throw new NotImplementedException();
     TargetPointer GetCurrentExceptionHandle(TargetPointer threadPointer) => throw new NotImplementedException();
     byte[] GetWatsonBuckets(TargetPointer threadPointer) => throw new NotImplementedException();
-    byte[] GetContext(TargetPointer threadPointer, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
 }
 
 public readonly struct Thread : IThread

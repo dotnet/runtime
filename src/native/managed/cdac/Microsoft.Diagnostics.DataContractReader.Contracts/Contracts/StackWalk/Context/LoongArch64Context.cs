@@ -36,6 +36,8 @@ internal struct LoongArch64Context : IPlatformContext
 
     public readonly uint Size => 0x320;
 
+    public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
+
     public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
 
     public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
@@ -47,7 +49,7 @@ internal struct LoongArch64Context : IPlatformContext
         readonly get => new(Sp);
         set => Sp = value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Pc);
         set => Pc = value.Value;
@@ -57,6 +59,8 @@ internal struct LoongArch64Context : IPlatformContext
         readonly get => new(Fp);
         set => Fp = value.Value;
     }
+
+    public uint RawContextFlags { readonly get => ContextFlags; set => ContextFlags = value; }
 
     public void Unwind(Target target)
     {

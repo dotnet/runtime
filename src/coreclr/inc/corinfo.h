@@ -429,9 +429,7 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_ASSIGN_REF,        // universal helpers with F_CALL_CONV calling convention
     CORINFO_HELP_CHECKED_ASSIGN_REF,
-    CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP,  // Do the store, and ensure that the target was not in the heap.
 
-    CORINFO_HELP_ASSIGN_BYREF,
     CORINFO_HELP_BULK_WRITEBARRIER,
 
     /* Accessing fields */
@@ -565,6 +563,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT_TRACK_TRANSITIONS, // Transition to preemptive mode and track transitions in reverse P/Invoke prolog.
 
     CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle
+    CORINFO_HELP_INTERFACEDISPATCH_FOR_SLOT,  // Dispatch a non-generic interface method from this pointer and dispatch cell
     CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT,  // Resolve a non-generic interface method from this pointer and dispatch cell
 
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
@@ -613,20 +612,11 @@ enum CorInfoType
     CORINFO_TYPE_NATIVEUINT      = 0xd,
     CORINFO_TYPE_FLOAT           = 0xe,
     CORINFO_TYPE_DOUBLE          = 0xf,
-    CORINFO_TYPE_STRING          = 0x10,         // Not used, should remove
-    CORINFO_TYPE_PTR             = 0x11,
-    CORINFO_TYPE_BYREF           = 0x12,
-    CORINFO_TYPE_VALUECLASS      = 0x13,
-    CORINFO_TYPE_CLASS           = 0x14,
-    CORINFO_TYPE_REFANY          = 0x15,
+    CORINFO_TYPE_PTR             = 0x10,
+    CORINFO_TYPE_BYREF           = 0x11,
+    CORINFO_TYPE_VALUECLASS      = 0x12,
+    CORINFO_TYPE_CLASS           = 0x13,
 
-    // CORINFO_TYPE_VAR is for a generic type variable.
-    // Generic type variables only appear when the JIT is doing
-    // verification (not NOT compilation) of generic code
-    // for the EE, in which case we're running
-    // the JIT in "import only" mode.
-
-    CORINFO_TYPE_VAR             = 0x16,
     CORINFO_TYPE_COUNT,                         // number of jit types
 };
 
@@ -726,6 +716,7 @@ enum CorInfoOptions
                                                CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
     CORINFO_GENERICS_CTXT_KEEP_ALIVE        = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
     CORINFO_ASYNC_SAVE_CONTEXTS             = 0x00000200, // Runtime async method must save and restore contexts
+    CORINFO_ASYNC_VERSION                   = 0x00000400, // This is an async version whose IL belongs to a non-async method
 };
 
 //
@@ -867,6 +858,7 @@ enum class CorInfoReloc
     ARM64_BRANCH26,                        // Arm64: B, BL
     ARM64_PAGEBASE_REL21,                  // ADRP
     ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+    ARM64_PAGEOFFSET_12L,                  // LDR (indexed, unsigned immediate), for page offset
     // Linux arm64
     ARM64_LIN_TLSDESC_ADR_PAGE21,
     ARM64_LIN_TLSDESC_LD64_LO12,
@@ -923,6 +915,7 @@ enum class CorInfoReloc
     WASM_GLOBAL_INDEX_LEB,               // Wasm: a global index encoded as a 5-byte varuint32, e.g. the index immediate in a get_global.
     WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                            // e.g. in R2R scenarios as an offset from __image_base
+    WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
 };
 
 enum CorInfoGCType
@@ -1151,7 +1144,6 @@ struct CORINFO_CONST_LOOKUP
     //     IAT_PVALUE    --> "addr" stores a pointer to a location which will hold the real handle
     //     IAT_RELPVALUE --> "addr" stores a relative pointer to a location which will hold the real handle
     //     IAT_PPVALUE   --> "addr" stores a double indirection to a location which will hold the real handle
-
     InfoAccessType              accessType;
     union
     {
@@ -1553,8 +1545,6 @@ struct CORINFO_CALL_INFO
     };
 
     CORINFO_CONST_LOOKUP    instParamLookup;
-
-    bool                    wrapperDelegateInvoke;
 };
 
 enum CORINFO_DEVIRTUALIZATION_DETAIL
@@ -1594,21 +1584,22 @@ struct CORINFO_DEVIRTUALIZATION_INFO
     // [Out] results of resolveVirtualMethod.
     // - devirtualizedMethod is set to MethodDesc of devirt'ed method iff we were able to devirtualize.
     //      invariant is `resolveVirtualMethod(...) == (devirtualizedMethod != nullptr)`.
-    // - exactContext is set to wrapped CORINFO_CLASS_HANDLE of devirt'ed method table.
+    // - tokenLookupContext is set to the wrapped context handle to use for token lookups and the instantiation
+    //   parameter after devirtualization.
     // - details on the computation done by the jit host
-    // - If pResolvedTokenDevirtualizedMethod is not set to NULL and targeting an R2R image
-    //   use it as the parameter to getCallInfo
-    // - isInstantiatingStub is set to TRUE if the devirtualized method is a generic method instantiating stub
-    // - needsMethodContext is set TRUE if the devirtualized method may require a method context
-    //     (in which case the method handle and context will be a generic method)
+    // - resolvedTokenDevirtualizedMethod is used as the parameter to getCallInfo when targeting an R2R image.
+    // - resolvedTokenDevirtualizedUnboxedMethod is set when devirtualizedMethod is an unboxing stub. Its hMethod
+    //   is the unboxed entry point, and the resolved token is used as the parameter to getCallInfo when targeting
+    //   an R2R image.
+    // - instParamLookup contains all the information necessary to pass the instantiation parameter for
+    //   the devirtualized method or its unboxed entry point.
     //
     CORINFO_METHOD_HANDLE           devirtualizedMethod;
-    CORINFO_CONTEXT_HANDLE          exactContext;
+    CORINFO_CONTEXT_HANDLE          tokenLookupContext;
     CORINFO_DEVIRTUALIZATION_DETAIL detail;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedMethod;
     CORINFO_RESOLVED_TOKEN          resolvedTokenDevirtualizedUnboxedMethod;
-    bool                            isInstantiatingStub;
-    bool                            needsMethodContext;
+    CORINFO_LOOKUP                  instParamLookup;
 };
 
 //----------------------------------------------------------------------------
@@ -1766,9 +1757,6 @@ struct CORINFO_EE_INFO
     // Delegate offsets
     unsigned    offsetOfDelegateInstance;
     unsigned    offsetOfDelegateFirstTarget;
-
-    // Wrapper delegate offsets
-    unsigned    offsetOfWrapperDelegateIndirectCell;
 
     // Reverse PInvoke offsets
     unsigned    sizeOfReversePInvokeFrame;
@@ -1976,6 +1964,7 @@ struct CORINFO_AsyncResumeInfo
     // Pointer in main code for diagnostics. See comments on
     // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
     // ResumeInfo.DiagnosticIP in SPC.
+    // This can be null for handrolled continuations without diagnostics.
     TARGET_SIZE_T DiagnosticIP;
 };
 
@@ -2276,20 +2265,6 @@ public:
     //
     // Returns false if devirtualization is not possible.
     virtual bool resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info) = 0;
-
-    // Get the unboxed entry point for a method, if possible.
-    virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
-        CORINFO_METHOD_HANDLE ftn,
-        bool*                 requiresInstMethodTableArg
-        ) = 0;
-
-    // Get the wrapped entry point for an instantiating stub, if possible.
-    // Sets methodArg for method instantiations, classArg for class instantiations.
-    virtual CORINFO_METHOD_HANDLE getInstantiatedEntry(
-        CORINFO_METHOD_HANDLE ftn,
-        CORINFO_METHOD_HANDLE* methodArg,
-        CORINFO_CLASS_HANDLE* classArg
-        ) = 0;
 
     // Get the other variant of an async method, if possible.
     // If this is a method with async calling convention: returns the corresponding task-returning method.
@@ -3150,6 +3125,10 @@ public:
     virtual void getAsyncInfo(
         CORINFO_ASYNC_INFO* pAsyncInfoOut
     ) = 0;
+
+    // Get information about which await call to use to await the return type
+    // of the non-async version of an async call.
+    virtual CORINFO_METHOD_HANDLE getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg) = 0;
 
     /*********************************************************************************/
     //

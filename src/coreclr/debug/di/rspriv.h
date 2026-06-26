@@ -69,6 +69,53 @@ struct MachineInfo;
 #define WriteProcessMemory DONT_USE_WRITEPROCESS_MEMORY
 
 
+//-----------------------------------------------------------------------------
+// CallbackAccumulator<T>
+//
+// Helper for FP_*_CALLBACK consumers on the DI side that need to collect a
+// list of values produced by the DAC and surface a single HRESULT. The
+// callback can call Push() without worrying about exceptions - the first
+// failure is captured in hrError and subsequent pushes are short-circuited.
+// After the enumeration call returns, the caller should check both the DAC's
+// returned HRESULT and acc.hrError, then consume acc.items.
+//-----------------------------------------------------------------------------
+template <typename T>
+struct CallbackAccumulator
+{
+    CQuickArrayList<T> items;
+    HRESULT            hrError;
+
+    CallbackAccumulator() : hrError(S_OK) { }
+
+    void Push(const T& item)
+    {
+        if (FAILED(hrError))
+            return;
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            items.Push(item);
+        }
+        EX_CATCH_HRESULT(hr);
+        if (FAILED(hr))
+            hrError = hr;
+    }
+
+    static CallbackAccumulator* From(CALLBACK_DATA pUserData)
+    {
+        return reinterpret_cast<CallbackAccumulator*>(pUserData);
+    }
+
+    // Adapter for FP_*_CALLBACK signatures that deliver an item by pointer
+    // (e.g. FP_TYPEPARAM_CALLBACK). Pass as the callback with &acc as pUserData:
+    //   pDAC->EnumX(args, &CallbackAccumulator<T>::PushCallback, &acc);
+    static void PushCallback(T * pItem, CALLBACK_DATA pUserData)
+    {
+        From(pUserData)->Push(*pItem);
+    }
+};
+
+
 /* ------------------------------------------------------------------------- *
  * Forward class declarations
  * ------------------------------------------------------------------------- */
@@ -716,6 +763,10 @@ public:
         // to count this lock in m_cTotalDbgApiLocks, which is asserted to be 0 on entry
         // to public APIs.  Example of such a lock: LL_SHIM_PROCESS_DISPOSE_LOCK
         cLockNonDbgApi  = 0x00000004,
+
+        // Skip the leak assert in the destructor. Use for static-lifetime locks
+        // whose owning shutdown path is not guaranteed to run.
+        cLockAllowLeak  = 0x00000008,
     };
 
     // To prevent deadlocks, we order all locks.
@@ -1633,11 +1684,6 @@ typedef CordbEnumerator<COR_SEGMENT,
                         ICorDebugHeapSegmentEnum, IID_ICorDebugHeapSegmentEnum,
                         IdentityConvert<COR_SEGMENT> > CordbHeapSegmentEnumerator;
 
-typedef CordbEnumerator<COR_MEMORY_RANGE,
-                        COR_MEMORY_RANGE,
-                        ICorDebugMemoryRangeEnum, IID_ICorDebugMemoryRangeEnum,
-                        IdentityConvert<COR_MEMORY_RANGE> > CordbMemoryRangeEnumerator;
-
 typedef CordbEnumerator<CorDebugExceptionObjectStackFrame,
                         CorDebugExceptionObjectStackFrame,
                         ICorDebugExceptionObjectCallStackEnum, IID_ICorDebugExceptionObjectCallStackEnum,
@@ -2458,9 +2504,6 @@ public:
     // Lookup a module from the cache.  Create and to the cache if needed.
     CordbModule * LookupOrCreateModule(VMPTR_Assembly vmAssemblyToken, VMPTR_Module vmModuleToken = VMPTR_Module::NullPtr());
 
-    // Callback from DAC for module enumeration
-    static void ModuleEnumerationCallback(VMPTR_Assembly vmAssembly, void * pUserData);
-
     // Use DAC to add any modules for this assembly.
     void PrepopulateModules();
 
@@ -2786,15 +2829,6 @@ public:
     virtual void HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEvent) = 0;
 #endif // FEATURE_INTEROP_DEBUGGING
 
-    // Get the modules in the order that they were loaded. This is needed to send the fake-attach events
-    // for module load in the right order.
-    //
-    // This can be removed once ICorDebug's enumerations are ordered.
-    virtual void GetModulesInLoadOrder(
-        ICorDebugAssembly * pAssembly,
-        RSExtSmartPtr<ICorDebugModule>* pModules,
-        ULONG countModules) = 0;
-
     // Get the assemblies in the order that they were loaded. This is needed to send the fake-attach events
     // for assembly load in the right order.
     //
@@ -2896,7 +2930,7 @@ public:
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 };
 
-class EMPTY_BASES_DECL CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
+class EMPTY_BASES CUnmanagedThreadSHashTraits : public DefaultSHashTraits<UnmanagedThreadTracker*>
 {
     public:
         typedef DWORD key_t;
@@ -2919,7 +2953,6 @@ class CordbProcess :
     public ICorDebugProcess5,
     public ICorDebugProcess7,
     public ICorDebugProcess8,
-    public ICorDebugProcess11,
     public ICorDebugProcess12,
     public IDacDbiInterface::IAllocator,
     public IDacDbiInterface::IMetaDataLookup,
@@ -2960,8 +2993,7 @@ public:
     IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly);
 
     // Helper functions for LookupMetaData implementation
-    IMDInternalImport * LookupMetaDataFromDebugger(VMPTR_PEAssembly vmPEAssembly,
-                                                   CordbModule * pModule);
+    IMDInternalImport * LookupMetaDataFromDebugger(CordbModule * pModule);
 
     IMDInternalImport * LookupMetaDataFromDebuggerForSingleFile(CordbModule * pModule,
                                                                 LPCWSTR pwszImagePath,
@@ -3134,11 +3166,6 @@ public:
     COM_METHOD EnableGCNotificationEvents(BOOL fEnable);
 
     //-----------------------------------------------------------
-    // ICorDebugProcess11
-    //-----------------------------------------------------------
-    COM_METHOD EnumerateLoaderHeapMemoryRegions(ICorDebugMemoryRangeEnum **ppRanges);
-
-    //-----------------------------------------------------------
     // ICorDebugProcess12
     //-----------------------------------------------------------
     COM_METHOD GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDebugStackWalk **ppStackWalk);
@@ -3291,12 +3318,6 @@ public:
         ICorDebugAppDomain * pAppDomain,
         RSExtSmartPtr<ICorDebugAssembly>* pAssemblies,
         ULONG countAssemblies);
-
-    // Callback for Shim to get the modules in load order
-    void GetModulesInLoadOrder(
-        ICorDebugAssembly * pAssembly,
-        RSExtSmartPtr<ICorDebugModule>* pModules,
-        ULONG countModules);
 
     // Functions to queue fake Connection events on attach.
     static void CountConnectionsCallback(DWORD id, LPCWSTR pName, void * pUserData);
@@ -4298,7 +4319,7 @@ private:
     BOOL IsFileMetaDataValid();
 
     // Helper to copy metadata buffer from the Target to the host.
-    void CopyRemoteMetaData(TargetBuffer buffer, CoTaskMemHolder<VOID> * pLocalBuffer);
+    void CopyRemoteMetaData(TargetBuffer buffer, VOID** pLocalBuffer);
 
 
     CordbAssembly * ResolveAssemblyInternal(mdToken tkAssemblyRef);
@@ -5828,7 +5849,7 @@ public:
     VMPTR_MethodDesc GetVMNativeCodeMethodDescToken() { return m_vmNativeCodeMethodDescToken; };
 
     // Worker function for GetReturnValueLiveOffset.
-    HRESULT GetReturnValueLiveOffsetImpl(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, ULONG32 *pOffsets);
+    HRESULT GetReturnValueVariableHomes(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, const ICorDebugInfo::NativeVarInfo **ppVarInfos);
 
     // get total size of the code including both hot and cold regions
     ULONG32 GetSize();
@@ -5898,8 +5919,6 @@ private:
 
     // Grabs the appropriate signature parser for a methodref, methoddef, methodspec.
     HRESULT GetSigParserFromFunction(mdToken mdFunction, mdToken *pClass, SigParser &methodSig, SigParser &genericSig);
-
-    int GetCallInstructionLength(BYTE *buffer, ULONG32 len);
 
     //-----------------------------------------------------------
     // Data members
@@ -6041,7 +6060,7 @@ public:
     //-----------------------------------------------------------
 
     // callback used to enumerate the internal frames on a thread
-    static void GetActiveInternalFramesCallback(const DebuggerIPCE_STRData * pFrameData,
+    static void GetActiveInternalFramesCallback(const Debugger_STRData * pFrameData,
                                                 void *                 pUserData);
 
     CorDebugUserState GetUserState();
@@ -6527,7 +6546,7 @@ public:
     CordbInternalFrame(CordbThread *          pThread,
                        FramePointer           fp,
                        CordbAppDomain *       pCurrentAppDomain,
-                       const DebuggerIPCE_STRData * pData);
+                       const Debugger_STRData * pData);
 
     CordbInternalFrame(CordbThread *             pThread,
                        FramePointer              fp,
@@ -6752,11 +6771,11 @@ typedef std::function<HRESULT(DWORD index, ICorDebugValue** ppValue)> ValueGette
 class CordbValueEnum : public CordbBase, public ICorDebugValueEnum
 {
 public:
-    CordbValueEnum(CordbProcess* pProcess, 
-                   UINT maxCount, 
+    CordbValueEnum(CordbProcess* pProcess,
+                   UINT maxCount,
                    ValueGetter valueGetter,
                    NeuterList* pNeuterList);
-    
+
     virtual ~CordbValueEnum();
     virtual void Neuter();
 
@@ -6808,7 +6827,7 @@ public:
     CordbMiscFrame();
 
     // new-style constructor
-    CordbMiscFrame(DebuggerIPCE_JITFuncData * pJITFuncData);
+    CordbMiscFrame(Debugger_JITFuncData * pJITFuncData);
 
     SIZE_T             parentIP;
     FramePointer       fpParentOrSelf;
@@ -6827,9 +6846,7 @@ public:
                      FramePointer         fp,
                      CordbNativeCode *    pNativeCode,
                      SIZE_T               ip,
-                     DebuggerREGDISPLAY * pDRD,
                      TADDR                addrAmbientESP,
-                     bool                 fQuicklyUnwound,
                      CordbAppDomain *     pCurrentAppDomain,
                      CordbMiscFrame *     pMisc = NULL,
                      DT_CONTEXT *         pContext = NULL);
@@ -7006,11 +7023,6 @@ public:
     //-----------------------------------------------------------
 
 public:
-    // the register set
-    DebuggerREGDISPLAY m_rd;
-
-    // This field is only true for Enter-Managed chain.  It means that the register set is invalid.
-    bool               m_quicklyUnwound;
 
     // each CordbNativeFrame corresponds to exactly one CordbJITILFrame and one CordbNativeCode
     RSSmartPtr<CordbJITILFrame> m_JITILFrame;
@@ -7024,8 +7036,6 @@ private:
     // (most likely in a frameless method)
     TADDR    m_taAmbientESP;
 
-    // @dbgtodo  inspection - When we DACize the various Cordb*Value classes, we should consider getting rid of the
-    // DebuggerREGDISPLAY and just use the CONTEXT.  A lot of simplification can be done here.
     DT_CONTEXT  m_context;
 };
 
@@ -7048,11 +7058,10 @@ private:
 class CordbRegisterSet : public CordbBase, public ICorDebugRegisterSet, public ICorDebugRegisterSet2
 {
 public:
-    CordbRegisterSet(DebuggerREGDISPLAY * pRegDisplay,
-                     CordbThread *        pThread,
+    CordbRegisterSet(CordbThread *        pThread,
+                     DT_CONTEXT *         pContext,
                      bool fActive,
-                     bool fQuickUnwind,
-                     bool fTakeOwnershipOfDRD = false);
+                     bool fQuickUnwind);
 
 
     ~CordbRegisterSet();
@@ -7148,23 +7157,15 @@ public:
     }
 
 protected:
-    // Platform specific helper for GetThreadContext.
-    void InternalCopyRDToContext(DT_CONTEXT * pContext);
 
     // Adapters to impl v2.0 interfaces on top of v1.0 interfaces.
     HRESULT GetRegistersAvailableAdapter(ULONG32 regCount, BYTE pAvailable[]);
     HRESULT GetRegistersAdapter(ULONG32 maskCount, BYTE mask[], ULONG32 regCount, CORDB_REGISTER regBuffer[]);
 
-
-    // This CordbRegisterSet is responsible to free this memory if m_fTakeOwnershipOfDRD is true.  Otherwise,
-    // this memory is freed by the CordbNativeFrame or CordbThread which creates this CordbRegisterSet.
-    DebuggerREGDISPLAY  *m_rd;
+    DT_CONTEXT          m_context;
     CordbThread         *m_thread;
     bool                m_active; // true if we're the leafmost register set.
     bool                m_quickUnwind;
-
-    // true if the CordbRegisterSet owns the DebuggerREGDISPLAY pointer and needs to free the memory
-    bool                m_fTakeOwnershipOfDRD;
 } ;
 
 
@@ -7305,9 +7306,6 @@ private:
 
     // Worker function for GetReturnValueForILOffset.
     HRESULT GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDebugValue** ppReturnValue);
-
-    // Given pType, fills ppReturnValue with the correct value.
-    HRESULT GetReturnValueForType(CordbType *pType, ICorDebugValue **ppReturnValue);
 
     //-----------------------------------------------------------
     // Data members
@@ -8165,7 +8163,7 @@ public:
     //               ReadProcessMemory.
     virtual
     void CreateInternalValue(CordbType *       pType,
-                             SIZE_T            offset,
+                             CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
                              ICorDebugValue ** ppValue) = 0;
@@ -8229,7 +8227,7 @@ public:
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
     void CreateInternalValue(CordbType *       pType,
-                                SIZE_T            offset,
+                                CORDB_ADDRESS     offset,
                                 void *            localAddress,
                                 ULONG32           size,
                                 ICorDebugValue ** ppValue);
@@ -8282,7 +8280,7 @@ public:
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
     void CreateInternalValue(CordbType *       pType,
-                             SIZE_T            offset,
+                             CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
                              ICorDebugValue ** ppValue);
@@ -8349,7 +8347,7 @@ public:
     // creates an ICDValue for a field or array element or for the value type of a boxed object
     virtual
     void CreateInternalValue(CordbType *       pType,
-                             SIZE_T            offset,
+                             CORDB_ADDRESS     offset,
                              void *            localAddress,
                              ULONG32           size,
                              ICorDebugValue ** ppValue);
@@ -8953,7 +8951,7 @@ public:
                        void *                    objectAddress,
                        CorElementType            type,
                        VMPTR_AppDomain           vmAppdomain,
-                       DebuggerIPCE_ObjectData * pInfo);
+                       DacDbiObjectData * pInfo);
 
     // get information about a TypedByRef object when the reference is the address of a TypedByRef structure.
     static
@@ -8961,7 +8959,7 @@ public:
                            CORDB_ADDRESS             pTypedByRef,
                            CorElementType            type,
                            VMPTR_AppDomain           vmAppDomain,
-                           DebuggerIPCE_ObjectData * pInfo);
+                           DacDbiObjectData * pInfo);
 
     //  get the address of the object referenced
     void * GetObjectAddress(MemoryRange localValue);
@@ -8990,7 +8988,7 @@ public:
     static HRESULT DereferenceCommon(CordbAppDomain *          pAppDomain,
                                      CordbType *               pType,
                                      CordbType *               pRealTypeOfTypedByref,
-                                     DebuggerIPCE_ObjectData * m_pInfo,
+                                     DacDbiObjectData * m_pInfo,
                                      ICorDebugValue **         ppValue);
 
     // Returns a pointer to the ValueHome field
@@ -9002,7 +9000,7 @@ public:
     //-----------------------------------------------------------
 
 public:
-    DebuggerIPCE_ObjectData  m_info;
+    DacDbiObjectData  m_info;
     CordbType *              m_realTypeOfTypedByref; // weak ref
 
     RefValueHome             m_valueHome;
@@ -9042,7 +9040,7 @@ public:
     CordbObjectValue(CordbAppDomain *          appdomain,
                      CordbType *               type,
                      TargetBuffer              remoteValue,
-                     DebuggerIPCE_ObjectData * pObjectData );
+                     DacDbiObjectData * pObjectData );
 
     virtual ~CordbObjectValue();
 
@@ -9184,7 +9182,7 @@ public:
 
     HRESULT Init();
 
-    DebuggerIPCE_ObjectData GetInfo() { return m_info; }
+    DacDbiObjectData GetInfo() { return m_info; }
     CordbHangingFieldTable * GetHangingFieldTable() { return &m_hangingFieldsInstance; }
 
     // Returns a pointer to the ValueHome field
@@ -9195,7 +9193,7 @@ protected:
     //-----------------------------------------------------------
     // Data members
     //-----------------------------------------------------------
-    DebuggerIPCE_ObjectData  m_info;
+    DacDbiObjectData  m_info;
     BYTE *                   m_pObjectCopy;     // local cached copy of the object
     BYTE *                   m_objectLocalVars; // var base in _this_ process
                                                 // points _into_ m_pObjectCopy
@@ -9507,7 +9505,7 @@ class CordbArrayValue : public CordbValue,
 public:
     CordbArrayValue(CordbAppDomain *          appdomain,
                     CordbType *               type,
-                    DebuggerIPCE_ObjectData * pObjectInfo,
+                    DacDbiObjectData *        pObjectInfo,
                     TargetBuffer              remoteValue);
     virtual ~CordbArrayValue();
 
@@ -9629,7 +9627,7 @@ public:
 
 private:
     // contains information about the array, such as rank, number of elements, element size, etc.
-    DebuggerIPCE_ObjectData  m_info;
+    DacDbiObjectData  m_info;
 
     // type of the elements
     CordbType               *m_elemtype;
@@ -9774,7 +9772,7 @@ private:
 
     BOOL                m_fCanBeValid;      // true if object "can" be valid. False when object is no longer valid.
     CorDebugHandleType m_handleType;        // handle type can be strong or weak
-    DebuggerIPCE_ObjectData  m_info;
+    DacDbiObjectData  m_info;
 ; // ICORDebugClass of this object when we create the handle
 };
 
@@ -10600,7 +10598,7 @@ public:
 
 private:
     RefWalkHandle mRefHandle;
-    BOOL mEnumStacksFQ;
+    BOOL mEnumStacks;
     UINT32 mHandleMask;
 };
 
@@ -11414,8 +11412,7 @@ class CordbAsyncFrame : public CordbBase, public ICorDebugILFrame, public ICorDe
     CORDB_ADDRESS m_diagnosticIP;
     CORDB_ADDRESS m_continuationAddress;
     UINT32 m_state;
-    int m_nNumberOfVars;
-    DacDbiArrayList<AsyncLocalData> m_asyncVars;
+    CQuickArrayList<AsyncLocalData> m_asyncVars;
 
     Instantiation     m_genericArgs;        // the generics type arguments
     BOOL              m_genericArgsLoaded;  // whether we have loaded and cached the generics type arguments

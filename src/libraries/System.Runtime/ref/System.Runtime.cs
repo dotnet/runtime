@@ -2342,7 +2342,7 @@ namespace System
         public static System.Delegate? Combine(System.Delegate? a, System.Delegate? b) { throw null; }
         public static System.Delegate? Combine(params System.Delegate?[]? delegates) { throw null; }
         public static System.Delegate? Combine(params System.ReadOnlySpan<System.Delegate?> delegates) { throw null; }
-        protected virtual System.Delegate CombineImpl(System.Delegate? d) { throw null; }
+        protected System.Delegate CombineImpl(System.Delegate? d) { throw null; }
         public static System.Delegate CreateDelegate(System.Type type, object? firstArgument, System.Reflection.MethodInfo method) { throw null; }
         public static System.Delegate? CreateDelegate(System.Type type, object? firstArgument, System.Reflection.MethodInfo method, bool throwOnBindFailure) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target method might be removed")]
@@ -2361,7 +2361,7 @@ namespace System
         public static System.Delegate.InvocationListEnumerator<TDelegate> EnumerateInvocationList<TDelegate>(TDelegate? d) where TDelegate : System.Delegate { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
-        public virtual System.Delegate[] GetInvocationList() { throw null; }
+        public System.Delegate[] GetInvocationList() { throw null; }
         protected virtual System.Reflection.MethodInfo GetMethodImpl() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -2370,7 +2370,7 @@ namespace System
         public static bool operator !=(System.Delegate? d1, System.Delegate? d2) { throw null; }
         public static System.Delegate? Remove(System.Delegate? source, System.Delegate? value) { throw null; }
         public static System.Delegate? RemoveAll(System.Delegate? source, System.Delegate? value) { throw null; }
-        protected virtual System.Delegate? RemoveImpl(System.Delegate d) { throw null; }
+        protected System.Delegate? RemoveImpl(System.Delegate? d) { throw null; }
         public partial struct InvocationListEnumerator<TDelegate> where TDelegate : System.Delegate
         {
             public TDelegate Current { get { throw null; } }
@@ -4793,17 +4793,14 @@ namespace System
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The target method might be removed")]
         protected MulticastDelegate(object target, string method) : base (default(object), default(string)) { }
         protected MulticastDelegate([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods)] System.Type target, string method) : base (default(object), default(string)) { }
-        protected sealed override System.Delegate CombineImpl(System.Delegate? follow) { throw null; }
         public sealed override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public sealed override int GetHashCode() { throw null; }
-        public sealed override System.Delegate[] GetInvocationList() { throw null; }
         protected override System.Reflection.MethodInfo GetMethodImpl() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool operator ==(System.MulticastDelegate? d1, System.MulticastDelegate? d2) { throw null; }
         public static bool operator !=(System.MulticastDelegate? d1, System.MulticastDelegate? d2) { throw null; }
-        protected sealed override System.Delegate? RemoveImpl(System.Delegate value) { throw null; }
     }
     public sealed partial class MulticastNotSupportedException : System.SystemException
     {
@@ -11031,6 +11028,71 @@ namespace System.IO
         public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
         public override System.Threading.Tasks.Task<string> ReadToEndAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
+    public sealed partial class StringStream : System.IO.Stream
+    {
+        public StringStream(System.ReadOnlyMemory<char> text, System.Text.Encoding encoding) { }
+        public StringStream(string text, System.Text.Encoding encoding) { }
+        public override bool CanRead { get { throw null; } }
+        public override bool CanSeek { get { throw null; } }
+        public override bool CanWrite { get { throw null; } }
+        public System.Text.Encoding Encoding { get { throw null; } }
+        public override long Length { get { throw null; } }
+        public override long Position { get { throw null; } set { } }
+        protected override void Dispose(bool disposing) { }
+        public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override int Read(System.Span<byte> buffer) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override int ReadByte() { throw null; }
+        public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
+        public override void SetLength(long value) { }
+        public override void Write(byte[] buffer, int offset, int count) { }
+        public override void Write(System.ReadOnlySpan<byte> buffer) { }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public sealed partial class ReadOnlyMemoryStream : System.IO.MemoryStream
+    {
+        public ReadOnlyMemoryStream(System.ReadOnlyMemory<byte> source) { }
+        public override int Capacity { get { throw null; } set { } }
+        public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
+        public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected override void Dispose(bool disposing) { }
+        public override byte[] GetBuffer() { throw null; }
+        public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override int Read(System.Span<byte> buffer) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override int ReadByte() { throw null; }
+        public override byte[] ToArray() { throw null; }
+        public override bool TryGetBuffer(out System.ArraySegment<byte> buffer) { throw null; }
+        public override void WriteTo(System.IO.Stream stream) { }
+    }
+    public sealed partial class WritableMemoryStream : System.IO.MemoryStream
+    {
+        public WritableMemoryStream(System.Memory<byte> buffer) { }
+        public override int Capacity { get { throw null; } set { } }
+        public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
+        public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected override void Dispose(bool disposing) { }
+        public override byte[] GetBuffer() { throw null; }
+        public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override int Read(System.Span<byte> buffer) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override int ReadByte() { throw null; }
+        public override void SetLength(long value) { }
+        public override byte[] ToArray() { throw null; }
+        public override bool TryGetBuffer(out System.ArraySegment<byte> buffer) { throw null; }
+        public override void Write(byte[] buffer, int offset, int count) { }
+        public override void Write(System.ReadOnlySpan<byte> buffer) { }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override void WriteByte(byte value) { }
+        public override void WriteTo(System.IO.Stream stream) { }
+    }
     public partial class StringWriter : System.IO.TextWriter
     {
         public StringWriter() { }
@@ -12309,6 +12371,7 @@ namespace System.Reflection
         protected ConstructorInfo() { }
         public override System.Reflection.MemberTypes MemberType { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
+        public override System.Type[] GetGenericArguments() { throw null; }
         public override int GetHashCode() { throw null; }
         public object Invoke(object?[]? parameters) { throw null; }
         public abstract object Invoke(System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object?[]? parameters, System.Globalization.CultureInfo? culture);
@@ -14018,6 +14081,13 @@ namespace System.Runtime.CompilerServices
     public sealed partial class IsByRefLikeAttribute : System.Attribute
     {
         public IsByRefLikeAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class IsClosedTypeAttribute : System.Attribute
+    {
+        public IsClosedTypeAttribute() { }
+        public System.Type[] DerivedTypes { get { throw null; } set { } }
     }
     public static partial class IsConst
     {

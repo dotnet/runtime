@@ -32,6 +32,23 @@ namespace System.IO.Compression
             _encoderOwned = false;
         }
 
+        /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream, decompression options, and optionally leaves the stream open.</summary>
+        /// <param name="stream">The stream from which data to decompress is read.</param>
+        /// <param name="decompressionOptions">The options to use for Zstandard decompression.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="decompressionOptions"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="stream"/> does not support reading.</exception>
+        public ZstandardStream(Stream stream, ZstandardDecompressionOptions decompressionOptions, bool leaveOpen = false)
+        {
+            ArgumentNullException.ThrowIfNull(decompressionOptions);
+
+            Init(stream, CompressionMode.Decompress);
+            _mode = CompressionMode.Decompress;
+            _leaveOpen = leaveOpen;
+
+            _decoder = new ZstandardDecoder(decompressionOptions);
+        }
+
         private bool TryDecompress(Span<byte> destination, out int bytesWritten, out OperationStatus lastResult)
         {
             Debug.Assert(_decoder != null);
@@ -261,9 +278,9 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The data is in an invalid format.</exception>
         /// <exception cref="ObjectDisposedException">The stream is disposed.</exception>
         /// <exception cref="IOException">Failed to decompress data from the underlying stream.</exception>
-        public override unsafe int ReadByte()
+        public override int ReadByte()
         {
-            Span<byte> singleByte = stackalloc byte[1];
+            Span<byte> singleByte = [0];
             int bytesRead = Read(singleByte);
             return bytesRead > 0 ? singleByte[0] : -1;
         }

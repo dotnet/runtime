@@ -27,10 +27,18 @@
     <WasmEnableSIMD>true</WasmEnableSIMD>
     <WasmClang>emcc</WasmClang>
 
-    <_WasmDefaultFlags>-fwasm-exceptions -msimd128</_WasmDefaultFlags>
+    <_WasmDefaultFlags>-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128</_WasmDefaultFlags>
 
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Build</WasmBuildAppAfterThisTarget>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
+
+    <!-- During a publish-driven build, skip the build-phase relink. Otherwise WasmBuildApp produces
+         for-build/dotnet.native.wasm whose pinvoke-table is generated before the user assembly is
+         available to the scanner; ProcessPublishFilesForWasm / ComputeWasmPublishAssets then pick up
+         that stale for-build/ artifact via @(WasmNativeAsset) and stage it into the publish bundle,
+         while the (correct) for-publish/ relink produced by the nested WasmTriggerPublishApp runs too
+         late to be consumed. Mirrors the default in src/mono/wasm/build/WasmApp.Common.targets. -->
+    <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and ('$(DeployOnBuild)' == 'true' or '$(_IsPublishing)' == 'true')">true</WasmBuildOnlyAfterPublish>
 
     <!-- The nested publish needs the full Publish chain (which includes Build) so that
          GenerateStaticWebAssetsManifest runs before _CleanupReferencedProjectItemGroups
@@ -49,6 +57,23 @@
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
   </PropertyGroup>
+
+  <!-- Diagnostics: transform Mono-style WasmPerformanceInstrumentation property into CoreCLR env vars.
+       Input format: "all,interval=0" or "N:Namespace" or "all" (Mono convention)
+       Output: DOTNET_WasmPerformanceInstrumentation=<MethodSet filter> ('all' mapped to '*')
+               DOTNET_EventPipeThreadSamplingRate=<ms> (if interval= specified) -->
+  <PropertyGroup Condition="'$(EnableDiagnostics)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''">
+    <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
+    <_WasmPerfInstInterval></_WasmPerfInstInterval>
+    <_WasmPerfInstInterval Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring($([MSBuild]::Add($(WasmPerformanceInstrumentation.IndexOf(',interval=')), 10))))</_WasmPerfInstInterval>
+    <_WasmPerfInstFilter Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring(0, $(WasmPerformanceInstrumentation.IndexOf(',interval='))))</_WasmPerfInstFilter>
+    <_WasmPerfInstInterval Condition="'$(_WasmPerfInstInterval)' != '' and $(_WasmPerfInstInterval.Contains(','))">$(_WasmPerfInstInterval.Substring(0, $(_WasmPerfInstInterval.IndexOf(','))))</_WasmPerfInstInterval>
+    <_WasmPerfInstFilter Condition="'$(_WasmPerfInstFilter)' == 'all'">*</_WasmPerfInstFilter>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(EnableDiagnostics)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''">
+    <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstFilter)" />
+    <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
+  </ItemGroup>
 
   <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods -->
   <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
@@ -74,15 +99,38 @@
 
   <!-- ======================== Entry Points ======================== -->
 
-  <!-- Build entry point: runs after Build when WasmBuildNative is true -->
+  <!-- Auto-enable native relink based on project configuration. Mirrors a subset of
+       the Mono path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets). -->
+  <Target Name="_CoreCLRSetWasmBuildNativeDefaults"
+          Condition="'$(IsBrowserWasmProject)' == 'true' and '$(IsCrossTargetingBuild)' != 'true'">
+    <PropertyGroup>
+      <!-- A project that references native files needs a relink to embed them.
+           NativeLibrary items are converted to NativeFileReference items later in the
+           flow (in _CoreCLRPrepareForNativeBuild) so we have to inspect both here. -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(EnableDiagnostics)' == 'true'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmPerformanceInstrumentation)' != ''">true</WasmBuildNative>
+    </PropertyGroup>
+
+    <!-- When publishing a trimmed app, default to relinking in Release, matching the Mono
+         path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets). This is what bakes the
+         app's own [UnmanagedCallersOnly] reverse thunks into dotnet.native.wasm; the runtime
+         pack only ships thunks for the framework's own [UnmanagedCallersOnly] methods. -->
+    <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Build entry point: runs after Build. The inner _CoreCLRWasmBuildAppCore is
+       gated on WasmBuildNative='true', so when no relink is needed this is a no-op. -->
   <Target Name="WasmBuildApp"
           AfterTargets="$(WasmBuildAppAfterThisTarget)"
           Condition="'$(IsBrowserWasmProject)' == 'true' and
-                     '$(WasmBuildNative)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(WasmBuildOnlyAfterPublish)' != 'true' and
                      '$(IsCrossTargetingBuild)' != 'true'"
-          DependsOnTargets="_CoreCLRWasmBuildAppCore" />
+          DependsOnTargets="_CoreCLRSetWasmBuildNativeDefaults;_CoreCLRWasmBuildAppCore" />
 
   <!-- Publish entry point: triggers nested publish for browser-wasm projects -->
   <Target Name="WasmTriggerPublishApp"
@@ -90,26 +138,179 @@
           Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(IsCrossTargetingBuild)' != 'true'">
+    <!-- Use a unique property, so the already run wasm targets can also run -->
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="WasmNestedPublishApp"
-             Properties="WasmBuildingForNestedPublish=true;_WasmInNestedPublish_UniqueProperty_XYZ=true"
-             RebaseOutputs="true">
+             Properties="_WasmInNestedPublish_UniqueProperty_XYZ=true;WasmBuildingForNestedPublish=true;DeployOnBuild=;_IsPublishing=;_WasmIsPublishing=$(_IsPublishing);ResolveAssemblyReferencesFindRelatedSatellites=true">
       <Output TaskParameter="TargetOutputs" ItemName="_WasmNestedPublishAppResultItems" />
     </MSBuild>
+
     <ItemGroup>
-      <!-- Remove build-phase native assets; the nested publish produces the definitive set -->
-      <WasmNativeAsset Remove="@(WasmNativeAsset)" />
       <WasmAssembliesFinal Remove="@(WasmAssembliesFinal)" />
-      <WasmAssembliesFinal Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(Extension)' == '.dll'" />
-      <WasmNativeAsset Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(Extension)' != '.dll'" />
+      <WasmAssembliesFinal Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == 'WasmAssembliesFinal'" />
+
+      <WasmNativeAsset Remove="@(WasmNativeAsset)" />
+      <WasmNativeAsset Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == 'WasmNativeAsset'" />
+
+      <FileWrites Include="@(_WasmNestedPublishAppResultItems)" Condition="'%(_WasmNestedPublishAppResultItems.OriginalItemName)' == 'FileWrites'" />
     </ItemGroup>
   </Target>
 
   <!-- Nested publish invocation -->
   <Target Name="WasmNestedPublishApp"
           Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
-          DependsOnTargets="ResolveRuntimePackAssets;$(_WasmNestedPublishAppPreTarget);$(WasmNestedPublishAppDependsOn);_CoreCLRWasmBuildAppCore"
-          Returns="@(WasmAssembliesFinal);@(WasmNativeAsset)" />
+          DependsOnTargets="ResolveRuntimePackAssets;$(_WasmNestedPublishAppPreTarget);$(WasmNestedPublishAppDependsOn);_CoreCLRSetWasmBuildNativeDefaults;_CoreCLRWasmBuildAppCore"
+          Returns="@(WasmNativeAsset);@(WasmAssembliesFinal);@(FileWrites)">
+    <ItemGroup>
+      <WasmNativeAsset OriginalItemName="WasmNativeAsset" />
+      <WasmAssembliesFinal OriginalItemName="WasmAssembliesFinal" />
+      <FileWrites OriginalItemName="FileWrites" />
+    </ItemGroup>
+  </Target>
+
+  <!-- The WebAssembly SDK has _WasmNativeForBuild which forces WasmBuildApp to run before
+       _ResolveWasmOutputs (so the relinked dotnet.native.wasm is staged into the build's
+       static web assets), but it is gated on $(UsingBrowserRuntimeWorkload) == 'true'. In
+       CoreCLR no-workload mode that property is false, so without this target the build-
+       phase relink would only run after Build completes via WasmBuildApp's AfterTargets="Build"
+       — too late for GenerateStaticWebAssetsManifest to pick up @(WasmNativeAsset), and the
+       served binary would be the original (runtime pack) dotnet.native.wasm. -->
+  <Target Name="_CoreCLRWasmNativeForBuild"
+          DependsOnTargets="WasmBuildApp"
+          BeforeTargets="_ResolveWasmOutputs"
+          Condition="'$(IsBrowserWasmProject)' == 'true' and
+                     '$(WasmBuildingForNestedPublish)' != 'true' and
+                     '$(WasmBuildOnlyAfterPublish)' != 'true' and
+                     '$(IsCrossTargetingBuild)' != 'true' and
+                     '$(UsingBrowserRuntimeWorkload)' != 'true'" />
+
+  <!-- The WebAssembly SDK has _WasmNative which forces WasmTriggerPublishApp to run before
+       ProcessPublishFilesForWasm, but it is gated on $(UsingBrowserRuntimeWorkload) == 'true'.
+       In CoreCLR no-workload mode that property is false, so without this target the nested
+       publish (and its for-publish/dotnet.native.wasm relink) would only run after Publish
+       completes — too late for ComputeWasmPublishAssets to pick up @(WasmNativeAsset). -->
+  <Target Name="_CoreCLRWasmNative"
+          DependsOnTargets="WasmTriggerPublishApp"
+          BeforeTargets="ProcessPublishFilesForWasm"
+          Condition="'$(IsBrowserWasmProject)' == 'true' and
+                     '$(WasmBuildingForNestedPublish)' != 'true' and
+                     '$(UsingBrowserRuntimeWorkload)' != 'true'" />
+
+  <!-- The SDK declares this in Microsoft.NET.ConflictResolution.targets for every Microsoft.NET.Sdk build
+       (which every browser-wasm app is). Re-declare it here, guarded, so the task resolves on user systems
+       regardless of import order; the guard also lets the target degrade gracefully where the SDK build
+       tasks assembly is unavailable. -->
+  <UsingTask TaskName="ResolvePackageFileConflicts"
+             AssemblyFile="$(MicrosoftNETBuildTasksAssembly)"
+             Condition="'$(MicrosoftNETBuildTasksAssembly)' != '' and Exists('$(MicrosoftNETBuildTasksAssembly)')" />
+
+  <!-- ==================== Resolve runtime-pack vs app-local assembly conflicts by version ====================
+
+    For a self-contained browser-wasm app, @(ReferenceCopyLocalPaths) can contain two copies of the
+    same assembly: the runtime-pack copy (under $(MicrosoftNetCoreAppRuntimePackDir)) and an app-local
+    copy referenced out-of-band at a different version. ComputeWasmBuildAssets dedupes the webcil bundle
+    candidates by relative path (first-wins, version-blind), so the wrong copy can shadow the other one
+    in _framework. The canonical case is System.Runtime.Serialization.Formatters: the shared framework
+    ships a non-functional 8.1.0.0 stub while the app references the functional 11.0.0.0 build, so an
+    Assembly.Load for 11.0.0.0 then fails with FileNotFoundException.
+
+    Resolve the shadowed pairs with the SDK's own conflict resolver (ResolvePackageFileConflicts) — the
+    same task SDK publish uses (Microsoft.NET.ConflictResolution.targets) — so the higher AssemblyVersion
+    wins, exactly as a desktop self-contained publish would. This is version-based, not an unconditional
+    app-local preference: when the runtime-pack copy is the higher version it is the one that is kept. The
+    wasm build path normally never reaches that resolver for runtime-pack files, which is why the stub
+    leaks into _framework. We feed the resolver only the same-named runtime-pack/app-local pairs that deploy
+    to the _framework root (no culture subdirectory) and drop whichever copies it discards; assemblies that
+    exist in just one place, and culture-specific satellites, are untouched.
+
+    Robustness on user systems: ResolvePackageFileConflicts ships in the .NET SDK, so it is present for any
+    Microsoft.NET.Sdk browser-wasm build (in-repo or on a user machine). If the SDK build tasks assembly is
+    somehow unavailable, fall back to "app-local wins" (drop the shadowed runtime-pack copies) so the fix
+    still applies — matching how a self-contained app loads assemblies.
+
+    DependsOnTargets=ResolveReferences guarantees @(ReferenceCopyLocalPaths) is populated before we prune;
+    _GatherWasmFilesToBuild (unlike _ComputeWasmBuildCandidates) does not pull it in on its own.
+  -->
+  <Target Name="_CoreCLRResolveRuntimePackVsAppLocalConflicts"
+          BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild"
+          DependsOnTargets="ResolveReferences"
+          Condition="'$(IsBrowserWasmProject)' == 'true'">
+    <PropertyGroup>
+      <!-- Resolve the runtime pack dir the same way the WebAssembly SDK does (Browser.targets): prefer
+           the property, fall back to the ResolvedRuntimePack metadata (WBT/Helix-created projects leave
+           the property empty). A browser-wasm CoreCLR app resolves exactly one runtime pack
+           (Microsoft.NETCore.App), so the metadata expansion is unambiguous — the same single-pack
+           assumption the SDK's own Browser.targets relies on. Normalize once (full path + trailing slash)
+           so the StartsWith checks below reliably match %(FullPath), which uses native separators. All
+           comparisons use the OrdinalIgnoreCase StringComparison so a casing difference between the
+           property and the enumerated item paths (common on case-insensitive filesystems) cannot silently
+           misclassify a copy. Path membership uses StartsWith(string, StringComparison); name membership
+           uses IndexOf(string, StringComparison) with the "!= -1" test kept OUTSIDE the $() (MSBuild's
+           property-function expander returns the int index but rejects a trailing comparison operator
+           inside the $(), which is the MSB4184 trap). Both overloads exist on .NET Framework MSBuild;
+           the Contains(string, StringComparison) overload does not, so it is avoided. -->
+      <_CoreCLRRuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_CoreCLRRuntimePackDir>
+      <_CoreCLRRuntimePackDir Condition="'$(_CoreCLRRuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_CoreCLRRuntimePackDir>
+      <_CoreCLRRuntimePackDir Condition="'$(_CoreCLRRuntimePackDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_CoreCLRRuntimePackDir)'))</_CoreCLRRuntimePackDir>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
+      <!-- Split copy-local managed assemblies into app-local vs runtime-pack copies. Restrict both sets to
+           assemblies that deploy to the _framework root: ComputeWasmBuildAssets keys the bundle on a culture-
+           qualified RelativePath (_framework/<culture>/<name> for satellites, _framework/<name> otherwise), so
+           same-named satellites in different cultures never actually collide. Matching the conflict set only by
+           file name would wrongly pair them, so we exclude anything with a culture/subdirectory (empty
+           DestinationSubDirectory and Culture == root deployment). Satellite-vs-satellite version skew is out of
+           scope here and is left to the downstream first-wins dedup. -->
+      <_CoreCLRAppLocalAssembly Include="@(ReferenceCopyLocalPaths)"
+                                Condition="'%(Extension)' == '.dll' and '%(ReferenceCopyLocalPaths.DestinationSubDirectory)' == '' and '%(ReferenceCopyLocalPaths.Culture)' == '' and !$([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)', System.StringComparison.OrdinalIgnoreCase))" />
+      <_CoreCLRRuntimePackAssembly Include="@(ReferenceCopyLocalPaths)"
+                                   Condition="'%(Extension)' == '.dll' and '%(ReferenceCopyLocalPaths.DestinationSubDirectory)' == '' and '%(ReferenceCopyLocalPaths.Culture)' == '' and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)', System.StringComparison.OrdinalIgnoreCase))" />
+    </ItemGroup>
+    <PropertyGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
+      <!-- ;-delimited name lists wrapped in leading/trailing ';' so an IndexOf of ';name;' below is an
+           exact whole-name membership test (never a substring of a longer name). -->
+      <_CoreCLRAppLocalAssemblyNames>;@(_CoreCLRAppLocalAssembly->'%(FileName)%(Extension)');</_CoreCLRAppLocalAssemblyNames>
+      <_CoreCLRRuntimePackAssemblyNames>;@(_CoreCLRRuntimePackAssembly->'%(FileName)%(Extension)');</_CoreCLRRuntimePackAssemblyNames>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
+      <!-- The conflict set: copies of the same file name present in BOTH the runtime pack and app-local. -->
+      <_CoreCLRConflictCandidate Include="@(_CoreCLRRuntimePackAssembly)"
+                                 Condition="$(_CoreCLRAppLocalAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase)) != -1" />
+      <_CoreCLRConflictCandidate Include="@(_CoreCLRAppLocalAssembly)"
+                                 Condition="$(_CoreCLRRuntimePackAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase)) != -1" />
+    </ItemGroup>
+
+    <!-- Version-based resolution (parity with SDK publish/desktop): keep the higher AssemblyVersion.
+         PreferredPackages mirrors the SDK publish call (_HandlePackageFileConflictsForPublish) so that an
+         exact AssemblyVersion+FileVersion tie is broken the same way publish breaks it (preferring the
+         framework package) instead of being left to the downstream first-wins dedup. The property is
+         populated by ResolveTargetingPackAssets, which runs as part of our ResolveReferences dependency. -->
+    <ResolvePackageFileConflicts Condition="'@(_CoreCLRConflictCandidate)' != '' and Exists('$(MicrosoftNETBuildTasksAssembly)')"
+                                 ReferenceCopyLocalPaths="@(_CoreCLRConflictCandidate)"
+                                 PreferredPackages="$(PackageConflictPreferredPackages)">
+      <Output TaskParameter="ReferenceCopyLocalPathsWithoutConflicts" ItemName="_CoreCLRConflictWinners" />
+    </ResolvePackageFileConflicts>
+    <!-- Drop the discarded copies. Mirror the SDK's _HandlePackageFileConflicts (remove every candidate, then
+         re-add the winners) instead of removing a computed "loser" subset by identity: @(ReferenceCopyLocalPaths)
+         removal matches on ItemSpec only, so an Exclude-derived loser list is fragile if an ItemSpec ever repeats
+         with different metadata. ReferenceCopyLocalPathsWithoutConflicts carries the winners' full metadata, so
+         re-including them is lossless, and removing both candidate copies first guarantees the loser is gone. -->
+    <ItemGroup Condition="'@(_CoreCLRConflictCandidate)' != '' and Exists('$(MicrosoftNETBuildTasksAssembly)')">
+      <ReferenceCopyLocalPaths Remove="@(_CoreCLRConflictCandidate)" />
+      <ReferenceCopyLocalPaths Include="@(_CoreCLRConflictWinners)" />
+    </ItemGroup>
+
+    <!-- Fallback when the SDK conflict-resolution task is unavailable: prefer app-local (copy-local wins). Same
+         root-only restriction as the split above so a runtime-pack satellite is never removed on a bare file-name
+         match against an unrelated app-local satellite in a different culture. -->
+    <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != '' and '@(_CoreCLRConflictCandidate)' != '' and !Exists('$(MicrosoftNETBuildTasksAssembly)')">
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
+                               Condition="'%(Extension)' == '.dll'
+                                          and '%(ReferenceCopyLocalPaths.DestinationSubDirectory)' == '' and '%(ReferenceCopyLocalPaths.Culture)' == ''
+                                          and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)', System.StringComparison.OrdinalIgnoreCase))
+                                          and $(_CoreCLRAppLocalAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase)) != -1" />
+    </ItemGroup>
+  </Target>
 
   <!-- ======================== Core Orchestrator ======================== -->
 
@@ -117,6 +318,7 @@
     <_CoreCLRWasmBuildAppCoreDependsOn>
       _CoreCLRWasmInitialize;
       _CoreCLRSetupEmscripten;
+      _GatherWasmFilesToBuild;
       _CoreCLRPrepareForNativeBuild;
       _CoreCLRGenerateManagedToNative;
       _CoreCLRWriteCompileRsp;
@@ -153,6 +355,7 @@
       <_WasmIntermediateOutputPath Condition="'$(WasmBuildingForNestedPublish)' == 'true'">$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm', 'for-publish'))</_WasmIntermediateOutputPath>
 
       <_WasmCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_WasmCompileRsp>
+      <_WasmCompileRspGenerated>$(_WasmIntermediateOutputPath)emcc-compile-generated.rsp</_WasmCompileRspGenerated>
       <_WasmLinkRsp>$(_WasmIntermediateOutputPath)emcc-link.rsp</_WasmLinkRsp>
     </PropertyGroup>
 
@@ -262,6 +465,7 @@
       <_EmccCommonFlags Include="-v"  Condition="'$(EmccVerbose)' == 'true'" />
       <_EmccCommonFlags Include="-g"  Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
       <_EmccCommonFlags Include="-fwasm-exceptions" />
+      <_EmccCommonFlags Include="-sWASM_LEGACY_EXCEPTIONS=0" />
       <_EmccCommonFlags Include="-msimd128" />
     </ItemGroup>
 
@@ -270,11 +474,37 @@
       <_EmccCFlags Include="@(_EmccCommonFlags)" />
       <_EmccCFlags Include="-DGEN_PINVOKE=1" />
       <_EmccCFlags Include="$(EmccExtraCFlags)" />
+    </ItemGroup>
 
-      <!-- Include paths for ManagedToNativeGenerator output compilation -->
-      <_EmccCFlags Include="-I&quot;$(RepoRoot)src/coreclr/vm/wasm&quot;" Condition="Exists('$(RepoRoot)src/coreclr/vm/wasm/callhelpers.hpp')" />
-      <_EmccCFlags Include="-I&quot;$(RepoRoot)src/native&quot;" Condition="Exists('$(RepoRoot)src/native/minipal/entrypoints.h')" />
-      <_EmccCFlags Include="-include &quot;$(_WasmIntermediateOutputPath)coreclr_compat.h&quot;" />
+    <!-- Compile flags for ManagedToNativeGenerator output (callhelpers-pinvoke.cpp,
+         callhelpers-interp-to-managed.cpp). The generated files #include the real CoreCLR
+         headers (<callhelpers.hpp>, <minipal/entrypoints.h>, <minipal/utils.h>).
+         Force-include coreclr_compat.h to provide the prerequisite types/macros
+         (MethodDesc/PCODE/ULONG/INTERP_STACK_SLOT_SIZE/logging) that the
+         in-tree build pulls in via vm/common.h. Add -I flags so the real
+         headers resolve.
+         We keep these off the user-source flags (_EmccCFlags) so user .c/.cpp
+         in NativeFileReference don't pick up the compat header (which uses
+         C++-style decls that wouldn't compile in C).
+         _MinipalIncludeDir points at the dir containing utils.h/entrypoints.h
+         directly; _VmWasmIncludeDir points at the dir containing callhelpers.hpp.
+         Both can be overridden via env vars (HelixPreCommand on Helix,
+         RunScriptCommands locally) so the dirs resolve outside the in-repo
+         source tree; otherwise they fall back to the in-repo paths for full
+         repo builds. -->
+    <PropertyGroup>
+      <!-- WASM-TODO https://github.com/dotnet/runtime/issues/128362 -->
+      <_MinipalIncludeDir Condition="'$(MINIPAL_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(MINIPAL_INCLUDE_DIR)'))))</_MinipalIncludeDir>
+      <_MinipalIncludeDir Condition="'$(_MinipalIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'native', 'minipal'))</_MinipalIncludeDir>
+      <_MinipalIncludeRoot>$([MSBuild]::NormalizeDirectory('$(_MinipalIncludeDir)', '..'))</_MinipalIncludeRoot>
+      <_VmWasmIncludeDir Condition="'$(CORECLR_VM_WASM_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(CORECLR_VM_WASM_INCLUDE_DIR)'))))</_VmWasmIncludeDir>
+      <_VmWasmIncludeDir Condition="'$(_VmWasmIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'coreclr', 'vm', 'wasm'))</_VmWasmIncludeDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_EmccCFlagsGenerated Include="@(_EmccCFlags)" />
+      <_EmccCFlagsGenerated Include="-include &quot;$(MSBuildThisFileDirectory)coreclr_compat.h&quot;" />
+      <_EmccCFlagsGenerated Include="-I&quot;$(_VmWasmIncludeDir.TrimEnd('\/'))&quot;" />
+      <_EmccCFlagsGenerated Include="-I&quot;$(_MinipalIncludeRoot.TrimEnd('\/'))&quot;" />
     </ItemGroup>
 
     <!-- Source files: user NativeFileReference sources -->
@@ -282,8 +512,8 @@
       <_WasmSourceFileToCompile Remove="@(_WasmSourceFileToCompile)" />
       <_WasmSourceFileToCompile Include="@(NativeFileReference)" Condition="'%(Extension)' == '.c' or '%(Extension)' == '.cpp'" />
       <_WasmSourceFileToCompile ObjectFile="$(_WasmIntermediateOutputPath)%(FileName).o" />
-      <!-- Add compile RSP and compat header as dependencies for incremental build -->
-      <_WasmSourceFileToCompile Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
+      <!-- Add compile RSP as dependency for incremental build -->
+      <_WasmSourceFileToCompile Dependencies="$(_WasmCompileRsp)" />
     </ItemGroup>
 
     <!-- Native .a files to link: any NativeFileReference that are archives -->
@@ -296,9 +526,9 @@
 
   <Target Name="_CoreCLRGenerateManagedToNative">
     <PropertyGroup>
-      <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.cpp</_WasmPInvokeTablePath>
-      <_WasmReversePInvokeTablePath>$(_WasmIntermediateOutputPath)reverse-pinvoke-table.cpp</_WasmReversePInvokeTablePath>
-      <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)wasm_m2n_invoke.g.cpp</_WasmInterpToNativeTablePath>
+      <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)callhelpers-pinvoke.cpp</_WasmPInvokeTablePath>
+      <_WasmReversePInvokeTablePath>$(_WasmIntermediateOutputPath)callhelpers-reverse.cpp</_WasmReversePInvokeTablePath>
+      <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)callhelpers-interp-to-managed.cpp</_WasmInterpToNativeTablePath>
       <_WasmM2NCachePath>$(_WasmIntermediateOutputPath)m2n_cache.txt</_WasmM2NCachePath>
       <_IsLibraryMode Condition="'$(OutputType)' == 'Library'">true</_IsLibraryMode>
       <_IsLibraryMode Condition="'$(_IsLibraryMode)' == ''">false</_IsLibraryMode>
@@ -307,9 +537,11 @@
     <!-- P/Invoke modules: user native libraries + system native libraries -->
     <ItemGroup>
       <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
+      <_WasmPInvokeModules Include="%(_WasmSourceFileToCompile.FileName)" Condition="'%(_WasmSourceFileToCompile.ScanForPInvokes)' != 'false'" />
       <_WasmPInvokeModules Include="libSystem.Native" />
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
-      <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+      <_WasmPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_WasmIgnoredPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
       <_WasmPInvokeModules Include="libSystem.Native.Browser" />
       <_WasmPInvokeModules Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
     </ItemGroup>
@@ -337,84 +569,53 @@
     <ManagedToNativeGenerator
       Assemblies="@(_WasmManagedAssemblies)"
       PInvokeModules="@(_WasmPInvokeModules)"
+      IgnoredPInvokeModules="@(_WasmIgnoredPInvokeModules)"
       PInvokeOutputPath="$(_WasmPInvokeTablePath)"
       ReversePInvokeOutputPath="$(_WasmReversePInvokeTablePath)"
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
       CacheFilePath="$(_WasmM2NCachePath)"
+      TargetOS="browser"
       IsLibraryMode="$(_IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
 
-    <!-- Add generated C++ files to compile list.
-         Note: reverse-pinvoke-table.cpp is NOT compiled separately because
-         libcoreclr_static.a already contains callhelpers-reverse.cpp.o with the
-         default reverse-thunk table. Compiling the app-generated version would
-         cause duplicate symbol errors when the archive object is pulled in for
-         other required symbols (e.g., SystemInteropJS_*). -->
     <ItemGroup>
-      <_WasmSourceFileToCompile Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)pinvoke-table.o"
-                                                                            Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
-      <_WasmSourceFileToCompile Include="$(_WasmInterpToNativeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)wasm_m2n_invoke.o"
-                                                                            Dependencies="$(_WasmCompileRsp);$(_WasmIntermediateOutputPath)coreclr_compat.h" />
+      <_WasmSourceFileToCompileGenerated Remove="@(_WasmSourceFileToCompileGenerated)" />
+      <_WasmSourceFileToCompileGenerated Include="$(_WasmPInvokeTablePath)"          ObjectFile="$(_WasmIntermediateOutputPath)callhelpers-pinvoke.o"
+                                                                                     Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h;$(_VmWasmIncludeDir)callhelpers.hpp;$(_MinipalIncludeDir)entrypoints.h;$(_MinipalIncludeDir)utils.h" />
+      <_WasmSourceFileToCompileGenerated Include="$(_WasmReversePInvokeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)callhelpers-reverse.o"
+                                                                                     Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h;$(_VmWasmIncludeDir)callhelpers.hpp;$(_MinipalIncludeDir)utils.h" />
+      <_WasmSourceFileToCompileGenerated Include="$(_WasmInterpToNativeTablePath)"   ObjectFile="$(_WasmIntermediateOutputPath)callhelpers-interp-to-managed.o"
+                                                                                     Dependencies="$(_WasmCompileRspGenerated);$(MSBuildThisFileDirectory)coreclr_compat.h;$(_VmWasmIncludeDir)callhelpers.hpp;$(_MinipalIncludeDir)utils.h" />
     </ItemGroup>
   </Target>
 
   <!-- ======================== Write Compile RSP ======================== -->
 
-  <Target Name="_CoreCLRWriteCompileRsp" Condition="@(_WasmSourceFileToCompile->Count()) > 0">
-    <!-- Generate a compatibility header with type/macro stubs for compiling
-         ManagedToNativeGenerator output outside the full CoreCLR build context -->
-    <PropertyGroup>
-      <_WasmCoreclrCompatHeader>$(_WasmIntermediateOutputPath)coreclr_compat.h</_WasmCoreclrCompatHeader>
-    </PropertyGroup>
-    <ItemGroup>
-      <_CompatHeaderLines Include="// Auto-generated CoreCLR compat header for app native build" />
-      <_CompatHeaderLines Include="#pragma once" />
-      <_CompatHeaderLines Include="#include &lt;stddef.h&gt;" />
-      <_CompatHeaderLines Include="#include &lt;stdint.h&gt;" />
-      <_CompatHeaderLines Include="#include &lt;stdlib.h&gt;" />
-      <_CompatHeaderLines Include="#include &lt;stdio.h&gt;" />
-      <_CompatHeaderLines Include="// CoreCLR type stubs" />
-      <_CompatHeaderLines Include="#ifndef _CORECLR_COMPAT_TYPES" />
-      <_CompatHeaderLines Include="#define _CORECLR_COMPAT_TYPES" />
-      <_CompatHeaderLines Include="typedef void MethodDesc%3B" />
-      <_CompatHeaderLines Include="typedef uintptr_t PCODE%3B" />
-      <_CompatHeaderLines Include="typedef uint32_t ULONG%3B" />
-      <_CompatHeaderLines Include="#define INTERP_STACK_SLOT_SIZE 8u" />
-      <_CompatHeaderLines Include="#endif" />
-      <_CompatHeaderLines Include="// CoreCLR logging stubs" />
-      <_CompatHeaderLines Include="#define LF_INTEROP 0" />
-      <_CompatHeaderLines Include="#define LL_INFO1000 0" />
-      <_CompatHeaderLines Include="#define LOG(x)" />
-      <_CompatHeaderLines Include="// CoreCLR assertion stubs" />
-      <_CompatHeaderLines Include="#define PORTABILITY_ASSERT(msg) do { fprintf(stderr, &quot;PORTABILITY_ASSERT: %25s&quot;, msg)%3B fprintf(stderr, &quot;\n&quot;)%3B abort()%3B } while(0)" />
-    </ItemGroup>
-
-    <WriteLinesToFile Lines="@(_CompatHeaderLines)" File="$(_WasmCoreclrCompatHeader)" Overwrite="true" WriteOnlyWhenDifferent="true" />
-    <ItemGroup>
-      <FileWrites Include="$(_WasmCoreclrCompatHeader)" />
-    </ItemGroup>
-
+  <Target Name="_CoreCLRWriteCompileRsp"
+          Condition="@(_WasmSourceFileToCompile->Count()) > 0 or @(_WasmSourceFileToCompileGenerated->Count()) > 0">
     <ItemGroup>
       <_WasmCFlags Include="@(_EmccCFlags)" />
+      <_WasmCFlagsGenerated Include="@(_EmccCFlagsGenerated)" />
     </ItemGroup>
-    <WriteLinesToFile Lines="@(_WasmCFlags)" File="$(_WasmCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile Lines="@(_WasmCFlags)"          File="$(_WasmCompileRsp)"          Overwrite="true" WriteOnlyWhenDifferent="true" Condition="@(_WasmSourceFileToCompile->Count()) > 0" />
+    <WriteLinesToFile Lines="@(_WasmCFlagsGenerated)" File="$(_WasmCompileRspGenerated)" Overwrite="true" WriteOnlyWhenDifferent="true" Condition="@(_WasmSourceFileToCompileGenerated->Count()) > 0" />
     <ItemGroup>
-      <FileWrites Include="$(_WasmCompileRsp)" />
+      <FileWrites Include="$(_WasmCompileRsp)"          Condition="@(_WasmSourceFileToCompile->Count()) > 0" />
+      <FileWrites Include="$(_WasmCompileRspGenerated)" Condition="@(_WasmSourceFileToCompileGenerated->Count()) > 0" />
     </ItemGroup>
   </Target>
 
   <!-- ======================== Compile Native Sources ======================== -->
 
-  <Target Name="_CoreCLRCompileNativeSources" Condition="@(_WasmSourceFileToCompile->Count()) > 0">
-    <ItemGroup>
-      <_WasmCompileArguments Remove="@(_WasmCompileArguments)" />
-      <_WasmCompileArguments Include="&quot;@$(_WasmCompileRsp)&quot;" Condition="'$(_WasmCompileRsp)' != ''" />
-    </ItemGroup>
+  <Target Name="_CoreCLRCompileNativeSources"
+          Condition="@(_WasmSourceFileToCompile->Count()) > 0 or @(_WasmSourceFileToCompileGenerated->Count()) > 0">
 
+    <!-- Compile user NativeFileReference sources (no force-included compat header). -->
     <EmccCompile
+          Condition="@(_WasmSourceFileToCompile->Count()) > 0"
           SourceFiles="@(_WasmSourceFileToCompile)"
-          Arguments="@(_WasmCompileArguments, ' ')"
+          Arguments="&quot;@$(_WasmCompileRsp)&quot;"
           CompilerBinaryPath="$(WasmClang)"
           EnvironmentVariables="@(EmscriptenEnvVars)"
           DisableParallelCompile="$(DisableParallelEmccCompile)"
@@ -423,8 +624,22 @@
       <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
     </EmccCompile>
 
+    <!-- Compile generated ManagedToNativeGenerator output (force-includes coreclr_compat.h). -->
+    <EmccCompile
+          Condition="@(_WasmSourceFileToCompileGenerated->Count()) > 0"
+          SourceFiles="@(_WasmSourceFileToCompileGenerated)"
+          Arguments="&quot;@$(_WasmCompileRspGenerated)&quot;"
+          CompilerBinaryPath="$(WasmClang)"
+          EnvironmentVariables="@(EmscriptenEnvVars)"
+          DisableParallelCompile="$(DisableParallelEmccCompile)"
+          MessageToIndicateCompiling="Compiling generated managed-to-native sources with emcc $(EmccCompileOptimizationFlag) ..."
+          OutputMessageImportance="$(_WasmCompileOutputMessageImportance)">
+      <Output TaskParameter="OutputFiles" ItemName="FileWrites" />
+    </EmccCompile>
+
     <ItemGroup>
       <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompile.ObjectFile)" />
+      <_WasmNativeFileForLinking Include="%(_WasmSourceFileToCompileGenerated.ObjectFile)" />
     </ItemGroup>
   </Target>
 
@@ -456,9 +671,9 @@
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Runtime.InteropServices.JavaScript.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a"                     Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a"                   Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a"                   Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a" Condition="'$(InvariantGlobalization)' != 'true'" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.IO.Compression.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libz.a" />
 
@@ -488,7 +703,6 @@
 
       <!-- ES6 module output -->
       <_EmccLinkStepArgs Include="-s EXPORT_ES6=1" />
-      <_EmccLinkStepArgs Include="-lexports.js" />
 
       <!-- Memory configuration -->
       <_EmccLinkStepArgs Include="-s INITIAL_MEMORY=$(WasmInitialHeapSize)" />
@@ -530,6 +744,12 @@
 
       <!-- Extra user flags -->
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
+
+      <!-- -lexports.js to set MINIFY_WASM_EXPORT_NAMES=0 -->
+      <_EmccLinkStepArgs Include="-lexports.js" />
+      <!-- Ensure the CoreCLR WASM globals/tags are exported -->
+      <_EmccLinkStepArgs Include="-Wl,--export=__stack_pointer" />
+      <_EmccLinkStepArgs Include="-Wl,--export=__coreclr_wasm_rtlrestorecontext_tag" />
 
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />

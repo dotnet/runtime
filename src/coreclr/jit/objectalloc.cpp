@@ -61,6 +61,7 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_initialMaxBlockID(comp->compBasicBlockID)
 {
     m_EscapingPointers                = BitVecOps::UninitVal();
+    m_DefinitelyUsedPointers          = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
     m_DefinitelyStackPointingPointers = BitVecOps::UninitVal();
     m_ConnGraphAdjacencyMatrix        = nullptr;
@@ -277,6 +278,17 @@ void ObjectAllocator::MarkLclVarAsEscaping(unsigned int lclNum)
 void ObjectAllocator::MarkIndexAsEscaping(unsigned int bvIndex)
 {
     BitVecOps::AddElemD(&m_bitVecTraits, m_EscapingPointers, bvIndex);
+}
+
+//------------------------------------------------------------------------------
+// MarkIndexAsUsed : Mark resource as having at least one non-trivial use.
+//
+// Arguments:
+//    bvIndex - bv index for the resource
+//
+void ObjectAllocator::MarkIndexAsUsed(unsigned int bvIndex)
+{
+    BitVecOps::AddElemD(&m_bitVecTraits, m_DefinitelyUsedPointers, bvIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -558,6 +570,7 @@ void ObjectAllocator::DoAnalysis()
     if (m_bvCount > 0)
     {
         m_EscapingPointers         = BitVecOps::MakeEmpty(&m_bitVecTraits);
+        m_DefinitelyUsedPointers   = BitVecOps::MakeEmpty(&m_bitVecTraits);
         m_ConnGraphAdjacencyMatrix = new (m_compiler->getAllocator(CMK_ObjectAllocator)) BitSetShortLongRep[m_bvCount];
 
         // If we are doing conditional escape analysis, we also need to compute dominance.
@@ -576,6 +589,14 @@ void ObjectAllocator::DoAnalysis()
 
         MarkEscapingVarsAndBuildConnGraph();
         ComputeEscapingNodes(&m_bitVecTraits, m_EscapingPointers);
+
+        // Every escaping local is also (by definition) used: the value flows
+        // somewhere we can't see. Seed the used set with the escape set so that
+        // the closure propagates correctly through chains that terminate in an
+        // escape.
+        //
+        BitVecOps::UnionD(&m_bitVecTraits, m_DefinitelyUsedPointers, m_EscapingPointers);
+        ComputeConnGraphClosure(&m_bitVecTraits, m_DefinitelyUsedPointers, "used");
     }
 
 #ifdef DEBUG
@@ -966,6 +987,67 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
 }
 
 //------------------------------------------------------------------------------
+// ComputeConnGraphClosure : Propagate membership over the connection graph.
+//
+// Arguments:
+//    bitVecTraits   - Bit vector traits
+//    nodes [in/out] - Initial set of nodes; on return, contains all nodes
+//                     reachable from the initial set via connection-graph edges
+//                     (an edge dst -> src means the value of src flowed into dst,
+//                     so any property of dst also holds for src).
+//    setName        - Human-readable name of the set for JITDUMP output
+//
+// Notes:
+//    Mirrors the propagation in ComputeEscapingNodes but for arbitrary attributes
+//    (currently used for "used" tracking).
+//
+void ObjectAllocator::ComputeConnGraphClosure(BitVecTraits* bitVecTraits, BitVec& nodes, const char* setName)
+{
+    BitVec nodesToProcess = BitVecOps::MakeCopy(bitVecTraits, nodes);
+
+    JITDUMP("\nComputing %s closure\n\n", setName);
+
+    bool               doOneMoreIteration = true;
+    BitSetShortLongRep newNodes           = BitVecOps::UninitVal();
+    unsigned int       lclIndex;
+
+    while (doOneMoreIteration)
+    {
+        BitVecOps::Iter iterator(bitVecTraits, nodesToProcess);
+        doOneMoreIteration = false;
+
+        while (iterator.NextElem(&lclIndex))
+        {
+            if (m_ConnGraphAdjacencyMatrix[lclIndex] != nullptr)
+            {
+                doOneMoreIteration = true;
+
+                BitVecOps::Assign(bitVecTraits, newNodes, m_ConnGraphAdjacencyMatrix[lclIndex]);
+                BitVecOps::DiffD(bitVecTraits, newNodes, nodes);
+                BitVecOps::UnionD(bitVecTraits, nodesToProcess, newNodes);
+                BitVecOps::UnionD(bitVecTraits, nodes, newNodes);
+                BitVecOps::RemoveElemD(bitVecTraits, nodesToProcess, lclIndex);
+
+#ifdef DEBUG
+                if (!BitVecOps::IsEmpty(bitVecTraits, newNodes))
+                {
+                    BitVecOps::Iter newIterator(bitVecTraits, newNodes);
+                    unsigned int    newLclIndex;
+                    while (newIterator.NextElem(&newLclIndex))
+                    {
+                        JITDUMPEXEC(DumpIndex(lclIndex));
+                        JITDUMP(" causes ");
+                        JITDUMPEXEC(DumpIndex(newLclIndex));
+                        JITDUMP(" to be %s\n", setName);
+                    }
+                }
+#endif
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
 // ComputeStackObjectPointers : Given an initial set of possibly stack-pointing nodes,
 //                              and an initial set of definitely stack-pointing nodes,
 //                              update both sets by computing nodes reachable from the
@@ -1182,6 +1264,14 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
     if (escapes)
     {
         *reason = "[escapes]";
+        return false;
+    }
+
+    if (!IsLclVarUsed(lclNum))
+    {
+        // No non-trivial use; leave as heap and let DCE clean up.
+        //
+        *reason = "[unused]";
         return false;
     }
 
@@ -2027,7 +2117,8 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 
     bool       keepChecking                  = true;
     bool       canLclVarEscapeViaParentStack = true;
-    bool       isCopy                        = true;
+    bool       edgeAddedForLcl               = false;
+    bool       isTrivialUse                  = false;
     bool const isEnumeratorLocal             = lclDsc->lvIsEnumerator;
     bool       isAddress                     = parentStack->Top()->OperIs(GT_LCL_ADDR);
 
@@ -2035,17 +2126,18 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
     {
         if (parentStack->Height() <= parentIndex)
         {
+            // No parent uses this expression.
             canLclVarEscapeViaParentStack = false;
+            isTrivialUse                  = true;
             break;
         }
 
-        GenTree* tree    = parentStack->Top(parentIndex - 1);
-        GenTree* parent  = parentStack->Top(parentIndex);
-        bool     wasCopy = isCopy;
+        GenTree* tree   = parentStack->Top(parentIndex - 1);
+        GenTree* parent = parentStack->Top(parentIndex);
 
-        isCopy                        = false;
         canLclVarEscapeViaParentStack = true;
         keepChecking                  = false;
+        isTrivialUse                  = false;
 
         JITDUMP("... V%02u ... checking [%06u]\n", lclNum, m_compiler->dspTreeID(parent));
 
@@ -2075,15 +2167,8 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 // Add an edge to the connection graph.
                 //
                 AddConnGraphEdgeIndex(dstIndex, lclIndex);
+                edgeAddedForLcl               = true;
                 canLclVarEscapeViaParentStack = false;
-
-                // If the source of this store is an enumerator local,
-                // then the dest also becomes an enumerator local.
-                //
-                if (isCopy)
-                {
-                    CheckForEnumeratorUse(lclNum, dstLclNum);
-                }
 
                 // Note that we modelled this store in the connection graph
                 //
@@ -2097,10 +2182,29 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
             case GT_GT:
             case GT_LE:
             case GT_GE:
+            {
+                canLclVarEscapeViaParentStack = false;
+
+                // Comparing against a constant zero just tests nullness. The
+                // allocation candidate is known non-null, so this folds away.
+                //
+                GenTree* const op1   = parent->AsOp()->gtGetOp1();
+                GenTree* const op2   = parent->AsOp()->gtGetOp2();
+                GenTree* const other = (op1 == tree) ? op2 : op1;
+                if (other->IsIntegralConst(0))
+                {
+                    isTrivialUse = true;
+                }
+                break;
+            }
+
             case GT_NULLCHECK:
             case GT_ARR_LENGTH:
             case GT_BOUNDS_CHECK:
+                // These read statically-known properties (non-null, fixed length).
+                // BOUNDS_CHECK takes a length, so the local is unlikely to appear here.
                 canLclVarEscapeViaParentStack = false;
+                isTrivialUse                  = true;
                 break;
 
             case GT_COMMA:
@@ -2108,6 +2212,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 {
                     // Left child of GT_COMMA, it will be discarded
                     canLclVarEscapeViaParentStack = false;
+                    isTrivialUse                  = true;
                     break;
                 }
                 FALLTHROUGH;
@@ -2135,7 +2240,6 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 break;
 
             case GT_BOX:
-                isCopy = wasCopy;
                 ++parentIndex;
                 keepChecking = true;
                 break;
@@ -2178,13 +2282,14 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 {
                     if (isAddress)
                     {
-                        // Remember the resource being stored to.
+                        // Pure write through the local's address; does not read its value.
                         //
                         JITDUMP("... store address is local\n");
                         m_StoreAddressToIndexMap.Set(parent, StoreInfo(lclIndex));
+                        isTrivialUse = true;
                     }
 
-                    // The address does not escape
+                    // The address does not escape.
                     //
                     canLclVarEscapeViaParentStack = false;
                     break;
@@ -2214,6 +2319,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     else
                     {
                         AddConnGraphEdgeIndex(dstInfo->m_index, lclIndex);
+                        edgeAddedForLcl               = true;
                         canLclVarEscapeViaParentStack = false;
                         break;
                     }
@@ -2240,6 +2346,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     JITDUMP("... local V%02u.f store\n", dstLclNum);
                     const unsigned dstIndex = LocalToIndex(dstLclNum);
                     AddConnGraphEdgeIndex(dstIndex, lclIndex);
+                    edgeAddedForLcl               = true;
                     canLclVarEscapeViaParentStack = false;
 
                     // Note that we modelled this store in the connection graph
@@ -2259,6 +2366,9 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 //
                 if (!IsTrackedType(parent->TypeGet()))
                 {
+                    // Loading a non-GC value cannot reveal the local's ref identity,
+                    // but it is a real read of the storage, so not a trivial use.
+                    //
                     canLclVarEscapeViaParentStack = false;
                     break;
                 }
@@ -2401,6 +2511,16 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
         JITDUMP(" first escapes via [%06u]...[%06u]\n", m_compiler->dspTreeID(parentStack->Top()),
                 m_compiler->dspTreeID(parentStack->Top(parentIndex)));
         MarkLclVarAsEscaping(lclNum);
+    }
+
+    // If this use isn't a copy into another tracked local and isn't trivial,
+    // record it as a real use.
+    //
+    if (!edgeAddedForLcl && !isTrivialUse && !IsIndexUsed(lclIndex))
+    {
+        JITDUMPEXEC(DumpIndex(lclIndex));
+        JITDUMP(" first used via [%06u]\n", m_compiler->dspTreeID(parentStack->Top()));
+        MarkIndexAsUsed(lclIndex);
     }
 }
 
@@ -2917,7 +3037,7 @@ void ObjectAllocator::RewriteUses()
                             call->gtCallType    = CT_INDIRECT;
                             call->gtControlExpr = target;
                             call->gtCallMethHnd = NO_METHOD_HANDLE;
-                            call->gtCallMoreFlags &= ~(GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
+                            call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
                         }
                     }
                 }
@@ -3455,7 +3575,7 @@ GenTree* ObjectAllocator::IsGuard(BasicBlock* block, GuardInfo* info)
     info->m_local  = addr->AsLclVar()->GetLclNum();
     bool isNonNull = false;
     bool isExact   = false;
-    info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtCompileTimeHandle;
+    info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->GetCompileTimeHandle();
     info->m_block  = block;
     info->m_stmt   = stmt;
     info->m_relop  = tree;
@@ -3672,6 +3792,21 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
         const bool isEnumeratorUse = CheckForEnumeratorUse(srcLclNum, lclNum);
 
         if (isEnumeratorUse)
+        {
+            RecordAppearance(lclNum, block, stmt, use);
+        }
+    }
+    else if (!data->IsIntegralConst(0))
+    {
+        // Store into a tracked enumerator local from an unrecognized source
+        // (e.g. a virtual GetEnumerator call that did not devirtualize, into
+        // a local Roslyn shares between two enumerator scopes). Record it so
+        // CheckCanClone's multiple-defs check bails out of unsafe cloning.
+        // Null/zero stores are skipped: the inliner emits these as GC cleanup
+        // of dead temps. See https://github.com/dotnet/runtime/issues/127075.
+        //
+        unsigned pseudoIndex = BAD_VAR_NUM;
+        if (m_EnumeratorLocalToPseudoIndexMap.TryGetValue(lclNum, &pseudoIndex))
         {
             RecordAppearance(lclNum, block, stmt, use);
         }

@@ -1456,9 +1456,9 @@ namespace System
         /// </returns>
         public unsafe string Replace(Rune oldRune, Rune newRune)
         {
-            if (Length == 0)
+            if (oldRune.IsBmp && newRune.IsBmp)
             {
-                return this;
+                return Replace((char)oldRune.Value, (char)newRune.Value);
             }
 
             ReadOnlySpan<char> oldChars = oldRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
@@ -1684,11 +1684,9 @@ namespace System
         /// <returns>An array whose elements contain the substrings from this instance that are delimited by <paramref name="separator"/>.</returns>
         public unsafe string[] Split(Rune separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
-            ReadOnlySpan<char> separatorSpan = separator.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
-
-            if (separatorSpan.Length == 1)
+            if (separator.IsBmp)
             {
-                return Split(separatorSpan[0], count, options);
+                return Split((char)separator.Value, count, options);
             }
 
             ArgumentOutOfRangeException.ThrowIfNegative(count);
@@ -1696,7 +1694,13 @@ namespace System
             CheckStringSplitOptions(options);
 
             // Ensure matching the string separator overload.
-            return (count <= 1 || Length == 0) ? CreateSplitArrayOfThisAsSoleValue(options, count) : Split(separatorSpan, count, options);
+            if (count <= 1 || Length == 0)
+            {
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
+            }
+
+            ReadOnlySpan<char> separatorSpan = separator.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+            return Split(separatorSpan, count, options);
         }
 
         // Creates an array of strings by splitting this string at each
@@ -2413,39 +2417,28 @@ namespace System
         /// </returns>
         public unsafe string Trim(Rune trimRune)
         {
-            if (Length == 0)
+            if (trimRune.IsBmp)
             {
-                return this;
+                return Trim((char)trimRune.Value);
             }
 
-            // Convert trimRune to span
-            ReadOnlySpan<char> trimChars = trimRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+            UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar((uint)trimRune.Value, out char highSurrogate, out char lowSurrogate);
 
             // Trim start
             int index = 0;
-            while (index < Length && this.AsSpan(index).StartsWith(trimChars))
+            while ((uint)(index + 1) < (uint)Length && this[index] == highSurrogate && this[index + 1] == lowSurrogate)
             {
-                index += trimChars.Length;
-            }
-
-            if (index >= Length)
-            {
-                return Empty;
+                index += 2;
             }
 
             // Trim end
-            int endIndex = Length - 1;
-            while (endIndex >= index && this.AsSpan(index..(endIndex + 1)).EndsWith(trimChars))
+            int endIndex = Length - 2;
+            while (endIndex > index && this[endIndex] == highSurrogate && this[endIndex + 1] == lowSurrogate)
             {
-                endIndex -= trimChars.Length;
+                endIndex -= 2;
             }
 
-            if (endIndex < index)
-            {
-                return Empty;
-            }
-
-            return this[index..(endIndex + 1)];
+            return this[index..(endIndex + 2)];
         }
 
         // Removes a set of characters from the beginning and end of this string.
@@ -2499,24 +2492,17 @@ namespace System
         /// </returns>
         public unsafe string TrimStart(Rune trimRune)
         {
-            if (Length == 0)
+            if (trimRune.IsBmp)
             {
-                return this;
+                return TrimStart((char)trimRune.Value);
             }
 
-            // Convert trimRune to span
-            ReadOnlySpan<char> trimChars = trimRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+            UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar((uint)trimRune.Value, out char highSurrogate, out char lowSurrogate);
 
-            // Trim start
             int index = 0;
-            while (index < Length && this.AsSpan(index).StartsWith(trimChars))
+            while ((uint)(index + 1) < (uint)Length && this[index] == highSurrogate && this[index + 1] == lowSurrogate)
             {
-                index += trimChars.Length;
-            }
-
-            if (index >= Length)
-            {
-                return Empty;
+                index += 2;
             }
 
             return this[index..];
@@ -2573,27 +2559,20 @@ namespace System
         /// </returns>
         public unsafe string TrimEnd(Rune trimRune)
         {
-            if (Length == 0)
+            if (trimRune.IsBmp)
             {
-                return this;
+                return TrimEnd((char)trimRune.Value);
             }
 
-            // Convert trimRune to span
-            ReadOnlySpan<char> trimChars = trimRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
+            UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar((uint)trimRune.Value, out char highSurrogate, out char lowSurrogate);
 
-            // Trim end
-            int endIndex = Length - 1;
-            while (endIndex >= 0 && this.AsSpan(..(endIndex + 1)).EndsWith(trimChars))
+            int endIndex = Length - 2;
+            while ((uint)endIndex < (uint)Length && this[endIndex] == highSurrogate && this[endIndex + 1] == lowSurrogate)
             {
-                endIndex -= trimChars.Length;
+                endIndex -= 2;
             }
 
-            if (endIndex < 0)
-            {
-                return Empty;
-            }
-
-            return this[..(endIndex + 1)];
+            return this[..(endIndex + 2)];
         }
 
         // Removes a set of characters from the end of this string.

@@ -142,15 +142,7 @@ namespace System.IO.Tests
             }
 
             // Ensure last write/access time on the new file is appropriate
-            //
-            // For browser, there is technically only 1 time.  It's the max
-            // of LastWrite and LastAccess.  On browser, File.SetLastWriteTime
-            // overwrites LastWrite and LastAccess, and File.Copy
-            // overwrites LastWrite , so this check doesn't apply.
-            if (PlatformDetection.IsNotBrowser)
-            {
-                Assert.InRange(File.GetLastWriteTimeUtc(testFileDest), lastWriteTime.AddSeconds(-1), lastWriteTime.AddSeconds(1));
-            }
+            Assert.InRange(File.GetLastWriteTimeUtc(testFileDest), lastWriteTime.AddSeconds(-1), lastWriteTime.AddSeconds(1));
 
             Assert.Equal(readOnly, (File.GetAttributes(testFileDest) & FileAttributes.ReadOnly) != 0);
             if (readOnly)

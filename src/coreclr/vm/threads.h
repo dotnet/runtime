@@ -576,7 +576,7 @@ public:
     {
         TSNC_Unknown                    = 0x00000000, // threads are initialized this way
 
-        TSNC_DebuggerUserSuspend        = 0x00000001, // marked "suspended" by the debugger
+        // unused                       = 0x00000001,
         // unused                       = 0x00000002,
         TSNC_DebuggerIsStepping         = 0x00000004, // debugger is stepping this thread
         TSNC_DebuggerIsManagedException = 0x00000008, // EH is re-raising a managed exception.
@@ -629,6 +629,14 @@ public:
                                                       // There are cases during managed debugging when we can run into this situation
     };
 
+    // Thread state flags that are only written by the debugger (out-of-proc) and read by the runtime (in-proc).
+    // Separated from ThreadStateNoConcurrency to avoid read-modify-write races between the debugger and the runtime.
+    enum DebuggerControlledThreadState
+    {
+        DCTS_None               = 0x00000000, // [cDAC] [Thread]: Contract depends on this value.
+        DCTS_UserSuspend        = 0x00000001, // Marked "suspended" by the debugger [cDAC] [Thread]: Contract depends on this value.
+    };
+
 public:
     HRESULT DetachThread(BOOL inTerminationCallback);
 
@@ -676,6 +684,24 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return ((DWORD)m_StateNC & tsnc);
+    }
+
+    void SetDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_DebuggerControlledThreadState = (DebuggerControlledThreadState)((DWORD)m_DebuggerControlledThreadState.Load() | dcts);
+    }
+
+    void ResetDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_DebuggerControlledThreadState = (DebuggerControlledThreadState)((DWORD)m_DebuggerControlledThreadState.Load() & ~dcts);
+    }
+
+    BOOL HasDebuggerControlledThreadState(DebuggerControlledThreadState dcts)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return ((DWORD)m_DebuggerControlledThreadState.Load() & dcts);
     }
 
     void MarkEtwStackWalkInProgress()
@@ -895,7 +921,7 @@ public:
 
 #ifdef FEATURE_INTERPRETER
 public:
-    InterpThreadContext *m_pInterpThreadContext;
+    PTR_InterpThreadContext m_pInterpThreadContext;
     InterpThreadContext* GetInterpThreadContext();
     InterpThreadContext* GetOrCreateInterpThreadContext();
 #endif // FEATURE_INTERPRETER
@@ -906,6 +932,9 @@ public:
 
     // Flags for thread states that have no concurrency issues.
     ThreadStateNoConcurrency m_StateNC;
+
+    // Flags for thread states controlled by the debugger.
+    Volatile<DebuggerControlledThreadState> m_DebuggerControlledThreadState;
 
 private:
 #ifdef _DEBUG
@@ -2155,7 +2184,7 @@ public:
     void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightUnwind = false);
 
     static PCODE VirtualUnwindCallFrame(T_CONTEXT* pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers = NULL,
-                                           EECodeInfo * pCodeInfo = NULL);
+                                           EECodeInfo * pCodeInfo = NULL ARM64_ARG(TADDR * pSpForPacSign = NULL));
     static UINT_PTR VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL);
 #ifndef DACCESS_COMPILE
     static PCODE VirtualUnwindLeafCallFrame(T_CONTEXT* pContext);
@@ -2288,8 +2317,6 @@ private:
     UINT_PTR    m_CacheStackSufficientExecutionLimit;
     UINT_PTR    m_CacheStackStackAllocNonRiskyExecutionLimit;
 
-#define HARD_GUARD_REGION_SIZE GetOsPageSize()
-
 private:
     //
     static HRESULT CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope = STSGuarantee_OnlyIfEnabled);
@@ -2302,8 +2329,8 @@ private:
 
     // Every stack has a single reserved page at its limit that we call the 'hard guard page'. This page is never
     // committed, and access to it after a stack overflow will terminate the thread.
-#define HARD_GUARD_REGION_SIZE GetOsPageSize()
-#define SIZEOF_DEFAULT_STACK_GUARANTEE 1 * GetOsPageSize()
+#define HARD_GUARD_REGION_SIZE (minipal_getpagesize())
+#define SIZEOF_DEFAULT_STACK_GUARANTEE (minipal_getpagesize())
 
 public:
     // This will return the last stack address that one could write to before a stack overflow.
@@ -2491,6 +2518,9 @@ private:
     void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet));
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
+#ifdef TARGET_ARM64
+    VOID        *m_pSpForPacSign;         // stack pointer value that was used to sign LR with PACIASP
+#endif
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
     MethodDesc  *m_HijackedFunction;      // remember what we hijacked
 
@@ -3735,9 +3765,11 @@ struct cdac_data<Thread>
     static constexpr size_t Id = offsetof(Thread, m_ThreadId);
     static constexpr size_t OSId = offsetof(Thread, m_OSThreadId);
     static constexpr size_t State = offsetof(Thread, m_State);
+    static constexpr size_t DebuggerControlledThreadState = offsetof(Thread, m_DebuggerControlledThreadState);
     static constexpr size_t PreemptiveGCDisabled = offsetof(Thread, m_fPreemptiveGCDisabled);
     static constexpr size_t RuntimeThreadLocals = offsetof(Thread, m_pRuntimeThreadLocals);
     static constexpr size_t Frame = offsetof(Thread, m_pFrame);
+    static constexpr size_t GCFrame = offsetof(Thread, m_pGCFrame);
     static constexpr size_t CachedStackBase = offsetof(Thread, m_CacheStackBase);
     static constexpr size_t CachedStackLimit = offsetof(Thread, m_CacheStackLimit);
     static constexpr size_t ExposedObject = offsetof(Thread, m_ExposedObject);
@@ -3751,6 +3783,10 @@ struct cdac_data<Thread>
         "Thread::m_ExceptionState is of type ThreadExceptionState");
     static constexpr size_t ExceptionTracker = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_pCurrentTracker);
     static constexpr size_t DebuggerFilterContext = offsetof(Thread, m_debuggerFilterContext);
+    static constexpr size_t InteropDebuggingHijacked = offsetof(Thread, m_fInteropDebuggingHijacked);
+#ifdef TARGET_WINDOWS
+    static constexpr size_t ThreadHandle = offsetof(Thread, m_ThreadHandle);
+#endif
 #ifndef TARGET_UNIX
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);

@@ -52,6 +52,11 @@ namespace System
         /// <returns><see langword="true"/> if <paramref name="value"/> occurs within this string; otherwise, <see langword="false"/>.</returns>
         public bool Contains(Rune value)
         {
+            if (value.IsBmp)
+            {
+                return Contains((char)value.Value);
+            }
+
             return Contains(value, StringComparison.Ordinal);
         }
 
@@ -127,7 +132,7 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, Length);
             ArgumentOutOfRangeException.ThrowIfNegative(count);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex + count, Length);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, Length - startIndex);
 
             int subIndex;
 
@@ -427,9 +432,10 @@ namespace System
         /// </returns>
         public unsafe int IndexOf(Rune value, int startIndex, int count, StringComparison comparisonType)
         {
-            ArgumentOutOfRangeException.ThrowIfLessThan(startIndex, 0);
-            ArgumentOutOfRangeException.ThrowIfLessThan(count, 0);
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex + count, Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, Length);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, Length - startIndex);
 
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
