@@ -13771,8 +13771,8 @@ void Compiler::gtDispConst(GenTree* tree)
                                 uint8_t element = simdVal.gtSimdScalableIndexU8[0];
                                 if (simdVal.gtSimdScalableKind == SimdScalableSequence)
                                 {
-                                    element = static_cast<uint8_t>(
-                                        element + (elementIndex * simdVal.gtSimdScalableStepU8[0]));
+                                    element = static_cast<uint8_t>(element +
+                                                                   (elementIndex * simdVal.gtSimdScalableStepU8[0]));
                                 }
                                 else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (elementIndex != 0))
                                 {
@@ -13788,8 +13788,8 @@ void Compiler::gtDispConst(GenTree* tree)
                                 uint16_t element = simdVal.gtSimdScalableIndexU16[0];
                                 if (simdVal.gtSimdScalableKind == SimdScalableSequence)
                                 {
-                                    element = static_cast<uint16_t>(
-                                        element + (elementIndex * simdVal.gtSimdScalableStepU16[0]));
+                                    element = static_cast<uint16_t>(element +
+                                                                    (elementIndex * simdVal.gtSimdScalableStepU16[0]));
                                 }
                                 else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (elementIndex != 0))
                                 {
@@ -13805,8 +13805,8 @@ void Compiler::gtDispConst(GenTree* tree)
                                 uint32_t element = simdVal.gtSimdScalableIndexU32[0];
                                 if (simdVal.gtSimdScalableKind == SimdScalableSequence)
                                 {
-                                    element = static_cast<uint32_t>(
-                                        element + (elementIndex * simdVal.gtSimdScalableStepU32[0]));
+                                    element = static_cast<uint32_t>(element +
+                                                                    (elementIndex * simdVal.gtSimdScalableStepU32[0]));
                                 }
                                 else if ((simdVal.gtSimdScalableKind == SimdScalableScalar) && (elementIndex != 0))
                                 {
