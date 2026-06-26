@@ -19,8 +19,6 @@ internal readonly struct CdacTypeHandle : ITypeHandle
     private readonly TypeHandle _typeHandle;
     private readonly Target _target;
 
-    private readonly RuntimeInfoArchitecture _arch;
-
     // Outermost ELEMENT_TYPE_* wrapper (PTR / BYREF / SZARRAY / ARRAY / etc.)
     // recorded out-of-band by the signature wrapper provider in
     // CallingConvention_1.ParamMetadataProvider. Used when the underlying
@@ -40,13 +38,13 @@ internal readonly struct CdacTypeHandle : ITypeHandle
     {
         _typeHandle = typeHandle;
         _target = target;
-        _arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
         _kindOverride = kindOverride;
     }
 
     private IRuntimeTypeSystem Rts => _target.Contracts.RuntimeTypeSystem;
 
     public int PointerSize => _target.PointerSize;
+    public RuntimeInfoArchitecture Arch => _target.Contracts.RuntimeInfo.GetTargetArchitecture();
 
     public bool IsNull() => _typeHandle.IsNull && _kindOverride == default;
 
@@ -113,7 +111,7 @@ internal readonly struct CdacTypeHandle : ITypeHandle
 
     public bool IsHomogeneousAggregate()
     {
-        if (_arch is not RuntimeInfoArchitecture.Arm and not RuntimeInfoArchitecture.Arm64)
+        if (Arch is not RuntimeInfoArchitecture.Arm and not RuntimeInfoArchitecture.Arm64)
             return false;
 
         // TODO(hfa): Implement HFA detection for ARM/ARM64.
@@ -123,7 +121,7 @@ internal readonly struct CdacTypeHandle : ITypeHandle
 
     public int GetHomogeneousAggregateElementSize()
     {
-        if (_arch is not RuntimeInfoArchitecture.Arm and not RuntimeInfoArchitecture.Arm64)
+        if (Arch is not RuntimeInfoArchitecture.Arm and not RuntimeInfoArchitecture.Arm64)
             return 0;
 
         // TODO(hfa): Return 4 for float HFA, 8 for double HFA, 16 for Vector128 HFA.
@@ -147,7 +145,7 @@ internal readonly struct CdacTypeHandle : ITypeHandle
         // Only meaningful on x86 -- this controls whether a value-type arg
         // can be passed in a register. Outside x86 (where structs always go
         // through other paths) we return false so callers ignore us.
-        if (_arch != RuntimeInfoArchitecture.X86 || _typeHandle.IsNull || !Rts.IsValueType(_typeHandle))
+        if (Arch != RuntimeInfoArchitecture.X86 || _typeHandle.IsNull || !Rts.IsValueType(_typeHandle))
             return false;
 
         // Must be exactly pointer-size (4 bytes on x86).
