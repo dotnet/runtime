@@ -55,8 +55,7 @@ namespace System.Reflection.Emit
                 GC.KeepAlive(methodHandle);
             }
 
-            MulticastDelegate d = (MulticastDelegate)Delegate.CreateDelegateForDynamicMethod(delegateType, target, GetMethodDescriptor(), this);
-            return d;
+            return Delegate.CreateDelegateForDynamicMethod(delegateType, target, GetMethodDescriptor(), this);
         }
 
         // This is guaranteed to return a valid handle
