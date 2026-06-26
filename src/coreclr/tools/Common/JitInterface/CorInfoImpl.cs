@@ -1483,8 +1483,12 @@ namespace Internal.JitInterface
                 info->resolvedTokenDevirtualizedUnboxedMethod = default(CORINFO_RESOLVED_TOKEN);
             }
 
+#if READYTORUN
             bool isArray = decl.OwningType.IsInterface && objType.IsArray;
-            bool isGenericVirtual = !isArray && decl.HasInstantiation;
+            bool contextIsMethod = isArray || decl.HasInstantiation;
+#else
+            bool contextIsMethod = decl.HasInstantiation;
+#endif
             MethodDesc instArgTarget = unboxingStub ? nonUnboxingImpl : impl;
             bool requiresInstMethodDescArg = instArgTarget.RequiresInstMethodDescArg();
             bool requiresInstMethodTableArg = instArgTarget.RequiresInstMethodTableArg();
@@ -1509,16 +1513,14 @@ namespace Internal.JitInterface
                 }
             }
 
+#if READYTORUN
             if (isArray)
             {
-#if READYTORUN
                 // Array interface devirt is not yet supported by R2R.
                 info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
                 return false;
-#else
-                // NativeAOT handles arrays in a different way that doesn't require an instantiating stub.
-#endif
             }
+#endif
 
             if (requiresInstMethodDescArg)
             {
@@ -1563,7 +1565,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->tokenLookupContext = (isArray || isGenericVirtual) ? contextFromMethod(originalImpl) : contextFromType(owningType);
+            info->tokenLookupContext = contextIsMethod ? contextFromMethod(originalImpl) : contextFromType(owningType);
 
             return true;
 
