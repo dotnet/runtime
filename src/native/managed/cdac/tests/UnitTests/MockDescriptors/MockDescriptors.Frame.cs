@@ -78,20 +78,28 @@ internal sealed class MockFramedMethodFrame : MockFrame
 
 internal sealed class MockFuncEvalFrame : MockFrame
 {
-    // Mirrors the cDAC FuncEvalFrame data class which only reads DebuggerEvalPtr.
-    // Identifier/Next are inherited from the base MockFrame layout so the
-    // FrameIterator.Next() chain walk works the same as for a plain Frame.
+    // Mirrors the cDAC FuncEvalFrame data class which reads DebuggerEvalPtr and
+    // ReturnAddress. Identifier/Next are inherited from the base MockFrame layout so
+    // the FrameIterator.Next() chain walk works the same as for a plain Frame.
     private const string DebuggerEvalPtrFieldName = "DebuggerEvalPtr";
+    private const string ReturnAddressFieldName = "ReturnAddress";
 
     public static Layout<MockFuncEvalFrame> CreateLayout(Layout<MockFrame> baseLayout)
         => new SequentialLayoutBuilder("FuncEvalFrame", baseLayout.Architecture, baseLayout)
             .AddPointerField(DebuggerEvalPtrFieldName)
+            .AddPointerField(ReturnAddressFieldName)
             .Build<MockFuncEvalFrame>();
 
     public ulong DebuggerEvalPtr
     {
         get => ReadPointerField(DebuggerEvalPtrFieldName);
         set => WritePointerField(DebuggerEvalPtrFieldName, value);
+    }
+
+    public ulong ReturnAddress
+    {
+        get => ReadPointerField(ReturnAddressFieldName);
+        set => WritePointerField(ReturnAddressFieldName, value);
     }
 }
 
@@ -262,14 +270,15 @@ internal sealed class MockFrameBuilder
 
     /// <summary>
     /// Allocates a FuncEvalFrame whose DebuggerEvalPtr field points at the given
-    /// DebuggerEval address.
+    /// DebuggerEval address and whose ReturnAddress field is set to the given value.
     /// </summary>
-    public MockFuncEvalFrame AddFuncEvalFrame(ulong debuggerEvalPtr)
+    public MockFuncEvalFrame AddFuncEvalFrame(ulong debuggerEvalPtr, ulong returnAddress = 0)
     {
         MockFuncEvalFrame frame = FuncEvalFrameLayout.Create(_allocator.Allocate((ulong)FuncEvalFrameLayout.Size, "FuncEvalFrame"));
         frame.Identifier = FuncEvalFrameIdentifierValue;
         frame.Next = _terminator;
         frame.DebuggerEvalPtr = debuggerEvalPtr;
+        frame.ReturnAddress = returnAddress;
         return frame;
     }
 

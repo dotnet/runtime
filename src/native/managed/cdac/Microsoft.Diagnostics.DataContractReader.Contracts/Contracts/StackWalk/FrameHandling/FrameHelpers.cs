@@ -270,7 +270,7 @@ internal sealed class FrameHelpers
                 Data.TailCallFrame tcf = _target.ProcessedData.GetOrAdd<Data.TailCallFrame>(frame.Address);
                 return tcf.ReturnAddress;
 
-            // FuncEvalFrame: returns 0 during exception eval, else from transition block
+            // FuncEvalFrame: returns 0 during exception eval
             case FrameType.FuncEvalFrame:
                 Data.FuncEvalFrame funcEval = _target.ProcessedData.GetOrAdd<Data.FuncEvalFrame>(frame.Address);
                 Data.DebuggerEval dbgEval = _target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEval.DebuggerEvalPtr);
