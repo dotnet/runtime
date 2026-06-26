@@ -401,12 +401,12 @@ namespace System.Tests
                 yield return new object[] { Decimal64.Parse("2467e0"), "[#-##-#]", defaultFormat, "[2-46-7]" };
                 yield return new object[] { Decimal64.Parse("4e-399"), "G", defaultFormat, "0." + new string('0', 398) };
                 yield return new object[] { Decimal64.Parse("5e-399"), "G", defaultFormat, "0." + new string('0', 398) };
-                yield return new object[] { Decimal64.Parse("5.00000000000000000000000001e-399"), "G", defaultFormat, "0." + new string('0', 398) };
+                yield return new object[] { Decimal64.Parse("5.00000000000000000000000001e-399"), "G", defaultFormat, "0." + new string('0', 397) + "1" };
                 yield return new object[] { Decimal64.Parse("6e-399"), "G", defaultFormat, "0." + new string('0', 397) + "1" };
                 yield return new object[] { Decimal64.Parse("-4e-399"), "G", defaultFormat, "-0." + new string('0', 398) };
                 yield return new object[] { Decimal64.Parse("-5e-399"), "G", defaultFormat, "-0." + new string('0', 398) };
+                yield return new object[] { Decimal64.Parse("-5.00000000000000000000000001e-399"), "G", defaultFormat, "-0." + new string('0', 397) + "1" };
                 yield return new object[] { Decimal64.Parse("-6e-399"), "G", defaultFormat, "-0." + new string('0', 397) + "1" };
-                yield return new object[] { Decimal64.Parse("-5.00000000000000000000000001e-399"), "G", defaultFormat, "-0." + new string('0', 398) };
 
             }
         }
