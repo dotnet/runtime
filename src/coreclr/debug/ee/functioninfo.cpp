@@ -78,6 +78,24 @@ static void _dumpVarNativeInfo(ICorDebugInfo::NativeVarInfo* vni)
              vni->loc.vlRegReg.vlrrReg2));
         break;
 
+    case ICorDebugInfo::VLT_REG_FP_REG_FP:
+        LOG((LF_CORDB, LL_INFO1000000, "REG_FP_REG_FP fpreg1=%d fpreg2=%d\n",
+             vni->loc.vlRegReg.vlrrReg1,
+             vni->loc.vlRegReg.vlrrReg2));
+        break;
+
+    case ICorDebugInfo::VLT_REG_FP_REG:
+        LOG((LF_CORDB, LL_INFO1000000, "REG_FP_REG fpreg1=%d reg2=%d\n",
+             vni->loc.vlRegReg.vlrrReg1,
+             vni->loc.vlRegReg.vlrrReg2));
+        break;
+
+    case ICorDebugInfo::VLT_REG_REG_FP:
+        LOG((LF_CORDB, LL_INFO1000000, "REG_REG_FP reg1=%d fpreg2=%d\n",
+             vni->loc.vlRegReg.vlrrReg1,
+             vni->loc.vlRegReg.vlrrReg2));
+        break;
+
     case ICorDebugInfo::VLT_REG_STK:
         LOG((LF_CORDB, LL_INFO1000000, "REG_STK reg=%d basereg=%d off=0x%04x (%d)\n",
              vni->loc.vlRegStk.vlrsReg,

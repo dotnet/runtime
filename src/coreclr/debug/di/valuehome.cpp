@@ -298,12 +298,40 @@ void RegRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
     UINT_PTR* lowWordAddr = m_pFrame->GetAddressOfRegister(m_reg2Info.m_kRegNumber);
     _ASSERTE(lowWordAddr != NULL);
 
-    _ASSERTE(sizeof(*highWordAddr) + sizeof(*lowWordAddr) == valueOutBuffer.Size());
+    // The low half occupies the first register-sized chunk; the high half the second.
+    // The out buffer may be smaller than two registers (e.g. a 12-byte struct returned
+    // in two 8-byte registers), so clamp each copy to the bytes that actually remain.
+    const SIZE_T cbReg = sizeof(*lowWordAddr);
+    const SIZE_T cbTotal = valueOutBuffer.Size();
+    _ASSERTE(cbTotal <= 2 * cbReg);
 
-    memcpy(valueOutBuffer.StartAddress(), lowWordAddr, sizeof(*lowWordAddr));
-    memcpy((BYTE *)valueOutBuffer.StartAddress() + sizeof(*lowWordAddr), highWordAddr, sizeof(*highWordAddr));
+    const SIZE_T cbLow = (cbTotal < cbReg) ? cbTotal : cbReg;
+    memcpy(valueOutBuffer.StartAddress(), lowWordAddr, cbLow);
+
+    if (cbTotal > cbReg)
+    {
+        const SIZE_T cbHigh = cbTotal - cbReg;
+        memcpy((BYTE *)valueOutBuffer.StartAddress() + cbReg, highWordAddr, cbHigh);
+    }
 
 } // RegRegValueHome::GetEnregisteredValue
+
+
+// ----------------------------------------------------------------------------
+// TwoRegisterValueHome member function implementations
+// ----------------------------------------------------------------------------
+
+// TwoRegisterValueHome::GetEnregisteredValue
+// Gets the snapshot value and returns it to the caller (see EnregisteredValueHome::GetEnregisteredValue
+// for full header comment)
+void TwoRegisterValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
+{
+    _ASSERTE(valueOutBuffer.Size() <= sizeof(m_value));
+
+    SIZE_T cbToCopy = (valueOutBuffer.Size() < sizeof(m_value)) ? valueOutBuffer.Size() : sizeof(m_value);
+    memcpy(valueOutBuffer.StartAddress(), m_value, cbToCopy);
+
+} // TwoRegisterValueHome::GetEnregisteredValue
 
 
 // ----------------------------------------------------------------------------
@@ -744,12 +772,15 @@ void RegisterValueHome::CreateInternalValue(CordbType *       pType,
      * and p.x is in a register, while p.y is in memory, then clearly the
      * home of p (RAK_REGMEM) is not the same as the home of p.x (RAK_MEM).
      *
-     * Currently the JIT does not split compound objects in this way. It
-     * will only split an object that has exactly one field that is twice
-     * the size of the register
+     * Currently the JIT does not split compound objects in this way for
+     * ordinary locals. However, a multi-register return value can be a genuine
+     * compound with fields at non-zero offsets (e.g. struct { long x; long y; }
+     * returned in RAX:RDX). For reads the caller supplies the field's
+     * offset-adjusted local snapshot in localAddress, so any in-range offset is
+     * valid here. (Write-back to a specific sub-register of such a split value
+     * is a separate, pre-existing limitation and is not handled.)
      * </TODO>
      */
-    _ASSERTE(offset == 0);
     pRemoteReg.Assign(m_pRemoteRegAddr->Clone());
 
     EnregisteredValueHomeHolder * pRegHolder = pRemoteReg.GetAddr();

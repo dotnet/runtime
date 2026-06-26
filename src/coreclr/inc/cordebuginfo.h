@@ -263,6 +263,10 @@ public:
         VLT_FPSTK,      // variable lives on the floating-point stack
         VLT_FIXED_VA,   // variable is a fixed argument in a varargs function (relative to VARARGS_HANDLE)
 
+        VLT_REG_FP_REG_FP, // variable lives in two fp registers (e.g. a 16-byte struct returned in XMM0+XMM1 on Unix x64)
+        VLT_REG_FP_REG,    // low part lives in an fp register, high part in an int register (mixed multi-reg return)
+        VLT_REG_REG_FP,    // low part lives in an int register, high part in an fp register (mixed multi-reg return)
+
         VLT_COUNT,
         VLT_INVALID,
     };
@@ -290,6 +294,15 @@ public:
 
     // VLT_REG_REG -- TYP_LONG with both uint32_ts enregistred
     // eg. RBM_EAXEDX
+    //
+    // VLT_REG_FP_REG_FP / VLT_REG_FP_REG / VLT_REG_REG_FP also reuse the vlRegReg
+    // struct to describe a value that lives in two registers where at least one of
+    // them is a floating-point register (e.g. a 16-byte struct returned in XMM0+XMM1
+    // on Unix x64, or a mixed int/fp multi-register return). vlrrReg1 holds the low
+    // 8 bytes of the value, vlrrReg2 the high 8 bytes. For a register that is an fp
+    // register the value stored is a 0-based fp register index (the consumer adds the
+    // platform-specific XMM0/F0 base), matching the VLT_REG_FP convention; for an int
+    // register the value is the ordinary register number.
 
     struct vlRegReg
     {

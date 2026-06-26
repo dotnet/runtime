@@ -199,6 +199,9 @@ namespace ILCompiler.ObjectWriter
                         case VarLocType.VLT_REG_BYREF:
                         case VarLocType.VLT_STK_BYREF:
                         case VarLocType.VLT_REG_REG:
+                        case VarLocType.VLT_REG_FP_REG_FP:
+                        case VarLocType.VLT_REG_FP_REG:
+                        case VarLocType.VLT_REG_REG_FP:
                         case VarLocType.VLT_REG_STK:
                         case VarLocType.VLT_STK_REG:
                         case VarLocType.VLT_STK2:

@@ -310,6 +310,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                         varLoc.Data1 = (int)reader.ReadUInt();
                         varLoc.Data2 = (int)reader.ReadUInt();
                         break;
+                    case VarLocType.VLT_REG_FP_REG_FP:
+                    case VarLocType.VLT_REG_FP_REG:
+                    case VarLocType.VLT_REG_REG_FP:
+                        varLoc.Data1 = (int)reader.ReadUInt();
+                        varLoc.Data2 = (int)reader.ReadUInt();
+                        break;
                     case VarLocType.VLT_REG_STK:
                         varLoc.Data1 = (int)reader.ReadUInt();
                         varLoc.Data2 = (int)reader.ReadUInt();

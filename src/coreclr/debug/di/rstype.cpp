@@ -1738,8 +1738,46 @@ HRESULT CordbType::ReturnedByValue()
     ULONG32 unboxedSize = 0;
     IfFailRet(GetUnboxedObjectSize(&unboxedSize));
 
+#ifdef TARGET_64BIT
+    // A value type is returned in registers (and is therefore representable by
+    // the managed-return-value debug info) only if it fits in at most two
+    // pointer-sized registers. Larger value types use the return buffer (stack)
+    // path, which the JIT does not currently emit MRV info for.
+    //
+    // Two-register returns are encoded via VLT_REG_REG (two integer registers),
+    // VLT_REG_FP_REG_FP (two FP registers), or the mixed VLT_REG_FP_REG /
+    // VLT_REG_REG_FP forms. Single-register returns use VLT_REG / VLT_REG_FP.
+    if (unboxedSize > 2 * sizeof(SIZE_T))
+        return S_FALSE;
+
+    // Whether the value occupies two registers (size in (8, 16] bytes on a
+    // 64-bit target). Single-register (<= pointer-sized) returns only support
+    // the original simple cases: a single integer/pointer-sized non-FP field.
+    // Floating-point and generic (unbound type-parameter) fields are only
+    // encodable for the two-register multi-reg forms (VLT_REG_FP_REG_FP and the
+    // mixed VLT_REG_FP_REG / VLT_REG_REG_FP). Enabling them for single-register
+    // value classes would
+    // reach unimplemented paths in the value-home code, so they remain
+    // unsupported there.
+    const bool twoRegister = (unboxedSize > sizeof(SIZE_T));
+
+    // 64-bit targets support multi-field value classes (e.g. ValueTuple<T1, T2>)
+    // returned across two registers.
+    const bool allowMultiField = true;
+#else
+    // 32-bit targets (x86 / arm32): the multi-register FP/mixed managed-return-
+    // value feature (dotnet/runtime#129344) is 64-bit only. Preserve the original
+    // behavior exactly: a value type is representable only if it fits in a single
+    // (pointer-sized) register and has a single non-floating-point field. The
+    // expanded two-register encodings above are inactive here, so broadening the
+    // size/field/FP rules would surface return values that the 32-bit read path
+    // does not support.
     if (unboxedSize > sizeof(SIZE_T))
         return S_FALSE;
+
+    const bool twoRegister = false;
+    const bool allowMultiField = false;
+#endif
 
     mdToken mdClass = m_pClass->GetToken();
 
@@ -1764,8 +1802,14 @@ HRESULT CordbType::ReturnedByValue()
             // !static
             if ((attr & 0x10) == 0)
             {
-                if (fieldCount++)
+                // On 32-bit targets, only single-field value classes are
+                // representable (matching the original behavior). More than one
+                // non-static field is unsupported there.
+                if (!allowMultiField && fieldCount++ != 0)
+                {
+                    unsupported = true;
                     break;
+                }
 
                 CorElementType et;
                 SigParser parser(sigBlob, sigLen);
@@ -1778,13 +1822,34 @@ HRESULT CordbType::ReturnedByValue()
                     {
                     case ELEMENT_TYPE_R4:
                     case ELEMENT_TYPE_R8:
-                        unsupported = true;
+                        // Floating-point fields are returned in FP registers.
+                        // A single FP register holding a value class is not
+                        // encodable here (only primitive VLT_REG_FP is), so
+                        // restrict to the two-register multi-reg forms.
+                        if (!twoRegister)
+                            unsupported = true;
                         break;
 
                     case ELEMENT_TYPE_CLASS:
                     case ELEMENT_TYPE_STRING:
                     case ELEMENT_TYPE_PTR:
                         // OK
+                        break;
+
+                    case ELEMENT_TYPE_VAR:
+                    case ELEMENT_TYPE_MVAR:
+                        // The field's type is a generic type parameter (e.g. the
+                        // Item1/Item2 fields of ValueTuple<T1, T2>); the unbound field
+                        // signature does not carry the instantiated type, so we cannot
+                        // tell whether it resolves to an FP type. Only permit it for the
+                        // two-register multi-reg forms, where both the all-FP and mixed
+                        // int/FP paths are implemented (and the read path fails gracefully
+                        // when the value is not actually register-returned). This is
+                        // required to support mixed int/fp returns such as
+                        // ValueTuple<double, int>, while avoiding the
+                        // unimplemented single-FP-register value-class path.
+                        if (!twoRegister)
+                            unsupported = true;
                         break;
 
                     default:
@@ -1813,7 +1878,7 @@ HRESULT CordbType::ReturnedByValue()
     if (unsupported)
         return S_FALSE;
 
-    return fieldCount <= 1 ? S_OK : S_FALSE;
+    return S_OK;
 }
 
 

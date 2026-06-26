@@ -6994,6 +6994,19 @@ public:
                                             CordbType * pType,
                                             ICorDebugValue **ppValue);
 
+    // Build a value that lives in two registers, where either register may be an
+    // integer or a floating-point register (e.g. a 16-byte struct returned in
+    // XMM0+XMM1 on Unix x64, or a mixed int/fp multi-register return). lowReg/highReg
+    // hold the low/high 8 bytes of the value; when the corresponding *IsFloat flag is
+    // true the register is a 0-based fp register index, otherwise it is a
+    // CorDebugRegister.
+    HRESULT GetLocalTwoRegisterValue(DWORD lowReg,
+                                            bool lowIsFloat,
+                                            DWORD highReg,
+                                            bool highIsFloat,
+                                            CordbType * pType,
+                                            ICorDebugValue **ppValue);
+
 
     CORDB_ADDRESS GetLSStackAddress(ICorDebugInfo::RegNum regNum, signed offset);
 
@@ -7876,6 +7889,71 @@ protected:
     // The information for the second of two registers in which the value resides.
     const RegisterInfo               m_reg2Info;
 }; // class RegRegValueHome
+
+// class TwoRegisterValueHome
+// EnregisteredValueHome for a value that lives in two registers where at least one is a
+// floating-point register (e.g. a 16-byte struct returned in XMM0+XMM1 on Unix x64, or a
+// mixed int/fp multi-register return).
+// Floating-point register contents are not reachable through the integer register display, so
+// rather than referencing live registers this home captures a snapshot of the 16-byte value
+// (low 8 bytes followed by high 8 bytes) when it is created. The snapshot is used to populate
+// the value's local object copy and is cloned for field access. Writing back to a
+// multi-register return value is not supported.
+class TwoRegisterValueHome: public EnregisteredValueHome
+{
+public:
+    // initializing constructor
+    // Arguments:
+    //     input:  pFrame - frame to which the value belongs
+    //             pValue - pointer to the snapshot bytes (low 8 bytes followed by high 8 bytes)
+    //             size   - number of valid bytes pointed to by pValue
+    TwoRegisterValueHome(const CordbNativeFrame * pFrame, const BYTE * pValue, ULONG32 size):
+        EnregisteredValueHome(pFrame)
+    {
+        _ASSERTE(size <= sizeof(m_value));
+        memset(m_value, 0, sizeof(m_value));
+        if (pValue != NULL)
+        {
+            memcpy(m_value, pValue, (size < sizeof(m_value)) ? size : (ULONG32)sizeof(m_value));
+        }
+    };
+
+    // copy constructor
+    TwoRegisterValueHome(const TwoRegisterValueHome * pRemoteRegAddr):
+        EnregisteredValueHome(pRemoteRegAddr->m_pFrame)
+    {
+        memcpy(m_value, pRemoteRegAddr->m_value, sizeof(m_value));
+    };
+
+    // make a copy of this instance of TwoRegisterValueHome
+    virtual
+    TwoRegisterValueHome * Clone() const { return new TwoRegisterValueHome(*this); };
+
+    // writing back to a multi-register return value is not supported
+    virtual
+    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned)
+    {
+        ThrowHR(CORDBG_E_SET_VALUE_NOT_ALLOWED_ON_NONLEAF_FRAME);
+    };
+
+    // Gets the snapshot value and returns it to the caller
+    virtual
+    void GetEnregisteredValue(MemoryRange valueOutBuffer);
+
+    // initializing an instance of RemoteAddress is not supported for a local snapshot
+    virtual
+    void CopyToIPCEType(RemoteAddress * pRegAddr)
+    {
+        ThrowHR(E_NOTIMPL);
+    };
+
+    //-------------------------------------
+    // data members
+    //-------------------------------------
+private:
+    // Snapshot of the value: low 8 bytes followed by high 8 bytes.
+    BYTE m_value[2 * sizeof(double)];
+}; // class TwoRegisterValueHome
 
 // class RegAndMemBaseValueHome
 // derived from RegValueHome, this class is also a base class for RegMemValueHome
