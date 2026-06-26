@@ -12,7 +12,7 @@ void CDacPlatformMetadata::Init()
 {
 #if defined(TARGET_ARM)
     (&g_cdacPlatformMetadata)->codePointerFlags = CDacCodePointerFlags::HasArm32ThumbBit;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) && !defined(TARGET_WINDOWS)
     CLRConfig::ConfigDWORDInfo jitPacEnabledConfig { W("JitPacEnabled"), 1, CLRConfig::LookupOptions::Default };
     (&g_cdacPlatformMetadata)->codePointerFlags =
         CLRConfig::GetConfigValue(jitPacEnabledConfig) != 0
