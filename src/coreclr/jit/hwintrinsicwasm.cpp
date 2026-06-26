@@ -80,6 +80,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     GenTree* retNode = nullptr;
     GenTree* op1     = nullptr;
+    GenTree* op2     = nullptr;
 
     switch (intrinsic)
     {
@@ -92,46 +93,65 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             return nullptr;
         }
 
-        // The following PackedSimd intrinsics are not yet implemented on WASM. Because
-        // PackedSimd is decorated with a class-level [Intrinsic], the managed bodies in
-        // PackedSimd.cs are self-recursive stubs that would stack-overflow at runtime if
-        // the JIT didn't recognize them. Fail loudly with a descriptive NYI_WASM_SIMD
-        // instead until codegen lands.
+        // The following PackedSimd intrinsics are not yet implemented on WASM. Because they are must-expand,
+        // when we return nullptr here the importer will insert a PlatformNotSupportedException throw.
         case NI_PackedSimd_CompareGreaterThan:
         case NI_PackedSimd_CompareGreaterThanOrEqual:
         case NI_PackedSimd_CompareLessThan:
         case NI_PackedSimd_CompareLessThanOrEqual:
-            NYI_WASM_SIMD("PackedSimd ordered compare (needs special codegen for Vector128<ulong>)");
             break;
 
         case NI_PackedSimd_ExtractScalar:
-            NYI_WASM_SIMD("PackedSimd.ExtractScalar");
             break;
+
         case NI_PackedSimd_ReplaceScalar:
-            NYI_WASM_SIMD("PackedSimd.ReplaceScalar");
             break;
 
         case NI_PackedSimd_LoadVector128:
+        {
+            assert(sig->numArgs == 1);
+            assert(simdSize == 16);
+            op1 = impPopStack().val;
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
+            }
+
+            return gtNewSimdLoadNode(retType, op1, simdBaseType, simdSize);
+        }
+
         case NI_PackedSimd_LoadScalarVector128:
         case NI_PackedSimd_LoadScalarAndSplatVector128:
         case NI_PackedSimd_LoadScalarAndInsert:
         case NI_PackedSimd_LoadWideningVector128:
-            NYI_WASM_SIMD("PackedSimd load");
             break;
 
         case NI_PackedSimd_Store:
+        {
+            assert(sig->numArgs == 2);
+            assert(simdSize == 16);
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
+            }
+
+            return gtNewSimdStoreNode(op1, op2, simdBaseType, simdSize);
+        }
+
         case NI_PackedSimd_StoreSelectedScalar:
-            NYI_WASM_SIMD("PackedSimd store");
             break;
 
         case NI_PackedSimd_ShiftLeft:
         case NI_PackedSimd_ShiftRightArithmetic:
         case NI_PackedSimd_ShiftRightLogical:
-            NYI_WASM_SIMD("PackedSimd shift");
             break;
 
         case NI_PackedSimd_Splat:
-            NYI_WASM_SIMD("PackedSimd.Splat");
             break;
 
         case NI_Vector128_Create:
@@ -272,13 +292,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // TODO-WASM-SIMD: Build a GT_HWINTRINSIC node packing N non-constant operands
             // (mirroring the arm64/xarch IntrinsicNodeBuilder path) once WASM SIMD lowering
             // and codegen for Vector128.Create are implemented.
-            retNode = nullptr;
             break;
         }
 
         default:
         {
-            NYI_WASM_SIMD("impSpecialIntrinsic");
             break;
         }
     }

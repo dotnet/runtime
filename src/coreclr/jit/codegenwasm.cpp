@@ -2669,11 +2669,6 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     assert(tree->OperIs(GT_IND));
 
     var_types type = tree->TypeGet();
-    if (type == TYP_SIMD16)
-    {
-        NYI_WASM_SIMD("SIMD16 indirect load");
-    }
-
     instruction ins = ins_Load(type);
 
     genConsumeAddress(tree->Addr());
