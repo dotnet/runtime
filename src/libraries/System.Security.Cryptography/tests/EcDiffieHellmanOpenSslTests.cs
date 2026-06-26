@@ -8,13 +8,14 @@ using Xunit;
 
 namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
 {
-    public class EcDiffieHellmanOpenSslTests : ECDiffieHellmanTests
+    public static class EcDiffieHellmanOpenSslTests
     {
-        public static bool ECExplicitCurvesSupported => ECDiffieHellmanFactory.ExplicitCurvesSupported;
-        public static bool SupportsExplicitCurves => ECDiffieHellmanFactory.ExplicitCurvesSupported || ECDiffieHellmanFactory.ExplicitCurvesSupportFailOnUseOnly;
+        public static bool ECDsa224Available => ECDiffieHellmanOpenSslProvider.Instance.IsCurveValid(new Oid(EccTestBase.ECDSA_P224_OID_VALUE));
+        public static bool ECExplicitCurvesSupported => ECDiffieHellmanOpenSslProvider.Instance.ExplicitCurvesSupported;
+        public static bool SupportsExplicitCurves => ECDiffieHellmanOpenSslProvider.Instance.ExplicitCurvesSupported || ECDiffieHellmanProvider.ExplicitCurvesSupportFailOnUseOnly;
 
         [Fact]
-        public void DefaultCtor()
+        public static void DefaultCtor()
         {
             using (var e = new ECDiffieHellmanOpenSsl())
             {
@@ -25,7 +26,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void Ctor256()
+        public static void Ctor256()
         {
             int expectedKeySize = 256;
             using (var e = new ECDiffieHellmanOpenSsl(expectedKeySize))
@@ -37,7 +38,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void Ctor384()
+        public static void Ctor384()
         {
             int expectedKeySize = 384;
             using (var e = new ECDiffieHellmanOpenSsl(expectedKeySize))
@@ -49,7 +50,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void Ctor521()
+        public static void Ctor521()
         {
             int expectedKeySize = 521;
             using (var e = new ECDiffieHellmanOpenSsl(expectedKeySize))
@@ -61,9 +62,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [ConditionalFact(typeof(EcDiffieHellmanOpenSslTests), nameof(ECDsa224Available))]
-        public void CtorHandle224()
+        public static void CtorHandle224()
         {
-            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(ECDSA_P224_OID_VALUE);
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(EccTestBase.ECDSA_P224_OID_VALUE);
             Assert.NotEqual(IntPtr.Zero, ecKey);
             int success = Interop.Crypto.EcKeyGenerateKey(ecKey);
             Assert.NotEqual(0, success);
@@ -79,9 +80,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void CtorHandle384()
+        public static void CtorHandle384()
         {
-            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(ECDSA_P384_OID_VALUE);
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(EccTestBase.ECDSA_P384_OID_VALUE);
             Assert.NotEqual(IntPtr.Zero, ecKey);
             int success = Interop.Crypto.EcKeyGenerateKey(ecKey);
             Assert.NotEqual(0, success);
@@ -97,9 +98,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void CtorHandle521()
+        public static void CtorHandle521()
         {
-            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(ECDSA_P521_OID_VALUE);
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(EccTestBase.ECDSA_P521_OID_VALUE);
             Assert.NotEqual(IntPtr.Zero, ecKey);
             int success = Interop.Crypto.EcKeyGenerateKey(ecKey);
             Assert.NotEqual(0, success);
@@ -115,9 +116,9 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void CtorHandleDuplicate()
+        public static void CtorHandleDuplicate()
         {
-            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(ECDSA_P521_OID_VALUE);
+            IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(EccTestBase.ECDSA_P521_OID_VALUE);
             Assert.NotEqual(IntPtr.Zero, ecKey);
             int success = Interop.Crypto.EcKeyGenerateKey(ecKey);
             Assert.NotEqual(0, success);
@@ -134,10 +135,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Theory]
-        [InlineData(ECDSA_P256_OID_VALUE, 256)]
-        [InlineData(ECDSA_P384_OID_VALUE, 384)]
-        [InlineData(ECDSA_P521_OID_VALUE, 521)]
-        public void CtorEvpPKeyHandle(string oid, int expectedKeySize)
+        [InlineData(EccTestBase.ECDSA_P256_OID_VALUE, 256)]
+        [InlineData(EccTestBase.ECDSA_P384_OID_VALUE, 384)]
+        [InlineData(EccTestBase.ECDSA_P521_OID_VALUE, 521)]
+        public static void CtorEvpPKeyHandle(string oid, int expectedKeySize)
         {
             int rc = Interop.Crypto.EvpPKeyGenerateByEcCurveOid(out SafeEvpPKeyHandle pkey, oid, out int keySize);
 
@@ -154,7 +155,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void KeySizePropWithExercise()
+        public static void KeySizePropWithExercise()
         {
             using (var e = new ECDiffieHellmanOpenSsl())
             {
@@ -176,7 +177,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void VerifyDuplicateKey_ValidHandle()
+        public static void VerifyDuplicateKey_ValidHandle()
         {
             using (var first = new ECDiffieHellmanOpenSsl())
             using (SafeEvpPKeyHandle firstHandle = first.DuplicateKeyHandle())
@@ -194,7 +195,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void VerifyDuplicateKey_DistinctHandles()
+        public static void VerifyDuplicateKey_DistinctHandles()
         {
             using (var first = new ECDiffieHellmanOpenSsl())
             using (SafeEvpPKeyHandle firstHandle = first.DuplicateKeyHandle())
@@ -205,7 +206,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void VerifyDuplicateKey_RefCounts()
+        public static void VerifyDuplicateKey_RefCounts()
         {
             byte[] derived;
             ECDiffieHellman second;
@@ -228,14 +229,14 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void VerifyDuplicateKey_NullHandle()
+        public static void VerifyDuplicateKey_NullHandle()
         {
             SafeEvpPKeyHandle pkey = null;
             Assert.Throws<ArgumentNullException>(() => new ECDiffieHellmanOpenSsl(pkey));
         }
 
         [Fact]
-        public void VerifyDuplicateKey_InvalidHandle()
+        public static void VerifyDuplicateKey_InvalidHandle()
         {
             using (var ecdsa = new ECDiffieHellmanOpenSsl())
             {
@@ -250,7 +251,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void VerifyDuplicateKey_NeverValidHandle()
+        public static void VerifyDuplicateKey_NeverValidHandle()
         {
             using (SafeEvpPKeyHandle pkey = new SafeEvpPKeyHandle(IntPtr.Zero, false))
             {
@@ -259,7 +260,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void VerifyDuplicateKey_RsaHandle()
+        public static void VerifyDuplicateKey_RsaHandle()
         {
             using (RSAOpenSsl rsa = new RSAOpenSsl())
             using (SafeEvpPKeyHandle pkey = rsa.DuplicateKeyHandle())
@@ -269,19 +270,19 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void LookupCurveByOidValue()
+        public static void LookupCurveByOidValue()
         {
-            var ec = new ECDiffieHellmanOpenSsl(ECCurve.CreateFromValue(ECDSA_P256_OID_VALUE)); // Same as nistP256
+            var ec = new ECDiffieHellmanOpenSsl(ECCurve.CreateFromValue(EccTestBase.ECDSA_P256_OID_VALUE)); // Same as nistP256
             ECParameters param = ec.ExportParameters(false);
             param.Validate();
             Assert.Equal(256, ec.KeySize);
             Assert.True(param.Curve.IsNamed);
             Assert.Equal("ECDSA_P256", param.Curve.Oid.FriendlyName);
-            Assert.Equal(ECDSA_P256_OID_VALUE, param.Curve.Oid.Value);
+            Assert.Equal(EccTestBase.ECDSA_P256_OID_VALUE, param.Curve.Oid.Value);
         }
 
         [Fact]
-        public void LookupCurveByOidFriendlyName()
+        public static void LookupCurveByOidFriendlyName()
         {
             // prime256v1 is alias for nistP256 for OpenSsl
             var ec = new ECDiffieHellmanOpenSsl(ECCurve.CreateFromFriendlyName("prime256v1"));
@@ -291,7 +292,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
             Assert.Equal(256, ec.KeySize);
             Assert.True(param.Curve.IsNamed);
             Assert.Equal("ECDSA_P256", param.Curve.Oid.FriendlyName); // OpenSsl maps prime256v1 to ECDSA_P256
-            Assert.Equal(ECDSA_P256_OID_VALUE, param.Curve.Oid.Value);
+            Assert.Equal(EccTestBase.ECDSA_P256_OID_VALUE, param.Curve.Oid.Value);
 
             // secp521r1 is same as nistP521; note Windows uses secP521r1 (uppercase P)
             ec = new ECDiffieHellmanOpenSsl(ECCurve.CreateFromFriendlyName("secp521r1"));
@@ -300,14 +301,14 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
             Assert.Equal(521, ec.KeySize);
             Assert.True(param.Curve.IsNamed);
             Assert.Equal("ECDSA_P521", param.Curve.Oid.FriendlyName); // OpenSsl maps secp521r1 to ECDSA_P521
-            Assert.Equal(ECDSA_P521_OID_VALUE, param.Curve.Oid.Value);
+            Assert.Equal(EccTestBase.ECDSA_P521_OID_VALUE, param.Curve.Oid.Value);
         }
 
         [Theory]
-        [InlineData(ECDSA_P256_OID_VALUE, 256)]
-        [InlineData(ECDSA_P384_OID_VALUE, 384)]
-        [InlineData(ECDSA_P521_OID_VALUE, 521)]
-        public void CtorEcKeyExportMatchesReimport(string oid, int expectedKeySize)
+        [InlineData(EccTestBase.ECDSA_P256_OID_VALUE, 256)]
+        [InlineData(EccTestBase.ECDSA_P384_OID_VALUE, 384)]
+        [InlineData(EccTestBase.ECDSA_P521_OID_VALUE, 521)]
+        public static void CtorEcKeyExportMatchesReimport(string oid, int expectedKeySize)
         {
             IntPtr ecKey = Interop.Crypto.EcKeyCreateByOid(oid);
             Assert.NotEqual(IntPtr.Zero, ecKey);
@@ -328,8 +329,8 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
 
                         ECParameters evpPrivateParams = evpBacked.ExportParameters(true);
 
-                        ComparePublicKey(privateParams.Q, evpPrivateParams.Q);
-                        ComparePrivateKey(privateParams, evpPrivateParams);
+                        EccTestBase.ComparePublicKey(privateParams.Q, evpPrivateParams.Q);
+                        EccTestBase.ComparePrivateKey(privateParams, evpPrivateParams);
                     }
                 }
             }
@@ -340,10 +341,10 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Theory]
-        [InlineData(ECDSA_P256_OID_VALUE)]
-        [InlineData(ECDSA_P384_OID_VALUE)]
-        [InlineData(ECDSA_P521_OID_VALUE)]
-        public void CtorEcKeyDeriveCrossCompatibleWithReimport(string oid)
+        [InlineData(EccTestBase.ECDSA_P256_OID_VALUE)]
+        [InlineData(EccTestBase.ECDSA_P384_OID_VALUE)]
+        [InlineData(EccTestBase.ECDSA_P521_OID_VALUE)]
+        public static void CtorEcKeyDeriveCrossCompatibleWithReimport(string oid)
         {
             IntPtr rawKey1 = Interop.Crypto.EcKeyCreateByOid(oid);
             Assert.NotEqual(IntPtr.Zero, rawKey1);
@@ -380,7 +381,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void CtorEcKeyDeriveLeftAndRightSide()
+        public static void CtorEcKeyDeriveLeftAndRightSide()
         {
             ECParameters testData = EccTestData.GetNistP256ReferenceKey();
 
@@ -415,7 +416,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void CtorEcKeyPublicOnlyFailsDerive()
+        public static void CtorEcKeyPublicOnlyFailsDerive()
         {
             ECParameters testData = EccTestData.GetNistP256ReferenceKey();
 
@@ -447,7 +448,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [ConditionalFact(nameof(SupportsExplicitCurves))]
-        public void ExplicitCurveImportExportProducesSameExplicitParams()
+        public static void ExplicitCurveImportExportProducesSameExplicitParams()
         {
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
 
@@ -459,14 +460,14 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
                 {
                     ECParameters reimportedParams = reimported.ExportExplicitParameters(true);
 
-                    ComparePublicKey(explicitParams.Q, reimportedParams.Q);
-                    ComparePrivateKey(explicitParams, reimportedParams);
+                    EccTestBase.ComparePublicKey(explicitParams.Q, reimportedParams.Q);
+                    EccTestBase.ComparePrivateKey(explicitParams, reimportedParams);
                 }
             }
         }
 
         [ConditionalFact(nameof(ECExplicitCurvesSupported))]
-        public void ExplicitCurveImportAndOriginalDeriveCrossCompatible()
+        public static void ExplicitCurveImportAndOriginalDeriveCrossCompatible()
         {
             ECCurve explicitCurve = EccTestData.GetNistP256ExplicitCurve();
 
@@ -494,7 +495,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void GenerateKeyImplicitCurveThrows()
+        public static void GenerateKeyImplicitCurveThrows()
         {
             ECCurve implicitCurve = default;
 
@@ -505,7 +506,7 @@ namespace System.Security.Cryptography.EcDiffieHellman.OpenSsl.Tests
         }
 
         [Fact]
-        public void ImportParametersImplicitCurveThrows()
+        public static void ImportParametersImplicitCurveThrows()
         {
             ECParameters parameters = new ECParameters
             {
