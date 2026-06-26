@@ -1808,24 +1808,21 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(GenTree** use, C
         {
             case TYP_UBYTE:
             {
-                indexVec->gtSimdVal.u8[index] =
-                    static_cast<uint8_t>(isTrailingZeroCount ? index + 1 : 31 - index);
+                indexVec->gtSimdVal.u8[index] = static_cast<uint8_t>(isTrailingZeroCount ? index + 1 : 31 - index);
                 otherVec->gtSimdVal.u8[index] = static_cast<uint8_t>(isTrailingZeroCount ? 33 : 32);
                 break;
             }
 
             case TYP_USHORT:
             {
-                indexVec->gtSimdVal.u16[index] =
-                    static_cast<uint16_t>(isTrailingZeroCount ? index + 1 : 31 - index);
+                indexVec->gtSimdVal.u16[index] = static_cast<uint16_t>(isTrailingZeroCount ? index + 1 : 31 - index);
                 otherVec->gtSimdVal.u16[index] = static_cast<uint16_t>(isTrailingZeroCount ? 33 : 32);
                 break;
             }
 
             case TYP_UINT:
             {
-                indexVec->gtSimdVal.u32[index] =
-                    static_cast<uint32_t>(isTrailingZeroCount ? index + 1 : 31 - index);
+                indexVec->gtSimdVal.u32[index] = static_cast<uint32_t>(isTrailingZeroCount ? index + 1 : 31 - index);
                 otherVec->gtSimdVal.u32[index] = static_cast<uint32_t>(isTrailingZeroCount ? 33 : 32);
                 break;
             }
@@ -1920,8 +1917,7 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
         return;
     }
 
-    if ((parents.Height() > 1) &&
-        (IsPrimitivePopCount(parents.Top(1)) || IsZeroCount(parents.Top(1))) &&
+    if ((parents.Height() > 1) && (IsPrimitivePopCount(parents.Top(1)) || IsZeroCount(parents.Top(1))) &&
         IsHWIntrinsicCmpMaskExtractMsb(node))
     {
         return;
