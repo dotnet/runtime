@@ -68,9 +68,9 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     m_StackAllocMaxSize               = (unsigned)JitConfig.JitObjectStackAllocationSize();
     m_trackFields                     = JitConfig.JitObjectStackAllocationTrackFields() > 0;
 
-    // OSR does not support localloc (though seems like late-introduced localloc might be ok)
+    // OSR and AOT do not support the conditional localloc expansion.
     //
-    m_UseLocalloc       = JitConfig.JitObjectStackAllocationLocalloc() && !comp->opts.IsOSR();
+    m_UseLocalloc       = JitConfig.JitObjectStackAllocationLocalloc() && !comp->opts.IsOSR() && !comp->IsAot();
     m_UseLocallocInLoop = m_UseLocalloc && JitConfig.JitObjectStackAllocationInLoop();
 }
 

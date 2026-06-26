@@ -2854,11 +2854,12 @@ PhaseStatus Compiler::fgExpandStackArrayAllocations()
 //
 // Remarks:
 //    For arrays whose size was large or not known during stack allocation analysis,
-//    the allocation expands into a runtime check followed by localloc (if small)
+//    the allocation expands into runtime checks followed by localloc (if small)
 //    or heapalloc (if big).
 //
-//    For known sized arrays, we assume upstream analysis has limited size to
-//    something reasonable, and the allocation is into fixed local storage.
+//    For known sized arrays that do not require runtime dispatch, we assume
+//    upstream analysis has limited size to something reasonable, and the
+//    allocation is into fixed local storage.
 //
 bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
                                             Statement*   stmt,
@@ -3000,10 +3001,11 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
         unsigned const locallocTemp   = lvaGrabTemp(true DEBUGARG("localloc stack address"));
         lvaTable[locallocTemp].lvType = TYP_I_IMPL;
 
-        GenTree* const arrayLength = gtNewLclVarNode(lengthTemp);
-        GenTree* const baseSize    = gtNewIconNode(OFFSETOF__CORINFO_Array__data, TYP_I_IMPL);
-        GenTree* const payloadSize = gtNewOperNode(GT_MUL, TYP_I_IMPL, elemSize, arrayLength);
-        GenTree*       totalSize   = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseSize, payloadSize);
+        GenTree* const arrayLength  = gtNewLclVarNode(lengthTemp);
+        GenTree* const nativeLength = fgOptimizeCast(gtNewCastNode(TYP_I_IMPL, arrayLength, false, TYP_I_IMPL));
+        GenTree* const baseSize     = gtNewIconNode(OFFSETOF__CORINFO_Array__data, TYP_I_IMPL);
+        GenTree* const payloadSize  = gtNewOperNode(GT_MUL, TYP_I_IMPL, elemSize, nativeLength);
+        GenTree*       totalSize    = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseSize, payloadSize);
 
         unsigned const elemSizeValue = (unsigned)elemSize->AsIntCon()->IconValue();
 
@@ -3093,42 +3095,51 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
                     fgFirstBB->bbNum);
         }
 
+        GenTree* const lengthCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, lengthCompare);
+
+        Statement* const lengthCheckStmt = fgNewStmtFromTree(lengthCheck);
+        gtUpdateStmtSideEffects(lengthCheckStmt);
+        fgInsertStmtBefore(block, stmt, lengthCheckStmt);
+
+        // Split block after the call, and insert blocks for the helper check,
+        // the localloc, and the heap alloc.
+        //
+        BasicBlock* const remainderBlock   = fgSplitBlockAfterStatement(block, stmt);
+        BasicBlock* const helperCheckBlock = fgNewBBafter(BBJ_ALWAYS, block, /* extendRegion */ true);
+        BasicBlock* const locallocBlock    = fgNewBBafter(BBJ_ALWAYS, helperCheckBlock, /* extendRegion */ true);
+        BasicBlock* const heapallocBlock   = fgNewBBafter(BBJ_ALWAYS, locallocBlock, /* extendRegion */ true);
+
         // Ask the managed helper to decide if this request should use the stack.
         // The helper accounts for request size, current stack usage, and the
-        // per-frame running total.
+        // per-frame running total. It must run only after the length check has
+        // passed since it updates the per-frame running total on success.
         //
         GenTreeCall* stackAllocHelperCall =
             gtNewHelperCallNode(CORINFO_HELP_CAN_STACK_ALLOCATE, TYP_INT, gtNewLclVarNode(totalSizeTemp),
                                 gtNewLclVarAddrNode(frameRunningTotalLclNum, TYP_I_IMPL));
         stackAllocHelperCall = fgMorphArgs(stackAllocHelperCall);
 
-        GenTree* const helperFailed = gtNewOperNode(GT_EQ, TYP_INT, stackAllocHelperCall, gtNewIconNode(0, TYP_INT));
-
-        // Combine the validity and helper checks. JTRUE requires a relop child,
-        // so wrap the OR with NE 0.
-        //
-        GenTree* const combinedOr       = gtNewOperNode(GT_OR, TYP_INT, lengthCompare, helperFailed);
-        GenTree* const combinedCond     = gtNewOperNode(GT_NE, TYP_INT, combinedOr, gtNewIconNode(0, TYP_INT));
-        GenTree* const runtimeSizeCheck = gtNewOperNode(GT_JTRUE, TYP_VOID, combinedCond);
-
-        Statement* const runtimeSizeCheckStmt = fgNewStmtFromTree(runtimeSizeCheck);
-        gtUpdateStmtSideEffects(runtimeSizeCheckStmt);
-        fgInsertStmtBefore(block, stmt, runtimeSizeCheckStmt);
-
-        // Split block after the call, and insert blocks for the localloc and the heap alloc
-        //
-        BasicBlock* const remainderBlock = fgSplitBlockAfterStatement(block, stmt);
-        BasicBlock* const locallocBlock  = fgNewBBafter(BBJ_ALWAYS, block, /* extendRegion */ true);
-        BasicBlock* const heapallocBlock = fgNewBBafter(BBJ_ALWAYS, locallocBlock, /* extendRegion */ true);
+        GenTree* const   helperFailed = gtNewOperNode(GT_EQ, TYP_INT, stackAllocHelperCall, gtNewIconNode(0, TYP_INT));
+        GenTree* const   helperCheck  = gtNewOperNode(GT_JTRUE, TYP_VOID, helperFailed);
+        Statement* const helperCheckStmt = fgNewStmtFromTree(helperCheck);
+        gtUpdateStmtSideEffects(helperCheckStmt);
+        fgInsertStmtAtBeg(helperCheckBlock, helperCheckStmt);
 
         // Wire up new flow.... assume (for now) localloc is more likely
         //
         FlowEdge* const blockRemainderEdge = fgGetPredForBlock(remainderBlock, block);
         fgRemoveRefPred(blockRemainderEdge);
 
-        FlowEdge* const locallocInEdge  = fgAddRefPred(locallocBlock, block);
-        FlowEdge* const locallocOutEdge = fgAddRefPred(remainderBlock, locallocBlock);
+        FlowEdge* const helperCheckInEdge = fgAddRefPred(helperCheckBlock, block);
+        FlowEdge* const helperHeapInEdge  = fgAddRefPred(heapallocBlock, helperCheckBlock);
+        FlowEdge* const locallocInEdge    = fgAddRefPred(locallocBlock, helperCheckBlock);
+        FlowEdge* const locallocOutEdge   = fgAddRefPred(remainderBlock, locallocBlock);
 
+        helperCheckInEdge->setLikelihood(0.99);
+        helperCheckBlock->inheritWeightPercentage(block, 99);
+        helperCheckBlock->SetCond(helperHeapInEdge, locallocInEdge);
+
+        helperHeapInEdge->setLikelihood(0.2);
         locallocInEdge->setLikelihood(0.8);
         locallocBlock->inheritWeightPercentage(block, 80);
         locallocOutEdge->setLikelihood(1.0);
@@ -3137,12 +3148,12 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
         FlowEdge* const heapallocInEdge  = fgAddRefPred(heapallocBlock, block);
         FlowEdge* const heapallocOutEdge = fgAddRefPred(remainderBlock, heapallocBlock);
 
-        heapallocInEdge->setLikelihood(0.2);
+        heapallocInEdge->setLikelihood(0.01);
         heapallocBlock->inheritWeightPercentage(block, 20);
         heapallocOutEdge->setLikelihood(1.0);
         heapallocBlock->SetTargetEdge(heapallocOutEdge);
 
-        block->SetCond(heapallocInEdge, locallocInEdge);
+        block->SetCond(heapallocInEdge, helperCheckInEdge);
 
         // Now fill in the heapalloc block.
         //
