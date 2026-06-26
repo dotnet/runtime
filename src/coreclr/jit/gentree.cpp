@@ -9424,8 +9424,9 @@ GenTreeVecCon* Compiler::gtNewSimdVconNode(
     GenTreeVecCon* vecCon                            = new (this, GT_CNS_VEC) GenTreeVecCon(type);
     vecCon->gtSimdScalableVal.gtSimdScalableKind     = kind;
     vecCon->gtSimdScalableVal.gtSimdScalableBaseType = baseType;
-    vecCon->gtSimdScalableVal.gtSimdScalableIndex    = index;
-    vecCon->gtSimdScalableVal.gtSimdScalableStep     = step;
+    uint64_t elementMask = SimdAllBitsSetForElementType(baseType);
+    vecCon->gtSimdScalableVal.gtSimdScalableIndex    = index & elementMask;
+    vecCon->gtSimdScalableVal.gtSimdScalableStep     = step & elementMask;
     return vecCon;
 }
 #endif // TARGET_ARM64
