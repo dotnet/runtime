@@ -11714,9 +11714,8 @@ bool Compiler::impWrapTopOfStackInAwait()
         if (lvaMonAcquired == BAD_VAR_NUM)
         {
             lvaMonAcquired = lvaGrabTemp(true DEBUGARG("Synchronized method monitor acquired boolean"));
+            lvaGetDesc(lvaMonAcquired)->lvType = TYP_I_IMPL;
         }
-
-        lvaGetDesc(lvaMonAcquired)->lvType = TYP_I_IMPL;
 
         GenTree* varAddrNode = gtNewLclVarAddrNode(lvaMonAcquired);
         GenTree* lockObject =
