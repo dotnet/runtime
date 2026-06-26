@@ -60,11 +60,6 @@ namespace ILCompiler
                         Instantiation genericTypeParameters = genericTypeDefinition.Instantiation;
                         Instantiation genericTypeArguments = type.Instantiation;
 
-                        if (genericTypeParameters.Length != genericTypeArguments.Length)
-                        {
-                            ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                        }
-
                         for (int i = 0; i < genericTypeArguments.Length; i++)
                         {
                             var genericTypeParameter = (EcmaGenericParameter)genericTypeParameters[i];
