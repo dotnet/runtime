@@ -2039,57 +2039,61 @@ namespace System
         /// <param name="sepListBuilder"><see cref="ValueListBuilder{T}"/> to store indexes</param>
         internal static void MakeSeparatorListAny(ReadOnlySpan<char> source, ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
         {
-            // Special-case no separators to mean any whitespace is a separator.
-            if (separators.Length == 0)
-            {
-                for (int i = 0; i < source.Length; i++)
-                {
-                    if (char.IsWhiteSpace(source[i]))
-                    {
-                        sepListBuilder.Append(i);
-                    }
-                }
-            }
-
-            // Special-case the common cases of 1 separator, the most common case, with manual comparisons against it.
-            else if (separators.Length == 1)
-            {
-                char sep0 = separators[0];
-                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
-                {
-                    MakeSeparatorListVectorized(source, ref sepListBuilder, sep0);
-                    return;
-                }
-
-                for (int i = 0; i < source.Length; i++)
-                {
-                    char c = source[i];
-                    if (c == sep0)
-                    {
-                        sepListBuilder.Append(i);
-                    }
-                }
-            }
-
-            // Special-case the common cases of 2 and 3 separators, with manual comparisons against each separator.
+            // Special-case the common cases of 1, 2 and 3 separators.
             else if (separators.Length <= 3)
             {
-                char sep0, sep1, sep2;
-                sep0 = separators[0];
-                sep1 = separators[1];
-                sep2 = separators.Length > 2 ? separators[2] : sep1;
-                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
+                // Special-case the common cases of 1 separator, the most common case, with manual comparisons against it.
+                if (separators.Length == 1)
                 {
-                    MakeSeparatorListVectorized(source, ref sepListBuilder, sep0, sep1, sep2);
-                    return;
+                    char sep0 = separators[0];
+                    if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
+                    {
+                        MakeSeparatorListVectorized(source, ref sepListBuilder, sep0);
+                        return;
+                    }
+    
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        char c = source[i];
+                        if (c == sep0)
+                        {
+                            sepListBuilder.Append(i);
+                        }
+                    }
+                }
+    
+                // Special-case the common cases of 2 and 3 separators, with manual comparisons against each separator.
+                else if (separators.Length > 0)
+                {
+                    char sep0, sep1, sep2;
+                    sep0 = separators[0];
+                    sep1 = separators[1];
+                    sep2 = separators.Length > 2 ? separators[2] : sep1;
+                    if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
+                    {
+                        MakeSeparatorListVectorized(source, ref sepListBuilder, sep0, sep1, sep2);
+                        return;
+                    }
+    
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        char c = source[i];
+                        if (c == sep0 || c == sep1 || c == sep2)
+                        {
+                            sepListBuilder.Append(i);
+                        }
+                    }
                 }
 
-                for (int i = 0; i < source.Length; i++)
+                // Special-case no separators to mean any whitespace is a separator.
+                else
                 {
-                    char c = source[i];
-                    if (c == sep0 || c == sep1 || c == sep2)
+                    for (int i = 0; i < source.Length; i++)
                     {
-                        sepListBuilder.Append(i);
+                        if (char.IsWhiteSpace(source[i]))
+                        {
+                            sepListBuilder.Append(i);
+                        }
                     }
                 }
             }
