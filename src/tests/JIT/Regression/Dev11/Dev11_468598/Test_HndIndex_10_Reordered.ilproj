@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
+    <!-- WASI: see https://github.com/dotnet/runtime/issues/120708 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>

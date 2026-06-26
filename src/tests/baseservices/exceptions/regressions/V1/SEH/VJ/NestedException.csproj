@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- WASI: see https://github.com/dotnet/runtime/issues/120708 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
     <!-- Needed for UnloadabilityIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
