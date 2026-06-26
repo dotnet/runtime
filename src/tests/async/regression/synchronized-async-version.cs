@@ -17,16 +17,18 @@ public class Async2Synchronized
     private static async Task TestEntryPointAsync()
     {
         Async2Synchronized p = new();
-        Task t = p.Foo();
+        TaskCompletionSource tcs = new();
+        Task t = p.Foo(tcs.Task);
         // Returning the task from the [MethodImpl(MethodImplOptions.Synchronized)]
         // method Bar must release the lock it acquired, so it should not be held here.
         Assert.False(Monitor.IsEntered(p));
+        tcs.SetResult();
         await t;
     }
 
-    private async Task Foo()
+    private async Task Foo(Task task)
     {
-        await Bar(Task.Delay(500));
+        await Bar(task);
     }
 
     [MethodImpl(MethodImplOptions.Synchronized)]
@@ -44,16 +46,18 @@ public class Async2Synchronized
     private static async ValueTask TestEntryPointValueTaskAsync()
     {
         Async2Synchronized p = new();
-        ValueTask t = p.FooValueTask();
+        TaskCompletionSource tcs = new();
+        ValueTask t = p.FooValueTask(new ValueTask(tcs.Task));
         // Returning the ValueTask from the [MethodImpl(MethodImplOptions.Synchronized)]
         // method Bar must release the lock it acquired, so it should not be held here.
         Assert.False(Monitor.IsEntered(p));
+        tcs.SetResult();
         await t;
     }
 
-    private async ValueTask FooValueTask()
+    private async ValueTask FooValueTask(ValueTask task)
     {
-        await Bar(new ValueTask(Task.Delay(500)));
+        await Bar(task);
     }
 
     [MethodImpl(MethodImplOptions.Synchronized)]
