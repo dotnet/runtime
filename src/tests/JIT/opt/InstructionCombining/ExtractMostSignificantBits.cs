@@ -128,6 +128,16 @@ namespace TestExtractMostSignificantBits
                 fail = true;
             }
 
+            if (LeadingZeroCountGreaterThanOrEqualByte(byteData, 0x80) != 16)
+            {
+                fail = true;
+            }
+
+            if (LeadingZeroCountGreaterThanOrEqualByte(Vector128<byte>.Zero, 0x80) != 32)
+            {
+                fail = true;
+            }
+
             Vector64<ushort> utf16Data64 = Vector64.Create(
                 (ushort)0x0000, (ushort)0x0800, (ushort)0x07FF, (ushort)0xFFFF);
 
@@ -223,6 +233,16 @@ namespace TestExtractMostSignificantBits
             }
 
             if (IndexOfFirstGreaterThanOrEqualByte64(Vector64<byte>.Zero, 0x80) != 32)
+            {
+                fail = true;
+            }
+
+            if (LeadingZeroCountGreaterThanOrEqualByte64(byteData64, 0x80) != 24)
+            {
+                fail = true;
+            }
+
+            if (LeadingZeroCountGreaterThanOrEqualByte64(Vector64<byte>.Zero, 0x80) != 32)
             {
                 fail = true;
             }
@@ -403,6 +423,16 @@ namespace TestExtractMostSignificantBits
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int LeadingZeroCountGreaterThanOrEqualByte(Vector128<byte> value, byte limit)
+        {
+            // ARM64-FULL-LINE: cmhs {{v[0-9]+}}.16b, {{v[0-9]+}}.16b, {{v[0-9]+}}.16b
+            // ARM64-FULL-LINE: bsl {{v[0-9]+}}.16b, {{v[0-9]+}}.16b, {{v[0-9]+}}.16b
+            // ARM64-FULL-LINE: uminv {{b[0-9]+}}, {{v[0-9]+}}.16b
+            // ARM64-FULL-LINE: umov {{w[0-9]+}}, {{v[0-9]+}}.b[0]
+            return BitOperations.LeadingZeroCount(Vector128.GreaterThanOrEqual(value, Vector128.Create(limit)).ExtractMostSignificantBits());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static uint LessThanUInt16Mask64(Vector64<ushort> value, ushort limit)
         {
             // ARM64-FULL-LINE: cmhi {{v[0-9]+}}.4h, {{v[0-9]+}}.4h, {{v[0-9]+}}.4h
@@ -547,6 +577,16 @@ namespace TestExtractMostSignificantBits
             // ARM64-FULL-LINE: umov {{w[0-9]+}}, {{v[0-9]+}}.b[0]
             // ARM64-FULL-LINE: sub {{w[0-9]+}}, {{w[0-9]+}}, #1
             return BitOperations.TrailingZeroCount(Vector64.GreaterThanOrEqual(value, Vector64.Create(limit)).ExtractMostSignificantBits());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int LeadingZeroCountGreaterThanOrEqualByte64(Vector64<byte> value, byte limit)
+        {
+            // ARM64-FULL-LINE: cmhs {{v[0-9]+}}.8b, {{v[0-9]+}}.8b, {{v[0-9]+}}.8b
+            // ARM64-FULL-LINE: bsl {{v[0-9]+}}.8b, {{v[0-9]+}}.8b, {{v[0-9]+}}.8b
+            // ARM64-FULL-LINE: uminv {{b[0-9]+}}, {{v[0-9]+}}.8b
+            // ARM64-FULL-LINE: umov {{w[0-9]+}}, {{v[0-9]+}}.b[0]
+            return BitOperations.LeadingZeroCount(Vector64.GreaterThanOrEqual(value, Vector64.Create(limit)).ExtractMostSignificantBits());
         }
     }
 }

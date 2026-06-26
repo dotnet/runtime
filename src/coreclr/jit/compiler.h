@@ -10481,6 +10481,42 @@ public:
         }
     }
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
+    //----------------------------------------------------------------------------------------------
+    // IsHWIntrinsicCmpMask: Checks if the hwintrinsic produces a SIMD comparison mask.
+    //
+    // Arguments:
+    //    intrinsic - The hwintrinsic id
+    //
+    // Return Value:
+    //    True if the hwintrinsic produces a mask where each SIMD element is either all-bits-set or zero.
+    //
+    static bool IsHWIntrinsicCmpMask(NamedIntrinsic intrinsic)
+    {
+        switch (intrinsic)
+        {
+            case NI_AdvSimd_CompareEqual:
+            case NI_AdvSimd_CompareGreaterThan:
+            case NI_AdvSimd_CompareGreaterThanOrEqual:
+            case NI_AdvSimd_CompareLessThan:
+            case NI_AdvSimd_CompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareGreaterThan:
+            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareLessThan:
+            case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
+            {
+                return true;
+            }
+
+            default:
+            {
+                return false;
+            }
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
+
 private:
     unsigned getSIMDInitTempVarNum(var_types simdType);
 

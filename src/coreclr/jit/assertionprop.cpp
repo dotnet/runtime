@@ -80,40 +80,6 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
 //----------------------------------------------------------------------------------------------
-// IsHWIntrinsicCmpMask: Checks if the hwintrinsic produces a SIMD comparison mask.
-//
-// Arguments:
-//    intrinsic - The hwintrinsic id
-//
-// Return Value:
-//    True if the hwintrinsic produces a mask where each SIMD element is either all-bits-set or zero.
-//
-static bool IsHWIntrinsicCmpMask(NamedIntrinsic intrinsic)
-{
-    switch (intrinsic)
-    {
-        case NI_AdvSimd_CompareEqual:
-        case NI_AdvSimd_CompareGreaterThan:
-        case NI_AdvSimd_CompareGreaterThanOrEqual:
-        case NI_AdvSimd_CompareLessThan:
-        case NI_AdvSimd_CompareLessThanOrEqual:
-        case NI_AdvSimd_Arm64_CompareEqual:
-        case NI_AdvSimd_Arm64_CompareGreaterThan:
-        case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
-        case NI_AdvSimd_Arm64_CompareLessThan:
-        case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
-        {
-            return true;
-        }
-
-        default:
-        {
-            return false;
-        }
-    }
-}
-
-//----------------------------------------------------------------------------------------------
 // AllComponentsEitherZeroOrAllBitsSet: Check if a SIMD VN has per-element boolean values.
 //
 // Arguments:
@@ -188,6 +154,8 @@ static bool AllComponentsEitherZeroOrAllBitsSet(Compiler* comp, ValueNum vn, var
         case GT_LE:
         case GT_LT:
         {
+            // The comparison intrinsic may have used a wider unsigned base type to produce the
+            // per-element mask, e.g. a TYP_BYTE compare can be implemented as TYP_UBYTE.
             return varTypeIsIntegral(baseType) && (genTypeSize(baseType) <= genTypeSize(intrinsicSimdBaseType));
         }
 
@@ -216,6 +184,7 @@ static bool AllComponentsEitherZeroOrAllBitsSet(Compiler* comp, ValueNum vn, var
 // optAssertionProp_HWIntrinsic: Propagate VN-derived facts to hwintrinsic tree flags.
 //
 // Arguments:
+//    comp - The compiler instance
 //    tree - The hwintrinsic node
 //
 static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tree)
@@ -231,7 +200,7 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
 
     GenTree* op1 = tree->Op(1);
 
-    if (op1->OperIsHWIntrinsic() && !IsHWIntrinsicCmpMask(op1->AsHWIntrinsic()->GetHWIntrinsicId()))
+    if (op1->OperIsHWIntrinsic() && !Compiler::IsHWIntrinsicCmpMask(op1->AsHWIntrinsic()->GetHWIntrinsicId()))
     {
         return;
     }

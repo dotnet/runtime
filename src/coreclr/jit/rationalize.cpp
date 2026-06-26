@@ -1368,40 +1368,6 @@ bool Rationalizer::ShouldRewriteToNonMaskHWIntrinsic(GenTree* node)
 
 #if defined(TARGET_ARM64)
 //----------------------------------------------------------------------------------------------
-// IsHWIntrinsicCmpMask: Checks if the hwintrinsic produces a SIMD comparison mask
-//
-// Arguments:
-//    intrinsic - The hwintrinsic id
-//
-// Return Value:
-//    True if the hwintrinsic produces a mask where each SIMD element is either all-bits-set or zero.
-//
-static bool IsHWIntrinsicCmpMask(NamedIntrinsic intrinsic)
-{
-    switch (intrinsic)
-    {
-        case NI_AdvSimd_CompareEqual:
-        case NI_AdvSimd_CompareGreaterThan:
-        case NI_AdvSimd_CompareGreaterThanOrEqual:
-        case NI_AdvSimd_CompareLessThan:
-        case NI_AdvSimd_CompareLessThanOrEqual:
-        case NI_AdvSimd_Arm64_CompareEqual:
-        case NI_AdvSimd_Arm64_CompareGreaterThan:
-        case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
-        case NI_AdvSimd_Arm64_CompareLessThan:
-        case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
-        {
-            return true;
-        }
-
-        default:
-        {
-            return false;
-        }
-    }
-}
-
-//----------------------------------------------------------------------------------------------
 // NormalizeCmpMaskSimdBaseType: Normalize a SIMD comparison mask's base type to unsigned.
 //
 // Arguments:
@@ -1416,20 +1382,12 @@ static var_types NormalizeCmpMaskSimdBaseType(var_types simdBaseType)
     {
         case TYP_BYTE:
         case TYP_UBYTE:
-        {
-            return TYP_UBYTE;
-        }
-
         case TYP_SHORT:
         case TYP_USHORT:
-        {
-            return TYP_USHORT;
-        }
-
         case TYP_INT:
         case TYP_UINT:
         {
-            return TYP_UINT;
+            return Compiler::getIndexTypeForShuffle(simdBaseType);
         }
 
         default:
@@ -1469,7 +1427,7 @@ static bool IsHWIntrinsicCmpMaskExtractMsb(GenTreeHWIntrinsic* node)
         return true;
     }
 
-    return op1->OperIsHWIntrinsic() && IsHWIntrinsicCmpMask(op1->AsHWIntrinsic()->GetHWIntrinsicId());
+    return op1->OperIsHWIntrinsic() && Compiler::IsHWIntrinsicCmpMask(op1->AsHWIntrinsic()->GetHWIntrinsicId());
 }
 
 //----------------------------------------------------------------------------------------------
@@ -1487,17 +1445,28 @@ static bool IsPrimitivePopCount(GenTree* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// IsPrimitiveTrailingZeroCount: Checks if a node is a primitive TrailingZeroCount intrinsic.
+// IsZeroCount: Checks if a node is a scalar zero-count intrinsic.
 //
 // Arguments:
 //    node - The node to check.
 //
 // Return Value:
-//    True if the node is a primitive TrailingZeroCount intrinsic.
+//    True if the node is a TrailingZeroCount or LeadingZeroCount intrinsic.
 //
-static bool IsPrimitiveTrailingZeroCount(GenTree* node)
+static bool IsZeroCount(GenTree* node)
 {
-    return node->OperIs(GT_INTRINSIC) && (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_TrailingZeroCount);
+    if (node->OperIs(GT_INTRINSIC))
+    {
+        return (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_TrailingZeroCount) ||
+               (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_LeadingZeroCount);
+    }
+
+    if (node->OperIsHWIntrinsic())
+    {
+        return node->AsHWIntrinsic()->GetHWIntrinsicId() == NI_ArmBase_LeadingZeroCount;
+    }
+
+    return false;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -1763,20 +1732,25 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbPopCount(GenTree** use, Co
 }
 
 //----------------------------------------------------------------------------------------------
-// RewriteHWIntrinsicCmpMaskExtractMsbTrailingZeroCount:
-// Rewrites TrailingZeroCount(ExtractMostSignificantBits(...)) when the input is known to be a
-// SIMD comparison mask.
+// RewriteHWIntrinsicCmpMaskExtractMsbZeroCount:
+// Rewrites TrailingZeroCount(ExtractMostSignificantBits(...)) and
+// LeadingZeroCount(ExtractMostSignificantBits(...)) when the input is known to be a SIMD comparison mask.
 //
 // Matches:
 //    TrailingZeroCount(ExtractMostSignificantBits(cmpMask))
+//    LeadingZeroCount(ExtractMostSignificantBits(cmpMask))
 //
 // Replaces it with:
-//    MinAcross(BitwiseSelect(cmpMask, IndexVector, SentinelVector)) - 1
+//    TrailingZeroCount: MinAcross(BitwiseSelect(cmpMask, IndexVector, SentinelVector)) - 1
+//    LeadingZeroCount:  MinAcross(BitwiseSelect(cmpMask, IndexVector, SentinelVector))
 //
-// IndexVector holds one-based element indexes and SentinelVector holds 33. The selected minimum is
-// therefore the first matching element index plus one, or 33 if no element matched. Subtracting one
-// preserves the zero-mask TrailingZeroCount result of 32. For Vector64<uint>, the reduction is
-// implemented with MinPairwise.
+// For TrailingZeroCount, IndexVector holds one-based element indexes and SentinelVector holds 33.
+// The selected minimum is therefore the first matching element index plus one, or 33 if no element
+// matched. Subtracting one preserves the zero-mask result of 32.
+//
+// For LeadingZeroCount, IndexVector holds 31 minus the element index and SentinelVector holds 32.
+// The selected minimum is therefore the leading-zero-count result directly, including 32 for the
+// zero-mask case. For Vector64<uint>, the reduction is implemented with MinPairwise.
 //
 // Arguments:
 //    use     - A pointer to the intrinsic node
@@ -1785,12 +1759,15 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbPopCount(GenTree** use, Co
 // Return Value:
 //    True if the node was rewritten; otherwise false.
 //
-bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbTrailingZeroCount(GenTree** use, Compiler::GenTreeStack& parents)
+bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(GenTree** use, Compiler::GenTreeStack& parents)
 {
-    GenTreeIntrinsic* tzcnt = (*use)->AsIntrinsic();
-    assert(tzcnt->gtIntrinsicName == NI_PRIMITIVE_TrailingZeroCount);
+    GenTree* zeroCount = *use;
+    assert(IsZeroCount(zeroCount));
 
-    GenTree* extract = tzcnt->gtGetOp1();
+    const bool isTrailingZeroCount = zeroCount->OperIs(GT_INTRINSIC) &&
+                                     (zeroCount->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_TrailingZeroCount);
+
+    GenTree* extract = zeroCount->OperIs(GT_INTRINSIC) ? zeroCount->gtGetOp1() : zeroCount->AsHWIntrinsic()->Op(1);
 
     if (!extract->OperIsHWIntrinsic())
     {
@@ -1813,11 +1790,9 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbTrailingZeroCount(GenTree*
     unsigned  simdSize = extractNode->GetSimdSize();
     var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
 
-    // A comparison produces elements whose value is either all-bits-set or zero. For an
-    // IndexOf-style consumer, select a 1-based element index when the comparison is true and a
-    // sentinel value of 33 when false. The horizontal min reduction then finds either the first
-    // matching index plus one or the sentinel. Subtracting one produces the trailing-zero-count
-    // result, including 32 for the zero mask case.
+    // A comparison produces elements whose value is either all-bits-set or zero. Select an element
+    // index value when the comparison is true and a sentinel when false. The horizontal min reduction
+    // then finds the zero-count result directly or with a final subtract, as described above.
 
     GenTree* op1 = extractNode->Op(1);
 
@@ -1833,22 +1808,25 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbTrailingZeroCount(GenTree*
         {
             case TYP_UBYTE:
             {
-                indexVec->gtSimdVal.u8[index] = static_cast<uint8_t>(index + 1);
-                otherVec->gtSimdVal.u8[index] = 33;
+                indexVec->gtSimdVal.u8[index] =
+                    static_cast<uint8_t>(isTrailingZeroCount ? index + 1 : 31 - index);
+                otherVec->gtSimdVal.u8[index] = static_cast<uint8_t>(isTrailingZeroCount ? 33 : 32);
                 break;
             }
 
             case TYP_USHORT:
             {
-                indexVec->gtSimdVal.u16[index] = static_cast<uint16_t>(index + 1);
-                otherVec->gtSimdVal.u16[index] = 33;
+                indexVec->gtSimdVal.u16[index] =
+                    static_cast<uint16_t>(isTrailingZeroCount ? index + 1 : 31 - index);
+                otherVec->gtSimdVal.u16[index] = static_cast<uint16_t>(isTrailingZeroCount ? 33 : 32);
                 break;
             }
 
             case TYP_UINT:
             {
-                indexVec->gtSimdVal.u32[index] = static_cast<uint32_t>(index + 1);
-                otherVec->gtSimdVal.u32[index] = 33;
+                indexVec->gtSimdVal.u32[index] =
+                    static_cast<uint32_t>(isTrailingZeroCount ? index + 1 : 31 - index);
+                otherVec->gtSimdVal.u32[index] = static_cast<uint32_t>(isTrailingZeroCount ? 33 : 32);
                 break;
             }
 
@@ -1899,15 +1877,20 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbTrailingZeroCount(GenTree*
     GenTree* castNode = m_compiler->gtNewCastNode(TYP_INT, extractNode, /* isUnsigned */ true, TYP_INT);
     BlockRange().InsertAfter(extractNode, castNode);
 
-    GenTree* one = m_compiler->gtNewIconNode(1);
-    BlockRange().InsertAfter(castNode, one);
+    GenTree* result = castNode;
 
-    GenTree* result = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, castNode, one);
-    BlockRange().InsertAfter(one, result);
+    if (isTrailingZeroCount)
+    {
+        GenTree* one = m_compiler->gtNewIconNode(1);
+        BlockRange().InsertAfter(castNode, one);
 
-    BlockRange().Remove(tzcnt);
+        result = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, castNode, one);
+        BlockRange().InsertAfter(one, result);
+    }
 
-    ReplaceHWIntrinsicCmpMaskExtractMsbUse(use, parents, tzcnt, result);
+    BlockRange().Remove(zeroCount);
+
+    ReplaceHWIntrinsicCmpMaskExtractMsbUse(use, parents, zeroCount, result);
 
     return true;
 }
@@ -1938,7 +1921,7 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
     }
 
     if ((parents.Height() > 1) &&
-        (IsPrimitivePopCount(parents.Top(1)) || IsPrimitiveTrailingZeroCount(parents.Top(1))) &&
+        (IsPrimitivePopCount(parents.Top(1)) || IsZeroCount(parents.Top(1))) &&
         IsHWIntrinsicCmpMaskExtractMsb(node))
     {
         return;
@@ -2441,9 +2424,10 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                     node = *useEdge;
                 }
             }
-            else if (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_TrailingZeroCount)
+            else if ((node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_TrailingZeroCount) ||
+                     (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_LeadingZeroCount))
             {
-                if (RewriteHWIntrinsicCmpMaskExtractMsbTrailingZeroCount(useEdge, parentStack))
+                if (RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(useEdge, parentStack))
                 {
                     node = *useEdge;
                 }
@@ -2453,6 +2437,16 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
+#if defined(TARGET_ARM64)
+            if (IsZeroCount(node))
+            {
+                if (RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(useEdge, parentStack))
+                {
+                    node = *useEdge;
+                    break;
+                }
+            }
+#endif // TARGET_ARM64
             RewriteHWIntrinsic(useEdge, parentStack);
             break;
 #endif // FEATURE_HW_INTRINSICS
