@@ -1348,7 +1348,7 @@ STRINGREF* LCGMethodResolver::GetOrInternString(STRINGREF *pProtectedStringRef)
     // Get the global string literal interning map
     GlobalStringLiteralMap* pStringLiteralMap = SystemDomain::GetGlobalStringLiteralMap();
 
-    // Calculating the hash: EEUnicodeHashTableHelper::GetHash
+    // Calculating the hash.
     EEStringData StringData = EEStringData((*pProtectedStringRef)->GetStringLength(), (*pProtectedStringRef)->GetBuffer());
     DWORD dwHash = pStringLiteralMap->GetHash(&StringData);
 
