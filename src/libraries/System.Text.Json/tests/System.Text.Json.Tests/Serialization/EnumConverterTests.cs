@@ -1303,6 +1303,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
+        [InlineData("\"  \"")]
+        [InlineData("\"\\t\"")]
+        public static void EnumWithEmptyStringMemberName_NonFlags_ParsesWhitespaceAsEmptyMember(string json)
+        {
+            Assert.Equal(YesOrNoOrEmpty.Empty, JsonSerializer.Deserialize<YesOrNoOrEmpty>(json, s_optionsWithStringEnumConverter));
+        }
+
+        [Theory]
         [InlineData("\"y, , n\"")]
         [InlineData("\",\"")]
         [InlineData("\"y,n\"")]
