@@ -4,6 +4,130 @@
 #include "jitpch.h"
 
 //------------------------------------------------------------------------
+// impGetInstParamArg: compute the hidden instantiation / generic-context argument
+//   for a call whose signature has a type arg (CORINFO_CALLCONV_PARAMTYPE).
+//
+// Arguments:
+//    pResolvedToken                 - resolved token for the call target
+//    callInfo                       - EE supplied info for the call
+//    exactContextHnd                - the exact (method or class) context for the call
+//    exactContextNeedsRuntimeLookup - whether the exact context needs a runtime lookup
+//    clsFlags                       - flags for the class that owns the called method
+//    isReadonlyCall                 - whether this is a "readonly." prefixed call
+//
+// Return Value:
+//    The IR node for the instantiation argument. This may be a null-handle constant
+//    for a "readonly." array Address call. Returns nullptr if the importer must abort
+//    the current method, in which case compDonotInline() is set and the caller should
+//    return TYP_UNDEF.
+//
+// Notes:
+//    This is the shared computation for the hidden "extra arg" described at the
+//    hasTypeArg() handling in impImportCall. It is also used by the wasm LDVIRTFTN
+//    path, which dispatches virtual calls (including the array Address accessor) that
+//    can carry a type arg but is otherwise outside the main hasTypeArg() handling.
+//
+GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                      CORINFO_CALL_INFO*      callInfo,
+                                      CORINFO_CONTEXT_HANDLE  exactContextHnd,
+                                      bool                    exactContextNeedsRuntimeLookup,
+                                      unsigned                clsFlags,
+                                      bool                    isReadonlyCall)
+{
+    GenTree* instParam = nullptr;
+    bool     runtimeLookup;
+
+    // Instantiated generic method
+    if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+    {
+        assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
+
+        CORINFO_METHOD_HANDLE exactMethodHandle =
+            (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
+
+        if (!exactContextNeedsRuntimeLookup)
+        {
+#ifdef FEATURE_READYTORUN
+            if (IsAot())
+            {
+                instParam = gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
+                if (instParam == nullptr)
+                {
+                    assert(compDonotInline());
+                    return nullptr;
+                }
+            }
+            else
+#endif
+            {
+                instParam = gtNewIconEmbMethHndNode(exactMethodHandle);
+                info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(exactMethodHandle);
+            }
+        }
+        else
+        {
+            instParam = impTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
+            if (instParam == nullptr)
+            {
+                assert(compDonotInline());
+                return nullptr;
+            }
+        }
+    }
+
+    // otherwise must be an instance method in a generic struct,
+    // a static method in a generic type, or a runtime-generated array method
+    else
+    {
+        assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+        CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(exactContextHnd);
+
+        if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
+        {
+            compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
+            return nullptr;
+        }
+
+        if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall)
+        {
+            // We indicate "readonly" to the Address operation by using a null
+            // instParam.
+            instParam = gtNewIconNode(0, TYP_REF);
+        }
+        else if (!exactContextNeedsRuntimeLookup)
+        {
+#ifdef FEATURE_READYTORUN
+            if (IsAot())
+            {
+                instParam = gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
+                if (instParam == nullptr)
+                {
+                    assert(compDonotInline());
+                    return nullptr;
+                }
+            }
+            else
+#endif
+            {
+                instParam = gtNewIconEmbClsHndNode(exactClassHandle);
+                info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(exactClassHandle);
+            }
+        }
+        else
+        {
+            instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
+            if (instParam == nullptr)
+            {
+                assert(compDonotInline());
+                return nullptr;
+            }
+        }
+    }
+
+    return instParam;
+}
+
+//------------------------------------------------------------------------
 // impImportCall: import a call-inspiring opcode
 //
 // Arguments:
@@ -466,6 +590,26 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert((sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_VARARG &&
                        (sig->callConv & CORINFO_CALLCONV_MASK) != CORINFO_CALLCONV_NATIVEVARARG);
 
+#ifdef TARGET_WASM
+                // Wasm has no virtual stub dispatch, so all virtual calls (including the array
+                // Address accessor) come through LDVIRTFTN, which skips the shared hidden-arg
+                // handling below via the `goto DEVIRT`. Add the type-context arg here so the
+                // call_indirect signature matches the callee; omitting it traps at runtime.
+                if (sig->hasTypeArg())
+                {
+                    GenTree* wasmInstParam =
+                        impGetInstParamArg(pResolvedToken, callInfo, exactContextHnd, exactContextNeedsRuntimeLookup,
+                                           clsFlags, isReadonlyCall);
+                    if (wasmInstParam == nullptr)
+                    {
+                        assert(compDonotInline());
+                        return TYP_UNDEF;
+                    }
+
+                    call->AsCall()->gtArgs.InsertInstParam(this, wasmInstParam);
+                }
+#endif // TARGET_WASM
+
                 goto DEVIRT;
             }
 
@@ -763,95 +907,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             assert(opcode != CEE_CALLI);
 
-            bool runtimeLookup;
-
-            // Instantiated generic method
-            if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+            instParam = impGetInstParamArg(pResolvedToken, callInfo, exactContextHnd, exactContextNeedsRuntimeLookup,
+                                           clsFlags, isReadonlyCall);
+            if (instParam == nullptr)
             {
-                assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
-
-                CORINFO_METHOD_HANDLE exactMethodHandle =
-                    (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
-
-                if (!exactContextNeedsRuntimeLookup)
-                {
-#ifdef FEATURE_READYTORUN
-                    if (IsAot())
-                    {
-                        instParam =
-                            gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
-                        if (instParam == nullptr)
-                        {
-                            assert(compDonotInline());
-                            return TYP_UNDEF;
-                        }
-                    }
-                    else
-#endif
-                    {
-                        instParam = gtNewIconEmbMethHndNode(exactMethodHandle);
-                        info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(exactMethodHandle);
-                    }
-                }
-                else
-                {
-                    instParam = impTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
-                    if (instParam == nullptr)
-                    {
-                        assert(compDonotInline());
-                        return TYP_UNDEF;
-                    }
-                }
-            }
-
-            // otherwise must be an instance method in a generic struct,
-            // a static method in a generic type, or a runtime-generated array method
-            else
-            {
-                assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-                CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(exactContextHnd);
-
-                if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
-                {
-                    compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
-                    return TYP_UNDEF;
-                }
-
-                if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall)
-                {
-                    // We indicate "readonly" to the Address operation by using a null
-                    // instParam.
-                    instParam = gtNewIconNode(0, TYP_REF);
-                }
-                else if (!exactContextNeedsRuntimeLookup)
-                {
-#ifdef FEATURE_READYTORUN
-                    if (IsAot())
-                    {
-                        instParam =
-                            gtNewIconEmbHndNode(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
-                        if (instParam == nullptr)
-                        {
-                            assert(compDonotInline());
-                            return TYP_UNDEF;
-                        }
-                    }
-                    else
-#endif
-                    {
-                        instParam = gtNewIconEmbClsHndNode(exactClassHandle);
-                        info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(exactClassHandle);
-                    }
-                }
-                else
-                {
-                    instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
-                    if (instParam == nullptr)
-                    {
-                        assert(compDonotInline());
-                        return TYP_UNDEF;
-                    }
-                }
+                assert(compDonotInline());
+                return TYP_UNDEF;
             }
         }
     }
