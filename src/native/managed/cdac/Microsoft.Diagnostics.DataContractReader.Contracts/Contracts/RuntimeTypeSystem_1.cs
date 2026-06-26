@@ -585,6 +585,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public bool IsString(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.IsString;
 
+    public bool IsCorElementTypeObjRef(CorElementType elementType)
+        => elementType is CorElementType.Class
+            or CorElementType.Object
+            or CorElementType.String
+            or CorElementType.Array
+            or CorElementType.SzArray;
+
     public TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind)
     {
         string globalName = kind switch
@@ -605,12 +612,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return value;
     }
 
-    public bool IsObjRef(TypeHandle typeHandle)
-    {
-        CorElementType elementType = GetSignatureCorElementType(typeHandle);
-        // Keep this aligned with CorTypeInfo::IsObjRef semantics for signature element types.
-        return elementType is CorElementType.Class or CorElementType.Array or CorElementType.SzArray;
-    }
     public bool ContainsGCPointers(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.ContainsGCPointers;
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
     public bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => typeHandle.IsMethodTable()
