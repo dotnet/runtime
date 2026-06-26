@@ -29,8 +29,8 @@ namespace System.Numerics
         private const int ExponentBias = 6176;
         private static UInt128 PositiveInfinityValue => new UInt128(upper: 0x7800_0000_0000_0000, lower: 0);
         private static UInt128 NegativeInfinityValue => new UInt128(upper: 0xf800_0000_0000_0000, lower: 0);
-        private static UInt128 ZeroValue => new UInt128(0, 0);
-        private static UInt128 NegativeZeroValue => new UInt128(0x8000_0000_0000_0000, 0);
+        private static UInt128 ZeroValue => new UInt128(0x3040_0000_0000_0000, 0);
+        private static UInt128 NegativeZeroValue => new UInt128(0xB040_0000_0000_0000, 0);
         private static UInt128 QuietNaNValue => new UInt128(0xFC00_0000_0000_0000, 0);
 
         private const ulong SignMaskUpper = 0x8000_0000_0000_0000;
@@ -57,23 +57,6 @@ namespace System.Numerics
         {
             _upper = upper;
             _lower = lower;
-        }
-
-        internal Decimal128(Int128 significand, int exponent)
-        {
-            bool isNegative = significand < 0;
-            UInt128 magnitude;
-            if (isNegative)
-            {
-                magnitude = significand == Int128.MinValue ? (UInt128)Int128.MaxValue + 1 : (UInt128)(-significand);
-            }
-            else
-            {
-                magnitude = (UInt128)significand;
-            }
-            UInt128 value = Number.ConstructorToDecimalIeee754Bits<Decimal128, UInt128>(isNegative, magnitude, exponent);
-            _upper = value.Upper;
-            _lower = value.Lower;
         }
 
         /// <summary>
@@ -352,13 +335,9 @@ namespace System.Numerics
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Zero => ZeroValue;
 
-        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NegativeZero => NegativeZeroValue;
-
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NaN => QuietNaNValue;
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MostSignificantBitOfSignificandMask => new UInt128(0x0002_0000_0000_0000, 0);
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberBitsEncoding => 128;
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SignMask => new UInt128(SignMaskUpper, 0);
 

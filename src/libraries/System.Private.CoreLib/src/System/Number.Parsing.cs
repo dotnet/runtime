@@ -148,7 +148,6 @@ namespace System
         static abstract TValue NegativeInfinity { get; }
         static abstract TValue NaN { get; }
         static abstract TValue Zero { get; }
-        static abstract TValue NegativeZero { get; }
         static abstract TValue MaxSignificand { get; }
         static abstract TValue NumberToSignificand(ref Number.NumberBuffer number, int digits);
         static abstract string ToDecStr(TValue significand);
@@ -157,7 +156,6 @@ namespace System
         static abstract (TValue Quotient, TValue Remainder) DivRemPow10(TValue value, int exponent);
         static abstract TSelf Construct(TValue value);
         static abstract int CountDigits(TValue significand);
-        static abstract int NumberBitsEncoding { get; }
         static abstract int NumberBitsSignificand { get; }
         static abstract TValue SignMask { get; }
         static abstract TValue G0G1Mask { get; }
@@ -1006,7 +1004,6 @@ namespace System
                     result = TDecimal.Construct(TDecimal.NaN);
                     return ParsingStatus.OK;
                 }
-
 
                 var positiveSign = info.PositiveSignTChar<TChar>();
 

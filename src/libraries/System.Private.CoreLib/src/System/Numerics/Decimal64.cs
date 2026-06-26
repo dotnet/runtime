@@ -23,8 +23,8 @@ namespace System.Numerics
         private const int ExponentBias = 398;
         private const ulong PositiveInfinityValue = 0x7800_0000_0000_0000;
         private const ulong NegativeInfinityValue = 0xF800_0000_0000_0000;
-        private const ulong ZeroValue = 0x0000_0000_0000_0000;
-        private const ulong NegativeZeroValue = 0x8000_0000_0000_0000;
+        private const ulong ZeroValue = 0x31C0_0000_0000_0000;
+        private const ulong NegativeZeroValue = 0xB1C0_0000_0000_0000;
         private const ulong QuietNaNValue = 0xFC00_0000_0000_0000;
         private const ulong G0G1Mask = 0x6000_0000_0000_0000;
         private const ulong SignMask = 0x8000_0000_0000_0000;
@@ -64,13 +64,6 @@ namespace System.Numerics
                 100000000000000,
                 1000000000000000,
             ];
-
-        internal Decimal64(long significand, int exponent)
-        {
-            bool isNegative = significand < 0;
-            ulong magnitude = isNegative ? (ulong)-significand : (ulong)significand;
-            _value = Number.ConstructorToDecimalIeee754Bits<Decimal64, ulong>(isNegative, magnitude, exponent);
-        }
 
         internal Decimal64(ulong value)
         {
@@ -302,13 +295,9 @@ namespace System.Numerics
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Zero => ZeroValue;
 
-        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NegativeZero => NegativeZeroValue;
-
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NaN => QuietNaNValue;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NumberBitsEncoding => 64;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.SignMask => SignMask;
 

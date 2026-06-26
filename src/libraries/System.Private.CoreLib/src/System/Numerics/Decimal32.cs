@@ -30,8 +30,8 @@ namespace System.Numerics
         private const int ExponentBias = 101;
         private const uint PositiveInfinityValue = 0x7800_0000;
         private const uint NegativeInfinityValue = 0xF800_0000;
-        private const uint ZeroValue = 0x0000_0000;
-        private const uint NegativeZeroValue = 0x8000_0000;
+        private const uint ZeroValue = 0x3280_0000;
+        private const uint NegativeZeroValue = 0xB280_0000;
         private const uint QuietNaNValue = 0xFC00_0000;
         private const uint G0G1Mask = 0x6000_0000;
         private const uint SignMask = 0x8000_0000;
@@ -62,13 +62,6 @@ namespace System.Numerics
                 100000,
                 1000000,
             ];
-
-        internal Decimal32(int significand, int exponent)
-        {
-            bool isNegative = significand < 0;
-            uint unsignedSignificand = isNegative ? (uint)-significand : (uint)significand;
-            _value = Number.ConstructorToDecimalIeee754Bits<Decimal32, uint>(isNegative, unsignedSignificand, exponent);
-        }
 
         /// <summary>
         /// Parses a <see cref="Decimal32"/> from a <see cref="string"/> in the default parse style.
@@ -300,13 +293,9 @@ namespace System.Numerics
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Zero => ZeroValue;
 
-        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NegativeZero => NegativeZeroValue;
-
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NaN => QuietNaNValue;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
-
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NumberBitsEncoding => 32;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.SignMask => SignMask;
 

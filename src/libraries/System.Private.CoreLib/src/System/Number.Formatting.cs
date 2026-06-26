@@ -382,7 +382,14 @@ namespace System
 
             if (fmt != 0)
             {
-                NumberToString(ref vlb, ref number, fmt, digits, info);
+                if (fmt is 'G' or 'R' or 'g' or 'r')
+                {
+                    FormatGeneralAndRoundTripDecimalIeee754(ref vlb, ref number, fmt, digits, info);
+                }
+                else
+                {
+                    NumberToString(ref vlb, ref number, fmt, digits, info);
+                }
             }
             else
             {
@@ -390,6 +397,16 @@ namespace System
             }
 
             return null;
+        }
+
+        private static void FormatGeneralAndRoundTripDecimalIeee754<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char fmt, int digits, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (number.IsNegative)
+            {
+                vlb.Append(info.NegativeSignTChar<TChar>());
+            }
+            FormatGeneral(ref vlb, ref number, digits, info, (char)(fmt - ('G' - 'E')), suppressScientific: true);
         }
 
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
@@ -458,6 +475,7 @@ namespace System
                 number.Scale = unpackDecimal.UnbiasedExponent < 0 ? unpackDecimal.UnbiasedExponent : 0;
                 number.DigitsCount = 0;
                 number.Digits[0] = (byte)'\0';
+                number.CheckConsistency();
                 return;
             }
 
