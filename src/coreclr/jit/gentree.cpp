@@ -25485,22 +25485,18 @@ GenTree* Compiler::gtNewSimdGetIndicesNode(var_types type, var_types simdBaseTyp
 #if defined(TARGET_ARM64)
     if (type == TYP_SIMD)
     {
-        GenTreeVecCon* indices = gtNewSimdVconNode(type, simdBaseType, SimdScalableSequence, 0);
-
         if (simdBaseType == TYP_FLOAT)
         {
-            indices->gtSimdScalableVal.gtSimdScalableStepF32[0] = 1.0f;
+            GenTreeVecCon* indices = gtNewSimdVconNode(type, TYP_INT, SimdScalableSequence, 0, 1);
+            return gtNewSimdHWIntrinsicNode(type, indices, NI_Sve_ConvertToSingle, TYP_INT, simdSize);
         }
         else if (simdBaseType == TYP_DOUBLE)
         {
-            indices->gtSimdScalableVal.gtSimdScalableStepF64[0] = 1.0;
-        }
-        else
-        {
-            indices->gtSimdScalableVal.gtSimdScalableStep = 1;
+            GenTreeVecCon* indices = gtNewSimdVconNode(type, TYP_LONG, SimdScalableSequence, 0, 1);
+            return gtNewSimdHWIntrinsicNode(type, indices, NI_Sve_ConvertToDouble, TYP_LONG, simdSize);
         }
 
-        return indices;
+        return gtNewSimdVconNode(type, simdBaseType, SimdScalableSequence, 0, 1);
     }
 #endif // TARGET_ARM64
 
