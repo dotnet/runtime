@@ -2052,7 +2052,7 @@ namespace System
             }
 
             // Special-case the common cases of 1 separator, the most common case, with manual comparisons against it.
-            else if (separators.Length <= 1)
+            else if (separators.Length == 1)
             {
                 char sep0 = separators[0];
                 if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
