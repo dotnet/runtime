@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -27,10 +28,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private readonly MemoryCacheOptions _options;
 
-        private readonly List<WeakReference<Stats>>? _allStats;
+        private readonly List<Stats>? _allStats;
         private long _accumulatedHits;
         private long _accumulatedMisses;
-        private readonly ThreadLocal<Stats>? _stats;
+        private long _accumulatedEvictions;
+        private readonly ThreadLocal<StatsHandler>? _stats;
         private CoherentState _coherentState;
         private bool _disposed;
         private DateTime _lastExpirationScan;
@@ -47,20 +49,34 @@ namespace Microsoft.Extensions.Caching.Memory
         /// </summary>
         /// <param name="optionsAccessor">The options of the cache.</param>
         /// <param name="loggerFactory">The factory used to create loggers.</param>
-        public MemoryCache(IOptions<MemoryCacheOptions> optionsAccessor, ILoggerFactory loggerFactory)
+        public MemoryCache(IOptions<MemoryCacheOptions> optionsAccessor, ILoggerFactory? loggerFactory)
+            : this(optionsAccessor, loggerFactory, meterFactory: null) { }
+
+        /// <summary>
+        /// Creates a new <see cref="MemoryCache"/> instance.
+        /// </summary>
+        /// <param name="optionsAccessor">The options of the cache.</param>
+        /// <param name="loggerFactory">The factory used to create loggers.</param>
+        /// <param name="meterFactory">The factory used to create meters for metrics collection.</param>
+        public MemoryCache(IOptions<MemoryCacheOptions> optionsAccessor, ILoggerFactory? loggerFactory, IMeterFactory? meterFactory)
         {
             ArgumentNullException.ThrowIfNull(optionsAccessor);
-            ArgumentNullException.ThrowIfNull(loggerFactory);
 
             _options = optionsAccessor.Value;
-            _logger = loggerFactory.CreateLogger<MemoryCache>();
+            _logger = (loggerFactory ?? NullLoggerFactory.Instance).CreateLogger<MemoryCache>();
 
             _coherentState = new CoherentState();
 
             if (_options.TrackStatistics)
             {
-                _allStats = new List<WeakReference<Stats>>();
-                _stats = new ThreadLocal<Stats>(() => new Stats(this));
+                _allStats = new List<Stats>();
+                _stats = new ThreadLocal<StatsHandler>(() => new StatsHandler(this));
+
+                Meter meter = meterFactory?.Create(new MeterOptions("Microsoft.Extensions.Caching.Memory.MemoryCache")
+                {
+                    Tags = [new("dotnet.cache.name", _options.Name)]
+                }) ?? SharedMeter.Instance;
+                InitializeMetrics(meter);
             }
 
             _lastExpirationScan = UtcNow;
@@ -161,11 +177,25 @@ namespace Microsoft.Extensions.Caching.Memory
                     // Try to update with the new entry if a previous entries exist.
                     entryAdded = coherentState.TryUpdate(entry.Key, entry, priorEntry);
 
-                    if (!entryAdded)
+                    if (entryAdded)
+                    {
+                        if (_options.HasSizeLimit)
+                        {
+                            // The prior entry was atomically replaced by this entry via TryUpdate, so
+                            // no other path can also remove (and decrement) it. Decrement its size here
+                            // exactly once, tied to the swap we performed. Doing this speculatively
+                            // inside UpdateCacheSizeExceedsCapacity (before the swap) races with a
+                            // concurrent RemoveEntry of the prior entry and double-counts the decrement,
+                            // drifting _cacheSize negative and permanently blocking all future inserts.
+                            Interlocked.Add(ref coherentState._cacheSize, -priorEntry.Size);
+                        }
+                    }
+                    else
                     {
                         // The update will fail if the previous entry was removed after retrieval.
                         // Adding the new entry will succeed only if no entry has been added since.
                         // This guarantees removing an old entry does not prevent adding a new entry.
+                        // The prior entry's size is decremented by whichever path removed it, not here.
                         entryAdded = coherentState.TryAdd(entry.Key, entry);
                     }
                 }
@@ -178,8 +208,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     if (_options.HasSizeLimit)
                     {
-                        // Entry could not be added, reset cache size
-                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size + (priorEntry?.Size).GetValueOrDefault());
+                        // Entry could not be added, roll back the size increment for this entry only.
+                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size);
                     }
                     entry.SetExpired(EvictionReason.Replaced);
                     entry.InvokeEvictionCallbacks();
@@ -296,7 +326,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 else
                 {
                     // TODO: For efficiency queue this up for batch removal
-                    coherentState.RemoveEntry(entry, _options);
+                    if (coherentState.RemoveEntry(entry, _options) && _allStats is not null)
+                    {
+                        Interlocked.Increment(ref _accumulatedEvictions);
+                    }
                 }
             }
 
@@ -367,7 +400,8 @@ namespace Microsoft.Extensions.Caching.Memory
                     TotalMisses = sumTotal.miss,
                     TotalHits = sumTotal.hit,
                     CurrentEntryCount = Count,
-                    CurrentEstimatedSize = _options.HasSizeLimit ? Size : null
+                    CurrentEstimatedSize = _options.HasSizeLimit ? Size : null,
+                    TotalEvictions = Interlocked.Read(ref _accumulatedEvictions)
                 };
             }
 
@@ -377,7 +411,11 @@ namespace Microsoft.Extensions.Caching.Memory
         internal void EntryExpired(CacheEntry entry)
         {
             // TODO: For efficiency consider processing these expirations in batches.
-            _coherentState.RemoveEntry(entry, _options);
+            if (_coherentState.RemoveEntry(entry, _options) && _allStats is not null)
+            {
+                Interlocked.Increment(ref _accumulatedEvictions);
+            }
+
             StartScanForExpiredItemsIfNeeded(UtcNow);
         }
 
@@ -406,26 +444,37 @@ namespace Microsoft.Extensions.Caching.Memory
                 long hits = _accumulatedHits;
                 long misses = _accumulatedMisses;
 
-                foreach (WeakReference<Stats> wr in _allStats)
+                foreach (Stats stats in _allStats)
                 {
-                    if (wr.TryGetTarget(out Stats? stats))
-                    {
-                        hits += Volatile.Read(ref stats.Hits);
-                        misses += Volatile.Read(ref stats.Misses);
-                    }
+                    hits += Volatile.Read(ref stats.Hits);
+                    misses += Volatile.Read(ref stats.Misses);
                 }
 
                 return (hits, misses);
             }
         }
 
-        private Stats GetStats() => _stats!.Value!;
+        private Stats GetStats() => _stats!.Value!.Stats;
+
+        internal sealed class StatsHandler
+        {
+            public StatsHandler(MemoryCache memoryCache)
+            {
+                Stats = new Stats(memoryCache);
+            }
+
+            public Stats Stats { get; private set; }
+
+            ~StatsHandler() => Stats.RemoveFromStats();
+        }
+
 
         internal sealed class Stats
         {
             private readonly MemoryCache _memoryCache;
             public long Hits;
             public long Misses;
+            public int Index;
 
             public Stats(MemoryCache memoryCache)
             {
@@ -433,7 +482,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 _memoryCache.AddToStats(this);
             }
 
-            ~Stats() => _memoryCache.RemoveFromStats(this);
+            internal void RemoveFromStats() => _memoryCache.RemoveFromStats(this);
         }
 
         private void RemoveFromStats(Stats current)
@@ -442,14 +491,17 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 _accumulatedHits += Volatile.Read(ref current.Hits);
                 _accumulatedMisses += Volatile.Read(ref current.Misses);
+                int indexToOverwrite = current.Index;
+                int lastIndex = _allStats.Count - 1;
 
-                List<WeakReference<Stats>> all = _allStats;
-                for (int i = all.Count - 1; i >= 0; i--)
+                if (indexToOverwrite < lastIndex)
                 {
-                    if (!all[i].TryGetTarget(out _))
-                        all.RemoveAt(i);
+                    _allStats[indexToOverwrite] = _allStats[lastIndex];
+                    _allStats[indexToOverwrite].Index = indexToOverwrite;
                 }
-                all.TrimExcess();
+
+                _allStats.RemoveAt(lastIndex);
+                _allStats.TrimExcess();
             }
         }
 
@@ -457,7 +509,8 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             lock (_allStats!)
             {
-                _allStats.Add(new WeakReference<Stats>(current));
+                current.Index = _allStats.Count;
+                _allStats.Add(current);
             }
         }
 
@@ -471,7 +524,10 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 if (entry.CheckExpired(utcNow))
                 {
-                    coherentState.RemoveEntry(entry, _options);
+                    if (coherentState.RemoveEntry(entry, _options) && _allStats is not null)
+                    {
+                        Interlocked.Increment(ref _accumulatedEvictions);
+                    }
                 }
             }
         }
@@ -492,23 +548,27 @@ namespace Microsoft.Extensions.Caching.Memory
                 return false;
             }
 
+            long priorSize = priorEntry?.Size ?? 0;
             long sizeRead = coherentState.Size;
             for (int i = 0; i < 100; i++)
             {
-                long newSize = sizeRead + entry.Size;
-                if (priorEntry != null)
-                {
-                    Debug.Assert(entry.Key == priorEntry.Key);
-                    newSize -= priorEntry.Size;
-                }
+                // The capacity decision still accounts for the prior entry being replaced (its size is
+                // freed by the replace), so a same-or-smaller replacement at the size limit is admitted.
+                // However, only the new entry's size is committed to _cacheSize here. The prior entry's
+                // size is decremented by the caller, atomically with the dictionary swap that actually
+                // removes it. Decrementing the prior size here (before the swap) races with a concurrent
+                // RemoveEntry of the same prior entry and double-counts the decrement, drifting
+                // _cacheSize negative and permanently blocking all future inserts.
+                long sizeAfterReplace = sizeRead + entry.Size - priorSize;
 
-                if ((ulong)newSize > (ulong)sizeLimit)
+                if ((ulong)sizeAfterReplace > (ulong)sizeLimit)
                 {
-                    // Overflow occurred, return true without updating the cache size
+                    // Exceeds the limit (or overflow); return true without updating the cache size.
                     return true;
                 }
 
-                long original = Interlocked.CompareExchange(ref coherentState._cacheSize, newSize, sizeRead);
+                long committedSize = sizeRead + entry.Size;
+                long original = Interlocked.CompareExchange(ref coherentState._cacheSize, committedSize, sizeRead);
                 if (sizeRead == original)
                 {
                     return false;
@@ -622,9 +682,18 @@ namespace Microsoft.Extensions.Caching.Memory
             ExpirePriorityBucket(ref removedSize, removalSizeTarget, computeEntrySize, entriesToRemove, normalPriEntries);
             ExpirePriorityBucket(ref removedSize, removalSizeTarget, computeEntrySize, entriesToRemove, highPriEntries);
 
+            int actuallyRemoved = 0;
             foreach (CacheEntry entry in entriesToRemove)
             {
-                coherentState.RemoveEntry(entry, _options);
+                if (coherentState.RemoveEntry(entry, _options))
+                {
+                    actuallyRemoved++;
+                }
+            }
+
+            if (actuallyRemoved > 0 && _allStats is not null)
+            {
+                Interlocked.Add(ref _accumulatedEvictions, actuallyRemoved);
             }
 
             // Policy:
@@ -781,7 +850,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal long Size => Volatile.Read(ref _cacheSize);
 
-            internal void RemoveEntry(CacheEntry entry, MemoryCacheOptions options)
+            internal bool RemoveEntry(CacheEntry entry, MemoryCacheOptions options)
             {
 #if NET
                 if (entry.Key is string s ? _stringEntries.TryRemove(KeyValuePair.Create(s, entry))
@@ -796,7 +865,10 @@ namespace Microsoft.Extensions.Caching.Memory
                         Interlocked.Add(ref _cacheSize, -entry.Size);
                     }
                     entry.InvokeEvictionCallbacks();
+                    return true;
                 }
+
+                return false;
             }
 
 #if !NET
@@ -822,6 +894,97 @@ namespace Microsoft.Extensions.Caching.Memory
                     => obj is string s ? GetHashCode(s) : 0;
             }
 #endif
+        }
+
+        private void InitializeMetrics(Meter meter)
+        {
+            // Use a weak reference for `this` to avoid keeping it alive indefinitely
+            // due to it being captured in the instrument's lambda and hence kept alive by the Meter.
+            WeakReference<MemoryCache> weakThis = new(this);
+            KeyValuePair<string, object?> cacheNameTag = new("dotnet.cache.name", _options.Name);
+
+            meter.CreateObservableCounter("dotnet.cache.requests",
+                () =>
+                {
+                    if (!weakThis.TryGetTarget(out MemoryCache? cache) || cache._disposed)
+                    {
+                        return [];
+                    }
+
+                    MemoryCacheStatistics? stats = cache.GetCurrentStatistics();
+                    return stats is null
+                        ? []
+                        : new Measurement<long>[]
+                        {
+                            new(stats.TotalHits, cacheNameTag, new("dotnet.cache.request.type", "hit")),
+                            new(stats.TotalMisses, cacheNameTag, new("dotnet.cache.request.type", "miss")),
+                        };
+                },
+                unit: "{request}",
+                description: "Total cache requests.");
+
+            meter.CreateObservableCounter<long>("dotnet.cache.evictions",
+                () =>
+                {
+                    if (!weakThis.TryGetTarget(out MemoryCache? cache) || cache._disposed)
+                    {
+                        return [];
+                    }
+
+                    MemoryCacheStatistics? stats = cache.GetCurrentStatistics();
+                    return stats is null
+                        ? []
+                        : [new Measurement<long>(stats.TotalEvictions, cacheNameTag)];
+                },
+                unit: "{eviction}",
+                description: "Total cache evictions.");
+
+            meter.CreateObservableUpDownCounter<long>("dotnet.cache.entries",
+                () =>
+                {
+                    if (!weakThis.TryGetTarget(out MemoryCache? cache) || cache._disposed)
+                    {
+                        return [];
+                    }
+
+                    MemoryCacheStatistics? stats = cache.GetCurrentStatistics();
+                    return stats is null
+                        ? []
+                        : [new Measurement<long>(stats.CurrentEntryCount, cacheNameTag)];
+                },
+                unit: "{entry}",
+                description: "Current number of cache entries.");
+
+            meter.CreateObservableGauge<long>("dotnet.cache.estimated_size",
+                () =>
+                {
+                    if (!weakThis.TryGetTarget(out MemoryCache? cache) || cache._disposed)
+                    {
+                        return [];
+                    }
+
+                    MemoryCacheStatistics? stats = cache.GetCurrentStatistics();
+                    return stats?.CurrentEstimatedSize is long size
+                        ? [new Measurement<long>(size, cacheNameTag)]
+                        : [];
+                },
+                unit: "By",
+                description: "Estimated size of the cache.");
+        }
+
+        private sealed class SharedMeter : Meter
+        {
+            public static Meter Instance { get; } = new SharedMeter();
+
+            private SharedMeter()
+                : base("Microsoft.Extensions.Caching.Memory.MemoryCache")
+            {
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                // NOP to prevent disposing the global instance.
+            }
         }
     }
 }

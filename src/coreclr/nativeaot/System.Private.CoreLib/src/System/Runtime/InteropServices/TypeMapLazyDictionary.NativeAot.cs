@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices
             RuntimeTypeHandle typeMapGroupHandle = typeMapGroup.TypeHandle;
             foreach (TypeManagerHandle module in RuntimeAugments.GetLoadedModules())
             {
-                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.ExternalTypeMap, out NativeReader externalTypeMapReader))
+                if (!TryGetNativeReaderForBlob(module, ReadyToRunSectionType.ExternalTypeMaps, out NativeReader externalTypeMapReader))
                 {
                     continue;
                 }
@@ -66,7 +66,7 @@ namespace System.Runtime.InteropServices
             RuntimeTypeHandle typeMapGroupHandle = typeMapGroup.TypeHandle;
             foreach (TypeManagerHandle module in RuntimeAugments.GetLoadedModules())
             {
-                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.ProxyTypeMap, out NativeReader externalTypeMapReader))
+                if (!TryGetNativeReaderForBlob(module, ReadyToRunSectionType.ProxyTypeMaps, out NativeReader externalTypeMapReader))
                 {
                     continue;
                 }
@@ -104,14 +104,13 @@ namespace System.Runtime.InteropServices
             throw ReflectionCoreExecution.ExecutionEnvironment.CreateMissingMetadataException(typeMapGroup);
         }
 
-        private static unsafe bool TryGetNativeReaderForBlob(TypeManagerHandle module, ReflectionMapBlob blob, out NativeReader reader)
+        private static unsafe bool TryGetNativeReaderForBlob(TypeManagerHandle module, ReadyToRunSectionType sectionType, out NativeReader reader)
         {
-            byte* pBlob;
-            uint cbBlob;
+            byte* pBlob = (byte*)RuntimeImports.RhGetModuleSection(module, sectionType, out int length);
 
-            if (RuntimeImports.RhFindBlob(module, (uint)blob, &pBlob, &cbBlob))
+            if (pBlob != null)
             {
-                reader = new NativeReader(pBlob, cbBlob);
+                reader = new NativeReader(pBlob, (uint)length);
                 return true;
             }
 

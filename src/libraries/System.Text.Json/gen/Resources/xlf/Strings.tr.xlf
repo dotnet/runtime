@@ -62,26 +62,6 @@
         <target state="translated">JsonIncludeAttribute notu eklenmiş erişilemeyen özellikler kaynak oluşturma modunda desteklenmiyor.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedFormat">
-        <source>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</source>
-        <target state="translated">‘{0}’ türü, seri durumdan çıkarılması şu anda kaynak oluşturma modunda desteklenmeyen yalnızca başlangıç özelliklerini tanımlar.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
-        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
-        <target state="translated">Yalnızca başlangıç özelliklerini seri durumdan çıkarma şu anda kaynak oluşturma modunda desteklenmiyor.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConstructorInaccessibleMessageFormat">
-        <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
-        <target state="translated">'{0}' türündeki oluşturucuya JsonConstructorAttribute ile açıklama eklenmiş ancak kaynak oluşturucu tarafından erişilebilir değil.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="JsonConstructorInaccessibleTitle">
-        <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
-        <target state="translated">JsonConstructorAttribute ile açıklama eklenmiş oluşturucuya erişilemiyor.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
         <target state="translated">'{1}' üyesi üzerinde belirtilen 'JsonConverterAttribute' '{0}' türü dönüştürücü türü değil veya erişilebilir parametresiz bir oluşturucu içermiyor.</target>
@@ -90,6 +70,16 @@
       <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
         <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
         <target state="translated">'JsonConverterAttribute.Type' geçersiz veya erişilemeyen bir bağımsız değişken içeriyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeFormat">
+        <source>The type '{0}' has been annotated with 'JsonIgnoreAttribute' using 'JsonIgnoreCondition.Always' which is not valid on type declarations. The attribute will be ignored.</source>
+        <target state="translated">‘{0}’ türü, tür bildirimlerinde geçerli olmayan ‘JsonIgnoreCondition.Always’ kullanılarak ‘JsonIgnoreAttribute’ ile işaretlenmiştir. Bu özellik göz ardı edilecektir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonIgnoreConditionAlwaysInvalidOnTypeTitle">
+        <source>'JsonIgnoreCondition.Always' is not valid on type-level 'JsonIgnoreAttribute' annotations.</source>
+        <target state="translated">‘JsonIgnoreCondition.Always’, tür düzeyindeki ‘JsonIgnoreAttribute’ ek açıklamalarında geçerli değildir.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonSerializableAttributeOnNonContextTypeMessageFormat">
@@ -142,6 +132,41 @@
         <target state="translated">Tür, JsonExtensionDataAttribute ile açıklanan birden çok üyeye sahip.</target>
         <note />
       </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat">
+        <source>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</source>
+        <target state="translated">Açık genel türetilmiş tür '{0}' çok biçimli temel tür '{1}' için çözümlenemedi: {2}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_AmbiguousMatch">
+        <source>the derived type matches the base type through multiple ancestors</source>
+        <target state="translated">türetilen tür, birden fazla atası aracılığıyla temel türle eşleşir</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_ConstraintViolation">
+        <source>the constraint on type parameter '{0}' is not satisfied by '{1}'</source>
+        <target state="translated">'{0}' tür parametresi için kısıtlama '{1}' tarafından karşılanmıyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_NotAssignable">
+        <source>the derived type is not assignable to the base type</source>
+        <target state="translated">Türetilmiş tür, temel türe atanamıyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnboundParameter">
+        <source>the type parameter '{0}' of the derived type is not bound by the base type's arguments</source>
+        <target state="translated">Türetilmiş türün '{0}' tür parametresi, temel türün bağımsız değişkenleri tarafından bağlanmıyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Polymorphism_OpenGeneric_Reason_UnificationFailed">
+        <source>the base type's arguments do not match the derived type's base specification</source>
+        <target state="translated">Temel türün bağımsız değişkenleri, türetilmiş türün temel belirtimiyle eşleşmiyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OpenGenericDerivedTypeCouldNotBeResolvedTitle">
+        <source>Open generic derived type could not be resolved for the polymorphic base type.</source>
+        <target state="translated">Açık genel türetilmiş tür, çok biçimli temel tür için çözümlenemiyor.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">
         <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
         <target state="translated">'{0}' türü; özellik, alan veya oluşturucu parametresi '{1}' gibi başvuru içeriyor. Özellik, alan veya oluşturucu için kaynak kodu üretilmeyecek.</target>
@@ -160,6 +185,26 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate serialization metadata for type.</source>
         <target state="translated">Tür için serileştirme meta verileri oluşturulmadı.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableMessageFormat">
+        <source>Union type '{0}': {1}. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate.</source>
+        <target state="translated">Birleşim türü '{0}': {1}. Belirsizliği giderebilen özel bir sınıflandırıcı sağlamak için JsonUnionAttribute.TypeClassifier öğesini ayarlayın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionCaseTypesNotClassifiableTitle">
+        <source>Union case types cannot be unambiguously classified by JSON value type.</source>
+        <target state="translated">Birleşim durum türleri JSON değer türüne göre belirsiz biçimde sınıflandırılamaz.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedMessageFormat">
+        <source>Union type '{0}' does not match the C# union shape convention: it must declare at least one public single-parameter case constructor and a public instance property named 'Value' with type 'object'.</source>
+        <target state="translated">'{0}' birleşim türü C# birleşim şekli kuralıyla eşleşmiyor: En az bir ortak tek parametreli durum oluşturucusu ve türü 'object' olan 'Value' adlı bir ortak örnek özelliği bildirmelidir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnionTypeShapeNotSupportedTitle">
+        <source>Union type shape is not a valid C# union.</source>
+        <target state="translated">Birleşim türü şekli geçerli bir C# birleşimi değil.</target>
         <note />
       </trans-unit>
     </body>

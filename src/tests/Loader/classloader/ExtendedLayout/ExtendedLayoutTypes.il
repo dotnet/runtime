@@ -6,6 +6,7 @@
 .assembly ExtendedLayoutTypes { }
 
 // Invalid type examples
+
 .class flags(0x18) public value beforefieldinit NoExtendedAttributeOnType
 {
     .field public int32 a
@@ -33,99 +34,6 @@
     .field public int32 a
 }
 
-// CStruct types below (can be moved to C# once we have ExtendedLayout support in the C# compiler)
-
-.class flags(0x18) public value beforefieldinit CStructBlittablePrimitiveFields
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000000) // CStruct
-    }
-
-    .field public int32 a
-    .field public float32 b
-    .field public uint8 c
-}
-
-.class flags(0x18) public value beforefieldinit CStructNonBlittablePrimitiveFields
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000000) // CStruct
-    }
-
-    .field public bool b
-    .field public char c
-}
-
-.class flags(0x18) public value beforefieldinit CStructWithReferenceFields
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000000) // CStruct
-    }
-
-    .field public class [System.Runtime]System.String a
-}
-
-.class flags(0x18) public value beforefieldinit CStructWithMixedFields
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000000) // CStruct
-    }
-
-    .field public int32 a
-    .field public class [System.Runtime]System.String b
-}
-
-.class flags(0x18) public value beforefieldinit NestedCStructType
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000000) // CStruct
-    }
-    .field public int32 x
-}
-
-.class flags(0x18) public value beforefieldinit CStructCustomCStructField
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000000) // CStruct
-    }
-
-    .field public valuetype NestedCStructType y
-}
-
-.class public sequential value beforefieldinit NestedSequentialType
-{
-    .field public int32 x
-}
-
-.class flags(0x18) public value beforefieldinit CStructCustomSeqStructField
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000000) // CStruct
-    }
-
-    .field public valuetype NestedSequentialType y
-}
-
-.class public auto value beforefieldinit NestedAutoLayoutType
-{
-    .field public int32 x
-}
-
-.class flags(0x18) public value beforefieldinit CStructCustomAutoStructField
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000000) // CStruct
-    }
-
-    .field public valuetype NestedAutoLayoutType y
-}
-
-.class flags(0x18) public value beforefieldinit EmptyCStruct
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000000) // CStruct
-    }
-}
 
 .class flags(0x18) public value beforefieldinit CStructWithOffsets
 {
@@ -157,103 +65,6 @@
     .field public int32 b
 
     .pack 1
-}
-
-// ByRefLike types with ExtendedLayout should fail to load
-.class flags(0x18) public value beforefieldinit CStructByRefLike
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000000) // CStruct
-    }
-
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = { }
-
-    .field public int32 a
-}
-
-// CUnion types below (can be moved to C# once we have ExtendedLayout support in the C# compiler)
-
-.class flags(0x18) public value beforefieldinit CUnionBlittablePrimitiveFields
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000001) // CUnion
-    }
-
-    .field public int32 a
-    .field public float32 b
-    .field public uint8 c
-}
-
-.class flags(0x18) public value beforefieldinit CUnionNonBlittablePrimitiveFields
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000001) // CUnion
-    }
-
-    .field public bool b
-    .field public char c
-}
-
-.class flags(0x18) public value beforefieldinit CUnionWithReferenceFields
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000001) // CUnion
-    }
-
-    .field public class [System.Runtime]System.String a
-}
-
-.class flags(0x18) public value beforefieldinit CUnionWithMixedFields
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000001) // CUnion
-    }
-
-    .field public int32 a
-    .field public class [System.Runtime]System.String b
-}
-
-.class flags(0x18) public value beforefieldinit NestedCUnionType
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000001) // CUnion
-    }
-    .field public int32 x
-    .field public int64 y
-}
-
-.class flags(0x18) public value beforefieldinit CUnionCustomCUnionField
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000001) // CUnion
-    }
-
-    .field public valuetype NestedCUnionType x
-}
-
-.class flags(0x18) public value beforefieldinit CUnionCustomSeqStructField
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000001) // CUnion
-    }
-
-    .field public valuetype NestedSequentialType y
-}
-
-.class flags(0x18) public value beforefieldinit CUnionCustomAutoStructField
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000001) // CUnion
-    }
-
-    .field public valuetype NestedAutoLayoutType y
-}
-
-.class flags(0x18) public value beforefieldinit EmptyCUnion
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000001) // CUnion
-    }
 }
 
 .class flags(0x18) public value beforefieldinit CUnionWithOffsets
@@ -288,36 +99,3 @@
     .pack 1
 }
 
-// CUnion types with mixed field sizes for testing union semantics
-.class flags(0x18) public value beforefieldinit CUnionMixedSizes
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000001) // CUnion
-    }
-
-    .field public uint8 byteField
-    .field public int16 shortField
-    .field public int32 intField
-    .field public int64 longField
-}
-
-.class flags(0x18) public value beforefieldinit CUnionTwoInts
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000001) // CUnion
-    }
-
-    .field public int32 first
-    .field public int32 second
-}
-
-.class flags(0x18) public value beforefieldinit CUnionByRefLike
-{
-    .custom instance void [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutAttribute::.ctor(valuetype [System.Runtime]System.Runtime.InteropServices.ExtendedLayoutKind) = {
-        int32(0x00000001) // CUnion
-    }
-
-    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = { }
-
-    .field public int32 a
-}

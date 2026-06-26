@@ -625,6 +625,9 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary, bool isConcreteInstantiation)
         {
             MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+
+            factory.TypeSystemContext.DetectGenericCycles(dictionary.Context, instantiatedMethod);
+
             if (isConcreteInstantiation || !instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any))
             {
                 // TODO-SIZE: this is address taken only in the delegate target case
@@ -635,7 +638,6 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any));
                 if (!instantiatedMethod.IsAbstract)
                 {
-                    factory.TypeSystemContext.DetectGenericCycles(dictionary.Context, instantiatedMethod);
                     return factory.ShadowNonConcreteMethod(instantiatedMethod);
                 }
                 return null;
@@ -711,10 +713,18 @@ namespace ILCompiler.DependencyAnalysis
             if (isConcreteInstantiation || !instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any))
             {
                 TypeSystemEntity contextOwner = context.Context;
-                GenericDictionaryNode dictionary =
-                    contextOwner is TypeDesc ?
-                    (GenericDictionaryNode)factory.TypeGenericDictionary((TypeDesc)contextOwner) :
-                    (GenericDictionaryNode)factory.MethodGenericDictionary((MethodDesc)contextOwner);
+                GenericDictionaryNode dictionary;
+
+                if (isConcreteInstantiation)
+                {
+                    dictionary = contextOwner is TypeDesc ?
+                        (GenericDictionaryNode)factory.TypeGenericDictionary((TypeDesc)contextOwner) :
+                        (GenericDictionaryNode)factory.MethodGenericDictionary((MethodDesc)contextOwner);
+                }
+                else
+                {
+                    dictionary = null;
+                }
 
                 return factory.InterfaceDispatchCell(instantiatedMethod, dictionary);
             }
@@ -1061,7 +1071,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // If we're producing a full vtable for the type, we don't need to report virtual method use.
             // We also don't report virtual method use for generic virtual methods - tracking those is orthogonal.
-            if (!factory.VTable(canonMethod.OwningType).HasKnownVirtualMethodUse && !canonMethod.HasInstantiation)
+            if (!canonMethod.HasInstantiation && !factory.VTable(canonMethod.OwningType).HasKnownVirtualMethodUse)
             {
                 // Report the method as virtually used so that types that could be used here at runtime
                 // have the appropriate implementations generated.

@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
+    <NoWarn>$(NoWarn);CS9368</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,6 +42,10 @@
     <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+
   <!-- Sources -->
   <ItemGroup>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\DehydratedData.cs">
@@ -58,6 +64,9 @@
   <ItemGroup>
     <!-- TODO: (async) once we know which helpers can actually be shared, move those to libraries partition -->
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.CoreCLR.cs" />
+    <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.ValueTaskSourceContinuation.cs" />
+    <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncProfiler.CoreCLR.cs" />
+    <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\RuntimeAsyncTaskContinuation.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Runtime\CompilerHelpers\DelegateHelpers.cs" />
@@ -189,6 +198,7 @@
     <Compile Include="System\RuntimeType.NativeAot.cs" />
     <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />
     <Compile Include="System\Runtime\DependentHandle.cs" />
+    <Compile Include="System\Diagnostics\DataContractAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />

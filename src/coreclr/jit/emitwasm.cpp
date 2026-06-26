@@ -11,19 +11,72 @@
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
-    #define INST(id, nm, info, fmt, opcode) info,
+    #define INST(id, nm, info, fmt, opcode         ) info,
+    #define INST2(id, nm, info, fmt, prefix, opcode) info,
     #include "instrs.h"
 };
 // clang-format on
 
+bool isValidSimdElemSize(unsigned elemSize)
+{
+    // Valid SIMD configurations are i8x16, i16x8, i32x4, i64x2, f32x4, f64x2
+    return (elemSize == 1) || (elemSize == 2) || (elemSize == 4) || (elemSize == 8);
+}
+
+// --------------------------------------------------------------------------------------------------
+// isValidVectorIndex - returns true if the specified index is valid for the given SIMD element size
+// Arguments:
+//  elemSize - element size in bytes (1, 2, 4, or 8)
+//  index    - the index to validate
+
+bool emitter::isValidVectorIndex(uint8_t elemSize, uint8_t index)
+{
+    assert(isValidSimdElemSize(elemSize));
+
+    bool isValid = false;
+    switch (elemSize)
+    {
+        case 1:
+            isValid = (index < 16);
+            break;
+        case 2:
+            isValid = (index < 8);
+            break;
+        case 4:
+            isValid = (index < 4);
+            break;
+        case 8:
+            isValid = (index < 2);
+            break;
+        default:
+            unreached();
+    }
+
+    return isValid;
+}
+
 void emitter::emitIns(instruction ins)
 {
-    instrDesc* id = emitNewInstrSmall(EA_8BYTE);
+    instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
+    insFormat  fmt = emitInsFormat(ins);
     id->idIns(ins);
-    id->idInsFmt(IF_OPCODE);
+    id->idInsFmt(fmt);
 
     dispIns(id);
     appendToCurIG(id);
+}
+
+//------------------------------------------------------------------------
+// emitIns_BlockTy: Emit a block instruction with simple type signature
+//
+// Arguments:
+//   ins      - instruction to emit
+//   valType  - type of object left on the stack at block end (for the block sig),
+//              with WasmValueType::Invalid representing no object left on the stack.
+//
+void emitter::emitIns_BlockTy(instruction ins, WasmValueType valType)
+{
+    emitIns_I(ins, EA_4BYTE, (cnsval_ssize_t)valType);
 }
 
 //------------------------------------------------------------------------
@@ -78,11 +131,24 @@ void emitter::emitIns_J(instruction ins, emitAttr attr, cnsval_ssize_t imm, Basi
 void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 {
     bool FPBased;
-    int  lclOffset = emitComp->lvaFrameAddress(varx, &FPBased);
+    int  lclOffset = m_compiler->lvaFrameAddress(varx, &FPBased);
     int  offset    = lclOffset + offs;
     noway_assert(offset >= 0); // WASM address modes are unsigned.
 
-    emitIns_I(ins, attr, offset);
+    instrDesc* id  = emitNewInstrSC(attr, offset);
+    insFormat  fmt = emitInsFormat(ins);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    if (m_debugInfoSize > 0)
+    {
+        id->idDebugOnlyInfo()->idLclNum    = (unsigned)varx;
+        id->idDebugOnlyInfo()->idLclOffset = (unsigned)offs;
+    }
+
+    dispIns(id);
+    appendToCurIG(id);
 }
 
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
@@ -116,6 +182,112 @@ bool emitter::emitInsIsStore(instruction ins)
     return false;
 }
 
+//------------------------------------------------------------------------
+// emitAddressConstant: Emit a memory address constant, like an indirection cell.
+// This will automatically make use of relocations and the module base (__r2r_start).
+void emitter::emitAddressConstant(void* address)
+{
+    // Load our module base from __r2r_start, then load our address constant, then sum them.
+    // FIXME-WASM: Make this a named constant or a reloc that crossgen2 fills in.
+    emitIns_I(INS_global_get, EA_4BYTE, 1 /* __r2r_start */);
+    emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), (cnsval_ssize_t)address);
+    emitIns(INS_i32_add);
+}
+
+void emitter::emitFuncletAddressConstant(cnsval_ssize_t funcletId)
+{
+    // Load our table base, then load our funclet pointer offset, then sum them.
+    emitIns_I(INS_global_get, EA_4BYTE, 2 /* __table_start */);
+    emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, (cnsval_ssize_t)funcletId);
+    emitIns(INS_i32_add);
+}
+
+/*****************************************************************************
+ *
+ *  Add a call instruction (direct or indirect).
+ *
+ * Unless callType is EC_FUNC_TOKEN, addr needs to be null.
+ *
+ */
+
+void emitter::emitIns_Call(const EmitCallParams& params)
+{
+    /* Sanity check the arguments depending on callType */
+
+    assert(params.callType < EC_COUNT);
+    assert((params.callType == EC_FUNC_TOKEN) || (params.addr == nullptr));
+
+    assert(params.wasmSignature != nullptr);
+
+    /*
+        We need to allocate the appropriate instruction descriptor based
+        on whether this is a direct/indirect call, and whether we need to
+        record an updated set of live GC variables.
+     */
+    instrDesc* id = nullptr;
+
+    instruction ins;
+
+    switch (params.callType)
+    {
+        case EC_FUNC_TOKEN:
+            ins = params.isJump ? INS_return_call : INS_call;
+            id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, 0 /* FIXME-WASM: function index reloc */);
+            id->idIns(ins);
+            id->idInsFmt(IF_FUNCIDX);
+            break;
+        case EC_INDIR_R:
+            ins = params.isJump ? INS_return_call_indirect : INS_call_indirect;
+            id  = emitNewInstrSC(EA_HANDLE_CNS_RELOC, (cnsval_ssize_t)(void*)params.wasmSignature);
+            id->idIns(ins);
+            id->idInsFmt(IF_CALL_INDIRECT);
+            break;
+        default:
+            unreached();
+    }
+
+    if (m_debugInfoSize > 0)
+    {
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
+        id->idDebugOnlyInfo()->idFlags     = GTF_ICON_METHOD_HDL;
+    }
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+//------------------------------------------------------------------------
+// GetWasmArgsCount: Get WASM argument count for the method or a funclet.
+//
+// Arguments:
+//    compiler - The compiler object
+//
+// Return Value:
+//    The number of arguments in the WASM signature of the method or funclet being compiled.
+//
+static unsigned GetWasmArgsCount(Compiler* compiler)
+{
+    if (compiler->funCurrentFunc()->funKind == FUNC_ROOT)
+    {
+        unsigned count = 0;
+        for (unsigned argLclNum = 0; argLclNum < compiler->info.compArgsCount; argLclNum++)
+        {
+            const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(argLclNum);
+            for (const ABIPassingSegment& segment : abiInfo.Segments())
+            {
+                count = max(count, WasmRegToIndex(segment.GetRegister()) + 1);
+            }
+        }
+        return count;
+    }
+    else
+    {
+        EHblkDsc* const ehDsc = compiler->ehGetDsc(compiler->funCurrentFunc()->funEHIndex);
+        return ehDsc->HasCatchHandler() ? 3 : 2;
+    }
+}
+
 //-----------------------------------------------------------------------------
 // emitNewInstrLclVarDecl: Construct an instrDesc corresponding to a wasm local
 // declaration.
@@ -140,7 +312,7 @@ emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr      attr,
 
     if (m_debugInfoSize > 0)
     {
-        id->idDebugOnlyInfo()->lclOffset = lclOffset;
+        id->idDebugOnlyInfo()->lclBaseIndex = GetWasmArgsCount(m_compiler) + lclOffset;
     }
 
     return id;
@@ -155,10 +327,52 @@ emitter::instrDesc* emitter::emitNewInstrLclVarDecl(emitAttr      attr,
 //   ins      - instruction to emit
 //   imm      - immediate value (local count)
 //   valType  - value type of the local variable
-//   offs     - local variable offset (= count of preceding locals) for debug info
+//   offs     - local variable offset (= count of preceding locals) for debug info,
+//              only includes locals declared explicitly (not args)
+//
 void emitter::emitIns_I_Ty(instruction ins, unsigned int imm, WasmValueType valType, int offs)
 {
     instrDesc* id  = emitNewInstrLclVarDecl(EA_8BYTE, imm, valType, offs);
+    insFormat  fmt = emitInsFormat(ins);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+//-----------------------------------------------------------------------------
+// emitNewInstrValTypeImm: Construct an instrDesc corresponding to an instruction
+//    with a simple type sig and immediate, like try_table
+//
+// Arguments:
+//   attr        - emit attributes
+//   type        - the simple sig type
+//   imm         - the immediate operand
+//
+emitter::instrDesc* emitter::emitNewInstrValTypeImm(emitAttr attr, WasmValueType type, unsigned int imm)
+{
+    instrDescValTypeImm* id = static_cast<instrDescValTypeImm*>(emitAllocAnyInstr(sizeof(instrDescValTypeImm), attr));
+    id->idValType(type);
+    id->idImm(imm);
+
+    return id;
+}
+
+//-----------------------------------------------------------------------------------
+// emitIns_Ty_I: Emit an instruction for encoding both a value type and a count (immediate).
+//    This is used for try_table.
+//
+// Arguments:
+//   ins      - instruction to emit
+//   valType  - sig for the try_table
+//   imm      - immediate value (case count)
+
+//
+void emitter::emitIns_Ty_I(instruction ins, WasmValueType valType, unsigned int imm)
+{
+    instrDesc* id  = emitNewInstrValTypeImm(EA_8BYTE, valType, imm);
     insFormat  fmt = emitInsFormat(ins);
 
     id->idIns(ins);
@@ -180,12 +394,128 @@ unsigned int emitter::emitGetLclVarDeclCount(const instrDesc* id)
     return static_cast<const instrDescLclVarDecl*>(id)->lclCnt;
 }
 
+WasmValueType emitter::emitGetValTypeImmType(const instrDesc* id)
+{
+    assert(id->idIsValTypeImm());
+    return static_cast<const instrDescValTypeImm*>(id)->valType;
+}
+
+unsigned int emitter::emitGetValTypeImmImm(const instrDesc* id)
+{
+    assert(id->idIsValTypeImm());
+    return static_cast<const instrDescValTypeImm*>(id)->imm;
+}
+
+const uint8_t* emitter::emitGetV128ImmValue(const instrDesc* id)
+{
+    assert(id->idIsV128Imm());
+    return static_cast<const instrDescV128Imm*>(id)->v128Bytes;
+}
+
+uint8_t emitter::emitGetLaneImmValue(const instrDesc* id)
+{
+    if (id->idIsMemargLaneImm())
+    {
+        return static_cast<const instrDescMemargLane*>(id)->lane;
+    }
+    else if (id->idInsFmt() == IF_LANE)
+    {
+        cnsval_size_t lane = emitGetInsSC(id);
+        assert(FitsIn<uint8_t>(lane));
+        return static_cast<uint8_t>(lane);
+    }
+    else
+    {
+        unreached();
+    }
+
+    return 0;
+}
+
+//------------------------------------------------------------------------
+// Packed SIMD instruction emit functions
+//------------------------------------------------------------------------
+
+//------------------------------------------------------------------------
+// emitIns_V128Imm: Emit a packed SIMD instruction with a 16 byte vector immediate.
+//
+// Arguments:
+//   ins   - instruction (currently used with INS_v128_const and INS_i8x16_shuffle)
+//   bytes - pointer to 16 bytes of constant data
+//
+void emitter::emitIns_V128Imm(instruction ins, const uint8_t bytes[16])
+{
+    assert(bytes != nullptr);
+    instrDescV128Imm* id  = static_cast<instrDescV128Imm*>(emitAllocAnyInstr(sizeof(instrDescV128Imm), EA_16BYTE));
+    insFormat         fmt = emitInsFormat(ins);
+    assert(fmt == IF_V128);
+
+    id->idInsFmt(fmt);
+    id->idIns(ins);
+    id->idV128Const(bytes);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+//------------------------------------------------------------------------
+// emitIns_Lane: Emit a SIMD extract/replace lane instruction.
+//
+// Arguments:
+//   ins     - instruction (e.g., INS_i8x16_extract_lane_s)
+//   attr    - emit attribute indicating the lane element size
+//   laneIdx - lane index byte
+//
+void emitter::emitIns_Lane(instruction ins, emitAttr attr, uint8_t laneIdx)
+{
+    instrDesc* id       = emitNewInstrSC(attr, laneIdx);
+    insFormat  fmt      = emitInsFormat(ins);
+    uint8_t    elemSize = CodeGenInterface::instSimdElemSize(ins);
+    assert(fmt == IF_LANE);
+    assert(isValidVectorIndex(elemSize, laneIdx));
+
+    id->idInsFmt(fmt);
+    id->idIns(ins);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+//------------------------------------------------------------------------
+// emitIns_MemargLane: Emit a SIMD load/store lane instruction with memarg + lane index.
+//
+// Arguments:
+//   ins     - instruction (e.g., INS_v128_load8_lane)
+//   attr    - emit attribute indicating the memory access size
+//   offset  - memory offset for the memarg
+//   laneIdx - lane index byte
+//
+void emitter::emitIns_MemargLane(instruction ins, emitAttr attr, cnsval_ssize_t offset, uint8_t laneIdx)
+{
+    instrDescMemargLane* id  = static_cast<instrDescMemargLane*>(emitAllocAnyInstr(sizeof(instrDescMemargLane), attr));
+    insFormat            fmt = emitInsFormat(ins);
+    uint8_t              elemSize = CodeGenInterface::instSimdElemSize(ins);
+    assert(fmt == IF_MEMARG_LANE);
+    assert(offset >= 0);
+    assert(isValidVectorIndex(elemSize, laneIdx));
+
+    id->idInsFmt(fmt);
+    id->idIns(ins);
+    id->idcCnsVal = offset;
+    id->idSetIsLargeCns();
+    id->idLaneIdx(laneIdx);
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
 emitter::insFormat emitter::emitInsFormat(instruction ins)
 {
     static_assert(IF_COUNT < 255);
 
     const static uint8_t insFormats[] = {
-#define INST(id, nm, info, fmt, opcode) fmt,
+#define INST(id, nm, info, fmt, opcode)          fmt,
+#define INST2(id, nm, info, fmt, prefix, opcode) fmt,
 #include "instrs.h"
     };
 
@@ -196,8 +526,9 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 
 static unsigned GetInsOpcode(instruction ins)
 {
-    static const uint8_t insOpcodes[] = {
-#define INST(id, nm, info, fmt, opcode) static_cast<uint8_t>(opcode),
+    static const uint16_t insOpcodes[] = {
+#define INST(id, nm, info, fmt, opcode)          static_cast<uint16_t>(opcode),
+#define INST2(id, nm, info, fmt, prefix, opcode) static_cast<uint16_t>(opcode),
 #include "instrs.h"
     };
 
@@ -205,11 +536,38 @@ static unsigned GetInsOpcode(instruction ins)
     return insOpcodes[ins];
 }
 
+static uint8_t GetOpcodePrefix(instruction ins)
+{
+    static const uint8_t prefix[] = {
+#define INST(id, nm, info, fmt, opcode)          0,
+#define INST2(id, nm, info, fmt, prefix, opcode) static_cast<uint8_t>(prefix),
+#include "instrs.h"
+    };
+
+    assert(ins < ArrLen(prefix));
+    return prefix[ins];
+}
+
+static bool HasOpcodePrefix(instruction ins)
+{
+    return GetOpcodePrefix(ins) != 0;
+}
+
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
     if (emitIsSmallInsDsc(id))
     {
         return SMALL_IDSC_SIZE;
+    }
+
+    if (id->idIsMemargLaneImm())
+    {
+        return sizeof(instrDescMemargLane);
+    }
+
+    if (id->idIsV128Imm())
+    {
+        return sizeof(instrDescV128Imm);
     }
 
     if (id->idIsLargeCns())
@@ -222,6 +580,11 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
     if (id->idIsLclVarDecl())
     {
         return sizeof(instrDescLclVarDecl);
+    }
+
+    if (id->idIsValTypeImm())
+    {
+        return sizeof(instrDescValTypeImm);
     }
 
     return sizeof(instrDesc);
@@ -250,15 +613,17 @@ unsigned emitter::SizeOfSLEB128(int64_t value)
     return (x * 37) >> 8;
 }
 
-static uint8_t GetWasmValueTypeCode(WasmValueType type)
+uint8_t emitter::GetWasmValueTypeCode(WasmValueType type)
 {
     // clang-format off
     static const uint8_t typecode_mapping[] = {
         0x00, // WasmValueType::Invalid = 0,
-        0x7C, // WasmValueType::F64 = 1,
-        0x7D, // WasmValueType::F32 = 2,
-        0x7E, // WasmValueType::I64 = 3,
-        0x7F, // WasmValueType::I32 = 4,
+        0x7F, // WasmValueType::I32 = 1,
+        0x7E, // WasmValueType::I64 = 2,
+        0x7D, // WasmValueType::F32 = 3,
+        0x7C, // WasmValueType::F64 = 4,
+        0x7B, // WasmValueType::V128 = 5,
+        0x69, // WasmValueType::ExnRef = 6;
     };
     static const int WASM_TYP_COUNT = ArrLen(typecode_mapping);
     static_assert(ArrLen(typecode_mapping) == (int)WasmValueType::Count);
@@ -267,17 +632,18 @@ static uint8_t GetWasmValueTypeCode(WasmValueType type)
     return typecode_mapping[static_cast<unsigned>(type)];
 }
 
-unsigned emitter::instrDesc::idCodeSize() const
-{
 #ifdef TARGET_WASM32
-    static const unsigned PADDED_RELOC_SIZE = 5;
+// NOTE: Keep in sync with Relocation.cs
+static const unsigned PADDED_RELOC_SIZE = 5;
 #else
 #error WASM64
 #endif
 
-    // Currently, all our instructions have 1 byte opcode.
-    unsigned size = 1;
-    assert(FitsIn<uint8_t>(GetInsOpcode(idIns())));
+unsigned emitter::instrDesc::idCodeSize() const
+{
+    unsigned int opcode = GetInsOpcode(idIns());
+
+    unsigned size = HasOpcodePrefix(idIns()) ? 1 + SizeOfULEB128(opcode) : 1;
     switch (idInsFmt())
     {
         case IF_OPCODE:
@@ -289,6 +655,10 @@ unsigned emitter::instrDesc::idCodeSize() const
             assert(!idIsCnsReloc());
             size = SizeOfULEB128(emitGetInsSC(this));
             break;
+        case IF_CODE_SIZE:
+            assert(!idIsCnsReloc());
+            size = PADDED_RELOC_SIZE;
+            break;
         case IF_LOCAL_DECL:
         {
             assert(idIsLclVarDecl());
@@ -296,12 +666,25 @@ unsigned emitter::instrDesc::idCodeSize() const
             size             = SizeOfULEB128(emitGetLclVarDeclCount(this)) + sizeof(typeCode);
             break;
         }
+        case IF_FUNCIDX:
         case IF_ULEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
             break;
+        case IF_MEMADDR:
+        case IF_FUNCPTR:
         case IF_SLEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfSLEB128(emitGetInsSC(this));
             break;
+        case IF_FUNCLETPTR:
+        case IF_FUNCLETIDX:
+            size += PADDED_RELOC_SIZE; // funclet indices and pointers are always emitted as relocations
+            break;
+        case IF_CALL_INDIRECT:
+        {
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
+            size += SizeOfULEB128(0);
+            break;
+        }
         case IF_F32:
             size += 4;
             break;
@@ -314,6 +697,42 @@ unsigned emitter::instrDesc::idCodeSize() const
             assert(align < 64); // spec says align > 2^6 produces a memidx for multiple memories.
             size += SizeOfULEB128(align);
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
+            break;
+        }
+        case IF_MEMIDX_MEMIDX:
+        {
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
+            break;
+        }
+        case IF_TRY_TABLE:
+        {
+            size += 1;                                         // for the sig
+            size += SizeOfULEB128(emitGetValTypeImmImm(this)); // for the case count
+            break;
+        }
+        case IF_CATCH_DECL:
+        {
+            // no opcode, this is part of a try_table
+
+            size = 1;                                  // catch kind
+            size += PADDED_RELOC_SIZE;                 // catch type tag (RtlRestoreContext tag index)
+            size += SizeOfULEB128(emitGetInsSC(this)); // control flow stack offset
+            break;
+        }
+        case IF_V128:
+            size += 16; // 16 raw bytes for the v128 constant
+            break;
+        case IF_LANE:
+            size += 1; // 1 byte lane index
+            break;
+        case IF_MEMARG_LANE:
+        {
+            uint64_t align = emitGetAlignHintLog2(this);
+            assert(align < 64); // spec says align > 2^6 produces a memidx for multiple memories.
+            size += SizeOfULEB128(align);
+            size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(emitGetInsSC(this));
+            size += 1; // 1 byte lane index
             break;
         }
         default:
@@ -348,6 +767,22 @@ size_t emitter::emitOutputULEB128(uint8_t* destination, uint64_t value)
     }
 }
 
+size_t emitter::emitOutputULEB128Padded(uint8_t* destination, uint64_t value)
+{
+    uint8_t* buffer = destination + writeableOffset;
+    unsigned i      = 0;
+
+    for (; i < PADDED_RELOC_SIZE - 1; i++)
+    {
+        buffer[i] = (uint8_t)((value & 0x7F) | 0x80);
+        value >>= 7;
+    }
+
+    buffer[i] = (uint8_t)value;
+
+    return PADDED_RELOC_SIZE;
+}
+
 size_t emitter::emitOutputSLEB128(uint8_t* destination, int64_t value)
 {
     uint8_t* buffer = destination + writeableOffset;
@@ -377,40 +812,159 @@ size_t emitter::emitRawBytes(uint8_t* destination, const void* source, size_t co
     return count;
 }
 
+size_t emitter::emitOutputOpcode(BYTE* dst, instruction ins)
+{
+    size_t   sz     = 0;
+    unsigned opcode = GetInsOpcode(ins);
+    uint8_t  prefix = GetOpcodePrefix(ins);
+
+    if (prefix == 0)
+    {
+        noway_assert(FitsIn<uint8_t>(opcode));
+        emitOutputByte(dst, opcode);
+        sz += 1;
+    }
+    else
+    {
+        // Output prefix byte
+        emitOutputByte(dst, prefix);
+        sz += 1;
+        // Output the rest of the opcode as a ULEB128
+        sz += emitOutputULEB128(dst + sz, opcode);
+    }
+    return sz;
+}
+
+size_t emitter::emitOutputPaddedReloc(uint8_t* destination)
+{
+    static_assert(PADDED_RELOC_SIZE > 1);
+    // Write zeroes with the bit set that indicates another byte is coming
+    for (unsigned i = 0; i < PADDED_RELOC_SIZE - 1; i++)
+    {
+        destination += emitOutputByte(destination, 0x80);
+    }
+
+    emitOutputByte(destination, 0x0);
+    return PADDED_RELOC_SIZE;
+}
+
+size_t emitter::emitOutputConstantFunclet(uint8_t* destination, const instrDesc* id, CorInfoReloc relocType)
+{
+    emitRecordRelocationWithAddlDelta(destination, emitCodeBlock, relocType, (int32_t)emitGetInsSC(id));
+    // emitRecordRelocationWithAddlDelta writes the relocation addend and padding,
+    // so we don't need to write anything else here.
+    return PADDED_RELOC_SIZE;
+}
+
+size_t emitter::emitOutputConstant(uint8_t* destination, const instrDesc* id, bool isSigned, CorInfoReloc relocType)
+{
+    if (id->idIsCnsReloc())
+    {
+        emitRecordRelocation(destination, (void*)emitGetInsSC(id), relocType);
+        return emitOutputPaddedReloc(destination);
+    }
+
+    if (isSigned)
+    {
+        return emitOutputSLEB128(destination, (int64_t)emitGetInsSC(id));
+    }
+    else
+    {
+        return emitOutputULEB128(destination, (uint64_t)emitGetInsSC(id));
+    }
+}
+
+size_t emitter::emitOutputValtypeSig(uint8_t* destination, WasmValueType valtype)
+{
+    if (valtype == WasmValueType::Invalid)
+    {
+        return emitOutputByte(destination, 0x40 /* block type of void */);
+    }
+    else
+    {
+        return emitOutputByte(destination, GetWasmValueTypeCode(valtype));
+    }
+}
+
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
+    const bool SIGNED   = true;
+    const bool UNSIGNED = false;
+
     BYTE*       dst    = *dp;
     size_t      sz     = emitSizeOfInsDsc(id);
     instruction ins    = id->idIns();
     insFormat   insFmt = id->idInsFmt();
-    unsigned    opcode = GetInsOpcode(ins);
 
     switch (insFmt)
     {
         case IF_OPCODE:
-            dst += emitOutputByte(dst, opcode);
+        {
+            dst += emitOutputOpcode(dst, ins);
             break;
+        }
         case IF_BLOCK:
-            dst += emitOutputByte(dst, opcode);
-            dst += emitOutputByte(dst, 0x40 /* block type of void */);
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputValtypeSig(dst, (WasmValueType)emitGetInsSC(id));
             break;
+        }
         case IF_ULEB128:
         {
-            dst += emitOutputByte(dst, opcode);
-            cnsval_ssize_t constant = emitGetInsSC(id);
-            dst += emitOutputULEB128(dst, (uint64_t)constant);
+            assert(!id->idIsCnsReloc());
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputULEB128(dst, (uint64_t)emitGetInsSC(id));
             break;
         }
         case IF_SLEB128:
         {
-            dst += emitOutputByte(dst, opcode);
-            cnsval_ssize_t constant = emitGetInsSC(id);
-            dst += emitOutputSLEB128(dst, (int64_t)constant);
+            assert(!id->idIsCnsReloc());
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputSLEB128(dst, (int64_t)emitGetInsSC(id));
+            break;
+        }
+        case IF_MEMADDR:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            // TODO-WASM: The below reloc we're emitting here is specific to R2R and assumes the address we want
+            // is an offset from __image_base
+            dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_MEMORY_ADDR_REL_SLEB);
+            break;
+        }
+        case IF_FUNCLETIDX:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstantFunclet(dst, id, CorInfoReloc::WASM_FUNCTION_INDEX_LEB);
+            break;
+        }
+        case IF_FUNCLETPTR:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstantFunclet(dst, id, CorInfoReloc::WASM_TABLE_INDEX_SLEB);
+            break;
+        }
+        case IF_FUNCPTR:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc::WASM_TABLE_INDEX_SLEB);
+            break;
+        }
+        case IF_FUNCIDX:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_FUNCTION_INDEX_LEB);
+            break;
+        }
+        case IF_CALL_INDIRECT:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc::WASM_TYPE_INDEX_LEB);
+            dst += emitOutputULEB128(dst, 0);
             break;
         }
         case IF_F32:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             // Reinterpret the bits as a double constant and then truncate it to f32,
             //  then finally copy the raw truncated f32 bits to the output.
             cnsval_ssize_t bits = emitGetInsSC(id);
@@ -423,7 +977,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_F64:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             // The int64 bits are actually a double constant we can copy directly
             //  to the output stream.
             cnsval_ssize_t bits = emitGetInsSC(id);
@@ -438,7 +992,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
         case IF_MEMARG:
         {
-            dst += emitOutputByte(dst, opcode);
+            dst += emitOutputOpcode(dst, ins);
             uint64_t align  = emitGetAlignHintLog2(id);
             uint64_t offset = emitGetInsSC(id);
             assert(align <= UINT32_MAX); // spec says memarg alignment is u32
@@ -456,19 +1010,98 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputByte(dst, valType);
             break;
         }
+        case IF_MEMIDX_MEMIDX:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            cnsval_ssize_t constant = emitGetInsSC(id);
+            dst += emitOutputULEB128(dst, (uint64_t)constant);
+            dst += emitOutputULEB128(dst, (uint64_t)constant);
+            break;
+        }
+        case IF_TRY_TABLE:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            assert(id->idIsValTypeImm());
+
+            // Add void as a WasmValueType?
+            //
+            WasmValueType valType = emitGetValTypeImmType(id);
+            uint8_t       sig     = GetWasmValueTypeCode(valType);
+            if (valType == WasmValueType::Invalid)
+            {
+                sig = 0x40;
+            }
+            cnsval_ssize_t caseCnt = emitGetValTypeImmImm(id);
+
+            dst += emitOutputByte(dst, sig);
+            dst += emitOutputULEB128(dst, (uint64_t)caseCnt);
+            break;
+        }
+        case IF_CATCH_DECL:
+        {
+            // Kind 1: catch_ref with type tag. The tag is the well-known
+            // CoreCLR RtlRestoreContext exception tag exported by the runtime;
+            // crossgen2's WasmObjectWriter resolves this reloc to the tag index
+            // of the module's imported `rtlRestoreContextTag`.
+            uint8_t catchKind = 1;
+            dst += emitOutputByte(dst, catchKind);
+
+            emitRecordRelocation(dst, emitCodeBlock, CorInfoReloc::WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB);
+            dst += emitOutputPaddedReloc(dst);
+
+            dst += emitOutputULEB128(dst, (int64_t)emitGetInsSC(id));
+            break;
+        }
+        case IF_CODE_SIZE:
+        {
+            // We always emit this as 5 bytes
+            FuncInfoDsc* const func        = m_compiler->funGetFunc(emitCurIG->igFuncIdx);
+            UNATIVE_OFFSET     startOffset = func->startLoc->CodeOffset(this);
+            UNATIVE_OFFSET     endOffset   = func->endLoc->CodeOffset(this);
+            assert(endOffset >= (startOffset + PADDED_RELOC_SIZE));
+            unsigned const size = endOffset - startOffset - PADDED_RELOC_SIZE;
+            dst += emitOutputULEB128Padded(dst, (int64_t)size);
+            break;
+        }
+        case IF_V128:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            const uint8_t* v128Value = emitGetV128ImmValue(id);
+            dst += emitRawBytes(dst, v128Value, 16);
+            break;
+        }
+        case IF_LANE:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            uint8_t laneIdx = emitGetLaneImmValue(id);
+            dst += emitOutputByte(dst, laneIdx);
+            break;
+        }
+        case IF_MEMARG_LANE:
+        {
+            dst += emitOutputOpcode(dst, ins);
+            uint8_t  laneIdx = emitGetLaneImmValue(id);
+            uint64_t align   = emitGetAlignHintLog2(id);
+            uint64_t offset  = emitGetInsSC(id);
+            assert(align < 64);
+            dst += emitOutputULEB128(dst, align);
+            dst += emitOutputULEB128(dst, offset);
+            dst += emitOutputByte(dst, laneIdx);
+            break;
+        }
         default:
             NYI_WASM("emitOutputInstr");
             break;
     }
 
 #ifdef DEBUG
-    bool dspOffs = emitComp->opts.dspGCtbls;
-    if (emitComp->opts.disAsm || emitComp->verbose)
+    bool dspOffs = m_compiler->opts.dspGCtbls;
+    if (m_compiler->opts.disAsm || m_compiler->verbose)
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
     }
 #else
-    if (emitComp->opts.disAsm)
+    if (m_compiler->opts.disAsm)
     {
         emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
     }
@@ -556,10 +1189,32 @@ void emitter::emitDispIns(
             BasicBlock* const targetBlock = id->idDebugOnlyInfo()->idTargetBlock;
             if (targetBlock != nullptr)
             {
-                printf(" ;; ");
+                printf("      ;; ");
                 insGroup* const targetGroup = (insGroup*)emitCodeGetCookie(targetBlock);
                 assert(targetGroup != nullptr);
                 emitPrintLabel(targetGroup);
+            }
+        }
+    };
+
+    auto dispHandleIfAny = [this, id]() {
+        if (m_debugInfoSize > 0)
+        {
+            emitDispCommentForHandle(id->idDebugOnlyInfo()->idMemCookie, 0, id->idDebugOnlyInfo()->idFlags);
+        }
+    };
+
+    auto dispLclVarInfoIfAny = [this, id]() {
+        if (m_debugInfoSize > 0)
+        {
+            unsigned const lclNum = id->idDebugOnlyInfo()->idLclNum;
+            if (lclNum != BAD_VAR_NUM)
+            {
+                printf("      ;; V%02u", lclNum);
+                if (id->idDebugOnlyInfo()->idLclOffset != 0)
+                {
+                    printf("+%u", id->idDebugOnlyInfo()->idLclOffset);
+                }
             }
         }
     };
@@ -569,18 +1224,43 @@ void emitter::emitDispIns(
     switch (fmt)
     {
         case IF_OPCODE:
-        case IF_BLOCK:
             break;
+
+        case IF_BLOCK:
+        {
+            WasmValueType valType = (WasmValueType)emitGetInsSC(id);
+            if (valType != WasmValueType::Invalid)
+            {
+                printf(" %s", WasmValueTypeName(valType));
+            }
+            break;
+        }
 
         case IF_RAW_ULEB128:
         case IF_ULEB128:
+        case IF_FUNCIDX:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %llu", (uint64_t)imm);
             dispJumpTargetIfAny();
+            dispHandleIfAny();
+            dispLclVarInfoIfAny();
         }
         break;
 
+        case IF_CALL_INDIRECT:
+        {
+            cnsval_ssize_t imm = emitGetInsSC(id);
+            printf(" %llu 0", (uint64_t)imm);
+            dispHandleIfAny();
+        }
+        break;
+        case IF_MEMIDX_MEMIDX:
+        {
+            cnsval_ssize_t imm = emitGetInsSC(id);
+            printf(" %llu %llu", (uint64_t)imm, (uint64_t)imm);
+        }
+        break;
         case IF_LOCAL_DECL:
         {
             unsigned int  count   = emitGetLclVarDeclCount(id);
@@ -590,7 +1270,7 @@ void emitter::emitDispIns(
             if (m_debugInfoSize > 0)
             {
                 // With debug info: print the local offsets being declared
-                int offs = id->idDebugOnlyInfo()->lclOffset;
+                int offs = id->idDebugOnlyInfo()->lclBaseIndex;
                 if (count > 1)
                 {
                     printf("[%u..%u] type=%s", offs, offs + count - 1, WasmValueTypeName(valType));
@@ -608,10 +1288,22 @@ void emitter::emitDispIns(
         }
         break;
 
+        case IF_MEMADDR:
+        case IF_FUNCPTR:
         case IF_SLEB128:
         {
             cnsval_ssize_t imm = emitGetInsSC(id);
             printf(" %lli", (int64_t)imm);
+            dispLclVarInfoIfAny();
+        }
+        break;
+
+        case IF_FUNCLETPTR:
+        case IF_FUNCLETIDX:
+        {
+            cnsval_ssize_t imm = emitGetInsSC(id);
+            printf("funclet %lli", (int64_t)imm);
+            dispLclVarInfoIfAny();
         }
         break;
 
@@ -630,6 +1322,84 @@ void emitter::emitDispIns(
             unsigned       log2align = emitGetAlignHintLog2(id);
             cnsval_ssize_t offset    = emitGetInsSC(id);
             printf(" %u %llu", log2align, (uint64_t)offset);
+            dispLclVarInfoIfAny();
+        }
+        break;
+
+        case IF_TRY_TABLE:
+        {
+            WasmValueType valType = emitGetValTypeImmType(id);
+
+            if (valType != WasmValueType::Invalid)
+            {
+                printf(" %s", WasmValueTypeName(valType));
+            }
+        }
+        break;
+
+        case IF_CATCH_DECL:
+        {
+            // catch_ref RtlRestoreContextTag, depth
+            printf(" RtlRestoreContextTag");
+            dispJumpTargetIfAny();
+        }
+        break;
+
+        case IF_CODE_SIZE:
+        {
+            // We should either have a non-null ig parameter, or emitCurIG should be set
+            insGroup* curIG = ig;
+            if (curIG == nullptr)
+            {
+                curIG = emitCurIG;
+            }
+            assert(curIG != nullptr);
+
+            FuncInfoDsc* const func = m_compiler->funGetFunc(curIG->igFuncIdx);
+            assert(func != nullptr);
+
+            emitLocation* const startLoc = func->startLoc;
+            emitLocation* const endLoc   = func->endLoc;
+
+            if (startLoc != nullptr)
+            {
+                assert(endLoc != nullptr);
+                UNATIVE_OFFSET codeSize = endLoc->CodeOffset(this) - startLoc->CodeOffset(this) - PADDED_RELOC_SIZE;
+                printf(" %u", codeSize);
+            }
+            else
+            {
+                printf(" <not yet determined>");
+            }
+        }
+        break;
+
+        case IF_V128:
+        {
+            const uint8_t* imm = emitGetV128ImmValue(id);
+            for (int i = 0; i < 16; i++)
+            {
+                printf(" 0x%02x", imm[i]);
+            }
+        }
+        break;
+
+        case IF_LANE:
+        {
+            uint8_t lane = emitGetLaneImmValue(id);
+            printf(" [%u]", (uint8_t)lane);
+        }
+        break;
+
+        case IF_MEMARG_LANE:
+        {
+            unsigned       log2align = emitGetAlignHintLog2(id);
+            cnsval_ssize_t offset    = emitGetInsSC(id);
+            printf(" %u %llu", log2align, (uint64_t)offset);
+            dispLclVarInfoIfAny();
+
+            uint8_t lane = emitGetLaneImmValue(id);
+            printf(" [%u]", (uint8_t)lane);
         }
         break;
 
@@ -654,13 +1424,13 @@ void emitter::emitDispInst(instruction ins)
 //
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
-    if (!emitComp->opts.disCodeBytes)
+    if (!m_compiler->opts.disCodeBytes)
     {
         return;
     }
 
     // We do not display the instruction hex if we want diff-able disassembly
-    if (!emitComp->opts.disDiffable && (sz != 0))
+    if (!m_compiler->opts.disDiffable && (sz != 0))
     {
         static const int PAD_WIDTH = 28; // From wasm-objdump output.
 
@@ -693,3 +1463,32 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 {
 }
 #endif // DEBUG
+
+//----------------------------------------------------------------------------------------
+// emitUpdateFuncletLocations: update the start and end locations of each funclet
+//
+void emitter::emitUpdateFuncletLocations()
+{
+    insGroup* ig   = emitIGlist;
+    insGroup* prev = nullptr;
+
+    while (ig != nullptr)
+    {
+        FuncInfoDsc* const func = m_compiler->funGetFunc(ig->igFuncIdx);
+
+        if ((prev == nullptr) || (prev->igFuncIdx != ig->igFuncIdx))
+        {
+            func->startLoc = new (m_compiler, CMK_UnwindInfo) emitLocation(ig);
+        }
+
+        insGroup* const next = ig->igNext;
+
+        if ((next == nullptr) || (next->igFuncIdx != ig->igFuncIdx))
+        {
+            func->endLoc = new (m_compiler, CMK_UnwindInfo) emitLocation(ig, ig->igInsCnt);
+        }
+
+        prev = ig;
+        ig   = next;
+    }
+}

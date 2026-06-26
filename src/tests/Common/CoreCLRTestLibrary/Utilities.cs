@@ -68,6 +68,7 @@ namespace TestLibrary
         public static bool IsWindows => OperatingSystem.IsWindows();
         public static bool IsLinux => OperatingSystem.IsLinux();
         public static bool IsFreeBSD => OperatingSystem.IsFreeBSD();
+        public static bool IsOpenBSD => OperatingSystem.IsOSPlatform("OpenBSD");
         public static bool IsMacOSX => OperatingSystem.IsMacOS();
         public static bool IsWindowsNanoServer => (!IsWindowsIoTCore && GetInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
 
@@ -92,6 +93,7 @@ namespace TestLibrary
 
         // return whether or not the OS is a 64 bit OS
         public static bool Is64 => (IntPtr.Size == 8);
+        public static bool Is32 => (IntPtr.Size == 4);
 
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsNotMonoRuntime => !IsMonoRuntime;

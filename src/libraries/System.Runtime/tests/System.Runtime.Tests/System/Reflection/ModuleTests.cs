@@ -92,7 +92,11 @@ namespace System.Reflection.Tests
             // Browser will include the path (/), so strip it
             if (PlatformDetection.IsBrowser && loc.Length > 1)
             {
-                loc = loc.Substring(1);
+                const string browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
+                if (loc.StartsWith(browserVirtualAppBase, StringComparison.Ordinal))
+                {
+                    loc = loc.Substring(browserVirtualAppBase.Length);
+                }
             }
 
             Assert.Equal(loc, Module.FullyQualifiedName);
@@ -209,7 +213,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public void GetMethod_AmbiguousMatch()
         {
             var ex = Assert.Throws<AmbiguousMatchException>(() => TestModule.GetMethod("TestMethodFoo"));
@@ -218,7 +222,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public void GetMethod()
         {
             var method = TestModule.GetMethod("TestMethodFoo", Type.EmptyTypes);
@@ -235,7 +239,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
         public void GetMethods()
         {
             var methodNames = TestModule.GetMethods().Select(m => m.Name).ToArray();

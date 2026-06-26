@@ -50,11 +50,16 @@ DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = {
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context };
-#else
+#elif defined(FEATURE_EVENTSOURCE_XPLAT)
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_LTTNG_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_LTTNG_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_LTTNG_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_LTTNG_Context };
+#else
+DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context };
+DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context };
+DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context };
+DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context };
 #endif // HOST_UNIX
 
 #ifdef FEATURE_NATIVEAOT
@@ -2277,9 +2282,9 @@ void InitializeEventTracing()
     // providers can do so now
     ETW::TypeSystemLog::PostRegistrationInit();
 
-#if defined(HOST_UNIX) && defined (FEATURE_PERFTRACING)
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
     XplatEventLogger::InitializeLogger();
-#endif // HOST_UNIX && FEATURE_PERFTRACING
+#endif // FEATURE_EVENTSOURCE_XPLAT
 }
 
 // Plumbing to funnel event pipe callbacks and ETW callbacks together into a single common
@@ -2851,7 +2856,12 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         // This check has been copied from StackTraceInfo::AppendElement
         if (!(pCf->HasFaulted() || pCf->IsIPadjusted()) && exceptionEIP != 0)
         {
-            exceptionEIP = (PVOID)((UINT_PTR)exceptionEIP - 1);
+#ifdef TARGET_WASM
+            if (!ExecutionManager::IsVirtualIP((PCODE)exceptionEIP))
+#endif
+            {
+                exceptionEIP = (PVOID)((UINT_PTR)exceptionEIP - 1);
+            }
         }
 
         gc.exceptionMessageRef =  ((EXCEPTIONREF)gc.exceptionObj)->GetMessage();
@@ -3989,9 +3999,9 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
         return;
     }
 
-    if (!pLayout->HasNTHeaders())
+    if (!pLayout->HasHeaders())
     {
-        // Without NT headers, we'll have a tough time finding the debug directory
+        // Without headers, we'll have a tough time finding the debug directory
         // entries. This can happen for nlp files.
         return;
     }
@@ -4417,7 +4427,7 @@ TADDR MethodAndStartAddressToEECodeInfoPointer(MethodDesc *pMethodDesc, PCODE pN
         return 0;
     }
 
-    return GetInterpreterCodeFromInterpreterPrecodeIfPresent(start);
+    return GetInterpreterCodeFromEntryPointIfPresent(start);
 }
 
 /****************************************************************************/
@@ -4965,7 +4975,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
     _ASSERTE(pLoaderAllocatorFilter == nullptr || pLoaderAllocatorFilter->IsCollectible());
     _ASSERTE(pLoaderAllocatorFilter == nullptr || !fGetCodeIds);
 
-#ifdef FEATURE_JIT
+#ifdef FEATURE_DYNAMIC_CODE_COMPILED
     SendEventsForJitMethodsHelper2(
         ExecutionManager::GetEEJitManager()->GetCodeHeapIterator(pLoaderAllocatorFilter),
         dwEventOptions,
@@ -4975,7 +4985,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
         fSendILToNativeMapEvent,
         fSendRichDebugInfoEvent,
         fGetCodeIds);
-#endif // FEATURE_JIT
+#endif // FEATURE_DYNAMIC_CODE_COMPILED
 
 #ifdef FEATURE_INTERPRETER
     SendEventsForJitMethodsHelper2(
@@ -5291,13 +5301,13 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
             ETW::MethodLog::SendEventsForJitMethods(FALSE /*getCodeVersionIds*/, pLoaderAllocator, enumerationOptions);
         }
 
-        // Iterate on all DomainAssembly loaded from the same AssemblyLoaderAllocator
-        DomainAssemblyIterator domainAssemblyIt = pLoaderAllocator->Id()->GetDomainAssemblyIterator();
-        while (!domainAssemblyIt.end())
+        // Iterate on all Assemblies loaded from the same AssemblyLoaderAllocator
+        AssemblyIterator assemblyIt = pLoaderAllocator->Id()->GetAssemblyIterator();
+        while (!assemblyIt.end())
         {
-            Assembly *pAssembly = domainAssemblyIt->GetAssembly(); // TODO: handle iterator
+            Assembly *pAssembly = assemblyIt;
 
-            Module* pModule = domainAssemblyIt->GetAssembly()->GetModule();
+            Module* pModule = pAssembly->GetModule();
             ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload)
@@ -5305,7 +5315,7 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
                 ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
             }
 
-            domainAssemblyIt++;
+            assemblyIt++;
         }
 
         // Load Jit Method events
@@ -5607,10 +5617,10 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
 }
 #endif // FEATURE_PERFTRACING
 
-#if defined(HOST_UNIX)  && defined(FEATURE_PERFTRACING)
+#if defined(FEATURE_EVENTSOURCE_XPLAT)
 // This is a wrapper method for LTTng. See https://github.com/dotnet/coreclr/pull/27273 for details.
 extern "C" bool XplatEventLoggerIsEnabled()
 {
     return XplatEventLogger::IsEventLoggingEnabled();
 }
-#endif // HOST_UNIX && FEATURE_PERFTRACING
+#endif // FEATURE_EVENTSOURCE_XPLAT

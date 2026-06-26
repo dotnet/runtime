@@ -13,6 +13,14 @@
 #endif
 #include "comcallablewrapper.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+#include "pregeneratedstringthunks.h"
+#endif
+
 //#define ENABLE_LOG_LOADER_ALLOCATOR_CLEANUP 1
 
 #define STUBMANAGER_RANGELIST(stubManager) (stubManager::g_pManager->GetRangeList())
@@ -45,7 +53,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 
     m_cReferences = (UINT32)-1;
 
-    m_pFirstDomainAssemblyFromSameALCToDelete = NULL;
+    m_pFirstAssemblyFromSameALCToDelete = NULL;
 
 #ifdef FAT_DISPATCH_TOKENS
     // DispatchTokenFat pointer table for token overflow scenarios. Lazily allocated.
@@ -90,6 +98,10 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     m_pUMEntryThunkCache = NULL;
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    m_registeredForPendingThunkResolution = false;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     m_nLoaderAllocator = InterlockedIncrement64((LONGLONG *)&LoaderAllocator::cLoaderAllocatorsCreated);
 
@@ -196,7 +208,7 @@ BOOL LoaderAllocator::Release()
     }
     CONTRACTL_END;
 
-    // Only actually destroy the domain assembly when all references to it are gone.
+    // Only actually destroy the assembly when all references to it are gone.
     // This should preserve behavior in the debugger such that an UnloadModule event
     // will occur before the underlying data structure cease functioning.
 #ifndef DACCESS_COMPILE
@@ -471,7 +483,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                             pLoaderAllocator->m_pLoaderAllocatorDestroyNext = pFirstDestroyedLoaderAllocator;
                             // We will store a reference to this assembly, and use it later in this function
                             pFirstDestroyedLoaderAllocator = pLoaderAllocator;
-                            _ASSERTE(pLoaderAllocator->m_pFirstDomainAssemblyFromSameALCToDelete != NULL);
+                            _ASSERTE(pLoaderAllocator->m_pFirstAssemblyFromSameALCToDelete != NULL);
                         }
                     }
                 }
@@ -488,23 +500,23 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
 
         GetAppDomain()->RemoveTypesFromTypeIDMap(pDomainLoaderAllocatorDestroyIterator);
 
-        DomainAssemblyIterator domainAssemblyIt(pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete);
+        AssemblyIterator assemblyIt(pDomainLoaderAllocatorDestroyIterator->m_pFirstAssemblyFromSameALCToDelete);
 
         // Release all assemblies from the same ALC
-        while (!domainAssemblyIt.end())
+        while (!assemblyIt.end())
         {
-            DomainAssembly* domainAssemblyToRemove = domainAssemblyIt;
-            pAppDomain->RemoveAssembly(domainAssemblyToRemove);
+            Assembly* assemblyToRemove = assemblyIt;
+            pAppDomain->RemoveAssembly(assemblyToRemove);
 
-            if (!domainAssemblyToRemove->GetAssembly()->IsDynamic())
+            if (!assemblyToRemove->IsDynamic())
             {
-                pAppDomain->RemoveFileFromCache(domainAssemblyToRemove->GetPEAssembly());
+                pAppDomain->RemoveFileFromCache(assemblyToRemove->GetPEAssembly());
                 AssemblySpec spec;
-                spec.InitializeSpec(domainAssemblyToRemove->GetPEAssembly());
-                VERIFY(pAppDomain->RemoveAssemblyFromCache(domainAssemblyToRemove->GetAssembly()));
+                spec.InitializeSpec(assemblyToRemove->GetPEAssembly());
+                VERIFY(pAppDomain->RemoveAssemblyFromCache(assemblyToRemove));
             }
 
-            domainAssemblyIt++;
+            assemblyIt++;
         }
 
         pDomainLoaderAllocatorDestroyIterator = pDomainLoaderAllocatorDestroyIterator->m_pLoaderAllocatorDestroyNext;
@@ -537,9 +549,9 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 
     AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
 
-    // Collect all LoaderAllocators that don't have anymore DomainAssemblies alive
+    // Collect all LoaderAllocators that don't have anymore Assemblies alive
     // Note: that it will not collect our pOriginalLoaderAllocator in case this
-    // LoaderAllocator hasn't loaded any DomainAssembly. We handle this case in the next loop.
+    // LoaderAllocator hasn't loaded any Assembly. We handle this case in the next loop.
     // Note: The removed LoaderAllocators are not reachable outside of this function anymore, because we
     // removed them from the assembly list
     pFirstDestroyedLoaderAllocator = GCLoaderAllocators_RemoveAssemblies(pAppDomain);
@@ -557,14 +569,14 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         // Set the unloaded flag before notifying the debugger
         pDomainLoaderAllocatorDestroyIterator->SetIsUnloaded();
 
-        DomainAssemblyIterator domainAssemblyIt(pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete);
-        while (!domainAssemblyIt.end())
+        AssemblyIterator assemblyIt(pDomainLoaderAllocatorDestroyIterator->m_pFirstAssemblyFromSameALCToDelete);
+        while (!assemblyIt.end())
         {
             // Call AssemblyUnloadStarted event
-            domainAssemblyIt->GetAssembly()->StartUnload();
+            assemblyIt->StartUnload();
             // Notify the debugger
-            domainAssemblyIt->GetAssembly()->NotifyDebuggerUnload();
-            domainAssemblyIt++;
+            assemblyIt->NotifyDebuggerUnload();
+            assemblyIt++;
         }
 
         if (pDomainLoaderAllocatorDestroyIterator == pOriginalLoaderAllocator)
@@ -574,18 +586,18 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         pDomainLoaderAllocatorDestroyIterator = pDomainLoaderAllocatorDestroyIterator->m_pLoaderAllocatorDestroyNext;
     }
 
-    // If the original LoaderAllocator was not processed, it is a LoaderAllocator without any loaded DomainAssembly
+    // If the original LoaderAllocator was not processed, it is a LoaderAllocator without any loaded Assembly
     // But we still want to collect it so we add it to the list of LoaderAllocator to destroy
     if (!isOriginalLoaderAllocatorFound && !pOriginalLoaderAllocator->Id()->HasAttachedDynamicAssemblies() && !pOriginalLoaderAllocator->IsAlive())
     {
 #ifdef ENABLE_LOG_LOADER_ALLOCATOR_CLEANUP
-        minipal_log_print_info("LoaderAllocator::GCLoaderAllocators FORCED unload due to no DomainAssembly LA %d(%p) %d\n", pOriginalLoaderAllocator->m_nLoaderAllocator, pOriginalLoaderAllocator, (int)pOriginalLoaderAllocator->m_cReferences.Load());
+        minipal_log_print_info("LoaderAllocator::GCLoaderAllocators FORCED unload due to no Assembly LA %d(%p) %d\n", pOriginalLoaderAllocator->m_nLoaderAllocator, pOriginalLoaderAllocator, (int)pOriginalLoaderAllocator->m_cReferences.Load());
 #endif
         pOriginalLoaderAllocator->m_pLoaderAllocatorDestroyNext = pFirstDestroyedLoaderAllocator;
         pFirstDestroyedLoaderAllocator = pOriginalLoaderAllocator;
     }
 
-    // Iterate through free list, deleting DomainAssemblies
+    // Iterate through free list, deleting Assemblies
     pDomainLoaderAllocatorDestroyIterator = pFirstDestroyedLoaderAllocator;
     while (pDomainLoaderAllocatorDestroyIterator != NULL)
     {
@@ -594,15 +606,15 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 #endif
         _ASSERTE(!pDomainLoaderAllocatorDestroyIterator->IsAlive());
 
-        DomainAssemblyIterator domainAssemblyIt(pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete);
-        while (!domainAssemblyIt.end())
+        AssemblyIterator assemblyIt(pDomainLoaderAllocatorDestroyIterator->m_pFirstAssemblyFromSameALCToDelete);
+        while (!assemblyIt.end())
         {
-            delete (DomainAssembly*)domainAssemblyIt;
-            domainAssemblyIt++;
+            delete (Assembly*)assemblyIt;
+            assemblyIt++;
         }
         // We really don't have to set it to NULL as the assembly is not reachable anymore, but just in case ...
         // (Also debugging NULL AVs if someone uses it accidentally is so much easier)
-        pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete = NULL;
+        pDomainLoaderAllocatorDestroyIterator->m_pFirstAssemblyFromSameALCToDelete = NULL;
 
         pDomainLoaderAllocatorDestroyIterator->ReleaseAssemblyLoadContext();
 
@@ -610,10 +622,10 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         // handles first
         pDomainLoaderAllocatorDestroyIterator->CleanupDependentHandlesToNativeObjects();
 
-        // The following code was previously happening on delete ~DomainAssembly->Terminate
+        // The following code was previously happening on delete ~Assembly->Terminate
         // We are moving this part here in order to make sure that we can unload a LoaderAllocator
-        // that didn't have a DomainAssembly
-        // (we have now a LoaderAllocator with 0-n DomainAssembly)
+        // that didn't have an Assembly
+        // (we have now a LoaderAllocator with 0-n Assembly)
 
         // This cleanup code starts resembling parts of AppDomain::Terminate too much.
         // It would be useful to reduce duplication and also establish clear responsibilities
@@ -638,6 +650,10 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 
         ExecutionManager::Unload(pDomainLoaderAllocatorDestroyIterator);
         pDomainLoaderAllocatorDestroyIterator->UninitVirtualCallStubManager();
+
+#ifdef FEATURE_INTERPRETER
+        InterpDispatchCache_ClearForLoaderAllocator(pDomainLoaderAllocatorDestroyIterator);
+#endif
 
         // TODO: Do we really want to perform this on each LoaderAllocator?
         MethodTable::ClearMethodDataCache();
@@ -681,6 +697,10 @@ BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
             LoaderAllocator::RemoveMemoryToLoaderAllocatorAssociation(pLoaderAllocator);
         }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        UnregisterLoaderAllocatorForPendingThunkResolution(pLoaderAllocator);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
         // This will probably change for shared code unloading
         _ASSERTE(pID->GetType() == LAT_Assembly);
 
@@ -705,11 +725,10 @@ BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
         }
 #endif // FEATURE_COMINTEROP
 
-        DomainAssembly* pDomainAssembly = (DomainAssembly*)(pID->GetDomainAssemblyIterator());
-        if (pDomainAssembly != NULL)
+        Assembly* pAssembly = (Assembly*)(pID->GetAssemblyIterator());
+        if (pAssembly != NULL)
         {
-            Assembly *pAssembly = pDomainAssembly->GetAssembly();
-            pLoaderAllocator->m_pFirstDomainAssemblyFromSameALCToDelete = pAssembly->GetDomainAssembly();
+            pLoaderAllocator->m_pFirstAssemblyFromSameALCToDelete = pAssembly;
         }
 
         // Iterate through all references to other loader allocators and decrement their reference
@@ -1044,17 +1063,8 @@ void LoaderAllocator::SetupManagedTracking(LOADERALLOCATORREF * pKeepLoaderAlloc
     // Initialize managed loader allocator reference holder
     //
 
-    MethodTable *pMT = CoreLibBinder::GetClass(CLASS__LOADERALLOCATOR);
-
-    *pKeepLoaderAllocatorAlive = (LOADERALLOCATORREF)AllocateObject(pMT);
-
-    MethodDescCallSite initLoaderAllocator(METHOD__LOADERALLOCATOR__CTOR, (OBJECTREF *)pKeepLoaderAllocatorAlive);
-
-    ARG_SLOT args[] = {
-        ObjToArgSlot(*pKeepLoaderAllocatorAlive)
-    };
-
-    initLoaderAllocator.Call(args);
+    UnmanagedCallersOnlyCaller initLoaderAllocator(METHOD__LOADERALLOCATOR__CREATE);
+    initLoaderAllocator.InvokeThrowing(pKeepLoaderAllocatorAlive);
 
     m_hLoaderAllocatorObjectHandle = AppDomain::GetCurrentDomain()->CreateLongWeakHandle(*pKeepLoaderAllocatorAlive);
 
@@ -1088,11 +1098,11 @@ void LoaderAllocator::ActivateManagedTracking()
 
 // We don't actually allocate a low frequency heap for collectible types.
 // This is carefully tuned to sum up to 16 pages to reduce waste.
-#define COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE        (0 * GetOsPageSize())
-#define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (3 * GetOsPageSize())
-#define COLLECTIBLE_STUB_HEAP_SIZE                 GetOsPageSize()
-#define COLLECTIBLE_CODEHEAP_SIZE                  (10 * GetOsPageSize())
-#define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (2 * GetOsPageSize())
+#define COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE        0
+#define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (3 * minipal_getpagesize())
+#define COLLECTIBLE_STUB_HEAP_SIZE                 minipal_getpagesize()
+#define COLLECTIBLE_CODEHEAP_SIZE                  (10 * minipal_getpagesize())
+#define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (2 * minipal_getpagesize())
 
 void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
 {
@@ -1146,7 +1156,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     // Take a page from the high-frequency heap for this.
     if (pExecutableHeapMemory != NULL)
     {
-        dwExecutableHeapReserveSize = GetOsPageSize();
+        dwExecutableHeapReserveSize = minipal_getpagesize();
 
         _ASSERTE(dwExecutableHeapReserveSize < dwHighFrequencyHeapReserveSize);
         dwHighFrequencyHeapReserveSize -= dwExecutableHeapReserveSize;
@@ -1758,16 +1768,16 @@ BOOL AssemblyLoaderAllocator::CanUnload()
     return TRUE;
 }
 
-DomainAssemblyIterator::DomainAssemblyIterator(DomainAssembly* pFirstAssembly)
+AssemblyIterator::AssemblyIterator(Assembly* pFirstAssembly)
 {
     pCurrentAssembly = pFirstAssembly;
-    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetAssembly()->GetNextAssemblyInSameALC() : NULL;
+    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetNextAssemblyInSameALC() : NULL;
 }
 
-void DomainAssemblyIterator::operator++()
+void AssemblyIterator::operator++()
 {
     pCurrentAssembly = pNextAssembly;
-    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetAssembly()->GetNextAssemblyInSameALC() : NULL;
+    pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetNextAssemblyInSameALC() : NULL;
 }
 
 #ifndef DACCESS_COMPILE
@@ -1964,7 +1974,7 @@ void AssemblyLoaderAllocator::UnregisterHandleFromCleanup(OBJECTHANDLE objHandle
     // FindAndRemove must be protected by a lock. Just use the loader allocator lock
     CrstHolder ch(&m_crstLoaderAllocator);
 
-    for (HandleCleanupListItem* item = m_handleCleanupList.GetHead(); item != NULL; item = SList<HandleCleanupListItem>::GetNext(item))
+    for (HandleCleanupListItem* item = m_handleCleanupList.GetHead(); item != NULL; item = SListTail<HandleCleanupListItem>::GetNext(item))
     {
         if (item->m_handle == objHandle)
         {
@@ -2244,7 +2254,7 @@ InteropMethodTableData *LoaderAllocator::LookupComInteropData(MethodTable *pMT)
     CrstHolder holder(&m_InteropDataCrst);
 
     // Lookup
-    InteropMethodTableData *pData = (InteropMethodTableData*)m_interopDataHash.LookupValue((UPTR)pMT, (LPVOID)NULL);
+    InteropMethodTableData *pData = (InteropMethodTableData*)m_interopDataHash.LookupValueByUniqueKey((UPTR)pMT);
 
     // Not there...
     if (pData == (InteropMethodTableData*)INVALIDENTRY)
@@ -2264,7 +2274,7 @@ BOOL LoaderAllocator::InsertComInteropData(MethodTable* pMT, InteropMethodTableD
     CrstHolder holder(&m_InteropDataCrst);
 
     // Check to see that it's not already in there
-    InteropMethodTableData *pDupData = (InteropMethodTableData*)m_interopDataHash.LookupValue((UPTR)pMT, (LPVOID)NULL);
+    InteropMethodTableData *pDupData = (InteropMethodTableData*)m_interopDataHash.LookupValueByUniqueKey((UPTR)pMT);
     if (pDupData != (InteropMethodTableData*)INVALIDENTRY)
         return FALSE;
 
@@ -2519,5 +2529,22 @@ bool LoaderAllocator::InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAlloca
     GCPROTECT_END();
     return result;
 }
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+
+void LoaderAllocator::AddPendingPortableEntryPointThunk(MethodDesc* pMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    AddPendingPortableEntryPointThunkUnderLock(this, pMD);
+}
+
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif

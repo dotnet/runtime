@@ -289,6 +289,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task ActiveRequests_Success_Recorded()
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -346,6 +347,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJSOrFirefox))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         [InlineData("GET", HttpStatusCode.OK)]
         [InlineData("PUT", HttpStatusCode.Created)]
         public Task RequestDuration_Success_Recorded(string method, HttpStatusCode statusCode)
@@ -449,6 +451,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task RequestDuration_CustomTags_Recorded()
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -475,6 +478,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task RequestDuration_MultipleCallbacksPerRequest_AllCalledInOrder()
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -591,6 +595,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         [InlineData(HttpCompletionOption.ResponseContentRead, ResponseContentType.Empty)]
         [InlineData(HttpCompletionOption.ResponseContentRead, ResponseContentType.ContentLength)]
         [InlineData(HttpCompletionOption.ResponseContentRead, ResponseContentType.TransferEncodingChunked)]
@@ -656,7 +661,7 @@ namespace System.Net.Http.Functional.Tests
             public NetworkCredential? GetCredential(Uri uri, string authType) => null;
         }
 
-        [ConditionalTheory(nameof(SupportsSeparateHttpSpansForRedirects))]
+        [ConditionalTheory(typeof(HttpMetricsTest), nameof(SupportsSeparateHttpSpansForRedirects))]
         [InlineData(0)] // null
         [InlineData(1)] // CredentialCache
         [InlineData(2)] // CustomCredentials
@@ -714,6 +719,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [PlatformSpecific(~TestPlatforms.Browser)] // BrowserHttpHandler supports only a limited set of methods.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         [MemberData(nameof(MethodData))]
         public async Task RequestMetrics_EmitNormalizedMethodTags(string method, string expectedMethodTag)
         {
@@ -818,6 +824,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task RequestDuration_RequestCancelled_ErrorReasonIsExceptionType()
         {
             TaskCompletionSource clientCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -862,6 +869,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task RequestDuration_ConnectionError_LogsExpectedErrorReason()
         {
             if (UseVersion.Major == 3)
@@ -1036,6 +1044,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJSOrFirefox))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task RequestDuration_EnrichmentHandler_ContentLengthError_Recorded()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1066,6 +1075,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         [InlineData(400)]
         [InlineData(404)]
         [InlineData(599)]
@@ -1090,6 +1100,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Browser is relaxed about validating HTTP headers")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public async Task RequestDuration_ConnectionClosedWhileReceivingHeaders_Recorded()
         {
             using CancellationTokenSource cancelServerCts = new CancellationTokenSource();
@@ -1122,6 +1133,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public Task DurationHistograms_HaveBucketSizeHints()
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1302,7 +1314,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task RequestDuration_ConcurrentRequestsSeeDifferentContexts()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1369,7 +1381,7 @@ namespace System.Net.Http.Functional.Tests
         {
         }
 
-        [ConditionalFact(nameof(SupportsSeparateHttpSpansForRedirects))]
+        [ConditionalFact(typeof(HttpMetricsTest_Http20), nameof(SupportsSeparateHttpSpansForRedirects))]
         public Task RequestDuration_Redirect_RecordedForEachHttpSpan()
         {
             return GetFactoryForVersion(HttpVersion.Version11).CreateServerAsync((originalServer, originalUri) =>
@@ -1509,7 +1521,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static bool RemoteExecutorAndSocketsHttpHandlerSupported => RemoteExecutor.IsSupported && SocketsHttpHandler.IsSupported;
 
-        [ConditionalFact(nameof(RemoteExecutorAndSocketsHttpHandlerSupported))]
+        [ConditionalFact(typeof(HttpMetricsTest_DefaultMeter), nameof(RemoteExecutorAndSocketsHttpHandlerSupported))]
         public async Task AllSocketsHttpHandlerCounters_Success_Recorded()
         {
             await RemoteExecutor.Invoke(static async Task () =>

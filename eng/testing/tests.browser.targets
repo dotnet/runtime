@@ -51,6 +51,10 @@
     <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
     <EventSourceSupport Condition="'$(EventSourceSupport)' == ''">true</EventSourceSupport>
     <NullabilityInfoContextSupport Condition="'$(NullabilityInfoContextSupport)' == ''">true</NullabilityInfoContextSupport>
+
+    <!-- Library tests run directly from bin/ without the static web assets middleware,
+         so copy framework files to the output directory. See https://github.com/dotnet/runtime/issues/127257. -->
+    <_WasmFrameworkCopyToOutputDirectory>PreserveNewest</_WasmFrameworkCopyToOutputDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <WasmTestSupport>true</WasmTestSupport>
@@ -59,14 +63,13 @@
     <WasmTestLogExitCode>true</WasmTestLogExitCode>
   </PropertyGroup>
 
-  <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120248 (CoreCLR on wasm defaults) -->
+  <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120226 (CoreCLR on wasm defaults) -->
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
-    <WasmEnableWebcil>false</WasmEnableWebcil>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="$(MonoProjectRoot)browser\test-main.js" Link="wwwroot\test-main.js" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
+    <Content Include="$(MonoProjectRoot)browser\test-main.mjs" Link="wwwroot\test-main.mjs" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
     <Content Include="$(MonoProjectRoot)browser\test-index.html" Link="wwwroot\index.html" CopyToOutputDirectory="PreserveNewest" Condition="'$(IsFunctionalTest)' != 'true'" />
   </ItemGroup>
 
@@ -124,10 +127,14 @@
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>
 
     <WasmXHarnessMonoArgs Condition="'$(XunitShowProgress)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=XHARNESS_LOG_TEST_START=true</WasmXHarnessMonoArgs>
-    <!-- help unit test with PlatformDetection.IsThreadingSupported via IsBrowserThreadingSupported env variable -->
-    <WasmXHarnessMonoArgs Condition="'$(WasmEnableThreads)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=IsBrowserThreadingSupported=true</WasmXHarnessMonoArgs>
     <WasmXHarnessMaxParallelThreads Condition="'$(WasmEnableThreads)' == 'true' and '$(WasmXHarnessMaxParallelThreads)' == ''">8</WasmXHarnessMaxParallelThreads>
   </PropertyGroup>
+  <ItemGroup Condition="'$(WasmEnableThreads)' != 'true'">
+    <RuntimeHostConfigurationOption Include="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" Value="false" Trim="true" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
+    <RuntimeHostConfigurationOption Include="System.Runtime.CompilerServices.RuntimeFeature.IsMultithreadingSupported" Value="true" Trim="true" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(RunScriptCommand)' == ''">
     <_XHarnessArgs Condition="'$(OS)' != 'Windows_NT'">wasm $XHARNESS_COMMAND --app=. --output-directory=$XHARNESS_OUT</_XHarnessArgs>
@@ -145,7 +152,9 @@
     <_XHarnessArgs Condition="'$(WasmXHarnessVerbosity)' != ''"    >$(_XHarnessArgs) --verbosity=$(WasmXHarnessVerbosity)</_XHarnessArgs><!-- Trace, Debug, Information (default), Warning, Error, Critical -->
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
 
+    <!-- 
     <_AppArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_AppArgs) -threads</_AppArgs>
+    -->
     <_AppArgs Condition="'$(WasmXHarnessMaxParallelThreads)' != ''">$(_AppArgs) -parallelThreads $(WasmXHarnessMaxParallelThreads)</_AppArgs>
     <!-- There are two flavors of WasmXHarnessArgs and WasmXHarnessMonoArgs, one is MSBuild property and the other is environment variable -->
     <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$HARNESS_RUNNER $(_XHarnessArgs) %24XHARNESS_ARGS %24WasmXHarnessArgs -- $(WasmXHarnessMonoArgs) %24WasmXHarnessMonoArgs $(_AppArgs) %24WasmTestAppArgs</RunScriptCommand>
@@ -215,7 +224,7 @@
   <Target Name="LinkContentToWwwroot" BeforeTargets="ResolveProjectStaticWebAssets" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(TestTrimming)' != 'true'">
     <!-- StaticWebAssetsSDK expects all "files accessible from web" to be in wwwroot folder -->
     <!-- Here we are adding Link/TargetPath for all Content items and adding them to WasmFilesToIncludeInFileSystem -->
-    <LinkContentToWwwroot Content="@(Content)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
+    <LinkContentToWwwroot Content="@(Content)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)" VfsOutputPath="$(IntermediateOutputPath)vfs">
       <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
       <Output TaskParameter="ContentOut" ItemName="_LinkedContent" />
     </LinkContentToWwwroot>
@@ -255,7 +264,7 @@
       <_WasmFilesForVfs CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
-    <LinkContentToWwwroot Content="@(_WasmFilesForVfs->Distinct())" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
+    <LinkContentToWwwroot Content="@(_WasmFilesForVfs->Distinct())" MSBuildProjectDirectory="$(MSBuildProjectDirectory)" VfsOutputPath="$(IntermediateOutputPath)vfs">
       <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
       <Output TaskParameter="ContentOut" ItemName="_WasmFilesForVfsLinked" />
     </LinkContentToWwwroot>
@@ -287,7 +296,6 @@
   <Target Name="ReadWasmNativeAssetsFromFileSystem" DependsOnTargets="_InitializeCommonProperties" Condition="'$(WasmBuildingForNestedPublish)' == 'true' and '@(ResolvedRuntimePack->Count())' == '0'">
     <PropertyGroup>
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'">true</_HasDotnetWasm>
-      <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.mjs'">true</_HasDotnetJsWorker>
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js.symbols'">true</_HasDotnetJsSymbols>
       <_HasDotnetNativeJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js'">true</_HasDotnetNativeJs>
       <_WasmIcuDataFileName Condition="'$(WasmIcuDataFileName)' != '' and Exists('$(WasmIcuDataFileName)')">$(WasmIcuDataFileName)</_WasmIcuDataFileName>
@@ -302,7 +310,6 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js" Condition="'$(EnableDiagnostics)' == 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs')" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js.symbols"
                        Condition="'$(WasmEmitSymbolMap)' == 'true' and
                                   '$(_HasDotnetJsSymbols)' != 'true' and
@@ -328,7 +335,7 @@
     <PropertyGroup>
       <WasmAppDir>$(BundleDir)</WasmAppDir>
       <WasmMainAssemblyFileName Condition="'$(WasmMainAssemblyFileName)' == ''">WasmTestRunner.dll</WasmMainAssemblyFileName>
-      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\browser\test-main.js</WasmMainJSPath>
+      <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\browser\test-main.mjs</WasmMainJSPath>
       <WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</WasmMainJSFileName>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>

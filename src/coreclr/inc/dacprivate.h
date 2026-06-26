@@ -65,6 +65,12 @@ enum
     DACSTACKPRIV_REQUEST_FRAME_DATA = 0xf0000000
 };
 
+// Private requests for the cDAC stress harness.
+enum
+{
+    DACSTRESSPRIV_REQUEST_FLUSH_TARGET_STATE = 0xf2000000
+};
+
 enum DacpObjectType { OBJ_STRING=0,OBJ_FREE,OBJ_OBJECT,OBJ_ARRAY,OBJ_OTHER };
 struct MSLAYOUT DacpObjectData
 {
@@ -226,9 +232,13 @@ struct MSLAYOUT DacpThreadLocalModuleData
     CLRDATA_ADDRESS pNonGCStaticDataStart = 0;
 };
 
-
 struct MSLAYOUT DacpModuleData
 {
+    enum TransientFlags
+    {
+        IsEditAndContinue = 0x00000208, // Flags for .NET Framework (0x00000200) and .NET Core (0x00000008)
+    };
+
     CLRDATA_ADDRESS Address = 0;
     CLRDATA_ADDRESS PEAssembly = 0; // Actually the module address in .NET 9+
     CLRDATA_ADDRESS ilBase = 0;

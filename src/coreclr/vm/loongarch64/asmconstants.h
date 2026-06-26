@@ -52,6 +52,9 @@ ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 #define               OFFSETOF__RuntimeThreadLocals__ee_alloc_context 0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__RuntimeThreadLocals__ee_alloc_context == offsetof(RuntimeThreadLocals, alloc_context));
 
+#define               OFFSETOF__ThreadLocalInfo__m_pThread 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLocalInfo, m_pThread));
+
 #define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, m_GCAllocContext) +
                                                                offsetof(gc_alloc_context, alloc_ptr));
@@ -99,37 +102,11 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__Frame == sizeof(Frame));
 #define SIZEOF__CONTEXT               0x520
 ASMCONSTANTS_C_ASSERT(SIZEOF__CONTEXT == sizeof(T_CONTEXT));
 
-#define OFFSETOF__CONTEXT__ContextFlags 0x0
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__ContextFlags == offsetof(T_CONTEXT, ContextFlags));
-
-#define OFFSETOF__CONTEXT__Ra         0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Ra == offsetof(T_CONTEXT, Ra));
-
-#define OFFSETOF__CONTEXT__Sp         0x20
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Sp == offsetof(T_CONTEXT, Sp));
-
-#define OFFSETOF__CONTEXT__A0         0x28
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__A0 == offsetof(T_CONTEXT, A0));
-
-#define OFFSETOF__CONTEXT__Fp         0xB8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Fp == offsetof(T_CONTEXT, Fp));
-
 #define OFFSETOF__CONTEXT__S0         0xC0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__S0 == offsetof(T_CONTEXT, S0));
 
-#define OFFSETOF__CONTEXT__Pc         0x108
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Pc == offsetof(T_CONTEXT, Pc));
-
-// Floating point registers F[0..127] start after Pc
-// Non-volatile FP registers are F24-F31
-// Each F entry is 8 bytes (ULONGLONG), but stored as 4*32 for LASX support
-#define OFFSETOF__CONTEXT__F          0x110
-ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__F == offsetof(T_CONTEXT, F));
-
-// CONTEXT_FLOATING_POINT_BIT is bit 2 in ContextFlags
-#define CONTEXT_FLOATING_POINT_BIT    2
-
-#define CONTEXT_INTEGER_BIT           1
+#define OFFSETOF__CONTEXT__Fp         0xB8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CONTEXT__Fp == offsetof(T_CONTEXT, Fp));
 
 //=========================================
 #define               OFFSETOF__MethodTable__m_dwFlags    0x0
@@ -162,16 +139,6 @@ ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + siz
 
 //=========================================
 
-#ifdef FEATURE_COMINTEROP
-
-#define SIZEOF__ComMethodFrame 0x70
-ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame == sizeof(ComMethodFrame));
-
-#define UnmanagedToManagedFrame__m_pvDatum 0x10
-ASMCONSTANTS_C_ASSERT(UnmanagedToManagedFrame__m_pvDatum == offsetof(UnmanagedToManagedFrame, m_pvDatum));
-
-#endif // FEATURE_COMINTEROP
-
 #define REDIRECTSTUB_SP_OFFSET_CONTEXT 0
 
 #define CONTEXT_Pc 0x108
@@ -194,10 +161,12 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__FixupPrecode == sizeof(FixupPrecode));
 ASMCONSTANTS_C_ASSERT(MethodDesc_ALIGNMENT_SHIFT == MethodDesc::ALIGNMENT_SHIFT);
 ASMCONSTANTS_C_ASSERT((1<<FixupPrecode_ALIGNMENT_SHIFT_1) == sizeof(FixupPrecode));
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 #define ResolveCacheElem__target      0x10
 #define ResolveCacheElem__pNext       0x18
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext == offsetof(ResolveCacheElem, pNext));
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #define                OFFSETOF__DynamicStaticsInfo__m_pMethodTable 0x10
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pMethodTable
@@ -244,6 +213,23 @@ ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecode
 
 #define StubPrecodeData__SecretParam 0x00
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
+
+#ifdef FEATURE_INTERPRETER
+#define OFFSETOF__InterpMethod__pCallStub 0x20
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
+
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x30
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
+
+#define OFFSETOF__InterpThreadContext__pStackPointer 0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpThreadContext__pStackPointer == offsetof(InterpThreadContext, pStackPointer))
+
+#define OFFSETOF__CallStubHeader__Routines 0x18
+ASMCONSTANTS_C_ASSERT(OFFSETOF__CallStubHeader__Routines == offsetof(CallStubHeader, Routines))
+
+#define SIZEOF__TransitionBlock 0xA0
+ASMCONSTANTS_C_ASSERT(SIZEOF__TransitionBlock == sizeof(TransitionBlock))
+#endif // FEATURE_INTERPRETER
 
 #ifdef FEATURE_TIERED_COMPILATION
 #define CallCountingStubData__RemainingCallCountCell 0x00

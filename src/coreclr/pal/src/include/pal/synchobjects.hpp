@@ -97,7 +97,7 @@ namespace CorUnix
 
         THREAD_STATE           m_tsThreadState;
         SharedID               m_shridWaitAwakened;
-        Volatile<LONG>         m_lLocalSynchLockCount;
+        LONG                   m_lLocalSynchLockCount;
         LIST_ENTRY             m_leOwnedObjsList;
 
         ThreadNativeWaitData   m_tnwdNativeData;
@@ -157,8 +157,6 @@ namespace CorUnix
     {
     public:
         static IPalSynchronizationManager * CreatePalSynchronizationManager();
-
-        static PAL_ERROR StartWorker(CPalThread * pthrCurrent);
 
         static PAL_ERROR PrepareForShutdown(void);
 

@@ -115,7 +115,7 @@
                                                  .Replace('{WasmAppBuilderTasksAssemblyPath}', '$(WasmAppBuilderTasksAssemblyPath)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackRidDir}', '$(MicrosoftNetCoreAppRuntimePackRidDir)')
                                                  .Replace('{WasmSdkPackBuildPath}', '$(MonoProjectRoot)nuget/Microsoft.NET.Sdk.WebAssembly.Pack/build/')
-                                                 .Replace('{WasmSdkPackTasksPath}', '$(ArtifactsBinDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/$(RuntimeConfiguration)/$(NetCoreAppToolCurrent)/')
+                                                 .Replace('{WasmSdkPackTasksPath}', '$(ArtifactsBinDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/$(RuntimeConfiguration)/')
                                                  .Replace('{ProductVersion}', '$(ProductVersion)')
                                                  .Replace('{NetCoreAppCurrent}', '$(NetCoreAppCurrent)')
                                                  .Replace('{NetCoreAppToolCurrent}', '$(NetCoreAppToolCurrent)')
@@ -160,7 +160,7 @@
           DependsOnTargets="PublishTrimmedProjects"
           Inputs="%(TestConsoleApps.Identity)"
           Outputs="_unused"
-          Condition="'$(ArchiveTests)' != 'true'">
+          Condition="'$(ArchiveTests)' != 'true' and '$(SkipTrimmingTestsRun)' != 'true'">
 
     <Message Importance="High" Text="[Trimming Tests] Running test: %(TestConsoleApps.ProjectCompileItems) ..." />
     <Exec IgnoreExitCode="true" Command="%(TestConsoleApps.TestCommand)" StandardOutputImportance="Low" WorkingDirectory="%(TestConsoleApps.TestExecutionDirectory)">

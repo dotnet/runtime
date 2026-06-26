@@ -1,0 +1,109 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>ILCompiler.ReadyToRun.Tests</AssemblyName>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Platforms>x64;x86</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
+    <Configurations>Debug;Release;Checked</Configurations>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj" />
+    <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false">
+      <!-- crossgen2 is a CoreCLR artifact, so publish it in the CoreCLR configuration. This keeps it
+           alongside the other CoreCLR artifacts the test consumes (System.Private.CoreLib, the JITs)
+           even when this test project is built in a different configuration than CoreCLR was (e.g.
+           CoreCLR built Release via 'clr -rc release', but the test built/run as Debug). Mirrors the
+           CoreLib SetConfiguration pattern in eng/references.targets. -->
+      <SetConfiguration Condition="'$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- HACK: We run runtime.proj inline to build the wasm JIT and then Copy it directly into
+       crossgen2_inbuild's publish dir. This is hacky for two reasons:
+         1. crossgen2_inbuild's <Content> glob for clrjits is evaluated at project-load time,
+            before this target runs, so on a clean tree the glob misses the freshly installed
+            JITs and the direct Copy is the only thing that reliably gets the file there.
+         2. We reach into another project's publish dir instead of flowing outputs through the
+            ProjectReference protocol.
+       Ideally this would be replaced by a proper ProjectReference setup where the wasm JIT and
+       crossgen2's other dependencies flow into our own output dir via GetCopyToOutputDirectoryItems,
+       and R2RTest.Crossgen2Dir points at the test's bin dir instead of crossgen2_inbuild's publish dir.
+
+       In cross builds JITs land in $(CoreCLRArtifactsPath)$(BuildArchitecture)/; we mirror
+       eng/Subsets.props's cross-tool stanza so install/read paths agree.
+       Hooks into ResolveProjectReferences so it fires for `dotnet build` (and CI's `build.sh -test`,
+       which builds before testing). `dotnet build /t:test` alone won't trigger it. -->
+  <PropertyGroup>
+    <_BuildJitsCrossArch Condition="'$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != ''">true</_BuildJitsCrossArch>
+    <_BuildJitsProperties>ClrAllJitsSubset=true;ClrWasmJitSubset=true;Configuration=$(CoreCLRConfiguration)</_BuildJitsProperties>
+    <_BuildJitsProperties Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(_BuildJitsProperties);Ninja=true</_BuildJitsProperties>
+    <_BuildJitsProperties Condition="'$(_BuildJitsCrossArch)' == 'true'">$(_BuildJitsProperties);HostArchitecture=$(BuildArchitecture);HostCrossOS=$(HostOS);CrossBuild=false;BuildSubdirectory=$(BuildArchitecture);CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1;PgoInstrument=false;NoPgoOptimize=true</_BuildJitsProperties>
+  </PropertyGroup>
+
+  <Target Name="BuildAllJitsForReadyToRunTests"
+          BeforeTargets="ResolveProjectReferences"
+          Condition="'$(DesignTimeBuild)' != 'true'">
+    <MSBuild Projects="$(CoreClrProjectRoot)runtime.proj"
+             Targets="Build"
+             Properties="$(_BuildJitsProperties)" />
+
+    <PropertyGroup>
+      <_WasmJitCrossHostArchSubdir Condition="'$(_BuildJitsCrossArch)' == 'true'">$(BuildArchitecture)/</_WasmJitCrossHostArchSubdir>
+      <_WasmJitFileName>$(HostLibPrefix)clrjit_universal_wasm_$(BuildArchitecture)$(HostLibSuffix)</_WasmJitFileName>
+      <_WasmJitSourcePath>$(CoreCLRArtifactsPath)$(_WasmJitCrossHostArchSubdir)$(_WasmJitFileName)</_WasmJitSourcePath>
+      <_Crossgen2InbuildPublishDir>$(CoreCLRArtifactsPath)$(BuildArchitecture)/crossgen2/</_Crossgen2InbuildPublishDir>
+    </PropertyGroup>
+    <Copy SourceFiles="$(_WasmJitSourcePath)"
+          DestinationFolder="$(_Crossgen2InbuildPublishDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Test case source files are embedded as resources so we can compile them with Roslyn at test time.
+       Exclude subdirectory sources from compilation since they are compiled in-memory by R2RTestCaseCompiler. -->
+  <ItemGroup>
+    <Compile Remove="TestCases/*/**/*.cs" />
+    <EmbeddedResource Include="TestCases/**/*.cs" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- Pass build-time paths to test runtime via RuntimeHostConfigurationOption -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="R2RTest.Crossgen2Dir">
+      <Value>$(CoreCLRArtifactsPath)/$(BuildArchitecture)/crossgen2</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackDir">
+      <Value>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.RuntimePackNativeDir">
+      <Value>$(MicrosoftNetCoreAppRuntimePackNativeDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.RefPackDir">
+      <Value>$(MicrosoftNetCoreAppRefPackRefDir)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.CoreCLRArtifactsDir">
+      <Value>$(CoreCLRArtifactsPath)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.TargetArchitecture">
+      <Value>$(TargetArchitecture)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.TargetOS">
+      <Value>$(TargetOS)</Value>
+    </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="R2RTest.Configuration">
+      <Value>$(Configuration)</Value>
+    </RuntimeHostConfigurationOption>
+  </ItemGroup>
+
+</Project>

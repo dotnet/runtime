@@ -272,7 +272,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 Type itemType = serviceType.GenericTypeArguments[0];
                 var cacheKey = new ServiceIdentifier(serviceIdentifier.ServiceKey, itemType);
-                if (ServiceProvider.VerifyAotCompatibility && itemType.IsValueType)
+                if (!ServiceProvider.IsDynamicCodeSupported && itemType.IsValueType)
                 {
                     // NativeAOT apps are not able to make Enumerable of ValueType services
                     // since there is no guarantee the ValueType[] code has been generated.
@@ -344,9 +344,19 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                                 // For AnyKey, we want to cache based on descriptor identity, not AnyKey that cacheKey has.
                                 ServiceIdentifier registrationKey = isAnyKeyLookup ? ServiceIdentifier.FromDescriptor(_descriptors[i]) : cacheKey;
                                 slot = GetSlot(registrationKey);
-                                if (CreateOpenGeneric(_descriptors[i], registrationKey, callSiteChain, slot, throwOnConstraintViolation: false) is { } callSite)
+
+                                // We skip open generics with incompatible constraints.
+                                if (CreateOpenGeneric(_descriptors[i], registrationKey, callSiteChain, slot, false) is { } callSite)
                                 {
                                     AddCallSite(callSite, i);
+                                    UpdateSlot(registrationKey);
+                                }
+                                else if (slot == 0)
+                                {
+                                    // If the last registration has incompatible constraints, we still need to update the slot.
+                                    // This ensures that single service resolution (GetService) will attempt to resolve using the last
+                                    // registration and throw an ArgumentException, maintaining "last wins" semantics. During enumerable
+                                    // resolution (GetServices), the incompatible registration is simply skipped.
                                     UpdateSlot(registrationKey);
                                 }
                             }
@@ -518,7 +528,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             "Trimming annotations on the generic types are verified when 'Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability' is set, which is set by default when PublishTrimmed=true. " +
             "That check informs developers when these generic types don't have compatible trimming annotations.")]
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "When ServiceProvider.VerifyAotCompatibility is true, which it is by default when PublishAot=true, " +
+            Justification = "When dynamic code isn't supported (ServiceProvider.IsDynamicCodeSupported is false), which is the case by default when PublishAot=true, " +
             "this method ensures the generic types being created aren't using ValueTypes.")]
         private ServiceCallSite? CreateOpenGeneric(ServiceDescriptor descriptor, ServiceIdentifier serviceIdentifier, CallSiteChain callSiteChain, int slot, bool throwOnConstraintViolation)
         {
@@ -535,7 +545,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             try
             {
                 Type[] genericTypeArguments = serviceIdentifier.ServiceType.GenericTypeArguments;
-                if (ServiceProvider.VerifyAotCompatibility)
+                if (!ServiceProvider.IsDynamicCodeSupported)
                 {
                     VerifyOpenGenericAotCompatibility(serviceIdentifier.ServiceType, genericTypeArguments);
                 }
@@ -804,10 +814,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             // These are the built in service types that aren't part of the list of service descriptors
             // If you update these make sure to also update the code in ServiceProvider.ctor
-            return serviceType == typeof(IServiceProvider) ||
-                   serviceType == typeof(IServiceScopeFactory) ||
-                   serviceType == typeof(IServiceProviderIsService) ||
-                   serviceType == typeof(IServiceProviderIsKeyedService);
+            return serviceIdentifier.ServiceKey is null &&
+                   (serviceType == typeof(IServiceProvider) ||
+                    serviceType == typeof(IServiceScopeFactory) ||
+                    serviceType == typeof(IServiceProviderIsService) ||
+                    serviceType == typeof(IServiceProviderIsKeyedService));
         }
 
         private struct ServiceDescriptorCacheItem

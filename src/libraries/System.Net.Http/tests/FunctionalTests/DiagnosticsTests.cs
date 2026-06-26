@@ -577,6 +577,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129771")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
@@ -1238,7 +1239,7 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { false, ActivityIdFormat.W3C };
         }
 
-        [ConditionalTheory(nameof(EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported))]
+        [ConditionalTheory(typeof(DiagnosticsTest), nameof(EnableActivityPropagationEnvironmentVariableIsNotSetAndRemoteExecutorSupported))]
         [InlineData("true")]
         [InlineData("1")]
         [InlineData("0")]

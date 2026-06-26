@@ -123,7 +123,6 @@ namespace System.Threading.Tasks
         // The delegate to invoke for a delegate-backed Task.
         // This field also may be used by async state machines to cache an Action.
         internal Delegate? m_action;
-
         private protected object? m_stateObject; // A state object that can be optionally supplied, passed to action.
         internal TaskScheduler? m_taskScheduler; // The task scheduler this task runs under.
 
@@ -178,6 +177,13 @@ namespace System.Threading.Tasks
         // task. This is to be used by the debugger ONLY. Task in this dictionary represent current active tasks.
         private static Dictionary<int, Task>? s_currentActiveTasks;
 
+#if !MONO
+        // Dictionary that relates a runtime-async Task's ID to the timestamp when the current inflight invocation started.
+        // Needed because Continuations that are inflight have already been dequeued from the chain.
+        private static Dictionary<int, long>? s_runtimeAsyncTaskTimestamps;
+        // Dictionary to store the timestamp when the logical invocation to which the Continuation belongs started.
+        private static Dictionary<object, long>? s_runtimeAsyncContinuationTimestamps;
+#endif
         // These methods are a way to access the dictionary both from this class and for other classes that also
         // activate dummy tasks. Specifically the AsyncTaskMethodBuilder and AsyncTaskMethodBuilder<>
         internal static bool AddToActiveTasks(Task task)
@@ -210,6 +216,140 @@ namespace System.Threading.Tasks
                 activeTasks.Remove(taskId);
             }
         }
+
+#if !MONO
+        private static Dictionary<object, long> GetOrCreateRuntimeAsyncContinuationTimestamps()
+        {
+            return Volatile.Read(ref s_runtimeAsyncContinuationTimestamps) ??
+                Interlocked.CompareExchange(ref s_runtimeAsyncContinuationTimestamps, new Dictionary<object, long>(ReferenceEqualityComparer.Instance), null) ??
+                s_runtimeAsyncContinuationTimestamps!;
+        }
+
+        private static Dictionary<int, long> GetOrCreateRuntimeAsyncTaskTimestamps()
+        {
+            return Volatile.Read(ref s_runtimeAsyncTaskTimestamps) ??
+                Interlocked.CompareExchange(ref s_runtimeAsyncTaskTimestamps, new Dictionary<int, long>(), null) ??
+                s_runtimeAsyncTaskTimestamps!;
+        }
+
+        internal static void ReplaceOrAddRuntimeAsyncContinuationTimestamp(Continuation curContinuation, Continuation newContinuation)
+        {
+            var continuationTimestamps = GetOrCreateRuntimeAsyncContinuationTimestamps();
+            lock (continuationTimestamps)
+            {
+                if (continuationTimestamps.TryGetValue(curContinuation, out long timestampVal))
+                {
+                    continuationTimestamps.Remove(curContinuation);
+                    continuationTimestamps[newContinuation] = timestampVal;
+                }
+                else
+                {
+                    continuationTimestamps.TryAdd(newContinuation, Stopwatch.GetTimestamp());
+                }
+            }
+        }
+
+        internal static void TryAddRuntimeAsyncContinuationChainTimestamps(Continuation continuationChain)
+        {
+            var continuationTimestamps = GetOrCreateRuntimeAsyncContinuationTimestamps();
+            long timestamp = Stopwatch.GetTimestamp();
+            lock (continuationTimestamps)
+            {
+                Continuation? nc = continuationChain;
+                while (nc != null)
+                {
+                    continuationTimestamps.TryAdd(nc, timestamp);
+                    nc = nc.Next;
+                }
+            }
+        }
+
+        internal static void RemoveRuntimeAsyncContinuationTimestamp(Continuation continuation)
+        {
+            var continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            if (continuationTimestamps is null)
+                return;
+
+            lock (continuationTimestamps)
+            {
+                continuationTimestamps.Remove(continuation);
+            }
+        }
+
+        internal static void RemoveRuntimeAsyncContinuationChainTimestamps(Continuation continuation, uint count)
+        {
+            var continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            if (continuationTimestamps is null)
+                return;
+
+            lock (continuationTimestamps)
+            {
+                Continuation? nc = continuation;
+                for (uint i = 0; i < count && nc != null; i++)
+                {
+                    continuationTimestamps.Remove(nc);
+                    nc = nc.Next;
+                }
+            }
+        }
+
+        internal static void UpdateRuntimeAsyncTaskTimestamp(Task task, Continuation timestampSource)
+        {
+            long timestamp = 0;
+            var continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            if (continuationTimestamps != null)
+            {
+                lock (continuationTimestamps)
+                {
+                    continuationTimestamps.TryGetValue(timestampSource, out timestamp);
+                }
+            }
+
+            if (timestamp == 0)
+            {
+                timestamp = Stopwatch.GetTimestamp();
+            }
+
+            var runtimeAsyncTaskTimestamps = GetOrCreateRuntimeAsyncTaskTimestamps();
+            lock (runtimeAsyncTaskTimestamps)
+            {
+                runtimeAsyncTaskTimestamps[task.Id] = timestamp;
+            }
+        }
+
+        internal static void RemoveRuntimeAsyncTask(Task task)
+        {
+            RemoveFromActiveTasks(task);
+
+            Dictionary<int, long>? runtimeAsyncTaskTimestamps = s_runtimeAsyncTaskTimestamps;
+            if (runtimeAsyncTaskTimestamps is null)
+                return;
+
+            lock (runtimeAsyncTaskTimestamps)
+            {
+                runtimeAsyncTaskTimestamps.Remove(task.Id);
+            }
+        }
+
+        internal static void RemoveRuntimeAsyncTask(Task task, Continuation continuationChain)
+        {
+            RemoveRuntimeAsyncTask(task);
+
+            Dictionary<object, long>? continuationTimestamps = s_runtimeAsyncContinuationTimestamps;
+            if (continuationTimestamps is null)
+                return;
+
+            lock (continuationTimestamps)
+            {
+                Continuation? nc = continuationChain;
+                while (nc != null)
+                {
+                    continuationTimestamps.Remove(nc);
+                    nc = nc.Next;
+                }
+            }
+        }
+#endif
 
         // We moved a number of Task properties into this class.  The idea is that in most cases, these properties never
         // need to be accessed during the life cycle of a Task, so we don't want to instantiate them every time.  Once
@@ -296,6 +436,7 @@ namespace System.Threading.Tasks
         // Constructs the task as already completed
         internal Task(bool canceled, TaskCreationOptions creationOptions, CancellationToken ct)
         {
+            _ = s_asyncDebuggingEnabled; // Debugger depends on Task cctor being run when any Task gets created
             int optionFlags = (int)creationOptions;
             if (canceled)
             {
@@ -315,6 +456,7 @@ namespace System.Threading.Tasks
         /// <summary>Constructor for use with promise-style tasks that aren't configurable.</summary>
         internal Task()
         {
+            _ = s_asyncDebuggingEnabled; // Debugger depends on Task cctor being run when any Task gets created
             m_stateFlags = (int)TaskStateFlags.WaitingForActivation | (int)InternalTaskOptions.PromiseTask;
         }
 
@@ -323,6 +465,7 @@ namespace System.Threading.Tasks
         // (action,TCO).  It should always be true.
         internal Task(object? state, TaskCreationOptions creationOptions, bool promiseStyle)
         {
+            _ = s_asyncDebuggingEnabled; // Debugger depends on Task cctor being run when any Task gets created
             Debug.Assert(promiseStyle, "Promise CTOR: promiseStyle was false");
 
             // Check the creationOptions. We allow the AttachedToParent option to be specified for promise tasks.
@@ -503,6 +646,7 @@ namespace System.Threading.Tasks
         internal Task(Delegate action, object? state, Task? parent, CancellationToken cancellationToken,
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler? scheduler)
         {
+            _ = s_asyncDebuggingEnabled; // Debugger depends on Task cctor being run when any Task gets created
             if (action == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
@@ -1467,7 +1611,11 @@ namespace System.Threading.Tasks
         internal static readonly Task<VoidTaskResult> s_cachedCompleted = new Task<VoidTaskResult>(false, default, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
 
         /// <summary>Gets a task that's already been completed successfully.</summary>
-        public static Task CompletedTask => s_cachedCompleted;
+        public static Task CompletedTask
+        {
+            [Intrinsic]
+            get => s_cachedCompleted;
+        }
 
         /// <summary>
         /// Provides an event that can be used to wait for completion.
@@ -2264,12 +2412,13 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// ThreadPool's entry point into the Task.  The base behavior is simply to
-        /// use the entry point that's not protected from double-invoke; derived internal tasks
-        /// can override to customize their behavior, which is usually done by promises
-        /// that want to reuse the same object as a queued work item.
+        /// This is used internally to execute the Task directly. ThreadPool uses this,
+        /// and it is also used to invoke runtime async tasks directly.
+        /// The base behavior is simply to use the entry point that's not protected from
+        /// double-invoke; derived internal tasks can override to customize their behavior,
+        /// which is usually done by promises that want to reuse the same object as a queued work item.
         /// </summary>
-        internal virtual void ExecuteFromThreadPool(Thread threadPoolThread) => ExecuteEntryUnsafe(threadPoolThread);
+        internal virtual void ExecuteDirectly(Thread? threadPoolThread) => ExecuteEntryUnsafe(threadPoolThread);
 
         internal void ExecuteEntryUnsafe(Thread? threadPoolThread) // used instead of ExecuteEntry() when we don't have to worry about double-execution prevent
         {
@@ -3004,7 +3153,7 @@ namespace System.Threading.Tasks
             }
             else
             {
-                Thread.ThrowIfSingleThreaded();
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 returnValue = SpinThenBlockingWait(millisecondsTimeout, cancellationToken);
             }
@@ -3061,7 +3210,7 @@ namespace System.Threading.Tasks
             bool returnValue = SpinWait(millisecondsTimeout);
             if (!returnValue)
             {
-                Thread.ThrowIfSingleThreaded();
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 // We're about to block waiting for the task to complete, which is expensive, and if
                 // the task being waited on depends on some other work to run, this thread could end up
@@ -3141,7 +3290,7 @@ namespace System.Threading.Tasks
         {
             if (IsCompleted) return true;
 
-            if (Thread.IsSingleThreaded)
+            if (!RuntimeFeature.IsMultithreadingSupported)
             {
                 return false;
             }
@@ -3473,10 +3622,22 @@ namespace System.Threading.Tasks
 
             switch (continuationObject)
             {
+#if !MONO
+                // Runtime async continuation is very cheap to check for since
+                // it is sealed. Its semantics cannot be described by
+                // ITaskCompletionAction because it should be inlined when
+                // there is only one, but run in parallel when there are
+                // multiple.
+                case RuntimeAsyncTaskContinuation tc:
+                    tc.Execute(canInline: canInlineContinuations);
+                    LogFinishCompletionNotification();
+                    return;
+#endif
+
                 // Handle the single IAsyncStateMachineBox case.  This could be handled as part of the ITaskCompletionAction
                 // but we want to ensure that inlining is properly handled in the face of schedulers, so its behavior
-                // needs to be customized ala raw Actions.  This is also the most important case, as it represents the
-                // most common form of continuation, so we check it first.
+                // needs to be customized ala raw Actions.  This is also one of the most important cases, as it represents the
+                // most common form of continuation, so we check it early.
                 case IAsyncStateMachineBox stateMachineBox:
                     AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
                     LogFinishCompletionNotification();
@@ -3553,6 +3714,12 @@ namespace System.Threading.Tasks
                                 log.RunningContinuationList(Id, i, currentContinuation);
                             switch (currentContinuation)
                             {
+#if !MONO
+                                case RuntimeAsyncTaskContinuation tc:
+                                    tc.Execute(canInline: false);
+                                    break;
+#endif
+
                                 case IAsyncStateMachineBox stateMachineBox:
                                     AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, allowInlining: false);
                                     break;
@@ -3586,6 +3753,12 @@ namespace System.Threading.Tasks
 
                 switch (currentContinuation)
                 {
+#if !MONO
+                    case RuntimeAsyncTaskContinuation tc:
+                        tc.Execute(canInlineContinuations);
+                        break;
+#endif
+
                     case IAsyncStateMachineBox stateMachineBox:
                         AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
                         break;
@@ -4620,7 +4793,7 @@ namespace System.Threading.Tasks
 
         // Record a continuation task or action.
         // Return true if and only if we successfully queued a continuation.
-        private bool AddTaskContinuation(object tc, bool addBeforeOthers)
+        internal bool AddTaskContinuation(object tc, bool addBeforeOthers)
         {
             Debug.Assert(tc != null);
 
@@ -4998,7 +5171,7 @@ namespace System.Threading.Tasks
 
             if (waitedOnTaskList != null)
             {
-                Thread.ThrowIfSingleThreaded();
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 // Block waiting for the tasks to complete.
                 returnValue = WaitAllBlockingCore(waitedOnTaskList, millisecondsTimeout, cancellationToken);
@@ -5073,7 +5246,7 @@ namespace System.Threading.Tasks
             Debug.Assert(tasks != null, "Expected a non-null list of tasks");
             Debug.Assert(tasks.Count > 0, "Expected at least one task");
 
-            Thread.ThrowIfSingleThreaded();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             bool waitCompleted = false;
             var mres = new SetOnCountdownMres(tasks.Count);
@@ -5340,7 +5513,7 @@ namespace System.Threading.Tasks
 
             if (signaledTaskIndex == -1 && tasks.Length != 0)
             {
-                Thread.ThrowIfSingleThreaded();
+                RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
                 Task<Task> firstCompleted = TaskFactory.CommonCWAnyLogic(tasks, isSyncBlocking: true);
                 bool waitCompleted = firstCompleted.Wait(millisecondsTimeout, cancellationToken);
@@ -5372,6 +5545,7 @@ namespace System.Threading.Tasks
         /// <param name="result">The result to store into the completed task.</param>
         /// <returns>The successfully completed task.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
+        [Intrinsic]
         public static unsafe Task<TResult> FromResult<TResult>(TResult result)
         {
             // The goal of this function is to be give back a cached task if possible, or to otherwise give back a new task.
@@ -6252,7 +6426,7 @@ namespace System.Threading.Tasks
                 int count = taskCollection.Count;
                 if (count == 0)
                 {
-                    return new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default);
+                    return new Task<TResult[]>(false, [], TaskCreationOptions.None, default);
                 }
 
                 taskArray = new Task<TResult>[count];
@@ -6286,7 +6460,7 @@ namespace System.Threading.Tasks
             }
 
             return taskList.Count == 0 ?
-                new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default) :
+                new Task<TResult[]>(false, [], TaskCreationOptions.None, default) :
                 new WhenAllPromise<TResult>(taskList.ToArray());
         }
 
@@ -6363,7 +6537,7 @@ namespace System.Threading.Tasks
         {
             if (tasks.IsEmpty)
             {
-                return new Task<TResult[]>(false, Array.Empty<TResult>(), TaskCreationOptions.None, default);
+                return new Task<TResult[]>(false, [], TaskCreationOptions.None, default);
             }
 
             Task<TResult>[] tasksCopy = tasks.ToArray();
@@ -7054,6 +7228,8 @@ namespace System.Threading.Tasks
 
             return new UnwrapPromise<TResult>(outerTask, lookForOce);
         }
+
+        internal object? ContinuationForDiagnostics => m_continuationObject != this ? m_continuationObject : null;
 
         internal virtual Delegate[]? GetDelegateContinuationsForDebugger()
         {

@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -2686,6 +2686,23 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 return false;
             }
 
+            // Per ISO 8601, 24:00:00 represents end of a calendar day
+            // (same instant as next day's 00:00:00), but only when minute, second, and fraction are all zero.
+            // We treat it as hour=0 and add one day at the end.
+            bool isEndOfDay = false;
+            if (result.Hour == 24)
+            {
+                if (result.Minute != 0 || result.Second != 0 || raw.fraction > 0)
+                {
+                    result.SetBadDateTimeFailure();
+                    TPTraceExit("0095 (hour 24 with non-zero minute/second/fraction)", dps);
+                    return false;
+                }
+
+                result.Hour = 0;
+                isEndOfDay = true;
+            }
+
             if (!result.calendar.TryToDateTime(result.Year, result.Month, result.Day,
                     result.Hour, result.Minute, result.Second, 0, result.era, out DateTime time))
             {
@@ -2700,6 +2717,17 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 {
                     result.SetBadDateTimeFailure();
                     TPTraceExit("0100 (time.TryAddTicks)", dps);
+                    return false;
+                }
+            }
+
+            // If hour was originally 24 (end of day per ISO 8601), add one day to advance to next day's 00:00:00
+            if (isEndOfDay)
+            {
+                if (!time.TryAddTicks(TimeSpan.TicksPerDay, out time))
+                {
+                    result.SetBadDateTimeFailure();
+                    TPTraceExit("0105 (hour 24 overflow adding one day)", dps);
                     return false;
                 }
             }
@@ -3049,6 +3077,22 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 }
             }
 
+            // Per ISO 8601, 24:00:00 represents end of a calendar day
+            // (same instant as next day's 00:00:00), but only when minute, second, and fraction are all zero.
+            // We treat it as hour=0 and add one day at the end.
+            bool isEndOfDay = false;
+            if (hour == 24)
+            {
+                if (minute != 0 || second != 0 || partSecond != 0)
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+
+                hour = 0;
+                isEndOfDay = true;
+            }
+
             Calendar calendar = GregorianCalendar.GetDefaultInstance();
             if (!calendar.TryToDateTime(raw.year, raw.GetNumber(0), raw.GetNumber(1),
                     hour, minute, second, 0, result.era, out DateTime time))
@@ -3061,6 +3105,16 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
             {
                 result.SetBadDateTimeFailure();
                 return false;
+            }
+
+            // If hour was originally 24 (end of day per ISO 8601), add one day to advance to next day's 00:00:00
+            if (isEndOfDay)
+            {
+                if (!time.TryAddTicks(TimeSpan.TicksPerDay, out time))
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
             }
 
             result.parsedDate = time;
@@ -4035,7 +4089,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
 
         // Given a specified format character, parse and update the parsing result.
         //
-        private static bool ParseByFormat(
+        private static unsafe bool ParseByFormat(
             ref __DTString str,
             ref __DTString format,
             scoped ref ParsingInfo parseInfo,
@@ -4762,6 +4816,23 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                     return false;
                 }
             }
+
+            // Per ISO 8601:2004, 24:00:00 represents the end of a calendar day
+            // (the same instant as the next day's 00:00:00), but only when minute, second, and fraction are all zero.
+            // We treat it as hour=0 and add one day at the end.
+            bool isEndOfDay = false;
+            if (result.Hour == 24)
+            {
+                if (result.Minute != 0 || result.Second != 0 || result.fraction > 0)
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+
+                result.Hour = 0;
+                isEndOfDay = true;
+            }
+
             if (!parseInfo.calendar.TryToDateTime(result.Year, result.Month, result.Day,
                     result.Hour, result.Minute, result.Second, 0, result.era, out result.parsedDate))
             {
@@ -4771,6 +4842,16 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
             if (result.fraction > 0)
             {
                 if (!result.parsedDate.TryAddTicks((long)Math.Round(result.fraction * TimeSpan.TicksPerSecond), out result.parsedDate))
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
+            }
+
+            // If hour was originally 24 (end of day per ISO 8601), add one day to advance to next day's 00:00:00
+            if (isEndOfDay)
+            {
+                if (!result.parsedDate.TryAddTicks(TimeSpan.TicksPerDay, out result.parsedDate))
                 {
                     result.SetBadDateTimeFailure();
                     return false;
@@ -5090,7 +5171,11 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 second = (int)(s1 * 10 + s2);
             }
 
-            double fraction;
+            // The "O" format always has exactly 7 fractional-second digits, which is the same precision
+            // as DateTime's ticks (TimeSpan.TicksPerSecond == 10_000_000), so the integer value formed
+            // by the seven digits is exactly the sub-second tick count. Compute it directly instead of
+            // going through a double divide/multiply/Math.Round round-trip.
+            int fractionTicks;
             {
                 uint f1 = (uint)(source[20] - '0');
                 uint f2 = (uint)(source[21] - '0');
@@ -5106,7 +5191,15 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                     return false;
                 }
 
-                fraction = (f1 * 1000000 + f2 * 100000 + f3 * 10000 + f4 * 1000 + f5 * 100 + f6 * 10 + f7) / 10000000.0;
+                fractionTicks = (int)(f1 * 1000000 + f2 * 100000 + f3 * 10000 + f4 * 1000 + f5 * 100 + f6 * 10 + f7);
+            }
+
+            // Per ISO 8601, 24:00:00 represents the end of a calendar day
+            // (the same instant as the next day's 00:00:00), but only when minute, second, and fraction are all zero
+            if (hour == 24 && (minute != 0 || second != 0 || fractionTicks != 0))
+            {
+                result.SetBadDateTimeFailure();
+                return false;
             }
 
             if (!DateTime.TryCreate(year, month, day, hour, minute, second, 0, out DateTime dateTime))
@@ -5115,7 +5208,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                 return false;
             }
 
-            if (!dateTime.TryAddTicks((long)Math.Round(fraction * TimeSpan.TicksPerSecond), out result.parsedDate))
+            if (!dateTime.TryAddTicks(fractionTicks, out result.parsedDate))
             {
                 result.SetBadDateTimeFailure();
                 return false;

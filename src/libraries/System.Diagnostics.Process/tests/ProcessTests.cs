@@ -10,6 +10,7 @@ using System.IO.Pipes;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -34,6 +35,7 @@ namespace System.Diagnostics.Tests
         {
             public static volatile bool WasFinalized;
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             public static void CreateAndRelease()
             {
                 new FinalizingProcess();
@@ -81,6 +83,31 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        private static void AssertRemoteProcessStandardOutputLine(RemoteInvokeHandle remoteHandle, string expectedMessage, int timeout)
+        {
+            using CancellationTokenSource cts = new(timeout);
+
+            Task<string?> readTask = remoteHandle.Process.StandardOutput.ReadLineAsync(cts.Token).AsTask();
+            string? line;
+            try
+            {
+                line = readTask.ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException)
+            {
+                throw new XunitException($"Expected message '{expectedMessage}' was not observed on remote process within specified time.");
+            }
+
+            if (line != null)
+            {
+                Assert.Equal(expectedMessage, line);
+            }
+            else
+            {
+                throw new XunitException($"StandardOutput was closed before observing expected message '{expectedMessage}'");
+            }
+        }
+
         public static IEnumerable<object[]> SignalTestData()
         {
             if (OperatingSystem.IsWindows())
@@ -93,6 +120,10 @@ namespace System.Diagnostics.Tests
             {
                 foreach (PosixSignal signal in Enum.GetValues<PosixSignal>())
                 {
+                    if (signal == PosixSignal.SIGKILL)
+                    {
+                        continue; // SIGKILL cannot be caught or ignored
+                    }
                     yield return new object[] { signal };
                 }
                 // Test a few raw signals.
@@ -137,14 +168,11 @@ namespace System.Diagnostics.Tests
                 arg: $"{signal}",
                 remoteInvokeOptions);
 
-            while (!remoteHandle.Process.StandardOutput.ReadLine().EndsWith(PosixSignalRegistrationCreatedMessage))
-            {
-                Thread.Sleep(20);
-            }
+            AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalRegistrationCreatedMessage, WaitInMS);
 
             try
             {
-                SendSignal(signal, remoteHandle.Process.Id);
+                SendSignal(signal, remoteHandle.Process);
 
                 Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
                 Assert.Equal(0, remoteHandle.Process.ExitCode);
@@ -158,12 +186,219 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        // Limited only to signals which terminates process by default, and are supported on all platforms by SendSignal
+        [InlineData(PosixSignal.SIGINT)]
+        [InlineData(PosixSignal.SIGQUIT)]
+        public void SignalHandler_CanDisposeInHandler(PosixSignal signal)
+        {
+            const string PosixSignalRegistrationCreatedMessage = "PosixSignalRegistration created.";
+            const string PosixSignalHandlerStartedMessage = "PosixSignalRegistration handler started.";
+            const string PosixSignalHandlerDisposedMessage = "PosixSignalRegistration disposed.";
+            const int UnterminatedExitCode = -1;
+
+            var remoteInvokeOptions = new RemoteInvokeOptions { CheckExitCode = false };
+            remoteInvokeOptions.StartInfo.RedirectStandardOutput = true;
+            if (OperatingSystem.IsWindows())
+            {
+                remoteInvokeOptions.StartInfo.CreateNewProcessGroup = true;
+            }
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(
+                (signalStr) =>
+                {
+                    PosixSignal expectedSignal = Enum.Parse<PosixSignal>(signalStr);
+                    using ManualResetEvent receivedSignalEvent = new ManualResetEvent(false);
+                    ReEnableCtrlCHandlerIfNeeded(expectedSignal);
+
+                    PosixSignalRegistration? p = null;
+                    p = PosixSignalRegistration.Create(expectedSignal, (ctx) =>
+                    {
+                        Console.WriteLine(PosixSignalHandlerStartedMessage);
+                        Assert.Equal(expectedSignal, ctx.Signal);
+
+                        Assert.NotNull(p);
+                        p?.Dispose();
+
+                        // Used for checking that Dispose returned and did not get stuck
+                        Console.WriteLine(PosixSignalHandlerDisposedMessage);
+
+                        receivedSignalEvent.Set();
+                        ctx.Cancel = true;
+                    });
+
+                    Console.WriteLine(PosixSignalRegistrationCreatedMessage);
+
+                    // Wait for signal which unregisters itself
+                    Assert.True(receivedSignalEvent.WaitOne(WaitInMS));
+
+                    // Wait for second signal which should terminate process by default system handler
+                    Thread.Sleep(WaitInMS);
+
+                    // If we did not terminated yet, return failure exit code
+                    return UnterminatedExitCode;
+                },
+                arg: $"{signal}",
+                remoteInvokeOptions);
+
+
+            try
+            {
+                AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalRegistrationCreatedMessage, WaitInMS);
+
+                SendSignal(signal, remoteHandle.Process);
+
+                AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerStartedMessage, WaitInMS);
+                AssertRemoteProcessStandardOutputLine(remoteHandle, PosixSignalHandlerDisposedMessage, WaitInMS);
+
+                // https://github.com/dotnet/runtime/issues/125733
+                // Mono prints running threads stack trace listings and does not quit on receiving SIGQUIT
+                if (PlatformDetection.IsMonoRuntime && signal == PosixSignal.SIGQUIT && !PlatformDetection.IsWindows)
+                {
+                    // Terminate process using SIGTERM instead.
+                    SendSignal(PosixSignal.SIGTERM, remoteHandle.Process);
+                }
+                else
+                {
+                    SendSignal(signal, remoteHandle.Process);
+                }
+
+                Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
+                Assert.True(remoteHandle.Process.StandardOutput.EndOfStream);
+
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.Equal(unchecked((int)0xC000013A), remoteHandle.Process.ExitCode); // STATUS_CONTROL_C_EXIT
+                }
+                else
+                {
+                    // Signal numbers are platform dependent, so we can't check exact exit code
+                    Assert.NotEqual(0, remoteHandle.Process.ExitCode);
+                    Assert.NotEqual(UnterminatedExitCode, remoteHandle.Process.ExitCode);
+                }
+            }
+            finally
+            {
+                // If sending the signal fails or process did not exit on its own, we want to kill the process ASAP
+                // to prevent RemoteExecutor's timeout from hiding it.
+                remoteHandle.Process.Kill();
+            }
+        }
+
+        private static bool IsNotNanoServerAndRemoteExecutorSupported =>
+            PlatformDetection.IsNotWindowsNanoServer &&
+            RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(typeof(ProcessTests), nameof(IsNotNanoServerAndRemoteExecutorSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/126936", TestPlatforms.Windows)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void StartDetached_GrandchildSurvivesSignalingParent(bool enable)
+        {
+            // Verify that a grandchild started with StartDetached=true survives terminating signal sent to the child's
+            // process group, whereas a non-detached grandchild (which inherits the child's process group) is killed.
+            int grandchildPid = -1;
+
+            // Start the child in its own group/session (process group leader) so killing the group
+            // targets only the child's process group, not the test runner's process group.
+            ProcessStartInfo childStartInfo = new()
+            {
+                RedirectStandardOutput = true,
+            };
+
+            if (OperatingSystem.IsWindows())
+            {
+                // We need to be able to send the signal to the child process group.
+                childStartInfo.CreateNewProcessGroup = true;
+            }
+            else
+            {
+                childStartInfo.StartDetached = true;
+            }
+
+            using (RemoteInvokeHandle childHandle = RemoteExecutor.Invoke(static (arg) =>
+            {
+                using RemoteInvokeHandle grandchildHandle = RemoteExecutor.Invoke(
+                    static () => { Thread.Sleep(Timeout.Infinite); return RemoteExecutor.SuccessExitCode; },
+                    new RemoteInvokeOptions { Start = false, CheckExitCode = false });
+
+                grandchildHandle.Process.StartInfo.StartDetached = bool.Parse(arg);
+                grandchildHandle.Process.Start();
+
+                Console.WriteLine(grandchildHandle.Process.Id);
+
+                // Transfer ownership.
+                grandchildHandle.Process = null;
+
+                // Keep the child alive so the test can kill the process group.
+                Thread.Sleep(Timeout.Infinite);
+
+                return RemoteExecutor.SuccessExitCode;
+            },
+            enable.ToString(),
+            new RemoteInvokeOptions { StartInfo = childStartInfo, CheckExitCode = false }))
+            {
+                string pidLine = childHandle.Process.StandardOutput.ReadLine();
+                Assert.True(int.TryParse(pidLine, out grandchildPid), $"Could not parse grandchild PID from: '{pidLine}'");
+
+                // Obtain a Process instance before the child is killed to avoid PID reuse issues.
+                using Process grandchild = Process.GetProcessById(grandchildPid);
+
+                try
+                {
+                    Assert.False(grandchild.HasExited);
+
+                    // Kill the child's entire process group
+                    PosixSignal signal = OperatingSystem.IsWindows() ? PosixSignal.SIGQUIT : PosixSignal.SIGKILL;
+                    SendSignal(signal, childHandle.Process, entireProcessGroup: true);
+
+                    Assert.True(childHandle.Process.WaitForExit(WaitInMS));
+                    // Use shorter wait time when the process is expected to survive
+                    Assert.Equal(enable, !grandchild.WaitForExit(enable ? 300 : WaitInMS));
+                }
+                finally
+                {
+                    grandchild.Kill();
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void StartDetached_StartsAndExitsSuccessfully()
+        {
+            // Simple smoke test: a process started with StartDetached=true should run and exit normally.
+            RemoteInvokeOptions options = new()
+            {
+                StartInfo = new ProcessStartInfo { StartDetached = true }
+            };
+            using RemoteInvokeHandle handle = RemoteExecutor.Invoke(static () => RemoteExecutor.SuccessExitCode, options);
+            Assert.True(handle.Process.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, handle.Process.ExitCode);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(-2)]
         [InlineData((long)int.MaxValue + 1)]
         public void TestWaitForExitValidation(long milliseconds)
         {
             CreateDefaultProcess();
             Assert.Throws<ArgumentOutOfRangeException>("timeout", () => _process.WaitForExit(TimeSpan.FromMilliseconds(milliseconds)));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(-2)]
+        [InlineData(-10)]
+        [InlineData(int.MinValue)]
+        public void TestWaitForExitInt_Validation(int milliseconds)
+        {
+            Process process = CreateDefaultProcess();
+            try
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("milliseconds", () => process.WaitForExit(milliseconds));
+            }
+            finally
+            {
+                process.Kill();
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -277,14 +512,14 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, and MacCatalyst.")]
         public void ProcessStart_TryOpenFolder_UseShellExecuteIsFalse_ThrowsWin32Exception()
         {
             Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = false, FileName = Path.GetTempPath() }));
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS, and MacCatalyst.")]
         public void TestStartWithBadWorkingDirectory()
         {
             string program;
@@ -379,7 +614,7 @@ namespace System.Diagnostics.Tests
             nameof(PlatformDetection.IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(true), InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS and MacCatalyst.")]
         [SkipOnPlatform(TestPlatforms.Android, "Android doesn't allow executing custom shell scripts")]
         public void ProcessStart_UseShellExecute_Executes(bool filenameAsUrl)
         {
@@ -405,7 +640,7 @@ namespace System.Diagnostics.Tests
 
         private static bool IsNotAppSandbox => PlatformDetection.IsNotAppSandbox;
 
-        [ConditionalFact(nameof(UseShellExecuteExecuteOrderIsRunnablePlatform), nameof(IsNotAppSandbox))]
+        [ConditionalFact(typeof(ProcessTests), nameof(UseShellExecuteExecuteOrderIsRunnablePlatform), nameof(IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void ProcessStart_UseShellExecute_ExecuteOrder()
         {
@@ -452,7 +687,7 @@ namespace System.Diagnostics.Tests
             nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore),
             nameof(PlatformDetection.IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on iOS, tvOS and MacCatalyst.")]
         [SkipOnPlatform(TestPlatforms.Android, "Android doesn't allow executing custom shell scripts")]
         public void ProcessStart_UseShellExecute_WorkingDirectory()
         {
@@ -652,7 +887,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsOpenBSD || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -700,7 +935,7 @@ namespace System.Diagnostics.Tests
                 Assert.InRange((long)p.MinWorkingSet, 0, long.MaxValue);
             }
 
-            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsSunOS) {
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD() || PlatformDetection.IsOpenBSD || PlatformDetection.IsSunOS) {
                 return; // doesn't support getting/setting working set for other processes
             }
 
@@ -1064,7 +1299,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "getting/setting affinity not supported on OSX and BSD")]
+        [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.OpenBSD, "getting/setting affinity not supported on OSX and BSD")]
         public void TestProcessorAffinity()
         {
             CreateDefaultProcess();
@@ -1231,23 +1466,15 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestGetProcessById()
-        {
-            CreateDefaultProcess();
-
-            Process p = Process.GetProcessById(_process.Id);
-            Assert.Equal(_process.Id, p.Id);
-            Assert.Equal(_process.ProcessName, p.ProcessName);
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void GetProcessById_KilledProcess_ThrowsArgumentException()
         {
             Process process = CreateDefaultProcess();
-            var handle = process.SafeHandle;
+            SafeProcessHandle handle = process.SafeHandle;
             int processId = process.Id;
+
             process.Kill();
             process.WaitForExit(WaitInMS);
+
             Assert.Throws<ArgumentException>(() => Process.GetProcessById(processId));
             GC.KeepAlive(handle);
         }
@@ -1667,6 +1894,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Process.Start() is not supported on iOS, tvOS, and MacCatalyst.")]
         public void Start_Disposed_ThrowsObjectDisposedException()
         {
             var process = new Process();
@@ -1815,76 +2043,6 @@ namespace System.Diagnostics.Tests
         {
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.MainWindowHandle);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection),
-            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
-            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
-        [OuterLoop("Pops UI")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void MainWindowHandle_GetWithGui_ShouldRefresh_Windows()
-        {
-            const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
-
-            using (Process process = Process.Start(ExePath))
-            {
-                try
-                {
-                    for (int attempt = 0; attempt < 50; ++attempt)
-                    {
-                        process.Refresh();
-                        if (process.MainWindowHandle != IntPtr.Zero)
-                        {
-                            break;
-                        }
-
-                        Thread.Sleep(100);
-                    }
-
-                    Assert.NotEqual(IntPtr.Zero, process.MainWindowHandle);
-                }
-                finally
-                {
-                    process.Kill();
-                    Assert.True(process.WaitForExit(WaitInMS));
-                }
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection),
-            nameof(PlatformDetection.IsNotWindowsNanoServer), // it needs Notepad
-            nameof(PlatformDetection.IsNotWindowsServerCore))] // explained in https://github.com/dotnet/runtime/pull/44972
-        [OuterLoop("Pops UI")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void MainWindowTitle_GetWithGui_ShouldRefresh_Windows()
-        {
-            const string ExePath = "notepad.exe";
-            Assert.True(IsProgramInstalled(ExePath), "Notepad is not installed");
-
-            using (Process process = Process.Start(new ProcessStartInfo(ExePath)))
-            {
-                try
-                {
-                    for (int attempt = 0; attempt < 50; ++attempt)
-                    {
-                        process.Refresh();
-                        if (process.MainWindowTitle != string.Empty)
-                        {
-                            break;
-                        }
-
-                        Thread.Sleep(100);
-                    }
-
-                    Assert.NotEqual(string.Empty, process.MainWindowTitle);
-                }
-                finally
-                {
-                    process.Kill();
-                    Assert.True(process.WaitForExit(WaitInMS));
-                }
-            }
         }
 
         [Fact]
@@ -2353,7 +2511,13 @@ namespace System.Diagnostics.Tests
             string sleepCommandPathFileName = Path.Combine(TestDirectory, LongProcessName);
             File.Copy(sleepPath, sleepCommandPathFileName);
 
-            using (Process px = Process.Start(sleepCommandPathFileName, "600"))
+            using SafeFileHandle nullHandle = File.OpenNullHandle();
+            ProcessStartInfo psi = new(sleepCommandPathFileName, "600")
+            {
+                StandardOutputHandle = nullHandle,
+                StandardErrorHandle= nullHandle
+            };
+            using (Process px = Process.Start(psi))
             {
                 // Reading of long process names is flaky during process startup and shutdown.
                 // Wait a bit to skip over the period where the ProcessName is not reliable.
@@ -2366,7 +2530,7 @@ namespace System.Diagnostics.Tests
                 }
                 finally
                 {
-                    px.Kill();
+                    px.Kill(entireProcessTree: true);
                     px.WaitForExit();
                 }
             }
@@ -2433,7 +2597,7 @@ namespace System.Diagnostics.Tests
             Process testProcess = CreateProcess();
             testProcess.StartInfo = psi;
 
-            AssertExtensions.Throws<ArgumentNullException>("item", () => testProcess.Start());
+            AssertExtensions.Throws<ArgumentNullException>("ArgumentList[0]", () => testProcess.Start());
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

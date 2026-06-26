@@ -411,12 +411,13 @@ C_FUNC(\Name\()_End):
 // Stack layout (from low to high address):
 //   sp+0:     FloatArgumentRegisters (fa0-fa7, 64 bytes)
 //   sp+64:    TransitionBlock start
-//             - CalleeSavedRegisters (fp, ra, s0-s8 - 96 bytes)
+//             - CalleeSavedRegisters (fp, ra, s0-s8 - 88 bytes)
+//             - padding (8 bytes)
 //             - ArgumentRegisters (a0-a7, 64 bytes)
 //
 // On exit, \target contains the TransitionBlock pointer (sp+128).
 .macro PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS target
-        // Stack: FPCalleeSaved(64) + FloatArgs(64) + CalleeSaved(96) + Args(64) = 288 bytes
+        // Stack: FPCalleeSaved(64) + FloatArgs(64) + CalleeSaved(88) + pad(8) + Args(64) = 288 bytes
         PROLOG_STACK_ALLOC 288
         PROLOG_SAVE_REG_PAIR  22, 1, 128, 1
 
@@ -441,31 +442,6 @@ C_FUNC(\Name\()_End):
 
         // Set target to TransitionBlock pointer
         addi.d  \target, $sp, 128
-.endm
-
-// ------------------------------------------------------------------
-// Epilog macro for PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS that restores all registers and returns.
-// Use this for JIT helpers that may return normally (unlike IL_Throw which never returns).
-.macro POP_COOP_PINVOKE_FRAME_WITH_FLOATS_RETURN
-        // Restore FP callee-saved registers (f24-f31) from offset 0
-        fld.d   $f24, $sp, 0
-        fld.d   $f25, $sp, 8
-        fld.d   $f26, $sp, 16
-        fld.d   $f27, $sp, 24
-        fld.d   $f28, $sp, 32
-        fld.d   $f29, $sp, 40
-        fld.d   $f30, $sp, 48
-        fld.d   $f31, $sp, 56
-
-        // Restore callee-saved registers from offset 128
-        RESTORE_CALLEESAVED_REGISTERS $sp, 128
-
-        // Restore fp, ra
-        EPILOG_RESTORE_REG_PAIR 22, 1, 128
-
-        // Deallocate stack and return
-        EPILOG_STACK_FREE 288
-        EPILOG_RETURN
 .endm
 
 // ------------------------------------------------------------------
@@ -547,4 +523,12 @@ $__RedirectionStubEndFuncName
         EMIT_BREAKPOINT
 0:
 #endif
+.endm
+
+#include <loongarch64/InlineTls.inc>
+
+// Inlined version of RhpGetThread. Target cannot be a0.
+.macro INLINE_GETTHREAD target
+        INLINE_GET_TLS_VAR \target, C_FUNC(t_CurrentThreadInfo)
+        ld.d  \target, \target, OFFSETOF__ThreadLocalInfo__m_pThread
 .endm

@@ -34,10 +34,98 @@ public readonly struct OffsetMapping
     public SourceTypes SourceType { get; init; }
 }
 
+/// <summary>
+/// Describes the kind of location where a variable is stored.
+/// This is a stable public enum that abstracts over runtime-internal VarLocType values.
+/// </summary>
+public enum DebugVarLocKind
+{
+    Register,
+    Stack,
+    RegisterRegister,
+    RegisterStack,
+    StackRegister,
+    DoubleStack,
+}
+
+/// <summary>
+/// Describes the location of a native variable at a particular native offset range.
+/// This is a stable public type exposed by the DebugInfo contract.
+/// </summary>
+public readonly struct DebugVarInfo
+{
+    public uint StartOffset { get; init; }
+    public uint EndOffset { get; init; }
+    public uint VarNumber { get; init; }
+    public DebugVarLocKind Kind { get; init; }
+    public bool IsByRef { get; init; }
+
+    /// <summary>Primary register number (Register, RegisterRegister, RegisterStack, StackRegister).</summary>
+    public uint Register { get; init; }
+    /// <summary>Second register number (RegisterRegister).</summary>
+    public uint Register2 { get; init; }
+    /// <summary>Stack base register number (Stack, DoubleStack, StackRegister, RegisterStack).</summary>
+    public uint BaseRegister { get; init; }
+    /// <summary>Stack offset from base register (Stack, DoubleStack, StackRegister).</summary>
+    public int StackOffset { get; init; }
+    /// <summary>Second stack base register (RegisterStack).</summary>
+    public uint BaseRegister2 { get; init; }
+    /// <summary>Second stack offset (RegisterStack).</summary>
+    public int StackOffset2 { get; init; }
+    /// <summary>
+    /// For <see cref="VarNumber"/> == <c>ICorDebugInfo::CALL_RETURN_ILNUM</c> entries, the IL offset of
+    /// the call site whose return value this entry describes. Zero for all other entries.
+    /// </summary>
+    public uint CallReturnValueILOffset { get; init; }
+}
+
+/// <summary>
+/// A native code location at which an async method may suspend, together with the
+/// continuation-object locals captured at that point.
+/// </summary>
+public readonly struct AsyncSuspensionInfo
+{
+    /// <summary>The native code offset of the suspension point.</summary>
+    public uint NativeOffset { get; init; }
+    /// <summary>The continuation-object locals live at this suspension point.</summary>
+    public IReadOnlyList<AsyncLocalInfo> Locals { get; init; }
+}
+
+/// <summary>
+/// A single local captured into the continuation object at a suspension point.
+/// </summary>
+public readonly struct AsyncLocalInfo
+{
+    /// <summary>Offset of the local within the continuation object's data area.</summary>
+    public uint Offset { get; init; }
+    /// <summary>IL var number of the local (or a synthetic marker such as MAX_ILNUM-relative values).</summary>
+    public uint ILVarNumber { get; init; }
+}
+
 public interface IDebugInfo : IContract
 {
     static string IContract.Name { get; } = nameof(DebugInfo);
+    /// <summary>
+    /// Returns true if the method at <paramref name="pCode"/> has debug info associated with it.
+    /// Methods such as ILStubs may be JIT-compiled but have no debug metadata.
+    /// </summary>
+    bool HasDebugInfo(TargetCodePointer pCode) => throw new NotImplementedException();
+    /// <summary>
+    /// Given a code pointer, return the associated native/IL offset mapping and codeOffset.
+    /// </summary>
     IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset) => throw new NotImplementedException();
+    /// <summary>
+    /// Given a code pointer, return the variable location info for the method.
+    /// Each entry describes where a variable is stored at a particular native offset range.
+    /// </summary>
+    IEnumerable<DebugVarInfo> GetMethodVarInfo(TargetCodePointer pCode, out uint codeOffset) => throw new NotImplementedException();
+    /// <summary>
+    /// Given a code pointer, return the async-suspension points for the method together with the
+    /// continuation-object locals captured at each suspension point. Returns an empty list when
+    /// the method has no async debug info.
+    /// </summary>
+    IReadOnlyList<AsyncSuspensionInfo> GetAsyncSuspensionPoints(TargetCodePointer pCode) =>
+        Array.Empty<AsyncSuspensionInfo>();
 }
 
 public readonly struct DebugInfo : IDebugInfo

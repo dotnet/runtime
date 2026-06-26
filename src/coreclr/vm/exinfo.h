@@ -37,28 +37,7 @@ struct RhEHClause
     }
 };
 
-enum class ExKind : uint8_t
-{
-    None = 0,
-    Throw = 1,
-    HardwareFault = 2,
-    KindMask = 3,
-
-    RethrowFlag = 4,
-
-    SupersededFlag = 8,
-
-    InstructionFaultFlag = 0x10
-};
-
 struct PAL_SEHException;
-
-struct LastReportedFuncletInfo
-{
-    PCODE IP;
-    TADDR FP;
-    uint32_t Flags;
-};
 
 struct ExInfo
 {
@@ -71,6 +50,8 @@ struct ExInfo
 
     class StackRange
     {
+        friend struct ::cdac_data<ExInfo>;
+
     public:
         StackRange();
         void Reset();
@@ -111,8 +92,6 @@ struct ExInfo
 
     // Previous ExInfo in the chain of exceptions rethrown from their catch / finally handlers
     PTR_ExInfo     m_pPrevNestedInfo;
-    // thrown exception object handle
-    OBJECTHANDLE   m_hThrowable;
     // EXCEPTION_RECORD and CONTEXT_RECORD describing the exception and its location
     DAC_EXCEPTION_POINTERS m_ptrs;
     // Information for the funclet we are calling
@@ -191,6 +170,7 @@ struct ExInfo
     EE_ILEXCEPTION_CLAUSE m_CurrentClause;
     // Method to report to the debugger / profiler when stack frame iterator leaves a frame
     MethodDesc    *m_pMDToReportFunctionLeave;
+    bool           m_reportedFunctionEnterWasForFunclet;
     // CONTEXT and REGDISPLAY used by the StackFrameIterator for stack walking
     CONTEXT        m_exContext;
     REGDISPLAY     m_regDisplay;
@@ -236,12 +216,23 @@ public:
         }
         CONTRACTL_END;
 
-        if (0 != m_hThrowable)
-        {
-            return ObjectFromHandle(m_hThrowable);
-        }
+        return m_exception;
+    }
 
-        return NULL;
+    // Returns the target address of the m_exception field as a pseudo-handle.
+    // This is NOT a real GC handle table entry - it is the address of an
+    // OBJECTREF slot on the stack. Reading through it yields the exception
+    // Object*. The slot is updated during GC by the ExInfo chain scanner
+    // in ScanStackRoots (gcenv.ee.cpp). The pseudo-handle has the same
+    // lifetime as the ExInfo.
+    inline OBJECTHANDLE GetThrowableAsPseudoHandle()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        if (m_exception == NULL)
+            return (OBJECTHANDLE)NULL;
+
+        return (OBJECTHANDLE)PTR_HOST_MEMBER_TADDR(ExInfo, this, m_exception);
     }
 
    inline BOOL DeliveredFirstChanceNotification()
@@ -274,19 +265,6 @@ public:
     {
         return !m_ExceptionFlags.UnwindHasStarted();
     }
-
-#ifndef DACCESS_COMPILE
-    void DestroyExceptionHandle()
-    {
-        // Never, ever destroy a preallocated exception handle.
-        if ((m_hThrowable != NULL) && !CLRException::IsPreallocatedExceptionHandle(m_hThrowable))
-        {
-            DestroyHandle(m_hThrowable);
-        }
-
-        m_hThrowable = NULL;
-    }
-#endif // !DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
@@ -371,13 +349,18 @@ private:
     static StackWalkAction RareFindParentStackFrameCallback(CrawlFrame* pCF, LPVOID pData);
 };
 
-#ifndef TARGET_UNIX
 template<>
 struct cdac_data<ExInfo>
 {
+    static constexpr size_t StackLowBound = offsetof(ExInfo, m_ScannedStackRange)
+        + offsetof(ExInfo::StackRange, m_sfLowBound);
+    static constexpr size_t StackHighBound = offsetof(ExInfo, m_ScannedStackRange)
+        + offsetof(ExInfo::StackRange, m_sfHighBound);
+    static constexpr size_t ExceptionFlagsValue = offsetof(ExInfo, m_ExceptionFlags.m_flags);
+#ifndef TARGET_UNIX
     static constexpr size_t ExceptionWatsonBucketTrackerBuckets = offsetof(ExInfo, m_WatsonBucketTracker)
         + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
-};
 #endif // TARGET_UNIX
+};
 
 #endif // __ExInfo_h__

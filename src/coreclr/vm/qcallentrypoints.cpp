@@ -132,6 +132,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_MakeByRef)
     DllImportEntry(RuntimeTypeHandle_MakeSZArray)
     DllImportEntry(RuntimeTypeHandle_MakeArray)
+    DllImportEntry(RuntimeTypeHandle_MakeFunctionPointer)
     DllImportEntry(RuntimeTypeHandle_GetConstraints)
     DllImportEntry(RuntimeTypeHandle_GetArgumentTypesFromFunctionPointer)
     DllImportEntry(RuntimeTypeHandle_GetAssemblySlow)
@@ -188,6 +189,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeFieldHandle_GetFieldDataReference)
     DllImportEntry(UnsafeAccessors_ResolveGenericParamToTypeHandle)
     DllImportEntry(StackTrace_GetStackFramesInternal)
+    DllImportEntry(AsyncHelpers_AddContinuationToExInternal)
     DllImportEntry(StackFrame_GetMethodDescFromNativeIP)
     DllImportEntry(ModuleBuilder_GetStringConstant)
     DllImportEntry(ModuleBuilder_GetTypeRef)
@@ -277,6 +279,8 @@ static const Entry s_QCall[] =
     DllImportEntry(AssemblyNative_GetAssemblyCount)
     DllImportEntry(AssemblyNative_GetEntryAssembly)
     DllImportEntry(AssemblyNative_GetExecutingAssembly)
+    DllImportEntry(TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry)
+    DllImportEntry(TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry)
     DllImportEntry(TypeMapLazyDictionary_ProcessAttributes)
 #if defined(FEATURE_MULTICOREJIT)
     DllImportEntry(MultiCoreJIT_InternalSetProfileRoot)
@@ -286,6 +290,7 @@ static const Entry s_QCall[] =
     DllImportEntry(String_Intern)
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
+    DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)
@@ -355,7 +360,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_OffsetOf)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
-    DllImportEntry(MarshalNative_TryGetStructMarshalStub)
+    DllImportEntry(MarshalNative_HasLayout)
     DllImportEntry(MarshalNative_SizeOfHelper)
     DllImportEntry(MarshalNative_GetDelegateForFunctionPointerInternal)
     DllImportEntry(MarshalNative_GetFunctionPointerForDelegateInternal)
@@ -389,15 +394,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_GetEndComSlot)
     DllImportEntry(MarshalNative_ChangeWrapperHandleStrength)
 #endif
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertSpaceToNative)
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertContentsToNative)
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertSpaceToManaged)
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertContentsToManaged)
-    DllImportEntry(MngdNativeArrayMarshaler_ClearNativeContents)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToNative)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertSpaceToManaged)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToManaged)
-    DllImportEntry(MngdFixedArrayMarshaler_ClearNativeContents)
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(MngdSafeArrayMarshaler_CreateMarshaler)
     DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToNative)
@@ -415,6 +411,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ObjectNative_GetHashCodeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
     DllImportEntry(MetadataImport_Enum)
+    DllImportEntry(MetadataImport_GetMarshalAs)
     DllImportEntry(ReflectionInvocation_RunClassConstructor)
     DllImportEntry(ReflectionInvocation_RunModuleConstructor)
     DllImportEntry(ReflectionInvocation_CompileMethod)
@@ -443,7 +440,7 @@ static const Entry s_QCall[] =
 #if defined(FEATURE_OBJCMARSHAL)
     DllImportEntry(ObjCMarshal_TrySetGlobalMessageSendCallback)
     DllImportEntry(ObjCMarshal_TryInitializeReferenceTracker)
-    DllImportEntry(ObjCMarshal_CreateReferenceTrackingHandle)
+    DllImportEntry(ObjCMarshal_AllocateReferenceTrackingHandle)
 #endif
 #if defined(FEATURE_JAVAMARSHAL)
     DllImportEntry(JavaMarshal_Initialize)
@@ -497,6 +494,7 @@ static const Entry s_QCall[] =
     DllImportEntry(X86Base_CpuId)
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
+    DllImportEntry(StubHelpers_CreateLayoutClassMarshalStubs)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
     DllImportEntry(StubHelpers_MarshalToManagedVaList)
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
@@ -513,6 +511,8 @@ static const Entry s_QCall[] =
     DllImportEntry(ObjectMarshaler_ConvertToManaged)
     DllImportEntry(InterfaceMarshaler_ConvertToNative)
     DllImportEntry(InterfaceMarshaler_ConvertToManaged)
+    DllImportEntry(InterfaceMarshaler_GetObjectForComCallableWrapperIUnknown)
+    DllImportEntry(InterfaceMarshaler_ValidateComVisibilityForIUnknown)
 #endif
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(ComWeakRefToObject)
@@ -534,14 +534,12 @@ static const Entry s_QCall[] =
     DllImportEntry(VersionResilientHashCode_TypeHashCode)
     DllImportEntry(TailCallHelp_AllocTailCallArgBufferInternal)
 #ifdef TARGET_BROWSER
+    DllImportEntry(SystemJS_MarkAsyncMain)
     DllImportEntry(SystemJS_ResolveMainPromise)
     DllImportEntry(SystemJS_RejectMainPromise)
     DllImportEntry(SystemJS_ScheduleTimer)
     DllImportEntry(SystemJS_ScheduleBackgroundJob)
 #endif // TARGET_BROWSER
-#ifdef FEATURE_INTERPRETER
-    DllImportEntry(AsyncHelpers_ResumeInterpreterContinuation)
-#endif // FEATURE_INTERPRETER
 };
 
 const void* QCallResolveDllImport(const char* name)

@@ -39,9 +39,9 @@ namespace ObjectiveCMarshalAPI
 
     public unsafe class Program
     {
-        static void Validate_ReferenceTrackingAPIs_InvalidArgs()
+        static void Validate_InvalidArgs()
         {
-            Console.WriteLine($"Running {nameof(Validate_ReferenceTrackingAPIs_InvalidArgs)}...");
+            Console.WriteLine($"Running {nameof(Validate_InvalidArgs)}...");
 
             delegate* unmanaged<void> beginEndCallback;
             delegate* unmanaged<IntPtr, int> isReferencedCallback;
@@ -72,6 +72,11 @@ namespace ObjectiveCMarshalAPI
                 () =>
                 {
                     ObjectiveCMarshal.CreateReferenceTrackingHandle(null , out _);
+                });
+            Assert.Throws<ArgumentNullException>(
+                () =>
+                {
+                    ObjectiveCMarshal.GetOrCreateReferenceTrackingMemory(null);
                 });
         }
 
@@ -184,6 +189,25 @@ namespace ObjectiveCMarshalAPI
             ObjectiveCMarshal.Initialize(beginEndCallback, isReferencedCallback, trackedObjectEnteredFinalization, OnUnhandledExceptionPropagationHandler);
         }
 
+        static void Validate_PreInitialize_Scenario()
+        {
+            Console.WriteLine($"Running {nameof(Validate_PreInitialize_Scenario)}...");
+
+            // Attempting to create handle prior to initialization.
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                {
+                    ObjectiveCMarshal.CreateReferenceTrackingHandle(new Base(), out _);
+                });
+
+            // Not initialized yet - should throw.
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                {
+                    ObjectiveCMarshal.GetOrCreateReferenceTrackingMemory(new Base());
+                });
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static GCHandle AllocAndTrackObject<T>(uint count) where T : Base, new()
         {
@@ -223,17 +247,6 @@ namespace ObjectiveCMarshalAPI
         {
             Console.WriteLine($"Running {nameof(Validate_ReferenceTracking_Scenario)}...");
 
-            var handles = new List<GCHandle>();
-
-            // Attempting to create handle prior to initialization.
-            Assert.Throws<InvalidOperationException>(
-                () =>
-                {
-                    ObjectiveCMarshal.CreateReferenceTrackingHandle(new Base(), out _);
-                });
-
-            InitializeObjectiveCMarshal();
-
             // Type attributed but no finalizer.
             Assert.Throws<InvalidOperationException>(
                 () =>
@@ -248,6 +261,8 @@ namespace ObjectiveCMarshalAPI
             AllocUntrackedObject<HasHashCode>();
             AllocUntrackedObject<HasThinLockHeld>();
             AllocUntrackedObject<HasSyncBlock>();
+
+            var handles = new List<GCHandle>();
 
             // Provide the minimum number of times the reference callback should run.
             // See IsRefCb() in NativeObjCMarshalTests.cpp for usage logic.
@@ -426,6 +441,53 @@ namespace ObjectiveCMarshalAPI
             GC.KeepAlive(delThrowException);
         }
 
+        static unsafe void Validate_ReferenceTrackingMemory_Scenario()
+        {
+            Console.WriteLine($"Running {nameof(Validate_ReferenceTrackingMemory_Scenario)}...");
+
+            // Type attributed but no finalizer.
+            Assert.Throws<InvalidOperationException>(
+                () =>
+                {
+                    ObjectiveCMarshal.GetOrCreateReferenceTrackingMemory(new AttributedNoFinalizer());
+                });
+
+            var obj = new Base();
+
+            // Validate length matches CreateReferenceTrackingHandle contract.
+            Span<IntPtr> memFromGet = ObjectiveCMarshal.GetOrCreateReferenceTrackingMemory(obj);
+            Assert.Equal(2, memFromGet.Length);
+
+            // Memory should be zero-initialized on first call.
+            Assert.Equal(IntPtr.Zero, memFromGet[0]);
+            Assert.Equal(IntPtr.Zero, memFromGet[1]);
+
+            // Multiple calls return the same memory.
+            Span<IntPtr> memFromGet2 = ObjectiveCMarshal.GetOrCreateReferenceTrackingMemory(obj);
+            fixed (void* p1 = memFromGet)
+            fixed (void* p2 = memFromGet2)
+                Assert.Equal((IntPtr)p1, (IntPtr)p2);
+
+            // CreateReferenceTrackingHandle on the same object returns the same memory.
+            GCHandle h = ObjectiveCMarshal.CreateReferenceTrackingHandle(obj, out Span<IntPtr> memFromCreate);
+            fixed (void* p1 = memFromGet)
+            fixed (void* p2 = memFromCreate)
+                Assert.Equal((IntPtr)p1, (IntPtr)p2);
+            h.Free();
+
+            // GetOrCreateReferenceTrackingMemory after CreateReferenceTrackingHandle also returns the same memory.
+            var obj2 = new Base();
+            GCHandle h2 = ObjectiveCMarshal.CreateReferenceTrackingHandle(obj2, out Span<IntPtr> memFromCreate2);
+            Span<IntPtr> memFromGetAfter = ObjectiveCMarshal.GetOrCreateReferenceTrackingMemory(obj2);
+            fixed (void* p1 = memFromCreate2)
+            fixed (void* p2 = memFromGetAfter)
+                Assert.Equal((IntPtr)p1, (IntPtr)p2);
+            h2.Free();
+
+            GC.KeepAlive(obj);
+            GC.KeepAlive(obj2);
+        }
+
         static void Validate_Initialize_FailsOnSecondAttempt()
         {
             Console.WriteLine($"Running {nameof(Validate_Initialize_FailsOnSecondAttempt)}...");
@@ -439,12 +501,18 @@ namespace ObjectiveCMarshalAPI
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+        [SkipOnMono("Mono does not support the new Objective-C marshalling APIs. Objective-C interop is done via Mono's own runtime embedding APIs.")]
         public static int TestEntryPoint()
         {
             try
             {
-                Validate_ReferenceTrackingAPIs_InvalidArgs();
+                Validate_InvalidArgs();
+                Validate_PreInitialize_Scenario();
+
+                InitializeObjectiveCMarshal();
                 Validate_ReferenceTracking_Scenario();
+                Validate_ReferenceTrackingMemory_Scenario();
+
                 Validate_Initialize_FailsOnSecondAttempt();
             }
             catch (Exception e)

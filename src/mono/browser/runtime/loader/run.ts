@@ -59,15 +59,12 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
-    withConfigSrc (configSrc: string): DotnetHostBuilder {
-        try {
-            mono_assert(configSrc && typeof configSrc === "string", "must be file path or URL");
-            deep_merge_module(emscriptenModule, { configSrc });
-            return this;
-        } catch (err) {
-            mono_exit(1, err);
-            throw err;
-        }
+    /**
+     * @deprecated This method is no longer supported and will be removed in a future version.
+     */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    withConfigSrc (_configSrc: string): DotnetHostBuilder {
+        return this;
     }
 
     withVirtualWorkingDirectory (vfsPath: string): DotnetHostBuilder {
@@ -327,9 +324,7 @@ export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((ap
 
     registerEmscriptenExitHandlers();
 
-    return emscriptenModule.ENVIRONMENT_IS_PTHREAD
-        ? createEmscriptenWorker()
-        : createEmscriptenMain();
+    return createEmscriptenMain();
 }
 
 let jsModuleRuntimePromise: Promise<RuntimeModuleExportsInternal>;
@@ -395,7 +390,7 @@ async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, Nat
     });
     result.catch((error) => {
         if (error.message && error.message.toLowerCase().includes("out of memory")) {
-            throw new Error(".NET runtime has failed to start, because too much memory was requested. Please decrease the memory by adjusting EmccMaximumHeapSize. See also https://aka.ms/dotnet-wasm-features");
+            throw new Error(".NET runtime has failed to start, because too much memory was requested. Please decrease the memory by adjusting EmccMaximumHeapSize.");
         }
         throw error;
     });
@@ -454,19 +449,35 @@ async function createEmscriptenWorker (): Promise<EmscriptenModuleInternal> {
     await loaderHelpers.afterConfigLoaded.promise;
 
     prepareAssetsWorker();
-
-    setTimeout(async () => {
-        try {
-            // load subset which is on JS heap rather than in WASM linear memory
-            await mono_download_assets();
-        } catch (err) {
-            mono_exit(1, err);
-        }
-    }, 0);
-
     const promises = importModules();
     const es6Modules = await Promise.all(promises);
+    (globalThis as any).name = "em-pthread";
     await initializeModules(es6Modules as any);
 
+    if (loaderHelpers.config.exitOnUnhandledError) {
+        installUnhandledErrorHandler();
+    }
+    registerEmscriptenExitHandlers();
+    if (ENVIRONMENT_IS_WEB && loaderHelpers.config.forwardConsole && typeof globalThis.WebSocket != "undefined") {
+        setup_proxy_console("main", globalThis.console, globalThis.location.origin);
+    }
+
+    await detect_features_and_polyfill(emscriptenModule);
+
+    await mono_download_assets();
+
+    self.dispatchEvent(new MessageEvent("message", {
+        data: {
+            cmd: "load",
+            handlers: emscriptenModule.handlers,
+            wasmMemory: emscriptenModule.wasmMemory,
+            wasmModule: emscriptenModule.wasmModule
+        }
+    }));
+
     return emscriptenModule;
+}
+
+if (ENVIRONMENT_IS_WORKER) {
+    void createEmscriptenWorker().catch((err) => mono_exit(1, err));
 }

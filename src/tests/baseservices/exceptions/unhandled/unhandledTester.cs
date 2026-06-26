@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 using Xunit;
+using TestLibrary;
 
 namespace TestUnhandledExceptionTester
 {
@@ -16,29 +17,27 @@ namespace TestUnhandledExceptionTester
     {
         static void RunExternalProcess(string unhandledType, string assembly)
         {
-            List<string> lines = new List<string>();
-
-            Process testProcess = new Process();
-
-            testProcess.StartInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
-            testProcess.StartInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), assembly) + " " + unhandledType;
-            testProcess.StartInfo.RedirectStandardError = true;
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
+            startInfo.Arguments = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), assembly) + " " + unhandledType;
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
             // Disable creating dump since the target process is expected to fail with an unhandled exception
-            testProcess.StartInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
-            testProcess.ErrorDataReceived += (sender, line) => 
-            {
-                Console.WriteLine($"\"{line.Data}\"");
-                if (!string.IsNullOrEmpty(line.Data))
-                {
-                    lines.Add(line.Data);
-                }
-            };
+            startInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
 
-            testProcess.Start();
-            testProcess.BeginErrorReadLine();
-            testProcess.WaitForExit();
+            ProcessTextOutput result = Process.RunAndCaptureText(startInfo);
             Console.WriteLine($"Test process {assembly} with argument {unhandledType} exited");
-            testProcess.CancelErrorRead();
+
+            List<string> lines = new List<string>();
+            foreach (string rawLine in result.StandardError.Split('\n'))
+            {
+                string line = rawLine.TrimEnd('\r');
+                Console.WriteLine($"\"{line}\"");
+                if (!string.IsNullOrEmpty(line))
+                {
+                    lines.Add(line);
+                }
+            }
 
             int[] expectedExitCodes;
             if (TestLibrary.Utilities.IsMonoRuntime)
@@ -71,7 +70,7 @@ namespace TestUnhandledExceptionTester
                 }
             }
 
-            if (!Array.Exists(expectedExitCodes, code => testProcess.ExitCode == code))
+            if (!Array.Exists(expectedExitCodes, code => result.ExitStatus.ExitCode == code))
             {
                 string separator = string.Empty;
                 StringBuilder expectedListBuilder = new StringBuilder();
@@ -80,7 +79,7 @@ namespace TestUnhandledExceptionTester
                     expectedListBuilder.Append($"{separator}0x{code:X8}");
                     separator = " or ";
                 });
-                throw new Exception($"Wrong exit code: 0x{testProcess.ExitCode:X8}, expected {expectedListBuilder}");
+                throw new Exception($"Wrong exit code: 0x{result.ExitStatus.ExitCode:X8}, expected {expectedListBuilder}");
             }
 
             int exceptionStackFrameLine = 1;
@@ -165,6 +164,9 @@ namespace TestUnhandledExceptionTester
             Console.WriteLine("Test process exited with expected error code and produced expected output");
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80356", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsX64Process))]
+        [ActiveIssue("System.Diagnostics.Process is not supported", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("Test expects being run with corerun", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
         [Fact]
         public static void TestEntryPoint()
         {

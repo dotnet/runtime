@@ -25,6 +25,7 @@ namespace System
 
         private static readonly Lazy<bool> s_IsInHelix = new Lazy<bool>(() => Environment.GetEnvironmentVariables().Keys.Cast<string>().Any(key => key.StartsWith("HELIX")));
         public static bool IsInHelix => s_IsInHelix.Value;
+        public static bool IsNotInHelix => !IsInHelix;
 
         public static bool IsNetCore => Environment.Version.Major >= 5 || RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
@@ -42,6 +43,7 @@ namespace System
         public static bool IsNotCoreClrInterpreter => !IsCoreClrInterpreter;
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+        public static bool IsOpenBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
         public static bool IsNotAndroid => !IsAndroid;
         public static bool IsAndroidX86 => IsAndroid && IsX86Process;
@@ -63,7 +65,7 @@ namespace System
         public static bool IsAppleMobile => IsMacCatalyst || IsiOS || IstvOS;
         public static bool IsNotAppleMobile => !IsAppleMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
-        public static bool IsBsdLike => IsApplePlatform || IsFreeBSD || IsNetBSD;
+        public static bool IsBsdLike => IsApplePlatform || IsFreeBSD || IsNetBSD || IsOpenBSD;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -139,8 +141,35 @@ namespace System
         public static bool FileCreateCaseSensitive => IsCaseSensitiveOS;
 #endif
 
-        public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
-        public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
+#if NET11_0_OR_GREATER
+        public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
+#else
+        public static bool IsMultithreadingSupported { get; } = GetIsMultithreadingSupported();
+
+        private static bool GetIsMultithreadingSupported()
+        {
+            if (!IsWasm)
+                return true;
+
+            try
+            {
+                Type runtimeFeatureType = typeof(System.Runtime.CompilerServices.RuntimeFeature);
+
+                PropertyInfo isMultithreadingSupportedProperty = runtimeFeatureType.GetProperty("IsMultithreadingSupported", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (isMultithreadingSupportedProperty != null)
+                {
+                    return (bool)isMultithreadingSupportedProperty.GetValue(null);
+                }
+            }
+            catch
+            {
+                // if any of the reflection calls fail, assume multithreading is not supported.
+            }
+            return false;
+        }
+#endif
+        public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
+        public static bool IsWasmThreadingSupported => IsWasm && IsMultithreadingSupported;
         public static bool IsNotWasmThreadingSupported => !IsWasmThreadingSupported;
 
         private static readonly Lazy<bool> s_isBinaryFormatterSupported = new Lazy<bool>(DetermineBinaryFormatterSupport);
@@ -226,14 +255,13 @@ namespace System
         public static bool IsInvokingFinalizersSupported => !IsNativeAot;
         public static bool IsTypeEquivalenceSupported => !IsNativeAot && !IsMonoRuntime && IsWindows;
 
-        public static bool IsMetadataUpdateSupported => !IsNativeAot;
+        public static bool IsMetadataUpdateSupported => !IsBuiltWithAggressiveTrimming;
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit
         public static bool IsXmlDsigXsltTransformSupported => !PlatformDetection.IsInAppContainer && IsReflectionEmitSupported;
 
-        public static bool IsPreciseGcSupported => !IsMonoRuntime 
-                                                    && !IsBrowser; // TODO-WASM: https://github.com/dotnet/runtime/issues/114096
+        public static bool IsPreciseGcSupported => !IsMonoRuntime;
 
         public static bool IsRareEnumsSupported => !IsNativeAot;
 
@@ -241,7 +269,7 @@ namespace System
 
         public static bool IsAssemblyLoadingSupported => !IsNativeAot;
         public static bool IsNonBundledAssemblyLoadingSupported => IsAssemblyLoadingSupported && !IsMonoAOT;
-        public static bool IsMethodBodySupported => !IsNativeAot;
+        public static bool IsMethodBodySupported => !IsBuiltWithAggressiveTrimming;
         public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);
         public static bool HasHostExecutable => HasAssemblyFiles; // single-file don't have a host
@@ -303,7 +331,7 @@ namespace System
         public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;
 
         // Changed to `true` when trimming
-        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot || IsAppleMobile;
+        public static bool IsBuiltWithAggressiveTrimming => IsNativeAot || IsAppleMobile || IsWasi;
         public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
         public static bool IsTrimmedWithILLink => IsBuiltWithAggressiveTrimming && !IsNativeAot;
 
@@ -445,6 +473,8 @@ namespace System
                 return false;
             }
         }
+
+        public static bool IsRuntimeAsyncSupported => !IsMonoRuntime;
 
         private static Version GetICUVersion()
         {

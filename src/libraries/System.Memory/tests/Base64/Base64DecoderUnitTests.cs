@@ -1004,6 +1004,89 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(new byte[] { 1, 2, 3, 4 }, destination4);
         }
 
+        [Theory]
+        [InlineData("AQ\r\nQ=")]
+        [InlineData("AQ\r\nQ=\r\n")]
+        [InlineData("AQ Q=")]
+        [InlineData("AQ\tQ=")]
+        public void DecodingWithWhiteSpaceSplitFinalQuantumAndIsFinalBlockFalse(string base64String)
+        {
+            // When a final quantum (containing padding) is split by whitespace and isFinalBlock=false,
+            // the decoder should not consume any bytes, allowing the caller to retry with isFinalBlock=true
+            ReadOnlySpan<byte> base64Data = Encoding.ASCII.GetBytes(base64String);
+            var output = new byte[10];
+
+            // First call with isFinalBlock=false should consume 0 bytes
+            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(OperationStatus.InvalidData, status);
+
+            // Second call with isFinalBlock=true should succeed
+            status = Base64.DecodeFromUtf8(base64Data, output, out bytesConsumed, out bytesWritten, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(base64Data.Length, bytesConsumed);
+            Assert.Equal(2, bytesWritten); // "AQQ=" decodes to 2 bytes: {1, 4}
+            Assert.Equal(new byte[] { 1, 4 }, output[..2]);
+        }
+
+        [Fact]
+        public void DecodingCompleteQuantumWithIsFinalBlockFalse()
+        {
+            // Complete quantum without padding should be decoded even when isFinalBlock=false
+            ReadOnlySpan<byte> base64Data = "AAAA"u8;
+            var output = new byte[10];
+
+            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(4, bytesConsumed);
+            Assert.Equal(3, bytesWritten);
+        }
+
+        [Fact]
+        public void DecodingPaddedQuantumWithIsFinalBlockFalse()
+        {
+            // Quantum with padding should not be decoded when isFinalBlock=false
+            ReadOnlySpan<byte> base64Data = "AAA="u8;
+            var output = new byte[10];
+
+            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.InvalidData, status);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Theory]
+        [InlineData("AQIDBAUG AQ\r\nQ=", 9, 6, "AQ\r\nQ=")]          // Two complete blocks, then whitespace-split final quantum
+        [InlineData("AQID BAUG AQ\r\nQ=", 10, 6, "AQ\r\nQ=")]        // Two blocks with space, then whitespace-split final quantum
+        [InlineData("AQIDBAUG\r\nAQID AQ\r\nQ=", 15, 9, "AQ\r\nQ=")] // Multiple blocks with various whitespace patterns
+        public void DecodingWithValidDataBeforeWhiteSpaceSplitFinalQuantum(string base64String, int expectedBytesConsumedFirstCall, int expectedBytesWrittenFirstCall, string expectedRemainingAfterFirstCall)
+        {
+            // When there's valid data before a whitespace-split final quantum and isFinalBlock=false,
+            // verify the streaming scenario works correctly
+            ReadOnlySpan<byte> base64Data = Encoding.ASCII.GetBytes(base64String);
+            var output = new byte[100];
+
+            // First call with isFinalBlock=false should decode the valid complete blocks and stop before the incomplete final quantum
+            OperationStatus status = Base64.DecodeFromUtf8(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+
+            Assert.Equal(OperationStatus.InvalidData, status);
+            Assert.Equal(expectedBytesConsumedFirstCall, bytesConsumed);
+            Assert.Equal(expectedBytesWrittenFirstCall, bytesWritten);
+
+            // Verify that only the final block remains
+            ReadOnlySpan<byte> remaining = base64Data.Slice(bytesConsumed);
+            string remainingString = Encoding.ASCII.GetString(remaining);
+            Assert.Equal(expectedRemainingAfterFirstCall, remainingString);
+
+            // Verify we can complete decoding by retrying with the FULL input and isFinalBlock=true
+            Array.Clear(output, 0, output.Length);
+            status = Base64.DecodeFromUtf8(base64Data, output, out bytesConsumed, out bytesWritten, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(base64Data.Length, bytesConsumed);
+            Assert.True(bytesWritten > 0, "Should have decoded data");
+        }
+
         [Fact]
         public void DecodingWithEmbeddedWhiteSpaceIntoSmallDestination_TrailingWhiteSpacesAreConsumed()
         {
@@ -1019,6 +1102,89 @@ namespace System.Buffers.Text.Tests
             Assert.Equal((byte)'j', input[consumed]); // byte right after the spaces
             Assert.Equal(destination.Length, written);
             Assert.Equal(new byte[] { 240, 159, 141, 137, 240, 159 }, destination);
+        }
+
+        [Theory]
+        [InlineData("AQ\r\nQ=")]
+        [InlineData("AQ\r\nQ=\r\n")]
+        [InlineData("AQ Q=")]
+        [InlineData("AQ\tQ=")]
+        public void DecodingFromCharsWithWhiteSpaceSplitFinalQuantumAndIsFinalBlockFalse(string base64String)
+        {
+            // When a final quantum (containing padding) is split by whitespace and isFinalBlock=false,
+            // the decoder should not consume any bytes, allowing the caller to retry with isFinalBlock=true
+            ReadOnlySpan<char> base64Data = base64String.AsSpan();
+            var output = new byte[10];
+
+            // First call with isFinalBlock=false should consume 0 bytes
+            OperationStatus status = Base64.DecodeFromChars(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(OperationStatus.InvalidData, status);
+
+            // Second call with isFinalBlock=true should succeed
+            status = Base64.DecodeFromChars(base64Data, output, out bytesConsumed, out bytesWritten, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(base64Data.Length, bytesConsumed);
+            Assert.Equal(2, bytesWritten); // "AQQ=" decodes to 2 bytes: {1, 4}
+            Assert.Equal(new byte[] { 1, 4 }, output[..2]);
+        }
+
+        [Fact]
+        public void DecodingFromCharsCompleteQuantumWithIsFinalBlockFalse()
+        {
+            // Complete quantum without padding should be decoded even when isFinalBlock=false
+            ReadOnlySpan<char> base64Data = "AAAA".AsSpan();
+            var output = new byte[10];
+
+            OperationStatus status = Base64.DecodeFromChars(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(4, bytesConsumed);
+            Assert.Equal(3, bytesWritten);
+        }
+
+        [Fact]
+        public void DecodingFromCharsPaddedQuantumWithIsFinalBlockFalse()
+        {
+            // Quantum with padding should not be decoded when isFinalBlock=false
+            ReadOnlySpan<char> base64Data = "AAA=".AsSpan();
+            var output = new byte[10];
+
+            OperationStatus status = Base64.DecodeFromChars(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+            Assert.Equal(OperationStatus.InvalidData, status);
+            Assert.Equal(0, bytesConsumed);
+            Assert.Equal(0, bytesWritten);
+        }
+
+        [Theory]
+        [InlineData("AQIDBAUG AQ\r\nQ=", 9, 6, "AQ\r\nQ=")]          // Two complete blocks, then whitespace-split final quantum
+        [InlineData("AQID BAUG AQ\r\nQ=", 10, 6, "AQ\r\nQ=")]        // Two blocks with space, then whitespace-split final quantum
+        [InlineData("AQIDBAUG\r\nAQID AQ\r\nQ=", 15, 9, "AQ\r\nQ=")] // Multiple blocks with various whitespace patterns
+        public void DecodingFromCharsWithValidDataBeforeWhiteSpaceSplitFinalQuantum(string base64String, int expectedBytesConsumedFirstCall, int expectedBytesWrittenFirstCall, string expectedRemainingAfterFirstCall)
+        {
+            // When there's valid data before a whitespace-split final quantum and isFinalBlock=false,
+            // verify the streaming scenario works correctly
+            ReadOnlySpan<char> base64Data = base64String.AsSpan();
+            var output = new byte[100];
+
+            // First call with isFinalBlock=false should decode the valid complete blocks and stop before the incomplete final quantum
+            OperationStatus status = Base64.DecodeFromChars(base64Data, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+
+            Assert.Equal(OperationStatus.InvalidData, status);
+            Assert.Equal(expectedBytesConsumedFirstCall, bytesConsumed);
+            Assert.Equal(expectedBytesWrittenFirstCall, bytesWritten);
+
+            // Verify that only the final block remains
+            ReadOnlySpan<char> remaining = base64Data.Slice(bytesConsumed);
+            string remainingString = new string(remaining);
+            Assert.Equal(expectedRemainingAfterFirstCall, remainingString);
+
+            // Verify we can complete decoding by retrying with the FULL input and isFinalBlock=true
+            Array.Clear(output, 0, output.Length);
+            status = Base64.DecodeFromChars(base64Data, output, out bytesConsumed, out bytesWritten, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(base64Data.Length, bytesConsumed);
+            Assert.True(bytesWritten > 0, "Should have decoded data");
         }
     }
 }

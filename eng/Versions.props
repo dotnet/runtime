@@ -14,14 +14,14 @@
     <PackageVersionNet8>8.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet9)').Build),11))</PackageVersionNet8>
     <PackageVersionNet7>7.0.20</PackageVersionNet7>
     <PackageVersionNet6>6.0.36</PackageVersionNet6>
-    <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
+    <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
+    <PreReleaseVersionIteration>6</PreReleaseVersionIteration>
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
     <!-- SdkVersionForWorkloadTesting is used to compute the sdk band and version for workload testing.
          The published manifests are built in dotnet/sdk so these values are for testing purposes only.
-         We use $(MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportVersion) unless it is lower
+         We use the manifest transport package version number unless it is lower
          than the sdk version specified in global.json
       -->
     <!-- NETCoreSdkVersion is normally set by the SDK, but for non-SDK projects we need extract from global.json -->
@@ -74,9 +74,7 @@
       Source-build builds the product with the most recent previously source-built release. Thankfully, these two requirements line up nicely
       such that any version that satisfies the VS version requirement will also satisfy the .NET SDK version requirement because of how we ship.
     -->
-    <MicrosoftCodeAnalysisVersion_LatestVS>4.14.0</MicrosoftCodeAnalysisVersion_LatestVS>
-    <!-- Some of the analyzer dependencies used by ILLink project -->
-    <MicrosoftCodeAnalysisBannedApiAnalyzersVersion>3.3.5-beta1.23270.2</MicrosoftCodeAnalysisBannedApiAnalyzersVersion>
+    <MicrosoftCodeAnalysisVersion_LatestVS>5.0.0-2.26070.104</MicrosoftCodeAnalysisVersion_LatestVS>
   </PropertyGroup>
 
   <!--
@@ -95,12 +93,12 @@
     <!-- Maintenance-Packages dependencies -->
     <MicrosoftBclHashCodeVersion>6.0.0</MicrosoftBclHashCodeVersion>
     <SystemBuffersVersion>4.6.1</SystemBuffersVersion>
-    <SystemDataSqlClientVersion>4.9.0</SystemDataSqlClientVersion>
+    <SystemDataSqlClientVersion>4.9.1</SystemDataSqlClientVersion>
     <SystemMemoryVersion>4.6.3</SystemMemoryVersion>
     <SystemNumericsVectorsVersion>4.6.1</SystemNumericsVectorsVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.1.2</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingTasksExtensionsVersion>4.6.3</SystemThreadingTasksExtensionsVersion>
-    <SystemValueTupleVersion>4.6.1</SystemValueTupleVersion>
+    <SystemValueTupleVersion>4.6.2</SystemValueTupleVersion>
     <!-- Libraries dependencies -->
     <MicrosoftBclAsyncInterfacesVersion>6.0.0</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftWin32RegistryVersion>5.0.0</MicrosoftWin32RegistryVersion>
@@ -134,27 +132,28 @@
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
-    <DNNEVersion>2.0.5</DNNEVersion>
+    <DNNEVersion>2.1.2</DNNEVersion>
     <MicrosoftBuildVersion>17.11.48</MicrosoftBuildVersion>
     <MicrosoftBuildTasksCoreVersion>17.11.48</MicrosoftBuildTasksCoreVersion>
     <MicrosoftBuildFrameworkVersion>17.11.48</MicrosoftBuildFrameworkVersion>
     <MicrosoftBuildUtilitiesCoreVersion>17.11.48</MicrosoftBuildUtilitiesCoreVersion>
     <DotnetSosVersion>7.0.412701</DotnetSosVersion>
     <DotnetSosTargetFrameworkVersion>6.0</DotnetSosTargetFrameworkVersion>
-    <Antlr4CodeGeneratorVersion>4.6.6</Antlr4CodeGeneratorVersion>
-    <Antlr4RuntimeVersion>4.6.6</Antlr4RuntimeVersion>
+    <Antlr4BuildTasksVersion>12.14.0</Antlr4BuildTasksVersion>
+    <Antlr4RuntimeStandardVersion>4.13.1</Antlr4RuntimeStandardVersion>
     <!-- Testing -->
-    <MicrosoftNETCoreCoreDisToolsVersion>1.6.0</MicrosoftNETCoreCoreDisToolsVersion>
+    <MicrosoftNETCoreCoreDisToolsVersion>1.7.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
-    <MicrosoftOneCollectRecordTraceVersion>0.1.32221</MicrosoftOneCollectRecordTraceVersion>
+    <MicrosoftOneCollectRecordTraceVersion>0.1.33421</MicrosoftOneCollectRecordTraceVersion>
     <NUnitVersion>3.12.0</NUnitVersion>
     <NUnit3TestAdapterVersion>4.5.0</NUnit3TestAdapterVersion>
     <CoverletCollectorVersion>6.0.4</CoverletCollectorVersion>
     <SystemComponentModelAnnotationsVersion>5.0.0</SystemComponentModelAnnotationsVersion>
     <JsonSchemaNetVersion>7.0.2</JsonSchemaNetVersion>
-    <NewtonsoftJsonVersion>13.0.3</NewtonsoftJsonVersion>
+    <NewtonsoftJsonVersion>13.0.4</NewtonsoftJsonVersion>
     <NewtonsoftJsonBsonVersion>1.0.2</NewtonsoftJsonBsonVersion>
     <MoqVersion>4.18.4</MoqVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>4.0.722401</MicrosoftDiagnosticsRuntimeVersion>
     <AwesomeAssertionsVersion>8.0.2</AwesomeAssertionsVersion>
     <FsCheckVersion>2.14.3</FsCheckVersion>
     <CommandLineParserVersion>2.9.1</CommandLineParserVersion>
@@ -165,13 +164,15 @@
     <!-- Docs -->
     <MicrosoftPrivateIntellisenseVersion>10.0.0-preview-20251006.1</MicrosoftPrivateIntellisenseVersion>
     <!-- MsQuic -->
-    <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.16</MicrosoftNativeQuicMsQuicSchannelVersion>
+    <MicrosoftNativeQuicMsQuicSchannelVersion>2.5.7</MicrosoftNativeQuicMsQuicSchannelVersion>
     <!-- emscripten workload package when testing workloads -->
+    <!-- we're using MicrosoftDotNetApiCompatTaskPackageVersion since the emscripten workload package ID contains a changing version. This one uses sdk-style feature band version numbers. -->
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftDotNetApiCompatTaskPackageVersion)</MicrosoftNETRuntimeEmscriptenVersion>
-    <EmsdkPackageVersion>10.0.0</EmsdkPackageVersion>
+    <!-- we're using MicrosoftNETCoreAppRefPackageVersion since the emsdk package ID contains a changing version. This one uses runtime version numbers.  -->
+    <EmsdkPackageVersion>$(MicrosoftNETCoreAppRefPackageVersion)</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
-    <EmsdkVersion>3.1.56</EmsdkVersion>
+    <EmsdkVersion>5.0.6</EmsdkVersion>
     <!-- WiX 5+ dependencies for MSI generation -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
@@ -179,12 +180,12 @@
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>
     <!-- WiX 5+ dependencies for MSI generation -->
-    <MicrosoftWixVersion>5.0.2-dotnet.2811440</MicrosoftWixVersion>
-    <MicrosoftWixToolsetUIWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetUIWixextVersion>
-    <MicrosoftWixToolsetDependencyWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetDependencyWixextVersion>
-    <MicrosoftWixToolsetUtilWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetUtilWixextVersion>
-    <MicrosoftWixToolsetBalWixextVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetBalWixextVersion>
-    <MicrosoftWixToolsetHeatVersion>5.0.2-dotnet.2811440</MicrosoftWixToolsetHeatVersion>
+    <MicrosoftWixVersion>6.0.3-dotnet.4</MicrosoftWixVersion>
+    <MicrosoftWixToolsetUIWixextVersion>6.0.3-dotnet.4</MicrosoftWixToolsetUIWixextVersion>
+    <MicrosoftWixToolsetDependencyWixextVersion>6.0.3-dotnet.4</MicrosoftWixToolsetDependencyWixextVersion>
+    <MicrosoftWixToolsetUtilWixextVersion>6.0.3-dotnet.4</MicrosoftWixToolsetUtilWixextVersion>
+    <MicrosoftWixToolsetBalWixextVersion>6.0.3-dotnet.4</MicrosoftWixToolsetBalWixextVersion>
+    <MicrosoftWixToolsetHeatVersion>6.0.3-dotnet.4</MicrosoftWixToolsetHeatVersion>
   </PropertyGroup>
 
 </Project>

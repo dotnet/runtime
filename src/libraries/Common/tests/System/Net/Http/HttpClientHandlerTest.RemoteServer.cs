@@ -1290,7 +1290,7 @@ namespace System.Net.Http.Functional.Tests
                 try
                 {
                     using HttpResponseMessage response = await client.GetAsync(uri);
-                    if (response.StatusCode is HttpStatusCode.GatewayTimeout or HttpStatusCode.BadGateway)
+                    if (response.StatusCode is HttpStatusCode.GatewayTimeout or HttpStatusCode.BadGateway or HttpStatusCode.ServiceUnavailable)
                     {
                         // Ignore the erroneous status code, the test depends on an external server that is out of our control.
                         _output.WriteLine(response.ToString());
@@ -1363,7 +1363,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushGetUris))]
+        [ConditionalTheory(typeof(HttpClientHandler_RemoteServerTest), nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushGetUris))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20(Uri server)
         {
             // Sync API supported only up to HTTP/1.1

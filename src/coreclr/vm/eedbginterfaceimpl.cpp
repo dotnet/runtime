@@ -239,7 +239,7 @@ OBJECTHANDLE EEDbgInterfaceImpl::GetThreadException(Thread *pThread)
     }
     CONTRACTL_END;
 
-    OBJECTHANDLE oh = pThread->GetThrowableAsHandle();
+    OBJECTHANDLE oh = pThread->GetThrowableAsPseudoHandle();
 
     if (oh != NULL)
     {
@@ -261,21 +261,7 @@ bool EEDbgInterfaceImpl::IsThreadExceptionNull(Thread *pThread)
     }
     CONTRACTL_END;
 
-    //
-    // We're assuming that the handle on the
-    // thread is a strong handle and we're goona check it for
-    // NULL. We're also assuming something about the
-    // implementation of the handle here, too.
-    //
-    OBJECTHANDLE h = pThread->GetThrowableAsHandle();
-    if (h == NULL)
-    {
-        return true;
-    }
-
-    void *pThrowable = *((void**)h);
-
-    return (pThrowable == NULL);
+    return pThread->IsThrowableNull();
 }
 
 void EEDbgInterfaceImpl::ClearThreadException(Thread *pThread)
@@ -600,7 +586,7 @@ size_t EEDbgInterfaceImpl::GetFunctionSize(MethodDesc *pFD)
     }
     CONTRACTL_END;
 
-    PCODE methodStart = pFD->GetNativeCode();
+    PCODE methodStart = pFD->GetCodeForInterpreterOrJitted();
 
     if (methodStart == (PCODE)NULL)
         return 0;
@@ -621,7 +607,7 @@ PCODE EEDbgInterfaceImpl::GetFunctionAddress(MethodDesc *pFD)
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-    return pFD->GetNativeCode();
+    return pFD->GetCodeForInterpreterOrJitted();
 }
 
 #ifndef DACCESS_COMPILE
@@ -1331,17 +1317,6 @@ void EEDbgInterfaceImpl::GetRuntimeOffsets(SIZE_T *pTLSIndex,
     *pEEIsManagedExceptionStateMask = Thread::TSNC_DebuggerIsManagedException;
 }
 
-void EEDbgInterfaceImpl::DebuggerModifyingLogSwitch (int iNewLevel,
-                                                     const WCHAR *pLogSwitchName)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-}
-
 
 HRESULT EEDbgInterfaceImpl::SetIPFromSrcToDst(Thread *pThread,
                                               SLOT addrStart,
@@ -1389,11 +1364,11 @@ void EEDbgInterfaceImpl::SetDebugState(Thread *pThread,
 
     if (state == THREAD_SUSPEND)
     {
-        pThread->SetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+        pThread->SetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
     }
     else
     {
-        pThread->ResetThreadStateNC(Thread::TSNC_DebuggerUserSuspend);
+        pThread->ResetDebuggerControlledThreadState(Thread::DCTS_UserSuspend);
     }
 }
 
@@ -1432,7 +1407,7 @@ CorDebugUserState EEDbgInterfaceImpl::GetPartialUserState(Thread *pThread)
     }
     CONTRACTL_END;
 
-    Thread::ThreadState ts = pThread->GetSnapshotState();
+    Thread::ThreadState ts = pThread->GetState();
     unsigned ret = 0;
 
     if (ts & Thread::TS_Background)
@@ -1446,12 +1421,12 @@ CorDebugUserState EEDbgInterfaceImpl::GetPartialUserState(Thread *pThread)
     }
 
     // Don't report a StopRequested if the thread has actually stopped.
-    if (ts & Thread::TS_Dead)
+    if (ts & Thread::TS_Stopped)
     {
         ret |= (unsigned)USER_STOPPED;
     }
 
-    if (ts & Thread::TS_Interruptible)
+    if (ts & Thread::TS_WaitSleepJoin)
     {
         ret |= (unsigned)USER_WAIT_SLEEP_JOIN;
     }

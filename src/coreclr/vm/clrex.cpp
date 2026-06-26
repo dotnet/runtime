@@ -610,6 +610,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
     // we could store a throwable handle at the catch site, or store it
     // on the thread object.
 
+#ifdef TARGET_WINDOWS
     if (pException->IsType(SEHException::GetType()))
     {
         SEHException *pSEHException = (SEHException*)pException;
@@ -663,6 +664,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
         return throwable;
     }
     else
+#endif // TARGET_WINDOWS
     {
         // We can enter here for HRException, COMException, DelegatingException
         // just to name a few.
@@ -1119,7 +1121,9 @@ BOOL EEResourceException::GetThrowableMessage(SString &result)
     CONTRACTL_END;
 
     STRINGREF message = NULL;
+    GCPROTECT_BEGIN(message);
     ResMgrGetString(m_resourceName, &message);
+    GCPROTECT_END();
 
     if (message != NULL)
     {
@@ -1277,6 +1281,26 @@ BOOL EETypeAccessException::GetThrowableMessage(SString &result)
 // EEArgumentException is an EE exception subclass representing a bad argument
 // ---------------------------------------------------------------------------
 
+// See Exception.CoreCLR.cs for managed mapping.
+enum class ArgumentExceptionKind : int32_t
+{
+    Argument,
+    ArgumentNull,
+    ArgumentOutOfRange
+};
+
+static ArgumentExceptionKind GetArgumentExceptionKind(RuntimeExceptionKind reKind)
+{
+    LIMITED_METHOD_CONTRACT;
+    switch (reKind)
+    {
+        case kArgumentException: return ArgumentExceptionKind::Argument;
+        case kArgumentNullException: return ArgumentExceptionKind::ArgumentNull;
+        case kArgumentOutOfRangeException: return ArgumentExceptionKind::ArgumentOutOfRange;
+        default: UNREACHABLE();
+    }
+}
+
 OBJECTREF EEArgumentException::CreateThrowable()
 {
 
@@ -1293,53 +1317,19 @@ OBJECTREF EEArgumentException::CreateThrowable()
     struct
     {
         OBJECTREF pThrowable;
-        STRINGREF s1;
-        OBJECTREF pTmpThrowable;
     } gc;
     gc.pThrowable = NULL;
-    gc.s1 = NULL;
-    gc.pTmpThrowable = NULL;
-    ResMgrGetString(m_resourceName, &gc.s1);
     GCPROTECT_BEGIN(gc);
 
-    MethodTable *pMT = CoreLibBinder::GetException(m_kind);
-    gc.pThrowable = AllocateObject(pMT);
+    UnmanagedCallersOnlyCaller createArgException(METHOD__EXCEPTION__CREATE_ARGUMENT_EXCEPTION);
+    ArgumentExceptionKind kind = GetArgumentExceptionKind(m_kind);
+    createArgException.InvokeThrowing(
+        kind,
+        m_resourceName.IsEmpty() ? NULL : m_resourceName.GetUnicode(),
+        m_argumentName.IsEmpty() ? NULL : m_argumentName.GetUnicode(),
+        &gc.pThrowable);
 
-    MethodDesc* pMD = MemberLoader::FindMethod(gc.pThrowable->GetMethodTable(),
-                            COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_RetVoid);
-
-    if (!pMD)
-    {
-        MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
-    }
-
-    MethodDescCallSite exceptionCtor(pMD);
-
-    STRINGREF argName = StringObject::NewString(m_argumentName);
-
-    // Note that ArgumentException takes arguments to its constructor in a different order,
-    // for usability reasons.  However it is inconsistent with our other exceptions.
-    if (m_kind == kArgumentException)
-    {
-        ARG_SLOT args1[] = {
-            ObjToArgSlot(gc.pThrowable),
-            ObjToArgSlot(gc.s1),
-            ObjToArgSlot(argName),
-        };
-        exceptionCtor.Call(args1);
-    }
-    else
-    {
-        ARG_SLOT args1[] = {
-            ObjToArgSlot(gc.pThrowable),
-            ObjToArgSlot(argName),
-            ObjToArgSlot(gc.s1),
-        };
-        exceptionCtor.Call(args1);
-    }
-
-    GCPROTECT_END(); //Prot
+    GCPROTECT_END();
 
     return gc.pThrowable;
 }
@@ -1420,54 +1410,19 @@ OBJECTREF EETypeLoadException::CreateThrowable()
     }
     CONTRACTL_END;
 
-    MethodTable *pMT = CoreLibBinder::GetException(kTypeLoadException);
+    OBJECTREF throwable = NULL;
+    GCPROTECT_BEGIN(throwable);
 
-    struct {
-        OBJECTREF pNewException;
-        STRINGREF pNewAssemblyString;
-        STRINGREF pNewClassString;
-        STRINGREF pNewMessageArgString;
-    } gc;
-    gc.pNewException = NULL;
-    gc.pNewAssemblyString = NULL;
-    gc.pNewClassString = NULL;
-    gc.pNewMessageArgString = NULL;
-    GCPROTECT_BEGIN(gc);
+    LPCWSTR pClassName = m_fullName.GetUnicode();
+    LPCWSTR pAssemblyName = m_pAssemblyName.IsEmpty() ? NULL : m_pAssemblyName.GetUnicode();
+    LPCWSTR pMessageArg = m_pMessageArg.IsEmpty() ? NULL : m_pMessageArg.GetUnicode();
 
-    gc.pNewClassString = StringObject::NewString(m_fullName);
-
-    if (!m_pMessageArg.IsEmpty())
-        gc.pNewMessageArgString = StringObject::NewString(m_pMessageArg);
-
-    if (!m_pAssemblyName.IsEmpty())
-        gc.pNewAssemblyString = StringObject::NewString(m_pAssemblyName);
-
-    gc.pNewException = AllocateObject(pMT);
-
-    MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
-                            COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_Str_Int_RetVoid);
-
-    if (!pMD)
-    {
-        MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
-    }
-
-    MethodDescCallSite exceptionCtor(pMD);
-
-    ARG_SLOT args[] = {
-        ObjToArgSlot(gc.pNewException),
-        ObjToArgSlot(gc.pNewClassString),
-        ObjToArgSlot(gc.pNewAssemblyString),
-        ObjToArgSlot(gc.pNewMessageArgString),
-        (ARG_SLOT)m_resIDWhy,
-    };
-
-    exceptionCtor.Call(args);
+    UnmanagedCallersOnlyCaller createTypeLoadEx(METHOD__TYPE_LOAD_EXCEPTION__CREATE);
+    createTypeLoadEx.InvokeThrowing(pClassName, pAssemblyName, pMessageArg, (int)m_resIDWhy, &throwable);
 
     GCPROTECT_END();
 
-    return gc.pNewException;
+    return throwable;
 }
 
 // ---------------------------------------------------------------------------
@@ -1496,6 +1451,20 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, Except
         m_name.Set(W("<Unknown>"));
 }
 
+
+EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException/* = NULL*/)
+  : EEFileLoadException(name, hr, pInnerException)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    m_diagnosticInfo.Set(diagnosticInfo);
+}
 
 EEFileLoadException::~EEFileLoadException()
 {
@@ -1560,33 +1529,56 @@ RuntimeExceptionKind EEFileLoadException::GetFileLoadKind(HRESULT hr)
 
     if (Assembly::FileNotFound(hr))
         return kFileNotFoundException;
-    else
+
+    // Make sure this matches the list in rexcep.h
+    switch (hr)
     {
-        // Make sure this matches the list in rexcep.h
-        if ((hr == COR_E_BADIMAGEFORMAT) ||
-            (hr == CLDB_E_FILE_OLDVER)   ||
-            (hr == CLDB_E_INDEX_NOTFOUND)   ||
-            (hr == CLDB_E_FILE_CORRUPT)   ||
-            (hr == COR_E_NEWER_RUNTIME)   ||
-            (hr == COR_E_ASSEMBLYEXPECTED)   ||
-            (hr == HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT)) ||
-            (hr == HRESULT_FROM_WIN32(ERROR_EXE_MARKED_INVALID)) ||
-            (hr == CORSEC_E_INVALID_IMAGE_FORMAT) ||
-            (hr == HRESULT_FROM_WIN32(ERROR_NOACCESS)) ||
-            (hr == HRESULT_FROM_WIN32(ERROR_INVALID_ORDINAL))   ||
-            (hr == HRESULT_FROM_WIN32(ERROR_INVALID_DLL)) ||
-            (hr == HRESULT_FROM_WIN32(ERROR_FILE_CORRUPT)) ||
-            (hr == (HRESULT) IDS_CLASSLOAD_32BITCLRLOADING64BITASSEMBLY) ||
-            (hr == COR_E_LOADING_REFERENCE_ASSEMBLY) ||
-            (hr == META_E_BAD_SIGNATURE))
-            return kBadImageFormatException;
-        else
-        {
-            if ((hr == E_OUTOFMEMORY) || (hr == NTE_NO_MEMORY))
-                return kOutOfMemoryException;
-            else
-                return kFileLoadException;
-        }
+    case COR_E_BADIMAGEFORMAT:
+    case CLDB_E_FILE_OLDVER:
+    case CLDB_E_INDEX_NOTFOUND:
+    case CLDB_E_FILE_CORRUPT:
+    case COR_E_NEWER_RUNTIME:
+    case COR_E_ASSEMBLYEXPECTED:
+    case HRESULT_FROM_WIN32(ERROR_BAD_EXE_FORMAT):
+    case HRESULT_FROM_WIN32(ERROR_EXE_MARKED_INVALID):
+    case CORSEC_E_INVALID_IMAGE_FORMAT:
+    case HRESULT_FROM_WIN32(ERROR_NOACCESS):
+    case HRESULT_FROM_WIN32(ERROR_INVALID_ORDINAL):
+    case HRESULT_FROM_WIN32(ERROR_INVALID_DLL):
+    case HRESULT_FROM_WIN32(ERROR_FILE_CORRUPT):
+    case (HRESULT)IDS_CLASSLOAD_32BITCLRLOADING64BITASSEMBLY:
+    case COR_E_LOADING_REFERENCE_ASSEMBLY:
+    case META_E_BAD_SIGNATURE:
+        return kBadImageFormatException;
+
+    case E_OUTOFMEMORY:
+    case NTE_NO_MEMORY:
+        return kOutOfMemoryException;
+
+    default:
+        return kFileLoadException;
+    }
+}
+
+// See FileLoadException.CoreCLR.cs for managed mapping.
+enum class FileLoadExceptionKind : int32_t
+{
+    FileLoad,
+    BadImageFormat,
+    FileNotFound,
+    OutOfMemory
+};
+
+static FileLoadExceptionKind GetFileLoadExceptionKind(HRESULT hr)
+{
+    RuntimeExceptionKind kind = EEFileLoadException::GetFileLoadKind(hr);
+    switch (kind)
+    {
+        case kFileLoadException: return FileLoadExceptionKind::FileLoad;
+        case kBadImageFormatException: return FileLoadExceptionKind::BadImageFormat;
+        case kFileNotFoundException: return FileLoadExceptionKind::FileNotFound;
+        case kOutOfMemoryException: return FileLoadExceptionKind::OutOfMemory;
+        default: UNREACHABLE();
     }
 }
 
@@ -1601,35 +1593,21 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     }
     CONTRACTL_END;
 
-    struct {
+    struct
+    {
         OBJECTREF pNewException;
-        STRINGREF pNewFileString;
     } gc;
     gc.pNewException = NULL;
-    gc.pNewFileString = NULL;
     GCPROTECT_BEGIN(gc);
 
-    gc.pNewFileString = StringObject::NewString(m_name);
-    gc.pNewException = AllocateObject(CoreLibBinder::GetException(m_kind));
+    LPCWSTR pFileName = m_name.GetUnicode();
+    LPCWSTR pDiagnosticInfo = m_diagnosticInfo.IsEmpty() ? NULL : m_diagnosticInfo.GetUnicode();
+    LPCWSTR pRequestingChain = m_requestingAssemblyChain.IsEmpty() ? NULL : m_requestingAssemblyChain.GetUnicode();
+    UnmanagedCallersOnlyCaller createFileLoadEx(METHOD__FILE_LOAD_EXCEPTION__CREATE);
 
-    MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
-                            COR_CTOR_METHOD_NAME, &gsig_IM_Str_Int_RetVoid);
-
-    if (!pMD)
-    {
-        MAKE_WIDEPTR_FROMUTF8(wzMethodName, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, wzMethodName);
-    }
-
-    MethodDescCallSite  exceptionCtor(pMD);
-
-    ARG_SLOT args[] = {
-        ObjToArgSlot(gc.pNewException),
-        ObjToArgSlot(gc.pNewFileString),
-        (ARG_SLOT) m_hr
-    };
-
-    exceptionCtor.Call(args);
+    FileLoadExceptionKind kind = GetFileLoadExceptionKind(m_hr);
+    createFileLoadEx.InvokeThrowing(kind, pFileName, pRequestingChain, (int)m_hr, pDiagnosticInfo, &gc.pNewException);
+    _ASSERTE(gc.pNewException->GetMethodTable() == CoreLibBinder::GetException(m_kind));
 
     GCPROTECT_END();
 
@@ -1663,8 +1641,6 @@ BOOL EEFileLoadException::CheckType(Exception* ex)
 // <TODO>@todo: ideally we would use inner exceptions with these routines</TODO>
 
 /* static */
-
-/* static */
 void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT hr, Exception *pInnerException/* = NULL*/)
 {
     CONTRACTL
@@ -1682,7 +1658,104 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
 
     StackSString name;
     pSpec->GetDisplayName(0, name);
-    EX_THROW_WITH_INNER(EEFileLoadException, (name, hr), pInnerException);
+
+    // Extract the requesting assembly chain for diagnostic purposes
+    {
+        FAULT_NOT_FATAL();
+
+        Exception *inner2 = ExThrowWithInnerHelper(pInnerException);
+        EEFileLoadException *pException = new EEFileLoadException(name, hr);
+        pException->SetInnerException(inner2);
+
+        Assembly *pParentAssembly = pSpec->GetParentAssembly();
+        if (pParentAssembly != NULL)
+        {
+            StackSString requestingChain;
+
+            EX_TRY
+            {
+                // Build the requesting assembly chain: start with the immediate parent,
+                // then walk up the binding cache to find transitive requesting assemblies.
+                pParentAssembly->GetDisplayName(requestingChain);
+
+                const int MaxChainDepth = 10;
+                AppDomain::GetCurrentDomain()->GetParentAssemblyChain(
+                    pParentAssembly, requestingChain, MaxChainDepth);
+
+                pException->SetRequestingAssemblyChain(requestingChain);
+            }
+            EX_CATCH
+            {
+                // Ignore failures while building best-effort diagnostic data and preserve
+                // the primary file load exception.
+            }
+            EX_END_CATCH
+        }
+
+        STRESS_LOG3(LF_EH, LL_INFO100, "EX_THROW_WITH_INNER Type = 0x%x HR = 0x%x, "
+                    INDEBUG(__FILE__) " line %d\n", EEFileLoadException::GetType(),
+                    pException->GetHR(), __LINE__);
+        EX_THROW_DEBUG_TRAP(__FUNCTION__, __FILE__, __LINE__, "EEFileLoadException", pException->GetHR(), "(name, hr)");
+        PAL_CPP_THROW(EEFileLoadException *, pException);
+    }
+}
+
+/* static */
+void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec *pSpec, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException/* = NULL*/)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (hr == COR_E_THREADABORTED)
+        COMPlusThrow(kThreadAbortException);
+    if (hr == E_OUTOFMEMORY)
+        COMPlusThrowOM();
+
+    StackSString name;
+    pSpec->GetDisplayName(0, name);
+
+    // Extract the requesting assembly chain for diagnostic purposes
+    {
+        FAULT_NOT_FATAL();
+
+        Exception *inner2 = ExThrowWithInnerHelper(pInnerException);
+        EEFileLoadException *pException = new EEFileLoadException(name, hr, diagnosticInfo);
+        pException->SetInnerException(inner2);
+
+        Assembly *pParentAssembly = pSpec->GetParentAssembly();
+        if (pParentAssembly != NULL)
+        {
+            StackSString requestingChain;
+
+            EX_TRY
+            {
+                pParentAssembly->GetDisplayName(requestingChain);
+
+                const int MaxChainDepth = 10;
+                AppDomain::GetCurrentDomain()->GetParentAssemblyChain(
+                    pParentAssembly, requestingChain, MaxChainDepth);
+
+                pException->SetRequestingAssemblyChain(requestingChain);
+            }
+            EX_CATCH
+            {
+                // Ignore failures while building best-effort diagnostic data and preserve
+                // the primary file load exception.
+            }
+            EX_END_CATCH
+        }
+
+        STRESS_LOG3(LF_EH, LL_INFO100, "EX_THROW_WITH_INNER Type = 0x%x HR = 0x%x, "
+                    INDEBUG(__FILE__) " line %d\n", EEFileLoadException::GetType(),
+                    pException->GetHR(), __LINE__);
+        EX_THROW_DEBUG_TRAP(__FUNCTION__, __FILE__, __LINE__, "EEFileLoadException", pException->GetHR(), "(name, hr, diagnosticInfo)");
+        PAL_CPP_THROW(EEFileLoadException *, pException);
+    }
 }
 
 /* static */

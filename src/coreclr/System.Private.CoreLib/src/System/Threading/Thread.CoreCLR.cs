@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -110,19 +111,19 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
         private static unsafe partial Interop.BOOL StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName, ObjectHandleOnStack exception);
 
-        // Called from the runtime
-        private void StartCallback()
+        [UnmanagedCallersOnly]
+        private static unsafe void StartCallback(Thread* pThread)
         {
-            StartHelper? startHelper = _startHelper;
+            StartHelper? startHelper = pThread->_startHelper;
             Debug.Assert(startHelper != null);
-            _startHelper = null;
+            pThread->_startHelper = null;
 
             startHelper.Run();
 
             // When this thread is about to exit, inform any subsystems that need to know.
             // For external threads that have been attached to the runtime, we'll call this
             // after the thread has been detached as it won't come through this path.
-            OnThreadExiting();
+            pThread->OnThreadExited();
         }
 
         // Max iterations to be done in SpinWait without switching GC modes.
@@ -145,7 +146,7 @@ namespace System.Threading
         /// </summary>
         public static void SpinWait(int iterations)
         {
-            if (Thread.IsSingleThreaded) return;
+            if (!RuntimeFeature.IsMultithreadingSupported) return;
 
             if (iterations < SpinWaitCoopThreshold)
             {
@@ -322,8 +323,6 @@ namespace System.Threading
             GC.KeepAlive(this);
         }
 
-        // Temporary workaround for https://github.com/dotnet/runtime/issues/122479
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         internal void ClearWaitSleepJoinState()
         {
             // This method is called when the thread is no longer in a wait, sleep, or join state.
@@ -486,13 +485,6 @@ namespace System.Threading
         /// Get the ThreadStaticBase used for this threads TLS data. This ends up being a pointer to the pNativeThread field on the ThreadLocalData,
         /// which is at a well known offset from the start of the ThreadLocalData
         /// </summary>
-        ///
-        /// <remarks>
-        /// We use BypassReadyToRunAttribute to ensure that this method is not compiled using ReadyToRun. This avoids an issue where we might
-        /// fail to use the JIT_GetNonGCThreadStaticBaseOptimized2 JIT helpers to access the field, which would result in a stack overflow, as accessing
-        /// this field would recursively call this method.
-        /// </remarks>
-        [System.Runtime.BypassReadyToRunAttribute]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DebuggerHidden]
         [DebuggerStepThrough]
@@ -574,7 +566,7 @@ namespace System.Threading
         }
 #endif
 
-        private void OnThreadExiting()
+        private void OnThreadExited()
         {
             // Consider this managed thread as dead.
             // The unmanaged thread is still alive, but will die soon, after cleaning up some state.
@@ -588,6 +580,19 @@ namespace System.Threading
             _waitInfo?.OnThreadExiting();
             SetJoinHandle();
 #endif
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void OnThreadExited(Thread* pThread, Exception* pException)
+        {
+            try
+            {
+                pThread->OnThreadExited();
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]

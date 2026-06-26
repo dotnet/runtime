@@ -115,8 +115,14 @@ public partial class ZipArchiveEntry
         {
             // this means we have never opened it before
 
-            // if _uncompressedSize > int.MaxValue, it's still okay, because MemoryStream will just
-            // grow as data is copied into it
+            // MemoryStream is backed by a single byte[] and cannot grow beyond Array.MaxLength.
+            // Validate up front before attempting the (int) cast.
+            if ((ulong)_uncompressedSize > (ulong)Array.MaxLength)
+            {
+                _currentlyOpenForWrite = false;
+                throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
+            }
+
             _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
             if (_originallyInArchive)
@@ -142,12 +148,6 @@ public partial class ZipArchiveEntry
                         throw;
                     }
                 }
-            }
-
-            // if they start modifying it and the compression method is not "store", we should make sure it will get deflated
-            if (CompressionMethod != ZipCompressionMethod.Stored)
-            {
-                CompressionMethod = ZipCompressionMethod.Deflate;
             }
         }
 
@@ -270,8 +270,6 @@ public partial class ZipArchiveEntry
             await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
         }
 
-        _everOpenedForWrite = true;
-        Changes |= ZipArchive.ChangeState.StoredData;
         _currentlyOpenForWrite = true;
 
         if (loadExistingContent)
@@ -282,14 +280,15 @@ public partial class ZipArchiveEntry
         {
             _storedUncompressedData?.Dispose();
             _storedUncompressedData = new MemoryStream();
+            // Opening with loadExistingContent: false discards existing content, which is a modification
+            MarkAsModified();
         }
 
         _storedUncompressedData.Seek(0, SeekOrigin.Begin);
 
-        return new WrappedStream(_storedUncompressedData, this, thisRef =>
-        {
-            thisRef!._currentlyOpenForWrite = false;
-        });
+        return new WrappedStream(_storedUncompressedData, this,
+            onClosed: thisRef => thisRef!._currentlyOpenForWrite = false,
+            notifyEntryOnWrite: true);
     }
 
     private async Task<(bool, string?)> IsOpenableAsync(bool needToUncompress, bool needToLoadIntoMemory, CancellationToken cancellationToken)
@@ -323,14 +322,14 @@ public partial class ZipArchiveEntry
     }
 
     // return value is true if we allocated an extra field for 64 bit headers, un/compressed size
-    private async Task<bool> WriteLocalFileHeaderAsync(bool isEmptyFile, bool forceWrite, CancellationToken cancellationToken)
+    private async Task<bool> WriteLocalFileHeaderAsync(bool isEmptyFile, bool forceWrite, bool preserveDataDescriptor, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (WriteLocalFileHeaderInitialize(isEmptyFile, forceWrite, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength))
+        if (WriteLocalFileHeaderInitialize(isEmptyFile, forceWrite, preserveDataDescriptor, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength, out uint crc32ToWrite))
         {
             byte[] lfStaticHeader = new byte[ZipLocalFileHeader.SizeOfLocalHeader];
-            WriteLocalFileHeaderPrepare(lfStaticHeader, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength);
+            WriteLocalFileHeaderPrepare(lfStaticHeader, crc32ToWrite, compressedSizeTruncated, uncompressedSizeTruncated, extraFieldLength);
 
             // write header
             await _archive.ArchiveStream.WriteAsync(lfStaticHeader, cancellationToken).ConfigureAwait(false);
@@ -351,6 +350,19 @@ public partial class ZipArchiveEntry
     private async Task WriteLocalFileHeaderAndDataIfNeededAsync(bool forceWrite, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        // Check if the entry's stored data was actually modified (StoredData flag is set).
+        // If _storedUncompressedData is loaded but StoredData is not set, it means the entry
+        // was opened for update but no writes occurred - we should use the original compressed bytes.
+        bool storedDataModified = (Changes & ZipArchive.ChangeState.StoredData) != 0;
+
+        // If _storedUncompressedData is loaded but not modified, clear it so we use _compressedBytes
+        if (_storedUncompressedData != null && !storedDataModified)
+        {
+            await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
+            _storedUncompressedData = null;
+        }
+
         // _storedUncompressedData gets frozen here, and is what gets written to the file
         if (_storedUncompressedData != null || _compressedBytes != null)
         {
@@ -377,7 +389,7 @@ public partial class ZipArchiveEntry
                     _compressedSize = 0;
                 }
 
-                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: true, cancellationToken).ConfigureAwait(false);
+                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: true, preserveDataDescriptor: false, cancellationToken).ConfigureAwait(false);
 
                 // according to ZIP specs, zero-byte files MUST NOT include file data
                 if (_uncompressedSize != 0)
@@ -395,13 +407,17 @@ public partial class ZipArchiveEntry
             if (_archive.Mode == ZipArchiveMode.Update || !_everOpenedForWrite)
             {
                 _everOpenedForWrite = true;
-                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, cancellationToken).ConfigureAwait(false);
+                // Preserve the data descriptor flag for entries that originally had one,
+                // since the descriptor bytes remain on disk after the compressed data.
+                bool preserveDataDescriptor = _originallyInArchive
+                    && (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0;
+                await WriteLocalFileHeaderAsync(isEmptyFile: _uncompressedSize == 0, forceWrite: forceWrite, preserveDataDescriptor: preserveDataDescriptor, cancellationToken).ConfigureAwait(false);
 
-                // If we know that we need to update the file header (but don't need to load and update the data itself)
-                // then advance the position past it.
-                if (_compressedSize != 0)
+                // Advance the stream past the compressed data and any trailing data descriptor
+                // by seeking to the pre-computed end-of-entry boundary.
+                if (_endOfLocalEntryData > _archive.ArchiveStream.Position)
                 {
-                    _archive.ArchiveStream.Seek(_compressedSize, SeekOrigin.Current);
+                    _archive.ArchiveStream.Seek(_endOfLocalEntryData, SeekOrigin.Begin);
                 }
             }
         }
@@ -466,7 +482,7 @@ public partial class ZipArchiveEntry
         return _archive.ArchiveStream.WriteAsync(dataDescriptor.AsMemory(0, bytesToWrite), cancellationToken);
     }
 
-    private async Task UnloadStreamsAsync()
+    internal async Task UnloadStreamsAsync()
     {
         if (_storedUncompressedData != null)
         {

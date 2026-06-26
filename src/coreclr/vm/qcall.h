@@ -110,12 +110,14 @@
 #endif // !TARGET_UNIX
 
 #define BEGIN_QCALL                      \
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame()) \
     INSTALL_MANAGED_EXCEPTION_DISPATCHER \
     INSTALL_UNWIND_AND_CONTINUE_HANDLER
 
 #define END_QCALL                         \
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER \
-    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER \
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
 
 #define QCALL_CHECK             \
     THROWS;                     \
@@ -190,9 +192,9 @@ public:
     //
     // ObjectHandleOnStack type is used for managed objects
     //
-    struct ObjectHandleOnStack
+    struct ObjectHandleOnStack final
     {
-        Object ** m_ppObject;
+        Object** m_ppObject;
 
         OBJECTREF Get()
         {

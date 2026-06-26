@@ -6,11 +6,13 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 namespace FixupCallsHostWhenLoaded
 {
     public class FixupCallsHostWhenLoaded
     {
+        [ActiveIssue("C++/CLI, IJW not supported on Mono", TestRuntimes.Mono)]
         [Fact]
         public static int TestEntryPoint()
         {

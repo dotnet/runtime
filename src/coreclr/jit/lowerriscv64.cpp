@@ -55,11 +55,11 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         // Make sure we have an actual immediate
         if (!childNode->IsCnsIntOrI())
             return false;
-        if (childNode->AsIntCon()->ImmedValNeedsReloc(comp))
+        if (childNode->AsIntCon()->ImmedValNeedsReloc(m_compiler))
             return false;
 
         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
-        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
+        target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->IconValue();
 
         switch (parentNode->OperGet())
         {
@@ -154,7 +154,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         }
         jcmp->gtCondition = GenCondition(code);
         jcmp->gtOp1       = cmp;
-        jcmp->gtOp2       = comp->gtNewZeroConNode(cmp->TypeGet());
+        jcmp->gtOp2       = m_compiler->gtNewZeroConNode(cmp->TypeGet());
         BlockRange().InsertBefore(jcmp, jcmp->gtOp2);
     }
 
@@ -193,7 +193,7 @@ GenTree* Lowering::LowerSavedIntegerCompare(GenTree* cmp)
         // a == b  --->  (a - b) == 0
         var_types  type = genActualTypeIsInt(left) ? TYP_INT : TYP_I_IMPL;
         genTreeOps oper = GT_SUB;
-        if (right->IsIntegralConst() && !right->AsIntCon()->ImmedValNeedsReloc(comp))
+        if (right->IsIntegralConst() && !right->AsIntCon()->ImmedValNeedsReloc(m_compiler))
         {
             INT64 value  = right->AsIntConCommon()->IntegralValue();
             INT64 minVal = (type == TYP_INT) ? INT_MIN : SSIZE_T_MIN;
@@ -211,13 +211,14 @@ GenTree* Lowering::LowerSavedIntegerCompare(GenTree* cmp)
                 right->AsIntConCommon()->SetIntegralValue(-value);
             }
         }
-        left  = comp->gtNewOperNode(oper, type, left, right);
-        right = comp->gtNewZeroConNode(type);
+        left  = m_compiler->gtNewOperNode(oper, type, left, right);
+        right = m_compiler->gtNewZeroConNode(type);
         BlockRange().InsertBefore(cmp, left, right);
         ContainCheckBinary(left->AsOp());
     }
 
-    if (!right->TypeIs(TYP_BYREF) && right->IsIntegralConst() && !right->AsIntConCommon()->ImmedValNeedsReloc(comp))
+    if (!right->TypeIs(TYP_BYREF) && right->IsIntegralConst() &&
+        !right->AsIntConCommon()->ImmedValNeedsReloc(m_compiler))
     {
         if (cmp->OperIs(GT_LE, GT_GE))
         {
@@ -277,7 +278,7 @@ void Lowering::SignExtendIfNecessary(GenTree** arg)
     if ((*arg)->OperIsShiftOrRotate() || (*arg)->OperIsCmpCompare() || (*arg)->OperIsAtomicOp())
         return;
 
-    *arg = comp->gtNewCastNode(TYP_I_IMPL, *arg, false, TYP_I_IMPL);
+    *arg = m_compiler->gtNewCastNode(TYP_I_IMPL, *arg, false, TYP_I_IMPL);
     BlockRange().InsertAfter((*arg)->gtGetOp1(), *arg);
 }
 
@@ -300,10 +301,10 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
     ContainCheckBinary(binOp);
 
-    if (!comp->opts.OptimizationEnabled())
+    if (!m_compiler->opts.OptimizationEnabled())
         return binOp->gtNext;
 
-    if (comp->compOpportunisticallyDependsOn(InstructionSet_Zbs) && binOp->OperIs(GT_OR, GT_XOR, GT_AND))
+    if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zbs) && binOp->OperIs(GT_OR, GT_XOR, GT_AND))
     {
         if (op2->IsIntegralConst())
         {
@@ -366,10 +367,10 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                 if (!op2->IsIntegralConst() && op1->TypeIs(TYP_INT))
                 {
                     // Zbs instructions don't have *w variants so wrap the bit index / shift amount to 0-31 manually
-                    GenTreeIntCon* mask = comp->gtNewIconNode(0x1F);
+                    GenTreeIntCon* mask = m_compiler->gtNewIconNode(0x1F);
                     mask->SetContained();
                     BlockRange().InsertAfter(op2, mask);
-                    op2 = comp->gtNewOperNode(GT_AND, op2->TypeGet(), op2, mask);
+                    op2 = m_compiler->gtNewOperNode(GT_AND, op2->TypeGet(), op2, mask);
                     BlockRange().InsertAfter(mask, op2);
                 }
             }
@@ -378,7 +379,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
     if (binOp->OperIs(GT_AND, GT_OR, GT_XOR) && (isOp1Negated || isOp2Negated))
     {
-        if ((isOp1Negated && isOp2Negated) || comp->compOpportunisticallyDependsOn(InstructionSet_Zbb))
+        if ((isOp1Negated && isOp2Negated) || m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
         {
             if (isOp1Negated)
             {
@@ -393,7 +394,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
             if (isOp1Negated != isOp2Negated)
             {
-                assert(comp->compOpportunisticallyDependsOn(InstructionSet_Zbb));
+                assert(m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb));
                 op2->ClearContained(); // negated binary instructions don't have immediate variants
                 if (isOp1Negated)
                     std::swap(op1, op2);
@@ -424,7 +425,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                     genTreeOps reverseOper = binOp->OperIs(GT_AND) ? GT_OR : GT_AND;
                     binOp->ChangeOper(reverseOper);
 
-                    GenTreeUnOp* negation = comp->gtNewOperNode(GT_NOT, binOp->gtType, binOp);
+                    GenTreeUnOp* negation = m_compiler->gtNewOperNode(GT_NOT, binOp->gtType, binOp);
                     BlockRange().InsertAfter(binOp, negation);
                     use.ReplaceWith(negation);
                 }
@@ -476,131 +477,6 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 {
     ContainCheckStoreIndir(node);
     return node->gtNext;
-}
-
-//------------------------------------------------------------------------
-// LowerBlockStore: Set block store type
-//
-// Arguments:
-//    blkNode       - The block store node of interest
-//
-// Return Value:
-//    None.
-//
-void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
-{
-    GenTree* dstAddr = blkNode->Addr();
-    GenTree* src     = blkNode->Data();
-    unsigned size    = blkNode->Size();
-
-    if (blkNode->OperIsInitBlkOp())
-    {
-        if (src->OperIs(GT_INIT_VAL))
-        {
-            src->SetContained();
-            src = src->AsUnOp()->gtGetOp1();
-        }
-
-        if ((size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) && src->OperIs(GT_CNS_INT))
-        {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-
-            // The fill value of an initblk is interpreted to hold a
-            // value of (unsigned int8) however a constant of any size
-            // may practically reside on the evaluation stack. So extract
-            // the lower byte out of the initVal constant and replicate
-            // it to a larger constant whose size is sufficient to support
-            // the largest width store of the desired inline expansion.
-
-            ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
-            if (fill == 0)
-            {
-                src->SetContained();
-            }
-            else if (size >= REGSIZE_BYTES)
-            {
-                fill *= 0x0101010101010101LL;
-                src->gtType = TYP_LONG;
-            }
-            else
-            {
-                fill *= 0x01010101;
-            }
-            src->AsIntCon()->SetIconValue(fill);
-
-            ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
-        }
-        else if (blkNode->IsZeroingGcPointersOnHeap())
-        {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindLoop;
-            // We're going to use REG_R0 for zero
-            src->SetContained();
-        }
-        else
-        {
-            LowerBlockStoreAsHelperCall(blkNode);
-            return;
-        }
-    }
-    else
-    {
-        assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
-        src->SetContained();
-
-        if (src->OperIs(GT_LCL_VAR))
-        {
-            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
-            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
-        }
-
-        ClassLayout* layout               = blkNode->GetLayout();
-        bool         doCpObj              = layout->HasGCPtr();
-        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
-
-        if (doCpObj && (size <= copyBlockUnrollLimit))
-        {
-            // No write barriers are needed on the stack.
-            // If the layout contains a byref, then we know it must live on the stack.
-            if (blkNode->IsAddressNotOnHeap(comp))
-            {
-                // If the size is small enough to unroll then we need to mark the block as non-interruptible
-                // to actually allow unrolling. The generated code does not report GC references loaded in the
-                // temporary register(s) used for copying.
-                doCpObj                  = false;
-                blkNode->gtBlkOpGcUnsafe = true;
-            }
-        }
-
-        // CopyObj or CopyBlk
-        if (doCpObj)
-        {
-            // Try to use bulk copy helper
-            if (TryLowerBlockStoreAsGcBulkCopyCall(blkNode))
-            {
-                return;
-            }
-
-            assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
-        }
-        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
-        {
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-
-            if (src->OperIs(GT_IND))
-            {
-                ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr(), src->AsIndir());
-            }
-
-            ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
-        }
-        else
-        {
-            assert(blkNode->OperIs(GT_STORE_BLK));
-            LowerBlockStoreAsHelperCall(blkNode);
-        }
-    }
 }
 
 //------------------------------------------------------------------------
@@ -670,7 +546,8 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgNode)
         {
             // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
             // the non-split case.
-            comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
+            m_compiler->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum()
+                                                     DEBUGARG(DoNotEnregisterReason::IsStructArg));
         }
     }
 }
@@ -784,7 +661,7 @@ genTreeOps GetShxaddOp(unsigned int shamt, bool isUnsigned)
 //
 bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
 {
-    if (comp->opts.OptimizationDisabled())
+    if (m_compiler->opts.OptimizationDisabled())
     {
         return false;
     }
@@ -901,7 +778,7 @@ bool Lowering::TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next)
 //
 bool Lowering::TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next)
 {
-    if (comp->opts.OptimizationDisabled())
+    if (m_compiler->opts.OptimizationDisabled())
     {
         return false;
     }
@@ -982,7 +859,7 @@ bool Lowering::TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next)
 //
 bool Lowering::TryLowerZextLeftShiftToSlliUw(GenTreeOp* tree, GenTree** next)
 {
-    if (comp->opts.OptimizationDisabled())
+    if (m_compiler->opts.OptimizationDisabled())
     {
         return false;
     }
@@ -1180,7 +1057,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         // - GT_LCL_ADDR is a stack addr mode.
         MakeSrcContained(indirNode, addr);
     }
-    else if (addr->IsCnsIntOrI() && !addr->AsIntCon()->ImmedValNeedsReloc(comp))
+    else if (addr->IsCnsIntOrI() && !addr->AsIntCon()->ImmedValNeedsReloc(m_compiler))
     {
         MakeSrcContained(indirNode, addr);
     }
@@ -1218,6 +1095,17 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 {
     assert(node->OperIs(GT_MOD, GT_UMOD, GT_DIV, GT_UDIV));
+}
+
+//------------------------------------------------------------------------
+// ContainCheckNonLocalJmp:
+//   No-op for RISCV64.
+//
+// Arguments:
+//    node - The GT_NONLOCAL_JMP node.
+//
+void Lowering::ContainCheckNonLocalJmp(GenTreeUnOp* node)
+{
 }
 
 //------------------------------------------------------------------------
@@ -1261,7 +1149,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
         }
     }
 
-    const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
+    const LclVarDsc* varDsc = m_compiler->lvaGetDesc(storeLoc);
 
 #ifdef FEATURE_SIMD
     if (storeLoc->TypeIs(TYP_SIMD8, TYP_SIMD12))
@@ -1291,8 +1179,8 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     }
 
     // Support emitting PC-relative addresses for handles hoisted by constant CSE
-    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && op1->IsIconHandle() && op1->AsIntCon()->FitsInAddrBase(comp) &&
-        op1->AsIntCon()->AddrNeedsReloc(comp))
+    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && op1->IsIconHandle() && op1->AsIntCon()->FitsInAddrBase(m_compiler) &&
+        op1->AsIntCon()->AddrNeedsReloc(m_compiler))
     {
         MakeSrcContained(storeLoc, op1);
     }
@@ -1317,7 +1205,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    if (cmp->gtOp1->IsIntegralConst(0) && !cmp->gtOp1->AsIntCon()->ImmedValNeedsReloc(comp))
+    if (cmp->gtOp1->IsIntegralConst(0) && !cmp->gtOp1->AsIntCon()->ImmedValNeedsReloc(m_compiler))
         MakeSrcContained(cmp, cmp->gtOp1); // use 'zero' register
 
     CheckImmedAndMakeContained(cmp, cmp->gtOp2);

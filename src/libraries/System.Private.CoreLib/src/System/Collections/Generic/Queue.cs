@@ -31,7 +31,7 @@ namespace System.Collections.Generic
         // capacity and grow factor are used.
         public Queue()
         {
-            _array = Array.Empty<T>();
+            _array = [];
         }
 
         // Creates a queue with room for capacity objects. The default grow factor
@@ -287,7 +287,7 @@ namespace System.Collections.Generic
         {
             if (_size == 0)
             {
-                return Array.Empty<T>();
+                return [];
             }
 
             T[] arr = new T[_size];

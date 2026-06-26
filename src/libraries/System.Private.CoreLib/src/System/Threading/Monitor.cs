@@ -78,41 +78,29 @@ namespace System.Threading
             throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
         }
 
-        #region Object->Condition mapping
-
-        private static readonly ConditionalWeakTable<object, Condition> s_conditionTable = [];
-        private static readonly Func<object, Condition> s_createCondition = (o) => new Condition(GetLockObject(o));
-
-        private static Condition GetCondition(object obj)
-        {
-            Debug.Assert(
-                obj is not Condition,
-                "Do not use Monitor.Pulse or Wait on a Condition instance; use the methods on Condition instead.");
-            return s_conditionTable.GetOrAdd(obj, s_createCondition);
-        }
-        #endregion
-
         #region Public Wait/Pulse methods
 
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
-            Thread.ThrowIfSingleThreaded();
-            return GetCondition(obj).Wait(millisecondsTimeout, obj);
+            ArgumentNullException.ThrowIfNull(obj);
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
+
+            return GetLockObject(obj).Wait(millisecondsTimeout, obj);
         }
 
         public static void Pulse(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            GetCondition(obj).SignalOne();
+            GetLockObject(obj).Pulse();
         }
 
         public static void PulseAll(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
-            GetCondition(obj).SignalAll();
+            GetLockObject(obj).PulseAll();
         }
 
         #endregion

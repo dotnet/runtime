@@ -55,6 +55,9 @@ else()
             System.IO.Compression.Native-Static
             System.Native-Static
             System.Native.TimeZoneData.Invariant)
+        if (TARGET coreclr_gen_static)
+            target_link_libraries(corerun PRIVATE coreclr_gen_static)
+        endif()
 
         # additional requirements for System.IO.Compression.Native
         include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
@@ -68,46 +71,49 @@ else()
                 "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
             set(JS_SYSTEM_BROWSER_UTILS
                 "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.Utils.js")
-            set(JS_CORE_RUN
+            set(JS_CORE_RUN_EXTPOST
                 "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.extpost.js")
+            set(JS_CORE_RUN
+                "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.js")
             set_target_properties(corerun PROPERTIES
-                LINK_DEPENDS "${JS_CORE_RUN};${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};"
-                LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --extern-post-js ${JS_CORE_RUN}"
+                LINK_DEPENDS "${JS_CORE_RUN};${JS_CORE_RUN_EXTPOST};${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};"
+                LINK_FLAGS "--js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS} --js-library ${JS_CORE_RUN} --extern-post-js ${JS_CORE_RUN_EXTPOST}"
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+            if (CORERUN_IN_BROWSER)
+                target_link_options(corerun PRIVATE -sWASM_BIGINT=1)
+                # Include the virtual file system data for the browser scenario.
+                set(WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")
+                if (EXISTS "${WASM_PRELOAD_DIR}")
+                    target_link_options(corerun PRIVATE --preload-file ${WASM_PRELOAD_DIR}@/)
+                endif()
+            else()
+                # Node.js doesn't have good support for WASM_BIGINT, so disable it for the Node/shell.
+                target_link_options(corerun PRIVATE -sWASM_BIGINT=0)
+
+                # remove HEAP64 and HEAPU64 from CMAKE_EMCC_EXPORTED_RUNTIME_METHODS
+                string(REPLACE "HEAP64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
+                string(REPLACE "HEAPU64," "" CMAKE_EMCC_EXPORTED_RUNTIME_METHODS "${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}")
+
+                # Add Node.js host file system support.
+                target_link_options(corerun PRIVATE -sNODERAWFS=1 -lnodefs.js)
+            endif()
             target_link_options(corerun PRIVATE
                 -sINITIAL_MEMORY=134217728
-                -sMAXIMUM_MEMORY=2147483648
+                -sMAXIMUM_MEMORY=4294967296
                 -sALLOW_MEMORY_GROWTH=1
+                -sALLOW_TABLE_GROWTH=1
                 -sSTACK_SIZE=5MB
                 -sMODULARIZE=1
                 -sEXPORT_ES6=1
                 -sEXIT_RUNTIME=1
-                -sEXPORTED_RUNTIME_METHODS=ENV,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+                -sEXPORTED_RUNTIME_METHODS=CORERUN,ENV,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
                 -sEXPORTED_FUNCTIONS=_main,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
                 -sEXPORT_NAME=createDotnetRuntime
                 -sENVIRONMENT=node,shell,web
-                -Wl,-error-limit=0)
-
-            if (CORERUN_IN_BROWSER)
-                # Node.js doesn't have good support for WASM_BIGINT
-                # so it only is added when running in the browser.
-                target_link_options(corerun PRIVATE
-                    -sWASM_BIGINT=1)
-
-                # Include the virtual file system data for the
-                # browser scenario.
-                set(WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")
-                if (EXISTS "${WASM_PRELOAD_DIR}")
-                    target_link_options(corerun PRIVATE
-                        --preload-file ${WASM_PRELOAD_DIR}@/)
-                endif()
-            else()
-                # If not running in the browser, add
-                # Node.js file system support.
-                target_link_options(corerun PRIVATE
-                    -sNODERAWFS=1
-                    -lnodefs.js)
-            endif()
+                -lexports.js
+                -Wl,--export=__stack_pointer
+                -Wl,--export=__coreclr_wasm_rtlrestorecontext_tag
+                -Wl,--error-limit=0)
         endif()
 
         if (CORERUN_IN_BROWSER)

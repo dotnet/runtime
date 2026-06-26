@@ -29,7 +29,6 @@ BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pCo
 // General purpose functions for use on an IP in jitted code.
 bool IsIPInProlog(EECodeInfo *pCodeInfo);
 bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSafeToInjectThreadAbort);
-
 #endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 
 // Enums
@@ -45,7 +44,7 @@ enum LFH {
 // Windows uses 64kB as the null-reference area
 #define NULL_AREA_SIZE   (64 * 1024)
 #else // !TARGET_UNIX
-#define NULL_AREA_SIZE   GetOsPageSize()
+#define NULL_AREA_SIZE   minipal_getpagesize()
 #endif // !TARGET_UNIX
 
 class IJitManager;
@@ -169,12 +168,6 @@ bool GenerateDump(LPCWSTR dumpName, INT dumpType, ULONG32 flags, LPSTR errorMess
 void CrashDumpAndTerminateProcess(UINT exitCode);
 
 LONG ThreadBaseExceptionAppDomainFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pvParam);
-
-// Filter for calls out from the 'vm' to native code, if there's a possibility of SEH exceptions
-// in the native code.
-struct CallOutFilterParam { BOOL OneShot; };
-LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv);
-
 
 void STDMETHODCALLTYPE DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionInfo,
                                            OBJECTREF *Throwable = NULL,
@@ -592,8 +585,6 @@ BOOL IsInFirstFrameOfHandler(Thread *pThread,
 //==========================================================================
 // Handy helper functions
 //==========================================================================
-LONG FilterAccessViolation(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam);
-
 bool IsInterceptableException(Thread *pThread);
 
 #ifdef DEBUGGING_SUPPORTED
@@ -648,11 +639,6 @@ inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);
 
 // See implementation for detailed comments in excep.cpp
-LONG AppDomainTransitionExceptionFilter(
-    EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
-    PVOID               pParam);
-
-// See implementation for detailed comments in excep.cpp
 LONG ReflectionInvocationExceptionFilter(
     EXCEPTION_POINTERS *pExceptionInfo, // the pExceptionInfo passed to a filter function.
     PVOID               pParam);
@@ -662,35 +648,11 @@ LONG ReflectionInvocationExceptionFilter(
 LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData);
 #endif // !DACCESS_COMPILE
 
-// Enum that defines the types of exception notification handlers
-// that we support.
-enum ExceptionNotificationHandlerType
-{
-    UnhandledExceptionHandler   = 0x1
-    ,
-    FirstChanceExceptionHandler = 0x2
-};
-
 // This class contains methods to support delivering the various exception notifications.
 class ExceptionNotifications
 {
-private:
-    void static GetEventArgsForNotification(ExceptionNotificationHandlerType notificationType,
-        OBJECTREF *pOutEventArgs, OBJECTREF *pThrowable);
-
-    void static DeliverNotificationInternal(ExceptionNotificationHandlerType notificationType,
-        OBJECTREF *pThrowable);
-
 public:
-    void static DeliverExceptionNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pDelegate, OBJECTREF *pEventArgs,
-        OBJECTREF *pAppDomain);
-
-    BOOL static CanDeliverNotificationToCurrentAppDomain(ExceptionNotificationHandlerType notificationType);
-
-    void static DeliverNotification(ExceptionNotificationHandlerType notificationType, OBJECTREF *pThrowable);
-
-public:
-    void static DeliverFirstChanceNotification();
+    static void DeliverFirstChanceNotification();
 };
 
 #ifndef DACCESS_COMPILE

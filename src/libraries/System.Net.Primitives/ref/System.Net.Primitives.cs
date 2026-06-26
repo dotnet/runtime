@@ -120,6 +120,7 @@ namespace System.Net
         GZip = 1,
         Deflate = 2,
         Brotli = 4,
+        Zstandard = 8,
     }
     public partial class DnsEndPoint : System.Net.EndPoint
     {

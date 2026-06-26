@@ -74,6 +74,12 @@ namespace System.Text.Json
         public object? PolymorphicTypeDiscriminator;
 
         /// <summary>
+        /// Holds the resolved Type when a custom type classifier is used
+        /// instead of discriminator-based resolution.
+        /// </summary>
+        public Type? PolymorphicResolvedType;
+
+        /// <summary>
         /// Global flag indicating whether we can read preserved references.
         /// </summary>
         public bool PreserveReferences;
@@ -105,7 +111,8 @@ namespace System.Text.Json
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
-            Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true;
+            Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true
+                || (jsonTypeInfo.PolymorphicTypeResolver is not null && jsonTypeInfo.TypeClassifier is not null);
             SupportContinuation = supportContinuation;
         }
 
@@ -134,7 +141,8 @@ namespace System.Text.Json
                     Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
                     // Allow number handling on property to win over handling on type.
                     Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.EffectiveNumberHandling;
-                    Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true;
+                    Current.CanContainMetadata = PreserveReferences || jsonTypeInfo.PolymorphicTypeResolver?.UsesTypeDiscriminators == true
+                        || (jsonTypeInfo.PolymorphicTypeResolver is not null && jsonTypeInfo.TypeClassifier is not null);
                 }
             }
             else

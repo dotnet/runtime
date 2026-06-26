@@ -7,8 +7,9 @@ Get-ChildItem -Path "$VersionFolder" -Filter "_version.*" | ForEach-Object {
         # For _version.c, update the commit ID if it has changed from the last build.
         $commit = (git rev-parse HEAD 2>$null)
         if (-not $commit) { $commit = "N/A" }
-        $substitute = "static char sccsid[] __attribute__((used)) = `"@(#)Version N/A @Commit: $commit`";"
-        $version_file_contents = Get-Content -Path $path | ForEach-Object { $_ -replace "^static.*", $substitute }
+        $weak_substitute = "char sccsid[] __attribute__((used, weak)) = `"@(#)Version N/A @Commit: $commit`";"
+        $retain_substitute = "static char sccsid[] __attribute__((used, retain)) = `"@(#)Version N/A @Commit: $commit`";"
+        $version_file_contents = Get-Content -Path $path | ForEach-Object { $_ -replace "^char sccsid\[\].*", $weak_substitute -replace "^static char sccsid\[\].*", $retain_substitute }
         $version_file_destination = "$RepoRoot\\artifacts\\obj\\_version.c"
         $current_contents = ""
         $is_placeholder_file = $false
@@ -18,7 +19,8 @@ Get-ChildItem -Path "$VersionFolder" -Filter "_version.*" | ForEach-Object {
         } else {
             $is_placeholder_file = $true
         }
-        if ($is_placeholder_file -and $version_file_contents -ne $current_contents) {
+        # Only overwrite if the file is a placeholder (or missing) and the content has changed (non empty comparison -> true).
+        if ($is_placeholder_file -and (Compare-Object $version_file_contents $current_contents)) {
             $version_file_contents | Set-Content -Path $version_file_destination
         }
     } elseif (-not (Test-Path -Path "$RepoRoot\\artifacts\\obj\\$($_.Name)")) {

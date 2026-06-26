@@ -27,6 +27,7 @@ Param(
   [switch]$bootstrap,
   [switch]$useBoostrap,
   [switch]$clrinterpreter,
+  [ValidateSet("true","false")][string]$dynamiccodecompiled,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -59,6 +60,9 @@ function Get-Help() {
   Write-Host "                                 [Default: Builds the entire repo.]"
   Write-Host "  -usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   Write-Host "  -clrinterpreter                Enables CoreCLR interpreter for Release builds of targets where it is a Debug only feature."
+  Write-Host "  -dynamiccodecompiled           Enable or disable dynamic code compilation support. Accepts true or false."
+  Write-Host "                                 Also enables the interpreter when dynamic code compilation is disabled."
+  Write-Host "                                 [Default: true for most platforms, false for ios/tvos/browser/wasi]"
   Write-Host "  -verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   Write-Host "                                 [Default: Minimal]"
   Write-Host "  --useBootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
@@ -131,6 +135,29 @@ function Get-Help() {
   Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/main/docs/workflow/README.md"
 }
 
+function Check-LongPathSupport() {
+  $regValue = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -ErrorAction SilentlyContinue
+
+  if ($regValue -and $regValue.LongPathsEnabled -eq 1) {
+    return
+  }
+
+  Write-Host ""
+  Write-Host "ERROR: Long file paths are not enabled on this system." -ForegroundColor Red
+  Write-Host "The dotnet/runtime repository requires long path support to build successfully." -ForegroundColor Red
+  Write-Host ""
+  Write-Host "Please follow the instructions at:" -ForegroundColor Yellow
+  Write-Host "  docs\workflow\requirements\windows-requirements.md#enable-long-paths" -ForegroundColor Yellow
+  Write-Host ""
+  Write-Host "Quick fix:" -ForegroundColor Yellow
+  Write-Host "  1. Enable long paths in Windows (requires admin):" -ForegroundColor White
+  Write-Host "     https://learn.microsoft.com/windows/win32/fileio/maximum-file-path-limitation" -ForegroundColor White
+  Write-Host "  2. Enable long paths in Git:" -ForegroundColor White
+  Write-Host "     git config --system core.longpaths true" -ForegroundColor White
+  Write-Host ""
+  exit 1
+}
+
 if ($help) {
   Get-Help
   exit 0
@@ -147,6 +174,8 @@ if ($subset -eq 'help') {
   Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -restore -build /p:subset=help /clp:nosummary /tl:false"
   exit 0
 }
+
+Check-LongPathSupport
 
 # Lower-case the passed in OS string.
 if ($os) {
@@ -345,8 +374,22 @@ foreach ($argument in $PSBoundParameters.Keys)
     "fsanitize"              { $arguments += " /p:EnableNativeSanitizers=$($PSBoundParameters[$argument])"}
     "useBootstrap"           { $arguments += " /p:UseBootstrap=$($PSBoundParameters[$argument])" }
     "clrinterpreter"         { $arguments += " /p:FeatureInterpreter=true" }
+    "dynamiccodecompiled"    {}
     default                  { $arguments += " /p:$argument=$($PSBoundParameters[$argument])" }
   }
+}
+
+# Default dynamiccodecompiled based on target OS if not explicitly set
+if (-not $dynamiccodecompiled) {
+  if ($os -eq "maccatalyst" -or $os -eq "ios" -or $os -eq "iossimulator" -or $os -eq "tvos" -or $os -eq "tvossimulator" -or $os -eq "browser" -or $os -eq "wasi") {
+    $dynamiccodecompiled = "false"
+  } else {
+    $dynamiccodecompiled = "true"
+  }
+}
+$arguments += " /p:FeatureDynamicCodeCompiled=$dynamiccodecompiled"
+if ($dynamiccodecompiled -eq "false") {
+  $arguments += " /p:FeatureInterpreter=true"
 }
 
 if ($env:TreatWarningsAsErrors -eq 'false') {

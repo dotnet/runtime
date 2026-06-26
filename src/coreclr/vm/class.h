@@ -61,7 +61,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
  *  Forward declarations
  */
 class   AppDomain;
-class   ArrayClass;
 class   ArrayMethodDesc;
 class   Assembly;
 class   ClassLoader;
@@ -79,6 +78,7 @@ class   MethodTable;
 class   Module;
 class   Object;
 class   Stub;
+enum class AsyncMethodFlags;
 class   Substitution;
 class   SystemDomain;
 class   TypeHandle;
@@ -726,6 +726,7 @@ class EEClass // DO NOT CREATE A NEW EEClass USING NEW!
     friend class FieldDesc;
     friend class CheckAsmOffsets;
     friend class ClrDataAccess;
+    friend MethodTable* Module::CreateArrayMethodTable(TypeHandle, CorElementType, unsigned, AllocMemTracker*);
 
     /************************************
      *  PUBLIC INSTANCE METHODS
@@ -792,6 +793,9 @@ private:
         mdMethodDef methodDef,
         DWORD dwImplFlags,
         DWORD dwMemberAttrs,
+        AsyncMethodFlags asyncFlags,
+        PCCOR_SIGNATURE pAsyncSig,
+        DWORD cbAsyncSig,
         MethodDesc** ppNewMD);
 public:
     // Add a new field to an already loaded type for EnC
@@ -1468,16 +1472,6 @@ public:
         GetOptionalFields()->m_pCoClassForIntf = th;
     }
 
-    OBJECTHANDLE GetOHDelegate()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_ohDelegate;
-    }
-    void SetOHDelegate (OBJECTHANDLE _ohDelegate)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_ohDelegate = _ohDelegate;
-    }
     // Set the COM interface type.
     CorIfaceAttr GetComInterfaceType()
     {
@@ -1524,7 +1518,7 @@ public:
     {
         SUPPORTS_DAC;
         WRAPPER_NO_CONTRACT;
-        return HasOptionalFields() ? GetOptionalFields()->m_pDictLayout : NULL;
+        return HasOptionalFields() ? VolatileLoad(&GetOptionalFields()->m_pDictLayout) : NULL;
     }
 
     void SetDictionaryLayout(PTR_DictionaryLayout pLayout)
@@ -1532,7 +1526,7 @@ public:
         SUPPORTS_DAC;
         WRAPPER_NO_CONTRACT;
         _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_pDictLayout = pLayout;
+        VolatileStore(&GetOptionalFields()->m_pDictLayout, pLayout);
     }
 
 #ifndef DACCESS_COMPILE
@@ -1688,16 +1682,8 @@ private:
     PTR_MethodDescChunk m_pChunks;
 
 #ifdef FEATURE_COMINTEROP
-    union
-    {
-        // For CLR wrapper objects that extend an unmanaged class, this field
-        // may contain a delegate to be called to allocate the aggregated
-        // unmanaged class (instead of using CoCreateInstance).
-        OBJECTHANDLE    m_ohDelegate;
-
-        // For interfaces this contains the COM interface type.
-        CorIfaceAttr    m_ComInterfaceType;
-    };
+    // For interfaces this contains the COM interface type.
+    CorIfaceAttr    m_ComInterfaceType;
 
     ComCallWrapperTemplate *m_pccwTemplate;   // points to interop data structures used when this type is exposed to COM
 #endif // FEATURE_COMINTEROP
@@ -1798,6 +1784,7 @@ template<> struct cdac_data<EEClass>
     static constexpr size_t NumStaticFields = offsetof(EEClass, m_NumStaticFields);
     static constexpr size_t NumThreadStaticFields = offsetof(EEClass, m_NumThreadStaticFields);
     static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
+    static constexpr size_t BaseSizePadding = offsetof(EEClass, m_cbBaseSizePadding);
 };
 
 // --------------------------------------------------------------------------------------------
@@ -1886,7 +1873,6 @@ public:
     PTR_Stub                         m_pInstRetBuffCallStub;
     PTR_MethodDesc                   m_pInvokeMethod;
     PCODE                            m_pMultiCastInvokeStub;
-    PCODE                            m_pWrapperDelegateInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
     Volatile<PCODE>                  m_pMarshalStub;
 
@@ -1913,64 +1899,6 @@ public:
 };
 
 
-typedef DPTR(ArrayClass) PTR_ArrayClass;
-
-
-// Dynamically generated array class structure
-class ArrayClass : public EEClass
-{
-    friend MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementType arrayKind, unsigned Rank, AllocMemTracker *pamTracker);
-
-#ifndef DACCESS_COMPILE
-    ArrayClass() { LIMITED_METHOD_CONTRACT; }
-#else
-    friend class NativeImageDumper;
-#endif
-
-private:
-
-    DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
-    unsigned char   m_rank;
-
-public:
-    DWORD GetRank() {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return m_rank;
-    }
-    void SetRank (unsigned Rank) {
-        LIMITED_METHOD_CONTRACT;
-        // The only code path calling this function is code:ClassLoader::CreateTypeHandleForTypeKey, which has
-        // checked the rank already.  Assert that the rank is less than MAX_RANK and that it fits in one byte.
-        _ASSERTE((Rank <= MAX_RANK) && (Rank <= (unsigned char)(-1)));
-        m_rank = (unsigned char)Rank;
-    }
-
-    // Allocate a new MethodDesc for the methods we add to this class
-    void InitArrayMethodDesc(
-        ArrayMethodDesc* pNewMD,
-        PCCOR_SIGNATURE pShortSig,
-        DWORD   cShortSig,
-        DWORD   dwVtableSlot,
-        AllocMemTracker *pamTracker);
-
-    // Generate a short sig for an array accessor
-    VOID GenerateArrayAccessorCallSig(DWORD   dwRank,
-                                      DWORD   dwFuncType, // Load, store, or <init>
-                                      PCCOR_SIGNATURE *ppSig, // Generated signature
-                                      DWORD * pcSig,      // Generated signature size
-                                      LoaderAllocator *pLoaderAllocator,
-                                      AllocMemTracker *pamTracker,
-                                      BOOL fForStubAsIL
-    );
-
-    friend struct ::cdac_data<ArrayClass>;
-};
-
-template<> struct cdac_data<ArrayClass>
-{
-    static constexpr size_t Rank = offsetof(ArrayClass, m_rank);
-};
 
 inline EEClassLayoutInfo *EEClass::GetLayoutInfo()
 {

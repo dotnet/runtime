@@ -457,13 +457,15 @@ namespace System.Text.Json.Tests
         public static void CurrentDepthArrayTest()
         {
             string jsonString =
-@"[
+"""
     [
-        1,
-        2,
-        3
+        [
+            1,
+            2,
+            3
+        ]
     ]
-]";
+    """;
 
             {
                 byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
@@ -516,14 +518,16 @@ namespace System.Text.Json.Tests
         public static void CurrentDepthObjectTest()
         {
             string jsonString =
-@"{
-    ""array"": [
-        1,
-        2,
-        3,
-        {}
-    ]
-}";
+"""
+    {
+        "array": [
+            1,
+            2,
+            3,
+            {}
+        ]
+    }
+    """;
 
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
             var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
@@ -1255,7 +1259,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void SkipTest()
         {
-            string jsonString = @"{""propertyName"": {""foo"": ""bar""},""nestedArray"": {""numbers"": [1,2,3]}}";
+            string jsonString = """{"propertyName": {"foo": "bar"},"nestedArray": {"numbers": [1,2,3]}}""";
 
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
@@ -1400,7 +1404,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void SkipTestEmpty()
         {
-            string jsonString = @"{""nestedArray"": {""empty"": [],""empty"": [{}]}}";
+            string jsonString = """{"nestedArray": {"empty": [],"empty": [{}]}}""";
 
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
@@ -2143,6 +2147,84 @@ namespace System.Text.Json.Tests
                 catch (JsonException ex)
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
+                    Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadLongWhitespaceAndDigitRuns()
+        {
+            // Long whitespace runs exercise the vectorized whitespace-skipping path in
+            // Utf8JsonReader, alongside long integer/fraction digit runs, to lock in correct
+            // tokenization and number parsing for large runs.
+            string jsonString =
+                "[" + new string(' ', 60) + "1234567890123456789," +
+                "\n\n" + new string(' ', 40) + "-1.25e3," +
+                new string('\t', 33) + "42," +
+                new string(' ', 48) + "12345678901234567890123456789012345678" +
+                "\n]";
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+
+            Assert.True(json.Read());
+            Assert.Equal(JsonTokenType.StartArray, json.TokenType);
+
+            Assert.True(json.Read());
+            Assert.Equal(JsonTokenType.Number, json.TokenType);
+            Assert.Equal(1234567890123456789L, json.GetInt64());
+
+            Assert.True(json.Read());
+            Assert.Equal(JsonTokenType.Number, json.TokenType);
+            Assert.Equal(-1250.0, json.GetDouble());
+
+            Assert.True(json.Read());
+            Assert.Equal(JsonTokenType.Number, json.TokenType);
+            Assert.Equal(42, json.GetInt32());
+
+            Assert.True(json.Read());
+            Assert.Equal(JsonTokenType.Number, json.TokenType);
+            Assert.Equal(38, json.ValueSpan.Length);
+
+            Assert.True(json.Read());
+            Assert.Equal(JsonTokenType.EndArray, json.TokenType);
+
+            Assert.False(json.Read());
+            Assert.Equal(dataUtf8.Length, json.BytesConsumed);
+        }
+
+        public static IEnumerable<object[]> WhitespaceBeforeInvalidTokenData()
+        {
+            yield return new object[] { "\n\n\n   ", 3, 3 };
+            yield return new object[] { "\r\n\t\t", 1, 2 };
+            yield return new object[] { new string(' ', 100), 0, 101 };
+            yield return new object[] { new string('\n', 50) + new string(' ', 30), 50, 30 };
+            yield return new object[] { " \t \t \r\n", 1, 0 };
+        }
+
+        [Theory]
+        [MemberData(nameof(WhitespaceBeforeInvalidTokenData))]
+        public static void WhitespaceRunBeforeInvalidToken_ReportsLineAndBytePosition(string whitespace, int expectedLineNumber, int expectedBytePosition)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes("[" + whitespace + "@]");
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling });
+                var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state);
+
+                Assert.True(json.Read());
+                Assert.Equal(JsonTokenType.StartArray, json.TokenType);
+
+                try
+                {
+                    json.Read();
+                    Assert.Fail("Expected JsonException was not thrown.");
+                }
+                catch (JsonException ex)
+                {
+                    Assert.Equal(expectedLineNumber, ex.LineNumber);
                     Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
                 }
             }
@@ -3812,7 +3894,9 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData(@"\""")]
+        [InlineData("""
+            \"
+            """)]
         [InlineData(@"\n")]
         [InlineData(@"\r")]
         [InlineData(@"\\")]
@@ -3836,7 +3920,9 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData(@"\""")]
+        [InlineData("""
+            \"
+            """)]
         [InlineData(@"\n")]
         [InlineData(@"\r")]
         [InlineData(@"\\")]

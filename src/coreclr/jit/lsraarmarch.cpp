@@ -148,18 +148,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
     }
 
+    // set reg requirements on call target represented as control sequence.
     GenTree*         ctrlExpr           = call->gtControlExpr;
     SingleTypeRegSet ctrlExprCandidates = RBM_NONE;
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        // either gtControlExpr != null or gtCallAddr != null.
-        // Both cannot be non-null at the same time.
-        assert(ctrlExpr == nullptr);
-        assert(call->gtCallAddr != nullptr);
-        ctrlExpr = call->gtCallAddr;
-    }
-
-    // set reg requirements on call target represented as control sequence.
     if (ctrlExpr != nullptr)
     {
         // we should never see a gtControlExpr whose type is void.
@@ -172,9 +163,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be overridden by epilog sequence.
             ctrlExprCandidates = allRegs(TYP_INT) & RBM_INT_CALLEE_TRASH.GetIntRegSet() & ~SRBM_LR;
-            if (compiler->getNeedsGSSecurityCookie())
+            if (m_compiler->getNeedsGSSecurityCookie())
             {
-                ctrlExprCandidates &= ~compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
+                ctrlExprCandidates &= ~m_compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
             }
             assert(ctrlExprCandidates != RBM_NONE);
         }
@@ -223,7 +214,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // Set destination candidates for return value of the call.
 
 #ifdef TARGET_ARM
-    if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
+    if (call->IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
     {
         // The ARM CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
         // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
@@ -232,7 +223,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     else
 #endif // TARGET_ARM
 #ifdef TARGET_ARM64
-        if (call->IsHelperCall(compiler, CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
+        if (call->IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
     {
         singleDstCandidates = RBM_INTERFACELOOKUP_FOR_SLOT_RETURN.GetIntRegSet();
     }
@@ -259,7 +250,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     if (ctrlExpr != nullptr)
     {
 #ifdef TARGET_ARM64
-        if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsUnix && (call->gtArgs.CountArgs() == 0) &&
+        if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsUnix && (call->gtArgs.CountArgs() == 0) &&
             ctrlExpr->IsTlsIconHandle())
         {
             // For NativeAOT linux/arm64, we generate the needed code as part of
@@ -280,7 +271,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
-    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    if (call->IsAsync() && m_compiler->compIsAsync() && !call->IsFastTailCall())
     {
         MarkAsyncContinuationBusyForCall(call);
     }
@@ -474,44 +465,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 
         switch (blkNode->gtBlkOpKind)
         {
-            case GenTreeBlk::BlkOpKindCpObjUnroll:
-            {
-                // We don't need to materialize the struct size but we still need
-                // a temporary register to perform the sequence of loads and stores.
-                // We can't use the special Write Barrier registers, so exclude them from the mask
-                SingleTypeRegSet internalIntCandidates =
-                    allRegs(TYP_INT) &
-                    ~(RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF).GetRegSetForType(IntRegisterType);
-                buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
-
-                if (size >= 2 * REGSIZE_BYTES)
-                {
-                    // We will use ldp/stp to reduce code size and improve performance
-                    // so we need to reserve an extra internal register
-                    buildInternalIntRegisterDefForNode(blkNode, internalIntCandidates);
-                }
-
-                if (size >= 4 * REGSIZE_BYTES)
-                {
-                    // We can use 128-bit SIMD ldp/stp for larger block sizes
-                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                }
-
-                // If we have a dest address we want it in RBM_WRITE_BARRIER_DST_BYREF.
-                dstAddrRegMask = RBM_WRITE_BARRIER_DST_BYREF.GetIntRegSet();
-
-                // If we have a source address we want it in REG_WRITE_BARRIER_SRC_BYREF.
-                // Otherwise, if it is a local, codegen will put its address in REG_WRITE_BARRIER_SRC_BYREF,
-                // which is killed by a StoreObj (and thus needn't be reserved).
-                if (srcAddrOrFill != nullptr)
-                {
-                    assert(!srcAddrOrFill->isContained());
-                    srcRegMask = RBM_WRITE_BARRIER_SRC_BYREF.GetIntRegSet();
-                }
-            }
-            break;
-
             case GenTreeBlk::BlkOpKindUnroll:
             {
                 buildInternalIntRegisterDefForNode(blkNode);

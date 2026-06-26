@@ -11,6 +11,7 @@ using System.Threading;
 using System.Runtime.InteropServices;
 
 using Xunit;
+using TestLibrary;
 
 namespace MonoAPI.Tests.MonoMono.PInvokeDetach;
 
@@ -22,6 +23,8 @@ public class PInvokeDetach {
     const string TestNamespace = "MonoAPI.Tests.MonoMono.PInvokeDetach";
     const string TestName = nameof (PInvokeDetach);
 
+    [ActiveIssue("CoreCLR does not implement the mono embedding API", TestRuntimes.CoreCLR)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/67047", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [Fact]
     public static void TestEntryPoint()
     {

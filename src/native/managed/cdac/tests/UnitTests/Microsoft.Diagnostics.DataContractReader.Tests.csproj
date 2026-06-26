@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <Import Project="..\..\..\subproject.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\mscordaccore_universal\mscordaccore_universal.csproj" AdditionalProperties="$(SplitSubprojectProps)" />
+    <ProjectReference Include="..\TestInfrastructure\Microsoft.Diagnostics.DataContractReader.TestInfrastructure.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+  </ItemGroup>
+
+</Project>

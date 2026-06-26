@@ -636,27 +636,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             class ImplIDamOnAllMissing : IDamOnAll
             {
-                // NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
-                // So it doesn't matter that the annotations are not in-sync since the access will validate
-                // the annotations on the implementation method - it doesn't even see the base method in this case.
-                [ExpectedWarning("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2092")]
+                [ExpectedWarning("IL2093")]
+                [ExpectedWarning("IL2095")]
                 public static Type AbstractMethod<T>(Type type) => null;
 
-                // NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
-                [ExpectedWarning("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2092")]
+                [ExpectedWarning("IL2093")]
+                [ExpectedWarning("IL2095")]
                 public static Type VirtualMethod<T>(Type type) => null;
             }
 
             class ImplIDamOnAllMismatch : IDamOnAll
             {
-                // NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
-                [ExpectedWarning("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2092")]
+                [ExpectedWarning("IL2093")]
+                [ExpectedWarning("IL2095")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 public static Type AbstractMethod
                     <[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -665,10 +660,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     Type type)
                 { return null; }
 
-                // NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
-                [ExpectedWarning("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2092")]
+                [ExpectedWarning("IL2093")]
+                [ExpectedWarning("IL2095")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 public static Type VirtualMethod
                     <[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -711,10 +705,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             class ImplIDamOnNoneMismatch : IDamOnNone
             {
-                // NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
-                [ExpectedWarning("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2092")]
+                [ExpectedWarning("IL2093")]
+                [ExpectedWarning("IL2095")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 public static Type AbstractMethod
                     <[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -723,10 +716,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     Type type)
                 { return null; }
 
-                // NativeAOT doesn't validate overrides when accessed through reflection because it's a direct call (non-virtual)
-                [ExpectedWarning("IL2092", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning("IL2093", Tool.Trimmer | Tool.Analyzer, "")]
-                [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2092")]
+                [ExpectedWarning("IL2093")]
+                [ExpectedWarning("IL2095")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
                 public static Type VirtualMethod
                     <[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -754,8 +746,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         {
             class ImplIAnnotatedMethodsMismatch : Library.IAnnotatedMethods
             {
-                // NativeAOT doesn't always validate static overrides when accessed through reflection because it's a direct call (non-virtual)
-                [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2095")]
                 public static void GenericWithMethodsStatic<T>() { }
 
                 [ExpectedWarning("IL2092")]
@@ -776,8 +767,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             class ImplIUnannotatedMethodsMismatch : Library.IUnannotatedMethods
             {
-                // NativeAOT doesn't always validate static overrides when accessed through reflection because it's a direct call (non-virtual)
-                [ExpectedWarning("IL2095", Tool.Trimmer | Tool.Analyzer, "")]
+                [ExpectedWarning("IL2095")]
                 public static void GenericStatic<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>() { }
 
                 [ExpectedWarning("IL2092")]

@@ -12,8 +12,9 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using WasmAppBuilder;
 using JoinedString;
+
+namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 internal sealed class PInvokeTableGenerator
 {
@@ -25,11 +26,11 @@ internal sealed class PInvokeTableGenerator
     private readonly PInvokeCollector _pinvokeCollector;
     private readonly bool _isLibraryMode;
 
-    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode = false)
+    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode, string targetOS)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
-        _pinvokeCollector = new(log);
+        _pinvokeCollector = new(log, targetOS);
         _isLibraryMode = isLibraryMode;
     }
 
@@ -39,16 +40,23 @@ internal sealed class PInvokeTableGenerator
             _pinvokeCollector.CollectPInvokes(pinvokes, callbacks, signatures, type);
     }
 
-    public IEnumerable<string> Generate(string[] pinvokeModules, string outputPathPInvoke, string outputPathReversePInvoke)
+    public IEnumerable<string> Generate(string[] pinvokeModules, string[] ignoredPInvokeModules, string outputPathPInvoke, string outputPathReversePInvoke)
     {
+        var ignoredModules = new HashSet<string>(ignoredPInvokeModules, StringComparer.Ordinal);
         var modules = new SortedDictionary<string, string>(StringComparer.Ordinal);
         foreach (var module in pinvokeModules)
-            modules[module] = module;
+        {
+            if (!ignoredModules.Contains(module))
+                modules[module] = module;
+        }
+
+        foreach (var module in ignoredModules.OrderBy(module => module, StringComparer.Ordinal))
+            Log.LogMessage(MessageImportance.Low, $"Ignoring PInvoke module {module}");
 
         using TempFileName tmpFileNamePInvoke = new();
         using (var w = new JoinedStringStreamWriter(tmpFileNamePInvoke.Path, false))
         {
-            EmitPInvokeTable(w, modules, pinvokes);
+            EmitPInvokeTable(w, modules, ignoredModules, pinvokes);
         }
 
         using TempFileName tmpFileNameReversePInvoke = new();
@@ -70,11 +78,13 @@ internal sealed class PInvokeTableGenerator
         return signatures;
     }
 
-    private void EmitPInvokeTable(StreamWriter w, SortedDictionary<string, string> modules, List<PInvoke> pinvokes)
+    private void EmitPInvokeTable(StreamWriter w, SortedDictionary<string, string> modules, HashSet<string> ignoredModules, List<PInvoke> pinvokes)
     {
         foreach (var pinvoke in pinvokes)
         {
             if (modules.ContainsKey(pinvoke.Module))
+                continue;
+            if (ignoredModules.Contains(pinvoke.Module))
                 continue;
             // Handle special modules, and add them to the list of modules
             // otherwise, skip them and throw an exception at runtime if they
@@ -267,7 +277,7 @@ internal sealed class PInvokeTableGenerator
         if (!t.IsValueType)
             return "void *";
         // Pass pointers and function pointers by-value
-        else if (t.IsPointer || t.IsFunctionPointer)
+        else if (t.IsPointer || IsFunctionPointer(t))
             return "void *";
         else if (t.IsPrimitive)
             throw new NotImplementedException("No native type mapping for type " + t);
@@ -404,7 +414,7 @@ internal sealed class PInvokeTableGenerator
 
             // WASM-TODO: The method lookup would ideally be fully qualified assembly and then methodDef token.
             // The current approach has limitations with overloaded methods.
-            extern "C" void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
+            extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
             extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
 
             """);
@@ -447,9 +457,9 @@ internal sealed class PInvokeTableGenerator
                 $$"""
 
 
-                extern "C" void {{cb.EntryPoint}}({{parametersDeclaration}})
+                extern "C" {{MapType(cb.ReturnType)}} {{cb.EntryPoint}}({{parametersDeclaration}})
                 {
-                    Call_{{cb.EntrySymbol}}({{cb.Parameters.Join(", ", (info, i) => $"arg{i}")}});
+                    {{(cb.IsVoid ? "" : "return ")}}Call_{{cb.EntrySymbol}}({{cb.Parameters.Join(", ", (info, i) => $"arg{i}")}});
                 }
                 """ : string.Empty;
             w.Write(
@@ -462,7 +472,7 @@ internal sealed class PInvokeTableGenerator
                     // Lazy lookup of MethodDesc for the function export scenario.
                     if (!MD_{{cb.EntrySymbol}})
                     {
-                        LookupMethodByName("{{cb.TypeFullName}}, {{cb.AssemblyName}}", "{{cb.MethodName}}", &MD_{{cb.EntrySymbol}});
+                        LookupUnmanagedCallersOnlyMethodByName("{{cb.TypeFullName}}, {{cb.AssemblyName}}", "{{cb.MethodName}}", &MD_{{cb.EntrySymbol}});
                     }{{
                     (!cb.IsVoid ? $"{w.NewLine}{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
                     ExecuteInterpretedMethodFromUnmanaged(MD_{{cb.EntrySymbol}}, {{argsArgs}}, {{(cb.IsVoid ? "nullptr" : "(int8_t*)&result")}}, (PCODE)&Call_{{cb.EntrySymbol}});{{
@@ -476,7 +486,7 @@ internal sealed class PInvokeTableGenerator
         w.Write(
             $$"""
 
-            extern const ReverseThunkMapEntry g_ReverseThunks[] =
+            const ReverseThunkMapEntry g_ReverseThunks[] =
             {
             {{callbacks.Join($",{w.NewLine}", cb => ThunkMapEntryLine(cb, Log))}}
             };
@@ -499,10 +509,16 @@ internal sealed class PInvokeTableGenerator
     {
         var fsName = FixedSymbolName(cb, Log);
 
-        return $"    {{ {cb.Token ^ HashString(cb.AssemblyFQName)}, {HashString(cb.Key)}, {{ &MD_{fsName}, (void*)&Call_{cb.EntrySymbol} }} }} /* alternate key source: {cb.Key} */";
+        return $"    {{ {HashString(cb.Key)}, \"{EscapeLiteral(cb.Key)}\", {{ &MD_{fsName}, (void*)&Call_{cb.EntrySymbol} }} }}";
     }
 
     private static readonly Dictionary<Type, bool> _blittableCache = new();
+
+    public static bool IsFunctionPointer(Type type)
+    {
+        object? bIsFunctionPointer = type.GetType().GetProperty("IsFunctionPointer")?.GetValue(type);
+        return (bIsFunctionPointer is bool b) && b;
+    }
 
     public static bool IsBlittable(Type type, LogAdapter log)
     {
@@ -523,7 +539,7 @@ internal sealed class PInvokeTableGenerator
             if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
                 return true;
 
-            if (type.IsFunctionPointer)
+            if (IsFunctionPointer(type))
                 return true;
 
             // HACK: SkiaSharp has pinvokes that rely on this

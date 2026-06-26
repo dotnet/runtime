@@ -776,7 +776,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             TestSimpleDecrypt_RoundTrip(Certificates.RSAKeyTransferCapi1, contentInfo, Oids.Aes256, SubjectIdentifierType.IssuerAndSerialNumber);
         }
 
-        [ConditionalFact(nameof(SupportsIndefiniteLengthEncoding))]
+        [ConditionalFact(typeof(DecryptTests), nameof(SupportsIndefiniteLengthEncoding))]
         public void DecryptEnvelopedEmptyOctetStringWithIndefiniteLength()
         {
             byte[] content = "30800000".HexToByteArray();
@@ -788,7 +788,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             TestSimpleDecrypt_RoundTrip(Certificates.RSAKeyTransferCapi1, contentInfo, Oids.Aes256, SubjectIdentifierType.IssuerAndSerialNumber, expectedContentInfo);
         }
 
-        [ConditionalFact(nameof(SupportsIndefiniteLengthEncoding))]
+        [ConditionalFact(typeof(DecryptTests), nameof(SupportsIndefiniteLengthEncoding))]
         public void DecryptEnvelopedOctetStringWithIndefiniteLength()
         {
             byte[] content = "308004000000".HexToByteArray();

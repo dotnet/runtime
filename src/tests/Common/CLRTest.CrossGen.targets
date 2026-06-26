@@ -32,13 +32,25 @@ WARNING:   When setting properties based on their current state (for example:
     Tests can opt out of ahead-of-time (AOT) compilation from crossgen / crossgen2 by setting this property in their project:
 
       <CrossGenTest>false</CrossGenTest>
+
+    Tests can pass extra crossgen2 arguments only in composite mode by setting this property in their project:
+
+      <CompositeCrossGen2TestExtraArguments>...</CompositeCrossGen2TestExtraArguments>
   -->
   <Target Name="GetCrossgenBashScript">
 
     <Error Text="Setting both AlwaysUseCrossGen2 to true and CrossGenTest to false is non-sensical" Condition="'$(CrossGenTest)' == 'false' and '$(AlwaysUseCrossGen2)' == 'true'"/>
 
     <PropertyGroup>
-      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
+      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(R2RIncompatible)' == 'true'">
+        <![CDATA[
+if [ ! -z ${RunCrossGen2+x} ]%3B then
+  echo SKIPPING EXECUTION BECAUSE the test is incompatible with ReadyToRun
+  exit 0
+fi
+        ]]>
+      </CrossgenBashScript>
+      <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false' and '$(R2RIncompatible)' != 'true'">
         <![CDATA[
 
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
@@ -61,14 +73,13 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       mkdir IL-CG2
       cp ./*.dll IL-CG2/
       rm IL-CG2/composite-r2r.* 2>/dev/null
-      rm IL-CG2/Coreclr.TestWrapper.dll 2>/dev/null
-      rm IL-CG2/*.XUnitWrapper.dll 2>/dev/null
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
         # HACK: copy native shared shim libraries. Not needed on Windows.
         cp "$CORE_ROOT"/lib*.so "$CORE_ROOT"/lib*.dylib $(scriptPath)
 
         ExtraCrossGen2Args+=" --composite"
+        ExtraCrossGen2Args+=" $(CompositeCrossGen2TestExtraArguments)"
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -98,7 +109,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
             __R2RDumpCommand+=" dotnet"
         fi
         __R2RDumpCommand+=" $CORE_ROOT/R2RDump/R2RDump.dll"
-        __R2RDumpCommand+=" --header --sc --in $__OutputFileFinal --out $__OutputFileFinal.r2rdump --val"
+        __R2RDumpCommand+=" --header --sc --in $__OutputFileFinal --out $__OutputFileFinal.r2rdump --val --rp $CORE_ROOT"
 
         __Command="$_DebuggerFullPath $CORE_ROOT/crossgen2/crossgen2"
         __Command+=" @$__ResponseFile"
@@ -176,6 +187,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           if [ "$(CrossGen2OutputFormat)" == "macho" ]; then
               __CompositeExt=".o"
               __CompositeExtFinal=".dylib"
+          elif [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
+              __CompositeExt=".wasm"
+              __CompositeExtFinal=".wasm"
           fi
           RunCrossgen2OnFiles "$PWD/composite-r2r${__CompositeExt}" "$PWD/composite-r2r${__CompositeExtFinal}" "$PWD/IL-CG2/*.dll"
       else
@@ -184,6 +198,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           do
             echo $dllFile
             bareFileName="${dllFile##*/}"
+            if [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
+                bareFileName="${bareFileName%.dll}.wasm"
+            fi
             RunCrossgen2OnFiles "$PWD/$bareFileName" "$PWD/$bareFileName" "$dllFile"
             if [ $__cg2ExitCode -ne 0 ]; then
               break
@@ -220,7 +237,16 @@ fi
 
   <Target Name="GetCrossgenBatchScript">
     <PropertyGroup>
-      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
+      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(R2RIncompatible)' == 'true'">
+        <![CDATA[
+IF NOT "%RunCrossGen2%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with ReadyToRun
+  popd
+  Exit /b 0
+)
+        ]]>
+      </CrossgenBatchScript>
+      <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false' and '$(R2RIncompatible)' != 'true'">
         <![CDATA[
 
 if /i "$(AlwaysUseCrossGen2)" == "true" (
@@ -254,12 +280,15 @@ if defined RunCrossGen2 (
     mkdir IL-CG2
     copy *.dll IL-CG2\
     del IL-CG2\composite-r2r.* 2>nul
-    del IL-CG2\Coreclr.TestWrapper.dll 2>nul
-    del IL-CG2\*.XUnitWrapper.dll 2>nul
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
-        set __OutputFile=!scriptPath!\composite-r2r.dll
+        set ExtraCrossGen2Args=!ExtraCrossGen2Args! $(CompositeCrossGen2TestExtraArguments)
+        if "$(CrossGen2OutputFormat)"=="wasm" (
+            set __OutputFile=!scriptPath!\composite-r2r.wasm
+        ) else (
+            set __OutputFile=!scriptPath!\composite-r2r.dll
+        )
         set __PdbFile=!scriptPath!\composite-r2r.ni.pdb
         rem In composite mode, treat all dll's in the test folder as rooting inputs
         set __InputFile=!scriptPath!IL-CG2\*.dll
@@ -268,7 +297,11 @@ if defined RunCrossGen2 (
     ) else (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL-CG2\*.dll
         for %%I in (!scriptPath!IL-CG2\*.dll) do (
-            set __OutputFile=!scriptPath!%%~nI.dll
+            if "$(CrossGen2OutputFormat)"=="wasm" (
+                set __OutputFile=!scriptPath!%%~nI.wasm
+            ) else (
+                set __OutputFile=!scriptPath!%%~nI.dll
+            )
             set __PdbFile=!scriptPath!%%~nI.ni.pdb
             set __InputFile=%%I
             call :CompileOneFileCrossgen2
@@ -293,7 +326,7 @@ if defined RunCrossGen2 (
         set __DotNet="dotnet"
     )
     set __R2RDumpCommand=!_DebuggerFullPath! !__DotNet! "!CORE_ROOT!\r2rdump\r2rdump.dll"
-    set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump --val
+    set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump --val --rp "!CORE_ROOT!"
 
     set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen2\crossgen2.exe"
     set __Command=!__Command! @"!__ResponseFile!"
@@ -306,6 +339,9 @@ if defined RunCrossGen2 (
     echo --targetos:$(TargetOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
+    if not "$(CrossGen2OutputFormat)"=="" (
+        echo -f:$(CrossGen2OutputFormat)>>!__ResponseFile!
+    )
     if defined CrossGen2SynthesizePgo (
         echo --synthesize-random-mibc>>!__ResponseFile!
         echo --embed-pgo-data>>!__ResponseFile!

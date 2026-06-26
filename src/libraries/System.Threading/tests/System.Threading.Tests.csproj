@@ -7,6 +7,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <_WasmPThreadPoolUnusedSize>10</_WasmPThreadPoolUnusedSize>
+    <XunitShowProgress Condition="'$(WasmEnableThreads)' == 'true'">true</XunitShowProgress>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncLocalTests.cs" />
@@ -34,6 +35,7 @@
     <Compile Include="ReaderWriterLockSlimTests.cs" />
     <Compile Include="SpinWaitTests.cs" />
     <Compile Include="ThreadLocalTests.cs" />
+    <Compile Include="VolatileTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ExecutionContextTests.cs" />
     <Compile Include="SynchronizationContextTests.cs" />

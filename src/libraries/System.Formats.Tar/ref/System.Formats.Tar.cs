@@ -84,13 +84,36 @@ namespace System.Formats.Tar
     public static partial class TarFile
     {
         public static void CreateFromDirectory(string sourceDirectoryName, System.IO.Stream destination, bool includeBaseDirectory) { }
+        public static void CreateFromDirectory(string sourceDirectoryName, System.IO.Stream destination, bool includeBaseDirectory, System.Formats.Tar.TarEntryFormat format) { }
+        public static void CreateFromDirectory(string sourceDirectoryName, System.IO.Stream destination, bool includeBaseDirectory, System.Formats.Tar.TarWriterOptions options) { }
         public static void CreateFromDirectory(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory) { }
+        public static void CreateFromDirectory(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, System.Formats.Tar.TarEntryFormat format) { }
+        public static void CreateFromDirectory(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, System.Formats.Tar.TarWriterOptions options) { }
         public static System.Threading.Tasks.Task CreateFromDirectoryAsync(string sourceDirectoryName, System.IO.Stream destination, bool includeBaseDirectory, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task CreateFromDirectoryAsync(string sourceDirectoryName, System.IO.Stream destination, bool includeBaseDirectory, System.Formats.Tar.TarEntryFormat format, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task CreateFromDirectoryAsync(string sourceDirectoryName, System.IO.Stream destination, bool includeBaseDirectory, System.Formats.Tar.TarWriterOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, System.Formats.Tar.TarEntryFormat format, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task CreateFromDirectoryAsync(string sourceDirectoryName, string destinationFileName, bool includeBaseDirectory, System.Formats.Tar.TarWriterOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void ExtractToDirectory(System.IO.Stream source, string destinationDirectoryName, bool overwriteFiles) { }
+        public static void ExtractToDirectory(System.IO.Stream source, string destinationDirectoryName, System.Formats.Tar.TarExtractOptions options) { }
         public static void ExtractToDirectory(string sourceFileName, string destinationDirectoryName, bool overwriteFiles) { }
+        public static void ExtractToDirectory(string sourceFileName, string destinationDirectoryName, System.Formats.Tar.TarExtractOptions options) { }
         public static System.Threading.Tasks.Task ExtractToDirectoryAsync(System.IO.Stream source, string destinationDirectoryName, bool overwriteFiles, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task ExtractToDirectoryAsync(System.IO.Stream source, string destinationDirectoryName, System.Formats.Tar.TarExtractOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task ExtractToDirectoryAsync(string sourceFileName, string destinationDirectoryName, bool overwriteFiles, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task ExtractToDirectoryAsync(string sourceFileName, string destinationDirectoryName, System.Formats.Tar.TarExtractOptions options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public sealed partial class TarExtractOptions
+    {
+        public TarExtractOptions() { }
+        public System.Formats.Tar.TarHardLinkMode HardLinkMode { get { throw null; } set { } }
+        public bool OverwriteFiles { get { throw null; } set { } }
+    }
+    public enum TarHardLinkMode
+    {
+        PreserveLink = 0,
+        CopyContents = 1,
     }
     public sealed partial class TarReader : System.IAsyncDisposable, System.IDisposable
     {
@@ -105,6 +128,7 @@ namespace System.Formats.Tar
         public TarWriter(System.IO.Stream archiveStream) { }
         public TarWriter(System.IO.Stream archiveStream, bool leaveOpen = false) { }
         public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarEntryFormat format = System.Formats.Tar.TarEntryFormat.Pax, bool leaveOpen = false) { }
+        public TarWriter(System.IO.Stream archiveStream, System.Formats.Tar.TarWriterOptions options, bool leaveOpen = false) { }
         public System.Formats.Tar.TarEntryFormat Format { get { throw null; } }
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
@@ -112,6 +136,12 @@ namespace System.Formats.Tar
         public void WriteEntry(string fileName, string? entryName) { }
         public System.Threading.Tasks.Task WriteEntryAsync(System.Formats.Tar.TarEntry entry, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task WriteEntryAsync(string fileName, string? entryName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public sealed partial class TarWriterOptions
+    {
+        public TarWriterOptions() { }
+        public System.Formats.Tar.TarEntryFormat Format { get { throw null; } set { } }
+        public System.Formats.Tar.TarHardLinkMode HardLinkMode { get { throw null; } set { } }
     }
     public sealed partial class UstarTarEntry : System.Formats.Tar.PosixTarEntry
     {

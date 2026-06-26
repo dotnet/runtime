@@ -28,6 +28,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.Rethrow:
                     mangledName = "RhpRethrow";
                     break;
+                case ReadyToRunHelper.ThrowExact:
+                    mangledName = "RhpThrowExact";
+                    break;
 
                 case ReadyToRunHelper.Overflow:
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowOverflowException"u8);
@@ -75,9 +78,6 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.BulkWriteBarrier:
                     methodDesc = context.GetCoreLibEntryPoint("System"u8, "Buffer"u8, "BulkMoveWithWriteBarrier"u8, null);
-                    break;
-                case ReadyToRunHelper.ByRefWriteBarrier:
-                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpByRefAssignRefArm64" : "RhpByRefAssignRef";
                     break;
                 case ReadyToRunHelper.WriteBarrier_EAX:
                     mangledName = "RhpAssignRefEAX";
@@ -333,6 +333,10 @@ namespace ILCompiler
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:
                     methodDesc = context.SystemModule.GetKnownType("System"u8, "Environment"u8).GetKnownMethod("get_CurrentManagedThreadId"u8, null);
+                    break;
+
+                case ReadyToRunHelper.AllocContinuation:
+                    methodDesc = context.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null);
                     break;
 
                 default:

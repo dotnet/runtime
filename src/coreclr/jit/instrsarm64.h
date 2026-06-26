@@ -1314,6 +1314,12 @@ INST1(blr,         "blr",          0,      IF_BR_1B,  0xD63F0000)
 INST1(ret,         "ret",          0,      IF_BR_1A,  0xD65F0000)
                                    //  ret     Rn                   BR_1A  1101011001011111 000000nnnnn00000   D65F 0000
 
+INST1(retaa,       "retaa",        0,      IF_BR_0A,  0xD65F0BFF)
+                                   //  retaa                        BR_0A  1101011001011111 0000101111111111   D65F 0BFF
+
+INST1(retab,       "retab",        0,      IF_BR_0A,  0xD65F0FFF)
+                                   //  retab                        BR_0A  1101011001011111 0000111111111111   D65F 0FFF
+
 INST1(beq,         "beq",          0,      IF_BI_0B,  0x54000000)
                                    //  beq     simm19               BI_0B  01010100iiiiiiii iiiiiiiiiii00000   5400 0000   simm19:00
 
@@ -1527,8 +1533,8 @@ INST1(sha1h,       "sha1h",        0,      IF_DV_2U,  0x5E280800)
 INST1(sha1su0,     "sha1su0",      0,      IF_DV_3F,  0x5E003000)
                                    //  sha1su0 Vd.4S,Vn.4S,Vm.4S    DV_3F  01011110000mmmmm 001100nnnnnddddd   5E00 3000   Vd.4S Vn.4S Vm.4S  (vector)
 
-INST1(sha1su1,     "sha1su1",      0,      IF_DV_2P,  0x5E281800)
-                                   //  sha1su1 Vd.4S, Vn.4S         DV_2P  0101111000101000 000110nnnnnddddd   5E28 1800   Vd.4S Vn.4S   (vector)
+INST1(sha1su1,     "sha1su1",      0,      IF_DV_2U,  0x5E281800)
+                                   //  sha1su1 Vd.4S, Vn.4S         DV_2U  0101111000101000 000110nnnnnddddd   5E28 1800   Vd.4S Vn.4S   (vector)
 
 INST1(sha256h,     "sha256h",      0,      IF_DV_3F,  0x5E004000)
                                    //  sha256h  Qd,Qn,Vm.4S         DV_3F  01011110000mmmmm 010000nnnnnddddd   5E00 4000   Qd Qn Vm.4S   (vector)
@@ -1536,8 +1542,8 @@ INST1(sha256h,     "sha256h",      0,      IF_DV_3F,  0x5E004000)
 INST1(sha256h2,    "sha256h2",     0,      IF_DV_3F,  0x5E005000)
                                    //  sha256h  Qd,Qn,Vm.4S         DV_3F  01011110000mmmmm 010100nnnnnddddd   5E00 5000   Qd Qn Vm.4S   (vector)
 
-INST1(sha256su0,   "sha256su0",    0,      IF_DV_2P,  0x5E282800)
-                                   // sha256su0  Vd.4S,Vn.4S        DV_2P  0101111000101000 001010nnnnnddddd   5E28 2800   Vd.4S Vn.4S   (vector)
+INST1(sha256su0,   "sha256su0",    0,      IF_DV_2U,  0x5E282800)
+                                   // sha256su0  Vd.4S,Vn.4S        DV_2U  0101111000101000 001010nnnnnddddd   5E28 2800   Vd.4S Vn.4S   (vector)
 
 INST1(sha256su1,   "sha256su1",    0,      IF_DV_3F,  0x5E006000)
                                    // sha256su1  Vd.4S,Vn.4S,Vm.4S  DV_3F  01011110000mmmmm 011000nnnnnddddd   5E00 6000   Vd.4S Vn.4S Vm.4S  (vector)
@@ -1593,14 +1599,32 @@ INST1(autia1716,   "autia1716",    0,      IF_PC_0A,  0xD503219F)
 INST1(autiasp,     "autiasp",      0,      IF_PC_0A,  0xD50323BF)
                                    //  autiasp                      PC_0A  1101010100000011 0010001110111111   D503 23BF
 
+INST1(autib1716,   "autib1716",    0,      IF_PC_0A,  0xD50321DF)
+                                   //  autib1716                    PC_0A  1101010100000011 0010000111011111   D503 21DF
+
+INST1(autibsp,     "autibsp",      0,      IF_PC_0A,  0xD50323FF)
+                                   //  autibsp                      PC_0A  1101010100000011 0010001111111111   D503 23FF
+
+INST1(autibz,      "autibz",       0,      IF_PC_0A,  0xD50323DF)
+                                   //  autibz                       PC_0A  1101010100000011 0010001111011111   D503 23DF
+
 INST1(autiaz,      "autiaz",       0,      IF_PC_0A,  0xD503239F)
                                    //  autiaz                       PC_0A  1101010100000011 0010001110011111   D503 239F
 
-INST1(pacia1716,   "pacia1716 ",   0,      IF_PC_0A,  0xD503211F)
+INST1(pacia1716,   "pacia1716",    0,      IF_PC_0A,  0xD503211F)
                                    //  pacia1716                    PC_0A  1101010100000011 0010000100011111   D503 211F
 
 INST1(paciasp,     "paciasp",      0,      IF_PC_0A,  0xD503233F)
                                    //  paciasp                      PC_0A  1101010100000011 0010001100111111   D503 233F
+
+INST1(pacib1716,   "pacib1716",    0,      IF_PC_0A,  0xD503215F)
+                                   //  pacib1716                    PC_0A  1101010100000011 0010000101011111   D503 215F
+
+INST1(pacibsp,     "pacibsp",      0,      IF_PC_0A,  0xD503237F)
+                                   //  pacibsp                      PC_0A  1101010100000011 0010001101111111   D503 237F
+
+INST1(pacibz,      "pacibz",       0,      IF_PC_0A,  0xD503235F)
+                                   //  pacibz                       PC_0A  1101010100000011 0010001101011111   D503 235F
 
 INST1(paciaz,      "paciaz",       0,      IF_PC_0A,  0xD503231F)
                                    //  paciaz                       PC_0A  1101010100000011 0010001100011111   D503 231F
@@ -1611,8 +1635,14 @@ INST1(xpaclri,     "xpaclri",      0,      IF_PC_0A,  0xD50320FF)
 INST1(autiza,      "autiza",       0,      IF_PC_1A,  0xDAC133E0)
                                    //  autiza  Rd                   PC_1A  1101101011000001 0001000000000000   DAC1 33E0
 
+INST1(autizb,      "autizb",       0,      IF_PC_1A,  0xDAC137E0)
+                                   //  autizb  Rd                   PC_1A  1101101011000001 00110111111ddddd   DAC1 37E0
+
 INST1(paciza,      "paciza",       0,      IF_PC_1A,  0xDAC123E0)
                                    //  paciza  Rd                   PC_1A  1101101011000001 00000011111ddddd   DAC1 23E0
+
+INST1(pacizb,      "pacizb",       0,      IF_PC_1A,  0xDAC127E0)
+                                   //  pacizb  Rd                   PC_1A  1101101011000001 00100111111ddddd   DAC1 27E0
 
 INST1(xpacd,       "xpacd",        0,      IF_PC_1A,  0xDAC147E0)
                                    //  xpacd   Rd                   PC_0A  1101101011000001 0100011111100000   DAC1 47E0
@@ -1623,8 +1653,14 @@ INST1(xpaci,       "xpaci",        0,      IF_PC_1A,  0xDAC143E0)
 INST1(autia,       "autia",        0,      IF_PC_2A,  0xDAC11000)
                                    //  autia   Rd,Rn                PC_2A  1101101011000001 00110011111ddddd   DAC1 1000
 
+INST1(autib,       "autib",        0,      IF_PC_2A,  0xDAC11400)
+                                   //  autib   Rd,Rn                PC_2A  1101101011000001 000101nnnnnddddd   DAC1 1400
+
 INST1(pacia,       "pacia",        0,      IF_PC_2A,  0xDAC10000)
                                    //  pacia   Rd,Rn                PC_2A  1101101011000001 000000nnnnnddddd   DAC1 0000
+
+INST1(pacib,       "pacib",        0,      IF_PC_2A,  0xDAC10400)
+                                   //  pacib   Rd,Rn                PC_2A  1101101011000001 000001nnnnnddddd   DAC1 0400
 
 INST1(nop,         "nop",          0,      IF_SN_0A,  0xD503201F)
                                    //  nop                          SN_0A  1101010100000011 0010000000011111   D503 201F
@@ -2044,6 +2080,46 @@ INST1(tbx_4regs,   "tbx",          0,      IF_DV_3C,  0x0E007000)
 INST1(align,       "align",        0,      IF_SN_0A,  BAD_CODE)
                                    //  align                          SN_0A
 #endif
+
+INST1(eor3,      "eor3",           0,      IF_DV_4B,  0xCE000000)
+                                   //  eor3 Vd.16B,Vn.16B,Vm.16B, Va.16B    DV_4B  11001110000mmmmm 0aaaaannnnnddddd      Vd Vn Vm Va (vector)
+
+INST1(bcax,      "bcax",           0,      IF_DV_4B,  0xCE200000)
+                                   //  bcax Vd.16B,Vn.16B,Vm.16B, Va.16B    DV_4B  11001110001mmmmm 0aaaaannnnnddddd      Vd Vn Vm Va (vector)
+
+INST1(sm3ss1,    "sm3ss1",         0,      IF_DV_4B,  0xCE400000)
+                                   //  sm3ss1 Vd.4S,Vn.4S,Vm.4S, Va.4S      DV_4B  11001110010mmmmm 0aaaaannnnnddddd      Vd Vn Vm Va (vector)
+
+INST1(sha512h,   "sha512h",        0,      IF_DV_3H,  0xCE608000)
+                                   //  sha512h Qd,Qn,Vm.2D                  DV_3H  11001110011mmmmm 100000nnnnnddddd      Vd Vn Vm    (vector)
+
+INST1(sha512h2,  "sha512h2",       0,      IF_DV_3H,  0xCE608400)
+                                   //  sha512h2 Qd,Qn,Vm.2D                 DV_3H  11001110011mmmmm 100001nnnnnddddd      Vd Vn Vm    (vector)
+
+INST1(sha512su1, "sha512su1",      0,      IF_DV_3H,  0xCE608800)
+                                   //  sha512su1 Vd.2D,Vn.2D,Vm.2D          DV_3H  11001110011mmmmm 100010nnnnnddddd      Vd Vn Vm    (vector)
+
+INST1(rax1,      "rax1",           0,      IF_DV_3H,  0xCE608C00)
+                                   //  rax1 Vd.2D,Vn.2D,Vm.2D               DV_3H  11001110011mmmmm 100011nnnnnddddd      Vd Vn Vm    (vector)
+
+INST1(sm3partw1, "sm3partw1",      0,      IF_DV_3H,  0xCE60C000)
+                                   //  sm3partw1 Vd.4S,Vn.4S,Vm.4S          DV_3H  11001110011mmmmm 110000nnnnnddddd      Vd Vn Vm    (vector)
+
+INST1(sm3partw2, "sm3partw2",      0,      IF_DV_3H,  0xCE60C400)
+                                   //  sm3partw2 Vd.4S,Vn.4S,Vm.4S          DV_3H  11001110011mmmmm 110001nnnnnddddd      Vd Vn Vm    (vector)
+
+INST1(sm4ekey,   "sm4ekey",        0,      IF_DV_3H,  0xCE60C800)
+                                   //  sm4ekey Vd.4S,Vn.4S,Vm.4S            DV_3H  11001110011mmmmm 110010nnnnnddddd      Vd Vn Vm    (vector)
+
+INST1(xar,       "xar",            0,      IF_DV_3I,  0xCE800000)
+                                   //  xar Vd.2D,Vn.2D,Vm.2D,imm6           DV_3I  11001110100mmmmm iiiiiinnnnnddddd      Vd Vn Vm imm6 (vector)
+
+INST1(sha512su0, "sha512su0",      0,      IF_DV_2V,  0xCEC08000)
+                                   //  sha512su0 Vd.2D,Vn.2D                DV_2V  1100111011000000 100000nnnnnddddd      Vd Vn       (vector)
+
+INST1(sm4e,      "sm4e",           0,      IF_DV_2V,  0xCEC08400)
+                                   //  sm4e Vd.4S,Vn.4S                     DV_2V  1100111011000000 100001nnnnnddddd      Vd Vn       (vector)
+
 // clang-format on
 
 /*****************************************************************************/

@@ -70,7 +70,7 @@ PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMa
                     }
                     pCurrent = pCurrent->pParent;
                 } while (pCurrent != NULL);
-                
+
             }
 
             pFrame = pFrame->PtrNextFrame();
@@ -365,6 +365,12 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
         pRD->pCurrentContextPointers            = pRD->pCallerContextPointers;
         pRD->pCallerContextPointers             = tempPtrs;
 
+#if defined(TARGET_ARM64)
+        TADDR tempSpForPacSign          = pRD->CurrentContextSpForPacSign;
+        pRD->CurrentContextSpForPacSign = pRD->CallerContextSpForPacSign;
+        pRD->CallerContextSpForPacSign  = tempSpForPacSign;
+#endif // TARGET_ARM64
+
 #ifdef TARGET_X86
         pRD->PCTAddr = pRD->pCurrentContext->Esp - pCodeInfo->GetCodeManager()->GetStackParameterSize(pCodeInfo) - sizeof(DWORD);
 #endif
@@ -388,7 +394,11 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
         pRD->pCurrentContext->Esp = pRD->SP;
         pRD->pCurrentContext->Eip = pRD->ControlPC;
 #else
-        VirtualUnwindCallFrame(pRD->pCurrentContext, pRD->pCurrentContextPointers, pCodeInfo);
+        ARM64_ONLY(pRD->CurrentContextSpForPacSign = 0;)
+        VirtualUnwindCallFrame(pRD->pCurrentContext,
+                               pRD->pCurrentContextPointers,
+                               pCodeInfo
+                               ARM64_ARG(&pRD->CurrentContextSpForPacSign));
 #endif
     }
 
@@ -400,7 +410,6 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
 #endif // TARGET_AMD64 && TARGET_WINDOWS
     SyncRegDisplayToCurrentContext(pRD);
     pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
     return pRD->ControlPC;
 }
@@ -409,12 +418,9 @@ UINT_PTR Thread::VirtualUnwindCallFrame(PREGDISPLAY pRD, EECodeInfo* pCodeInfo /
 // static
 PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                                         T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers /*= NULL*/,
-                                        EECodeInfo * pCodeInfo /*= NULL*/)
+                                        EECodeInfo * pCodeInfo /*= NULL*/
+                                        ARM64_ARG(TADDR * pSpForPacSign /*= NULL*/))
 {
-#ifdef TARGET_WASM
-    _ASSERTE("VirtualUnwindCallFrame is not supported on WebAssembly");
-    return 0;
-#else
     CONTRACTL
     {
         NOTHROW;
@@ -520,6 +526,17 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
     #endif // HOST_64BIT
         PVOID               HandlerData;
 
+#if defined(TARGET_ARM64)
+        RtlVirtualUnwindWithSpForPacSign(0,
+                                         uImageBase,
+                                         uControlPc,
+                                         pFunctionEntry,
+                                         pContext,
+                                         &HandlerData,
+                                         &EstablisherFrame,
+                                         pContextPointers,
+                                         (PULONG64)pSpForPacSign);
+#else
         RtlVirtualUnwind(0,
                          uImageBase,
                          uControlPc,
@@ -528,6 +545,7 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
                          &HandlerData,
                          &EstablisherFrame,
                          pContextPointers);
+#endif
 
         uControlPc = GetIP(pContext);
     }
@@ -550,7 +568,6 @@ PCODE Thread::VirtualUnwindCallFrame(T_CONTEXT* pContext,
 #endif // !DACCESS_COMPILE
 
     return uControlPc;
-#endif // TARGET_WASM
 }
 
 #ifndef DACCESS_COMPILE
@@ -664,7 +681,7 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
             break;
         }
 
-        BOOL success = PAL_VirtualUnwind(pContext, NULL);
+        BOOL success = PAL_VirtualUnwind(pContext);
         if (!success)
         {
             _ASSERTE(!"Thread::VirtualUnwindToFirstManagedCallFrame: PAL_VirtualUnwind failed");
@@ -1087,6 +1104,27 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
 
     // process the REGDISPLAY and stop at the first frame
     ProcessIp(GetControlPC(m_crawl.pRD));
+#ifdef FEATURE_INTERPRETER
+    if (m_crawl.codeInfo.IsInterpretedCode())
+    {
+        // CONTEXT is in interpreted code where the first-arg register holds the owning InterpreterFrame.
+        // Skip past it so we don't re-enter its frame chain.
+        PTR_InterpreterFrame pOwning =
+            dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(m_crawl.pRD->pCurrentContext));
+        _ASSERTE(pOwning != NULL);
+        _ASSERTE(pOwning->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+
+        if (pFrame == NULL)
+        {
+            m_crawl.pFrame = pOwning->PtrNextFrame();
+        }
+        else
+        {
+            // Explicit pFrame must already be past the owner (callee Frames have lower addresses than their callers).
+            _ASSERTE(dac_cast<TADDR>(m_crawl.pFrame) > dac_cast<TADDR>(pOwning));
+        }
+    }
+#endif // FEATURE_INTERPRETER
     if (m_crawl.isFrameless && !!(m_crawl.pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE))
     {
         m_crawl.hasFaulted = true;
@@ -1160,6 +1198,19 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
     PCODE curPc = GetControlPC(pRegDisp);
     ProcessIp(curPc);
 
+#ifdef FEATURE_INTERPRETER
+    if (m_crawl.codeInfo.IsInterpretedCode())
+    {
+        // CONTEXT is in interpreted code where the first-arg register holds the owning InterpreterFrame.
+        // Skip past it so we don't re-enter its frame chain.
+        PTR_InterpreterFrame pOwningInterpFrame =
+            dac_cast<PTR_InterpreterFrame>((TADDR)GetFirstArgReg(m_crawl.pRD->pCurrentContext));
+        _ASSERTE(pOwningInterpFrame != NULL);
+        _ASSERTE(pOwningInterpFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+        m_crawl.pFrame = pOwningInterpFrame->PtrNextFrame();
+    }
+    else
+#endif // FEATURE_INTERPRETER
     // loop the frame chain to find the closet explicit frame which is lower than the specified REGDISPLAY
     // (stack grows up towards lower address)
     if (m_crawl.pFrame != FRAME_TOP)
@@ -2155,6 +2206,15 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             goto Cleanup;
         }
 
+#ifdef FEATURE_INTERPRETER
+        if (GetIP(m_crawl.pRD->pCurrentContext) == InterpreterFrame::DummyCallerIP)
+        {
+            PTR_InterpreterFrame pInterpreterFrame = dac_cast<PTR_InterpreterFrame>(GetSP(m_crawl.pRD->pCurrentContext));
+            pInterpreterFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
+            LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Transitioning from last interpreted frame under InterpreterFrame %p to native frame (IP=%p, SP=%p)\n", pInterpreterFrame, GetControlPC(m_crawl.pRD), GetRegdisplaySP(m_crawl.pRD)));
+        }
+#endif // FEATURE_INTERPRETER
+
 #define FAIL_IF_SPECULATIVE_WALK(condition)             \
         if (m_flags & PROFILER_DO_STACK_SNAPSHOT)       \
         {                                               \
@@ -2208,6 +2268,16 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame))
         {
             pInlinedFrame = m_crawl.pFrame;
+#ifdef FEATURE_INTERPRETER
+            if (((InlinedCallFrame*)pInlinedFrame)->IsInInterpreter())
+            {
+                PTR_Frame pNextFrame = pInlinedFrame->PtrNextFrame();
+                _ASSERTE((pNextFrame != FRAME_TOP) && (pNextFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame));
+                LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Transitioning from InlinedCallFrame to InterpreterFrame %p\n", m_crawl.pFrame));
+                m_crawl.GotoNextFrame();
+                goto Cleanup;
+            }
+#endif // FEATURE_INTERPRETER
         }
 
         unsigned uFrameAttribs = m_crawl.pFrame->GetFrameAttribs();
@@ -2225,40 +2295,59 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             m_crawl.isIPadjusted = false;
         }
 
-        PCODE adr = m_crawl.pFrame->GetReturnAddress();
-        _ASSERTE(adr != (PCODE)POISONC);
-
-        _ASSERTE(!pInlinedFrame || adr);
-
-        if (adr)
+#ifdef FEATURE_INTERPRETER
+        if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
         {
-            ProcessIp(adr);
+            LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Switching to interpreted frames for InterpreterFrame %p\n", m_crawl.pFrame));
+            ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(m_crawl.GetRegisterSet()->pCurrentContext);
+            SyncRegDisplayToCurrentContext(m_crawl.GetRegisterSet());
+            ProcessIp(GetControlPC(m_crawl.pRD));
 
-            _ASSERTE(m_crawl.GetCodeInfo()->IsValid() || !pInlinedFrame);
-
-            if (m_crawl.isFrameless)
+            _ASSERTE(m_crawl.GetCodeInfo()->IsValid());
+            if (m_crawl.GetRegisterSet()->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
             {
-                m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
+                m_crawl.isInterrupted = true;
+                m_crawl.hasFaulted = true;
+            }
+        }
+        else
+#endif // FEATURE_INTERPRETER
+        {
+            PCODE adr = m_crawl.pFrame->GetReturnAddress();
+            _ASSERTE(adr != (PCODE)POISONC);
 
-                CONSISTENCY_CHECK(NULL == m_pvResumableFrameTargetSP);
+            _ASSERTE(!pInlinedFrame || adr);
 
-                if (m_crawl.isFirst)
+            if (adr)
+            {
+                ProcessIp(adr);
+
+                _ASSERTE(m_crawl.GetCodeInfo()->IsValid() || !pInlinedFrame);
+
+                if (m_crawl.isFrameless)
                 {
-                    if (m_flags & THREAD_IS_SUSPENDED)
+                    m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD, m_flags & UNWIND_FLOATS);
+
+                    CONSISTENCY_CHECK(NULL == m_pvResumableFrameTargetSP);
+
+                    if (m_crawl.isFirst)
                     {
-                        _ASSERTE(m_crawl.isProfilerDoStackSnapshot);
+                        if (m_flags & THREAD_IS_SUSPENDED)
+                        {
+                            _ASSERTE(m_crawl.isProfilerDoStackSnapshot);
 
-                        // abort the stackwalk, we can't proceed without risking deadlock
-                        retVal = SWA_FAILED;
-                        goto Cleanup;
+                            // abort the stackwalk, we can't proceed without risking deadlock
+                            retVal = SWA_FAILED;
+                            goto Cleanup;
+                        }
+
+                        // we are about to unwind, which may take a lock, so the thread
+                        // better not be suspended.
+                        CONSISTENCY_CHECK(!(m_flags & THREAD_IS_SUSPENDED));
+
+                        m_crawl.GetCodeManager()->EnsureCallerContextIsValid(m_crawl.pRD, NULL, m_codeManFlags);
+                        m_pvResumableFrameTargetSP = (LPVOID)GetSP(m_crawl.pRD->pCallerContext);
                     }
-
-                    // we are about to unwind, which may take a lock, so the thread
-                    // better not be suspended.
-                    CONSISTENCY_CHECK(!(m_flags & THREAD_IS_SUSPENDED));
-
-                    m_crawl.GetCodeManager()->EnsureCallerContextIsValid(m_crawl.pRD, NULL, m_codeManFlags);
-                    m_pvResumableFrameTargetSP = (LPVOID)GetSP(m_crawl.pRD->pCallerContext);
                 }
             }
         }
@@ -2402,68 +2491,6 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             m_frameState = SFITER_DONE;
             return;
         }
-
-#ifdef FEATURE_INTERPRETER
-        if (!m_crawl.isFrameless)
-        {
-            PREGDISPLAY pRD = m_crawl.GetRegisterSet();
-
-            if (m_crawl.pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
-            {
-                if (GetIP(pRD->pCurrentContext) != (PCODE)InterpreterFrame::DummyCallerIP)
-                {
-                    // We have hit the InterpreterFrame while we were not processing the interpreter frames.
-                    // Switch to walking the underlying interpreted frames.
-                    // Save the registers the interpreter frames walking reuses so that we can restore them
-                    // after we are done with the interpreter frames.
-                    LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Switching to interpreted frames for InterpreterFrame %p, saving SP=%p, IP=%p\n", m_crawl.pFrame, GetIP(pRD->pCurrentContext), GetSP(pRD->pCurrentContext)));
-                    m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
-                    m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
-                    m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
-                    m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-                    m_interpExecMethodSSP = pRD->SSP;
-#endif
-                    ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
-                    if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
-                    {
-                        m_crawl.isInterrupted = true;
-                        m_crawl.hasFaulted = true;
-                    }
-
-                    SyncRegDisplayToCurrentContext(pRD);
-                    ProcessIp(GetControlPC(pRD));
-                }
-                else
-                {
-                    // We have finished walking the interpreted frames. Process the InterpreterFrame itself.
-                    // Restore the registers to the values they had before we started walking the interpreter frames.
-                    LOG((LF_GCROOTS, LL_INFO10000, "STACKWALK: Completed walking of interpreted frames for InterpreterFrame %p, restoring SP=%p, IP=%p\n", m_crawl.pFrame, m_interpExecMethodSP, m_interpExecMethodIP));
-                    _ASSERTE(dac_cast<TADDR>(m_crawl.pFrame) == GetFirstArgReg(pRD->pCurrentContext));
-                    SetIP(pRD->pCurrentContext, m_interpExecMethodIP);
-                    SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
-                    SetFP(pRD->pCurrentContext, m_interpExecMethodFP);
-                    SetFirstArgReg(pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-                    pRD->SSP = m_interpExecMethodSSP;
-#endif
-                    SyncRegDisplayToCurrentContext(pRD);
-                }
-            }
-            else if (InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame) && ((PTR_InlinedCallFrame)m_crawl.pFrame)->IsInInterpreter())
-            {
-                // There is an active inlined call frame localed in the interpreter code. This is a special case where we need
-                // to save the current context registers that the interpreter frames walking reuses.
-                m_interpExecMethodIP = GetIP(pRD->pCurrentContext);
-                m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
-                m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
-                m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
-#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
-                m_interpExecMethodSSP = pRD->SSP;
-#endif
-            }
-        }
-#endif // FEATURE_INTERPRETER
 
         if (m_crawl.isFrameless)
         {

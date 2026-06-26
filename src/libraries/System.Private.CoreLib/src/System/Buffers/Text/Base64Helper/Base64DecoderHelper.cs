@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
+
 #if NET
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
@@ -167,6 +169,11 @@ namespace System.Buffers.Text
                 long remaining = srcEnd - src;
                 Debug.Assert(typeof(TBase64Decoder) == typeof(Base64DecoderByte) ? remaining == 4 : remaining < 8);
                 int i0 = decoder.DecodeRemaining(srcEnd, ref decodingMap, remaining, out uint t2, out uint t3);
+
+                if (i0 < 0)
+                {
+                    goto InvalidDataExit;
+                }
 
                 byte* destMax = destBytes + (uint)destLength;
 
@@ -458,7 +465,7 @@ namespace System.Buffers.Text
             }
         }
 
-        internal static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+        internal static unsafe OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
             where TBase64Decoder : IBase64Decoder<byte>
         {
             const int BlockSize = 4;
@@ -467,6 +474,14 @@ namespace System.Buffers.Text
 
             while (!source.IsEmpty)
             {
+                // Skip over any leading whitespace
+                if (IsWhiteSpace(source[0]))
+                {
+                    source = source.Slice(1);
+                    bytesConsumed++;
+                    continue;
+                }
+
                 int encodedIdx = 0;
                 int bufferIdx = 0;
                 int skipped = 0;
@@ -485,12 +500,7 @@ namespace System.Buffers.Text
                 }
 
                 source = source.Slice(encodedIdx);
-                bytesConsumed += skipped;
-
-                if (bufferIdx == 0)
-                {
-                    continue;
-                }
+                Debug.Assert(bufferIdx > 0);
 
                 bool hasAnotherBlock;
 
@@ -522,13 +532,16 @@ namespace System.Buffers.Text
                 }
 
                 status = DecodeFrom<TBase64Decoder, byte>(decoder, buffer.Slice(0, bufferIdx), bytes, out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
-                bytesConsumed += localConsumed;
-                bytesWritten += localWritten;
 
                 if (status != OperationStatus.Done)
                 {
+                    Debug.Assert(localConsumed == 0 && localWritten == 0, "On failure, should not have consumed or written any bytes");
                     return status;
                 }
+
+                bytesConsumed += skipped;
+                bytesConsumed += localConsumed;
+                bytesWritten += localWritten;
 
                 // The remaining data must all be whitespace in order to be valid.
                 if (!hasAnotherBlock)
@@ -551,12 +564,13 @@ namespace System.Buffers.Text
                 }
 
                 bytes = bytes.Slice(localWritten);
+                Debug.Assert(!source.IsEmpty);
             }
 
             return status;
         }
 
-        internal static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+        internal static unsafe OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
             where TBase64Decoder : IBase64Decoder<ushort>
         {
             const int BlockSize = 4;
@@ -565,6 +579,14 @@ namespace System.Buffers.Text
 
             while (!source.IsEmpty)
             {
+                // Skip over any leading whitespace
+                if (IsWhiteSpace(source[0]))
+                {
+                    source = source.Slice(1);
+                    bytesConsumed++;
+                    continue;
+                }
+
                 int encodedIdx = 0;
                 int bufferIdx = 0;
                 int skipped = 0;
@@ -583,16 +605,11 @@ namespace System.Buffers.Text
                 }
 
                 source = source.Slice(encodedIdx);
-                bytesConsumed += skipped;
-
-                if (bufferIdx == 0)
-                {
-                    continue;
-                }
+                Debug.Assert(bufferIdx > 0);
 
                 bool hasAnotherBlock;
 
-                if (decoder is Base64DecoderByte)
+                if (decoder is Base64DecoderChar)
                 {
                     hasAnotherBlock = source.Length >= BlockSize;
                 }
@@ -620,13 +637,16 @@ namespace System.Buffers.Text
                 }
 
                 status = DecodeFrom(decoder, buffer.Slice(0, bufferIdx), bytes, out int localConsumed, out int localWritten, localIsFinalBlock, ignoreWhiteSpace: false);
-                bytesConsumed += localConsumed;
-                bytesWritten += localWritten;
 
                 if (status != OperationStatus.Done)
                 {
+                    Debug.Assert(localConsumed == 0 && localWritten == 0, "On failure, should not have consumed or written any bytes");
                     return status;
                 }
+
+                bytesConsumed += skipped;
+                bytesConsumed += localConsumed;
+                bytesWritten += localWritten;
 
                 // The remaining data must all be whitespace in order to be valid.
                 if (!hasAnotherBlock)
@@ -648,6 +668,7 @@ namespace System.Buffers.Text
                 }
 
                 bytes = bytes.Slice(localWritten);
+                Debug.Assert(!source.IsEmpty);
             }
 
             return status;
@@ -691,7 +712,7 @@ namespace System.Buffers.Text
             return padding;
         }
 
-        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> source, ref int destIndex, uint sourceIndex)
+        private static unsafe OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> source, ref int destIndex, uint sourceIndex)
             where TBase64Decoder : IBase64Decoder<byte>
         {
             int BlockSize = Math.Min(source.Length - (int)sourceIndex, 4);

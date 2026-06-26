@@ -83,6 +83,10 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
     // restored after the wait operation;
     int32_t lastErrorOnEntry = PalGetLastError();
 
+    // Mark that this thread is trapped for suspension.
+    // Used by the sample profiler to determine this thread was in managed code.
+    SetState(TSF_SuspensionTrapped);
+
     do
     {
         // set preemptive mode
@@ -101,6 +105,8 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
         VolatileStoreWithoutBarrier(&m_pTransitionFrame, (PInvokeTransitionFrame*)nullptr);
     }
     while (ThreadStore::IsTrapThreadsRequested());
+
+    ClearState(TSF_SuspensionTrapped);
 
     // Restore the saved error
     PalSetLastError(lastErrorOnEntry);
@@ -475,6 +481,12 @@ void Thread::GcScanRootsWorker(ScanFunc * pfnEnumCallback, ScanContext * pvCallb
             EnumGcRef(pHijackedReturnValue, returnKind, pfnEnumCallback, pvCallbackData);
         }
     }
+
+    PTR_OBJECTREF pHijackedAsyncContinuation = NULL;
+    if (frameIterator.GetHijackedAsyncContinuation(&pHijackedAsyncContinuation))
+    {
+        EnumGcRef(pHijackedAsyncContinuation, GCRK_Object, pfnEnumCallback, pvCallbackData);
+    }
 #endif
 
 #ifndef DACCESS_COMPILE
@@ -811,9 +823,9 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         m_ppvHijackedReturnAddressLocation = ppvRetAddrLocation;
         m_pvHijackedReturnAddress = pvRetAddr;
 #if defined(TARGET_X86)
-        m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(
-            frameIterator->GetCodeManager()->GetReturnValueKind(frameIterator->GetMethodInfo(),
-                                                                frameIterator->GetRegisterSet()));
+        bool isAsync = false;
+        GCRefKind retKind = frameIterator->GetCodeManager()->GetReturnValueKind(frameIterator->GetMethodInfo(), frameIterator->GetRegisterSet(), &isAsync);
+        m_uHijackedReturnValueFlags = ReturnKindToTransitionFrameFlags(retKind, isAsync);
 #endif
 
         *ppvRetAddrLocation = (void*)pfnHijackFunction;

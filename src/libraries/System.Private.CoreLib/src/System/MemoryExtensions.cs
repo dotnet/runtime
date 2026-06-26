@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -5014,11 +5014,8 @@ namespace System
             {
                 other = other.Slice(0, span.Length);
             }
-            else if (span.Length > other.Length)
-            {
-                span = span.Slice(0, other.Length);
-            }
-            Debug.Assert(span.Length == other.Length);
+
+            span = span.Slice(0, other.Length);
         }
 
         /// <summary>
@@ -5259,7 +5256,7 @@ namespace System
         /// <param name="options">A bitwise combination of the enumeration values that specifies whether to trim whitespace and include empty ranges.</param>
         /// <returns>The number of ranges written into <paramref name="destination"/>.</returns>
         /// <remarks>This implementation matches the various quirks of string.Split.</remarks>
-        private static int SplitCore(
+        private static unsafe int SplitCore(
             ReadOnlySpan<char> source, Span<Range> destination,
             ReadOnlySpan<char> separatorOrSeparators, ReadOnlySpan<string?> stringSeparators, bool isAny,
             StringSplitOptions options)

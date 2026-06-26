@@ -3,7 +3,9 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Internal;
 
 namespace System.Threading
 {
@@ -11,26 +13,72 @@ namespace System.Threading
     /// A LIFO semaphore.
     /// Waits on this semaphore are uninterruptible.
     /// </summary>
-    internal sealed partial class LowLevelLifoSemaphore : IDisposable
+    internal sealed partial class LowLevelLifoSemaphore
     {
+        // The spin count is chosen to be in the range of typical thread wake latency and some additional overhead,
+        // all assuming a single spin is calibrated to around 35 nanoseconds.
+        // The thread wake latency commonly measures at 2-10 microsecond (year 2026) and unlikely to drastically change.
+        private const int DefaultSemaphoreSpinCountLimit = 256;
+        // The cooldown roughly serves as detection that the thread did not spend time being blocked.
+        // If it woke in under 4 microseconds, it was likely a fast/trivial wake without blocking.
+        private const int DefaultWakeCooldown = 4;
+
         private CacheLineSeparatedCounts _separated;
 
-        private readonly int _maximumSignalCount;
-        private readonly uint _spinCount;
+        private readonly short _maxSpinCount;
+        private readonly short _threadWakeCooldownUsec;
         private readonly Action _onWait;
 
-        public LowLevelLifoSemaphore(int maximumSignalCount, uint spinCount, Action onWait)
+        // When we need to block threads we use a linked list of per-thread blockers.
+        // When we need to wake a worker, we pop the topmost blocker and release it.
+        private sealed class LifoBlockerNode
         {
-            Debug.Assert(maximumSignalCount > 0);
-            Debug.Assert(maximumSignalCount <= short.MaxValue);
-            Debug.Assert(spinCount >= 0);
+            internal LifoBlockerNode? _next;
+            internal LowLevelThreadBlocker _blocker = new LowLevelThreadBlocker();
 
+            ~LifoBlockerNode()
+            {
+                _blocker.Dispose();
+            }
+        }
+
+        [ThreadStatic]
+        private static LifoBlockerNode? t_blockerNode;
+
+        private readonly LowLevelLock _blockerStackLock = new LowLevelLock();
+        private LifoBlockerNode? _blockerStack;
+
+        // Sometimes due to races we may see nonzero waiter count, but no blockers to wake.
+        // That happens if threads that added themselves to waiter count, have not yet blocked themselves.
+        // In such case we increment _racingUnblocks and the waiter will simply
+        // decrement the counter and return without blocking.
+        private int _racingUnblocks;
+
+        // If a _blockerStackLock is locked by other thread, like someone is inserting itself into blocker list,
+        // we cannot proceed with a wake, but we do not want to wait while releasing, thus we do it in two-stages:
+        // - we register an intent to wake, then
+        // - try waking and if _blockerStackLock is locked the waking becomes
+        //   a responsibility of the thread that holds the lock.
+        // The main goal here is that the threads who release other threads do not get themselves blocked as
+        // the releasers are the hot threads that do the actual work (as opposed to threads who are parking/unparking).
+        private int _pendingWake;
+
+        public LowLevelLifoSemaphore(Action onWait)
+        {
             _separated = default;
-            _maximumSignalCount = maximumSignalCount;
-            _spinCount = spinCount;
             _onWait = onWait;
 
-            Create(maximumSignalCount);
+            _maxSpinCount = AppContextConfigHelper.GetInt16ComPlusOrDotNetConfig(
+                "System.Threading.ThreadPool.UnfairSemaphoreSpinLimit",
+                "ThreadPool_UnfairSemaphoreSpinLimit",
+                DefaultSemaphoreSpinCountLimit,
+                false);
+
+            _threadWakeCooldownUsec = AppContextConfigHelper.GetInt16ComPlusOrDotNetConfig(
+                "System.Threading.ThreadPool.UnfairSemaphoreWakeCooldown",
+                "ThreadPool_UnfairSemaphoreWakeCooldown",
+                DefaultWakeCooldown,
+                false);
         }
 
         public bool Wait(int timeoutMs)
@@ -51,23 +99,19 @@ namespace System.Threading
                 }
             }
 
-            Thread.ThrowIfSingleThreaded();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             return WaitSlow(timeoutMs);
         }
 
         private bool WaitSlow(int timeoutMs)
         {
-            // Now spin briefly with exponential backoff.
-            // We use random exponential backoff because:
-            // - we do not know how soon a signal appears, but with exponential backoff we will not be more than 2x off the ideal guess
-            // - it gives mild preference to the most recent spinners. We want LIFO here so that hot(er) threads keep running.
-            // - it is possible that spinning workers prevent non-pool threads from submitting more work to the pool,
-            //   so we want some workers to sleep earlier than others.
-            uint spinCount = Environment.IsSingleProcessor ? 0 : _spinCount;
-            for (uint iteration = 0; iteration < spinCount; iteration++)
+            int spinsRemaining = Environment.IsSingleProcessor ? 0 : _maxSpinCount;
+
+            uint iteration = 0;
+            while (spinsRemaining > 0)
             {
-                Backoff.Exponential(iteration);
+                spinsRemaining -= Backoff.Exponential(iteration++);
 
                 Counts counts = _separated._counts;
                 if (counts.SignalCount != 0)
@@ -83,35 +127,77 @@ namespace System.Threading
                 }
             }
 
-            // Now we will try registering as a waiter and wait.
-            // If signaled before that, we have to acquire as this can be the last thread that could take that signal.
-            // The difference with spinning above is that we are not waiting for a signal. We should immediately succeed
-            // unless a lot of threads are trying to update the counts. Thus we use a different attempt counter.
-            uint collisionCount = 0;
-            while (true)
-            {
-                Counts counts = _separated._counts;
-                Counts newCounts = counts;
-                if (counts.SignalCount != 0)
-                {
-                    newCounts.DecrementSignalCount();
-                }
-                else
-                {
-                    newCounts.IncrementWaiterCount();
-                }
+            return WaitNoSpin(timeoutMs);
+        }
 
+        public bool WaitNoSpin(int timeoutMs)
+        {
+            if (timeoutMs == 0)
+                return false;
+
+            Counts counts = _separated._counts.InterlockedIncrementWaiterCount();
+
+            // If there are pending signals, we may end in a condition that requires
+            // waking a waiter.
+            // Perhaps the current thread will be such waiter, but we should still
+            // go through wait/wake routine (vs. just claiming the signal) as the
+            // caller wants to park the thread.
+            MaybeWakeWaiter(counts);
+
+            return WaitAsWaiter(timeoutMs);
+        }
+
+        // If we have signals and have waiters, we need to make sure at least one is waking.
+        // We wake one waiter at a time. If it finds work it will ask for workers and that can wake more waiters
+        // if other workers do not consume the additional signals.
+        // It is generally unusual to have > 1 signal. That only happens when the count of desired workers had a forced change.
+        // In any case, we would prefer that extra signals be consumed by active workers, but must guarantee that signals
+        // are consumed eventually thus we release waiters one by one.
+        private static bool HasWaitersToWake(Counts counts) =>
+            counts.CountOfWaitersSignaledToWake == 0 &&
+            counts.SignalCount > 0 &&
+            counts.WaiterCount > 0;
+
+        private void MaybeWakeWaiter(Counts counts)
+        {
+            if (!HasWaitersToWake(counts))
+            {
+                // No waiters to wake. This is the most common case.
+                return;
+            }
+
+            MaybeWakeWaiterSlow(counts);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void MaybeWakeWaiterSlow(Counts counts)
+        {
+            Debug.Assert(HasWaitersToWake(counts));
+
+            uint collisionCount = 0;
+            do
+            {
+                Counts newCounts = counts;
+                newCounts.AddCountOfWaitersSignaledToWake(1);
+                Debug.Assert(newCounts.CountOfWaitersSignaledToWake == 1);
                 Counts countsBeforeUpdate = _separated._counts.InterlockedCompareExchange(newCounts, counts);
                 if (countsBeforeUpdate == counts)
                 {
-                    return counts.SignalCount != 0 || WaitForSignal(timeoutMs);
+                    WakeOne();
+                    break;
                 }
 
+                if (!HasWaitersToWake(countsBeforeUpdate))
+                    break;
+
+                // CAS collision, but still have waiters to wake, try again.
                 Backoff.Exponential(collisionCount++);
+                counts = _separated._counts;
             }
+            while (HasWaitersToWake(counts));
         }
 
-        private bool WaitForSignal(int timeoutMs)
+        private bool WaitAsWaiter(int timeoutMs)
         {
             Debug.Assert(timeoutMs > 0 || timeoutMs == -1);
 
@@ -119,15 +205,32 @@ namespace System.Threading
 
             while (true)
             {
-                int startWaitTicks = timeoutMs != -1 ? Environment.TickCount : 0;
-                if (timeoutMs == 0 || !WaitCore(timeoutMs))
+                long waitStartTick = Stopwatch.GetTimestamp();
+
+                // In the context of this semaphore the purpose of timeoutMs is just to age out
+                // workers that have not been woken for very long time.
+                // We do not need to reduce the timeout after spurious wakes as that will only result
+                // in workers that are woken spuriously to eventually exit and be replaced by new workers.
+                if (!Block(timeoutMs))
                 {
-                    // Unregister the waiter. The wait subsystem used above guarantees that a thread that wakes due to a timeout does
-                    // not observe a signal to the object being waited upon.
+                    // Unregister the waiter, but do not decrement wake count, the thread did not observe a wake.
                     _separated._counts.InterlockedDecrementWaiterCount();
                     return false;
                 }
-                int endWaitTicks = timeoutMs != -1 ? Environment.TickCount : 0;
+
+                // The thread could not obtain work for quite a while. We will require a 4 usec
+                // cooldown before reintroducing the thread. The sleep/wake transition typically
+                // takes care of the wait, but the blocker has fast wake paths and the underlying
+                // OS API may have trivial/spinning wake paths as well and fast wakeups can happen
+                // and are hard to avoid completely.
+                // So, if a fast wake happened when parking was desired, we hold up the thread a bit
+                // before releasing.
+                long cooldown = Stopwatch.Frequency * _threadWakeCooldownUsec / 1000000;
+                while (Stopwatch.GetTimestamp() - waitStartTick < cooldown)
+                {
+                    Thread.UninterruptibleSleep0();
+                    Thread.SpinWait(1);
+                }
 
                 uint collisionCount = 0;
                 while (true)
@@ -136,9 +239,12 @@ namespace System.Threading
                     Counts newCounts = counts;
 
                     Debug.Assert(counts.WaiterCount != 0);
-                    Debug.Assert(counts.CountOfWaitersSignaledToWake != 0);
 
+                    // we consumed a wake, decrement the count
+                    Debug.Assert(counts.CountOfWaitersSignaledToWake == 1);
                     newCounts.DecrementCountOfWaitersSignaledToWake();
+
+                    // If there is a signal, try claiming it and stop waiting.
                     if (newCounts.SignalCount != 0)
                     {
                         newCounts.DecrementSignalCount();
@@ -154,22 +260,14 @@ namespace System.Threading
                             return true;
                         }
 
-                        // we've consumed a wake, but there was no signal, we will wait again.
+                        // We've consumed a wake, but there was no signal.
+                        // The semaphore is unfair and spurious/stolen wakes can happen.
+                        // We will have to wait again.
                         break;
                     }
 
-                    // collision, try again.
+                    // CAS collision, try again.
                     Backoff.Exponential(collisionCount++);
-                }
-
-                // we will wait again, reduce timeout
-                if (timeoutMs != -1)
-                {
-                    int waitMs = endWaitTicks - startWaitTicks;
-                    if (waitMs >= 0 && waitMs < timeoutMs)
-                        timeoutMs -= waitMs;
-                    else
-                        timeoutMs = 0;
                 }
             }
         }
@@ -178,36 +276,198 @@ namespace System.Threading
         {
             // Increment signal count. This enables one-shot acquire.
             Counts counts = _separated._counts.InterlockedIncrementSignalCount();
+            MaybeWakeWaiter(counts);
+        }
 
-            // Now check if waiters need to be woken
-            uint collisionCount = 0;
+        private bool Block(int timeoutMs)
+        {
+            Debug.Assert(timeoutMs >= -1);
+
+            LifoBlockerNode? blockerNode = t_blockerNode;
+            if (blockerNode == null)
+            {
+                try
+                {
+                    t_blockerNode = blockerNode = new LifoBlockerNode();
+                }
+                catch (OutOfMemoryException)
+                {
+                    // Treat OOM as a timeout.
+                    // The thread will try to exit.
+                    return false;
+                }
+            }
+
+            _blockerStackLock.Acquire();
+            if (_racingUnblocks != 0)
+            {
+                Debug.Assert(_blockerStack == null);
+                Debug.Assert(_racingUnblocks > 0);
+                _racingUnblocks--;
+                blockerNode = null;
+            }
+            else
+            {
+                blockerNode._next = _blockerStack;
+                _blockerStack = blockerNode;
+            }
+
+            _blockerStackLock.Release();
+
+            // LowLevelLock release is a full fence thus ordinary read of _pendingWake is ok
+            if (_pendingWake > 0)
+                WakeOneCore();
+
+            if (blockerNode != null)
+            {
+#if TARGET_WINDOWS
+                // Disable the priority boost that Windows would normally apply
+                // when this thread is unblocked. The semaphore is used to park workers.
+                // A transient priority boost on wake provides no benefit here and can
+                // result in woken thread preempting already working threads.
+                // GetCurrentThread() returns a pseudo-handle (-2) that is valid
+                // only on the calling thread and does not need to be closed.
+                Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: true);
+#endif
+
+                try
+                {
+                    while (!blockerNode._blocker.TimedWait(timeoutMs))
+                    {
+                        if (TryRemove(blockerNode))
+                        {
+                            return false;
+                        }
+
+                        // We timed out, but our waiter is already popped. Someone is waking
+                        // our blocker. This is a very rare case.
+                        // We can't leave or the wake could be lost, so let's wait again.
+                        // The blocker is likely woken already, but give it some extra time,
+                        // just so we do not keep coming here again.
+                        timeoutMs = 10;
+                    }
+                }
+                finally
+                {
+#if TARGET_WINDOWS
+                    // restore the default.
+                    Interop.Kernel32.SetThreadPriorityBoost(Interop.Kernel32.GetCurrentThread(), bDisablePriorityBoost: false);
+#endif
+                }
+            }
+
+            return true;
+        }
+
+        private void WakeOne()
+        {
+            // Use Interlocked. This assignment must happen before trying to acquire the _blockerStackLock
+            int origWake = Interlocked.Exchange(ref _pendingWake, 1);
+            Debug.Assert(origWake == 0);
+            WakeOneCore();
+        }
+
+        // Turn any pending wakes into actual thread wakes, but use TryAcquire to acquire the _blockerStackLock.
+        // If someone acquires _blockerStackLock, it becomes its responsibility to check for pending wakes after
+        // releasing and call here if needed.
+        private void WakeOneCore()
+        {
             while (true)
             {
-                // Determine how many waiters to wake.
-                // The number of wakes should not be more than the signal count, not more than waiter count and discount any pending wakes.
-                int countOfWaitersToWake = (int)Math.Min(counts.SignalCount, counts.WaiterCount) - counts.CountOfWaitersSignaledToWake;
-                if (countOfWaitersToWake <= 0)
+                if (!_blockerStackLock.TryAcquire())
                 {
-                    // No waiters to wake. This is the most common case.
+                    // The lock holder will pick up _pendingWake on release.
+                    // NOTE: both setting _pendingWake and releasing the lock are done via full fence atomic
+                    // operations, thus the holder is guaranteed to observe the wake that it is blocking.
                     return;
                 }
 
-                Counts newCounts = counts;
-                newCounts.AddCountOfWaitersSignaledToWake((uint)countOfWaitersToWake);
-                Counts countsBeforeUpdate = _separated._counts.InterlockedCompareExchange(newCounts, counts);
-                if (countsBeforeUpdate == counts)
+                if (_pendingWake == 0)
                 {
-                    Debug.Assert(_maximumSignalCount - counts.SignalCount >= 1);
-                    if (countOfWaitersToWake > 0)
-                        ReleaseCore(countOfWaitersToWake);
+                    _blockerStackLock.Release();
+
+                    // Loop: handle any wakes that arrived while we were holding the lock
+                    //       it is highly unlikely, but not impossible.
+                    //
+                    // LowLevelLock release is a full fence thus ordinary read of _pendingWake is ok
+                    if (_pendingWake != 0)
+                        continue;
+
+                    // no pending wakes
                     return;
                 }
 
-                // collision, try again.
-                Backoff.Exponential(collisionCount++);
+                // We use only one pending wake at a time and this is the only place when we clear it.
+                // We are also holding the _blockerStackLock and whoever we are unparking cannot acknowledge
+                // the wake while we are holding the lock.
+                // Until the wake is acknowledged _pendingWake cannot be changed by any thread except the current.
+                // Therefore we can use an ordinary --
+                Debug.Assert(_pendingWake == 1);
+                _pendingWake--;
 
-                counts = _separated._counts;
+                LifoBlockerNode? top = _blockerStack;
+                if (top != null)
+                {
+                    _blockerStack = top._next;
+                    top._next = null;
+                }
+                else
+                {
+                    _racingUnblocks++;
+                    Debug.Assert(_racingUnblocks != ushort.MaxValue);
+                }
+
+                // No new wakes can be pended while we are holding the lock for the purpose of
+                // clearing an existing pending wake.
+                // Thus we do not check _pendingWake after releasing the lock in this case.
+                Debug.Assert(_pendingWake == 0);
+                _blockerStackLock.Release();
+
+                if (top != null)
+                {
+                    top._blocker.WakeOne();
+                }
+
+                return;
             }
+        }
+
+        // Used when waiter times out
+        private bool TryRemove(LifoBlockerNode node)
+        {
+            bool removed = false;
+            _blockerStackLock.Acquire();
+
+            LifoBlockerNode? current = _blockerStack;
+            if (current == node)
+            {
+                _blockerStack = node._next;
+                node._next = null;
+                removed = true;
+            }
+            else
+            {
+                while (current != null)
+                {
+                    if (current._next == node)
+                    {
+                        current._next = node._next;
+                        node._next = null;
+                        removed = true;
+                        break;
+                    }
+
+                    current = current._next;
+                }
+            }
+
+            _blockerStackLock.Release();
+
+            // LowLevelLock release is a full fence thus ordinary read of _pendingWake is ok
+            if (_pendingWake > 0)
+                WakeOneCore();
+
+            return removed;
         }
 
         private struct Counts : IEquatable<Counts>
@@ -221,8 +481,6 @@ namespace System.Threading
             private Counts(ulong data) => _data = data;
 
             private ushort GetUInt16Value(byte shift) => (ushort)(_data >> shift);
-            private void SetUInt16Value(ushort value, byte shift) =>
-                _data = (_data & ~((ulong)ushort.MaxValue << shift)) | ((ulong)value << shift);
 
             public ushort SignalCount
             {
@@ -265,6 +523,13 @@ namespace System.Threading
                 Debug.Assert(countsAfterUpdate.WaiterCount != ushort.MaxValue); // underflow check
             }
 
+            public Counts InterlockedIncrementWaiterCount()
+            {
+                var countsAfterUpdate = new Counts(Interlocked.Add(ref _data, unchecked((ulong)1) << WaiterCountShift));
+                Debug.Assert(countsAfterUpdate.WaiterCount != ushort.MaxValue); // overflow check
+                return countsAfterUpdate;
+            }
+
             public ushort CountOfWaitersSignaledToWake
             {
                 get => GetUInt16Value(CountOfWaitersSignaledToWakeShift);
@@ -294,12 +559,11 @@ namespace System.Threading
             public override int GetHashCode() => (int)_data + (int)(_data >> 32);
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Explicit, Size = 2 * PaddingHelpers.CACHE_LINE_SIZE)]
         private struct CacheLineSeparatedCounts
         {
-            private readonly Internal.PaddingFor32 _pad1;
+            [FieldOffset(PaddingHelpers.CACHE_LINE_SIZE)]
             public Counts _counts;
-            private readonly Internal.PaddingFor32 _pad2;
         }
     }
 }
