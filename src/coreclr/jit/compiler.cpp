@@ -3145,6 +3145,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             printf("OPTIONS: compilation is an async state machine\n");
         }
+
+        if (compIsAsyncVersion())
+        {
+            printf(
+                "OPTIONS: compilation is for an async version of a synchronous method; IL belongs to synchronous method\n");
+        }
     }
 #endif
 
@@ -4942,6 +4948,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Remove empty try regions (try/catch/fault)
     //
     DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_3, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
+
+    // Remove unreachable try regions
+    //
+    DoPhase(this, PHASE_REMOVE_UNREACHABLE_TRY, &Compiler::fgRemoveUnreachableTry);
 
     // Create funclets from the EH handlers.
     //
