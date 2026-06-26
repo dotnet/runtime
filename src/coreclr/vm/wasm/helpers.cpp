@@ -1362,7 +1362,7 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
     _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
 
     // Prefer R2R-compiled native code for UnmanagedCallersOnly methods since it is emitted
-    // with the native (unmanaged) calling convention, so its R2R code is itself the directly-callable
+    // with the native (unmanaged) calling convention and its R2R code is itself the directly-callable
     // unmanaged entrypoint. Resolve the method's code first and, if it has native (R2R) code, return that
     // entrypoint directly. The g_ReverseThunks interpreter fallback below is only required for methods
     // that are executed by the interpreter (no native code), and is intentionally unused for R2R methods.
