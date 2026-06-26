@@ -455,9 +455,10 @@ internal sealed class CallingConvention_1 : ICallingConvention
             _rts = rts;
         }
 
-        // Helpers: Wrap stamps Underlying but leaves OutermostKind == End so
-        // callers know to fall back to GetSignatureCorElementType on Underlying.
-        // The constructed-type overrides (ByRef/Ptr/SzArray/Array) override
+        // Helpers: Wrap stamps Underlying but leaves OutermostKind at default
+        // (the enum's 0 value, which CdacCorElementType doesn't name) so callers
+        // know to fall back to GetSignatureCorElementType on Underlying. The
+        // constructed-type overrides (ByRef/Ptr/SzArray/Array) set
         // OutermostKind explicitly.
         private static TrackedType Wrap(TypeHandle th)
             => new() { Underlying = th };

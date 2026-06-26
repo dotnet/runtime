@@ -56,7 +56,7 @@ A useful configuration sets at least one WHERE and at least one WHAT bit.
 | `0x00010000` | MODIFIER | VERBOSE   | Rich per-ref diagnostics in the log                                          |
 
 Common combinations:
-- `0x00101` -- ALLOC + GCREFS (default for `RunStressTests.ps1` and `GCStress_*` xunit theories)
+- `0x00101` -- ALLOC + GCREFS (default for `RunStressTests.ps1` and `GCRefStress_*` xunit theories)
 - `0x00201` -- ALLOC + ARGITER (default for `ArgIterStress_*` xunit theories; independent run on the same Helix build so the two sub-checks don't share state)
 - `0x00301` -- ALLOC + GCREFS + ARGITER (validates both sub-checks in one process)
 - `0x10101` -- ALLOC + GCREFS + VERBOSE (use when triaging a GCREFS mismatch)
@@ -163,7 +163,7 @@ $env:CORE_ROOT = "path\to\Core_Root"
 ## Architecture
 
 ```
-CdacStressTestBase.RunGCStressAsync(debuggeeName)
+CdacStressTestBase.RunGCRefStressAsync(debuggeeName)
   │
   ├── Locate core_root/corerun (CORE_ROOT env or default path)
   ├── Locate debuggee DLL (artifacts/bin/StressTests/<name>/...)
