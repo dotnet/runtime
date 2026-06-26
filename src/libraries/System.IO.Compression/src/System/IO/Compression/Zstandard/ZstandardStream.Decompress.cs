@@ -257,12 +257,16 @@ namespace System.IO.Compression
 
             if (_buffer.ActiveLength < ZstdFrameMagicLength)
             {
-                // Not enough buffered to tell a split next-frame magic from end-of-stream; read more.
+                // Not enough buffered to tell a split next-frame magic from end-of-stream; read just enough
+                // to complete the magic. Limiting the read to exactly the missing bytes (rather than filling
+                // the available buffer) avoids consuming and hiding trailing bytes past the magic on a
+                // non-seekable stream, where they can't be rewound; any following frame's body is read by the
+                // Read/ReadAsync loop afterwards.
                 int needed = ZstdFrameMagicLength - _buffer.ActiveLength;
                 _buffer.EnsureAvailableSpace(needed);
                 int peeked = async
-                    ? await _stream.ReadAtLeastAsync(_buffer.AvailableMemory, needed, throwOnEndOfStream: false, cancellationToken: cancellationToken).ConfigureAwait(false)
-                    : _stream.ReadAtLeast(_buffer.AvailableSpan, needed, throwOnEndOfStream: false);
+                    ? await _stream.ReadAtLeastAsync(_buffer.AvailableMemory.Slice(0, needed), needed, throwOnEndOfStream: false, cancellationToken: cancellationToken).ConfigureAwait(false)
+                    : _stream.ReadAtLeast(_buffer.AvailableSpan.Slice(0, needed), needed, throwOnEndOfStream: false);
                 if (peeked > 0)
                 {
                     _nonEmptyInput = true;
