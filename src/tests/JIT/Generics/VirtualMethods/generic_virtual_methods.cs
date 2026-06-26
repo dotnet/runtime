@@ -245,7 +245,7 @@ internal class RuntimeLookupDelegateGenericVirtual
         Assert.Equal(m1, m2);
 
         // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
-        if (TestLibrary.Utilities.IsNativeAot)
+        if (!TestLibrary.Utilities.IsNativeAot)
         {
             IBase test5 = new DerivedStruct();
             Delegate m3 = test5.Foo<List<T>>();
@@ -282,7 +282,7 @@ internal class RuntimeLookupDelegateGenericVirtual
         Assert.Equal(m1, m2);
 
         // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
-        if (TestLibrary.Utilities.IsNativeAot)
+        if (!TestLibrary.Utilities.IsNativeAot)
         {
             IBase<U> test5 = new DerivedStruct<U>();
             Delegate m3 = test5.Foo<List<T>>();
@@ -319,7 +319,7 @@ internal class RuntimeLookupDelegateGenericVirtual
         Assert.Equal(m1, m2);
 
         // NativeAOT doesn't handle generic recursion in type loader: https://github.com/dotnet/runtime/issues/129855
-        if (TestLibrary.Utilities.IsNativeAot)
+        if (!TestLibrary.Utilities.IsNativeAot)
         {
             IBase<string> test5 = new DerivedStructString();
             Delegate m3 = test5.Foo<List<T>>();
