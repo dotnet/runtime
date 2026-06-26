@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -239,6 +240,48 @@ namespace System.Net.Tests
 
             var responseException = Assert.Throws<WebException>(() => ftpWebRequest.GetResponse());
             Assert.True(responseException.InnerException is FormatException);
+        }
+
+        [Theory]
+        [InlineData("ok\r\nbad")]
+        [InlineData("ok\rbad")]
+        [InlineData("ok\nbad")]
+        [InlineData("ok%0D%0Abad")]
+        [InlineData("ok%0d%0abad")]
+        [InlineData("ok%0Dbad")]
+        [InlineData("ok%0dbad")]
+        [InlineData("ok%0Abad")]
+        [InlineData("ok%0abad")]
+        public void Ftp_NewLineInRenameTo_GetResponse_Throws_FormatException_As_InnerException(string renameTo)
+        {
+            // FormatFtpCommand is invoked when the command pipeline is built (in FtpControlStream.BuildCommandsList),
+            // which happens after the TCP connection is established but before any bytes are read from or written to
+            // the server. A minimal loopback listener that accepts the connection is therefore sufficient to drive
+            // the request to the point where the RNTO parameter is validated.
+            using TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+
+            Task acceptTask = Task.Run(async () =>
+            {
+                try
+                {
+                    using TcpClient client = await listener.AcceptTcpClientAsync();
+                    // Keep the connection open briefly so the client can observe the validation failure
+                    // before the socket is torn down.
+                    await Task.Delay(1000);
+                }
+                catch { }
+            });
+
+            FtpWebRequest request = (FtpWebRequest)WebRequest.Create($"ftp://127.0.0.1:{port}/file");
+            request.Method = WebRequestMethods.Ftp.Rename;
+            request.RenameTo = renameTo;
+            request.Timeout = 10_000;
+            request.ReadWriteTimeout = 10_000;
+
+            WebException ex = Assert.Throws<WebException>(() => request.GetResponse());
+            Assert.IsType<FormatException>(ex.InnerException);
         }
 
         private static async Task<MemoryStream> DoAsync(FtpWebRequest request, MemoryStream requestBody)
