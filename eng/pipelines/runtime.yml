@@ -972,10 +972,10 @@ extends:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: true
           scenarios:
             - WasmTestOnChrome
             - WasmTestOnFirefox
-          useHelixMonitor: true
 
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
@@ -983,9 +983,9 @@ extends:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: true
           scenarios:
             - WasmTestOnChrome
-          useHelixMonitor: true
 
       # WebAssembly CoreCLR
       - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
@@ -994,9 +994,9 @@ extends:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: true
           scenarios:
             - WasmTestOnChrome
-          useHelixMonitor: true
 
       # WebAssembly CoreCLR - smoke tests only on Firefox and V8
       - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
@@ -1007,10 +1007,11 @@ extends:
           shouldRunSmokeOnly: 'true'
           nameSuffix: _SmokeFirefoxV8
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: true
           scenarios:
             - WasmTestOnFirefox
-            - WasmTestOnV8
-          useHelixMonitor: true
+            # ActiveIssue https://github.com/dotnet/runtime/issues/129849
+            # - WasmTestOnV8
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -1222,8 +1223,8 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-                  useHelixMonitor: true
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+                  useHelixMonitor: true
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),
@@ -1267,8 +1268,8 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-                  useHelixMonitor: true
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+                  useHelixMonitor: true
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),
@@ -1310,8 +1311,8 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-                  useHelixMonitor: true
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+                  useHelixMonitor: true
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),
