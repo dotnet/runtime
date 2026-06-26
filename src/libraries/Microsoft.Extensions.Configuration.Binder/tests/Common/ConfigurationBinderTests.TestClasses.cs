@@ -221,6 +221,30 @@ namespace Microsoft.Extensions
 
         public record RecordWithArrayParameter(string[] Array);
 
+        public class GetterOnlyCollectionWithCaseMismatchedCtorParameter
+        {
+            public GetterOnlyCollectionWithCaseMismatchedCtorParameter(List<string> instances) => Instances = instances;
+            public List<string> Instances { get; }
+        }
+
+        public class SettableCollectionWithCaseMismatchedCtorParameter
+        {
+            public SettableCollectionWithCaseMismatchedCtorParameter(List<string> instances) => Instances = instances;
+            public List<string> Instances { get; set; }
+        }
+
+        public class GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter
+        {
+            public GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter(IList<string> instances) => Instances = instances;
+            public IList<string> Instances { get; }
+        }
+
+        public class ParamsCollectionCtor
+        {
+            public ParamsCollectionCtor(params List<string> instances) => Instances = instances;
+            public List<string> Instances { get; }
+        }
+
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
         public class ContainerWithNestedImmutableObject

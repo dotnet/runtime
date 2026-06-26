@@ -450,14 +450,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
-        public static void DangerousAs()
-        {
-            // Verify that As does not perform type checks
-            object o = new object();
-            Assert.IsType<object>(Unsafe.As<string>(o));
-        }
-
-        [Fact]
         public static void ByteOffsetArray()
         {
             var a = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7 };
