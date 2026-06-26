@@ -24,7 +24,7 @@ namespace System.Net.Sockets
 
         // Windows always supports IPv6 dual-mode, so OSSupportsIPv6DualMode short-circuits before this is
         // ever called; the stub exists only to satisfy the cross-platform call site.
-        internal bool TryReplaceHandleForAddressFamily(AddressFamily addressFamily) => false;
+        internal bool TryReplaceHandleForAddressFamily(AddressFamily _) => false;
         internal bool CanProceedWithMultiConnect => true;
 #pragma warning restore CA1822
 
