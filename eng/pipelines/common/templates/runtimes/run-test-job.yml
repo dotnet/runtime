@@ -11,6 +11,7 @@ parameters:
   hotColdSplitting: false
   liveLibrariesBuildConfig: ''
   compositeBuildMode: false
+  crossgen2OutputFormat: ''
   largeVersionBubble: false
   useCodeFlowEnforcement: ''
   helixQueues: ''
@@ -127,6 +128,9 @@ jobs:
           value: 'composite'
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2_Composite
+        - ${{ if ne(parameters.crossgen2OutputFormat, '') }}:
+          - name: LogNamePrefix
+            value: TestRunLogs_R2R_CG2_${{ parameters.crossgen2OutputFormat }}
       - ${{ if eq(parameters.hotColdSplitting, true) }}:
         - name: LogNamePrefix
           value: TestRunLogs_R2R_CG2_HotColdSplitting
@@ -316,6 +320,7 @@ jobs:
         timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
         runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         compositeBuildMode: ${{ parameters.compositeBuildMode }}
+        crossgen2OutputFormat: ${{ parameters.crossgen2OutputFormat }}
         runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
         runInterpreter: ${{ parameters.runInterpreter }}
         tieringTest: ${{ parameters.tieringTest }}

@@ -7,6 +7,7 @@ parameters:
   crossBuild: false
   readyToRun: false
   compositeBuildMode: false
+  crossgen2OutputFormat: ''
   helixQueues: ''
   displayNameArgs: ''
   runInUnloadableContext: false
@@ -115,6 +116,7 @@ steps:
       timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
       runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
       compositeBuildMode: ${{ parameters.compositeBuildMode }}
+      crossgen2OutputFormat: ${{ parameters.crossgen2OutputFormat }}
       runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       nativeAotTest: ${{ parameters.nativeAotTest }}
       helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
