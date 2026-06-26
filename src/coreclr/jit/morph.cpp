@@ -8574,7 +8574,7 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
         // For indir-like nodes, we may be able to change their type to satisfy (and discard) the cast.
         // Look through COMMAs so we can fold `CAST<small>(COMMA(side-effects, IND<small-same-size>))`
         // into `COMMA(side-effects, IND<castToType>)` -- e.g. `(sbyte)span[i]` should lower to a
-        // single sign-extending load instead of `movzx`/`movsx`.
+        // single sign- or zero-extending load instead of an extending load followed by another extension.
         GenTree* effectiveSrc = src->gtEffectiveVal();
         if (varTypeIsSmall(castToType) && (genTypeSize(castToType) == genTypeSize(effectiveSrc)) &&
             effectiveSrc->OperIs(GT_IND, GT_LCL_FLD))
@@ -8583,16 +8583,20 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
             // in other cases we discard the cast without modifying src
             // so the VN doesn't change.
 
-            effectiveSrc->ChangeType(castToType);
+            src->ChangeType(castToType);
 
-            // Propagate the new type up through any COMMA wrappers so that the
-            // tree's type accurately describes the value being produced.
-            for (GenTree* cur = src; cur != effectiveSrc; cur = cur->AsOp()->gtOp2)
+            // Propagate the new VN through any COMMA wrappers so that it stays
+            // consistent with ChangeType's type propagation.
+            for (GenTree* cur = src;; cur = cur->AsOp()->gtOp2)
             {
-                cur->ChangeType(castToType);
-            }
+                cur->SetVNsFromNode(cast);
+                if (cur == effectiveSrc)
+                {
+                    break;
+                }
 
-            src->SetVNsFromNode(cast);
+                assert(cur->OperIs(GT_COMMA));
+            }
 
             return src;
         }
