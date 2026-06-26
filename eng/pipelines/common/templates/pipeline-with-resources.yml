@@ -109,12 +109,12 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-amd64@sha256:1849c00a1347f17dbdd167bc8d025b9e2c31273a1f8c2eddbfac3f2197932ee7
 
       browser_wasm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-webassembly-amd64@sha256:5ad583f9a503d9b5d71171ac27018db895f9b48f136d5d4fe3cdcf80bc28937e
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-webassembly-amd64@sha256:0afc4daa90da131fd61de0751429a7dadf4cc2e4a159f0c60a0d24d02267bae8
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
       wasi_wasm:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-webassembly-amd64@sha256:5ad583f9a503d9b5d71171ac27018db895f9b48f136d5d4fe3cdcf80bc28937e
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-webassembly-amd64@sha256:0afc4daa90da131fd61de0751429a7dadf4cc2e4a159f0c60a0d24d02267bae8
         env:
           ROOTFS_DIR: /crossrootfs/x64
 
