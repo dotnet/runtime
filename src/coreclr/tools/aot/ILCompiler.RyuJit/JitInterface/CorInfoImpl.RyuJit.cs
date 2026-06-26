@@ -2287,7 +2287,17 @@ namespace Internal.JitInterface
         private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
         {
             MetadataType type = HandleToObject(baseType) as MetadataType;
-            if (type == null || type.HasVariance)
+            if (type == null)
+            {
+                return -1;
+            }
+
+            // Variance can make types not in the implementor list compatible with 'type',
+            // so reporting an exact class set would be unsound. This only happens through
+            // reference conversions of the variant arguments, so it's still safe when every
+            // variant argument is a value type (e.g. the contravariant IEqualityComparer<int>
+            // used by Dictionary<int, int>).
+            if (type.HasVariance && HasVariantReferenceTypeArgument(type))
             {
                 return -1;
             }
@@ -2324,6 +2334,22 @@ namespace Internal.JitInterface
 
             Debug.Assert(index <= maxExactClasses);
             return index;
+        }
+
+        private static bool HasVariantReferenceTypeArgument(MetadataType type)
+        {
+            Instantiation typeInstantiation = type.Instantiation;
+            Instantiation genericParameters = type.GetTypeDefinition().Instantiation;
+            for (int i = 0; i < genericParameters.Length; i++)
+            {
+                if (((GenericParameterDesc)genericParameters[i]).Variance != GenericVariance.None
+                    && typeInstantiation[i].IsGCPointer)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private bool getStaticFieldContent(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
