@@ -22,7 +22,6 @@ using std::nothrow;
 #include "winwrap.h"
 #include <wchar.h>
 #include <ole2.h>
-#include <oleauto.h>
 #include "clrtypes.h"
 #include "safewrap.h"
 #include "volatile.h"
