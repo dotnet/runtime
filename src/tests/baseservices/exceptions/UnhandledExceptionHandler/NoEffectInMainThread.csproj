@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- WASI: see https://github.com/dotnet/runtime/issues/120708 -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
     <!-- tests process-wide state -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Test checks the behavior of Main -->

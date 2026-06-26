@@ -47,3 +47,87 @@ Regressions/coreclr/GitHub_49826/test49826/test49826.sh
 Regressions/coreclr/GitHub_49982/test49982/test49982.sh
 Regressions/coreclr/GitHub_61104/test61104/test61104.sh
 
+# ----- RequiresProcessIsolation tests (silently 'Pass' in CI via xharness) ---
+#
+# CI's merged-runner path (xharness) silently no-ops every test marked
+# RequiresProcessIsolation=true on Browser/WASI via the OutOfProcessTest
+# framework gate (src/tests/Common/CoreCLRTestLibrary/OutOfProcessTest.cs).
+# The XUnitWrapperGenerator emits an if/no-else wrapper so the body never
+# runs and the result is recorded as Pass.
+#
+# Our local standalone sweep (run.cs) has no such gate, so these tests
+# really execute and really fail (PNSE, vararg, threading, etc.). They
+# are listed here for the local sweep instead of touching 72 csproj files.
+baseservices/callconvs/TestCallingConventions/TestCallingConventions.sh
+baseservices/exceptions/regressions/Dev11/154243/dynamicmethodliveness/dynamicmethodliveness.sh
+baseservices/exceptions/regressions/V1/SEH/VJ/HandlerException/HandlerException.sh
+baseservices/exceptions/regressions/V1/SEH/VJ/MultipleException/MultipleException.sh
+baseservices/exceptions/regressions/V1/SEH/VJ/NestedException/NestedException.sh
+baseservices/exceptions/regressions/V1/SEH/VJ/RecursiveException/RecursiveException.sh
+baseservices/exceptions/simple/ParallelCrashTester/ParallelCrashTester.sh
+baseservices/exceptions/stackoverflow/stackoverflowtester/stackoverflowtester.sh
+baseservices/exceptions/unhandled/unhandledTester/unhandledTester.sh
+baseservices/exceptions/UnhandledExceptionHandler/Foreign/ForeignUnhandled/ForeignUnhandled.sh
+baseservices/exceptions/UnhandledExceptionHandler/HandlerRefuses/HandlerRefuses.sh
+baseservices/exceptions/UnhandledExceptionHandler/HandlerThrows/HandlerThrows.sh
+baseservices/exceptions/UnhandledExceptionHandler/NoEffectInMainThread/NoEffectInMainThread.sh
+baseservices/exceptions/UnhandledExceptionHandler/PInvoke/PInvokeUnhandled/PInvokeUnhandled.sh
+baseservices/exceptions/UnhandledExceptionHandler/UnhandledTrivial/UnhandledTrivial.sh
+baseservices/RuntimeConfiguration/TestConfigTester/TestConfigTester.sh
+baseservices/threading/regressions/13662/13662-a/13662-a.sh
+baseservices/threading/regressions/13662/13662-b/13662-b.sh
+baseservices/threading/regressions/13662/13662-simple/13662-simple.sh
+baseservices/threading/regressions/30032/30032/30032.sh
+baseservices/threading/regressions/576463/576463/576463.sh
+baseservices/threading/regressions/beta2/437017/437017.sh
+baseservices/threading/regressions/beta2/437044/437044.sh
+baseservices/TieredCompilation/BasicTestWithMcj/BasicTestWithMcj.sh
+GC/API/GC/Collect_Forced_1/Collect_Forced_1.sh
+GC/API/GC/Collect_Forced_2/Collect_Forced_2.sh
+GC/API/GC/Collect_Forced_3/Collect_Forced_3.sh
+GC/API/GC/GetAllocatedBytesForCurrentThread/GetAllocatedBytesForCurrentThread.sh
+GC/API/GC/GetConfigurationVariables/GetConfigurationVariables.sh
+GC/API/GC/GetTotalAllocatedBytes/GetTotalAllocatedBytes.sh
+GC/API/NoGCRegion/Callback_Svr/Callback_Svr.sh
+GC/API/NoGCRegion/Callback/Callback.sh
+GC/Coverage/LargeObjectAlloc/LargeObjectAlloc.sh
+GC/Features/BackgroundGC/foregroundgc/foregroundgc.sh
+GC/Features/SustainedLowLatency/scenario/scenario.sh
+GC/Scenarios/BinTree/thdtree/thdtree.sh
+GC/Scenarios/BinTree/thdtreegrowingobj/thdtreegrowingobj.sh
+GC/Scenarios/BinTree/thdtreelivingobj/thdtreelivingobj.sh
+GC/Scenarios/DoublinkList/dlbigleakthd/dlbigleakthd.sh
+GC/Scenarios/LeakGen/leakgenthrd/leakgenthrd.sh
+GC/Scenarios/THDChaos/thdchaos/thdchaos.sh
+GC/Scenarios/THDList/thdlist/thdlist.sh
+JIT/Directed/aliasing_retbuf/aliasing_retbuf/aliasing_retbuf.sh
+JIT/Directed/callconv/ThisCall/EmptyThisCallTest/EmptyThisCallTest.sh
+JIT/Directed/debugging/debuginfo/tester/tester.sh
+JIT/Directed/pinning/object-pin/object-pin/object-pin.sh
+JIT/Directed/pinvoke/tail_pinvoke/tail_pinvoke.sh
+JIT/Directed/StructABI/EmptyStructs/EmptyStructs.sh
+JIT/Directed/StructABI/StructABI/StructABI.sh
+JIT/Directed/tls/TestTLSWithLoadedDlls/TestTLSWithLoadedDlls.sh
+JIT/Methodical/Boxing/misc/concurgc_d/concurgc_d.sh
+JIT/Methodical/Boxing/misc/concurgc_r/concurgc_r.sh
+JIT/Methodical/cctor/misc/threads2_cs_d/threads2_cs_d.sh
+JIT/Methodical/cctor/misc/threads2_cs_do/threads2_cs_do.sh
+JIT/Methodical/cctor/misc/threads2_cs_r/threads2_cs_r.sh
+JIT/Methodical/cctor/misc/threads2_cs_ro/threads2_cs_ro.sh
+JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b65423/b65423/b65423.sh
+JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b426654/b426654/b426654.sh
+JIT/Regression/JitBlue/GitHub_23199/GitHub_23199_Target_32Bit/GitHub_23199_Target_32Bit.sh
+JIT/Regression/JitBlue/GitHub_23199/GitHub_23199_Target_64Bit/GitHub_23199_Target_64Bit.sh
+JIT/Regression/JitBlue/Runtime_101046/Runtime_101046/Runtime_101046.sh
+JIT/Regression/VS-ia64-JIT/V1.2-M02/b108129/b108129/b108129.sh
+Loader/AssemblyDependencyResolver/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests/AssemblyDependencyResolverTests.sh
+Loader/AssemblyDependencyResolver/MissingHostPolicyTests/MissingHostPolicyTests/MissingHostPolicyTests.sh
+Loader/CollectibleAssemblies/AssemblyOnDisk/AssemblyOnDisk/AssemblyOnDisk.sh
+Loader/CollectibleAssemblies/Statics/CollectibleStatics/CollectibleStatics.sh
+Loader/CollectibleAssemblies/Statics/CollectibleTLSStaticCollection/CollectibleTLSStaticCollection.sh
+Loader/ExternalAssemblyProbe/ExternalAssemblyProbe/ExternalAssemblyProbe.sh
+Loader/NativeLibs/FromNativePaths/FromNativePaths.sh
+Loader/SystemCoreLibDirectory/SystemCoreLibDirectory/SystemCoreLibDirectory.sh
+Regressions/coreclr/GitHub_117393/test117393/test117393.sh
+Regressions/coreclr/GitHub_12224/Test12224/Test12224.sh
+Regressions/coreclr/GitHub_89834/test89834/test89834.sh

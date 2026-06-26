@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- WASI: see https://github.com/dotnet/runtime/issues/120708 -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsWasi)' == 'true'">true</CLRTestTargetUnsupported>
     <!-- Needed for GCStressIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- This test is too slow under GCStress=3. Issue: https://github.com/dotnet/runtime/issues/50615 -->
