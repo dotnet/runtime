@@ -3518,6 +3518,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 betterToExpand = opts.IsInstrumented();
                 break;
 
+            // Lightweight runtime async intrinsics
+            case NI_System_Threading_Tasks_Task_FromResult:
+            case NI_System_Threading_Tasks_Task_get_CompletedTask:
+            case NI_System_Threading_Tasks_ValueTask_FromResult:
+            case NI_System_Threading_Tasks_ValueTask_get_CompletedTask:
+                betterToExpand = (sig->callConv & CORINFO_CALLCONV_ASYNCCALL) != 0;
+                break;
+
             default:
                 // Various intrinsics are all small enough to prefer expansions.
                 betterToExpand |= ni >= NI_SYSTEM_MATH_START && ni <= NI_SYSTEM_MATH_END;
@@ -5088,6 +5096,56 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_Threading_Tasks_Task_FromResult:
+            case NI_System_Threading_Tasks_ValueTask_FromResult:
+            {
+                assert(sig->sigInst.methInstCount == 1);
+
+                if ((sig->callConv & CORINFO_CALLCONV_ASYNCCALL) == 0)
+                {
+                    break;
+                }
+
+                CORINFO_CLASS_HANDLE typeHnd = sig->sigInst.methInst[0];
+                ClassLayout*         layout  = nullptr;
+                var_types            type    = TypeHandleToVarType(typeHnd, &layout);
+
+                GenTree* value = impPopStack().val;
+                if (varTypeIsStruct(value))
+                {
+                    value = impNormStructVal(value, CHECK_SPILL_ALL);
+                }
+                else
+                {
+                    value = impImplicitR4orR8Cast(value, type);
+                    value = impImplicitIorI4Cast(value, type);
+                }
+
+                if (varTypeIsSmall(type) && fgCastNeeded(value, type))
+                {
+                    value = gtNewCastNode(TYP_INT, value, false, type);
+                }
+
+                retNode = value;
+                break;
+            }
+            case NI_System_Threading_Tasks_Task_get_CompletedTask:
+            case NI_System_Threading_Tasks_ValueTask_get_CompletedTask:
+            {
+                if ((sig->callConv & CORINFO_CALLCONV_ASYNCCALL) == 0)
+                {
+                    break;
+                }
+
+                retNode = gtNewNothingNode();
+                break;
+            }
+            case NI_System_Threading_Tasks_ValueTask_1__ctor:
+            {
+                // We fold this when we try to wrap it in await in async versions
+                isSpecial = compIsAsyncVersion();
+                break;
+            }
             default:
                 break;
         }
@@ -11626,6 +11684,35 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             strcmp(className, "ValueTask`1") == 0 || strcmp(className, "ValueTask") == 0)
                         {
                             result = NI_System_Threading_Tasks_Task_ConfigureAwait;
+                        }
+                    }
+                    else if (strcmp(className, "Task") == 0)
+                    {
+                        if (strcmp(methodName, "FromResult") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_Task_FromResult;
+                        }
+                        else if (strcmp(methodName, "get_CompletedTask") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_Task_get_CompletedTask;
+                        }
+                    }
+                    else if (strcmp(className, "ValueTask") == 0)
+                    {
+                        if (strcmp(methodName, "FromResult") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_FromResult;
+                        }
+                        else if (strcmp(methodName, "get_CompletedTask") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_get_CompletedTask;
+                        }
+                    }
+                    else if (strcmp(className, "ValueTask`1") == 0)
+                    {
+                        if (strcmp(methodName, ".ctor") == 0)
+                        {
+                            result = NI_System_Threading_Tasks_ValueTask_1__ctor;
                         }
                     }
                 }
