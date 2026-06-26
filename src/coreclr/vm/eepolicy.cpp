@@ -154,6 +154,33 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
 
 
 //---------------------------------------------------------------------------------------
+// Writer abstraction for crash info output. Allows EmitCrashInfo and stack trace
+// printing to target either stderr (default) or a user-provided fatal error log callback.
+//---------------------------------------------------------------------------------------
+
+struct CrashInfoWriter
+{
+    void (*m_pfnWriteA)(const char* pszString, void* context);
+    void (*m_pfnWriteW)(const WCHAR* pwzString, void* context);
+    void* m_pContext;
+
+    void Write(const char* pszString) const { m_pfnWriteA(pszString, m_pContext); }
+    void Write(const WCHAR* pwzString) const { m_pfnWriteW(pwzString, m_pContext); }
+};
+
+static void StdErrWriteA(const char* pszString, void* /*context*/)
+{
+    PrintToStdErrA(pszString);
+}
+
+static void StdErrWriteW(const WCHAR* pwzString, void* /*context*/)
+{
+    PrintToStdErrW(pwzString);
+}
+
+static const CrashInfoWriter s_stdErrWriter = { StdErrWriteA, StdErrWriteW, nullptr };
+
+//---------------------------------------------------------------------------------------
 // This class is responsible for displaying a stack trace. It uses a condensed way for
 // stack overflow stack traces where there are possibly many repeated frames.
 // It displays a count and a repeated sequence of frames at the top of the stack in
@@ -163,6 +190,7 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
 class CallStackLogger
 {
     PEXCEPTION_POINTERS m_pExceptionInfo;
+    const CrashInfoWriter* m_pWriter;
     // MethodDescs of the stack frames, the TOS is at index 0
     CDynArray<MethodDesc*> m_frames;
 
@@ -221,16 +249,17 @@ class CallStackLogger
         str.Append(frame);
         str.Append(W("\n"));
 
-        PrintToStdErrW(str.GetUnicode());
+        m_pWriter->Write(str.GetUnicode());
     }
 
 public:
 
-    CallStackLogger(PEXCEPTION_POINTERS pExceptionInfo)
+    CallStackLogger(PEXCEPTION_POINTERS pExceptionInfo, const CrashInfoWriter* pWriter)
     {
         WRAPPER_NO_CONTRACT;
 
         m_pExceptionInfo = pExceptionInfo;
+        m_pWriter = pWriter;
     }
 
     // Callback called by the stack walker for each frame on the stack
@@ -330,9 +359,9 @@ public:
             SmallStackSString repeatStr;
             repeatStr.AppendPrintf("Repeated %d times:\n", largestCommonRepeat);
 
-            PrintToStdErrW(repeatStr.GetUnicode());
+            m_pWriter->Write(repeatStr.GetUnicode());
 
-            PrintToStdErrA("--------------------------------\n");
+            m_pWriter->Write("--------------------------------\n");
             for (int i = largestCommonStartOffset; i < largestCommonStartOffset + largestCommonLength; i++)
             {
                 PrintFrame(i,
@@ -340,7 +369,7 @@ public:
                     static_cast<uint32_t>(largestCommonRepeat),
                     static_cast<uint32_t>(largestCommonLength));
             }
-            PrintToStdErrA("--------------------------------\n");
+            m_pWriter->Write("--------------------------------\n");
         }
 
         for (int i = largestCommonLength * largestCommonRepeat + largestCommonStartOffset; i < m_frames.Count(); i++)
@@ -370,7 +399,7 @@ static bool g_LogStackOverflowExit = false;
 // Return Value:
 //    None
 //
-inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExceptionInfo)
+static void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExceptionInfo, const CrashInfoWriter& writer)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -386,7 +415,7 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
     }
     WordAt.Append(W(" "));
 
-    CallStackLogger logger(pExceptionInfo);
+    CallStackLogger logger(pExceptionInfo, &writer);
 
     pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 
@@ -409,32 +438,12 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
 //
 // Return Value:
 //    None
-//
-//
-// Writer abstraction for crash info output. Allows EmitCrashInfo to target
-// either stderr (default) or a user-provided fatal error log callback.
+
 //
 // Uses the public FatalErrorHandling.h header for shared type definitions.
 //
 
 #include <public/FatalErrorHandling.h>
-
-struct CrashInfoWriter
-{
-    void (*WriteA)(const char* pszString, void* context);
-    void (*WriteW)(const WCHAR* pwzString, void* context);
-    void* Context;
-};
-
-static void StdErrWriteA(const char* pszString, void* /*context*/)
-{
-    PrintToStdErrA(pszString);
-}
-
-static void StdErrWriteW(const WCHAR* pwzString, void* /*context*/)
-{
-    PrintToStdErrW(pwzString);
-}
 
 // State passed through the CrashInfoWriter context pointer to forward
 // crash output to the user's FatalErrorLogAction callback.
@@ -453,8 +462,6 @@ static void CallbackWriteW(const WCHAR* pwzString, void* context)
     state->pfnLogAction(pUtf8, state->userContext);
 }
 
-static const CrashInfoWriter s_stdErrWriter = { StdErrWriteA, StdErrWriteW, nullptr };
-
 static void EmitCrashInfo(const CrashInfoWriter& writer, UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo, LPCWSTR errorSource, LPCWSTR argExceptionString)
 {
     WRAPPER_NO_CONTRACT;
@@ -463,46 +470,40 @@ static void EmitCrashInfo(const CrashInfoWriter& writer, UINT exitCode, LPCWSTR 
     {
         if (exitCode == (UINT)COR_E_FAILFAST)
         {
-            writer.WriteA("Process terminated.\n", writer.Context);
+            writer.Write("Process terminated.\n");
         }
         else
         {
-            writer.WriteA("Fatal error.\n", writer.Context);
+            writer.Write("Fatal error.\n");
         }
 
         if (errorSource != NULL)
         {
-            writer.WriteW(errorSource, writer.Context);
-            writer.WriteA("\n", writer.Context);
+            writer.Write(errorSource);
+            writer.Write("\n");
         }
 
         if (pszMessage != NULL)
         {
-            writer.WriteW(pszMessage, writer.Context);
+            writer.Write(pszMessage);
         }
         else
         {
             // If no message was passed in, generate it from the exitCode
             InlineSString<256> exitCodeMessage;
             GetHRMsg(exitCode, exitCodeMessage);
-            writer.WriteW(exitCodeMessage.GetUnicode(), writer.Context);
+            writer.Write(exitCodeMessage.GetUnicode());
         }
 
-        writer.WriteA("\n", writer.Context);
+        writer.Write("\n");
 
         Thread* pThread = GetThreadNULLOk();
         if (pThread && errorSource == NULL)
         {
-            // LogCallstackForLogWorker uses PrintToStdErrA/W directly for stack
-            // frames so it only works with the stderr writer. For callback writers,
-            // the stack trace is not included in the log output.
-            if (writer.WriteA == StdErrWriteA)
-            {
-                LogCallstackForLogWorker(pThread, pExceptionInfo);
-            }
+            LogCallstackForLogWorker(pThread, pExceptionInfo, writer);
 
             if (argExceptionString != NULL) {
-                writer.WriteW(argExceptionString, writer.Context);
+                writer.Write(argExceptionString);
             }
         }
     }
@@ -815,7 +816,7 @@ void DisplayStackOverflowException()
 
 DWORD LogStackOverflowStackTraceThread(void* arg)
 {
-    LogCallstackForLogWorker((Thread*)arg, NULL);
+    LogCallstackForLogWorker((Thread*)arg, NULL, s_stdErrWriter);
 
     return 0;
 }
