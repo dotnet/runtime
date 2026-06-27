@@ -352,12 +352,29 @@ namespace System.Net
         // that the measurement starts before the query runs - on the synchronous path
         // the PAL would otherwise execute the entire query before telemetry began.
 
-        private Task<DnsResult<AddressRecord>> ResolveAddressesCore(bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
-            => NameResolutionTelemetry.AnyDiagnosticsEnabled()
-                ? ResolveWithTelemetry(name, (servers: _servers, async, name, addressFamily, cancellationToken),
-                    static s => DnsResolverPal.ResolveAddresses(s.servers, s.async, s.name, s.addressFamily, s.cancellationToken),
-                    static r => MapAnswers(r, static a => a.Address.ToString()))
-                : DnsResolverPal.ResolveAddresses(_servers, async, name, addressFamily, cancellationToken);
+        private async Task<DnsResult<AddressRecord>> ResolveAddressesCore(bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
+        {
+            if (addressFamily == AddressFamily.Unspecified)
+            {
+                // if `async == true` then this runs both queries in parallel, otherwise it runs them sequentially (the synchronous path is expected to be rare and the async path is expected to be the common case).
+                Task<DnsResult<AddressRecord>> aTask = DoResolve(async, name, AddressFamily.InterNetwork, cancellationToken);
+                Task<DnsResult<AddressRecord>> aaaaTask = DoResolve(async, name, AddressFamily.InterNetworkV6, cancellationToken);
+
+                await Task.WhenAll(aTask, aaaaTask).ConfigureAwait(false);
+                DnsResult<AddressRecord> aRes = await aTask.ConfigureAwait(false);
+                DnsResult<AddressRecord> aaaaRes = await aaaaTask.ConfigureAwait(false);
+                return MergeAddressResults(aRes, aaaaRes);
+            }
+
+            return await DoResolve(async, name, addressFamily, cancellationToken).ConfigureAwait(false);
+
+            Task<DnsResult<AddressRecord>> DoResolve(bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
+                => NameResolutionTelemetry.AnyDiagnosticsEnabled()
+                    ? ResolveWithTelemetry(name, (servers: _servers, async, name, addressFamily, cancellationToken),
+                        static s => DnsResolverPal.ResolveAddresses(s.servers, s.async, s.name, s.addressFamily, s.cancellationToken),
+                        static r => MapAnswers(r, static a => a.Address.ToString()))
+                    : DnsResolverPal.ResolveAddresses(_servers, async, name, addressFamily, cancellationToken);
+        }
 
         private Task<DnsResult<SrvRecord>> ResolveSrvCore(bool async, string name, CancellationToken cancellationToken)
             => NameResolutionTelemetry.AnyDiagnosticsEnabled()
@@ -434,6 +451,40 @@ namespace System.Net
                 answers[i] = selector(records[i]);
             }
             return answers;
+        }
+
+        // Combines the results of the separate A and AAAA queries issued for an
+        // AddressFamily.Unspecified request into a single result.
+        private static DnsResult<AddressRecord> MergeAddressResults(DnsResult<AddressRecord> a, DnsResult<AddressRecord> b)
+        {
+            if (a.Records.Count > 0 || b.Records.Count > 0)
+            {
+                AddressRecord[] merged = [.. a.Records, .. b.Records];
+                TimeSpan mergedTtl = MinNonZero(a.NegativeCacheTtl, b.NegativeCacheTtl);
+                return new DnsResult<AddressRecord>(DnsResponseCode.NoError, merged, mergedTtl);
+            }
+
+            DnsResponseCode chosenRc = a.ResponseCode == DnsResponseCode.NxDomain || b.ResponseCode == DnsResponseCode.NxDomain
+                ? DnsResponseCode.NxDomain
+                : (a.ResponseCode != DnsResponseCode.NoError ? a.ResponseCode : b.ResponseCode);
+            TimeSpan negTtl = MinNonZero(a.NegativeCacheTtl, b.NegativeCacheTtl);
+            return new DnsResult<AddressRecord>(chosenRc, null, negTtl);
+        }
+
+        // Returns the smaller of two non-zero negative-cache TTLs, or zero if neither is positive.
+        private static TimeSpan MinNonZero(TimeSpan x, TimeSpan y)
+        {
+            if (x <= TimeSpan.Zero)
+            {
+                return y > TimeSpan.Zero ? y : TimeSpan.Zero;
+            }
+
+            if (y <= TimeSpan.Zero)
+            {
+                return x;
+            }
+
+            return x < y ? x : y;
         }
 
         private static void ValidateName(string name)

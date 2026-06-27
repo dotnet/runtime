@@ -24,26 +24,6 @@ namespace System.Net
 
         public static async Task<DnsResult<AddressRecord>> ResolveAddresses(IPEndPoint[] servers, bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
         {
-            if (addressFamily == AddressFamily.Unspecified)
-            {
-                if (async)
-                {
-                    // Issue A and AAAA in parallel; merge results.
-                    Task<DnsResult<AddressRecord>> aTask = QueryAddresses(servers, async: true, name, Interop.Dnsapi.DNS_TYPE_A, cancellationToken);
-                    Task<DnsResult<AddressRecord>> aaaaTask = QueryAddresses(servers, async: true, name, Interop.Dnsapi.DNS_TYPE_AAAA, cancellationToken);
-                    DnsResult<AddressRecord> aRes = await aTask.ConfigureAwait(false);
-                    DnsResult<AddressRecord> aaaaRes = await aaaaTask.ConfigureAwait(false);
-                    return MergeAddressResults(aRes, aaaaRes);
-                }
-                else
-                {
-                    // Synchronous: query A then AAAA sequentially.
-                    DnsResult<AddressRecord> aRes = await QueryAddresses(servers, async: false, name, Interop.Dnsapi.DNS_TYPE_A, cancellationToken).ConfigureAwait(false);
-                    DnsResult<AddressRecord> aaaaRes = await QueryAddresses(servers, async: false, name, Interop.Dnsapi.DNS_TYPE_AAAA, cancellationToken).ConfigureAwait(false);
-                    return MergeAddressResults(aRes, aaaaRes);
-                }
-            }
-
             ushort qtype = AddressFamilyToQueryType(addressFamily);
             return await QueryAddresses(servers, async, name, qtype, cancellationToken).ConfigureAwait(false);
         }
@@ -202,20 +182,20 @@ namespace System.Net
                 if (hdr.wType == Interop.Dnsapi.DNS_TYPE_TEXT && section == Interop.Dnsapi.DNSREC_ANSWER)
                 {
                     IntPtr dataPtr = cur + sizeof(Interop.Dnsapi.DNS_RECORD_HEADER);
+                    ref readonly Interop.Dnsapi.DNS_TXT_DATA data = ref AsStruct<Interop.Dnsapi.DNS_TXT_DATA>(dataPtr);
                     // DNS_TXT_DATA: uint dwStringCount; followed by array of PCWSTR.
-                    uint count = (uint)Marshal.ReadInt32(dataPtr);
-                    int ptrSize = IntPtr.Size;
-                    IntPtr stringsPtr = dataPtr + sizeof(uint);
-                    if (ptrSize > sizeof(uint))
+                    uint count = data.dwStringCount;
+                    IntPtr stringsPtr = dataPtr + sizeof(Interop.Dnsapi.DNS_TXT_DATA);
+                    if (IntPtr.Size > sizeof(Interop.Dnsapi.DNS_TXT_DATA))
                     {
                         // Round up to pointer alignment.
-                        long aligned = ((long)stringsPtr + (ptrSize - 1)) & ~(long)(ptrSize - 1);
+                        long aligned = ((long)stringsPtr + (IntPtr.Size - 1)) & ~(long)(IntPtr.Size - 1);
                         stringsPtr = checked((nint)aligned);
                     }
                     string[] values = new string[count];
                     for (int i = 0; i < count; i++)
                     {
-                        IntPtr strPtr = Marshal.ReadIntPtr(stringsPtr, i * ptrSize);
+                        IntPtr strPtr = Marshal.ReadIntPtr(stringsPtr, i * IntPtr.Size);
                         values[i] = PtrToString(strPtr) ?? string.Empty;
                     }
                     records.Add(new TxtRecord(values, TimeSpan.FromSeconds(hdr.dwTtl)));
@@ -248,38 +228,6 @@ namespace System.Net
             }
 
             return new DnsResult<TRecord>(DnsResponseCode.NoError, records, raw.NegativeCacheTtl);
-        }
-
-        private static DnsResult<AddressRecord> MergeAddressResults(DnsResult<AddressRecord> a, DnsResult<AddressRecord> b)
-        {
-            if (a.Records.Count > 0 || b.Records.Count > 0)
-            {
-                AddressRecord[] merged = [.. a.Records, .. b.Records];
-                TimeSpan mergedTtl = MinNonZero(a.NegativeCacheTtl, b.NegativeCacheTtl);
-                return new DnsResult<AddressRecord>(DnsResponseCode.NoError, merged, mergedTtl);
-            }
-
-            DnsResponseCode chosenRc = a.ResponseCode == DnsResponseCode.NxDomain || b.ResponseCode == DnsResponseCode.NxDomain
-                ? DnsResponseCode.NxDomain
-                : (a.ResponseCode != DnsResponseCode.NoError ? a.ResponseCode : b.ResponseCode);
-            TimeSpan negTtl = MinNonZero(a.NegativeCacheTtl, b.NegativeCacheTtl);
-            return new DnsResult<AddressRecord>(chosenRc, null, negTtl);
-        }
-
-        // Returns the smaller of two non-zero negative-cache TTLs, or zero if neither is positive.
-        private static TimeSpan MinNonZero(TimeSpan x, TimeSpan y)
-        {
-            if (x <= TimeSpan.Zero)
-            {
-                return y > TimeSpan.Zero ? y : TimeSpan.Zero;
-            }
-
-            if (y <= TimeSpan.Zero)
-            {
-                return x;
-            }
-
-            return x < y ? x : y;
         }
 
         private static bool TryParseAddress(ushort recordType, IntPtr dataPtr, out IPAddress? address)
@@ -360,10 +308,79 @@ namespace System.Net
 
         // ---- Asynchronous DnsQueryEx state machine ----
 
+        // Bundles the three fixed-size native structures DnsQueryEx needs into a single block so
+        // one SafeHandle can own their lifetime. The query name and server-list buffers are
+        // variable-length, so they are allocated separately and freed by the handle as well.
+        [StructLayout(LayoutKind.Sequential)]
+        private struct DnsQueryBuffers
+        {
+            public Interop.Dnsapi.DNS_QUERY_REQUEST Request;
+            public Interop.Dnsapi.DNS_QUERY_RESULT Result;
+            public Interop.Dnsapi.DNS_QUERY_CANCEL Cancel;
+        }
+
+        // Owns the native buffers backing a single asynchronous DnsQueryEx call. SafeHandle
+        // reference counting is what makes cancellation thread-safe: DnsCancelQuery runs under
+        // DangerousAddRef so the Cancel buffer cannot be freed while a cancel call is in flight,
+        // and once the completion path disposes the handle any later cancellation attempt observes
+        // a closed handle and becomes a no-op instead of dereferencing freed memory.
+        private sealed unsafe class DnsQuerySafeHandle : SafeHandle
+        {
+            private IntPtr _namePtr;
+            private IntPtr _serverListPtr;
+
+            public DnsQuerySafeHandle()
+                : base(IntPtr.Zero, ownsHandle: true)
+            {
+            }
+
+            public override bool IsInvalid => handle == IntPtr.Zero;
+
+            public DnsQueryBuffers* Buffers => (DnsQueryBuffers*)handle;
+
+            public void Allocate(string name, IPEndPoint[] servers, ushort queryType,
+                delegate* unmanaged[Stdcall]<nint, nint, void> completionCallback, IntPtr context)
+            {
+                DnsQueryBuffers* buffers = (DnsQueryBuffers*)NativeMemory.AllocZeroed((nuint)sizeof(DnsQueryBuffers));
+                SetHandle((IntPtr)buffers);
+
+                _namePtr = Marshal.StringToHGlobalUni(name);
+
+                buffers->Result.Version = Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION1;
+
+                buffers->Request.Version = Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION1;
+                buffers->Request.QueryName = (char*)_namePtr;
+                buffers->Request.QueryType = queryType;
+                buffers->Request.QueryOptions = Interop.Dnsapi.DNS_QUERY_STANDARD;
+                buffers->Request.pQueryCompletionCallback = completionCallback;
+                buffers->Request.pQueryContext = context;
+
+                if (servers is { Length: > 0 })
+                {
+                    BuildAddrArray(servers, out _serverListPtr);
+                    buffers->Request.pDnsServerList = (Interop.Dnsapi.DNS_ADDR_ARRAY*)_serverListPtr;
+                }
+            }
+
+            protected override bool ReleaseHandle()
+            {
+                if (_namePtr != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(_namePtr);
+                }
+                if (_serverListPtr != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(_serverListPtr);
+                }
+                NativeMemory.Free((void*)handle);
+                return true;
+            }
+        }
+
         /// <summary>
-        /// Holds the unmanaged state for a single DnsQueryEx invocation, including
-        /// the request/result/cancel structures, the pinned query name, and the
-        /// completion TaskCompletionSource.
+        /// Holds the managed state for a single asynchronous DnsQueryEx invocation: the native
+        /// buffers (via <see cref="DnsQuerySafeHandle"/>), the GC handle handed to the native
+        /// completion callback, the cancellation registration, and the completion source.
         /// </summary>
         private sealed unsafe class DnsQueryAsyncState
         {
@@ -372,13 +389,10 @@ namespace System.Net
             private readonly ushort _queryType;
             private readonly CancellationToken _cancellationToken;
             private readonly IPEndPoint[] _servers;
+            private readonly object _lock = new();
 
+            private DnsQuerySafeHandle _handle = null!;
             private GCHandle<DnsQueryAsyncState> _selfHandle;
-            private char* _namePtr;
-            private Interop.Dnsapi.DNS_QUERY_REQUEST* _requestPtr;
-            private Interop.Dnsapi.DNS_QUERY_RESULT* _resultPtr;
-            private Interop.Dnsapi.DNS_QUERY_CANCEL* _cancelPtr;
-            private Interop.Dnsapi.DNS_ADDR_ARRAY* _serverListPtr;
             private CancellationTokenRegistration _ctReg;
             private bool _completed;
 
@@ -394,62 +408,54 @@ namespace System.Net
             {
                 ValidateServerPorts(_servers);
 
+                _handle = new DnsQuerySafeHandle();
+                _selfHandle = new GCHandle<DnsQueryAsyncState>(this);
+
                 int status;
                 try
                 {
-                    _namePtr = (char*)Marshal.StringToHGlobalUni(_name);
+                    _handle.Allocate(_name, _servers, _queryType, &QueryCompletionCallback,
+                        GCHandle<DnsQueryAsyncState>.ToIntPtr(_selfHandle));
 
-                    _resultPtr = (Interop.Dnsapi.DNS_QUERY_RESULT*)Marshal.AllocHGlobal(sizeof(Interop.Dnsapi.DNS_QUERY_RESULT));
-                    NativeMemory.Clear(_resultPtr, (nuint)sizeof(Interop.Dnsapi.DNS_QUERY_RESULT));
-                    _resultPtr->Version = Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION1;
-
-                    _cancelPtr = (Interop.Dnsapi.DNS_QUERY_CANCEL*)Marshal.AllocHGlobal(sizeof(Interop.Dnsapi.DNS_QUERY_CANCEL));
-                    NativeMemory.Clear(_cancelPtr, (nuint)sizeof(Interop.Dnsapi.DNS_QUERY_CANCEL));
-
-                    _selfHandle = new GCHandle<DnsQueryAsyncState>(this);
-
-                    _requestPtr = (Interop.Dnsapi.DNS_QUERY_REQUEST*)Marshal.AllocHGlobal(sizeof(Interop.Dnsapi.DNS_QUERY_REQUEST));
-                    NativeMemory.Clear(_requestPtr, (nuint)sizeof(Interop.Dnsapi.DNS_QUERY_REQUEST));
-                    _requestPtr->Version = Interop.Dnsapi.DNS_QUERY_REQUEST_VERSION1;
-                    _requestPtr->QueryName = _namePtr;
-                    _requestPtr->QueryType = _queryType;
-                    _requestPtr->QueryOptions = Interop.Dnsapi.DNS_QUERY_STANDARD;
-                    _requestPtr->InterfaceIndex = 0;
-                    _requestPtr->pQueryCompletionCallback = &QueryCompletionCallback;
-                    _requestPtr->pQueryContext = GCHandle<DnsQueryAsyncState>.ToIntPtr(_selfHandle);
-
-                    if (_servers is { Length: > 0 })
-                    {
-                        BuildAddrArray(_servers, out IntPtr serverList);
-                        _serverListPtr = (Interop.Dnsapi.DNS_ADDR_ARRAY*)serverList;
-                        _requestPtr->pDnsServerList = _serverListPtr;
-                    }
-
-                    status = Interop.Dnsapi.DnsQueryEx(_requestPtr, _resultPtr, _cancelPtr);
+                    DnsQueryBuffers* buffers = _handle.Buffers;
+                    status = Interop.Dnsapi.DnsQueryEx(&buffers->Request, &buffers->Result, &buffers->Cancel);
                 }
                 catch
                 {
-                    FreeAll();
+                    _handle.Dispose();
+                    _selfHandle.Dispose();
                     throw;
                 }
 
                 if (status == Interop.Dnsapi.DNS_REQUEST_PENDING)
                 {
-                    // The query is now in-flight and the native runtime owns the request/result/
-                    // cancel buffers until the completion callback fires. Register cancellation
-                    // OUTSIDE the try/catch above: if registration throws (e.g. the
-                    // CancellationTokenSource was already disposed) we must NOT free the native
-                    // state here, because the pending query still references it — the completion
-                    // callback will free everything when it eventually runs.
-                    _ctReg = _cancellationToken.UnsafeRegister(static (s, _) =>
+                    // The query is in-flight; the native runtime owns the buffers until the
+                    // completion callback fires. Register cancellation, then publish the
+                    // registration under _lock and check whether completion already ran (it may
+                    // race ahead on another thread the instant DnsQueryEx returned PENDING). If it
+                    // did, we dispose the registration here; otherwise CompleteFromResult disposes
+                    // it. Either way the SafeHandle keeps the Cancel buffer alive across any
+                    // DnsCancelQuery call, so cancellation can never touch freed memory.
+                    CancellationTokenRegistration registration = _cancellationToken.UnsafeRegister(static (s, _) =>
                     {
-                        DnsQueryAsyncState st = (DnsQueryAsyncState)s!;
-                        st.CancelAndAbort();
+                        ((DnsQueryAsyncState)s!).CancelAndAbort();
                     }, this);
+
+                    bool alreadyCompleted;
+                    lock (_lock)
+                    {
+                        _ctReg = registration;
+                        alreadyCompleted = _completed;
+                    }
+
+                    if (alreadyCompleted)
+                    {
+                        registration.Dispose();
+                    }
                 }
                 else
                 {
-                    // Synchronous completion. The callback was NOT invoked; we complete inline.
+                    // Synchronous completion: the callback was NOT invoked; we complete inline.
                     CompleteFromResult(status);
                 }
 
@@ -458,26 +464,51 @@ namespace System.Net
 
             private void CancelAndAbort()
             {
-                if (_cancelPtr != null)
+                bool addedRef = false;
+                try
                 {
-                    Interop.Dnsapi.DnsCancelQuery(_cancelPtr);
+                    // AddRef pins the native buffers for the duration of the cancel call. If the
+                    // completion path has already disposed the handle, AddRef throws and we treat
+                    // the cancellation as a no-op.
+                    _handle.DangerousAddRef(ref addedRef);
+                    Interop.Dnsapi.DnsCancelQuery(&_handle.Buffers->Cancel);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Completion already disposed the handle and freed the buffers; nothing left
+                    // to cancel.
+                }
+                finally
+                {
+                    if (addedRef)
+                    {
+                        _handle.DangerousRelease();
+                    }
                 }
             }
 
             /// <summary>
-            /// Invoked from either the native callback or the sync completion path.
-            /// Parses the QueryStatus and pQueryRecords from the result struct,
-            /// completes the TCS, and frees state.
+            /// Invoked exactly once, from either the native completion callback or the inline
+            /// synchronous-completion path. Parses the QueryStatus and pQueryRecords from the
+            /// result struct, completes the TCS, and releases all native state.
             /// </summary>
             internal void CompleteFromResult(int status)
             {
-                _completed = true;
+                CancellationTokenRegistration registration;
+                lock (_lock)
+                {
+                    _completed = true;
+                    registration = _ctReg;
+                }
+
+                // Dispose the registration outside the lock. This also waits for any in-flight
+                // CancelAndAbort to finish before we dispose the handle below, so DnsCancelQuery
+                // can never observe a freed buffer.
+                registration.Dispose();
 
                 try
                 {
-                    _ctReg.Dispose();
-
-                    IntPtr records = _resultPtr->pQueryRecords;
+                    IntPtr records = _handle.Buffers->Result.pQueryRecords;
 
                     if (_cancellationToken.IsCancellationRequested)
                     {
@@ -504,39 +535,7 @@ namespace System.Net
                 }
                 finally
                 {
-                    FreeAll();
-                }
-            }
-
-            private void FreeAll()
-            {
-                if (_namePtr != null)
-                {
-                    Marshal.FreeHGlobal((IntPtr)_namePtr);
-                    _namePtr = null;
-                }
-                if (_requestPtr != null)
-                {
-                    Marshal.FreeHGlobal((IntPtr)_requestPtr);
-                    _requestPtr = null;
-                }
-                if (_resultPtr != null)
-                {
-                    Marshal.FreeHGlobal((IntPtr)_resultPtr);
-                    _resultPtr = null;
-                }
-                if (_cancelPtr != null)
-                {
-                    Marshal.FreeHGlobal((IntPtr)_cancelPtr);
-                    _cancelPtr = null;
-                }
-                if (_serverListPtr != null)
-                {
-                    Marshal.FreeHGlobal((IntPtr)_serverListPtr);
-                    _serverListPtr = null;
-                }
-                if (_selfHandle.IsAllocated)
-                {
+                    _handle.Dispose();
                     _selfHandle.Dispose();
                 }
             }
