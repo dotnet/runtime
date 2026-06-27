@@ -2125,7 +2125,7 @@ namespace System
                         Vector512<ushort> vector2 = Vector512.Create(remaining.Slice(Vector512<ushort>.Count));
                         var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
 
-                        if (Vector512.EqualsAny(packed, packedComparand1) || Vector512.EqualsAny(packed, packedComparand2) || Vector512.EqualsAny(packed, packedComparand3))
+                        if ((Vector512.Equals(packed, packedComparand1) | Vector512.Equals(packed, packedComparand2) | Vector512.Equals(packed, packedComparand3)) != Vector512<byte>.Zero)
                         {
                             var cmp1 = Vector512.Equals(vector1, v1).AsByte() | Vector512.Equals(vector1, v2).AsByte() | Vector512.Equals(vector1, v3).AsByte();
                             var cmp2 = Vector512.Equals(vector2, v1).AsByte() | Vector512.Equals(vector2, v2).AsByte() | Vector512.Equals(vector2, v3).AsByte();
@@ -2220,7 +2220,7 @@ namespace System
                         Vector256<ushort> vector2 = Vector256.Create(remaining.Slice(Vector256<ushort>.Count));
                         var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
 
-                        if (Vector256.EqualsAny(packed, packedComparand1) || Vector256.EqualsAny(packed, packedComparand2) || Vector256.EqualsAny(packed, packedComparand3))
+                        if ((Vector256.Equals(packed, packedComparand1) | Vector256.Equals(packed, packedComparand2) | Vector256.Equals(packed, packedComparand3)) != Vector256<byte>.Zero)
                         {
                             var cmp1 = Vector256.Equals(vector1, v1).AsByte() | Vector256.Equals(vector1, v2).AsByte() | Vector256.Equals(vector1, v3).AsByte();
                             var cmp2 = Vector256.Equals(vector2, v1).AsByte() | Vector256.Equals(vector2, v2).AsByte() | Vector256.Equals(vector2, v3).AsByte();
@@ -2315,7 +2315,7 @@ namespace System
                         Vector128<ushort> vector2 = Vector128.Create(remaining.Slice(Vector128<ushort>.Count));
                         var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
 
-                        if (Vector128.EqualsAny(packed, packedComparand1) || Vector128.EqualsAny(packed, packedComparand2) || Vector128.EqualsAny(packed, packedComparand3))
+                        if ((Vector128.Equals(packed, packedComparand1) | Vector128.Equals(packed, packedComparand2) | Vector128.Equals(packed, packedComparand3)) != Vector128<byte>.Zero)
                         {
                             var cmp1 = Vector128.Equals(vector1, v1).AsByte() | Vector128.Equals(vector1, v2).AsByte() | Vector128.Equals(vector1, v3).AsByte();
                             var cmp2 = Vector128.Equals(vector2, v1).AsByte() | Vector128.Equals(vector2, v2).AsByte() | Vector128.Equals(vector2, v3).AsByte();
