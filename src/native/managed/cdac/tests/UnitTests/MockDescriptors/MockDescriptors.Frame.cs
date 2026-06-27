@@ -98,8 +98,8 @@ internal sealed class MockFuncEvalFrame : MockFrame
 
     public ulong ReturnAddress
     {
-        get => ReadPointerField(ReturnAddressFieldName);
-        set => WritePointerField(ReturnAddressFieldName, value);
+        get => ReadCodePointerField(ReturnAddressFieldName);
+        set => WriteCodePointerField(ReturnAddressFieldName, value);
     }
 }
 

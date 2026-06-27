@@ -275,7 +275,7 @@ internal sealed class FrameHelpers
                 Data.FuncEvalFrame funcEval = _target.ProcessedData.GetOrAdd<Data.FuncEvalFrame>(frame.Address);
                 Data.DebuggerEval dbgEval = _target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEval.DebuggerEvalPtr);
                 if (!dbgEval.EvalUsesHijack)
-                    return TargetPointer.Null;
+                    return TargetCodePointer.Null;
                 return funcEval.ReturnAddress;
 
             // Base Frame and unknown types: return 0 (matches native Frame::GetReturnAddressPtr_Impl)
