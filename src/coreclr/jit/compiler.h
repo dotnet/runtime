@@ -5205,6 +5205,13 @@ protected:
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
 
+    GenTree* impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                CORINFO_CALL_INFO*      callInfo,
+                                CORINFO_CONTEXT_HANDLE  exactContextHnd,
+                                bool                    exactContextNeedsRuntimeLookup,
+                                unsigned                clsFlags,
+                                bool                    isReadonlyCall);
+
     void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
 
     void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
