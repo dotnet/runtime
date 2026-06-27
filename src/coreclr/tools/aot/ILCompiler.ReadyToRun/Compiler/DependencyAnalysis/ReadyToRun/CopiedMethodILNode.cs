@@ -5,6 +5,7 @@ using System;
 using System.Reflection.Metadata;
 
 using Internal.Text;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
@@ -57,8 +58,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (factory.OptimizationFlags.StripILBodies
                 && factory.OptimizationFlags.CompiledMethodDefs.Contains(_method)
-                && !_method.HasInstantiation
-                && !_method.OwningType.HasInstantiation)
+                && !MayNeedILAtRuntime(_method))
             {
                 return new ObjectData(s_minimalILBody, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
             }
@@ -70,6 +70,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             byte[] bodyBytes = peReader.GetSectionData(rva).GetReader().ReadBytes(size);
 
             return new ObjectData(bodyBytes, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
+        }
+
+        private static bool MayNeedILAtRuntime(MethodDesc method)
+        {
+            if (method.HasInstantiation || method.OwningType.HasInstantiation)
+            {
+                // IL may be needed for new instantiations
+                return true;
+            }
+
+            if (method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask() && !method.IsAsync)
+            {
+                // IL may be needed for async version of non-async Task-returning method
+                return true;
+            }
+
+            return false;
         }
 
         public override int ClassCode => 541651465;

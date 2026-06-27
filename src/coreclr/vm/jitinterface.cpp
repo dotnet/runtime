@@ -11021,6 +11021,9 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
     {
         helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
         _ASSERTE(PortableEntryPoint::GetMethodDesc((PCODE)targetAddr) == helperMD);
+#ifdef FEATURE_READYTORUN
+        _ASSERTE(PortableEntryPoint::GetActualCode((PCODE)targetAddr) != NULL);
+#endif
     }
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
