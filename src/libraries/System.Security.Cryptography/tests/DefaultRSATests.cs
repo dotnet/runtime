@@ -8,10 +8,10 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public class RSATests
+    public static class DefaultRSATests
     {
         [Fact]
-        public void BaseVirtualsNotImplementedException()
+        public static void BaseVirtualsNotImplementedException()
         {
             var rsa = new EmptyRSA();
             Assert.Throws<NotImplementedException>(() => rsa.Decrypt(null, null));
@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void TryDecrypt_UsesDecrypt()
+        public static void TryDecrypt_UsesDecrypt()
         {
             var rsa = new DelegateRSA { DecryptDelegate = (data, padding) => data };
             int bytesWritten;
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void TryEncrypt_UsesEncrypt()
+        public static void TryEncrypt_UsesEncrypt()
         {
             var rsa = new DelegateRSA { EncryptDelegate = (data, padding) => data };
             int bytesWritten;
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void TryHashData_UsesHashData()
+        public static void TryHashData_UsesHashData()
         {
             var rsa = new DelegateRSA { HashDataArrayDelegate = (data, offset, count, name) => new Span<byte>(data, offset, count).ToArray() };
             int bytesWritten;
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void TrySignHash_UsesSignHash()
+        public static void TrySignHash_UsesSignHash()
         {
             var rsa = new DelegateRSA { SignHashDelegate = (data, name, padding) => data };
             int bytesWritten;
@@ -121,7 +121,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void VerifyHashSpan_UsesVerifyHashArray()
+        public static void VerifyHashSpan_UsesVerifyHashArray()
         {
             bool invoked = false;
             var rsa = new DelegateRSA { VerifyHashDelegate = delegate { invoked = true; return true; } };
@@ -130,7 +130,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void SignDataArray_UsesHashDataAndSignHash()
+        public static void SignDataArray_UsesHashDataAndSignHash()
         {
             var rsa = new DelegateRSA();
 
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void SignDataStream_UsesHashDataAndSignHash()
+        public static void SignDataStream_UsesHashDataAndSignHash()
         {
             var rsa = new DelegateRSA();
 
@@ -172,7 +172,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void VerifyDataStream_UsesHashDataAndVerifyHash()
+        public static void VerifyDataStream_UsesHashDataAndVerifyHash()
         {
             var rsa = new DelegateRSA();
 
@@ -191,7 +191,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void RSAEncryptionPadding_Equality()
+        public static void RSAEncryptionPadding_Equality()
         {
             Assert.True(RSAEncryptionPadding.Pkcs1.Equals(RSAEncryptionPadding.Pkcs1));
             Assert.True(RSAEncryptionPadding.Pkcs1.Equals((object)RSAEncryptionPadding.Pkcs1));
@@ -210,7 +210,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void RSASignaturePadding_Equality()
+        public static void RSASignaturePadding_Equality()
         {
             Assert.True(RSASignaturePadding.Pkcs1.Equals(RSASignaturePadding.Pkcs1));
             Assert.True(RSASignaturePadding.Pkcs1.Equals((object)RSASignaturePadding.Pkcs1));

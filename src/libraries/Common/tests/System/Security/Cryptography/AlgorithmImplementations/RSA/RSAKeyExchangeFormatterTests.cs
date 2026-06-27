@@ -8,10 +8,12 @@ using Xunit;
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public partial class RSAKeyExchangeFormatterTests
+    public abstract class RSAKeyExchangeFormatterTests
     {
+        protected abstract RSAProvider RSAFactory { get; }
+
         [Fact]
-        public static void VerifyDecryptKeyExchangeOaep()
+        public void VerifyDecryptKeyExchangeOaep()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -24,7 +26,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void VerifyDecryptKeyExchangePkcs1()
+        public void VerifyDecryptKeyExchangePkcs1()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -37,7 +39,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void TestKnownValueOaep()
+        public void TestKnownValueOaep()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -54,7 +56,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void TestKnownValuePkcs1()
+        public void TestKnownValuePkcs1()
         {
             using (RSA rsa = RSAFactory.Create())
             {
