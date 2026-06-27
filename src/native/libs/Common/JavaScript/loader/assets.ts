@@ -588,8 +588,7 @@ const behaviorToBlazorAssetTypeMap: { [key: string]: WebAssemblyBootResourceType
     "webcil": "assembly",
     "js-module-dotnet": "dotnetjs",
     "js-module-native": "dotnetjs",
-    "js-module-runtime": "dotnetjs",
-    "js-module-threads": "dotnetjs"
+    "js-module-runtime": "dotnetjs"
 };
 
 const behaviorToContentTypeMap: { [key: string]: string | undefined } = {
@@ -667,7 +666,6 @@ export async function prefetchAllResources(extraVfs?: VfsAsset[]): Promise<void>
         ...(resources.jsModuleNative || []),
         ...(resources.jsModuleRuntime || []),
         ...(resources.jsModuleDiagnostics || []),
-        ...(resources.jsModuleWorker || []),
         ...(resources.modulesAfterConfigLoaded || []),
         ...(resources.modulesAfterRuntimeReady || []),
     ]);
