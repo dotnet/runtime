@@ -340,7 +340,7 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe HeaderLockResult IsAcquired(object obj)
+        public static unsafe bool IsAcquired(object obj)
         {
             ArgumentNullException.ThrowIfNull(obj);
 
@@ -353,22 +353,17 @@ namespace System.Threading
                 // In either case, the two will be consistent.
                 int oldBits = *pHeader;
 
-                // If has a hash code or syncblock, we cannot determine the lock state from the header
-                // use the slow path.
-                if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0)
+                // If no hash code or syncblock, the lock state is determined by the header.
+                if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) == 0)
                 {
-                    return HeaderLockResult.UseSlowPath;
+                    // do we own the thin lock?
+                    return (oldBits & SBLK_MASK_LOCK_THREADID) == ManagedThreadId.Current;
                 }
-
-                // if we own the lock
-                if ((oldBits & SBLK_MASK_LOCK_THREADID) == ManagedThreadId.Current)
-                {
-                    return HeaderLockResult.Success;
-                }
-
-                // someone else owns or no one.
-                return HeaderLockResult.Failure;
             }
+
+            // Has a hash code or syncblock - let the slow path determine ownership.
+            // Done outside the fixed block to avoid pinning the object across the call.
+            return Monitor.GetLockObject(obj).IsHeldByCurrentThread;
         }
     }
 }

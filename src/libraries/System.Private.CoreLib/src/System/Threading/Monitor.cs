@@ -41,6 +41,53 @@ namespace System.Threading
             => Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
 
 #if !MONO
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void Enter(object obj)
+        {
+            ObjectHeader.AcquireThinLock(obj);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool TryEnter(object obj)
+        {
+            return ObjectHeader.TryAcquireThinLock(obj);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool TryEnter(object obj, int millisecondsTimeout)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
+            return ObjectHeader.TryAcquireThinLock(obj, millisecondsTimeout);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void Exit(object obj)
+        {
+            ArgumentNullException.ThrowIfNull(obj);
+            ObjectHeader.Release(obj);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool IsEntered(object obj)
+        {
+            return ObjectHeader.IsAcquired(obj);
+        }
+
+        private static void SynchronizedMethodEnter(object obj, ref bool lockTaken)
+        {
+            ObjectHeader.AcquireThinLock(obj);
+            lockTaken = true;
+        }
+
+        private static void SynchronizedMethodExit(object obj, ref bool lockTaken)
+        {
+            // Inlined Monitor.Exit
+            if (!lockTaken)
+                return;
+
+            ObjectHeader.Release(obj);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Enter(object obj, ref bool lockTaken)
         {
