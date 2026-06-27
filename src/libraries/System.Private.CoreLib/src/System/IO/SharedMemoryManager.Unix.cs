@@ -419,6 +419,9 @@ namespace System.IO
 
         internal static SafeFileHandle CreateOrOpenFile(string sharedMemoryFilePath, SharedMemoryId id, bool createIfNotExist, out bool createdFile)
         {
+            const int AccessDeniedRetryCount = 10;
+            int accessDeniedRetryCount = 0;
+
             while (true)
             {
                 SafeFileHandle fd = Interop.Sys.Open(sharedMemoryFilePath, Interop.Sys.OpenFlags.O_RDWR | Interop.Sys.OpenFlags.O_CLOEXEC, 0);
@@ -448,6 +451,15 @@ namespace System.IO
                     }
                     createdFile = false;
                     return fd;
+                }
+
+                if (error.Error == Interop.Error.EACCES && accessDeniedRetryCount < AccessDeniedRetryCount)
+                {
+                    // During creation, the mode passed to O_CREAT is filtered by process umask. Retry briefly in case
+                    // another process is still in the window between creating the file and fixing its permissions.
+                    accessDeniedRetryCount++;
+                    Thread.Sleep(1);
+                    continue;
                 }
 
                 if (error.Error != Interop.Error.ENOENT)
@@ -485,6 +497,8 @@ namespace System.IO
                     throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
                 }
 
+                // The mode passed to open(..., O_CREAT|O_EXCL, permissionsMask) is filtered by process umask, so the
+                // created file may not have the requested access. Set the exact mode explicitly.
                 int result = Interop.Sys.FChMod(fd, (int)permissionsMask);
 
                 if (result != 0)
