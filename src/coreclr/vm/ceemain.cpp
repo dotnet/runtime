@@ -194,9 +194,7 @@
 #include "profilinghelper.h"
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #include "diagnosticserveradapter.h"
 #include "eventpipeadapter.h"

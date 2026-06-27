@@ -407,7 +407,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 

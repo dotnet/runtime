@@ -196,10 +196,22 @@ public:
     {
         Object** m_ppObject;
 
+        bool IsNull() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return *m_ppObject == NULL;
+        }
+
         OBJECTREF Get()
         {
             LIMITED_METHOD_CONTRACT;
             return ObjectToOBJECTREF(*m_ppObject);
+        }
+
+        Object** GetObjectPointer() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_ppObject;
         }
 
 #ifndef DACCESS_COMPILE

@@ -3888,9 +3888,6 @@ private:
     WORD          m_wNumGenericArgs;
 
 public:
-    static InstantiatedMethodDesc *FindOrCreateExactClassMethod(MethodTable *pExactMT,
-                                                                MethodDesc *pCanonicalMD);
-
     static InstantiatedMethodDesc* FindLoadedInstantiatedMethodDesc(MethodTable *pMT,
                                                                     mdMethodDef methodDef,
                                                                     Instantiation methodInst,

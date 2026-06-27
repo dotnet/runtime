@@ -915,7 +915,14 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     MethodDesc* pCtorMD = ((REFLECTMETHODREF)pMethod.Get())->GetMethod();
     TypeHandle th = ((REFLECTCLASSBASEREF)pCaType.Get())->GetType();
 
-    MethodDescCallSite ctorCallSite(pCtorMD, th);
+    PCODE pCallTarget;
+
+    {
+        GCX_PREEMP();
+        pCallTarget = pCtorMD->GetCallTarget(NULL, th);
+    }
+
+    MethodDescCallSite ctorCallSite(pCtorMD, pCallTarget, th);
     MetaSig* pSig = ctorCallSite.GetMetaSig();
     BYTE* pBlob = *ppBlob;
 

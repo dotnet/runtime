@@ -1947,22 +1947,23 @@ extern "C" MethodDesc* QCALLTYPE RuntimeMethodHandle_GetStubIfNeededSlow(MethodD
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    TypeHandle* inst = NULL;
+    DWORD ntypars = 0;
 
+    
     if (pMethod->IsAsyncVariantMethod())
     {
         // do not report async variants to reflection.
         pMethod = pMethod->GetOrdinaryVariant(/*allowInstParam*/ false);
     }
-
+    
     TypeHandle instType = declaringTypeHandle.AsTypeHandle();
-
-    TypeHandle* inst = NULL;
-    DWORD ntypars = 0;
-
+    
     // Construct TypeHandle array for instantiation.
-    if (methodInstantiation.Get() != NULL)
+    if (!methodInstantiation.IsNull())
     {
+        GCX_COOP();
+
         ntypars = ((PTRARRAYREF)methodInstantiation.Get())->GetNumComponents();
 
         size_t size = ntypars * sizeof(TypeHandle);
@@ -2037,7 +2038,10 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_GetMethodBody(MethodDesc* pMethod,
     {
         MethodDesc* pMethodIL = pMethod;
         if (pMethod->IsWrapperStub())
+        {
+            GCX_PREEMP();
             pMethodIL = pMethod->GetWrappedMethodDesc();
+        }
 
         pILHeader = pMethodIL->GetILHeader();
     }

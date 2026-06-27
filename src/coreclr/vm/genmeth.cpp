@@ -170,6 +170,7 @@ static MethodDesc * FindTightlyBoundWrappedMethodDesc(MethodDesc * pMD)
 {
     CONTRACTL
     {
+        MODE_ANY;
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pMD));
@@ -401,6 +402,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 {
     CONTRACT(InstantiatedMethodDesc*)
     {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
@@ -596,45 +598,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 
     RETURN pNewMD;
 }
-
-// Calling this method is equivalent to
-// FindOrCreateAssociatedMethodDesc(pCanonicalMD, pExactMT, FALSE, Instantiation(), FALSE, TRUE)
-// except that it also creates InstantiatedMethodDescs based on shared class methods. This is
-// convenient for interop where, unlike ordinary managed methods, marshaling stubs for say Foo<string>
-// and Foo<object> look very different and need separate representation.
-InstantiatedMethodDesc*
-InstantiatedMethodDesc::FindOrCreateExactClassMethod(MethodTable *pExactMT,
-                                                     MethodDesc *pCanonicalMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(!pExactMT->IsSharedByGenericInstantiations());
-        PRECONDITION(pCanonicalMD->IsSharedByGenericInstantiations());
-    }
-    CONTRACTL_END;
-
-    InstantiatedMethodDesc *pInstMD = FindLoadedInstantiatedMethodDesc(pExactMT,
-                                                                       pCanonicalMD->GetMemberDef(),
-                                                                       Instantiation(),
-                                                                       FALSE,
-                                                                       pCanonicalMD->IsAsyncVariantMethod());
-
-    if (pInstMD == NULL)
-    {
-        // create a new MD if not found
-        pInstMD = NewInstantiatedMethodDesc(pExactMT,
-                                            pCanonicalMD,
-                                            pCanonicalMD,
-                                            Instantiation(),
-                                            FALSE);
-    }
-
-    return pInstMD;
-}
-
 #endif // !DACCESS_COMPILE
 
 // N.B. it is not guarantee that the returned InstantiatedMethodDesc is restored.
@@ -807,6 +770,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     CONTRACT(MethodDesc*)
     {
         THROWS;
+        if (allowCreate) { MODE_PREEMPTIVE; } else { MODE_ANY; }
         if (allowCreate) { GC_TRIGGERS; } else { GC_NOTRIGGER; }
         if (!allowCreate) { SUPPORTS_DAC; }
         INJECT_FAULT(COMPlusThrowOM(););
@@ -1322,6 +1286,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     Instantiation methodInst)
 {
     CONTRACTL {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;    // Because allowCreate is TRUE
         PRECONDITION(CheckPointer(pMethod));

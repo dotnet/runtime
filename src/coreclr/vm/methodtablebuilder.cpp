@@ -675,7 +675,7 @@ MethodTableBuilder::BuildMethodTableThrowException(
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -6255,7 +6255,7 @@ MethodTableBuilder::InitMethodDesc(
     {
         THROWS;
         if (fEnC) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 

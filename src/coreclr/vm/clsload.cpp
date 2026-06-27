@@ -584,8 +584,8 @@ VOID ClassLoader::PopulateAvailableClassHashTable(Module* pModule,
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
@@ -638,8 +638,8 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTablesDontHaveLock()
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
@@ -655,8 +655,8 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
@@ -3455,8 +3455,8 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -3490,8 +3490,8 @@ VOID ClassLoader::AddAvailableClassHaveLock(
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -3564,8 +3564,8 @@ VOID ClassLoader::AddExportedTypeDontHaveLock(Module *pManifestModule,
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -3589,8 +3589,8 @@ VOID ClassLoader::AddExportedTypeHaveLock(Module *pManifestModule,
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END

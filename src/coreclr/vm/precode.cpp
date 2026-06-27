@@ -15,9 +15,7 @@
 #include <interpretershared.h>
 #endif // FEATURE_INTERPRETER
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
 #ifdef HAS_FIXUP_PRECODE
@@ -253,9 +251,7 @@ InterpreterPrecode* Precode::AllocateInterpreterPrecode(PCODE byteCode,
 
     FlushCacheForDynamicMappedStub(pPrecode, sizeof(InterpreterPrecode));
 
-#ifdef FEATURE_PERFMAP
     PerfMap::LogStubs(__FUNCTION__, "UMEntryThunk", (PCODE)pPrecode, sizeof(InterpreterPrecode), PerfMapStubType::IndividualWithinBlock);
-#endif
     return pPrecode;
 }
 #endif // FEATURE_INTERPRETER
@@ -288,9 +284,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
         // to see the actual final Target (which doesn't require any further synchronization), or we'll hit the memory
         // barrier in the second portion of the FixupPrecodeThunk and find that the MethodDesc/PrecodeFixupThunk are
         // properly set. See FixupPrecode::GenerateDataPage for the code to fill in the target.
-#ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, "FixupPrecode", (PCODE)pPrecode, sizeof(FixupPrecode), PerfMapStubType::IndividualWithinBlock);
-#endif
     }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     else if (t == PRECODE_THISPTR_RETBUF)
@@ -302,9 +296,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
 
         FlushCacheForDynamicMappedStub(pPrecode, sizeof(ThisPtrRetBufPrecode));
 
-#ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, "ThisPtrRetBuf", (PCODE)pPrecode, sizeof(ThisPtrRetBufPrecodeData), PerfMapStubType::IndividualWithinBlock);
-#endif
         }
 #endif // HAS_THISPTR_RETBUF_PRECODE
     else
@@ -315,9 +307,7 @@ Precode* Precode::Allocate(PrecodeType t, MethodDesc* pMD,
 
         FlushCacheForDynamicMappedStub(pPrecode, sizeof(StubPrecode));
 
-#ifdef FEATURE_PERFMAP
         PerfMap::LogStubs(__FUNCTION__, t == PRECODE_STUB ? "StubPrecode" : "PInvokeImportPrecode", (PCODE)pPrecode, sizeof(StubPrecode), PerfMapStubType::IndividualWithinBlock);
-#endif
     }
 
     return pPrecode;
