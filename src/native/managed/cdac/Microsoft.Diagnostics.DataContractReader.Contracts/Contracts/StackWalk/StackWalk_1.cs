@@ -341,9 +341,16 @@ internal partial class StackWalk_1 : IStackWalk
                     }
                 }
             }
+            catch (NotImplementedException ex)
+            {
+                // The calling convention or frame type is not yet supported (e.g., VarArgs,
+                // SystemV struct-in-registers). Skip this frame -- the DSO will have partial
+                // results but won't fail the entire stack walk.
+                Debug.WriteLine($"Skipping frame at IP=0x{gcFrame.Frame.Context.InstructionPointer:X}: {ex.Message}");
+            }
             catch (System.Exception ex)
             {
-                // Per-frame exceptions are intentionally swallowed to provide partial results
+                // Unexpected per-frame exceptions are swallowed to provide partial results
                 // rather than failing the entire stack walk. This matches the resilience model
                 // of the legacy DAC. Callers can detect incomplete results by comparing counts.
                 Debug.WriteLine($"Exception during WalkStackReferences at IP=0x{gcFrame.Frame.Context.InstructionPointer:X}: {ex.GetType().Name}: {ex.Message}");
