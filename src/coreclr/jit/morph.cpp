@@ -4223,6 +4223,12 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         }
     }
 
+    if (callee->IsAsync() != compIsAsync())
+    {
+        reportFastTailCallDecision("Mismatch in async calling convention");
+        return false;
+    }
+
     // For a fast tail call the caller will use its incoming arg stack space to place
     // arguments, so if the callee requires more arg stack space than is available here
     // the fast tail call cannot be performed. This is common to all platforms.

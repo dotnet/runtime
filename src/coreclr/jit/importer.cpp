@@ -9332,6 +9332,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
                     }
 
+                    prefixFlags &= ~PREFIX_TAILCALL;
                     goto RET;
                 }
 
