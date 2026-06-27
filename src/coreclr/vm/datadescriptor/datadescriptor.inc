@@ -1179,6 +1179,7 @@ CDAC_TYPE_END(TransitionBlock)
 CDAC_TYPE_BEGIN(FuncEvalFrame)
 CDAC_TYPE_SIZE(sizeof(FuncEvalFrame))
 CDAC_TYPE_FIELD(FuncEvalFrame, T_POINTER, DebuggerEvalPtr, cdac_data<FuncEvalFrame>::DebuggerEvalPtr)
+CDAC_TYPE_FIELD(FuncEvalFrame, TYPE(CodePointer), ReturnAddress, cdac_data<FuncEvalFrame>::ReturnAddress)
 CDAC_TYPE_END(FuncEvalFrame)
 
 CDAC_TYPE_BEGIN(DebuggerEval)
