@@ -5244,11 +5244,13 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
         sz += emitInsSize(id, insEncodeRMreg(id, code), includeRexPrefixSize);
     }
 
+#ifdef TARGET_AMD64
     if (IsKInstruction(ins) && hasVexPrefix(code))
     {
         // K instructions add VEX before this helper; avoid counting the prefix once here and once in the adjustment.
         sz -= emitGetVexPrefixSize(id);
     }
+#endif // TARGET_AMD64
 
     if (HasRewrittenBuiltInRexPrefix(ins) && TakesRexWPrefix(id) && !TakesRex2Prefix(id))
     {
@@ -5534,15 +5536,6 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     {
         size = 2;
     }
-
-#ifdef TARGET_AMD64
-    if (HasRewrittenBuiltInRexPrefix(ins) && TakesRexWPrefix(id) && !TakesRex2Prefix(id) &&
-        ((reg != REG_NA) || (rgx != REG_NA)))
-    {
-        // The legacy 3-op IMUL opcodes carry a built-in REX byte that output rewrites from operand state.
-        size--;
-    }
-#endif
 
     size += emitGetAdjustedSize(id, code);
 
