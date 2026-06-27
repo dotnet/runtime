@@ -86,8 +86,8 @@ internal sealed class MockFuncEvalFrame : MockFrame
 
     public static Layout<MockFuncEvalFrame> CreateLayout(Layout<MockFrame> baseLayout)
         => new SequentialLayoutBuilder("FuncEvalFrame", baseLayout.Architecture, baseLayout)
-            .AddPointerField(DebuggerEvalPtrFieldName)
             .AddPointerField(ReturnAddressFieldName)
+            .AddPointerField(DebuggerEvalPtrFieldName)
             .Build<MockFuncEvalFrame>();
 
     public ulong DebuggerEvalPtr
