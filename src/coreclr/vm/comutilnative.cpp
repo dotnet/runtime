@@ -946,7 +946,6 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
     return allocated;
 }
 
-#ifdef FEATURE_BASICFREEZE
 
 /*===============================RegisterFrozenSegment===============================
 **Action: Registers the frozen segment
@@ -1002,7 +1001,6 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment)
     END_QCALL;
 }
 
-#endif // FEATURE_BASICFREEZE
 
 /*==============================SuppressFinalize================================
 **Action: Indicate that an object's finalizer should not be run by the system
