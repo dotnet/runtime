@@ -358,7 +358,7 @@ namespace System.IO.Packaging
                     long newStartOffset = checked(currentPieceStreamInfo.StartOffset + currentPieceStreamInfo.Stream.Length);
 
                     // Compute pieceInfoStream.Stream.
-                    Stream pieceStream = _zipStreamManager.Open(_sortedPieceInfoList[pieceNumber].ZipArchiveEntry,
+                    Stream pieceStream = _zipStreamManager.Open(_sortedPieceInfoList[i].ZipArchiveEntry,
                                                                 _fileAccess, requireSeekableStream: true);
 
                     // Update _pieceStreamInfoArray.
