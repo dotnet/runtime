@@ -17,12 +17,13 @@ namespace System
     [ComVisible(true)]
     public abstract partial class MulticastDelegate : Delegate
     {
+        internal object? _invocationList;
+        
         // This is set under 3 circumstances
         // 1. Multicast delegate
         // 2. Unmanaged function pointer
         // 3. Open virtual delegate
-        private object? _invocationList; // Initialized by VM as needed
-        private nint _invocationCount;
+        internal nint _invocationCount;
 
         internal bool IsUnmanagedFunctionPtr()
         {
