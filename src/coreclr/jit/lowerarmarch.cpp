@@ -3844,6 +3844,23 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_AdvSimd_CompareLessThan:
+            case NI_AdvSimd_CompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareLessThan:
+            case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareLessThanScalar:
+            case NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar:
+            {
+                // Containment is not supported for unsigned base types as there is no
+                // 'less than [or equal to] zero' form; comparing an unsigned value to zero
+                // would require the two-operand cmhi/cmhs instructions.
+                if (intrin.op2->IsVectorZero() && !varTypeIsUnsigned(intrin.baseType))
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+            }
+
             case NI_Vector64_CreateScalarUnsafe:
             case NI_Vector128_CreateScalarUnsafe:
             case NI_AdvSimd_DuplicateToVector64:

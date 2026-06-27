@@ -2652,6 +2652,12 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     genConsumeAddress(tree->Addr());
 
+    if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
+    {
+        regNumber addrReg = GetMultiUseOperandReg(tree->Addr());
+        genEmitNullCheck(addrReg);
+    }
+
     // TODO-WASM: Memory barriers
 
     GetEmitter()->emitIns_I(ins, emitActualTypeSize(type), 0);
@@ -3594,6 +3600,19 @@ void CodeGen::genCallFinally(BasicBlock* block)
         {
             GetEmitter()->emitIns(INS_end);
         }
+
+        return;
+    }
+
+    // Branch to the continuation block if it's not the next block.
+    assert(block->isBBCallFinallyPair());
+    BasicBlock* const callFinallyRet = block->Next();
+    assert(callFinallyRet->KindIs(BBJ_CALLFINALLYRET));
+    BasicBlock* const continuation = callFinallyRet->GetTarget();
+
+    if (continuation != callFinallyRet->Next())
+    {
+        inst_JMP(EJ_jmp, continuation);
     }
 }
 

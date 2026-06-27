@@ -5205,6 +5205,13 @@ protected:
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
 
+    GenTree* impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                CORINFO_CALL_INFO*      callInfo,
+                                CORINFO_CONTEXT_HANDLE  exactContextHnd,
+                                bool                    exactContextNeedsRuntimeLookup,
+                                unsigned                clsFlags,
+                                bool                    isReadonlyCall);
+
     void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
 
     void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
@@ -5690,6 +5697,7 @@ private:
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
     bool impWrapTopOfStackInAwait();
+    bool impFoldAwaitedTopOfStack();
     void impPoisonImplicitByrefsBeforeReturn();
 
     // A free list of linked list nodes used to represent to-do stacks of basic blocks.
