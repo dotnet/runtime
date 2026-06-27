@@ -44,9 +44,7 @@ namespace System.Net.Http
         private readonly IWebProxy? _proxy;
         private readonly ICredentials? _proxyCredentials;
 
-#if !ILLUMOS && !SOLARIS && !HAIKU
         private NetworkChangeCleanup? _networkChangeCleanup;
-#endif
 
         /// <summary>
         /// Keeps track of whether or not the cleanup timer is running. It helps us avoid the expensive
@@ -139,7 +137,6 @@ namespace System.Net.Http
             }
         }
 
-#if !ILLUMOS && !SOLARIS && !HAIKU
         /// <summary>
         /// Starts monitoring for network changes. Upon a change, <see cref="HttpConnectionPool.OnNetworkChanged"/> will be
         /// called for every <see cref="HttpConnectionPool"/> in the <see cref="HttpConnectionPoolManager"/>.
@@ -222,7 +219,6 @@ namespace System.Net.Http
                 GC.SuppressFinalize(this);
             }
         }
-#endif
 
         public HttpConnectionSettings Settings => _settings;
         public ICredentials? ProxyCredentials => _proxyCredentials;
@@ -457,9 +453,7 @@ namespace System.Net.Http
                 pool.Value.Dispose();
             }
 
-#if !ILLUMOS && !SOLARIS && !HAIKU
             _networkChangeCleanup?.Dispose();
-#endif
         }
 
         /// <summary>Sets <see cref="_cleaningTimer"/> and <see cref="_timerIsRunning"/> based on the specified timeout.</summary>

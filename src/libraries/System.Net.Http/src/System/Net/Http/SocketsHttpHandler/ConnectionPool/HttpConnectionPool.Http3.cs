@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -512,7 +513,7 @@ namespace System.Net.Http
                     if (NetEventSource.Log.IsEnabled()) connection.Trace("HTTP3 connection no longer usable");
                     connection.Dispose();
                 }
-            };
+            }
         }
 
         /// <summary>
@@ -754,11 +755,14 @@ namespace System.Net.Http
                     _persistAuthority = nextAuthorityPersist;
                 }
 
-                if (!nextAuthorityPersist)
+                // Network change notifications aren't supported on some platforms
+                // (NetworkChange.NetworkAddressChanged throws PlatformNotSupportedException there)
+                if (!nextAuthorityPersist &&
+                    !RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS")) &&
+                    !RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS")) &&
+                    !RuntimeInformation.IsOSPlatform(OSPlatform.Create("HAIKU")))
                 {
-#if !ILLUMOS && !SOLARIS && !HAIKU
                     _poolManager.StartMonitoringNetworkChanges();
-#endif
                 }
             }
         }
