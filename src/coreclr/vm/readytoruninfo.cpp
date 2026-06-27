@@ -453,7 +453,11 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
         return;
 
     SString assemblyPath{ pPEAssembly->GetPath() };
-    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, assemblyPath.GetUTF8());
+    // On some hosts (e.g. wasm) assemblies are loaded from memory and have no
+    // file path, which would otherwise log as an empty string. Fall back to the
+    // assembly simple name so the log identifies which module the entry is for.
+    LPCUTF8 assemblyName = assemblyPath.IsEmpty() ? pPEAssembly->GetSimpleName() : assemblyPath.GetUTF8();
+    fprintf(r2rLogFile, "%s: \"%s\".\n", msg, assemblyName);
     fflush(r2rLogFile);
 }
 
@@ -1678,7 +1682,7 @@ bool ReadyToRunInfo::MayHaveCustomAttribute(WellKnownAttribute attribute, mdToke
             s_wellKnownAttributeHashes[(DWORD)attribute] = wellKnownHash = ComputeNameHashCode(GetWellKnownAttributeName(attribute));
         }
 
-        hash = CombineTwoValuesIntoHash(wellKnownHash, token);
+        hash = CombineTwoValuesIntoHash<xxHashVersionResilientTraits>(wellKnownHash, token);
         fingerprint = hash >> 16;
     }
 
@@ -2748,9 +2752,16 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             else
             {
                 _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
+                // SecondIndir is in bytes, but actual indirections into the table are always pointer aligned. 
+                // A value of 0 indicates that the second indirection is into the first generic dictionary of
+                // the type, which is the most common access pattern for generics. For Dictionary<TKey,TValue>,
+                // a SecondIndir of 0, and a LastIndir of 0 would indicate the MethodTable pointer of TKey,
+                // and if LastIndir was sizeof(TADDR) it would access the MethodTable pointer of TValue and so on.
                 if ((dictLookupData.SecondIndir == 0) && (dictLookupData.LastIndir <= sizeof(TADDR) * 3))
                 {
                     needsDictLookupData = false;
+                    // Since LastIndir is in bytes, but actual indirections into the table are always pointer
+                    // aligned, we can divide by sizeof(TADDR) to compute the possible cases here.
                     switch (dictLookupData.LastIndir / sizeof(TADDR))
                     {
                         case 0:
@@ -2780,6 +2791,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             _ASSERTE(helperAddress == g_pMethodWithSlotAndModule);
             _ASSERTE(pLookup->offsets[0] == offsetof(InstantiatedMethodDesc, m_pPerInstInfo));
             dictLookupData.LastIndir = (UINT32)pLookup->offsets[1];
+            _ASSERTE(dictLookupData.SecondIndir == 0); // There are only 2 indirections, so there is no "SecondIndir" value to set, and it should be 0.
             if (pLookup->testForNull && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
                 helper = (PCODE)DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull;
@@ -2793,9 +2805,10 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
             else
             {
                 _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
-                if ((dictLookupData.SecondIndir == 0) && (dictLookupData.LastIndir <= sizeof(TADDR) * 3))
+                if (dictLookupData.LastIndir <= sizeof(TADDR) * 3)
                 {
                     needsDictLookupData = false;
+                    // Since LastIndir is in bytes, but actual indirections into the table are always pointer aligned, we can divide by sizeof(TADDR) to compute the possible cases here.
                     switch (dictLookupData.LastIndir / sizeof(TADDR))
                     {
                         case 0:
