@@ -100,7 +100,6 @@ public enum DataType
     InterpMethodContextFrame,
     Array,
     Delegate,
-    MulticastDelegate,
     TypedByRef,
     StackTraceArrayHeader,
     StackTraceElement,

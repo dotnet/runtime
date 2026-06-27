@@ -3262,14 +3262,23 @@ DacDbiInterfaceImpl::DelegateType DacDbiInterfaceImpl::GetDelegateType(VMPTR_Obj
 
     DelegateType delegateType = DelegateType::kUnknownDelegateType;
     PTR_DelegateObject pDelObj = dac_cast<PTR_DelegateObject>(delegateObject.GetDacPtr());
-
     INT_PTR invocationCount = pDelObj->GetInvocationCount();
-    PTR_Object invocationList = OBJECTREFToObject(pDelObj->GetInvocationList());
-    if (invocationList == NULL && invocationCount != DELEGATE_MARKER_UNMANAGEDFPTR)
+
+    if (invocationCount == 0)
     {
-        // If this delegate points to an open delegate, this should be non-null
+        // If this delegate points to a static function or this is a open virtual delegate, this should be non-null
+        // Special case: This might fail in a VSD delegate (instance open virtual)...
+        // TODO: There is the special signatures cases missing.
         TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
-        delegateType = targetMethodPtr == (TADDR)NULL ? DelegateType::kClosedDelegate : DelegateType::kOpenDelegate;
+        if (targetMethodPtr == (TADDR)NULL)
+        {
+            // Static extension methods, other closed static delegates, and instance delegates fall into this category.
+            delegateType = DelegateType::kClosedDelegate;
+        }
+        else
+        {
+            delegateType = DelegateType::kOpenDelegate;
+        }
     }
     return delegateType;
 }

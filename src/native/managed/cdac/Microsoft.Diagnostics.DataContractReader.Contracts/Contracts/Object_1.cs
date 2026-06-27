@@ -162,12 +162,18 @@ internal readonly struct Object_1 : IObject
     public DelegateInfo GetDelegateInfo(TargetPointer address)
     {
         Data.Delegate del = _target.ProcessedData.GetOrAdd<Data.Delegate>(address);
-        Data.MulticastDelegate multicast = _target.ProcessedData.GetOrAdd<Data.MulticastDelegate>(address);
 
+        // Classify by invocation count first:
+        // anything other than 0 indicates a multicast/wrapper/special-sig delegate
+        // that this API does not interpret further. Only when invocationCount==0
+        // do MethodPtr/MethodPtrAux unambiguously identify a closed/open delegate.
         DelegateType delegateType = DelegateType.Unknown;
-        if (multicast.InvocationList == TargetPointer.Null && multicast.InvocationCount.Value != -1)
+        if (del.InvocationCount.Value == 0)
         {
-            delegateType = del.MethodPtrAux == TargetCodePointer.Null ? DelegateType.Closed : DelegateType.Open;
+            if (del.MethodPtrAux == TargetCodePointer.Null)
+                delegateType = DelegateType.Closed;
+            else
+                delegateType = DelegateType.Open;
         }
 
         (TargetPointer targetObject, TargetCodePointer targetMethodPtr) = delegateType switch
