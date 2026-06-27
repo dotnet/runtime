@@ -207,7 +207,9 @@ namespace System.IO.Compression
                     // A frame finished. A zstd stream may be frames concatenated back-to-back (RFC 8878
                     // section 3), so decide whether another frame follows before reporting end-of-stream.
                     // async: false completes synchronously (it only ever takes the synchronous read path).
-                    if (!AdvanceToNextFrame(buffer.IsEmpty, hasPendingOutput: bytesWritten != 0, async: false, cancellationToken: default).GetAwaiter().GetResult())
+                    ValueTask<bool> advanceTask = AdvanceToNextFrame(buffer.IsEmpty, hasPendingOutput: bytesWritten != 0, async: false, cancellationToken: default);
+                    Debug.Assert(advanceTask.IsCompleted, "AdvanceToNextFrame should complete synchronously when async: false");
+                    if (!advanceTask.GetAwaiter().GetResult())
                     {
                         return bytesWritten;
                     }
