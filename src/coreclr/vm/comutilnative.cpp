@@ -1860,7 +1860,7 @@ enum ValueTypeHashCodeStrategy
     ValueTypeOverride,
 };
 
-static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMTOut)
+static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMTOut, bool* isCacheable)
 {
     CONTRACTL
     {
@@ -1883,6 +1883,9 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
         _ASSERTE(!field->IsRVA());
         if (field->IsObjRef())
         {
+            // The chosen field depends on the runtime value (a null reference is skipped), so this
+            // outcome is not a pure function of the MethodTable and must not be cached.
+            *isCacheable = false;
             GCX_COOP();
             // if we get an object reference we get the hash code out of that
             if (*(Object**)((BYTE *)objHandle.Get()->UnBox() + *fieldOffset + field->GetOffsetUnsafe()) != NULL)
@@ -1934,6 +1937,8 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
                                              CoreLibBinder::GetClass(CLASS__VALUE_TYPE),
                                              CoreLibBinder::GetMethod(METHOD__VALUE_TYPE__GET_HASH_CODE)->GetSlot()))
                 {
+                    // The override is invoked via a boxed field at runtime; do not cache the pointer-bearing result.
+                    *isCacheable = false;
                     *fieldOffset += field->GetOffsetUnsafe();
                     *fieldMTOut = fieldMT;
                     ret = ValueTypeHashCodeStrategy::ValueTypeOverride;
@@ -1941,7 +1946,7 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
                 else
                 {
                     *fieldOffset += field->GetOffsetUnsafe();
-                    ret = GetHashCodeStrategy(fieldMT, objHandle, fieldOffset, fieldSize, fieldMTOut);
+                    ret = GetHashCodeStrategy(fieldMT, objHandle, fieldOffset, fieldSize, fieldMTOut, isCacheable);
                 }
             }
         }
@@ -1962,7 +1967,13 @@ extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall:
 
     BEGIN_QCALL;
 
-    ret = GetHashCodeStrategy(mt, objHandle, fieldOffset, fieldSize, fieldMT);
+    bool isCacheable = true;
+    ret = GetHashCodeStrategy(mt, objHandle, fieldOffset, fieldSize, fieldMT, &isCacheable);
+
+    // The strategy is deterministic per MethodTable except for the runtime-value-dependent cases
+    // (flagged via isCacheable). Cache it so subsequent calls take the inline managed fast path
+    // and skip this QCall entirely.
+    mt->SetValueTypeHashCodeStrategyCache(isCacheable, (int)ret, *fieldOffset, *fieldSize);
 
     END_QCALL;
 

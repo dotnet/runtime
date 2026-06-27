@@ -363,6 +363,18 @@ struct MethodTableAuxiliaryData
     // Unloadable context: slot index in LoaderAllocator's pinned table
     RUNTIMETYPEHANDLE m_hExposedClassObject;
 
+    // Lazily initialized cache for the default ValueType.GetHashCode strategy of this MethodTable.
+    // The strategy (which field to hash, at what offset and size) is deterministic per MethodTable
+    // for every outcome except the reference-field and value-type-override cases, which depend on
+    // runtime values; those are marked non-cacheable. A stored value of 0 means "not computed yet".
+    // Bit layout (kept in sync with ValueType.cs and MethodTableAuxiliaryData in RuntimeHelpers.CoreCLR.cs):
+    //   bit  0      : checked (strategy has been computed)
+    //   bit  1      : cacheable (the cached strategy may be used without recomputation)
+    //   bits 2-4    : strategy (ValueTypeHashCodeStrategy)
+    //   bits 5-28   : field offset (24 bits)
+    //   bits 29-52  : field size (24 bits)
+    uint64_t m_valueTypeHashCodeStrategyCache;
+
 #ifdef _DEBUG
     enum
     {
@@ -391,6 +403,17 @@ struct MethodTableAuxiliaryData
 #endif
 
 public:
+    // Bit layout of m_valueTypeHashCodeStrategyCache. Kept in sync with the managed
+    // MethodTableAuxiliaryData mirror and ValueType.GetHashCode.
+    static const uint64_t enum_ValueTypeHashCodeStrategyCache_Checked   = 0x1;
+    static const uint64_t enum_ValueTypeHashCodeStrategyCache_Cacheable = 0x2;
+    static const int      ValueTypeHashCodeStrategyCache_StrategyShift   = 2;
+    static const uint64_t ValueTypeHashCodeStrategyCache_StrategyMask    = 0x7;   // 3 bits
+    static const int      ValueTypeHashCodeStrategyCache_OffsetShift      = 5;
+    static const uint64_t ValueTypeHashCodeStrategyCache_OffsetMask       = 0xFFFFFF; // 24 bits
+    static const int      ValueTypeHashCodeStrategyCache_SizeShift        = 29;
+    static const uint64_t ValueTypeHashCodeStrategyCache_SizeMask         = 0xFFFFFF; // 24 bits
+
     inline PTR_Module GetLoaderModule() const
     {
         return m_pLoaderModule;
@@ -1349,6 +1372,28 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         InterlockedOr((LONG*)&GetAuxiliaryDataForWrite()->m_dwFlags, MethodTableAuxiliaryData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+    }
+
+    // Caches the resolved default ValueType.GetHashCode strategy for this MethodTable so that
+    // repeated calls can avoid recomputing it. When cacheable is false only the "checked" marker
+    // is meaningful and callers must recompute (the result depends on runtime values).
+    inline void SetValueTypeHashCodeStrategyCache(bool cacheable, int strategy, uint32_t fieldOffset, uint32_t fieldSize)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        uint64_t value = MethodTableAuxiliaryData::enum_ValueTypeHashCodeStrategyCache_Checked;
+        if (cacheable
+            && fieldOffset <= MethodTableAuxiliaryData::ValueTypeHashCodeStrategyCache_OffsetMask
+            && fieldSize <= MethodTableAuxiliaryData::ValueTypeHashCodeStrategyCache_SizeMask)
+        {
+            value |= MethodTableAuxiliaryData::enum_ValueTypeHashCodeStrategyCache_Cacheable;
+            value |= ((uint64_t)strategy & MethodTableAuxiliaryData::ValueTypeHashCodeStrategyCache_StrategyMask) << MethodTableAuxiliaryData::ValueTypeHashCodeStrategyCache_StrategyShift;
+            value |= ((uint64_t)fieldOffset & MethodTableAuxiliaryData::ValueTypeHashCodeStrategyCache_OffsetMask) << MethodTableAuxiliaryData::ValueTypeHashCodeStrategyCache_OffsetShift;
+            value |= ((uint64_t)fieldSize & MethodTableAuxiliaryData::ValueTypeHashCodeStrategyCache_SizeMask) << MethodTableAuxiliaryData::ValueTypeHashCodeStrategyCache_SizeShift;
+        }
+
+        // A single aligned 64-bit store publishes the fully-formed cache value atomically.
+        VolatileStore(&GetAuxiliaryDataForWrite()->m_valueTypeHashCodeStrategyCache, value);
     }
 
     inline void SetIsDependenciesLoaded()

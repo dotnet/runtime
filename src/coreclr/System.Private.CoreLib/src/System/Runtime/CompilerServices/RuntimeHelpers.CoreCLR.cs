@@ -1120,9 +1120,21 @@ namespace System.Runtime.CompilerServices
         private int CachedVersionResilientHashCode;
         private void* LoaderModule;
         private nint ExposedClassObjectRaw;
+        private ulong ValueTypeHashCodeStrategyCache;
 
         private const uint enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode = 0x0002;  // Whether we have checked the overridden Equals or GetHashCode
         private const uint enum_flag_CanCompareBitsOrUseFastGetHashCode = 0x0004;     // Is any field type or sub field type overridden Equals or GetHashCode
+
+        // Bit layout of ValueTypeHashCodeStrategyCache. Kept in sync with
+        // MethodTableAuxiliaryData::SetValueTypeHashCodeStrategyCache in src\vm\methodtable.h.
+        private const ulong enum_ValueTypeHashCodeStrategyCache_Checked   = 0x1;
+        private const ulong enum_ValueTypeHashCodeStrategyCache_Cacheable = 0x2;
+        private const int   ValueTypeHashCodeStrategyCache_StrategyShift   = 2;
+        private const ulong ValueTypeHashCodeStrategyCache_StrategyMask    = 0x7;      // 3 bits
+        private const int   ValueTypeHashCodeStrategyCache_OffsetShift     = 5;
+        private const ulong ValueTypeHashCodeStrategyCache_OffsetMask      = 0xFFFFFF; // 24 bits
+        private const int   ValueTypeHashCodeStrategyCache_SizeShift       = 29;
+        private const ulong ValueTypeHashCodeStrategyCache_SizeMask        = 0xFFFFFF; // 24 bits
 
         private const uint enum_flag_Initialized                = 0x0001;
         private const uint enum_flag_HasCheckedStreamOverride   = 0x0400;
@@ -1132,6 +1144,27 @@ namespace System.Runtime.CompilerServices
 
 
         public bool HasCheckedCanCompareBitsOrUseFastGetHashCode => (Flags & enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode) != 0;
+
+        // Returns true and the cached default ValueType.GetHashCode strategy when it has been
+        // computed and is a pure function of the MethodTable. Returns false when the strategy has
+        // not been computed yet or is value-dependent (caller must recompute).
+        public bool TryGetValueTypeHashCodeStrategy(out int strategy, out uint fieldOffset, out uint fieldSize)
+        {
+            ulong cache = Volatile.Read(ref ValueTypeHashCodeStrategyCache);
+            if ((cache & (enum_ValueTypeHashCodeStrategyCache_Checked | enum_ValueTypeHashCodeStrategyCache_Cacheable))
+                != (enum_ValueTypeHashCodeStrategyCache_Checked | enum_ValueTypeHashCodeStrategyCache_Cacheable))
+            {
+                strategy = 0;
+                fieldOffset = 0;
+                fieldSize = 0;
+                return false;
+            }
+
+            strategy = (int)((cache >> ValueTypeHashCodeStrategyCache_StrategyShift) & ValueTypeHashCodeStrategyCache_StrategyMask);
+            fieldOffset = (uint)((cache >> ValueTypeHashCodeStrategyCache_OffsetShift) & ValueTypeHashCodeStrategyCache_OffsetMask);
+            fieldSize = (uint)((cache >> ValueTypeHashCodeStrategyCache_SizeShift) & ValueTypeHashCodeStrategyCache_SizeMask);
+            return true;
+        }
 
         public bool CanCompareBitsOrUseFastGetHashCode
         {

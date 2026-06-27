@@ -119,8 +119,23 @@ namespace System
             }
             else
             {
-                object thisRef = this;
-                switch (GetHashCodeStrategy(pMT, ObjectHandleOnStack.Create(ref thisRef), out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT))
+                MethodTable* fieldMT;
+                MethodTableAuxiliaryData* pAuxData = pMT->AuxiliaryData;
+                if (!pAuxData->TryGetValueTypeHashCodeStrategy(out int cachedStrategy, out uint fieldOffset, out uint fieldSize))
+                {
+                    // Cache miss: resolve (and populate the cache) via the runtime. Only this path
+                    // needs a boxed copy for the strategy resolver to inspect field values.
+                    object thisRef = this;
+                    cachedStrategy = (int)GetHashCodeStrategy(pMT, ObjectHandleOnStack.Create(ref thisRef), out fieldOffset, out fieldSize, out fieldMT);
+                }
+                else
+                {
+                    // Cached strategies never carry a field MethodTable (the value-type-override
+                    // case is intentionally not cached).
+                    fieldMT = null;
+                }
+
+                switch ((ValueTypeHashCodeStrategy)cachedStrategy)
                 {
                     case ValueTypeHashCodeStrategy.ReferenceField:
                         hashCode.Add(Unsafe.As<byte, object>(ref Unsafe.AddByteOffset(ref rawData, fieldOffset)).GetHashCode());
