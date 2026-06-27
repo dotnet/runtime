@@ -80,7 +80,7 @@ namespace System
         /// <value>true if the <see cref="Delegate"/> has a single invocation target.</value>
         public bool HasSingleTarget => Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
 
-        public object? Target => GetTarget();
+        public object? Target => Unsafe.As<MulticastDelegate>(this).GetTarget();
 #endif
 
         /// <summary>
