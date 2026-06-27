@@ -17,15 +17,15 @@ namespace System
     [ComVisible(true)]
     public abstract partial class MulticastDelegate : Delegate
     {
-        internal object? _invocationList;
-        
+        private object? _invocationList;
+
         // This is set under 3 circumstances
         // 1. Multicast delegate
         // 2. Unmanaged function pointer
         // 3. Open virtual delegate
-        internal nint _invocationCount;
+        private nint _invocationCount;
 
-        internal bool IsUnmanagedFunctionPtr()
+        private bool IsUnmanagedFunctionPtr()
         {
             return _invocationCount == -1;
         }
@@ -59,7 +59,7 @@ namespace System
                 // there are 3 kind of delegate kinds that fall into this bucket
                 // 1- Multicast (_invocationList is Object[])
                 // 2- Unmanaged FntPtr (_invocationList == null)
-                // 3- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
+                // 3- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null)
 
                 if (HasSingleTarget)
                 {
@@ -408,15 +408,19 @@ namespace System
             }
         }
 
-        internal new object? GetTarget()
+        internal new object? Target
         {
-            if (_invocationList is object[] invocationList)
+            get
             {
-                // Multicast -> return the target of the last delegate in the list
-                int invocationCount = (int)_invocationCount;
-                return ((Delegate)invocationList[invocationCount - 1]).GetTarget();
+                Delegate instance = this;
+                if (_invocationList is object[] invocationList)
+                {
+                    // Multicast -> return the target of the last delegate in the list
+                    int invocationCount = (int)_invocationCount;
+                    instance = (Delegate)invocationList[invocationCount - 1];
+                }
+                return instance._methodPtrAux == 0 ? instance._target : null;
             }
-            return _methodPtrAux == 0 ? _target : null;
         }
 
         protected override MethodInfo GetMethodImpl()

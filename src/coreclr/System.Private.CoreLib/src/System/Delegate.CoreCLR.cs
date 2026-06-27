@@ -219,9 +219,6 @@ namespace System
             return (MethodInfo)_helperObject;
         }
 
-        internal object? GetTarget() => Unsafe.As<MulticastDelegate>(this).GetTarget();
-
-        // V1 API.
         [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
@@ -257,7 +254,6 @@ namespace System
             return d;
         }
 
-        // V1 API.
         public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -293,7 +289,6 @@ namespace System
             return d;
         }
 
-        // V1 API.
         public static Delegate? CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -328,7 +323,6 @@ namespace System
             return d;
         }
 
-        // V2 API.
         public static Delegate? CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -359,10 +353,6 @@ namespace System
 
             return d;
         }
-
-        //
-        // internal implementation details (FCALLS and utilities)
-        //
 
         internal static Delegate CreateDelegateForDynamicMethod(Type type, object? target, RuntimeMethodHandle method,
             DynamicMethod dynamicMethod)
