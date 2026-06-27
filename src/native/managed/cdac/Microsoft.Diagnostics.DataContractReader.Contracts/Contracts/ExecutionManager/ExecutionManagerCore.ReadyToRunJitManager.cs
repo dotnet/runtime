@@ -188,7 +188,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             {
                 >= 21 => 5,
                 >= 11 => 4,
-                 < 11 => 3,
+                < 11 => 3,
             };
         }
 
@@ -273,6 +273,13 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             // ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage
             TargetCodePointer startAddress = imageBase + function.BeginAddress;
             TargetPointer entryPoint = CodePointerUtils.AddressFromCodePointer(startAddress, Target);
+
+            RuntimeInfoArchitecture arch = Target.Contracts.RuntimeInfo.GetTargetArchitecture();
+            if ((arch == RuntimeInfoArchitecture.X64 || arch == RuntimeInfoArchitecture.X86)
+                && (entryPoint.Value & 0x1) != 0)
+            {
+                return TargetPointer.Null;
+            }
 
             TargetPointer methodDesc = _hashMap.GetValue(r2rInfo.EntryPointToMethodDescMap, entryPoint);
             if (methodDesc == (ulong)HashMapLookup.SpecialKeys.InvalidEntry)
