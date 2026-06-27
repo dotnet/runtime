@@ -125,6 +125,13 @@ namespace System.Threading
             ObjectHeader.Release(obj);
         }
 
+        #region Object->Lock mapping
+        private static Lock GetLockObject(object obj)
+        {
+            return ObjectHeader.GetLockObject(obj);
+        }
+        #endregion
+
         #region Public Wait/Pulse methods
 
         [UnsupportedOSPlatform("browser")]

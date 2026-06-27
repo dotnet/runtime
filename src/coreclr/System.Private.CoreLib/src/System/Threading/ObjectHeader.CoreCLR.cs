@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-
+using System.Runtime.InteropServices;
 using Internal.Runtime;
 
 namespace System.Threading
@@ -16,7 +16,7 @@ namespace System.Threading
     /// Do not store managed pointers (ref int) to the object header in locals or parameters
     /// as they may be incorrectly updated during garbage collection.
     /// </remarks>
-    internal static class ObjectHeader
+    internal static partial class ObjectHeader
     {
         // The following three header bits are reserved for the GC engine:
         //   BIT_SBLK_UNUSED        = 0x80000000
@@ -61,6 +61,35 @@ namespace System.Threading
             // The header is 4 bytes before MT pointer on all architectures
             return (int*)ppMethodTable - 1;
         }
+
+        internal static Lock GetLockObject(object obj)
+        {
+            IntPtr lockHandle = GetLockHandleIfExists(obj);
+            if (lockHandle != 0)
+            {
+                Lock lockObj = GCHandle<Lock>.FromIntPtr(lockHandle).Target;
+                GC.KeepAlive(obj);
+                return lockObj;
+            }
+
+            return GetLockObjectFallback(obj);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Lock GetLockObjectFallback(object obj)
+            {
+#pragma warning disable CS9216 // A value of type 'System.Threading.Lock' converted to a different type will use likely unintended monitor-based locking in 'lock' statement.
+                object lockObj = new Lock();
+#pragma warning restore CS9216
+                GetOrCreateLockObject(ObjectHandleOnStack.Create(ref obj), ObjectHandleOnStack.Create(ref lockObj));
+                return (Lock)lockObj!;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern IntPtr GetLockHandleIfExists(object obj);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectHeader_GetOrCreateLockObject")]
+        private static partial void GetOrCreateLockObject(ObjectHandleOnStack obj, ObjectHandleOnStack lockObj);
 
         //
         // A few words about spinning choices:
@@ -147,7 +176,7 @@ namespace System.Threading
                 }
             }
 
-            Lock lck = Monitor.GetLockObject(obj);
+            Lock lck = GetLockObject(obj);
             return lck.TryEnter_Outlined(millisecondsTimeout);
         }
 
@@ -189,7 +218,7 @@ namespace System.Threading
             if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) != 0 ||
                 TryAcquireUncommon(obj, false) != HeaderLockResult.Success)
             {
-                Lock lck = Monitor.GetLockObject(obj);
+                Lock lck = GetLockObject(obj);
                 lck.Enter();
             }
         }
@@ -336,7 +365,7 @@ namespace System.Threading
             // * a fat lock - the most likely case by far, or
             // * we don't own the lock and need to throw and it is ok if the lock gets inflated.
             // Let the slow path handle this.
-            Monitor.GetLockObject(obj).Exit();
+            GetLockObject(obj).Exit();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -354,7 +383,7 @@ namespace System.Threading
                 int oldBits = *pHeader;
 
                 // If no hash code or syncblock, the lock state is determined by the header.
-                if ((oldBits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) == 0)
+                if ((oldBits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_SPIN_LOCK)) == 0)
                 {
                     // do we own the thin lock?
                     return (oldBits & SBLK_MASK_LOCK_THREADID) == ManagedThreadId.Current;
@@ -363,7 +392,7 @@ namespace System.Threading
 
             // Has a hash code or syncblock - let the slow path determine ownership.
             // Done outside the fixed block to avoid pinning the object across the call.
-            return Monitor.GetLockObject(obj).IsHeldByCurrentThread;
+            return GetLockObject(obj).IsHeldByCurrentThread;
         }
     }
 }

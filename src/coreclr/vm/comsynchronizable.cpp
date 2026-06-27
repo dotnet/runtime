@@ -831,7 +831,7 @@ FCIMPL0(FC_BOOL_RET, ThreadNative::CurrentThreadIsFinalizerThread)
 }
 FCIMPLEND
 
-FCIMPL1(OBJECTHANDLE, Monitor_GetLockHandleIfExists, Object* pObj)
+FCIMPL1(OBJECTHANDLE, ObjectHeader_GetLockHandleIfExists, Object* pObj)
 {
     FCALL_CONTRACT;
 
@@ -845,7 +845,7 @@ FCIMPL1(OBJECTHANDLE, Monitor_GetLockHandleIfExists, Object* pObj)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE Monitor_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
+extern "C" void QCALLTYPE ObjectHeader_GetOrCreateLockObject(QCall::ObjectHandleOnStack obj, QCall::ObjectHandleOnStack lockObj)
 {
     QCALL_CONTRACT;
 
