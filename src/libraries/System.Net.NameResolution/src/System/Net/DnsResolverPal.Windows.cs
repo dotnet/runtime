@@ -138,7 +138,7 @@ namespace System.Net
             }
 
             List<AddressRecord> records = new();
-            for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero; )
+            for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero;)
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
@@ -168,7 +168,7 @@ namespace System.Net
             ParseAdditionalAddresses(raw.RecordsHead, ref glue);
 
             List<SrvRecord> records = new();
-            for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero; )
+            for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero;)
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
@@ -195,7 +195,7 @@ namespace System.Net
             }
 
             List<TxtRecord> records = new();
-            for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero; )
+            for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero;)
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
@@ -235,7 +235,7 @@ namespace System.Net
             }
 
             List<TRecord> records = new();
-            for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero; )
+            for (IntPtr cur = raw.RecordsHead; cur != IntPtr.Zero;)
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
@@ -307,7 +307,7 @@ namespace System.Net
 
         private static unsafe void ParseAdditionalAddresses(IntPtr head, ref Dictionary<string, List<AddressRecord>>? glue)
         {
-            for (IntPtr cur = head; cur != IntPtr.Zero; )
+            for (IntPtr cur = head; cur != IntPtr.Zero;)
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
@@ -441,14 +441,11 @@ namespace System.Net
                     // CancellationTokenSource was already disposed) we must NOT free the native
                     // state here, because the pending query still references it — the completion
                     // callback will free everything when it eventually runs.
-                    if (_cancellationToken.CanBeCanceled)
+                    _ctReg = _cancellationToken.UnsafeRegister(static (s, _) =>
                     {
-                        _ctReg = _cancellationToken.UnsafeRegister(static (s, _) =>
-                        {
-                            DnsQueryAsyncState st = (DnsQueryAsyncState)s!;
-                            st.CancelAndAbort();
-                        }, this);
-                    }
+                        DnsQueryAsyncState st = (DnsQueryAsyncState)s!;
+                        st.CancelAndAbort();
+                    }, this);
                 }
                 else
                 {
@@ -474,10 +471,7 @@ namespace System.Net
             /// </summary>
             internal void CompleteFromResult(int status)
             {
-                if (Interlocked.Exchange(ref _completed, true))
-                {
-                    return;
-                }
+                _completed = true;
 
                 try
                 {
@@ -722,7 +716,7 @@ namespace System.Net
         private static unsafe TimeSpan ExtractNegativeCacheTtl(IntPtr head)
         {
             // Walk the record list looking for an SOA in the authority section.
-            for (IntPtr cur = head; cur != IntPtr.Zero; )
+            for (IntPtr cur = head; cur != IntPtr.Zero;)
             {
                 ref readonly Interop.Dnsapi.DNS_RECORD_HEADER hdr = ref AsStruct<Interop.Dnsapi.DNS_RECORD_HEADER>(cur);
                 uint section = hdr.Flags & Interop.Dnsapi.DNSREC_SECTION_MASK;
