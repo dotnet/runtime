@@ -10,6 +10,9 @@ namespace System.Net.NetworkInformation
 {
     public partial class NetworkChange
     {
+        /// <summary>Gets a value that indicates whether network change notifications are supported on the current platform.</summary>
+        public static bool IsSupported => false;
+
         [EditorBrowsableAttribute(EditorBrowsableState.Never)]
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public NetworkChange()

@@ -400,6 +400,7 @@ namespace System.Net.NetworkInformation
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public NetworkChange() { }
+        public static bool IsSupported { get { throw null; } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("illumos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("solaris")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("haiku")]

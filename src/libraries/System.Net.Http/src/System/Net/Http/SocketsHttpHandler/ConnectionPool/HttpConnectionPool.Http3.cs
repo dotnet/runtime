@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Headers;
+using System.Net.NetworkInformation;
 using System.Net.Quic;
 using System.Net.Security;
 using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -755,12 +755,8 @@ namespace System.Net.Http
                     _persistAuthority = nextAuthorityPersist;
                 }
 
-                // Network change notifications aren't supported on some platforms
-                // (NetworkChange.NetworkAddressChanged throws PlatformNotSupportedException there)
-                if (!nextAuthorityPersist &&
-                    !RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS")) &&
-                    !RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS")) &&
-                    !RuntimeInformation.IsOSPlatform(OSPlatform.Create("HAIKU")))
+                // NetworkChange notifications aren't supported on every platform.
+                if (!nextAuthorityPersist && NetworkChange.IsSupported)
                 {
                     _poolManager.StartMonitoringNetworkChanges();
                 }

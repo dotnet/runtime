@@ -9,6 +9,9 @@ namespace System.Net.NetworkInformation
 {
     public partial class NetworkChange
     {
+        /// <summary>Gets a value that indicates whether network change notifications are supported on the current platform.</summary>
+        public static bool IsSupported => true;
+
         // The list of current address-changed subscribers.
         private static readonly Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?> s_addressChangedSubscribers =
             new Dictionary<NetworkAddressChangedEventHandler, ExecutionContext?>();
