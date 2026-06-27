@@ -1441,36 +1441,30 @@ static void FormatSlotLocation(int pos, int byteOffset, char* buf, size_t bufLen
 #if defined(TARGET_AMD64)
 #  if defined(UNIX_AMD64_ABI)
     static const char* regNames[] = { "RDI", "RSI", "RDX", "RCX", "R8", "R9" };
-    const int numRegs = 6;
 #  else
     static const char* regNames[] = { "RCX", "RDX", "R8", "R9" };
-    const int numRegs = 4;
 #  endif
 #elif defined(TARGET_ARM64)
     static const char* regNames[] = { "X0", "X1", "X2", "X3", "X4", "X5", "X6", "X7" };
-    const int numRegs = 8;
 #elif defined(TARGET_ARM)
     static const char* regNames[] = { "R0", "R1", "R2", "R3" };
-    const int numRegs = 4;
 #elif defined(TARGET_X86)
     // x86 has 2 arg regs (ECX, EDX) and a non-monotonic pos->offset mapping;
     // print pos+offset rather than guess the wrong register name.
     static const char* regNames[] = { "ECX", "EDX" };
-    const int numRegs = 2;
-#else
-    static const char* const* regNames = nullptr;
-    const int numRegs = 0;
 #endif
 
-    if (regNames != nullptr && pos < numRegs)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_X86)
+    const int numRegs = (int)(sizeof(regNames) / sizeof(regNames[0]));
+    if (pos >= 0 && pos < numRegs)
     {
         snprintf(buf, bufLen, "%-6s", regNames[pos]);
+        return;
     }
-    else
-    {
-        int stackByteOffset = byteOffset - (int)sizeof(TransitionBlock);
-        snprintf(buf, bufLen, "[sp+%d]", stackByteOffset);
-    }
+#endif
+
+    int stackByteOffset = byteOffset - (int)sizeof(TransitionBlock);
+    snprintf(buf, bufLen, "[sp+%d]", stackByteOffset);
 }
 
 // Decode a GCRefMap blob into an offset->token map (sparse) plus the
@@ -1593,7 +1587,7 @@ static void LogArgIteratorMismatch(MethodDesc* pMD, CLRDATA_ADDRESS mdAddr,
         if (rtTok == GCREFMAP_SKIP && cdacTok == GCREFMAP_SKIP)
             continue;
 
-        char loc[16];
+        char loc[24];
         FormatSlotLocation(pos, OffsetFromGCRefMapPos(pos), loc, sizeof(loc));
 
         const char* diff = (rtTok != cdacTok) ? " <-- DIFF" : "";
