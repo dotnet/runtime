@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
     /// </remarks>
     public abstract class X25519DiffieHellman : IDisposable
     {
-        private static readonly string[] s_knownOids = [Oids.X25519];
+        private protected static readonly string[] s_knownOids = [Oids.X25519];
 
         private bool _disposed;
 
@@ -41,8 +41,11 @@ namespace System.Security.Cryptography
         /// </summary>
         public const int PublicKeySizeInBytes = 32;
 
+        // Pre-encoded PKCS#8 for X25519 is 48 bytes: 16 byte preamble + 32 byte private key.
+        private protected const int Pkcs8SizeInBytes = 16 + PrivateKeySizeInBytes;
+
         // Pre-encoded SPKI for X25519 is 44 bytes: 12 byte preamble + 32 byte public key.
-        private const int SpkiSizeInBytes = 12 + PublicKeySizeInBytes;
+        private protected const int SpkiSizeInBytes = 12 + PublicKeySizeInBytes;
 
         /// <summary>
         ///   Gets a value that indicates whether the algorithm is supported on the current platform.
@@ -83,6 +86,40 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Derives a raw secret agreement with the other party's public key.
+        /// </summary>
+        /// <param name="otherPartyPublicKey">
+        ///   The other party's public key.
+        /// </param>
+        /// <returns>
+        ///   The secret agreement.
+        /// </returns>
+        /// <remarks>
+        ///   The raw secret agreement value is expected to be used as input into a Key Derivation Function,
+        ///   and not used directly as key material.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="otherPartyPublicKey" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="otherPartyPublicKey" /> has a length that is not <see cref="PublicKeySizeInBytes" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during the secret agreement derivation.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] DeriveRawSecretAgreement(byte[] otherPartyPublicKey)
+        {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+            ThrowIfPublicKeyWrongSize(otherPartyPublicKey, nameof(otherPartyPublicKey));
+            ThrowIfDisposed();
+
+            byte[] buffer = new byte[SecretAgreementSizeInBytes];
+            DeriveRawSecretAgreementCore(otherPartyPublicKey, buffer);
+            return buffer;
+        }
+
+        /// <summary>
         ///   Derives a raw secret agreement with the other party's key, writing it into the provided buffer.
         /// </summary>
         /// <param name="otherParty">
@@ -118,6 +155,43 @@ namespace System.Security.Cryptography
 
             ThrowIfDisposed();
             DeriveRawSecretAgreementCore(otherParty, destination);
+        }
+
+        /// <summary>
+        ///   Derives a raw secret agreement with the other party's public key, writing it into the provided buffer.
+        /// </summary>
+        /// <param name="otherPartyPublicKey">
+        ///   The other party's public key.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the secret agreement.
+        /// </param>
+        /// <remarks>
+        ///   The raw secret agreement value is expected to be used as input into a Key Derivation Function,
+        ///   and not used directly as key material.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        ///   <para><paramref name="otherPartyPublicKey" /> has a length that is not <see cref="PublicKeySizeInBytes" />.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="destination" /> is the incorrect length to receive the secret agreement.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during the secret agreement derivation.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public void DeriveRawSecretAgreement(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
+        {
+            ThrowIfPublicKeyWrongSize(otherPartyPublicKey, nameof(otherPartyPublicKey));
+
+            if (destination.Length != SecretAgreementSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, SecretAgreementSizeInBytes),
+                    nameof(destination));
+            }
+
+            ThrowIfDisposed();
+            DeriveRawSecretAgreementCore(otherPartyPublicKey, destination);
         }
 
         /// <summary>
@@ -291,7 +365,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   An error occurred while exporting the key.
         /// </exception>
-        public string ExportSubjectPublicKeyInfoPem()
+        public unsafe string ExportSubjectPublicKeyInfoPem()
         {
             ThrowIfDisposed();
             Span<byte> spki = stackalloc byte[SpkiSizeInBytes];
@@ -735,6 +809,21 @@ namespace System.Security.Cryptography
         ///   An error occurred during the secret agreement derivation.
         /// </exception>
         protected abstract void DeriveRawSecretAgreementCore(X25519DiffieHellman otherParty, Span<byte> destination);
+
+        /// <summary>
+        ///   When overridden in a derived class, derives a raw secret agreement with the other party's public key,
+        ///   writing it into the provided buffer.
+        /// </summary>
+        /// <param name="otherPartyPublicKey">
+        ///   The other party's public key.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the secret agreement.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during the secret agreement derivation.
+        /// </exception>
+        protected abstract void DeriveRawSecretAgreementCore(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination);
 
         /// <summary>
         ///   When overridden in a derived class, exports the private key into the provided buffer.
@@ -1341,7 +1430,12 @@ namespace System.Security.Cryptography
         {
         }
 
-        private bool TryExportSubjectPublicKeyInfoCore(Span<byte> destination, out int bytesWritten)
+        private protected static bool TryWriteSubjectPublicKeyInfo<TState>(
+            Span<byte> destination,
+            TState state,
+            Action<TState, Span<byte>> writer,
+            out int bytesWritten)
+            where TState : allows ref struct
         {
             // Pre-encoded SubjectPublicKeyInfo for X25519 (RFC 8410):
             ReadOnlySpan<byte> spkiPreamble =
@@ -1360,9 +1454,18 @@ namespace System.Security.Cryptography
             }
 
             spkiPreamble.CopyTo(destination);
-            ExportPublicKeyCore(destination.Slice(spkiPreamble.Length, PublicKeySizeInBytes));
+            writer(state, destination.Slice(spkiPreamble.Length, PublicKeySizeInBytes));
             bytesWritten = SpkiSizeInBytes;
             return true;
+        }
+
+        private bool TryExportSubjectPublicKeyInfoCore(Span<byte> destination, out int bytesWritten)
+        {
+            return TryWriteSubjectPublicKeyInfo(
+                destination,
+                this,
+                static (self, buffer) => self.ExportPublicKeyCore(buffer),
+                out bytesWritten);
         }
 
         private TResult ExportPkcs8PrivateKeyCallback<TResult>(Func<ReadOnlySpan<byte>, TResult> func)
@@ -1375,6 +1478,7 @@ namespace System.Security.Cryptography
 
             while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
             {
+                size = buffer.Length;
                 CryptoPool.Return(buffer);
                 size = checked(size * 2);
                 buffer = CryptoPool.Rent(size);
@@ -1393,6 +1497,20 @@ namespace System.Security.Cryptography
 
         private protected bool TryExportPkcs8PrivateKeyImpl(Span<byte> destination, out int bytesWritten)
         {
+            return TryWritePkcs8PrivateKey(
+                destination,
+                this,
+                static (self, buffer) => self.ExportPrivateKeyCore(buffer),
+                out bytesWritten);
+        }
+
+        private protected static bool TryWritePkcs8PrivateKey<TState>(
+            Span<byte> destination,
+            TState state,
+            Action<TState, Span<byte>> writer,
+            out int bytesWritten)
+            where TState : allows ref struct
+        {
             // Pre-encoded PKCS#8 PrivateKeyInfo for X25519 (RFC 8410):
             ReadOnlySpan<byte> pkcs8Preamble =
             [
@@ -1403,9 +1521,9 @@ namespace System.Security.Cryptography
                 0x04, 0x20,                         // OCTET STRING (32 bytes)
             ];
 
-            int pkcs8SizeInBytes = pkcs8Preamble.Length + PrivateKeySizeInBytes;
+            Debug.Assert(pkcs8Preamble.Length + PrivateKeySizeInBytes == Pkcs8SizeInBytes);
 
-            if (destination.Length < pkcs8SizeInBytes)
+            if (destination.Length < Pkcs8SizeInBytes)
             {
                 bytesWritten = 0;
                 return false;
@@ -1416,8 +1534,8 @@ namespace System.Security.Cryptography
 
             try
             {
-                ExportPrivateKey(privateKeyBuffer);
-                bytesWritten = pkcs8SizeInBytes;
+                writer(state, privateKeyBuffer);
+                bytesWritten = Pkcs8SizeInBytes;
                 return true;
             }
             catch
@@ -1483,6 +1601,12 @@ namespace System.Security.Cryptography
         private protected void ThrowIfDisposed()
         {
             ObjectDisposedException.ThrowIf(_disposed, typeof(X25519DiffieHellman));
+        }
+
+        private static void ThrowIfPublicKeyWrongSize(ReadOnlySpan<byte> publicKey, string paramName)
+        {
+            if (publicKey.Length != PublicKeySizeInBytes)
+                throw new ArgumentException(SR.Argument_PublicKeyWrongSizeForAlgorithm, paramName);
         }
 
         private protected static void ThrowIfNotSupported()

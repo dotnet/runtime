@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.AddSymbol(this);
             builder.EmitByte((byte)ReadyToRunFixupKind.ResumptionStubEntryPoint);
             // Emit a relocation to the resumption stub code; at link time this becomes the RVA.
-            builder.EmitReloc(_resumptionStub, RelocType.IMAGE_REL_BASED_ADDR32NB, delta: factory.Target.CodeDelta);
+            builder.EmitReloc(_resumptionStub, RelocType.IMAGE_REL_BASED_ADDR32NB);
 
             return builder.ToObjectData();
         }

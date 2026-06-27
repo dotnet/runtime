@@ -1135,7 +1135,7 @@ static PVOID SplitPlaceholder(
 
 static SIZE_T OffsetWithinPage(SIZE_T addr)
 {
-    return addr & (GetOsPageSize() - 1);
+    return addr & (minipal_getpagesize() - 1);
 }
 
 static SIZE_T RoundToPage(SIZE_T size, SIZE_T offset)
@@ -1169,13 +1169,13 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
     PVOID reservedEnd = NULL;
     IMAGE_NT_HEADERS* ntHeader = FindNTHeaders();
 
-    if  ((ntHeader->OptionalHeader.FileAlignment < GetOsPageSize()) &&
+    if  ((ntHeader->OptionalHeader.FileAlignment < minipal_getpagesize()) &&
          (ntHeader->OptionalHeader.FileAlignment != ntHeader->OptionalHeader.SectionAlignment))
     {
         goto UNSUPPORTED;
     }
 
-    if (this->GetSize() < GetOsPageSize() * 2)
+    if (this->GetSize() < minipal_getpagesize() * 2)
     {
         goto UNSUPPORTED;
     }
@@ -1278,7 +1278,7 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
         // then map only the aligned chunk that fits, the rest we will copy.
         while (mapEnd > offset + this->GetSize())
         {
-            mapEnd -= GetOsPageSize();
+            mapEnd -= minipal_getpagesize();
         }
 
         // if we have something to map at page granularity, map it

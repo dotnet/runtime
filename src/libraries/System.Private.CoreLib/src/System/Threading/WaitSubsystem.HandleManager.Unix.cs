@@ -13,11 +13,11 @@ namespace System.Threading
         public interface IWaitableObject
         {
             void OnDeleteHandle();
-            int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize, ref LockHolder lockHolder);
+            int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, ref LockHolder lockHolder);
             void Signal(int count, ref LockHolder lockHolder);
         }
 
-        public static int Wait(this IWaitableObject waitable, ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, bool prioritize)
+        public static int Wait(this IWaitableObject waitable, ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible)
         {
             Debug.Assert(waitInfo.Thread == Thread.CurrentThread);
 
@@ -32,7 +32,7 @@ namespace System.Threading
                     throw new ThreadInterruptedException();
                 }
 
-                return waitable.Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, prioritize, ref lockHolder);
+                return waitable.Wait_Locked(waitInfo, timeoutMilliseconds, interruptible, ref lockHolder);
             }
             finally
             {

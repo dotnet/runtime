@@ -197,10 +197,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return array;
 
             [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                Justification = "VerifyAotCompatibility ensures elementType is not a ValueType")]
+                Justification = "The element type is guaranteed not to be a ValueType when dynamic code isn't supported")]
             static Array CreateArray(Type elementType, int length)
             {
-                Debug.Assert(!ServiceProvider.VerifyAotCompatibility || !elementType.IsValueType, "VerifyAotCompatibility=true will throw during building the IEnumerableCallSite if elementType is a ValueType.");
+                Debug.Assert(ServiceProvider.IsDynamicCodeSupported || !elementType.IsValueType, "When dynamic code isn't supported, building the IEnumerableCallSite will throw if elementType is a ValueType.");
 
                 return Array.CreateInstance(elementType, length);
             }

@@ -104,7 +104,6 @@ DEFINE_METHOD(APPCONTEXT,   ON_FIRST_CHANCE_EXCEPTION,  OnFirstChanceException, 
 
 DEFINE_CLASS(ARG_ITERATOR,          System,                 ArgIterator)
 DEFINE_CLASS_U(System,              ArgIterator,            VARARGS)  // Includes a SigPointer.
-DEFINE_METHOD(ARG_ITERATOR,         CTOR2,                  .ctor,                      IM_RuntimeArgumentHandle_PtrVoid_RetVoid)
 
 DEFINE_CLASS(ARGUMENT_HANDLE,       System,                 RuntimeArgumentHandle)
 
@@ -206,7 +205,10 @@ DEFINE_CLASS_U(System,                 RuntimeMethodInfoStub,     ReflectMethodO
 DEFINE_FIELD_U(m_value,                   ReflectMethodObject, m_pMD)
 DEFINE_CLASS(STUBMETHODINFO,      System,                 RuntimeMethodInfoStub)
 DEFINE_FIELD(STUBMETHODINFO,      HANDLE,                 m_value)
-DEFINE_METHOD(STUBMETHODINFO,     FROMPTR,                FromPtr,                     SM_IntPtr_RetObj)
+DEFINE_METHOD(STUBMETHODINFO,     FROMPTR,                FromPtr,                      SM_IntPtr_RetObj)
+#ifdef FOR_ILLINK
+DEFINE_METHOD(STUBMETHODINFO,       CTOR,                   .ctor,                      IM_RetVoid)
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(CONSTRUCTOR_INFO,      Reflection,             ConstructorInfo)
 
@@ -227,7 +229,7 @@ DEFINE_METHOD(DECIMAL,              CURRENCY_CTOR,          .ctor,              
 
 DEFINE_CLASS_U(System,                 Delegate,            NoClass)
 DEFINE_FIELD_U(_target,                    DelegateObject,   _target)
-DEFINE_FIELD_U(_methodBase,                DelegateObject,   _methodBase)
+DEFINE_FIELD_U(_helperObject,               DelegateObject,   _helperObject)
 DEFINE_FIELD_U(_methodPtr,                 DelegateObject,   _methodPtr)
 DEFINE_FIELD_U(_methodPtrAux,              DelegateObject,   _methodPtrAux)
 DEFINE_CLASS(DELEGATE,              System,                 Delegate)
@@ -328,14 +330,12 @@ DEFINE_METHOD(FILE_LOAD_EXCEPTION,  CREATE,                 Create,    NoSig)
 DEFINE_CLASS(VALUETASK_1, Tasks, ValueTask`1)
 DEFINE_METHOD(VALUETASK_1, GET_ISCOMPLETED, get_IsCompleted, NoSig)
 DEFINE_METHOD(VALUETASK_1, GET_RESULT, get_Result, NoSig)
-DEFINE_METHOD(VALUETASK_1, AS_TASK_OR_NOTIFIER, AsTaskOrNotifier, IM_RetObj)
 
 DEFINE_CLASS(VALUETASK, Tasks, ValueTask)
 DEFINE_METHOD(VALUETASK, FROM_RESULT_T, FromResult, GM_T_RetValueTaskOfT)
 DEFINE_METHOD(VALUETASK, GET_COMPLETED_TASK, get_CompletedTask, SM_RetValueTask)
 DEFINE_METHOD(VALUETASK, GET_ISCOMPLETED, get_IsCompleted, NoSig)
 DEFINE_METHOD(VALUETASK, THROW_IF_COMPLETED_UNSUCCESSFULLY, ThrowIfCompletedUnsuccessfully, NoSig)
-DEFINE_METHOD(VALUETASK, AS_TASK_OR_NOTIFIER, AsTaskOrNotifier, IM_RetObj)
 
 DEFINE_CLASS(TASK_1, Tasks, Task`1)
 
@@ -363,12 +363,12 @@ DEFINE_METHOD(TYPE_NAME_RESOLVER,   GET_TYPE_HELPER,        GetTypeHelper,      
 DEFINE_CLASS_U(Reflection,          RtFieldInfo,            NoClass)
 DEFINE_FIELD_U(m_fieldHandle,       ReflectFieldObject,     m_pFD)
 DEFINE_CLASS(RT_FIELD_INFO,         Reflection,             RtFieldInfo)
-DEFINE_FIELD(RT_FIELD_INFO,         HANDLE,                 m_fieldHandle)
 
 DEFINE_CLASS_U(System,              RuntimeFieldInfoStub,   ReflectFieldObject)
 DEFINE_FIELD_U(m_fieldHandle,       ReflectFieldObject,     m_pFD)
 DEFINE_CLASS(STUBFIELDINFO,         System,                 RuntimeFieldInfoStub)
-DEFINE_METHOD(STUBFIELDINFO,        FROMPTR,                FromPtr,                     SM_IntPtr_RetObj)
+DEFINE_FIELD(STUBFIELDINFO,         HANDLE,                 m_fieldHandle)
+DEFINE_METHOD(STUBFIELDINFO,        FROMPTR,                FromPtr,                    SM_IntPtr_RetObj)
 #ifdef FOR_ILLINK
 DEFINE_METHOD(STUBFIELDINFO,        CTOR,                   .ctor,                      IM_RetVoid)
 #endif // FOR_ILLINK
@@ -460,6 +460,9 @@ DEFINE_FIELD_U(_buckets, GCHandleSetObject, _buckets)
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(OBJCMARSHAL,    ObjectiveC, ObjectiveCMarshal)
 DEFINE_METHOD(OBJCMARSHAL,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,    InvokeUnhandledExceptionPropagation,    SM_PtrException_IntPtr_PtrIntPtr_PtrException_RetVoidPtr)
+DEFINE_FIELD(OBJCMARSHAL, OBJECTS, s_objects)
+DEFINE_CLASS_U(ObjectiveC, ObjectiveCMarshal+ObjcTrackingInformation, ObjcTrackingInformationObject)
+DEFINE_FIELD_U(_memory, ObjcTrackingInformationObject, _memory)
 #endif // FEATURE_OBJCMARSHAL
 
 DEFINE_CLASS_U(Interop, TypeMapLazyDictionary+CallbackContext, CallbackContext)
@@ -565,8 +568,6 @@ DEFINE_METHOD(RUNTIME_METHOD_BODY,  CTOR,   .ctor,  IM_RetVoid)
 
 DEFINE_CLASS(METHOD_INFO,           Reflection,             MethodInfo)
 
-DEFINE_CLASS(METHOD_HANDLE_INTERNAL,System,                 RuntimeMethodHandleInternal)
-
 DEFINE_CLASS(METHOD_HANDLE,         System,                 RuntimeMethodHandle)
 DEFINE_FIELD(METHOD_HANDLE,         METHOD,                 m_value)
 DEFINE_METHOD(METHOD_HANDLE,        TO_INTPTR,              ToIntPtr,           SM_RuntimeMethodHandle_RetIntPtr)
@@ -628,7 +629,6 @@ DEFINE_CLASS(OLE_AUT_BINDER,        System,                 OleAutBinder)
 END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
-DEFINE_FIELD(MONITOR,               CONDITION_TABLE,        s_conditionTable)
 DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_ENTER, SynchronizedMethodEnter, SM_Obj_RefBool_RetVoid)
 DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_EXIT,  SynchronizedMethodExit,  SM_Obj_RefBool_RetVoid)
 
@@ -717,7 +717,14 @@ DEFINE_METHOD(ASYNC_HELPERS,      TASK_FROM_EXCEPTION_1, TaskFromException, GM_E
 DEFINE_METHOD(ASYNC_HELPERS,      VALUETASK_FROM_EXCEPTION, ValueTaskFromException, SM_Exception_RetValueTask)
 DEFINE_METHOD(ASYNC_HELPERS,      VALUETASK_FROM_EXCEPTION_1, ValueTaskFromException, GM_Exception_RetValueTaskOfT)
 
-DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT,         TransparentAwait, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT,            TransparentAwait, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_OF_T,       TransparentAwaitOfT, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUE_TASK,   TransparentAwaitValueTask, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUE_TASK_OF_T, TransparentAwaitValueTaskOfT, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_TASK_WITH_RESULT,                TransparentAwaitWithResult, SM_Task_RetVoid)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUETASK_WITH_RESULT,           TransparentAwaitWithResult, SM_ValueTask_RetVoid)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_TASK_OF_T_WITH_RESULT,           TransparentAwaitWithResult, GM_TaskOfT_RetT)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUETASK_OF_T_WITH_RESULT,      TransparentAwaitWithResult, GM_ValueTaskOfT_RetT)
 DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK_RESULT,     CompletedTaskResult, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK,            CompletedTask, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_EXECUTION_CONTEXT, CaptureExecutionContext, NoSig)
@@ -729,6 +736,7 @@ DEFINE_METHOD(ASYNC_HELPERS,      FINISH_SUSPENSION_NO_CONTINUATION_CONTEXT, Fin
 DEFINE_METHOD(ASYNC_HELPERS,      FINISH_SUSPENSION_WITH_CONTINUATION_CONTEXT, FinishSuspensionWithContinuationContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      ASYNC_CALL_CONTINUATION,   AsyncCallContinuation, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      TAIL_AWAIT,                TailAwait, NoSig)
+
 DEFINE_FIELD(ASYNC_HELPERS,       TLS_RUNTIME_ASYNC_AWAIT_STATE, t_runtimeAsyncAwaitState)
 
 #ifdef FEATURE_INTERPRETER

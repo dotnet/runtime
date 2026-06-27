@@ -19,7 +19,7 @@ namespace System.Formats.Tar
         // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
-        internal static TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock)
+        internal static unsafe TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock)
         {
             // The four supported formats have a header that fits in the default record size
             Span<byte> buffer = stackalloc byte[TarHelpers.RecordSize];
@@ -44,19 +44,24 @@ namespace System.Formats.Tar
 
             // The four supported formats have a header that fits in the default record size
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
-            Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
-
-            await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            TarHeader? header = TryReadAttributes(initialFormat, buffer.Span, archiveStream);
-            if (header != null && processDataBlock)
+            try
             {
-                await header.ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
+                Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
+
+                await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+                TarHeader? header = TryReadAttributes(initialFormat, buffer.Span, archiveStream);
+                if (header != null && processDataBlock)
+                {
+                    await header.ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
+                }
+
+                return header;
             }
-
-            ArrayPool<byte>.Shared.Return(rented);
-
-            return header;
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
         }
 
         private static TarHeader? TryReadAttributes(TarEntryFormat initialFormat, ReadOnlySpan<byte> buffer, Stream archiveStream)
@@ -151,6 +156,11 @@ namespace System.Formats.Tar
             // The 'size' header field only fits 12 bytes, so the data section length that surpases that limit needs to be retrieved
             if (TarHelpers.TryGetStringAsBaseTenLong(ExtendedAttributes, PaxEaSize, out long size))
             {
+                if (size < 0)
+                {
+                    throw new InvalidDataException(SR.Format(SR.TarSizeFieldNegative));
+                }
+
                 _size = size;
             }
 
@@ -225,7 +235,8 @@ namespace System.Formats.Tar
         // - Metadata typeflag entries (Extended Attributes and Global Extended Attributes in PAX, LongLink and LongPath in GNU)
         //   will get all the data section read and the stream pointer positioned at the beginning of the next header.
         // - Block, Character, Directory, Fifo, HardLink and SymbolicLink typeflag entries have no data section so the archive stream pointer will be positioned at the beginning of the next header.
-        // - All other typeflag entries with a data section will generate a stream wrapping the data section: SeekableSubReadStream for seekable archive streams, and SubReadStream for unseekable archive streams.
+        // - All other typeflag entries with a data section will generate a SubReadStream wrapping the data section.
+        //   When the archive stream is seekable, the SubReadStream is seekable too.
         internal void ProcessDataBlock(Stream archiveStream, bool copyData)
         {
             bool skipBlockAlignmentPadding = true;
@@ -271,15 +282,18 @@ namespace System.Formats.Tar
                         _gnuSparseDataStream = new GnuSparseStream(_dataStream, _gnuSparseRealSize);
                     }
 
-                    if (_dataStream is SeekableSubReadStream)
+                    if (_dataStream is SubReadStream)
                     {
-                        TarHelpers.AdvanceStream(archiveStream, _size);
-                    }
-                    else if (_dataStream is SubReadStream)
-                    {
-                        // This stream gives the user the chance to optionally read the data section
-                        // when the underlying archive stream is unseekable
-                        skipBlockAlignmentPadding = false;
+                        if (archiveStream.CanSeek)
+                        {
+                            TarHelpers.AdvanceStream(archiveStream, _size);
+                        }
+                        else
+                        {
+                            // This stream gives the user the chance to optionally read the data section
+                            // when the underlying archive stream is unseekable
+                            skipBlockAlignmentPadding = false;
+                        }
                     }
 
                     break;
@@ -339,15 +353,18 @@ namespace System.Formats.Tar
                         _gnuSparseDataStream = new GnuSparseStream(_dataStream, _gnuSparseRealSize);
                     }
 
-                    if (_dataStream is SeekableSubReadStream)
+                    if (_dataStream is SubReadStream)
                     {
-                        await TarHelpers.AdvanceStreamAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
-                    }
-                    else if (_dataStream is SubReadStream)
-                    {
-                        // This stream gives the user the chance to optionally read the data section
-                        // when the underlying archive stream is unseekable
-                        skipBlockAlignmentPadding = false;
+                        if (archiveStream.CanSeek)
+                        {
+                            await TarHelpers.AdvanceStreamAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // This stream gives the user the chance to optionally read the data section
+                            // when the underlying archive stream is unseekable
+                            skipBlockAlignmentPadding = false;
+                        }
                     }
 
                     break;
@@ -387,9 +404,7 @@ namespace System.Formats.Tar
                 return copiedData;
             }
 
-            return archiveStream.CanSeek
-                ? new SeekableSubReadStream(archiveStream, archiveStream.Position, _size)
-                : new SubReadStream(archiveStream, 0, _size);
+            return new SubReadStream(archiveStream, archiveStream.CanSeek ? archiveStream.Position : 0, _size);
         }
 
         // Asynchronously returns a stream that represents the data section of the current header.
@@ -414,9 +429,7 @@ namespace System.Formats.Tar
                 return copiedData;
             }
 
-            return archiveStream.CanSeek
-                ? new SeekableSubReadStream(archiveStream, archiveStream.Position, size)
-                : new SubReadStream(archiveStream, 0, size);
+            return new SubReadStream(archiveStream, archiveStream.CanSeek ? archiveStream.Position : 0, size);
         }
 
         // Attempts to read the fields shared by all formats and stores them in their expected data type.
@@ -683,17 +696,22 @@ namespace System.Formats.Tar
                 ValidateSize();
 
                 byte[]? buffer = null;
-                Span<byte> span = (ulong)size <= 256 ?
-                    stackalloc byte[256] :
-                    (buffer = ArrayPool<byte>.Shared.Rent((int)size));
-                span = span.Slice(0, (int)size);
-
-                archiveStream.ReadExactly(span);
-                ReadExtendedAttributesFromBuffer(span, _name);
-
-                if (buffer is not null)
+                try
                 {
-                    ArrayPool<byte>.Shared.Return(buffer);
+                    Span<byte> span = (ulong)size <= 256 ?
+                        stackalloc byte[256] :
+                        (buffer = ArrayPool<byte>.Shared.Rent((int)size));
+                    span = span.Slice(0, (int)size);
+
+                    archiveStream.ReadExactly(span);
+                    ReadExtendedAttributesFromBuffer(span, _name);
+                }
+                finally
+                {
+                    if (buffer is not null)
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
                 }
             }
         }
@@ -708,18 +726,23 @@ namespace System.Formats.Tar
             {
                 ValidateSize();
                 byte[] buffer = ArrayPool<byte>.Shared.Rent((int)_size);
-                Memory<byte> memory = buffer.AsMemory(0, (int)_size);
+                try
+                {
+                    Memory<byte> memory = buffer.AsMemory(0, (int)_size);
 
-                await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(false);
-                ReadExtendedAttributesFromBuffer(memory.Span, _name);
-
-                ArrayPool<byte>.Shared.Return(buffer);
+                    await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(false);
+                    ReadExtendedAttributesFromBuffer(memory.Span, _name);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 
         private void ValidateSize()
         {
-            if ((uint)_size > (uint)Array.MaxLength)
+            if ((ulong)_size > (ulong)MaxMetadataBlockSize)
             {
                 ThrowSizeFieldTooLarge();
             }
@@ -757,17 +780,22 @@ namespace System.Formats.Tar
                 ValidateSize();
 
                 byte[]? buffer = null;
-                Span<byte> span = (ulong)size <= 256 ?
-                    stackalloc byte[256] :
-                    (buffer = ArrayPool<byte>.Shared.Rent((int)size));
-                span = span.Slice(0, (int)size);
-
-                archiveStream.ReadExactly(span);
-                ReadGnuLongPathDataFromBuffer(span);
-
-                if (buffer is not null)
+                try
                 {
-                    ArrayPool<byte>.Shared.Return(buffer);
+                    Span<byte> span = (ulong)size <= 256 ?
+                        stackalloc byte[256] :
+                        (buffer = ArrayPool<byte>.Shared.Rent((int)size));
+                    span = span.Slice(0, (int)size);
+
+                    archiveStream.ReadExactly(span);
+                    ReadGnuLongPathDataFromBuffer(span);
+                }
+                finally
+                {
+                    if (buffer is not null)
+                    {
+                        ArrayPool<byte>.Shared.Return(buffer);
+                    }
                 }
             }
         }
@@ -783,12 +811,17 @@ namespace System.Formats.Tar
             {
                 ValidateSize();
                 byte[] buffer = ArrayPool<byte>.Shared.Rent((int)_size);
-                Memory<byte> memory = buffer.AsMemory(0, (int)_size);
+                try
+                {
+                    Memory<byte> memory = buffer.AsMemory(0, (int)_size);
 
-                await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(false);
-                ReadGnuLongPathDataFromBuffer(memory.Span);
-
-                ArrayPool<byte>.Shared.Return(buffer);
+                    await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(false);
+                    ReadGnuLongPathDataFromBuffer(memory.Span);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
         }
 

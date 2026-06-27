@@ -3,8 +3,6 @@ parameters:
     monoAot_x64: false
     mono_arm64: false
     monoAot_arm64: false
-    monoAndroid: false
-    monoAndroidPacks: false
 
 jobs:
   - ${{ if eq(parameters.monoAot_x64, true) }}:
@@ -103,40 +101,3 @@ jobs:
                 archiveExtension: '.tar.gz'
                 archiveType: tar
                 tarCompression: gz
-
-  - ${{ if eq(parameters.monoAndroid, true) }}:
-    # build mono Android scenarios
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/global-build-job.yml
-        buildConfig: release
-        runtimeFlavor: mono
-        platforms:
-        - android_arm64
-        jobParameters:
-          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-          nameSuffix: AndroidMono
-          isOfficialBuild: false
-          postBuildSteps:
-            - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml
-              parameters:
-                runtimeType: mono
-
-  - ${{ if eq(parameters.monoAndroidPacks, true) }}:
-    # build mono runtime packs
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/global-build-job.yml
-        buildConfig: release
-        runtimeFlavor: mono
-        platforms:
-        - android_arm64
-        jobParameters:
-          buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-          nameSuffix: Mono_Packs
-          isOfficialBuild: false
-          postBuildSteps:
-            - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-              parameters:
-                name: MonoRuntimePacks
-                isOfficialBuild: false

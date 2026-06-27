@@ -6,15 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public readonly struct ModuleHandle
-{
-    public ModuleHandle(TargetPointer address)
-    {
-        Address = address;
-    }
-
-    public TargetPointer Address { get; }
-}
+public readonly record struct ModuleHandle(TargetPointer Address);
 
 [Flags]
 public enum ModuleFlags
@@ -42,6 +34,21 @@ public enum ClrModifiableAssemblies : uint
     Unset = 0,
     None = 1,
     Debug = 2,
+}
+
+public enum LoaderAllocatorHeapType
+{
+    Unknown,
+    LowFrequencyHeap,
+    HighFrequencyHeap,
+    StaticsHeap,
+    StubHeap,
+    ExecutableHeap,
+    FixupPrecodeHeap,
+    NewStubPrecodeHeap,
+    DynamicHelpersStubHeap,
+    IndcellHeap,
+    CacheEntryHeap,
 }
 
 [Flags]
@@ -72,7 +79,8 @@ public record struct ModuleLookupTables(
     TargetPointer MethodDefToDesc,
     TargetPointer TypeDefToMethodTable,
     TargetPointer TypeRefToMethodTable,
-    TargetPointer MethodDefToILCodeVersioningState);
+    TargetPointer MethodDefToILCodeVersioningState,
+    uint TableDataOffset);
 
 public readonly struct LoaderHeapBlockData
 {
@@ -90,6 +98,7 @@ public interface ILoader : IContract
     IEnumerable<ModuleHandle> GetModuleHandles(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
     string GetAppDomainFriendlyName() => throw new NotImplementedException();
+    TargetPointer GetAppDomain() => throw new NotImplementedException();
     TargetPointer GetModule(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
@@ -106,6 +115,7 @@ public interface ILoader : IContract
     string GetSimpleName(ModuleHandle handle) => throw new NotImplementedException();
     string GetPath(ModuleHandle handle) => throw new NotImplementedException();
     string GetFileName(ModuleHandle handle) => throw new NotImplementedException();
+    bool GetFileHeadersInfo(ModuleHandle handle, out uint timeStamp, out uint imageSize) => throw new NotImplementedException();
     TargetPointer GetLoaderAllocator(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetILBase(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetAssemblyLoadContext(ModuleHandle handle) => throw new NotImplementedException();
@@ -130,7 +140,7 @@ public interface ILoader : IContract
     TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap) => throw new NotImplementedException();
     // Returns the data for the given loader heap block (address, size, and next block pointer).
     LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block) => throw new NotImplementedException();
-    IReadOnlyDictionary<string, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
+    IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 
     DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle) => throw new NotImplementedException();
     void SetDebuggerInfoBits(ModuleHandle handle, DebuggerAssemblyControlFlags newBits) => throw new NotImplementedException();

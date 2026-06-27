@@ -34,11 +34,6 @@
     .space (0xC0)
     LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 
-        .align 4
-    LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
-    .space (0xC4)
-    LEAF_END_MARKED JIT_ByRefWriteBarrier , _TEXT
-
     LEAF_ENTRY JIT_PatchedWriteBarrierLast, _TEXT
     LEAF_END JIT_PatchedWriteBarrierLast, _TEXT
 

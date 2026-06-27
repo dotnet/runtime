@@ -244,6 +244,15 @@
         $(LibrariesSharedFrameworkDir)*.js;
         $(LibrariesSharedFrameworkDir)*.a;
         $(LibrariesSharedFrameworkDir)*.dat;
+        "
+        Exclude="$(LibrariesSharedFrameworkDir)libminipal.a;
+                 $(LibrariesSharedFrameworkDir)libSystem.IO.Compression.Native.a;
+                 $(LibrariesSharedFrameworkDir)libz.a"
+        IsNative="true" />
+
+      <!-- Runtime tests for Helix are built without the host subset, so browser host files are excluded from the runtime tests build -->
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'"
+                             Include="
         $(HostSharedFrameworkDir)libBrowserHost.a;
         $(HostSharedFrameworkDir)dotnet.native.js;
         $(HostSharedFrameworkDir)dotnet.native.wasm;
@@ -264,11 +273,6 @@
         $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.diagnostics.js.map;
         $(LibrariesNativeArtifactsPath)dotnet.native.js.symbols;"
-        IsNative="true" />
-      <!-- for threaded wasm -->
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono' and Exists('$(LibrariesNativeArtifactsPath)dotnet.native.worker.mjs')"
-                             Include="
-        $(LibrariesNativeArtifactsPath)dotnet.native.worker.mjs"
         IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'"
                              Include="
