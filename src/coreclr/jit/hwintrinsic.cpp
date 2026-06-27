@@ -1629,7 +1629,18 @@ GenTree* Compiler::impSimdCreate(
 {
     if (sig->numArgs == 1)
     {
-        GenTree* op1 = impPopStack().val;
+        GenTree* op1 = impStackTop().val;
+
+#ifdef TARGET_WASM
+        if (!(op1->IsIntegralConst() || op1->IsCnsFltOrDbl()))
+        {
+            // Vector*.Create(T) with a non-constant operand is not yet supported on Wasm.
+            // Returning nullptr lets the importer fall back to the managed implementation.
+            return nullptr;
+        }
+#endif
+
+        op1 = impPopStack().val;
         return gtNewSimdCreateBroadcastNode(retType, op1, simdBaseType, simdSize);
     }
 
