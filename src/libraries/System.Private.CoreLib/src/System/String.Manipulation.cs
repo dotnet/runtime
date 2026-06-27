@@ -2040,7 +2040,7 @@ namespace System
         internal static void MakeSeparatorListAny(ReadOnlySpan<char> source, ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
         {
             // Special-case no separators to mean any whitespace is a separator.
-            if
+            if (separators.Length == 0)
             {
                 for (int i = 0; i < source.Length; i++)
                 {
@@ -2051,7 +2051,7 @@ namespace System
                 }
             }
 
-            // Special-case the common cases of 1, 2 and 3 separators.
+            // Special-case the common cases of 1, 2, and 3 separators, with manual comparisons against each separator.
             else if (separators.Length <= 3)
             {
                 char sep0, sep1, sep2;
