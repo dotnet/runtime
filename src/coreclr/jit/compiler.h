@@ -7515,6 +7515,9 @@ protected:
     // To represent sets of VN's that have already been hoisted in outer loops.
     typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> VNSet;
 
+    // To track per-VN counts of constant-tree occurrences for hoist profitability (#92170).
+    typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, unsigned> VNToCountMap;
+
     struct LoopHoistContext
     {
     private:
@@ -7525,6 +7528,12 @@ protected:
         // Value numbers of expressions that have been hoisted in the current (or most recent) loop in the nest.
         // Previous decisions on loop-invariance of value numbers in the current loop.
         VNSet m_curLoopVnInvariantCache;
+
+        // Method-wide count of constant-tree occurrences by VN. Used to gate hoisting of plain
+        // integral constants: a single occurrence isn't worth hoisting because the hoist just
+        // injects a preheader copy without removing the original in-loop materialization.
+        // Built lazily once per method (only when there is at least one loop to hoist from).
+        VNToCountMap* m_constantUseCount;
 
         int m_loopVarInOutCount;
         int m_loopVarCount;
@@ -7558,7 +7567,9 @@ protected:
         }
 
         LoopHoistContext(Compiler* comp)
-            : m_pHoistedInCurLoop(nullptr), m_curLoopVnInvariantCache(comp->getAllocatorLoopHoist())
+            : m_pHoistedInCurLoop(nullptr)
+            , m_curLoopVnInvariantCache(comp->getAllocatorLoopHoist())
+            , m_constantUseCount(nullptr)
         {
         }
     };

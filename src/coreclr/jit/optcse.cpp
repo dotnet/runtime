@@ -1790,7 +1790,12 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         if (!enableConstCSE &&
             // Unconditionally allow these constant handles to be CSE'd
             !tree->IsIconHandle(GTF_ICON_STATIC_HDL) && !tree->IsIconHandle(GTF_ICON_CLASS_HDL) &&
-            !tree->IsIconHandle(GTF_ICON_STR_HDL) && !tree->IsIconHandle(GTF_ICON_OBJ_HDL))
+            !tree->IsIconHandle(GTF_ICON_STR_HDL) && !tree->IsIconHandle(GTF_ICON_OBJ_HDL) &&
+            // Also unconditionally allow CSE/hoist for constants that don't fit as imm32
+            // or that require relocation. On targets where these can't be encoded as an
+            // instruction immediate, every use costs a full-size constant load, so reuse
+            // via CSE or a hoisted temp is generally profitable. See issue #92170.
+            tree->IsIntCnsFitsInI32() && !tree->AsIntConCommon()->ImmedValNeedsReloc(m_compiler))
         {
             return false;
         }
@@ -4717,6 +4722,24 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
                 cse_def_cost += 1;
                 cse_use_cost += 1;
             }
+
+            // For constants, the alternative to CSE is to rematerialize the value at each
+            // use - essentially as cheap as a callee-trash register move. So a low-use-count
+            // constant CSE that spans a call may not save enough to justify forcing a
+            // callee-saved register into the prolog/epilog. Charge for that here when the
+            // use count is low enough that the trade-off is borderline. See issue #92170.
+            //
+            // Restricted to TARGET_XARCH: on arm64/loongarch64/riscv64 a 64-bit constant
+            // takes multiple instructions to rematerialize, so the alternative isn't as
+            // cheap and discouraging the CSE actively bloats code.
+            //
+#if defined(TARGET_XARCH)
+            if (candidate->Expr()->OperIsConst() && (candidate->CseDsc()->csdUseCount <= 2))
+            {
+                cse_def_cost += 1;
+                cse_use_cost += 1;
+            }
+#endif
         }
 
         // If we don't have a lot of variables to enregister or we have a floating point type
@@ -4897,13 +4920,15 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     // Verify that all of the ValueNumbers in this list are correct as
     // Morph will change them when it performs a mutating operation.
     //
-    bool         setRefCnt      = true;
-    bool         allSame        = true;
-    bool         isSharedConst  = successfulCandidate->IsSharedConst();
-    ValueNum     bestVN         = ValueNumStore::NoVN;
-    bool         bestIsDef      = false;
-    ssize_t      bestConstValue = 0;
-    treeStmtLst* lst            = &dsc->csdTreeList;
+    bool         setRefCnt            = true;
+    bool         allSame              = true;
+    bool         isSharedConst        = successfulCandidate->IsSharedConst();
+    ValueNum     bestVN               = ValueNumStore::NoVN;
+    bool         bestIsDef            = false;
+    ssize_t      bestConstValue       = 0;
+    ssize_t      maxConstValue        = 0;
+    bool         seenSharedConstValue = false;
+    treeStmtLst* lst                  = &dsc->csdTreeList;
 
     while (lst != nullptr)
     {
@@ -4927,8 +4952,10 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
                 if (isSharedConst)
                 {
                     // set bestConstValue and bestIsDef
-                    bestConstValue = curConstValue;
-                    bestIsDef      = isDef;
+                    bestConstValue       = curConstValue;
+                    maxConstValue        = curConstValue;
+                    seenSharedConstValue = true;
+                    bestIsDef            = isDef;
                 }
             }
             else if (currVN != bestVN)
@@ -4951,6 +4978,10 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
                     bestVN         = currVN;
                     bestConstValue = curConstValue;
                     bestIsDef      = isDef;
+                }
+                if (curConstValue > maxConstValue)
+                {
+                    maxConstValue = curConstValue;
                 }
             }
 
@@ -4979,8 +5010,29 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         lst = lst->tslNext;
     }
 
-    dsc->csdConstDefValue = bestConstValue;
-    dsc->csdConstDefVN    = bestVN;
+    // For shared-constant CSEs on x64, center the def value at the midpoint of the
+    // actual constant range so the use-side deltas distribute symmetrically around
+    // zero. This lets lea use the disp8 (signed 8-bit) displacement encoding for the
+    // full bucket range, halving the encoded size compared with a min-anchored base.
+    //
+    // Other targets use unsigned offsets in their primary addressing modes (or
+    // separate add/sub instructions for negative displacements), so centering
+    // forces extra subtracts and is a net loss there.
+    //
+#if defined(TARGET_AMD64)
+    const bool centerSharedConst = true;
+#else
+    const bool centerSharedConst = false;
+#endif
+    if (centerSharedConst && isSharedConst && seenSharedConstValue)
+    {
+        dsc->csdConstDefValue = bestConstValue + ((maxConstValue - bestConstValue) / 2);
+    }
+    else
+    {
+        dsc->csdConstDefValue = bestConstValue;
+    }
+    dsc->csdConstDefVN = bestVN;
 
 #ifdef DEBUG
     if (m_compiler->verbose)
@@ -5886,12 +5938,12 @@ bool Compiler::optSharedConstantCSEEnabled()
     {
         enableSharedConstCSE = true;
     }
-#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
-    else if (configValue == CONST_CSE_ENABLE_ARM_RISCV64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_XARCH)
+    else if (configValue == CONST_CSE_ENABLE_TARGETED)
     {
         enableSharedConstCSE = true;
     }
-#endif // TARGET_ARMARCH || TARGET_RISCV64
+#endif // TARGET_ARMARCH || TARGET_RISCV64 || TARGET_XARCH
 
     return enableSharedConstCSE;
 }
@@ -5912,7 +5964,7 @@ bool Compiler::optConstantCSEEnabled()
         enableConstCSE = true;
     }
 #if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64)
-    else if ((configValue == CONST_CSE_ENABLE_ARM_RISCV64) || (configValue == CONST_CSE_ENABLE_ARM_RISCV64_NO_SHARING))
+    else if ((configValue == CONST_CSE_ENABLE_TARGETED) || (configValue == CONST_CSE_ENABLE_TARGETED_NO_SHARING))
     {
         enableConstCSE = true;
     }
