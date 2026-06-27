@@ -110,12 +110,14 @@ namespace System.Threading
             throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void SynchronizedMethodEnter(object obj, ref bool lockTaken)
         {
             ObjectHeader.AcquireThinLock(obj);
             lockTaken = true;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void SynchronizedMethodExit(object obj, ref bool lockTaken)
         {
             // Inlined Monitor.Exit
