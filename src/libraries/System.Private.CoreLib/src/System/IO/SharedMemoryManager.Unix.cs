@@ -475,6 +475,7 @@ namespace System.IO
                 if (fd.IsInvalid)
                 {
                     error = Interop.Sys.GetLastErrorInfo();
+                    fd.Dispose();
                     if (error.Error == Interop.Error.EEXIST)
                     {
                         // Another process created the file between our ENOENT check and our O_CREAT|O_EXCL attempt.
