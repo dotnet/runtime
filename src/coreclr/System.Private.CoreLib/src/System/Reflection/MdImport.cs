@@ -227,18 +227,22 @@ namespace System.Reflection
         #endregion
 
         #region Static Members
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe bool GetMarshalAs(
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_GetMarshalAs")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static unsafe partial bool GetMarshalAs(
             IntPtr pNativeType,
             int cNativeType,
             out int unmanagedType,
             out int safeArraySubType,
             out byte* safeArrayUserDefinedSubType,
+            out int safeArrayUserDefinedSubTypeLength,
             out int arraySubType,
             out int sizeParamIndex,
             out int sizeConst,
             out byte* marshalType,
+            out int marshalTypeLength,
             out byte* marshalCookie,
+            out int marshalCookieLength,
             out int iidParamIndex);
 
         internal static unsafe MarshalAsAttribute GetMarshalAs(ConstArray nativeType, RuntimeModule scope)
@@ -249,11 +253,14 @@ namespace System.Reflection
                     out int unmanagedTypeRaw,
                     out int safeArraySubTypeRaw,
                     out byte* safeArrayUserDefinedSubTypeRaw,
+                    out int safeArrayUserDefinedSubTypeLength,
                     out int arraySubTypeRaw,
                     out int sizeParamIndex,
                     out int sizeConst,
                     out byte* marshalTypeRaw,
+                    out int marshalTypeLength,
                     out byte* marshalCookieRaw,
+                    out int marshalCookieLength,
                     out int iidParamIndex))
             {
                 throw new BadImageFormatException();
@@ -261,21 +268,32 @@ namespace System.Reflection
 
             string? safeArrayUserDefinedTypeName = safeArrayUserDefinedSubTypeRaw == null
                 ? null
-                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(safeArrayUserDefinedSubTypeRaw));
+                : Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(safeArrayUserDefinedSubTypeRaw, safeArrayUserDefinedSubTypeLength));
             string? marshalTypeName = marshalTypeRaw == null
                 ? null
-                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalTypeRaw));
+                : Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(marshalTypeRaw, marshalTypeLength));
             string? marshalCookie = marshalCookieRaw == null
                 ? null
-                : Text.Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(marshalCookieRaw));
+                : Text.Encoding.UTF8.GetString(new ReadOnlySpan<byte>(marshalCookieRaw, marshalCookieLength));
 
-            RuntimeType? safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
-                TypeNameResolver.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
+            RuntimeType? safeArrayUserDefinedType = null;
+
+            try
+            {
+                safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
+                    TypeNameResolver.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
+            }
+            catch (TypeLoadException)
+            {
+                // The user may have supplied a bad type name string causing this TypeLoadException
+                Debug.Assert(safeArrayUserDefinedTypeName is not null);
+            }
+
             RuntimeType? marshalTypeRef = null;
 
             try
             {
-                marshalTypeRef = marshalTypeName is null ? null : TypeNameResolver.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
+                marshalTypeRef = string.IsNullOrEmpty(marshalTypeName) ? null : TypeNameResolver.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
             }
             catch (TypeLoadException)
             {
