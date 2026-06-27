@@ -283,7 +283,7 @@ namespace System.Threading
         // Try acquiring the thin-lock.
         // The common cases (free lock, fat lock) are handled inline. A thread id that doesn't fit,
         // recursive acquisition, contention and lost races are rarer and less performance sensitive,
-        // so they are handled out of line in AcquireUncommon to keep this inlined fast path small.
+        // so they are handled out of line in TryAcquireUncommon to keep this inlined fast path small.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool TryAcquireThinLock(object obj, int millisecondsTimeout = 0)
         {
@@ -364,6 +364,8 @@ namespace System.Threading
                     // Thread IDs are allocated sequentially starting from 1 and recycled, so it's
                     // unusual to have a thread ID that doesn't fit in the thin-lock field.
                     // Check here rather than at entry to keep the hot path as tight as possible.
+                    // If the id doesn't fit, we fall through and call TryAcquireUncommon outside the
+                    // fixed block to avoid keeping the object pinned while potentially spinning.
                     // The uninitialized 0 id is also ruled out by this check.
                     int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
                     if ((uint)(currentThreadID - 1) < (uint)SBLK_MASK_LOCK_THREADID)
