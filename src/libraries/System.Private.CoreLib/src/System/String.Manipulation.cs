@@ -2424,20 +2424,22 @@ namespace System
                 Vector512<ushort> v2 = Vector512.Create((ushort)c2);
                 Vector512<ushort> v3 = Vector512.Create((ushort)c3);
 
-                if (Avx512BW.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
+                if (Avx512BW.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c) && PackedSpanHelpers.CanUsePackedIndexOf(c2) && PackedSpanHelpers.CanUsePackedIndexOf(c3))
                 {
                     // Process in double chunks & check if either chunk is likely to contain matches at once.
                     // If we get multiple matches in a single chunk, we assume they're likely to be close &
                     // break out of this logic & use the more optimistic loop below.
                     // This is similar logic to SpanHelpers.Packed.cs's IndexOf.
-                    Vector512<byte> packedComparand = Vector512.Create((byte)c);
+                    Vector512<byte> packedComparand1 = Vector512.Create((byte)c);
+                    Vector512<byte> packedComparand2 = Vector512.Create((byte)c2);
+                    Vector512<byte> packedComparand3 = Vector512.Create((byte)c3);
                     while ((uint)remaining.Length >= (uint)Vector512<ushort>.Count*2)
                     {
                         Vector512<ushort> vector1 = Vector512.Create(remaining);
                         Vector512<ushort> vector2 = Vector512.Create(remaining.Slice(Vector512<ushort>.Count));
                         var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
 
-                        if (Vector512.EqualsAny(packed, packedComparand))
+                        if (Vector512.EqualsAny(packed, packedComparand1) || Vector512.EqualsAny(packed, packedComparand2) || Vector512.EqualsAny(packed, packedComparand3))
                         {
                             var cmp1 = Vector512.Equals(vector1, v1).AsByte() | Vector512.Equals(vector1, v2).AsByte() | Vector512.Equals(vector1, v3).AsByte();
                             var cmp2 = Vector512.Equals(vector2, v1).AsByte() | Vector512.Equals(vector2, v2).AsByte() | Vector512.Equals(vector2, v3).AsByte();
@@ -2517,20 +2519,22 @@ namespace System
                 Vector256<ushort> v2 = Vector256.Create((ushort)c2);
                 Vector256<ushort> v3 = Vector256.Create((ushort)c3);
 
-                if (Avx2.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
+                if (Avx2.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c) && PackedSpanHelpers.CanUsePackedIndexOf(c2) && PackedSpanHelpers.CanUsePackedIndexOf(c3))
                 {
                     // Process in double chunks & check if either chunk is likely to contain matches at once.
                     // If we get multiple matches in a single chunk, we assume they're likely to be close &
                     // break out of this logic & use the more optimistic loop below.
                     // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
-                    Vector256<byte> packedComparand = Vector256.Create((byte)c);
+                    Vector256<byte> packedComparand1 = Vector256.Create((byte)c);
+                    Vector256<byte> packedComparand2 = Vector256.Create((byte)c2);
+                    Vector256<byte> packedComparand3 = Vector256.Create((byte)c3);
                     while ((uint)remaining.Length >= (uint)Vector256<ushort>.Count*2)
                     {
                         Vector256<ushort> vector1 = Vector256.Create(remaining);
                         Vector256<ushort> vector2 = Vector256.Create(remaining.Slice(Vector256<ushort>.Count));
                         var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
 
-                        if (Vector256.EqualsAny(packed, packedComparand))
+                        if (Vector256.EqualsAny(packed, packedComparand1) || Vector256.EqualsAny(packed, packedComparand2) || Vector256.EqualsAny(packed, packedComparand3))
                         {
                             var cmp1 = Vector256.Equals(vector1, v1).AsByte() | Vector256.Equals(vector1, v2).AsByte() | Vector256.Equals(vector1, v3).AsByte();
                             var cmp2 = Vector256.Equals(vector2, v1).AsByte() | Vector256.Equals(vector2, v2).AsByte() | Vector256.Equals(vector2, v3).AsByte();
@@ -2610,20 +2614,22 @@ namespace System
                 Vector128<ushort> v2 = Vector128.Create((ushort)c2);
                 Vector128<ushort> v3 = Vector128.Create((ushort)c3);
 
-                if (Sse2.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
+                if (Sse2.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c) && PackedSpanHelpers.CanUsePackedIndexOf(c2) && PackedSpanHelpers.CanUsePackedIndexOf(c3))
                 {
                     // Process in double chunks & check if either chunk is likely to contain matches at once.
                     // If we get multiple matches in a single chunk, we assume they're likely to be close &
                     // break out of this logic & use the more optimistic loop below.
                     // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
-                    Vector128<byte> packedComparand = Vector128.Create((byte)c);
+                    Vector128<byte> packedComparand1 = Vector128.Create((byte)c);
+                    Vector128<byte> packedComparand2 = Vector128.Create((byte)c2);
+                    Vector128<byte> packedComparand3 = Vector128.Create((byte)c3);
                     while ((uint)remaining.Length >= (uint)Vector128<ushort>.Count*2)
                     {
                         Vector128<ushort> vector1 = Vector128.Create(remaining);
                         Vector128<ushort> vector2 = Vector128.Create(remaining.Slice(Vector128<ushort>.Count));
                         var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
 
-                        if (Vector128.EqualsAny(packed, packedComparand))
+                        if (Vector128.EqualsAny(packed, packedComparand1) || Vector128.EqualsAny(packed, packedComparand2) || Vector128.EqualsAny(packed, packedComparand3))
                         {
                             var cmp1 = Vector128.Equals(vector1, v1).AsByte() | Vector128.Equals(vector1, v2).AsByte() | Vector128.Equals(vector1, v3).AsByte();
                             var cmp2 = Vector128.Equals(vector2, v1).AsByte() | Vector128.Equals(vector2, v2).AsByte() | Vector128.Equals(vector2, v3).AsByte();
