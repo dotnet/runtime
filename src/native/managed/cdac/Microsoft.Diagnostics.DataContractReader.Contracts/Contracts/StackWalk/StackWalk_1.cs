@@ -955,6 +955,11 @@ internal partial class StackWalk_1 : IStackWalk
                 }
                 else
                 {
+                    if (handle.State == StackWalkState.Frame)
+                    {
+                        handle.State = validFrame ? StackWalkState.Frame : StackWalkState.Complete;
+                        return;
+                    }
                     handle.State = (validFrame || handle.State == StackWalkState.Frameless) ? StackWalkState.NativeMarker : StackWalkState.Complete;
                 }
                 return;
