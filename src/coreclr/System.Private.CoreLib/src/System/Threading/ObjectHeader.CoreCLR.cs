@@ -377,9 +377,8 @@ namespace System.Threading
             {
                 int* pHeader = GetHeaderPtr(ppMethodTable);
 
-                // Ignore the spinlock here.
-                // Either we'll read the thin-lock data in the header or we'll have a sync block.
-                // In either case, the two will be consistent.
+                // If the spin lock is set, the header may be transitioning to a sync block.
+                // In that case, fall back to the slow path to determine ownership.
                 int oldBits = *pHeader;
 
                 // If no hash code or syncblock, the lock state is determined by the header.
