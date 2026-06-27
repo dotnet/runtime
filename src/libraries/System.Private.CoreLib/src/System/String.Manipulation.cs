@@ -2184,8 +2184,7 @@ namespace System
                 while ((uint)remaining.Length >= (uint)Vector512<ushort>.Count)
                 {
                     Vector512<ushort> vector = Vector512.Create(remaining);
-                    Vector512<ushort> v1Eq = Vector512.Equals(vector, v1);
-                    Vector512<byte> cmp = v1Eq.AsByte();
+                    Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte();
 
                     if (cmp != Vector512<byte>.Zero)
                     {
@@ -2208,8 +2207,7 @@ namespace System
                 if (remaining.Length > 0)
                 {
                     Vector512<ushort> vector = Vector512.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector512<ushort>.Count));
-                    Vector512<ushort> v1Eq = Vector512.Equals(vector, v1);
-                    Vector512<byte> cmp = v1Eq.AsByte();
+                    Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte();
                     int finalIndex = sourceSpanUInt16.Length - Vector512<ushort>.Count;
                     ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - remaining.Length * sizeof(char))) - 1);
                     while (mask != 0)
@@ -2277,8 +2275,7 @@ namespace System
                 while ((uint)remaining.Length >= (uint)Vector256<ushort>.Count)
                 {
                     Vector256<ushort> vector = Vector256.Create(remaining);
-                    Vector256<ushort> v1Eq = Vector256.Equals(vector, v1);
-                    Vector256<byte> cmp = v1Eq.AsByte();
+                    Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte();
 
                     if (cmp != Vector256<byte>.Zero)
                     {
@@ -2301,8 +2298,7 @@ namespace System
                 if (remaining.Length > 0)
                 {
                     Vector256<ushort> vector = Vector256.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector256<ushort>.Count));
-                    Vector256<ushort> v1Eq = Vector256.Equals(vector, v1);
-                    Vector256<byte> cmp = v1Eq.AsByte();
+                    Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte();
                     int finalIndex = sourceSpanUInt16.Length - Vector256<ushort>.Count;
                     uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - remaining.Length * sizeof(char))) - 1);
                     while (mask != 0)
@@ -2370,8 +2366,7 @@ namespace System
                 while ((uint)remaining.Length >= (uint)Vector128<ushort>.Count)
                 {
                     Vector128<ushort> vector = Vector128.Create(remaining);
-                    Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
-                    Vector128<byte> cmp = v1Eq.AsByte();
+                    Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte();
 
                     if (cmp != Vector128<byte>.Zero)
                     {
@@ -2394,8 +2389,7 @@ namespace System
                 if (remaining.Length > 0)
                 {
                     Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
-                    Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
-                    Vector128<byte> cmp = v1Eq.AsByte();
+                    Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte();
                     int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
                     uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
                     while (mask != 0)
@@ -2482,8 +2476,7 @@ namespace System
                 while ((uint)remaining.Length >= (uint)Vector512<ushort>.Count)
                 {
                     Vector512<ushort> vector = Vector512.Create(remaining);
-                    Vector512<ushort> v1Eq = Vector512.Equals(vector, v1) | Vector512.Equals(vector, v2) | Vector512.Equals(vector, v3);
-                    Vector512<byte> cmp = v1Eq.AsByte();
+                    Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte() | Vector512.Equals(vector, v2).AsByte() | Vector512.Equals(vector, v3).AsByte();
 
                     if (cmp != Vector512<byte>.Zero)
                     {
@@ -2506,8 +2499,7 @@ namespace System
                 if (remaining.Length > 0)
                 {
                     Vector512<ushort> vector = Vector512.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector512<ushort>.Count));
-                    Vector512<ushort> v1Eq = Vector512.Equals(vector, v1) | Vector512.Equals(vector, v2) | Vector512.Equals(vector, v3);
-                    Vector512<byte> cmp = v1Eq.AsByte();
+                    Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte() | Vector512.Equals(vector, v2).AsByte() | Vector512.Equals(vector, v3).AsByte();
                     int finalIndex = sourceSpanUInt16.Length - Vector512<ushort>.Count;
                     ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - remaining.Length * sizeof(char))) - 1);
                     while (mask != 0)
@@ -2577,8 +2569,7 @@ namespace System
                 while ((uint)remaining.Length >= (uint)Vector256<ushort>.Count)
                 {
                     Vector256<ushort> vector = Vector256.Create(remaining);
-                    Vector256<ushort> v1Eq = Vector256.Equals(vector, v1) | Vector256.Equals(vector, v2) | Vector256.Equals(vector, v3);
-                    Vector256<byte> cmp = v1Eq.AsByte();
+                    Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte() | Vector256.Equals(vector, v2).AsByte() | Vector256.Equals(vector, v3).AsByte();
 
                     if (cmp != Vector256<byte>.Zero)
                     {
@@ -2601,8 +2592,7 @@ namespace System
                 if (remaining.Length > 0)
                 {
                     Vector256<ushort> vector = Vector256.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector256<ushort>.Count));
-                    Vector256<ushort> v1Eq = Vector256.Equals(vector, v1) | Vector256.Equals(vector, v2) | Vector256.Equals(vector, v3);
-                    Vector256<byte> cmp = v1Eq.AsByte();
+                    Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte() | Vector256.Equals(vector, v2).AsByte() | Vector256.Equals(vector, v3).AsByte();
                     int finalIndex = sourceSpanUInt16.Length - Vector256<ushort>.Count;
                     uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - remaining.Length * sizeof(char))) - 1);
                     while (mask != 0)
@@ -2672,8 +2662,7 @@ namespace System
                 while ((uint)remaining.Length >= (uint)Vector128<ushort>.Count)
                 {
                     Vector128<ushort> vector = Vector128.Create(remaining);
-                    Vector128<ushort> v1Eq = Vector128.Equals(vector, v1) | Vector128.Equals(vector, v2) | Vector128.Equals(vector, v3);
-                    Vector128<byte> cmp = v1Eq.AsByte();
+                    Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
 
                     if (cmp != Vector128<byte>.Zero)
                     {
@@ -2696,8 +2685,7 @@ namespace System
                 if (remaining.Length > 0)
                 {
                     Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
-                    Vector128<ushort> v1Eq = Vector128.Equals(vector, v1) | Vector128.Equals(vector, v2) | Vector128.Equals(vector, v3);
-                    Vector128<byte> cmp = v1Eq.AsByte();
+                    Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
                     int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
                     uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
                     while (mask != 0)
