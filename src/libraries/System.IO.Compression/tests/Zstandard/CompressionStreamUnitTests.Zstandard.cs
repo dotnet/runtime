@@ -517,10 +517,8 @@ namespace System.IO.Compression
         [InlineData(true)]
         public async Task ZstandardStream_FrameFollowedByCorruptFrame_Throws(bool async)
         {
-            // A continuation chunk that begins with a valid frame magic but is not a decodable frame is
-            // corrupt input, the same as a corrupt first frame, so it must throw rather than be silently
-            // dropped as trailing data. This is the case that distinguishes checking the frame magic from
-            // treating a first-call InvalidData as "not a frame".
+            // A continuation chunk that begins with a valid frame magic but a corrupt header is corrupt input,
+            // the same as a corrupt first frame, so it must throw rather than be silently dropped as trailing data.
             byte[] first = ZstandardTestUtils.CreateTestData(4_000);
             byte[] corruptFrame = CompressToSingleFrame(ZstandardTestUtils.CreateTestData(4_000));
 
@@ -543,6 +541,40 @@ namespace System.IO.Compression
             {
                 Assert.Throws<InvalidDataException>(() => decompressor.CopyTo(output));
             }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ZstandardStream_SkippableFrameBetweenFrames_DecompressesAllFrames(bool async)
+        {
+            // A skippable frame may appear between data frames and must not prevent subsequent
+            // frames from being decoded (RFC 8878 section 3.1.2).
+            byte[] first = ZstandardTestUtils.CreateTestData(4_000);
+            byte[] second = ZstandardTestUtils.CreateTestData(6_000);
+            byte[] expected = [.. first, .. second];
+
+            // A minimal skippable frame: magic 0x184D2A50, a 4-byte little-endian content size of 4, then 4
+            // bytes of (ignored) user data.
+            byte[] skippable = [0x50, 0x2A, 0x4D, 0x18, 0x04, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04];
+
+            byte[] body = [.. CompressToSingleFrame(first), .. skippable, .. CompressToSingleFrame(second)];
+
+            using MemoryStream input = new(body);
+            using MemoryStream output = new();
+            using (ZstandardStream decompressor = new(input, CompressionMode.Decompress, leaveOpen: true))
+            {
+                if (async)
+                {
+                    await decompressor.CopyToAsync(output);
+                }
+                else
+                {
+                    decompressor.CopyTo(output);
+                }
+            }
+
+            Assert.Equal(expected, output.ToArray());
         }
 
         // A non-seekable, read-only stream that returns at most one byte per read.

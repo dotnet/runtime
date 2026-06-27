@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
@@ -108,27 +107,6 @@ namespace System.IO.Compression
             return false;
         }
 
-        /// <summary>
-        /// Returns whether <paramref name="data"/> begins with a Zstandard frame magic number: a standard
-        /// frame (0xFD2FB528) or a skippable frame (0x184D2A50-0x184D2A5F), which indicates that another
-        /// concatenated frame follows. Used to distinguish a subsequent frame from trailing data after the
-        /// final frame. Requires at least <see cref="ZstdFrameMagicLength"/> bytes.
-        /// </summary>
-        private static bool StartsWithZstdFrame(ReadOnlySpan<byte> data)
-        {
-            if (data.Length < ZstdFrameMagicLength)
-            {
-                return false;
-            }
-
-            const uint ZstdFrameMagic = 0xFD2FB528;
-            const uint SkippableFrameMagicMin = 0x184D2A50;
-            const uint SkippableFrameMagicMax = 0x184D2A5F;
-
-            uint magic = BinaryPrimitives.ReadUInt32LittleEndian(data);
-            return magic == ZstdFrameMagic || (magic >= SkippableFrameMagicMin && magic <= SkippableFrameMagicMax);
-        }
-
         /// <summary>Reads decompressed bytes from the underlying stream and places them in the specified array.</summary>
         /// <param name="buffer">The byte array to contain the decompressed bytes.</param>
         /// <param name="offset">The byte offset in <paramref name="buffer" /> at which the read bytes will be placed.</param>
@@ -198,16 +176,17 @@ namespace System.IO.Compression
                         _buffer.Commit(bytesRead);
                     }
 
-                    if (lastResult != OperationStatus.Done)
+                    if (lastResult != OperationStatus.Done || bytesWritten != 0)
                     {
-                        // Produced output, or a zero-byte read that should return to the caller.
+                        // Output to hand back, or not at a finished-frame boundary: return to the caller.
                         return bytesWritten;
                     }
 
-                    // A frame finished. A zstd stream may be frames concatenated back-to-back (RFC 8878
-                    // section 3), so decide whether another frame follows before reporting end-of-stream.
-                    // async: false completes synchronously (it only ever takes the synchronous read path).
-                    ValueTask<bool> advanceTask = AdvanceToNextFrame(buffer.IsEmpty, hasPendingOutput: bytesWritten != 0, async: false, cancellationToken: default);
+                    // A frame finished with no pending output. A zstd stream may be frames concatenated
+                    // back-to-back (RFC 8878 section 3), so decide whether another frame follows before
+                    // reporting end-of-stream. async: false completes synchronously (it only ever takes the
+                    // synchronous read path).
+                    ValueTask<bool> advanceTask = AdvanceToNextFrame(async: false, cancellationToken: default);
                     Debug.Assert(advanceTask.IsCompleted, "AdvanceToNextFrame should complete synchronously when async: false");
                     if (!advanceTask.GetAwaiter().GetResult())
                     {
@@ -221,41 +200,14 @@ namespace System.IO.Compression
             }
         }
 
-        // Called after TryDecompress reports OperationStatus.Done (end of a frame). Decides whether another
-        // concatenated frame follows: returns true (after resetting the decoder) when the caller should loop
-        // to decode it, or false when the stream is complete and the caller should return. Uses only buffered
-        // bytes when there is pending output to hand back; otherwise reads up to a frame magic to tell a split
-        // next-frame magic from end-of-stream. Shared by Read (async: false) and ReadAsync (async: true).
-        private async ValueTask<bool> AdvanceToNextFrame(bool zeroByteRead, bool hasPendingOutput, bool async, CancellationToken cancellationToken)
+        // Called after TryDecompress reports OperationStatus.Done with no pending output (a finished frame).
+        // Decides whether another concatenated frame follows: reads up to a frame magic and asks the decoder
+        // (IsFrameStart) whether those bytes begin a frame. Returns true (decoder reset and ready) so the caller
+        // loops to decode it, or false (stream complete; a seekable base stream is rewound to the end of the
+        // compressed data) so the caller returns. Shared by Read (async: false) and ReadAsync (async: true).
+        private async ValueTask<bool> AdvanceToNextFrame(bool async, CancellationToken cancellationToken)
         {
-            if (hasPendingOutput)
-            {
-                // There is output to hand back now. If the next frame's header is already buffered, ready the
-                // decoder for it now (no read needed) so the next read decodes it directly; if this was instead
-                // the final frame (trailing non-zstd data) rewind a seekable base stream. With fewer than
-                // ZstdFrameMagicLength bytes buffered we can't tell yet, so defer the decision to the next read
-                // rather than block on the next frame's header before returning data we already have.
-                if (_buffer.ActiveLength >= ZstdFrameMagicLength)
-                {
-                    if (StartsWithZstdFrame(_buffer.ActiveSpan))
-                    {
-                        Debug.Assert(_decoder != null);
-                        _decoder.Reset();
-                    }
-                    else if (_stream.CanSeek)
-                    {
-                        TryRewindStream(_stream);
-                    }
-                }
-
-                return false;
-            }
-
-            if (zeroByteRead)
-            {
-                // Zero-byte read: don't block peeking the next frame; the next read resolves it.
-                return false;
-            }
+            Debug.Assert(_decoder != null);
 
             if (_buffer.ActiveLength < ZstdFrameMagicLength)
             {
@@ -276,12 +228,12 @@ namespace System.IO.Compression
                 }
             }
 
-            if (_buffer.ActiveLength >= ZstdFrameMagicLength && StartsWithZstdFrame(_buffer.ActiveSpan))
+            if (_buffer.ActiveLength >= ZstdFrameMagicLength &&
+                _decoder.IsFrameStart(_buffer.ActiveSpan.Slice(0, ZstdFrameMagicLength)))
             {
-                // Another frame follows. Reset readies the decoder for it (a session-only native reset that
-                // keeps the window size and any dictionary, and releases a single-use prefix).
-                Debug.Assert(_decoder != null);
-                _decoder.Reset();
+                // Another frame follows. IsFrameStart has reset the decoder (a session-only native reset that
+                // keeps the window size and any dictionary, and releases a single-use prefix) and left it ready
+                // to decode the next frame.
                 return true;
             }
 
@@ -367,15 +319,16 @@ namespace System.IO.Compression
                         _buffer.Commit(bytesRead);
                     }
 
-                    if (lastResult != OperationStatus.Done)
+                    if (lastResult != OperationStatus.Done || bytesWritten != 0)
                     {
-                        // Produced output, or a zero-byte read that should return to the caller.
+                        // Output to hand back, or not at a finished-frame boundary: return to the caller.
                         return bytesWritten;
                     }
 
-                    // A frame finished. A zstd stream may be frames concatenated back-to-back (RFC 8878
-                    // section 3), so decide whether another frame follows before reporting end-of-stream.
-                    if (!await AdvanceToNextFrame(buffer.IsEmpty, hasPendingOutput: bytesWritten != 0, async: true, cancellationToken: cancellationToken).ConfigureAwait(false))
+                    // A frame finished with no pending output. A zstd stream may be frames concatenated
+                    // back-to-back (RFC 8878 section 3), so decide whether another frame follows before
+                    // reporting end-of-stream.
+                    if (!await AdvanceToNextFrame(async: true, cancellationToken: cancellationToken).ConfigureAwait(false))
                     {
                         return bytesWritten;
                     }
