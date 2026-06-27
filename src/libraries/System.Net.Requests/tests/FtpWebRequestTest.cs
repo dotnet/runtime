@@ -232,12 +232,6 @@ namespace System.Net.Tests
         [InlineData("test\r\ntest2")]
         [InlineData("test\rtest2")]
         [InlineData("test\ntest2")]
-        [InlineData("test%0D%0Atest2")]
-        [InlineData("test%0d%0atest2")]
-        [InlineData("test%0Dtest2")]
-        [InlineData("test%0dtest2")]
-        [InlineData("test%0Atest2")]
-        [InlineData("test%0atest2")]
         public void Ftp_Ignore_NewLine_GetRequestStream_And_GetResponse_Throws_FormatException_As_InnerException(string credential)
         {
             FtpWebRequest ftpWebRequest = (FtpWebRequest)WebRequest.Create(absoluteUri + Guid.NewGuid().ToString());
@@ -254,12 +248,6 @@ namespace System.Net.Tests
         [InlineData("ok\r\nbad")]
         [InlineData("ok\rbad")]
         [InlineData("ok\nbad")]
-        [InlineData("ok%0D%0Abad")]
-        [InlineData("ok%0d%0abad")]
-        [InlineData("ok%0Dbad")]
-        [InlineData("ok%0dbad")]
-        [InlineData("ok%0Abad")]
-        [InlineData("ok%0abad")]
         public void Ftp_NewLineInRenameTo_GetResponse_Throws_FormatException_As_InnerException(string renameTo)
         {
             FtpWebRequest request = (FtpWebRequest)WebRequest.Create(absoluteUri + Guid.NewGuid().ToString());

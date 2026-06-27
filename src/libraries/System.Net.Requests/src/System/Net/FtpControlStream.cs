@@ -1147,10 +1147,7 @@ namespace System.Net
         /// </summary>
         private static string FormatFtpCommand(string command, string? parameter)
         {
-            if (parameter is not null &&
-                (parameter.AsSpan().ContainsAny('\r', '\n') ||
-                 parameter.Contains("%0A", StringComparison.OrdinalIgnoreCase) ||
-                 parameter.Contains("%0D", StringComparison.OrdinalIgnoreCase)))
+            if (parameter is not null && parameter.AsSpan().ContainsAny('\r', '\n'))
             {
                 throw new FormatException(SR.net_ftp_no_newlines);
             }
