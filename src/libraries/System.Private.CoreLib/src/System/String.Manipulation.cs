@@ -2040,36 +2040,60 @@ namespace System
         internal static void MakeSeparatorListAny(ReadOnlySpan<char> source, ReadOnlySpan<char> separators, ref ValueListBuilder<int> sepListBuilder)
         {
             // Special-case no separators to mean any whitespace is a separator.
-            if (separators.Length == 0)
+            if (separators.Length <= 3)
             {
-                for (int i = 0; i < source.Length; i++)
+                // Special-case the common cases of 1 separator, the most common case, with manual comparisons against it.
+                if (separators.Length == 1)
                 {
-                    if (char.IsWhiteSpace(source[i]))
+                    char sep0 = separators[0];
+                    if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
                     {
-                        sepListBuilder.Append(i);
+                        MakeSeparatorListVectorized(source, ref sepListBuilder, sep0);
+                        return;
+                    }
+
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        char c = source[i];
+                        if (c == sep0)
+                        {
+                            sepListBuilder.Append(i);
+                        }
                     }
                 }
-            }
 
-            // Special-case the common cases of 1, 2, and 3 separators, with manual comparisons against each separator.
-            else if (separators.Length <= 3)
-            {
-                char sep0, sep1, sep2;
-                sep0 = separators[0];
-                sep1 = separators.Length > 1 ? separators[1] : sep0;
-                sep2 = separators.Length > 2 ? separators[2] : sep1;
-                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
+                // Special-case the common cases of 2 and 3 separators, with manual comparisons against each separator.
+                else if (separators.Length > 0)
                 {
-                    MakeSeparatorListVectorized(source, ref sepListBuilder, sep0, sep1, sep2);
-                    return;
+                    char sep0, sep1, sep2;
+                    sep0 = separators[0];
+                    sep1 = separators[1];
+                    sep2 = separators.Length > 2 ? separators[2] : sep1;
+                    if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
+                    {
+                        MakeSeparatorListVectorized(source, ref sepListBuilder, sep0, sep1, sep2);
+                        return;
+                    }
+
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        char c = source[i];
+                        if (c == sep0 || c == sep1 || c == sep2)
+                        {
+                            sepListBuilder.Append(i);
+                        }
+                    }
                 }
 
-                for (int i = 0; i < source.Length; i++)
+                // Special-case no separators to mean any whitespace is a separator.
+                else
                 {
-                    char c = source[i];
-                    if (c == sep0 || c == sep1 || c == sep2)
+                    for (int i = 0; i < source.Length; i++)
                     {
-                        sepListBuilder.Append(i);
+                        if (char.IsWhiteSpace(source[i]))
+                        {
+                            sepListBuilder.Append(i);
+                        }
                     }
                 }
             }
@@ -2089,6 +2113,296 @@ namespace System
                     }
                 }
             }
+        }
+
+        private static void MakeSeparatorListVectorized(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> sepListBuilder, char c)
+        {
+            // Redundant test so we won't prejit remainder of this method
+            // on platforms where it is not supported
+            if (!Vector128.IsHardwareAccelerated)
+            {
+                throw new PlatformNotSupportedException();
+            }
+            Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count*2);
+            int baseIndex = 0;
+            ReadOnlySpan<ushort> sourceSpanUInt16 = MemoryMarshal.Cast<char, ushort>(sourceSpan);
+            ReadOnlySpan<ushort> remaining = sourceSpanUInt16;
+
+            if (Vector512.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector512<ushort>.Count*2)
+            {
+                Vector512<ushort> v1 = Vector512.Create((ushort)c);
+
+                if (Avx512BW.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
+                {
+                    // Process in double chunks & check if either chunk is likely to contain matches at once.
+                    // If we get multiple matches in a single chunk, we assume they're likely to be close &
+                    // break out of this logic & use the more optimistic loop below.
+                    // This is similar logic to SpanHelpers.Packed.cs's IndexOf.
+                    Vector512<byte> packedComparand = Vector512.Create((byte)c);
+                    while ((uint)remaining.Length >= (uint)Vector512<ushort>.Count*2)
+                    {
+                        Vector512<ushort> vector1 = Vector512.Create(remaining);
+                        Vector512<ushort> vector2 = Vector512.Create(remaining.Slice(Vector512<ushort>.Count));
+                        var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
+
+                        if (Vector512.EqualsAny(packed, packedComparand))
+                        {
+                            var cmp1 = Vector512.Equals(vector1, v1).AsByte();
+                            var cmp2 = Vector512.Equals(vector2, v1).AsByte();
+
+                            // Same logic as below, but for both vectors.
+                            ulong mask1 = cmp1.ExtractMostSignificantBits() & 0x5555555555555555;
+                            ulong mask2 = cmp2.ExtractMostSignificantBits() & 0x5555555555555555;
+                            bool shouldBreak = ulong.PopCount(mask1) + ulong.PopCount(mask2) > 1;
+                            while (mask1 != 0)
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask1) / sizeof(char);
+                                sepListBuilder.Append(baseIndex + (int)bitPos);
+                                mask1 = BitOperations.ResetLowestSetBit(mask1);
+                            }
+                            while (mask2 != 0)
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask2) / sizeof(char);
+                                sepListBuilder.Append(baseIndex + (int)bitPos + Vector512<ushort>.Count);
+                                mask2 = BitOperations.ResetLowestSetBit(mask2);
+                            }
+
+                            // Break out of the loop if we had >1 match:
+                            if (shouldBreak)
+                            {
+                                baseIndex += Vector512<ushort>.Count*2;
+                                remaining = remaining.Slice(Vector512<ushort>.Count*2);
+                                break;
+                            }
+                        }
+
+                        baseIndex += Vector512<ushort>.Count*2;
+                        remaining = remaining.Slice(Vector512<ushort>.Count*2);
+                    }
+                }
+
+                while ((uint)remaining.Length >= (uint)Vector512<ushort>.Count)
+                {
+                    Vector512<ushort> vector = Vector512.Create(remaining);
+                    Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte();
+
+                    if (cmp != Vector512<byte>.Zero)
+                    {
+                        // Skip every other bit
+                        ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555;
+                        do
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(baseIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        } while (mask != 0);
+                    }
+
+                    baseIndex += Vector512<ushort>.Count;
+                    remaining = remaining.Slice(Vector512<ushort>.Count);
+                }
+
+                // Handle the last chunk in a vectorized way also.
+                // We do a whole vector's worth again, but just mask out the bits we've already handled.
+                if (remaining.Length > 0)
+                {
+                    Vector512<ushort> vector = Vector512.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector512<ushort>.Count));
+                    Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte();
+                    int finalIndex = sourceSpanUInt16.Length - Vector512<ushort>.Count;
+                    ulong mask = cmp.ExtractMostSignificantBits() & 0x5555555555555555 & ~((1UL << (Vector512<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                    while (mask != 0)
+                    {
+                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                        sepListBuilder.Append(finalIndex + (int)bitPos);
+                        mask = BitOperations.ResetLowestSetBit(mask);
+                    }
+                }
+                return;
+            }
+            else if (Vector256.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector256<ushort>.Count*2)
+            {
+                Vector256<ushort> v1 = Vector256.Create((ushort)c);
+
+                if (Avx2.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
+                {
+                    // Process in double chunks & check if either chunk is likely to contain matches at once.
+                    // If we get multiple matches in a single chunk, we assume they're likely to be close &
+                    // break out of this logic & use the more optimistic loop below.
+                    // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
+                    Vector256<byte> packedComparand = Vector256.Create((byte)c);
+                    while ((uint)remaining.Length >= (uint)Vector256<ushort>.Count*2)
+                    {
+                        Vector256<ushort> vector1 = Vector256.Create(remaining);
+                        Vector256<ushort> vector2 = Vector256.Create(remaining.Slice(Vector256<ushort>.Count));
+                        var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
+
+                        if (Vector256.EqualsAny(packed, packedComparand))
+                        {
+                            var cmp1 = Vector256.Equals(vector1, v1).AsByte();
+                            var cmp2 = Vector256.Equals(vector2, v1).AsByte();
+
+                            // Same logic as below, but for both vectors.
+                            uint mask1 = cmp1.ExtractMostSignificantBits() & 0x55555555;
+                            uint mask2 = cmp2.ExtractMostSignificantBits() & 0x55555555;
+                            bool shouldBreak = uint.PopCount(mask1) + uint.PopCount(mask2) > 1;
+                            while (mask1 != 0)
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask1) / sizeof(char);
+                                sepListBuilder.Append(baseIndex + (int)bitPos);
+                                mask1 = BitOperations.ResetLowestSetBit(mask1);
+                            }
+                            while (mask2 != 0)
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask2) / sizeof(char);
+                                sepListBuilder.Append(baseIndex + (int)bitPos + Vector256<ushort>.Count);
+                                mask2 = BitOperations.ResetLowestSetBit(mask2);
+                            }
+
+                            // Break out of the loop if we had > 1 match:
+                            if (shouldBreak)
+                            {
+                                baseIndex += Vector256<ushort>.Count*2;
+                                remaining = remaining.Slice(Vector256<ushort>.Count*2);
+                                break;
+                            }
+                        }
+
+                        baseIndex += Vector256<ushort>.Count*2;
+                        remaining = remaining.Slice(Vector256<ushort>.Count*2);
+                    }
+                }
+
+                while ((uint)remaining.Length >= (uint)Vector256<ushort>.Count)
+                {
+                    Vector256<ushort> vector = Vector256.Create(remaining);
+                    Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte();
+
+                    if (cmp != Vector256<byte>.Zero)
+                    {
+                        // Skip every other bit
+                        uint mask = cmp.ExtractMostSignificantBits() & 0x55555555;
+                        do
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(baseIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        } while (mask != 0);
+                    }
+
+                    baseIndex += Vector256<ushort>.Count;
+                    remaining = remaining.Slice(Vector256<ushort>.Count);
+                }
+
+                // Handle the last chunk in a vectorized way also.
+                // We do a whole vector's worth again, but just mask out the bits we've already handled.
+                if (remaining.Length > 0)
+                {
+                    Vector256<ushort> vector = Vector256.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector256<ushort>.Count));
+                    Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte();
+                    int finalIndex = sourceSpanUInt16.Length - Vector256<ushort>.Count;
+                    uint mask = cmp.ExtractMostSignificantBits() & 0x55555555 & ~((1u << (Vector256<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                    while (mask != 0)
+                    {
+                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                        sepListBuilder.Append(finalIndex + (int)bitPos);
+                        mask = BitOperations.ResetLowestSetBit(mask);
+                    }
+                }
+                return;
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                Vector128<ushort> v1 = Vector128.Create((ushort)c);
+
+                if (Sse2.IsSupported && PackedSpanHelpers.CanUsePackedIndexOf(c))
+                {
+                    // Process in double chunks & check if either chunk is likely to contain matches at once.
+                    // If we get multiple matches in a single chunk, we assume they're likely to be close &
+                    // break out of this logic & use the more optimistic loop below.
+                    // This is the similar logic to SpanHelpers.Packed.cs's IndexOf.
+                    Vector128<byte> packedComparand = Vector128.Create((byte)c);
+                    while ((uint)remaining.Length >= (uint)Vector128<ushort>.Count*2)
+                    {
+                        Vector128<ushort> vector1 = Vector128.Create(remaining);
+                        Vector128<ushort> vector2 = Vector128.Create(remaining.Slice(Vector128<ushort>.Count));
+                        var packed = PackedSpanHelpers.PackSources(vector1.AsInt16(), vector2.AsInt16());
+
+                        if (Vector128.EqualsAny(packed, packedComparand))
+                        {
+                            var cmp1 = Vector128.Equals(vector1, v1).AsByte();
+                            var cmp2 = Vector128.Equals(vector2, v1).AsByte();
+
+                            // Same logic as below, but for both vectors.
+                            uint mask1 = cmp1.ExtractMostSignificantBits() & 0x5555;
+                            uint mask2 = cmp2.ExtractMostSignificantBits() & 0x5555;
+                            bool shouldBreak = uint.PopCount(mask1) + uint.PopCount(mask2) > 1;
+                            while (mask1 != 0)
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask1) / sizeof(char);
+                                sepListBuilder.Append(baseIndex + (int)bitPos);
+                                mask1 = BitOperations.ResetLowestSetBit(mask1);
+                            }
+                            while (mask2 != 0)
+                            {
+                                uint bitPos = (uint)BitOperations.TrailingZeroCount(mask2) / sizeof(char);
+                                sepListBuilder.Append(baseIndex + (int)bitPos + Vector128<ushort>.Count);
+                                mask2 = BitOperations.ResetLowestSetBit(mask2);
+                            }
+
+                            // Break out of the loop if we had > 1 match:
+                            if (shouldBreak)
+                            {
+                                baseIndex += Vector128<ushort>.Count*2;
+                                remaining = remaining.Slice(Vector128<ushort>.Count*2);
+                                break;
+                            }
+                        }
+
+                        baseIndex += Vector128<ushort>.Count*2;
+                        remaining = remaining.Slice(Vector128<ushort>.Count*2);
+                    }
+                }
+
+                while ((uint)remaining.Length >= (uint)Vector128<ushort>.Count)
+                {
+                    Vector128<ushort> vector = Vector128.Create(remaining);
+                    Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte();
+
+                    if (cmp != Vector128<byte>.Zero)
+                    {
+                        // Skip every other bit
+                        uint mask = cmp.ExtractMostSignificantBits() & 0x5555;
+                        do
+                        {
+                            uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                            sepListBuilder.Append(baseIndex + (int)bitPos);
+                            mask = BitOperations.ResetLowestSetBit(mask);
+                        } while (mask != 0);
+                    }
+
+                    baseIndex += Vector128<ushort>.Count;
+                    remaining = remaining.Slice(Vector128<ushort>.Count);
+                }
+
+                // Handle the last chunk in a vectorized way also.
+                // We do a whole vector's worth again, but just mask out the bits we've already handled.
+                if (remaining.Length > 0)
+                {
+                    Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
+                    Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte();
+                    int finalIndex = sourceSpanUInt16.Length - Vector128<ushort>.Count;
+                    uint mask = cmp.ExtractMostSignificantBits() & 0x5555 & ~((1u << (Vector128<byte>.Count - remaining.Length * sizeof(char))) - 1);
+                    while (mask != 0)
+                    {
+                        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+                        sepListBuilder.Append(finalIndex + (int)bitPos);
+                        mask = BitOperations.ResetLowestSetBit(mask);
+                    }
+                }
+                return;
+            }
+
+            Debug.Fail("We should not be able to reach this point of MakeSeparatorListVectorized.");
         }
 
         private static void MakeSeparatorListVectorized(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
