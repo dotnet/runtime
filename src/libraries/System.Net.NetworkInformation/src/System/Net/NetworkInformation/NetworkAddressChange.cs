@@ -10,6 +10,8 @@ namespace System.Net.NetworkInformation
     public partial class NetworkChange
     {
         /// <summary>Gets a value that indicates whether network change notifications are supported on the current platform.</summary>
+        /// <value><see langword="true" /> if network change notifications are supported on the current platform; otherwise, <see langword="false" />.</value>
+        /// <remarks>A value of <see langword="false" /> indicates that the <see cref="NetworkAddressChanged" /> and <see cref="NetworkAvailabilityChanged" /> events will throw <see cref="PlatformNotSupportedException" />.</remarks>
         public static bool IsSupported => true;
 
         // The list of current address-changed subscribers.
