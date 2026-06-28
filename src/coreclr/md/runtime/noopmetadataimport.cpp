@@ -3,9 +3,9 @@
 //
 // NoopMetadataImport implementation.
 
-#include "common.h"
+#include "stdafx.h"
 
-#ifndef DACCESS_COMPILE
+#ifdef FEATURE_METADATA_IN_VM
 
 // This importer is only used to satisfy the symbol binder's non-null parameter.
 // It is intentionally inert so we do not materialize the module's real public importer.
@@ -44,7 +44,6 @@ public:
             riid == IID_IMetaDataImport2)
         {
             *ppvObject = static_cast<IMetaDataImport2*>(this);
-            AddRef();
             return S_OK;
         }
 
@@ -145,27 +144,16 @@ public:
     STDMETHOD(GetVersionString)(LPWSTR pwzBuf, DWORD ccBufSize, DWORD* pccBufSize) override { NOOPMD_NYI(GetVersionString); }
     STDMETHOD(EnumMethodSpecs)(HCORENUM* phEnum, mdToken tk, mdMethodSpec rMethodSpecs[], ULONG cMax, ULONG* pcMethodSpecs) override { NOOPMD_NYI(EnumMethodSpecs); }
 
-    NoopMetadataImport() = default;
-    ~NoopMetadataImport() = default;
 };
 
 NoopMetadataImport g_NoopMetadataImport;
 } // namespace
 
-STDAPI CreateNoopMetaDataImport2(IMetaDataImport2** ppImport)
+IMetaDataImport2* GetNoopMetaDataImport2()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
 
-    if (ppImport == NULL)
-        return E_POINTER;
-
-    return g_NoopMetadataImport.QueryInterface(IID_IMetaDataImport2, (void**)ppImport);
+    return &g_NoopMetadataImport;
 }
 
-#endif // !DACCESS_COMPILE
+#endif // FEATURE_METADATA_IN_VM

@@ -1811,10 +1811,8 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
                 // (RW) metadata interface: the reader only needs it to satisfy the
                 // binder, and producing the real importer would force this module's
                 // metadata to its locked RW backing store.
-                SafeComHolder<IMetaDataImport2> pNoopImport = NULL;
-                hr = CreateNoopMetaDataImport2(&pNoopImport);
-                if (SUCCEEDED(hr))
-                    hr = pBinder->GetReaderFromStream(pNoopImport, pIStream, &pReader);
+                IMetaDataImport2* pNoopImport = GetNoopMetaDataImport2();
+                hr = pBinder->GetReaderFromStream(pNoopImport, pIStream, &pReader);
             }
         }
         else
@@ -1826,10 +1824,8 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
             // interface for this module: the reader only needs it to satisfy the
             // binder, and obtaining the real importer would force this module's
             // metadata to its locked RW backing store.
-            SafeComHolder<IMetaDataImport2> pNoopImport = NULL;
-            hr = CreateNoopMetaDataImport2(&pNoopImport);
-            if (SUCCEEDED(hr))
-                hr = pBinder->GetReaderForFile(pNoopImport, path, NULL, &pReader);
+            IMetaDataImport2* pNoopImport = GetNoopMetaDataImport2();
+            hr = pBinder->GetReaderForFile(pNoopImport, path, NULL, &pReader);
         }
 
         if (SUCCEEDED(hr))
