@@ -475,13 +475,15 @@ RELEASE_CONFIG_INTEGER(EnableApxZU,                 "EnableApxZU",              
 RELEASE_CONFIG_INTEGER(JitDisableSimdVN, "JitDisableSimdVN", 0)
 #endif
 
-// Default 0, enable the CSE of Constants, including nearby offsets. (target-gated:
-// currently enabled for ARM/ARM64/x86/x64/RISCV64; see optSharedConstantCSEEnabled
-// and optConstantCSEEnabled.)
-// If 1, disable all the CSE of Constants
-// If 2, enable the CSE of Constants but don't combine with nearby offsets. (target-gated)
-// If 3, enable the CSE of Constants including nearby offsets. (all platforms)
-// If 4, enable the CSE of Constants but don't combine with nearby offsets. (all platforms)
+// Default 0, target-gated CSE of constants.
+// On ARM/ARM64/RISCV64 this enables CSE of individual constants and bucketing of
+// nearby-value constants (see optConstantCSEEnabled and optSharedConstantCSEEnabled).
+// On x86/x64 only the nearby-value bucketing is enabled by default; individual
+// constants are not CSE'd because they typically fit as instruction immediates.
+// If 1, disable all the CSE of Constants.
+// If 2, target-gated CSE of constants but without nearby-value bucketing.
+// If 3, enable both CSE of constants and nearby-value bucketing on all platforms.
+// If 4, enable CSE of constants on all platforms without nearby-value bucketing.
 //
 #define CONST_CSE_ENABLE_TARGETED            0
 #define CONST_CSE_DISABLE_ALL                1

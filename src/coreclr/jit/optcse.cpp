@@ -5024,15 +5024,27 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 #else
     const bool centerSharedConst = false;
 #endif
-    if (centerSharedConst && isSharedConst && seenSharedConstValue)
+    if (centerSharedConst && isSharedConst && seenSharedConstValue &&
+        ((cseLclVarTyp == TYP_INT) || (cseLclVarTyp == TYP_LONG)))
     {
-        dsc->csdConstDefValue = bestConstValue + ((maxConstValue - bestConstValue) / 2);
+        const ssize_t centerValue = bestConstValue + ((maxConstValue - bestConstValue) / 2);
+        dsc->csdConstDefValue     = centerValue;
+        // Allocate a VN that matches the centered constant value, so the stored
+        // VN agrees with the actual value of the temp's def node.
+        if (cseLclVarTyp == TYP_LONG)
+        {
+            dsc->csdConstDefVN = m_compiler->vnStore->VNForLongCon(static_cast<INT64>(centerValue));
+        }
+        else
+        {
+            dsc->csdConstDefVN = m_compiler->vnStore->VNForIntCon(static_cast<INT32>(centerValue));
+        }
     }
     else
     {
         dsc->csdConstDefValue = bestConstValue;
+        dsc->csdConstDefVN    = bestVN;
     }
-    dsc->csdConstDefVN = bestVN;
 
 #ifdef DEBUG
     if (m_compiler->verbose)
