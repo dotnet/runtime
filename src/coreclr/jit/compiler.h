@@ -5787,14 +5787,12 @@ private:
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                bool                   exactContextNeedsRuntimeLookup,
                                 CORINFO_CALL_INFO*     callInfo,
                                 InlineContext*         inlinersContext);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       uint8_t                candidateIndex,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                      bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
                                       InlineContext*         inlinersContext,
                                       InlineResult*          inlineResult);
