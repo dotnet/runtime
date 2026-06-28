@@ -105,8 +105,6 @@ namespace System
             };
         }
 
-        public partial bool HasSingleTarget => Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
-
         internal virtual object? GetTarget() => _target;
 
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure)

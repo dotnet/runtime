@@ -68,19 +68,19 @@ namespace System
         public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
 #if !NATIVEAOT
+        protected Delegate CombineImpl(Delegate? d) => Unsafe.As<MulticastDelegate>(this).CombineImpl(d);
+
+        protected Delegate? RemoveImpl(Delegate? d) => Unsafe.As<MulticastDelegate>(this).RemoveImpl(d);
+
+        public Delegate[] GetInvocationList() => Unsafe.As<MulticastDelegate>(this).GetInvocationList();
+
         /// <summary>
         /// Gets a value that indicates whether the <see cref="Delegate"/> has a single invocation target.
         /// </summary>
         /// <value>true if the <see cref="Delegate"/> has a single invocation target.</value>
-        public partial bool HasSingleTarget { get; }
+        public bool HasSingleTarget => Unsafe.As<MulticastDelegate>(this).HasSingleTarget;
 
-        public object? Target => GetTarget();
-
-        public virtual Delegate[] GetInvocationList() => [this];
-
-        protected virtual Delegate CombineImpl(Delegate? d) => throw new MulticastNotSupportedException(SR.Multicast_Combine);
-
-        protected virtual Delegate? RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
+        public object? Target => Unsafe.As<MulticastDelegate>(this).Target;
 #endif
 
         /// <summary>

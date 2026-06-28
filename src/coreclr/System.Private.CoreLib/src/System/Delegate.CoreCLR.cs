@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -18,12 +19,11 @@ namespace System
     public abstract partial class Delegate : ICloneable, ISerializable
     {
         private const nint UnmanagedMarker = -1;
-
         // This is set under 3 circumstances
         // 1. Multicast delegate
         // 2. Method cache
         // 3. Collectible delegates
-        internal object? _invocationList; // Initialized by VM as needed
+        internal object? _helperObject;
 
         // _target is the object we will invoke on; null if static delegate
         // Keep _target and _methodPtr next to each other for optimal delegate invoke performance
@@ -40,9 +40,9 @@ namespace System
         internal nint _methodPtrAux;
 
         // this stores the multicast count, UnmanagedMarker for unmanaged or target MethodDesc
-        internal nint _invocationCount;
+        internal nint _extraData;
 
-        internal bool IsUnmanagedFunctionPtr => _invocationCount == UnmanagedMarker;
+        internal bool IsUnmanagedFunctionPtr => _extraData == UnmanagedMarker;
 
         public partial bool HasSingleTarget => _invocationList is null || _invocationList.GetType() != typeof(object[]);
 
@@ -314,14 +314,6 @@ namespace System
             return (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
         }
 
-        internal void StoreDynamicMethod(MethodInfo dynamicMethod)
-        {
-            Debug.Assert(!IsUnmanagedFunctionPtr);
-            Debug.Assert(HasSingleTarget, "dynamic method with invocation list");
-            _invocationList = dynamicMethod;
-        }
-
-        // V1 API.
         [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
@@ -354,7 +346,6 @@ namespace System
             return d;
         }
 
-        // V1 API.
         public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -387,7 +378,6 @@ namespace System
             return d;
         }
 
-        // V1 API.
         public static Delegate? CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -419,7 +409,6 @@ namespace System
             return d == null && throwOnBindFailure ? throw new ArgumentException(SR.Arg_DlgtTargMeth) : d;
         }
 
-        // V2 API.
         public static Delegate? CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
@@ -448,12 +437,8 @@ namespace System
             return d == null && throwOnBindFailure ? throw new ArgumentException(SR.Arg_DlgtTargMeth) : d;
         }
 
-        //
-        // internal implementation details (FCALLS and utilities)
-        //
-
-        // V2 internal API.
-        internal static Delegate CreateDelegateNoSecurityCheck(Type type, object? target, RuntimeMethodHandle method)
+        internal static Delegate CreateDelegateForDynamicMethod(Type type, object? target, RuntimeMethodHandle method,
+            DynamicMethod dynamicMethod)
         {
             ArgumentNullException.ThrowIfNull(type);
 
@@ -466,9 +451,7 @@ namespace System
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
 
-            // Initialize the method...
             Delegate d = InternalAlloc(rtType);
-            // This is a new internal API added in Whidbey.
             // Allow flexible binding options since the target method is
             // unambiguously provided to us.
 
@@ -477,6 +460,8 @@ namespace System
                                     RuntimeMethodHandle.GetDeclaringType(method.GetMethodInfo()),
                                     DelegateBindingFlags.RelaxedSignature))
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);
+
+            d._helperObject = dynamicMethod;
             return d;
         }
 

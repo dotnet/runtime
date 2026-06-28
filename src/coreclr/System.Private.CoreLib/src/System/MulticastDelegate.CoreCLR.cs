@@ -75,7 +75,7 @@ namespace System
 
         // This method will combine this delegate with the passed delegate
         //    to form a new delegate.
-        protected sealed override Delegate CombineImpl(Delegate? follow)
+        internal new Delegate CombineImpl(Delegate? follow)
         {
             if (follow is null)
                 return this;
@@ -195,7 +195,7 @@ namespace System
         //    look at the invocation list.)  If this is found we remove it from
         //    this list and return a new delegate.  If its not found a copy of the
         //    current list is returned.
-        protected sealed override Delegate? RemoveImpl(Delegate? value)
+        internal new Delegate? RemoveImpl(Delegate? value)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
@@ -211,7 +211,7 @@ namespace System
                     int invocationCount = (int)_invocationCount;
                     for (int i = invocationCount; --i >= 0;)
                     {
-                        if (!value!.Equals(invocationList[i]))
+                        if (v.Equals(invocationList[i]))
                         {
                             continue;
                         }
@@ -270,7 +270,7 @@ namespace System
         }
 
         // This method returns the Invocation list of this multicast delegate.
-        public sealed override Delegate[] GetInvocationList()
+        internal new Delegate[] GetInvocationList()
         {
             return TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations) ? ((ReadOnlySpan<Delegate>)invocations).ToArray() : [this];
         }

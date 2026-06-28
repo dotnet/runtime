@@ -320,7 +320,7 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
-    DllImportEntry(Monitor_GetOrCreateLockObject)
+    DllImportEntry(ObjectHeader_GetOrCreateLockObject)
     DllImportEntry(ClrConfig_GetConfigBoolValue)
 #ifdef TARGET_SUNOS
     // Work around illumos.org/issues/17832

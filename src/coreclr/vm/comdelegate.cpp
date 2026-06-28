@@ -1293,7 +1293,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
 
     _ASSERTE((*pRefThis)->GetInvocationList() == NULL);
     if (pLoaderAllocator->IsCollectible())
-        (*pRefThis)->SetInvocationList(pLoaderAllocator->GetExposedObject());
+        (*pRefThis)->SetHelperObject(pLoaderAllocator->GetExposedObject());
 }
 
 // Marshals a delegate to a unmanaged callback.
@@ -1709,7 +1709,7 @@ extern "C" void QCALLTYPE Delegate_Construct(QCall::ObjectHandleOnStack _this, Q
 
     _ASSERTE(refThis->GetInvocationList() == NULL);
     if (pMeth->GetLoaderAllocator()->IsCollectible())
-        refThis->SetInvocationList(pMeth->GetLoaderAllocator()->GetExposedObject());
+        refThis->SetHelperObject(pMeth->GetLoaderAllocator()->GetExposedObject());
 
     // Open delegates.
     if (invokeArgCount == methodArgCount)
@@ -1807,12 +1807,12 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     {
         // this is one of the following:
         // - multicast - _invocationList is Array && _invocationCount != 0
-        // - unmanaged ftn ptr - _invocationList == NULL && _invocationCount == -1
+        // - unmanaged ftn ptr - _invocationList == null && _invocationCount == -1
         // - MethodDesc already cached
 
-        // we return the method desc for the invoke
-        OBJECTREF innerDel = thisDel->GetInvocationList();
-        if ((innerDel != NULL && innerDel->GetMethodTable()->IsArray()) || count == DELEGATE_MARKER_UNMANAGEDFPTR)
+        // we return the method desc for the invoke for the first two cases
+        OBJECTREF invocationList = thisDel->GetInvocationList();
+        if ((invocationList != NULL && invocationList->GetMethodTable()->IsArray()) || count == DELEGATE_MARKER_UNMANAGEDFPTR)
             return FindDelegateInvokeMethod(thisDel->GetMethodTable());
 
         return (MethodDesc*)count;
@@ -1822,11 +1822,11 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
     PCODE code = thisDel->GetMethodPtrAux();
     if (code == NULL)
     {
-        // Must be a normal delegate
+        // Must be a closed delegate
         code = thisDel->GetMethodPtr();
     }
 
-    MethodDesc* pMethodHandle = NonVirtualEntry2MethodDesc(code);
+    MethodDesc *pMethodHandle = NonVirtualEntry2MethodDesc(code);
     _ASSERTE(pMethodHandle);
 
     thisDel->SetInvocationCount((INT_PTR)pMethodHandle);
@@ -2546,8 +2546,8 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     LoaderAllocator *pTargetMethodLoaderAllocator = pTargetMethod->GetLoaderAllocator();
     BOOL isCollectible = pTargetMethodLoaderAllocator->IsCollectible();
     // A method that may be instantiated over a collectible type, and is static will require a delegate
-    // that has the LoaderAllocator of the collectible assembly associated with the instantiation
-    // stored in the _invocationList field.
+    // that has the _helperObject field filled in with the LoaderAllocator of the collectible assembly
+    // associated with the instantiation.
     BOOL fMaybeCollectibleAndStatic = FALSE;
 
     if (isStatic)
@@ -2618,13 +2618,13 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     // Delegate invoke arg count == 1 + target method arg count - 1, 4, 5
     //
     // 1        - CtorClosed (or CtorRTClosed for value-type instance targets needing runtime lookup)
-    // 4        - CtorClosedStatic
-    // 5        - Retbuf static closed form (not differentiated on this fast path; see TODO below)
     // 2, 6     - CtorOpened
     // 3        - CtorVirtualDispatch
+    // 4        - CtorClosedStatic
+    // 5        - Retbuf static closed form (not differentiated on this fast path; see TODO below)
     // Collectible delegates use the corresponding CtorCollectible* variants.
     //
-    // With collectible types, we need to fill the _invocationList field in with a value that represents the LoaderAllocator of the target method
+    // With collectible types, we need to fill the _helperObject field in with a value that represents the LoaderAllocator of the target method
     // if the delegate is not a closed instance delegate.
     //
     // There are two techniques that will work for this.
