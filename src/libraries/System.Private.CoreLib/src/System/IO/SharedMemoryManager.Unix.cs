@@ -419,8 +419,8 @@ namespace System.IO
 
         internal static SafeFileHandle CreateOrOpenFile(string sharedMemoryFilePath, SharedMemoryId id, bool createIfNotExist, out bool createdFile)
         {
-            const int AccessDeniedRetryCount = 10;
-            int accessDeniedRetryCount = 0;
+            const int TransientRetryCount = 10;
+            int transientRetryCount = 0;
 
             while (true)
             {
@@ -446,6 +446,16 @@ namespace System.IO
                         if ((fileStatus.Mode & (int)PermissionsMask_AllUsers_ReadWriteExecute) != (int)PermissionsMask_OwnerUser_ReadWrite)
                         {
                             fd.Dispose();
+
+                            // Another process may have created this file and not yet applied the final mode via fchmod.
+                            // Retry briefly in case this open races with that transient window.
+                            if (transientRetryCount < TransientRetryCount)
+                            {
+                                transientRetryCount++;
+                                Thread.Sleep(1);
+                                continue;
+                            }
+
                             throw new IOException(SR.Format(SR.IO_SharedMemory_FilePermissionsIncorrect, sharedMemoryFilePath, PermissionsMask_OwnerUser_ReadWrite));
                         }
                     }
@@ -453,11 +463,11 @@ namespace System.IO
                     return fd;
                 }
 
-                if (error.Error == Interop.Error.EACCES && accessDeniedRetryCount < AccessDeniedRetryCount)
+                if (error.Error == Interop.Error.EACCES && transientRetryCount < TransientRetryCount)
                 {
                     // During creation, the mode passed to O_CREAT is filtered by process umask. Retry briefly in case
                     // another process is still in the window between creating the file and fixing its permissions.
-                    accessDeniedRetryCount++;
+                    transientRetryCount++;
                     Thread.Sleep(1);
                     continue;
                 }
