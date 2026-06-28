@@ -58,12 +58,6 @@ public class CdacStressTests : CdacStressTestBase
         if (debuggee.SkipGCRefs)
             throw new SkipTestException($"{debuggee.Name} is excluded from GCREFS pending follow-up work.");
 
-        // The GCREFS sub-check has only been validated on architectures where
-        // the cDAC GC root enumeration is at parity with the runtime. x86 has
-        // not been brought up yet (a separate effort); skip there until it is.
-        if (arch == Architecture.X86)
-            throw new SkipTestException("GCREFS stress is not yet validated on x86 (ARGITER stress runs there instead)");
-
         CdacStressResults results = await RunGCRefStressAsync(debuggee.Name);
         AssertAllPassed(results, debuggee.Name);
     }
