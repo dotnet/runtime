@@ -143,7 +143,6 @@ public:
     STDMETHOD(GetPEKind)(DWORD* pdwPEKind, DWORD* pdwMachine) override { NOOPMD_NYI(GetPEKind); }
     STDMETHOD(GetVersionString)(LPWSTR pwzBuf, DWORD ccBufSize, DWORD* pccBufSize) override { NOOPMD_NYI(GetVersionString); }
     STDMETHOD(EnumMethodSpecs)(HCORENUM* phEnum, mdToken tk, mdMethodSpec rMethodSpecs[], ULONG cMax, ULONG* pcMethodSpecs) override { NOOPMD_NYI(EnumMethodSpecs); }
-
 };
 
 NoopMetadataImport g_NoopMetadataImport;
