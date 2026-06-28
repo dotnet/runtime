@@ -5741,8 +5741,11 @@ void Compiler::optEnableArm64AddrModeCseForPairing()
                 ssize_t  offset;
                 GenTree* baseIndex = getBaseIndex(node->AsIndir()->Addr(), &offset);
 
+                // Require a genuine "base + index": a GT_ADD whose second operand is a
+                // register index, not a constant. A "base + constant" address is already
+                // addressable as "[base, #imm]" and must not be treated as an index.
                 if (!baseIndex->OperIs(GT_ADD) || !varTypeIsIntegralOrI(baseIndex) ||
-                    ((baseIndex->gtFlags & GTF_ADDRMODE_NO_CSE) == 0))
+                    baseIndex->gtGetOp2()->IsCnsIntOrI() || ((baseIndex->gtFlags & GTF_ADDRMODE_NO_CSE) == 0))
                 {
                     continue;
                 }
@@ -5790,20 +5793,24 @@ void Compiler::optEnableArm64AddrModeCseForPairing()
 
         int  nonZeroCount = 0;
         bool adjacent     = false;
+
+        // Track offsets already seen so adjacency can be detected in O(n): an offset is
+        // adjacent when "offset +/- accessSize" was seen at an earlier use of this VN.
+        typedef JitHashTable<ssize_t, JitSmallPrimitiveKeyFuncs<ssize_t>, bool> OffsetSet;
+        OffsetSet                                                               seenOffsets(allocator);
         for (int i = 0; i < offsets->Height(); i++)
         {
-            if (offsets->Bottom(i) != 0)
+            ssize_t offset = offsets->Bottom(i);
+            if (offset != 0)
             {
                 nonZeroCount++;
             }
-            for (int j = i + 1; pairable && !adjacent && (j < offsets->Height()); j++)
+            if (pairable && !adjacent &&
+                (seenOffsets.Lookup(offset - accessSize) || seenOffsets.Lookup(offset + accessSize)))
             {
-                ssize_t delta = offsets->Bottom(i) - offsets->Bottom(j);
-                if ((delta == accessSize) || (delta == -accessSize))
-                {
-                    adjacent = true;
-                }
+                adjacent = true;
             }
+            seenOffsets.Set(offset, true, OffsetSet::Overwrite);
         }
 
         if ((nonZeroCount >= 2) || adjacent)

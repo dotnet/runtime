@@ -46,7 +46,8 @@ namespace LdpStpPairing
         {
             // Two non-adjacent, non-zero offsets cannot form a pair, but "src + i" / "dst + i"
             // should still be materialized once and shared (rather than recomputed per access).
-            // The two loads sharing a base register proves the common "add" was CSE'd.
+            // Both loads using the same base register is consistent with the shared "add"
+            // (this does not by itself prove the address is computed only once).
             //ARM64-FULL-LINE: ldr {{q[0-9]+}}, [[[SRCBASE:x[0-9]+]], #0x10]
             //ARM64-FULL-LINE: ldr {{q[0-9]+}}, [[[SRCBASE]], #0x30]
             Vector128<byte> v1 = Vector128.Load(src + i + 16);
