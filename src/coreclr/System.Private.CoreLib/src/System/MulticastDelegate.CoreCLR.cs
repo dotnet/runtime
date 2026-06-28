@@ -204,7 +204,7 @@ namespace System
                 if (_helperObject is not object[] invocationList)
                 {
                     // they are both not real Multicast
-                    if (Equals(value))
+                    if (Equals(v))
                         return null;
                 }
                 else
