@@ -274,16 +274,6 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             TargetCodePointer startAddress = imageBase + function.BeginAddress;
             TargetPointer entryPoint = CodePointerUtils.AddressFromCodePointer(startAddress, Target);
 
-            // Method entryPoint are 4-byte aligned on all architectures. We can exit early for misaligned addresses.
-            //
-            // This is not just an optimization for the cDAC: the createdump path takes the same
-            // bail when enumerating memory for a triage minidump, so the bucket page an odd-address
-            // probe would land in is never captured.
-            if ((entryPoint.Value & 0x1) != 0)
-            {
-                return TargetPointer.Null;
-            }
-
             TargetPointer methodDesc = _hashMap.GetValue(r2rInfo.EntryPointToMethodDescMap, entryPoint);
             if (methodDesc == (ulong)HashMapLookup.SpecialKeys.InvalidEntry)
                 return TargetPointer.Null;
