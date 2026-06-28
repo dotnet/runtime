@@ -75,6 +75,8 @@ enum class AsyncMethodFlags
     Thunk                      = 16,
     // A special thunk to drop return value in covariant return scenario
     ReturnDroppingThunk        = 32,
+    // Note: If adding more flags make sure to modify RequiresAsyncContextSaveAndRestore
+
     // The rest of the methods that are not in any of the above groups.
     // Such methods are not interesting to the Runtime Async feature.
     // Note: Generic T-returning methods are classified as "None", even if T could be a Task.
@@ -115,6 +117,11 @@ inline AsyncMethodFlags operator|(AsyncMethodFlags lhs, AsyncMethodFlags rhs)
 inline AsyncMethodFlags operator&(AsyncMethodFlags lhs, AsyncMethodFlags rhs)
 {
     return (AsyncMethodFlags)((int)lhs & (int)rhs);
+}
+
+inline AsyncMethodFlags operator~(AsyncMethodFlags flags)
+{
+    return (AsyncMethodFlags)~(int)flags;
 }
 
 inline AsyncMethodFlags& operator|=(AsyncMethodFlags& lhs, AsyncMethodFlags rhs)
@@ -2161,7 +2168,7 @@ public:
 
         AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
         // asynccall that is also async variant, but not a thunk
-        return asyncFlags == (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
+        return (asyncFlags & ~AsyncMethodFlags::IsAsyncVariantForValueTask) == (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
     }
 
 #ifdef FEATURE_METADATA_UPDATER
