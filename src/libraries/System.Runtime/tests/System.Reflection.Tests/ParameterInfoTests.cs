@@ -331,6 +331,26 @@ namespace System.Reflection.Tests
             Assert.Equal((byte)0, Convert.ToByte(defaultValue));
         }
 
+        [Fact]
+        public void EnumAPIs_OnOpenGenericEnumType()
+        {
+            Type openEnumType = typeof(NestedGenericEnumContainer<>).GetNestedType("NestedEnum")!;
+
+            Assert.Equal(typeof(byte), openEnumType.GetEnumUnderlyingType());
+
+            string[] names = openEnumType.GetEnumNames();
+            Assert.Equal(new[] { "Zero", "One" }, names);
+
+            Array values = openEnumType.GetEnumValuesAsUnderlyingType();
+            Assert.Equal(new byte[] { 0, 1 }, values);
+
+            Assert.Equal("Zero", openEnumType.GetEnumName((byte)0));
+            Assert.Equal("One", openEnumType.GetEnumName((byte)1));
+
+            Assert.True(openEnumType.IsEnumDefined("Zero"));
+            Assert.False(openEnumType.IsEnumDefined("Two"));
+        }
+
         [Theory]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithDefaultDateTime", 0, null)]
         public void DefaultValue_broken_on_NETFX(Type type, string name, int index, object? expected)

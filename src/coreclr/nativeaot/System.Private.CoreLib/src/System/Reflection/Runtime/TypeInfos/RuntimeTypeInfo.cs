@@ -411,6 +411,54 @@ namespace System.Reflection.Runtime.TypeInfos
             return fields[0].FieldType;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "Literal fields on open generic enum types are never trimmed")]
+        public virtual string[] GetEnumNames()
+        {
+            FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            object[] keys = new object[fields.Length];
+            string[] names = new string[fields.Length];
+            for (int i = 0; i < fields.Length; i++)
+            {
+                keys[i] = fields[i].GetRawConstantValue()!;
+                names[i] = fields[i].Name;
+            }
+            Array.Sort(keys, names);
+            return names;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "Literal fields on open generic enum types are never trimmed")]
+        public virtual string? GetEnumName(ulong rawValue)
+        {
+            FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            foreach (FieldInfo field in fields)
+            {
+                IConvertible ic = (IConvertible)field.GetRawConstantValue()!;
+                ulong fieldRawValue = ic.GetTypeCode() == TypeCode.UInt64
+                    ? ic.ToUInt64(null)
+                    : unchecked((ulong)ic.ToInt64(null));
+                if (fieldRawValue == rawValue)
+                    return field.Name;
+            }
+            return null;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "Literal fields on open generic enum types are never trimmed")]
+        public virtual Array GetEnumValuesAsUnderlyingType()
+        {
+            FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            object[] rawValues = new object[fields.Length];
+            for (int i = 0; i < fields.Length; i++)
+                rawValues[i] = fields[i].GetRawConstantValue()!;
+            Array.Sort(rawValues);
+            Type underlyingType = GetEnumUnderlyingType();
+            Array result = Array.CreateInstance(underlyingType, rawValues.Length);
+            rawValues.CopyTo(result, 0);
+            return result;
+        }
+
         public Type MakeArrayType()
         {
             // Do not implement this as a call to MakeArrayType(1) - they are not interchangeable. MakeArrayType() returns a
