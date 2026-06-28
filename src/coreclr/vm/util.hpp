@@ -68,66 +68,6 @@ BOOL inline FitsInU4(uint64_t val)
     return val == (uint64_t)(uint32_t)val;
 }
 
-#if defined(DACCESS_COMPILE)
-#define FastInterlockedCompareExchange InterlockedCompareExchange
-#define FastInterlockedCompareExchangeAcquire InterlockedCompareExchangeAcquire
-#define FastInterlockedCompareExchangeRelease InterlockedCompareExchangeRelease
-#else
-
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-
-FORCEINLINE LONG  FastInterlockedCompareExchange(
-    LONG volatile *Destination,
-    LONG Exchange,
-    LONG Comperand)
-{
-    if (g_arm64_atomics_present)
-    {
-        return (LONG) __casal32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
-    }
-    else
-    {
-        return InterlockedCompareExchange(Destination, Exchange, Comperand);
-    }
-}
-
-FORCEINLINE LONG FastInterlockedCompareExchangeAcquire(
-  IN OUT LONG volatile *Destination,
-  IN LONG Exchange,
-  IN LONG Comperand
-)
-{
-    if (g_arm64_atomics_present)
-    {
-        return (LONG) __casa32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
-    }
-    else
-    {
-        return InterlockedCompareExchangeAcquire(Destination, Exchange, Comperand);
-    }
-}
-
-FORCEINLINE LONG FastInterlockedCompareExchangeRelease(
-  IN OUT LONG volatile *Destination,
-  IN LONG Exchange,
-  IN LONG Comperand
-)
-{
-    if (g_arm64_atomics_present)
-    {
-        return (LONG) __casl32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
-    }
-    else
-    {
-        return InterlockedCompareExchangeRelease(Destination, Exchange, Comperand);
-    }
-}
-
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-
-#endif //defined(DACCESS_COMPILE)
-
-
 //************************************************************************
 // CQuickHeap
 //
