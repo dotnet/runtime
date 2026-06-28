@@ -132,8 +132,6 @@ enum AvailableMetadataType
 
 AvailableMetadataType GetAvailableMetadataType(ModuleHandle handle)
 {
-    Data.Module module = new Data.Module(Target, handle.Address);
-
     AvailableMetadataType flags = AvailableMetadataType.None;
 
     TargetPointer dynamicMetadata = Target.ReadPointer(handle.Address + /* Module::DynamicMetadata offset */);
@@ -142,7 +140,7 @@ AvailableMetadataType GetAvailableMetadataType(ModuleHandle handle)
     {
         flags |= AvailableMetadataType.ReadWriteSavedCopy;
     }
-    else if (UseReadWriteMetadata(module))
+    else if (UseReadWriteMetadata(handle))
     {
         flags |= AvailableMetadataType.ReadWrite;
     }

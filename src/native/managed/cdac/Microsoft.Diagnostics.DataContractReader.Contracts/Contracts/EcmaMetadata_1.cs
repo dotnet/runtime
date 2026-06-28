@@ -26,6 +26,11 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     {
         if (scope == FlushScope.All)
         {
+            foreach ((uint _, MetadataReaderProvider? provider) in _metadata.Values)
+            {
+                provider?.Dispose();
+            }
+
             _metadata.Clear();
             _readOnlyMetadataAddress.Clear();
         }
@@ -60,10 +65,13 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     {
         uint generation = GetMetadataGeneration(handle);
 
-        if (_metadata.TryGetValue(handle, out (uint Generation, MetadataReaderProvider? Provider) cached)
-            && cached.Generation == generation)
+        if (_metadata.TryGetValue(handle, out (uint Generation, MetadataReaderProvider? Provider) cached))
         {
-            return cached.Provider?.GetMetadataReader();
+            if (cached.Generation == generation)
+            {
+                return cached.Provider?.GetMetadataReader();
+            }
+            cached.Provider?.Dispose();
         }
 
         MetadataReaderProvider? provider = GetMetadataProvider(handle);
