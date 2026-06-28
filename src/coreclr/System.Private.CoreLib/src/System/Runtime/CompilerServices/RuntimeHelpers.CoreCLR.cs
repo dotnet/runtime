@@ -1150,7 +1150,7 @@ namespace System.Runtime.CompilerServices
         // not been computed yet or is value-dependent (caller must recompute).
         public bool TryGetValueTypeHashCodeStrategy(out int strategy, out uint fieldOffset, out uint fieldSize)
         {
-            ulong cache = Volatile.Read(ref ValueTypeHashCodeStrategyCache);
+            ulong cache = Interlocked.Read(ref ValueTypeHashCodeStrategyCache);
             if ((cache & (enum_ValueTypeHashCodeStrategyCache_Checked | enum_ValueTypeHashCodeStrategyCache_Cacheable))
                 != (enum_ValueTypeHashCodeStrategyCache_Checked | enum_ValueTypeHashCodeStrategyCache_Cacheable))
             {

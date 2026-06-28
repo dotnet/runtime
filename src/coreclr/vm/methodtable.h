@@ -1392,8 +1392,7 @@ public:
             value |= ((uint64_t)fieldSize & MethodTableAuxiliaryData::ValueTypeHashCodeStrategyCache_SizeMask) << MethodTableAuxiliaryData::ValueTypeHashCodeStrategyCache_SizeShift;
         }
 
-        // A single aligned 64-bit store publishes the fully-formed cache value atomically.
-        VolatileStore(&GetAuxiliaryDataForWrite()->m_valueTypeHashCodeStrategyCache, value);
+        InterlockedExchange64((LONGLONG volatile *)&GetAuxiliaryDataForWrite()->m_valueTypeHashCodeStrategyCache, (LONGLONG)value);
     }
 
     inline void SetIsDependenciesLoaded()
@@ -1855,7 +1854,7 @@ public:
     // Returns MethodTable that GetRestoredSlot get its values from
     MethodTable * GetRestoredSlotMT(DWORD slot);
 
-    // Used to map to "the same" method between instantiations. 
+    // Used to map to "the same" method between instantiations.
     MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD);
     // Maps methods between instantiations + filters/adjusts the result according to the lookup.
     MethodDesc* GetParallelMethodDesc(MethodDesc* pDefMD, AsyncVariantLookup asyncVariantLookup);
