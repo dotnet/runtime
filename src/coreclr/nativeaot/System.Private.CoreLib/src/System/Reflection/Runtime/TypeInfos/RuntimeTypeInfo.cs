@@ -401,6 +401,16 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public virtual Type? GetNullableUnderlyingType() => null;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "The single instance field on enum types is never trimmed")]
+        public virtual Type GetEnumUnderlyingType()
+        {
+            FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (fields is not { Length: 1 })
+                throw new ArgumentException(SR.Argument_InvalidEnum, "enumType");
+            return fields[0].FieldType;
+        }
+
         public Type MakeArrayType()
         {
             // Do not implement this as a call to MakeArrayType(1) - they are not interchangeable. MakeArrayType() returns a

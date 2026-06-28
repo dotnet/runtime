@@ -114,8 +114,6 @@ namespace System
             return new ReadOnlySpan<string>(ret).ToArray();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
-            Justification = "The single instance field on enum types is never trimmed")]
         public override Type GetEnumUnderlyingType()
         {
             if (!IsActualEnum)
@@ -124,12 +122,7 @@ namespace System
             if (_pUnderlyingEEType != null)
                 return Enum.InternalGetUnderlyingType(this);
 
-            // Open generic enum type: no MethodTable available. Discover the underlying
-            // type from the value__ instance field, which every enum is required to have.
-            FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            if (fields is not { Length: 1 })
-                throw new ArgumentException(SR.Argument_InvalidEnum, "enumType");
-            return fields[0].FieldType;
+            return GetRuntimeTypeInfo().GetEnumUnderlyingType();
         }
 
         public override Type? GetNullableUnderlyingType()
