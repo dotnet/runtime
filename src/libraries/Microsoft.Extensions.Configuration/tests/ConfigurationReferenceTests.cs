@@ -482,6 +482,20 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Throws<InvalidOperationException>(() => b.Build());
         }
 
+        [Fact]
+        public void Cycle_IndirectFixed_Throws()
+        {
+            IConfigurationBuilder b = BuilderWith(Dict(
+                    ("A", "ref(B)"),
+                    ("B", "ref(C)"),
+                    ("C", "ref(A)")))
+                .AllowReferences(r => r
+                    .Allow("A", "B")
+                    .Allow("B", "C")
+                    .Allow("C", "A"));
+            Assert.Throws<InvalidOperationException>(() => b.Build());
+        }
+
         // === ConfigurationManager parity ===
 
         [Fact]

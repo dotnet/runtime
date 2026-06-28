@@ -23,13 +23,6 @@ namespace Microsoft.Extensions.Configuration
     // the root's per-provider OnChange registration picks up.
     internal sealed class ReferenceConfigurationProvider : ConfigurationProvider, IDisposable
     {
-        private enum VisitState : byte
-        {
-            Unseen,
-            InProgress,
-            Done,
-        }
-
         private readonly IReadOnlyDictionary<string, ReferenceRule> _concreteRules;
         private readonly List<ReferenceRule> _templateRules;
         private readonly Func<string, ConfigurationExpansion?> _parser;
@@ -104,38 +97,32 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            // Build dependency edges between resolved subjects: when a referenced key falls
-            // under another resolved subject we must materialise that subject first.
+            // Materialise resolved subjects, deferring any whose referenced subjects are not yet
+            // materialised so a dependency's entries are populated before any subject that resolves
+            // through them. Each sweep advances at least one subject; a sweep that cannot advance means
+            // the remaining subjects form a cycle.
             string[] resolvedByLengthDesc = ByLengthDesc(matched.Keys);
-            var dependsOn = new Dictionary<string, List<string>>(matched.Count, StringComparer.OrdinalIgnoreCase);
-            foreach (KeyValuePair<string, ConfigurationExpansion> m in matched)
+            var pending = new List<string>(matched.Keys);
+            while (pending.Count > 0)
             {
-                var deps = new List<string>();
-                foreach (string? referenced in m.Value.ReferencedKeys)
+                bool progress = false;
+                for (int i = pending.Count - 1; i >= 0; i--)
                 {
-                    if (TryFindSubject(resolvedByLengthDesc, referenced!, out string? dep)
-                        && !string.Equals(dep, m.Key, StringComparison.OrdinalIgnoreCase)
-                        && !deps.Contains(dep))
+                    string subject = pending[i];
+                    if (FirstUnresolvedDependency(subject, matched[subject], resolvedByLengthDesc, values) is null)
                     {
-                        deps.Add(dep);
+                        Materialise(subject, matched[subject], values);
+                        pending.RemoveAt(i);
+                        progress = true;
                     }
                 }
-                dependsOn[m.Key] = deps;
-            }
 
-            // Topo-sort subjects so a dependency's entries are populated before any subject
-            // that resolves through them is materialised. Throws on cycles.
-            var order = new List<string>(matched.Count);
-            var colour = new Dictionary<string, VisitState>(matched.Count, StringComparer.OrdinalIgnoreCase);
-            foreach (string s in matched.Keys)
-            {
-                TopoVisit(s, dependsOn, colour, order);
-            }
-
-            // Materialise each resolved subject according to its spec kind.
-            foreach (string subject in order)
-            {
-                Materialise(subject, matched[subject], values);
+                if (!progress)
+                {
+                    string stuck = pending[0];
+                    string revisits = FirstUnresolvedDependency(stuck, matched[stuck], resolvedByLengthDesc, values) ?? stuck;
+                    throw new InvalidOperationException(SR.Format(SR.Error_ReferenceCycle, stuck, revisits));
+                }
             }
 
             Data = values;
@@ -284,28 +271,26 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        private static void TopoVisit(
+        // Returns null when every subject this spec references is already materialised; otherwise the
+        // first referenced subject still awaiting materialisation. Drives both the readiness test for the
+        // materialisation worklist and the subject named when the remaining subjects form a cycle. A direct
+        // self-reference is not treated as a dependency, matching its resolve-to-literal behaviour.
+        private static string? FirstUnresolvedDependency(
             string subject,
-            Dictionary<string, List<string>> dependsOn,
-            Dictionary<string, VisitState> colour,
-            List<string> order)
+            ConfigurationExpansion spec,
+            string[] subjectsByLengthDesc,
+            Dictionary<string, string?> values)
         {
-            colour.TryGetValue(subject, out VisitState state);
-            switch (state)
+            foreach (string? referenced in spec.ReferencedKeys)
             {
-                case VisitState.Done:
-                    return;
-                case VisitState.InProgress:
-                    throw new InvalidOperationException(SR.Format(SR.Error_ReferenceCycle, subject, subject));
+                if (TryFindSubject(subjectsByLengthDesc, referenced!, out string? dep)
+                    && !string.Equals(dep, subject, StringComparison.OrdinalIgnoreCase)
+                    && !values.ContainsKey(dep))
+                {
+                    return dep;
+                }
             }
-
-            colour[subject] = VisitState.InProgress;
-            foreach (string dep in dependsOn[subject])
-            {
-                TopoVisit(dep, dependsOn, colour, order);
-            }
-            colour[subject] = VisitState.Done;
-            order.Add(subject);
+            return null;
         }
 
         private void MirrorSubtree(string target, string subject, Dictionary<string, string?> values)
