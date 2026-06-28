@@ -274,6 +274,17 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             TargetCodePointer startAddress = imageBase + function.BeginAddress;
             TargetPointer entryPoint = CodePointerUtils.AddressFromCodePointer(startAddress, Target);
 
+            // Mirror the legacy DAC fast path in ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage
+            // (src/coreclr/vm/readytoruninfo.cpp).
+            //
+            // This is not just an optimization for the cDAC: the createdump path takes the same
+            // bail when enumerating memory for a triage minidump, so the bucket page an odd-address
+            // probe would land in is never captured. Without this bail the cDAC would fault reading
+            // that not-in-dump page and abort the stack walk (see dotnet/diagnostics#5910).
+            //
+            // Only x86/x64 need this: on arm64 all code (incl. funclets) is 4-byte aligned so an
+            // entry point is never odd, and on arm32 an odd low bit is the Thumb indicator rather
+            // than a funclet marker.
             RuntimeInfoArchitecture arch = Target.Contracts.RuntimeInfo.GetTargetArchitecture();
             if ((arch == RuntimeInfoArchitecture.X64 || arch == RuntimeInfoArchitecture.X86)
                 && (entryPoint.Value & 0x1) != 0)
