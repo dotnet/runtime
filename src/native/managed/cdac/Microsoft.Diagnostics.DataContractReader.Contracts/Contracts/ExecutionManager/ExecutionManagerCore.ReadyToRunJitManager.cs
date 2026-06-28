@@ -188,7 +188,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             {
                 >= 21 => 5,
                 >= 11 => 4,
-                < 11 => 3,
+                 < 11 => 3,
             };
         }
 
