@@ -71,6 +71,13 @@ public enum DataType
     FnPtrTypeDesc,
     FieldDesc,
     DynamicMetadata,
+    MDInternalRW,
+    CLiteWeightStgdbRW,
+    CMiniMdRW,
+    CMiniMdSchema,
+    TableRW,
+    StgPool,
+    StgPoolSeg,
     StressLog,
     StressLogModuleDesc,
     StressLogHeader,
@@ -211,6 +218,7 @@ public enum DataType
     EnCAddedField,
     EnCAddedStaticField,
     EnCSyncBlockInfo,
+    EditAndContinueModule,
     UnorderedArrayBase,
 }
 

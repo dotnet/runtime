@@ -208,6 +208,8 @@ class EditAndContinueModule : public Module
 {
     VPTR_VTABLE_CLASS(EditAndContinueModule, Module)
 
+    friend struct ::cdac_data<EditAndContinueModule>;
+
     // keep track of the number of changes - this is used to apply a version number
     // to an updated function. The version number for a function is the overall edit count,
     // ie the number of times ApplyChanges has been called, not the number of times that
@@ -295,6 +297,12 @@ public:
     {
         return m_applyChangesCount;
     }
+};
+
+template<>
+struct cdac_data<EditAndContinueModule>
+{
+    static constexpr size_t ApplyChangesCount = offsetof(EditAndContinueModule, m_applyChangesCount);
 };
 
 // Information about an instance field value added by EnC

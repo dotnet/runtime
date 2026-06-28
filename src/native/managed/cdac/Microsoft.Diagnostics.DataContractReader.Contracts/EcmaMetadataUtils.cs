@@ -38,4 +38,27 @@ public static class EcmaMetadataUtils
         Debug.Assert((tokenParts & 0xff000000) == 0, $"Token type should not be set in {nameof(tokenParts)}");
         return (uint)TokenType.mdtFieldDef | tokenParts;
     }
+
+    // ECMA-335 II.24.2.1 metadata root:
+    // Signature(4) | MajorVersion(2) | MinorVersion(2) | Reserved(4) | VersionLength(4) | Version[VersionLength]
+    private const ulong MetadataRootVersionLengthOffset = 12;
+    private const ulong MetadataRootVersionStringOffset = 16;
+
+    // Reads the metadata version string from the metadata root (ECMA-335 II.24.2.1) at the given
+    // address. Returns an empty string when the address is null or no version string is present.
+    public static string ReadMetadataVersion(Target target, TargetPointer metadataRootAddress)
+    {
+        if (metadataRootAddress == TargetPointer.Null)
+        {
+            return string.Empty;
+        }
+
+        uint versionLength = target.Read<uint>(metadataRootAddress + MetadataRootVersionLengthOffset);
+        if (versionLength == 0)
+        {
+            return string.Empty;
+        }
+
+        return target.ReadUtf8String(metadataRootAddress + MetadataRootVersionStringOffset);
+    }
 }

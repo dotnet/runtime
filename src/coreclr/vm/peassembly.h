@@ -434,6 +434,12 @@ struct cdac_data<PEAssembly>
 {
     static constexpr size_t PEImage = offsetof(PEAssembly, m_PEImage);
     static constexpr size_t AssemblyBinder = offsetof(PEAssembly, m_pAssemblyBinder);
+    static constexpr size_t MDImportIsRW = offsetof(PEAssembly, m_MDImportIsRW_Debugger_Use_Only);
+#ifdef DACCESS_COMPILE
+    static constexpr size_t MDImport = offsetof(PEAssembly, m_pMDImport_UseAccessor);
+#else
+    static constexpr size_t MDImport = offsetof(PEAssembly, m_pMDImport);
+#endif
 };
 
 typedef ReleaseHolder<PEAssembly> PEAssemblyHolder;

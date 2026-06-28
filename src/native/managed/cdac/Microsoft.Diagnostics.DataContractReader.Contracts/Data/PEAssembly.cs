@@ -8,4 +8,6 @@ internal sealed partial class PEAssembly : IData<PEAssembly>
 {
     [Field] public TargetPointer PEImage { get; }
     [Field] public TargetPointer AssemblyBinder { get; }
+    [Field] public uint MDImportIsRW { get; }
+    [Field] public TargetPointer MDImport { get; }
 }
