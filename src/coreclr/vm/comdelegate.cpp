@@ -2605,7 +2605,7 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     //
     // 1- Instance closed         'this' ptr     target method         null
     // 2- Instance open non-virt  delegate       shuffle thunk         target method
-    // 3- Instance open virtual   delegate       Virtual-stub dispatch method id
+    // 3- Instance open virtual   delegate       Virtual call stub     method id
     // 4- Static closed           first arg      target method         null
     // 5- Static closed (retbuf)  first arg      ThisPtrRetBuf precode null
     // 6- Static open             delegate       shuffle thunk         target method
