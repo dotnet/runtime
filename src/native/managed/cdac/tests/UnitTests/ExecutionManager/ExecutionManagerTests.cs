@@ -45,16 +45,12 @@ public class ExecutionManagerTests
     private static Target CreateTarget(MockExecutionManagerBuilder emBuilder)
     {
         var arch = emBuilder.Builder.TargetTestHelpers.Arch;
-        var runtimeInfo = new Mock<IRuntimeInfo>();
-        runtimeInfo.Setup(r => r.GetTargetArchitecture())
-            .Returns(arch.Is64Bit ? RuntimeInfoArchitecture.X64 : RuntimeInfoArchitecture.X86);
         return new TestPlaceholderTarget.Builder(arch)
             .UseReader(emBuilder.Builder.GetMemoryContext().ReadFromTarget)
             .AddTypes(CreateContractTypes(emBuilder))
             .AddGlobals(emBuilder.Globals)
             .AddContract<IExecutionManager>(version: emBuilder.Version)
             .AddMockContract<IPlatformMetadata>(Mock.Of<IPlatformMetadata>())
-            .AddMockContract(runtimeInfo)
             .Build();
     }
 
