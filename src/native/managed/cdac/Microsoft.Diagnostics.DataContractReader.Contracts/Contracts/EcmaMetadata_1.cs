@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 
@@ -388,9 +389,13 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         Data.MDInternalRW mdRW = target.ProcessedData.GetOrAdd<Data.MDInternalRW>(peAssembly.MDImport);
         Data.CLiteWeightStgdbRW stgdb = target.ProcessedData.GetOrAdd<Data.CLiteWeightStgdbRW>(mdRW.Stgdb);
         Data.CMiniMdRW miniMd = target.ProcessedData.GetOrAdd<Data.CMiniMdRW>(stgdb.MiniMd);
-        Data.CMiniMdSchema schema = target.ProcessedData.GetOrAdd<Data.CMiniMdSchema>(miniMd.Schema);
+        Data.CMiniMdSchema schema = new(target, miniMd.Schema);
 
         int tableCount = checked((int)miniMd.TableCount);
+        if ((uint)tableCount > (uint)MetadataTokens.TableCount)
+        {
+            throw new InvalidOperationException($"Unexpected metadata table count {tableCount}.");
+        }
 
         // ECMA-335 II.24.2.6
         int[] rowCounts = new int[tableCount];
@@ -443,7 +448,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         List<(TargetPointer Data, uint Size)> segments = [];
         long totalSize = 0;
 
-        Data.StgPool head = target.ProcessedData.GetOrAdd<Data.StgPool>(poolAddress);
+        Data.StgPool head = new(target, poolAddress);
         TargetPointer segData = head.SegData;
         uint dataSize = head.DataSize;
         TargetPointer nextSegment = head.NextSegment;
@@ -460,7 +465,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
                 break;
             }
 
-            Data.StgPoolSeg segment = target.ProcessedData.GetOrAdd<Data.StgPoolSeg>(nextSegment);
+            Data.StgPoolSeg segment = new(target, nextSegment);
             segData = segment.SegData;
             dataSize = segment.DataSize;
             nextSegment = segment.NextSegment;

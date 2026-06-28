@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
+using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -43,6 +45,7 @@ public static class EcmaMetadataUtils
     // Signature(4) | MajorVersion(2) | MinorVersion(2) | Reserved(4) | VersionLength(4) | Version[VersionLength]
     private const ulong MetadataRootVersionLengthOffset = 12;
     private const ulong MetadataRootVersionStringOffset = 16;
+    private const uint MaxMetadataVersionLength = 256;
 
     // Reads the metadata version string from the metadata root (ECMA-335 II.24.2.1) at the given
     // address. Returns an empty string when the address is null or no version string is present.
@@ -59,6 +62,15 @@ public static class EcmaMetadataUtils
             return string.Empty;
         }
 
-        return target.ReadUtf8String(metadataRootAddress + MetadataRootVersionStringOffset);
+        int length = (int)Math.Min(versionLength, MaxMetadataVersionLength);
+        Span<byte> buffer = stackalloc byte[length];
+        target.ReadBuffer(metadataRootAddress + MetadataRootVersionStringOffset, buffer);
+        int terminator = buffer.IndexOf((byte)0);
+        if (terminator >= 0)
+        {
+            buffer = buffer[..terminator];
+        }
+
+        return Encoding.UTF8.GetString(buffer);
     }
 }

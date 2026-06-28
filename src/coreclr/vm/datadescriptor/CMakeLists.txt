@@ -12,7 +12,7 @@ target_include_directories(runtime_descriptor_interface INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR})
 
-target_compile_definitions(runtime_descriptor_interface INTERFACE FEATURE_METADATA_INTERNAL_APIS)
+target_compile_definitions(runtime_descriptor_interface INTERFACE -DFEATURE_METADATA_INTERNAL_APIS)
 add_dependencies(runtime_descriptor_interface cee_wks_core)
 generate_data_descriptors(
    LIBRARY_NAME cdac_contract_descriptor

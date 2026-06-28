@@ -160,7 +160,7 @@ bool UseReadWriteMetadata(ModuleHandle handle)
     if (PEAssembly == TargetPointer.Null)
         return false;
 
-    bool isEnCCapable = Target.Read<uint>(handle.Address + /* Module::Flags offset */) != 0;
+    bool isEnCCapable = (Target.Read<uint>(handle.Address + /* Module::Flags offset */) & ModuleFlagsEncCapable) != 0;
     bool hasRWMetadata = Target.Read<uint>(PEAssembly + /* PEAssembly::MDImportIsRW offset */) != 0;
     bool hasMDImport = Target.ReadPointer(PEAssembly + /* PEAssembly::MDImport offset */) != TargetPointer.Null;
     return hasRWMetadata && hasMDImport && isEnCCapable;
