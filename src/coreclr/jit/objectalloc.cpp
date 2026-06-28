@@ -1414,6 +1414,10 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
         {
             MarkLclVarAsDefinitelyStackPointing(lclNum);
         }
+        else if (IsTrackedLocal(lclNum))
+        {
+            AddConnGraphEdgeIndex(LocalToIndex(lclNum), m_unknownSourceIndex);
+        }
 
         // If this was conditionally escaping enumerator, establish a connection between this local
         // and the enumeratorLocal we already allocated. This is needed because we do early rewriting

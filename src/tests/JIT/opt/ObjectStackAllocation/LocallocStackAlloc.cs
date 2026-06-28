@@ -25,9 +25,9 @@ public class LocallocStackAlloc
     static AllocationKind StackAllocation()
     {
         AllocationKind expectedAllocationKind = AllocationKind.Stack;
-        if (GCStressEnabled())
+        if (!OperatingSystem.IsWindows() || GCStressEnabled())
         {
-            Console.WriteLine("GCStress is enabled");
+            Console.WriteLine("Allocation kind is not predictable");
             expectedAllocationKind = AllocationKind.Undefined;
         }
         return expectedAllocationKind;
@@ -36,9 +36,9 @@ public class LocallocStackAlloc
     static AllocationKind HeapAllocation()
     {
         AllocationKind expectedAllocationKind = AllocationKind.Heap;
-        if (GCStressEnabled())
+        if (!OperatingSystem.IsWindows() || GCStressEnabled())
         {
-            Console.WriteLine("GCStress is enabled");
+            Console.WriteLine("Allocation kind is not predictable");
             expectedAllocationKind = AllocationKind.Undefined;
         }
         return expectedAllocationKind;
