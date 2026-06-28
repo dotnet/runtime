@@ -5,6 +5,7 @@ namespace Runtime_129527;
 
 using System.Runtime.Intrinsics.Arm;
 using System.Threading.Tasks;
+using TestLibrary;
 using Xunit;
 
 public struct S1
@@ -30,7 +31,7 @@ public static class Runtime_129527
     private static bool[] s_8 = new bool[1];
     private static long s_13;
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         M0();
