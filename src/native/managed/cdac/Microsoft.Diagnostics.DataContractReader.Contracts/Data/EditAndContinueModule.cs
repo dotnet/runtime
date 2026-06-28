@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.EditAndContinueModule))]
 internal sealed partial class EditAndContinueModule : IData<EditAndContinueModule>
 {
-    [Field] public int ApplyChangesCount { get; private set; }
+    [Field] public int ApplyChangesCount { get; }
 }
