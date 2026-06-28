@@ -1907,13 +1907,12 @@ HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32
     // We filter out multicast and unmanaged here.
 
     DELEGATEREF del = (DELEGATEREF)objRef;
-    INT_PTR invocationCount = del->GetInvocationCount();
-    OBJECTREF invocationList = del->GetInvocationList();
+    INT_PTR extraData = del->GetExtraData();
 
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
-    if (((invocationList == NULL) || !invocationList->GetMethodTable()->IsArray()) && (invocationCount != DELEGATE_MARKER_UNMANAGEDFPTR))
+    if (!COMDelegate::IsTrueMulticastDelegate(del) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
-        MethodDesc* pMD = (MethodDesc*)invocationCount;
+        MethodDesc* pMD = (MethodDesc*)extraData;
         if ((pMD == nullptr) && (del->GetMethodPtrAux() == NULL))
         {
             pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
@@ -1959,13 +1958,12 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
     // We filter out multicast and unmanaged here.
 
     DELEGATEREF del = (DELEGATEREF)objRef;
-    INT_PTR invocationCount = del->GetInvocationCount();
-    OBJECTREF invocationList = del->GetInvocationList();
+    INT_PTR extraData = del->GetExtraData();
 
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
-    if (((invocationList == NULL) || !invocationList->GetMethodTable()->IsArray()) && (invocationCount != DELEGATE_MARKER_UNMANAGEDFPTR))
+    if (!COMDelegate::IsTrueMulticastDelegate(del) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
-        MethodDesc* pMD = (MethodDesc*)invocationCount;
+        MethodDesc* pMD = (MethodDesc*)extraData;
         if ((pMD == nullptr) && (del->GetMethodPtrAux() == NULL))
         {
             pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());

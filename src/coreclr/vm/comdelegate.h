@@ -60,7 +60,7 @@ public:
 
     static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
 
-    static BOOL IsTrueMulticastDelegate(OBJECTREF delegate);
+    static BOOL IsTrueMulticastDelegate(DELEGATEREF delegate);
 
     // Throw if the method violates any usage restrictions
     // for UnmanagedCallersOnlyAttribute.

@@ -163,15 +163,22 @@ internal readonly struct Object_1 : IObject
     {
         Data.Delegate del = _target.ProcessedData.GetOrAdd<Data.Delegate>(address);
 
-        // Classify by invocation count first to handle multicast and unmanaged.
-        // This does not handle open virtual delegates correctly.
-        DelegateType delegateType = DelegateType.Unknown;
-        if (del.InvocationCount.Value == 0)
+        // Check for multicast and unmanaged first.
+        bool isMulticast = false;
+        if (del.HelperObject != TargetPointer.Null)
         {
-            if (del.MethodPtrAux == TargetCodePointer.Null)
-                delegateType = DelegateType.Closed;
-            else
-                delegateType = DelegateType.Open;
+            IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
+
+            TargetPointer mt = GetMethodTableAddress(del.HelperObject);
+            Debug.Assert(mt != TargetPointer.Null);
+
+            isMulticast = typeSystemContract.IsArray(typeSystemContract.GetTypeHandle(mt), out _);
+        }
+
+        DelegateType delegateType = DelegateType.Unknown;
+        if (!isMulticast && del.ExtraData.Value != Data.Delegate.UnmanagedMarker)
+        {
+            delegateType = del.MethodPtrAux == TargetCodePointer.Null ? DelegateType.Closed : DelegateType.Open;
         }
 
         (TargetPointer targetObject, TargetCodePointer targetMethodPtr) = delegateType switch

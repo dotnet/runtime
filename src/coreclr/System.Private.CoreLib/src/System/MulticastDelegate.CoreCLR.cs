@@ -44,7 +44,7 @@ namespace System
                    dd._target == d._target;
         }
 
-        private unsafe MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
+        private unsafe MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount, bool thisIsMultiCastAlready = false)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
             MulticastDelegate result = Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAllocNoChecks(RuntimeHelpers.GetMethodTable(this)));
@@ -62,15 +62,10 @@ namespace System
                 result._methodPtrAux = GetInvokeMethod();
             }
             result._target = result;
-            result._invocationList = invocationList;
-            result._invocationCount = invocationCount;
+            result._helperObject = invocationList;
+            result._extraData = invocationCount;
 
             return result;
-        }
-
-        internal MulticastDelegate NewMulticastDelegate(object[] invocationList, int invocationCount)
-        {
-            return NewMulticastDelegate(invocationList, invocationCount, false);
         }
 
         // This method will combine this delegate with the passed delegate
@@ -87,12 +82,12 @@ namespace System
             MulticastDelegate dFollow = (MulticastDelegate)follow;
             object[]? resultList;
             int followCount = 1;
-            object[]? followList = dFollow._invocationList as object[];
+            object[]? followList = dFollow._helperObject as object[];
             if (followList != null)
-                followCount = (int)dFollow._invocationCount;
+                followCount = (int)dFollow._extraData;
 
             int resultCount;
-            if (_invocationList is not object[] invocationList)
+            if (_helperObject is not object[] invocationList)
             {
                 resultCount = 1 + followCount;
                 resultList = new object[resultCount];
@@ -109,7 +104,7 @@ namespace System
                 return NewMulticastDelegate(resultList, resultCount);
             }
 
-            int invocationCount = (int)_invocationCount;
+            int invocationCount = (int)_extraData;
             resultCount = invocationCount + followCount;
             resultList = null;
             if (resultCount <= invocationList.Length)
@@ -161,8 +156,8 @@ namespace System
 
         private object[] DeleteFromInvocationList(object[] invocationList, int invocationCount, int deleteIndex, int deleteCount)
         {
-            Debug.Assert(_invocationList is object[]);
-            object[]? thisInvocationList = Unsafe.As<object[]>(_invocationList);
+            Debug.Assert(_helperObject is object[]);
+            object[]? thisInvocationList = Unsafe.As<object[]>(_helperObject);
             Debug.Assert(thisInvocationList is not null);
 
             int allocCount = thisInvocationList.Length;
@@ -206,9 +201,15 @@ namespace System
 
             if (v.HasSingleTarget)
             {
-                if (_invocationList is object[] invocationList)
+                if (_helperObject is not object[] invocationList)
                 {
-                    int invocationCount = (int)_invocationCount;
+                    // they are both not real Multicast
+                    if (Equals(value))
+                        return null;
+                }
+                else
+                {
+                    int invocationCount = (int)_extraData;
                     for (int i = invocationCount; --i >= 0;)
                     {
                         if (v.Equals(invocationList[i]))
@@ -226,69 +227,38 @@ namespace System
                         return NewMulticastDelegate(list, invocationCount - 1, true);
                     }
                 }
-                else
-                {
-                    // they are both not real Multicast
-                    if (Equals(value))
-                        return null;
-                }
             }
-            else
+            else if (_helperObject is object[] invocationList)
             {
-                if (_invocationList is object[] invocationList)
+                int invocationCount = (int)_extraData;
+                int vInvocationCount = (int)v._extraData;
+                object[] vInvocationList = (object[])v._helperObject!;
+                for (int i = invocationCount - vInvocationCount; i >= 0; i--)
                 {
-                    int invocationCount = (int)_invocationCount;
-                    int vInvocationCount = (int)v._invocationCount;
-                    object[] vInvocationList = (object[])v._invocationList!;
-                    for (int i = invocationCount - vInvocationCount; i >= 0; i--)
+                    if (!EqualInvocationLists(invocationList, vInvocationList, i, vInvocationCount))
                     {
-                        if (!EqualInvocationLists(invocationList, vInvocationList, i, vInvocationCount))
-                        {
-                            continue;
-                        }
+                        continue;
+                    }
 
-                        switch (invocationCount - vInvocationCount)
+                    switch (invocationCount - vInvocationCount)
+                    {
+                        case 0:
+                            // Special case - no values left
+                            return null;
+                        case 1:
+                            // Special case - only one value left, either at the beginning or the end
+                            return (Delegate)invocationList[i != 0 ? 0 : invocationCount - 1];
+                        default:
                         {
-                            case 0:
-                                // Special case - no values left
-                                return null;
-                            case 1:
-                                // Special case - only one value left, either at the beginning or the end
-                                return (Delegate)invocationList[i != 0 ? 0 : invocationCount - 1];
-                            default:
-                            {
-                                object[] list = DeleteFromInvocationList(invocationList, invocationCount, i,
-                                    vInvocationCount);
-                                return NewMulticastDelegate(list, invocationCount - vInvocationCount, true);
-                            }
+                            object[] list = DeleteFromInvocationList(invocationList, invocationCount, i,
+                                vInvocationCount);
+                            return NewMulticastDelegate(list, invocationCount - vInvocationCount, true);
                         }
                     }
                 }
             }
 
             return this;
-        }
-
-        // This method returns the Invocation list of this multicast delegate.
-        internal new Delegate[] GetInvocationList()
-        {
-            return TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations) ? ((ReadOnlySpan<Delegate>)invocations).ToArray() : [this];
-        }
-
-        // Used by delegate invocation list enumerator
-        internal Delegate? TryGetAt(int index)
-        {
-            if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
-            {
-                if ((uint)index < (uint)invocations.Length)
-                    return invocations[index];
-            }
-            else if (index == 0)
-            {
-                return this;
-            }
-
-            return null;
         }
 
         public sealed override bool Equals([NotNullWhen(true)] object? obj) => base.Equals(obj);
@@ -353,7 +323,7 @@ namespace System
         {
             _target = target;
             _methodPtr = (nuint)methodPtr;
-            _invocationList = GCHandle.InternalGet(gchandle);
+            _helperObject = GCHandle.InternalGet(gchandle);
             Debug.Assert(HasSingleTarget);
         }
 
@@ -364,7 +334,7 @@ namespace System
             _target = this;
             _methodPtr = (nuint)shuffleThunk;
             _methodPtrAux = methodPtr;
-            _invocationList = GCHandle.InternalGet(gchandle);
+            _helperObject = GCHandle.InternalGet(gchandle);
             Debug.Assert(HasSingleTarget);
         }
 
@@ -374,7 +344,7 @@ namespace System
         {
             _target = this;
             _methodPtr = (nuint)shuffleThunk;
-            _invocationList = GCHandle.InternalGet(gchandle);
+            _helperObject = GCHandle.InternalGet(gchandle);
             Debug.Assert(HasSingleTarget);
             InitializeVirtualCallStub(methodPtr);
         }

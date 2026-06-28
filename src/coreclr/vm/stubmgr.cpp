@@ -1208,7 +1208,7 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
 
     // If we got here, then we're here b/c we're at the start of a delegate stub
     // need to figure out the kind of delegates we are dealing with.
-    BYTE *pbDelInvocationList = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfInvocationList());
+    BYTE *pbDelInvocationList = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfHelperObject());
 
     LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: invocationList: %p\n", pbDelInvocationList));
 
@@ -1239,9 +1239,9 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
 
         LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: ppbDest: %p *ppbDest:%p\n", ppbDest, *ppbDest));
 
-        BOOL res = StubManager::TraceStub((PCODE) (*ppbDest), trace);
+        BOOL res = StubManager::TraceStub((PCODE) *ppbDest, trace);
 
-        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: res: %s, result type: %d\n", (res ? "true" : "false"), trace->GetTraceType()));
+        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: res: %s, result type: %d\n", res ? "true" : "false", trace->GetTraceType()));
 
         return res;
     }
@@ -1250,7 +1250,7 @@ BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *tra
     // In order to go to the correct spot, we have just have to fish out
     // slot 0 of the invocation list, and figure out where that's going to,
     // then put a breakpoint there.
-    pbDel = *(BYTE**)(((ArrayBase *)pbDelInvocationList)->GetDataPtr());
+    pbDel = *(BYTE**)((ArrayBase *)pbDelInvocationList)->GetDataPtr();
     return TraceDelegateObject(pbDel, trace);
 }
 

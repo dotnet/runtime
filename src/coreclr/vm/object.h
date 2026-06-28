@@ -1753,9 +1753,9 @@ class DelegateObject : public Object
     friend struct ::cdac_data<DelegateObject>;
 
 public:
-    OBJECTREF GetInvocationList() { LIMITED_METHOD_CONTRACT; return _invocationList; }
-    void SetInvocationList(OBJECTREF invocationList) { WRAPPER_NO_CONTRACT; SetObjectReference(&_invocationList, invocationList); }
-    static int GetOffsetOfInvocationList() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationList); }
+    OBJECTREF GetHelperObject() { LIMITED_METHOD_CONTRACT; return _helperObject; }
+    void SetHelperObject(OBJECTREF helperObject) { WRAPPER_NO_CONTRACT; SetObjectReference(&_helperObject, helperObject); }
+    static int GetOffsetOfHelperObject() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _helperObject); }
 
     OBJECTREF GetTarget() { LIMITED_METHOD_CONTRACT; return _target; }
     void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
@@ -1769,9 +1769,9 @@ public:
     void SetMethodPtrAux(PCODE methodPtrAux) { LIMITED_METHOD_CONTRACT; _methodPtrAux = methodPtrAux; }
     static int GetOffsetOfMethodPtrAux() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodPtrAux); }
 
-    INT_PTR GetInvocationCount() { LIMITED_METHOD_CONTRACT; return _invocationCount; }
-    void SetInvocationCount(INT_PTR invocationCount) { LIMITED_METHOD_CONTRACT; _invocationCount = invocationCount; }
-    static int GetOffsetOfInvocationCount() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationCount); }
+    INT_PTR GetExtraData() { LIMITED_METHOD_CONTRACT; return _extraData; }
+    void SetExtraData(INT_PTR extraData) { LIMITED_METHOD_CONTRACT; _extraData = extraData; }
+    static int GetOffsetOfExtraData() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _extraData); }
 
     // README:
     // If you modify the order of these fields, make sure to update the definition in
@@ -1781,7 +1781,7 @@ private:
     OBJECTREF   _target;
     PCODE       _methodPtr;
     PCODE       _methodPtrAux;
-    INT_PTR     _invocationCount;
+    INT_PTR     _extraData;
 };
 
 #define OFFSETOF__DelegateObject__target       (OBJECT_SIZE /* m_pMethTab */ + TARGET_POINTER_SIZE /* _helperObject */)
@@ -1791,10 +1791,11 @@ private:
 template<>
 struct cdac_data<DelegateObject>
 {
+    static constexpr size_t HelperObject = offsetof(DelegateObject, _helperObject);
     static constexpr size_t Target = offsetof(DelegateObject, _target);
     static constexpr size_t MethodPtr = offsetof(DelegateObject, _methodPtr);
     static constexpr size_t MethodPtrAux = offsetof(DelegateObject, _methodPtrAux);
-    static constexpr size_t InvocationCount = offsetof(DelegateObject, _invocationCount);
+    static constexpr size_t ExtraData = offsetof(DelegateObject, _extraData);
 };
 
 #ifdef USE_CHECKED_OBJECTREFS

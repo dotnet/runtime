@@ -212,10 +212,11 @@ CDAC_TYPE_END(Array)
 
 CDAC_TYPE_BEGIN(Delegate)
 CDAC_TYPE_SIZE(sizeof(DelegateObject))
+CDAC_TYPE_FIELD(Delegate, T_POINTER, HelperObject, cdac_data<DelegateObject>::HelperObject)
 CDAC_TYPE_FIELD(Delegate, T_POINTER, Target, cdac_data<DelegateObject>::Target)
 CDAC_TYPE_FIELD(Delegate, T_POINTER, MethodPtr, cdac_data<DelegateObject>::MethodPtr)
 CDAC_TYPE_FIELD(Delegate, T_POINTER, MethodPtrAux, cdac_data<DelegateObject>::MethodPtrAux)
-CDAC_TYPE_FIELD(Delegate, T_NINT, InvocationCount, cdac_data<DelegateObject>::InvocationCount)
+CDAC_TYPE_FIELD(Delegate, T_NINT, ExtraData, cdac_data<DelegateObject>::ExtraData)
 CDAC_TYPE_END(Delegate)
 
 CDAC_TYPE_BEGIN(TypedByRef)

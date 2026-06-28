@@ -220,15 +220,24 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
 {
     Data.Delegate del = new Data.Delegate(target, address);
 
-    // Classify the delegate from its invocation count and auxiliary pointer.
-    // This does not handle open virtual delegates correctly.
-    DelegateType delegateType = target.ReadNInt(address + /* Delegate::InvocationCount offset */) switch
+    // Check for multicast and unmanaged first.
+    bool isMulticast = false;
+    TargetPointer helperObject = target.ReadPointer(address + /* Delegate::HelperObject offset */);
+    if (helperObject == TargetPointer.Null)
     {
-        0  => del.MethodPtrAux == TargetCodePointer.Null
-                ? DelegateType.Closed
-                : DelegateType.Open,
-        _  => DelegateType.Unknown,
-    };
+        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer mt = GetMethodTableAddress(helperObject);
+        Debug.Assert(mt != TargetPointer.Null);
+
+        isMulticast = rts.IsArray(rts.GetTypeHandle(mt), out _);
+    }
+
+    DelegateType delegateType = DelegateType.Unknown;
+    if (!isMulticast && target.ReadNInt(address + /* Delegate::ExtraData offset */) != -1)
+    {
+        delegateType = del.MethodPtrAux == TargetCodePointer.Null ? DelegateType.Closed : DelegateType.Open;
+    }
 
     // Pick the bound object and primary entry point based on the classification.
     // For Closed delegates the target is the bound `this` and MethodPtr is invoked on it.
