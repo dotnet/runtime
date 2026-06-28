@@ -1596,6 +1596,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(SpecialNumTestCases))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Too slow on the single-threaded wasm interpreter (O(n^2) slicing of special numbers).")]
         public static void TestPartialJsonReaderSlicesSpecialNumbers(TestCaseType type, string jsonString)
         {
             _ = type;

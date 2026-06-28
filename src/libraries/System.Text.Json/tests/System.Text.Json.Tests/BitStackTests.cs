@@ -86,6 +86,7 @@ namespace System.Text.Json.Tests
         [OuterLoop]
         [InlineData(3_200_000)]
         [InlineData(int.MaxValue / 32 + 1)]    // 67_108_864
+        [SkipOnPlatform(TestPlatforms.Browser, "Too slow on the single-threaded wasm interpreter (pushes/pops up to 67M bits).")]
         public static void BitStackPushPopLarge(int bitLength)
         {
             BitStack bitStack = default;

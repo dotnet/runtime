@@ -354,6 +354,7 @@ namespace System.Text.Tests
         [Fact]
         [OuterLoop] // this test takes ~10 seconds on modern hardware since it operates over GBs of data
         [ActiveIssue("https://github.com/dotnet/runtime/issues/79883", TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Too slow on the single-threaded wasm interpreter (iterates ~3.2bn chars of UTF-16 input).")]
         public static void GetBytes_Encoding_ReadOnlySequence_IBufferWriter_LargeMultiSegment()
         {
             ReadOnlySequence<char> sequence = GetLargeRepeatingReadOnlySequence<char>(AllScalarsAsUtf16, 1500); // ~ 3.2bn chars of UTF-16 input
@@ -509,6 +510,7 @@ namespace System.Text.Tests
 
         [Fact]
         [OuterLoop] // this test takes ~10 seconds on modern hardware since it operates over GBs of data
+        [SkipOnPlatform(TestPlatforms.Browser, "Too slow on the single-threaded wasm interpreter (iterates ~6.5bn bytes of UTF-8 input).")]
         public static void GetChars_Encoding_ReadOnlySequence_IBufferWriter_LargeMultiSegment()
         {
             ReadOnlySequence<byte> sequence = GetLargeRepeatingReadOnlySequence<byte>(AllScalarsAsUtf8, 1500); // ~ 6.5bn bytes of UTF-8 input

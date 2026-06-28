@@ -5005,6 +5005,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [MemberData(nameof(JsonOptions_TestData))]
         [OuterLoop("Too slow", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Too slow on the single-threaded wasm interpreter (escapes characters across every writer-option combination).")]
         public void EscapeCharacters(JsonWriterOptions options)
         {
             // Do not include surrogate pairs.
@@ -5888,6 +5889,7 @@ namespace System.Text.Json.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [MemberData(nameof(WriteValue_TestData))]
         [OuterLoop("Too slow", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Too slow on the single-threaded wasm interpreter (writes numbers across every writer-option combination).")]
         public void WriteNumbers(JsonWriterOptions options, string keyString)
         {
             var random = new Random(42);
