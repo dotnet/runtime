@@ -215,12 +215,10 @@ namespace TestLibrary
                 // attempt to use pgrep then
                 var pgrepInfo = new ProcessStartInfo("pgrep");
                 pgrepInfo.RedirectStandardOutput = true;
+                pgrepInfo.RedirectStandardError = true;
                 pgrepInfo.Arguments = $"-P {process.Id}";
 
-                using Process pgrep = Process.Start(pgrepInfo)!;
-
-                string[] pidStrings = pgrep.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                pgrep.WaitForExit();
+                string[] pidStrings = Process.RunAndCaptureText(pgrepInfo).StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
                 childPids = new List<int>();
                 foreach (var pidString in pidStrings)
@@ -568,12 +566,11 @@ namespace TestLibrary
             process.StartInfo.FileName = "cmd.exe";
             process.StartInfo.Arguments = $"/c {command}";
             process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
             process.StartInfo.CreateNoWindow = true;
 
             // Start the process and read the output
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit(100); // wait for 100 ms
+            string output = Process.RunAndCaptureText(process.StartInfo).StandardOutput;
 
             // Output the result
             return output;

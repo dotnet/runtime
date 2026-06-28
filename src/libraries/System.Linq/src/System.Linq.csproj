@@ -44,7 +44,6 @@
     <Compile Include="System\Linq\Lookup.cs" />
     <Compile Include="System\Linq\Lookup.SpeedOpt.cs" />
     <Compile Include="System\Linq\Max.cs" />
-    <Compile Include="System\Linq\MaxMin.cs" />
     <Compile Include="System\Linq\Min.cs" />
     <Compile Include="System\Linq\OfType.cs" />
     <Compile Include="System\Linq\OfType.SpeedOpt.cs" />

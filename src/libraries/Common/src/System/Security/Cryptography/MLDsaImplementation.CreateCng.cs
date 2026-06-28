@@ -18,8 +18,8 @@ namespace System.Security.Cryptography
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB;
 
             CngKeyBlobFormat cngBlobFormat =
-                _hasPrivateKey ? CngKeyBlobFormat.PQDsaPrivateBlob :
                 _hasSeed ? CngKeyBlobFormat.PQDsaPrivateSeedBlob :
+                _hasPrivateKey ? CngKeyBlobFormat.PQDsaPrivateBlob :
                 CngKeyBlobFormat.PQDsaPublicBlob;
 
             CngKey key = Interop.BCrypt.BCryptExportKey(
