@@ -9,5 +9,5 @@ internal partial class SoftwareExceptionFrame : IData<SoftwareExceptionFrame>
     [FieldAddress]
     public TargetPointer TargetContext { get; }
 
-    [Field] public TargetPointer ReturnAddress { get; }
+    [Field] public TargetCodePointer ReturnAddress { get; }
 }

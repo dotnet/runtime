@@ -153,6 +153,19 @@ static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVXVNNIINT_V512;
         }
 
+        case InstructionSet_AVXVNNI:
+        case InstructionSet_AVX512v3:
+        {
+            // AvxVnni.V512 lifts under AVX512v3, which carries the EVEX-encoded
+            // VPDPBUSD / VPDPWSSD on ZMM. The class-name dispatch in
+            // lookupInstructionSet has already chosen between AVXVNNI and AVX512v3
+            // based on the available CPUID bits, and the caller's downstream
+            // compSupportsHWIntrinsic(InstructionSet_AVX512v3) check gates the
+            // result correctly: on machines without AVX-512 (e.g. Tiger Lake)
+            // AVX512v3 isn't supported and IsSupported returns false.
+            return InstructionSet_AVX512v3;
+        }
+
         default:
         {
             return InstructionSet_NONE;
@@ -269,7 +282,14 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
             {
                 if (className[7] == '\0')
                 {
-                    return InstructionSet_AVXVNNI;
+                    if (compSupportsHWIntrinsic(InstructionSet_AVXVNNI))
+                    {
+                        return InstructionSet_AVXVNNI;
+                    }
+                    else
+                    {
+                        return InstructionSet_AVX512v3;
+                    }
                 }
                 else if (strncmp(className + 7, "Int", 3) == 0)
                 {
@@ -1523,7 +1543,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
 
             retNode = impSIMDPopStack();
-            SetOpLclRelatedToSIMDIntrinsic(retNode);
             assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
             break;
         }
@@ -1613,7 +1632,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // and the signature return type are both the same TYP_SIMD.
 
                     retNode = impSIMDPopStack();
-                    SetOpLclRelatedToSIMDIntrinsic(retNode);
                     assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
 
                     break;
@@ -1673,7 +1691,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // and the signature return type are both the same TYP_SIMD.
 
                 retNode = impSIMDPopStack();
-                SetOpLclRelatedToSIMDIntrinsic(retNode);
                 assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
 
                 break;
@@ -5658,24 +5675,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             argType      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg5, &argClass)));
             GenTree* op5 = getArgForHWIntrinsic(argType, argClass);
-            SetOpLclRelatedToSIMDIntrinsic(op5);
 
             argType      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg4, &argClass)));
             GenTree* op4 = getArgForHWIntrinsic(argType, argClass);
-            SetOpLclRelatedToSIMDIntrinsic(op4);
 
             argType                 = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
             var_types indexBaseType = getBaseTypeOfSIMDType(argClass);
             GenTree*  op3           = getArgForHWIntrinsic(argType, argClass);
-            SetOpLclRelatedToSIMDIntrinsic(op3);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2     = getArgForHWIntrinsic(argType, argClass);
-            SetOpLclRelatedToSIMDIntrinsic(op2);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
             op1     = getArgForHWIntrinsic(argType, argClass);
-            SetOpLclRelatedToSIMDIntrinsic(op1);
 
             retNode = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic,
                                                                     simdBaseType, simdSize, op1, op2, op3, op4, op5);
