@@ -13,6 +13,7 @@ namespace System.IO.Compression.Tests
     /// Conformance tests for WinZipAesStream (AES-128).
     /// </summary>
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+    [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
     [UnsupportedOSPlatform("browser")]
     public sealed class WinZipAes128StreamConformanceTests : WinZipAesStreamConformanceTests
     {
@@ -23,6 +24,7 @@ namespace System.IO.Compression.Tests
     /// Conformance tests for WinZipAesStream (AES-256).
     /// </summary>
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
+    [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
     [UnsupportedOSPlatform("browser")]
     public sealed class WinZipAes256StreamConformanceTests : WinZipAesStreamConformanceTests
     {

@@ -1088,12 +1088,15 @@ namespace System.IO.Compression.Tests
         public async Task PasswordProtectedZip64_UpdateMode_Throws(bool async)
         {
             using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtectedZIP64.zip"));
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Update);
 
-            await Assert.ThrowsAsync<InvalidDataException>(async () =>
-            {
-                ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Update);
-                await DisposeZipArchive(async, archive);
-            });
+            ZipArchiveEntry entry = archive.Entries[0];
+
+            // The entry reports an uncompressed size larger than Update mode can buffer in memory,
+            // so opening it for update must throw.
+            await Assert.ThrowsAsync<InvalidDataException>(async () => await OpenEntryStream(async, entry, "S3cur3P@ssw0rd"));
+
+            await DisposeZipArchive(async, archive);
         }
 
         [Fact]
