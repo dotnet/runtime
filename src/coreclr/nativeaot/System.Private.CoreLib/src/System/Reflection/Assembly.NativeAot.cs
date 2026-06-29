@@ -49,8 +49,7 @@ namespace System.Reflection
                 // Skip the static constructor invocation machinery so that a GetCallingAssembly
                 // called from a class constructor sees the assembly that triggered the cctor.
                 if (dmi.DeclaringTypeName == $"System.Runtime.CompilerServices.{nameof(ClassConstructorRunner)}"
-                    && dmi.DeclaringAssemblyName?.StartsWith(CoreLib.Name) == true)
-                {
+                    && dmi.DeclaringAssemblyName?.StartsWith(CoreLib.Name, StringComparison.Ordinal) == true)
                     dmi = null;
                     continue;
                 }
