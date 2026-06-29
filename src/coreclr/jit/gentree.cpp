@@ -11593,6 +11593,27 @@ void Compiler::gtUpdateStmtSideEffects(Statement* stmt)
                 tree->gtFlags |= GTF_IND_NONFAULTING;
             }
 
+            // Clear stale order-side-effect bits.
+            // A node whose oper does not itself support ordering side effects,
+            // and whose children do not have ordering side effects, should not have the ordering side effect flag set.
+            if (((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !tree->OperSupportsOrderingSideEffect())
+            {
+                bool childHasOrderingSideEffect = false;
+                tree->VisitOperands([&childHasOrderingSideEffect](GenTree* operand) -> GenTree::VisitResult {
+                    if ((operand->gtFlags & GTF_ORDER_SIDEEFF) != 0)
+                    {
+                        childHasOrderingSideEffect = true;
+                        return GenTree::VisitResult::Abort;
+                    }
+                    return GenTree::VisitResult::Continue;
+                });
+
+                if (!childHasOrderingSideEffect)
+                {
+                    tree->gtFlags &= ~GTF_ORDER_SIDEEFF;
+                }
+            }
+
             // Then update the parent's side effects based on this node.
             if (user != nullptr)
             {
