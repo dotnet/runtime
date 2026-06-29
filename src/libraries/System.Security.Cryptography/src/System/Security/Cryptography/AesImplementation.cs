@@ -20,9 +20,17 @@ namespace System.Security.Cryptography
             if (_keyBox is null)
             {
                 Span<byte> key = stackalloc byte[KeySize / BitsPerByte];
-                RandomNumberGenerator.Fill(key);
-                SetKeyCoreUnchecked(key);
-                Debug.Assert(_keyBox is not null);
+
+                try
+                {
+                    RandomNumberGenerator.Fill(key);
+                    SetKeyCoreUnchecked(key);
+                    Debug.Assert(_keyBox is not null);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(key);
+                }
             }
 
             return _keyBox;
@@ -81,8 +89,16 @@ namespace System.Security.Cryptography
         public sealed override unsafe void GenerateKey()
         {
             Span<byte> key = stackalloc byte[KeySize / BitsPerByte];
-            RandomNumberGenerator.Fill(key);
-            SetKeyCore(key);
+
+            try
+            {
+                RandomNumberGenerator.Fill(key);
+                SetKeyCore(key);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(key);
+            }
         }
 
         protected sealed override void Dispose(bool disposing)
