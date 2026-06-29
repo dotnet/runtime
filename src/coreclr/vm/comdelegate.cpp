@@ -1257,7 +1257,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     }
     else
     {
-        PCODE pTargetCode = NULL;
+        PCODE pTargetCode = (PCODE)NULL;
 
         // For virtual methods we can (and should) virtualize the call now (so we don't have to insert a thunk to do so at runtime).
         // <TODO>
@@ -1819,7 +1819,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
 
     // Next, check for an open delegate
     PCODE code = thisDel->GetMethodPtrAux();
-    if (code == NULL)
+    if (code == (PCODE)NULL)
     {
         // Must be a closed delegate
         code = thisDel->GetMethodPtr();
