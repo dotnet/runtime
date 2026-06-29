@@ -130,6 +130,15 @@ namespace Microsoft.Extensions.Primitives
                 {
                     return;
                 }
+
+                // If the registration has already been disposed, don't register again. This guards re-registration
+                // after disposal: registering on a token that has already changed invokes the callback synchronously, which
+                // would re-run the consumer after disposal.
+                if (Volatile.Read(ref _disposable) == _disposedSentinel)
+                {
+                    return;
+                }
+
                 IDisposable? registration = token.RegisterChangeCallback(static s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
                 if (token.HasChanged && token.ActiveChangeCallbacks)
                 {
