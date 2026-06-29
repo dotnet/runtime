@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -877,9 +878,11 @@ namespace ILCompiler.ObjectWriter
                     // The JIT references the well-known wasm globals (stack pointer / image base /
                     // table base) via WASM_GLOBAL_INDEX_LEB relocations against the WasmWellKnownGlobalSymbolNode.
                     // For R2R these globals live at fixed indices supplied by the runtime loader, so we
-                    // self-resolve them to the node's GlobalIndex here. They are intentionally absent from
-                    // _definedSymbols.
-                    var globalIndex = WasmWellKnownGlobal.FromSymbolName(reloc.SymbolName);
+                    // self-resolve them here to the global indices defined in the WebCIL specification.
+                    if (!_globalSymbolNameToGlobalIndex.TryGetValue(reloc.SymbolName, out var globalIndex))
+                    {
+                        throw new NotImplementedException($"Unexpected global symbol: {reloc.SymbolName}");
+                    }
 
                     fixed (byte* pData = ReadRelocToDataSpan(reloc, relocScratchBuffer, sectionStart))
                     {
@@ -1059,15 +1062,21 @@ namespace ILCompiler.ObjectWriter
             new([]),
             new([]));
 
+        private static readonly FrozenDictionary<Utf8String, int> _globalSymbolNameToGlobalIndex = FrozenDictionary.Create<Utf8String, int>([
+            new(new(WasmWellKnownGlobalSymbolNode.StackPointerName), StackPointerGlobalIndex),
+            new(new(WasmWellKnownGlobalSymbolNode.ImageBaseName),    ImageBaseGlobalIndex),
+            new(new(WasmWellKnownGlobalSymbolNode.TableBaseName),    TableBaseGlobalIndex)
+        ]);
+
         private WasmImport[] CreateDefaultGlobalImports()
         {
             int rtlRestoreContextTagTypeIndex = RegisterSignature(RtlRestoreContextTagSignature);
 
             return
             [
-                new WasmImport("webcil", "stackPointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: (int)WasmWellKnownGlobal.StackPointer),
-                new WasmImport("webcil", "imageBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: (int)WasmWellKnownGlobal.ImageBase),
-                new WasmImport("webcil", "tableBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: (int)WasmWellKnownGlobal.TableBase),
+                new WasmImport("webcil", "stackPointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
+                new WasmImport("webcil", "imageBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
+                new WasmImport("webcil", "tableBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
                 new WasmImport("webcil", "table", import: new WasmTableImportType(), index: 0),
                 new WasmImport("webcil", "rtlRestoreContextTag", import: new WasmTagImportType(rtlRestoreContextTagTypeIndex), index: RtlRestoreContextTagIndex),
             ];

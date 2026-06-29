@@ -8,13 +8,6 @@
 
 #include "codegen.h"
 
-// Well-known wasm globals, referenced by the JIT via WASM_GLOBAL_INDEX_LEB relocations.
-// These fixed indices match the ABI shared with the object writer (see WasmAbiConstants /
-// WasmObjectWriter): 0 = stack pointer, 1 = image base (__memory_base), 2 = table base (__table_base).
-static const unsigned WASM_STACK_POINTER_GLOBAL = 0;
-static const unsigned WASM_IMAGE_BASE_GLOBAL    = 1;
-static const unsigned WASM_TABLE_BASE_GLOBAL    = 2;
-
 // clang-format off
 /*static*/ const BYTE CodeGenInterface::instInfo[] =
 {
@@ -191,7 +184,7 @@ bool emitter::emitInsIsStore(instruction ins)
 
 //------------------------------------------------------------------------
 // emitAddressConstant: Emit a memory address constant, like an indirection cell.
-// This will automatically make use of relocations and the module base (__r2r_start).
+// This will automatically make use of relocations and the module base (imageBase).
 void emitter::emitAddressConstant(void* address)
 {
     // Load our module base from the image base global, then load our address constant, then sum them.
