@@ -51,7 +51,7 @@ internal struct ARM64Context : IPlatformContext
         readonly get => new(Sp);
         set => Sp = value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Pc);
         set => Pc = value.Value;

@@ -80,6 +80,7 @@ internal static class Entrypoints
                         }
 
                         byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)buffer.Length, RequiredAlignment);
+                        NativeMemory.Clear(alignedBuffer, (nuint)buffer.Length);
                         try
                         {
                             int hr = readThreadContext(threadId, contextFlags, (uint)buffer.Length, alignedBuffer, delegateContext);
