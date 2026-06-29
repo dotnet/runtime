@@ -214,20 +214,9 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             if (!typeHandle.IsNull)
                 return RuntimeAugments.GetEnumUnderlyingType(typeHandle);
 
-            // For open generic types (no EEType), read the underlying type from NativeFormat metadata.
-            // Try to find the value__ instance field and read its type from the field signature.
-            foreach (FieldHandle fieldHandle in _typeDefinition.Fields)
-            {
-                Field field = fieldHandle.GetField(_reader);
-                if (0 == (field.Flags & FieldAttributes.Static))
-                {
-                    Handle fieldTypeHandle = field.Signature.GetFieldSignature(_reader).Type;
-                    return fieldTypeHandle.Resolve(_reader, new TypeContext(null, null)).ToType();
-                }
-            }
-
-            // The instance field may be absent (metadata stripped); fall back to inspecting
-            // the DefaultValue HandleType of the first static (enum member) field.
+            // For open generic types (no EEType), infer the underlying type from the DefaultValue
+            // HandleType of the first static (enum member) field. This avoids pulling in type
+            // resolution infrastructure (Handle.Resolve) which would increase binary size.
             foreach (FieldHandle fieldHandle in _typeDefinition.Fields)
             {
                 Field field = fieldHandle.GetField(_reader);
