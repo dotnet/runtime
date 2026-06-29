@@ -17,36 +17,36 @@ namespace CodeGenTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int SbyteFromReadOnlySpan(ReadOnlySpan<byte> span, int index)
         {
-            // X64-NOT: movzx
-            // X64:     movsx
-            // X64-NOT: movzx
+            // X64-NOT: movzx    {{[a-z0-9]+}}, byte  ptr
+            // X64:     movsx    {{[a-z0-9]+}}, byte  ptr
+            // X64-NOT: movzx    {{[a-z0-9]+}}, byte  ptr
             return (sbyte)span[index];
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int ByteFromReadOnlySpan(ReadOnlySpan<sbyte> span, int index)
         {
-            // X64-NOT: movsx
-            // X64:     movzx
-            // X64-NOT: movsx
+            // X64-NOT: movsx    {{[a-z0-9]+}}, byte  ptr
+            // X64:     movzx    {{[a-z0-9]+}}, byte  ptr
+            // X64-NOT: movsx    {{[a-z0-9]+}}, byte  ptr
             return (byte)span[index];
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int ShortFromReadOnlySpan(ReadOnlySpan<ushort> span, int index)
         {
-            // X64-NOT: movzx
-            // X64:     movsx
-            // X64-NOT: movzx
+            // X64-NOT: movzx    {{[a-z0-9]+}}, word  ptr
+            // X64:     movsx    {{[a-z0-9]+}}, word  ptr
+            // X64-NOT: movzx    {{[a-z0-9]+}}, word  ptr
             return (short)span[index];
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int UshortFromReadOnlySpan(ReadOnlySpan<short> span, int index)
         {
-            // X64-NOT: movsx
-            // X64:     movzx
-            // X64-NOT: movsx
+            // X64-NOT: movsx    {{[a-z0-9]+}}, word  ptr
+            // X64:     movzx    {{[a-z0-9]+}}, word  ptr
+            // X64-NOT: movsx    {{[a-z0-9]+}}, word  ptr
             return (ushort)span[index];
         }
 
