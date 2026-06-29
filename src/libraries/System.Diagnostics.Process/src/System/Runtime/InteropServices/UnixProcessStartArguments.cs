@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
 
         /// <summary>
         /// Gets a pointer to the command-line arguments for the process.
-        /// On Unix, this is a pointer to a null-terminated array of pointers to null-terminated UTF-8 byte strings (argv).
+        /// This is a pointer to a null-terminated array of pointers to null-terminated UTF-8 byte strings (argv).
         /// </summary>
         /// <remarks>
         /// The memory pointed to by this property is only valid for the duration of the callback invocation.
