@@ -1048,9 +1048,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      SveSm4_Arm64
 #elif defined(TARGET_WASM)
     { NI_Illegal, NI_Illegal },                                 //      WasmBase
-    { NI_Illegal, NI_Illegal },                                 //      PackedSimd
+    { FIRST_NI_PackedSimd, LAST_NI_PackedSimd },                // PackedSimd
     { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
-    // TODO-WASM: Add PackedSimd intrinsic ranges
 #else
 #error Unsupported platform
 #endif
@@ -1603,6 +1602,173 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
     }
 
     return arg;
+}
+
+//------------------------------------------------------------------------
+// impSimdCreate: Common importer logic for Vector{64,128,256,512}.Create intrinsics.
+//
+// Handles the shared pattern used across xarch, arm64, and wasm:
+//   * sig->numArgs == 1                    -> emit a broadcast/splat node
+//   * sig->numArgs == simdLength, all const-> fold into a single GenTreeVecCon
+//   * otherwise                            -> pack operands into a GT_HWINTRINSIC
+//                                             via IntrinsicNodeBuilder
+//
+// Arguments:
+//    intrinsic    -- the NI_Vector*_Create NamedIntrinsic being imported
+//    sig          -- the call signature (used for numArgs)
+//    simdBaseType -- the base element type of the SIMD vector
+//    retType      -- the SIMD return type
+//    simdSize     -- size in bytes of the SIMD vector
+//
+// Return Value:
+//    The imported GenTree* representing the Create call. Operands are popped
+//    off the importer stack as part of this call.
+//
+GenTree* Compiler::impSimdCreate(
+    NamedIntrinsic intrinsic, CORINFO_SIG_INFO* sig, var_types simdBaseType, var_types retType, unsigned simdSize)
+{
+    if (sig->numArgs == 1)
+    {
+        GenTree* op1 = impStackTop().val;
+
+#ifdef TARGET_WASM
+        if (!(op1->IsIntegralConst() || op1->IsCnsFltOrDbl()))
+        {
+            // Vector*.Create(T) with a non-constant operand is not yet supported on Wasm.
+            // Returning nullptr lets the importer fall back to the managed implementation.
+            return nullptr;
+        }
+#endif
+
+        op1 = impPopStack().val;
+        return gtNewSimdCreateBroadcastNode(retType, op1, simdBaseType, simdSize);
+    }
+
+    uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
+    assert(sig->numArgs == simdLength);
+
+    bool isConstant = true;
+
+    if (varTypeIsFloating(simdBaseType))
+    {
+        for (uint32_t index = 0; index < sig->numArgs; index++)
+        {
+            if (!impStackTop(index).val->IsCnsFltOrDbl())
+            {
+                isConstant = false;
+                break;
+            }
+        }
+    }
+    else
+    {
+        assert(varTypeIsIntegral(simdBaseType));
+
+        for (uint32_t index = 0; index < sig->numArgs; index++)
+        {
+            if (!impStackTop(index).val->IsIntegralConst())
+            {
+                isConstant = false;
+                break;
+            }
+        }
+    }
+
+    if (isConstant)
+    {
+        GenTreeVecCon* vecCon = gtNewVconNode(retType);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    uint8_t cnsVal = static_cast<uint8_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                    vecCon->gtSimdVal.u8[simdLength - 1 - index] = cnsVal;
+                }
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    uint16_t cnsVal = static_cast<uint16_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                    vecCon->gtSimdVal.u16[simdLength - 1 - index] = cnsVal;
+                }
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    uint32_t cnsVal = static_cast<uint32_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                    vecCon->gtSimdVal.u32[simdLength - 1 - index] = cnsVal;
+                }
+                break;
+            }
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            {
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    uint64_t cnsVal = static_cast<uint64_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                    vecCon->gtSimdVal.u64[simdLength - 1 - index] = cnsVal;
+                }
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    float cnsVal = static_cast<float>(impPopStack().val->AsDblCon()->DconValue());
+                    vecCon->gtSimdVal.f32[simdLength - 1 - index] = cnsVal;
+                }
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    double cnsVal = static_cast<double>(impPopStack().val->AsDblCon()->DconValue());
+                    vecCon->gtSimdVal.f64[simdLength - 1 - index] = cnsVal;
+                }
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        return vecCon;
+    }
+#ifdef TARGET_WASM
+    else
+    {
+        // non const Vector128.Create not yet implemented on Wasm
+        return nullptr;
+    }
+#endif
+
+    IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), sig->numArgs);
+
+    for (int i = sig->numArgs - 1; i >= 0; i--)
+    {
+        GenTree* arg = impPopStack().val;
+        nodeBuilder.AddOperand(i, arg);
+    }
+
+    return gtNewSimdHWIntrinsicNode(retType, std::move(nodeBuilder), intrinsic, simdBaseType, simdSize);
 }
 
 //------------------------------------------------------------------------
@@ -2275,6 +2441,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             if ((simdSize != 8) && (simdSize != 16) && (simdSize != SIZE_UNKNOWN))
 #elif defined(TARGET_XARCH)
             if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
+#elif defined(TARGET_WASM)
+            if (simdSize != 16)
 #endif // TARGET_*
             {
                 assert(!"Unexpected SIMD size");
