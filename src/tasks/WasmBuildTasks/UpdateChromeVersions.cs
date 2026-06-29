@@ -111,10 +111,10 @@ public partial class UpdateChromeVersions : MBU.Task
         string existingChromeVersion = GetNodeValue(xmlDoc, $"{nodePrefix}_ChromeVersion");
         if (Version.TryParse(existingChromeVersion, out Version? existing) &&
             Version.TryParse(version.version, out Version? candidate) &&
-            candidate <= existing)
+            candidate < existing)
         {
             Log.LogMessage(MessageImportance.High,
-                $"Skipping {version.os}: candidate version {version.version} is not newer than existing {existingChromeVersion}.");
+                $"Skipping {version.os}: candidate version {version.version} is older than existing {existingChromeVersion}.");
             return false;
         }
 

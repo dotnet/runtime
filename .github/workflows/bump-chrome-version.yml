@@ -28,7 +28,7 @@ jobs:
           make -C src/mono/wasm build-tasks &&
           PATH=$PWD/.dotnet:$PATH dotnet build eng/testing/bump-chrome-version.proj -p:Configuration=Release &&
           git add eng/testing/BrowserVersions.props &&
-          { [ -f eng/testing/bump-chrome-pr.env ] && cat eng/testing/bump-chrome-pr.env >> "$GITHUB_ENV" || true; }
+          if [ -f eng/testing/bump-chrome-pr.env ]; then cat eng/testing/bump-chrome-pr.env >> "$GITHUB_ENV"; fi
 
       - name: Check for changes
         id: check_changes
