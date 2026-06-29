@@ -56,8 +56,8 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Gets or sets the window size to use for Zstandard compression.</summary>
-        /// <value>The window size for compression, expressed as base 2 logarithm.</value>
+        /// <summary>Gets or sets the base-2 logarithm of the window size to use for Zstandard compression.</summary>
+        /// <value>The base-2 logarithm of the window size for compression.</value>
         /// <remarks>
         /// The window size determines how much data the compressor can reference for finding matches.
         /// Larger window sizes can improve compression ratios for large files but require more memory.
@@ -65,7 +65,7 @@ namespace System.IO.Compression
         /// Value 0 indicates the implementation-defined default window size.
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">The value is not 0 and is not between <see cref="MinWindowLog"/> and <see cref="MaxWindowLog"/>.</exception>
-        public int WindowLog
+        public int WindowLog2
         {
             get;
             set

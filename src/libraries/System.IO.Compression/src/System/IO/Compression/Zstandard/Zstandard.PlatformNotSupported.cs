@@ -11,7 +11,7 @@ namespace System.IO.Compression
     {
         public ZstandardDecompressionOptions() => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public ZstandardDictionary? Dictionary { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
-        public int MaxWindowLog { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
+        public int MaxWindowLog2 { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
     }
 
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
@@ -30,7 +30,7 @@ namespace System.IO.Compression
         public static int MinWindowLog => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression);
         public int Quality { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
         public int TargetBlockSize { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
-        public int WindowLog { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
+        public int WindowLog2 { get => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); set => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ZstandardCompression); }
     }
 
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]

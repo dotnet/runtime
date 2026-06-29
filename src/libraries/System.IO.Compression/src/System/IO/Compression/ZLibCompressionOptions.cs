@@ -19,7 +19,7 @@ namespace System.IO.Compression
 
         private int _compressionLevel = -1;
         private ZLibCompressionStrategy _strategy;
-        private int _windowLog = -1;
+        private int _windowLog2 = -1;
 
         /// <summary>
         /// Gets or sets the compression level for a compression stream.
@@ -69,9 +69,9 @@ namespace System.IO.Compression
         /// When used with <see cref="DeflateStream"/> or <see cref="GZipStream"/>, a value of 8 is treated as 9 by the underlying implementation.
         /// -1 requests the default window log which is currently equivalent to 15 (32KB window). The default value is -1.
         /// </remarks>
-        public int WindowLog
+        public int WindowLog2
         {
-            get => _windowLog;
+            get => _windowLog2;
             set
             {
                 if (value != -1)
@@ -80,7 +80,7 @@ namespace System.IO.Compression
                     ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZLibNative.MaxWindowLog, nameof(value));
                 }
 
-                _windowLog = value;
+                _windowLog2 = value;
             }
         }
     }

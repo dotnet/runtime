@@ -588,7 +588,7 @@ namespace System.IO.Compression
         [InlineData(10)]
         public void Decoder_Ctor_DecompressionOptions_Succeeds(int maxWindowLog)
         {
-            ZstandardDecompressionOptions options = new() { MaxWindowLog = maxWindowLog };
+            ZstandardDecompressionOptions options = new() { MaxWindowLog2 = maxWindowLog };
             using ZstandardDecoder decoder = new(options);
 
             byte[] testData = ZstandardTestUtils.CreateTestData(100);

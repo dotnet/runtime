@@ -817,7 +817,7 @@ namespace System.IO.Compression
         [InlineData(10)]
         [InlineData(15)]
         [InlineData(-1)]
-        public void RoundTrip_WithWindowLog(int windowLog)
+        public void RoundTrip_WithWindowLog2(int windowLog2)
         {
             byte[] input = new byte[1024];
             Random.Shared.NextBytes(input);
@@ -825,7 +825,7 @@ namespace System.IO.Compression
             var options = new ZLibCompressionOptions
             {
                 CompressionLevel = 6,
-                WindowLog = windowLog
+                WindowLog2 = windowLog2
             };
 
             using var compressed = new MemoryStream();

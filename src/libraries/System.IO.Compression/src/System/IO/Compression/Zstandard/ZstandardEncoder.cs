@@ -153,9 +153,9 @@ namespace System.IO.Compression
                     SetQuality(_context, compressionOptions.Quality);
                 }
 
-                if (compressionOptions.WindowLog != 0)
+                if (compressionOptions.WindowLog2 != 0)
                 {
-                    SetWindowLog(_context, compressionOptions.WindowLog);
+                    SetWindowLog(_context, compressionOptions.WindowLog2);
                 }
 
                 if (compressionOptions.AppendChecksum)

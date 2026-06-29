@@ -194,7 +194,7 @@ namespace System.IO.Compression
         public ZLibCompressionOptions() { }
         public int CompressionLevel { get { throw null; } set { } }
         public System.IO.Compression.ZLibCompressionStrategy CompressionStrategy { get { throw null; } set { } }
-        public int WindowLog { get { throw null; } set { } }
+        public int WindowLog2 { get { throw null; } set { } }
     }
     public enum ZLibCompressionStrategy
     {
@@ -277,7 +277,7 @@ namespace System.IO.Compression
         public static int MinWindowLog { get { throw null; } }
         public int Quality { get { throw null; } set { } }
         public int TargetBlockSize { get { throw null; } set { } }
-        public int WindowLog { get { throw null; } set { } }
+        public int WindowLog2 { get { throw null; } set { } }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]
@@ -302,7 +302,7 @@ namespace System.IO.Compression
     {
         public ZstandardDecompressionOptions() { }
         public System.IO.Compression.ZstandardDictionary? Dictionary { get { throw null; } set { } }
-        public int MaxWindowLog { get { throw null; } set { } }
+        public int MaxWindowLog2 { get { throw null; } set { } }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("wasi")]

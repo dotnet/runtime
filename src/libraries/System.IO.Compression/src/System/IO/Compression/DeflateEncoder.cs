@@ -88,7 +88,7 @@ namespace System.IO.Compression
         {
             ArgumentNullException.ThrowIfNull(options);
 
-            int windowBits = CompressionFormatHelper.ResolveWindowBits(options.WindowLog, format);
+            int windowBits = CompressionFormatHelper.ResolveWindowBits(options.WindowLog2, format);
 
             int memLevel = options.CompressionLevel == (int)ZLibNative.CompressionLevel.NoCompression
                 ? ZLibNative.Deflate_NoCompressionMemLevel

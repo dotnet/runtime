@@ -93,9 +93,9 @@ namespace System.IO.Compression
 
             try
             {
-                if (decompressionOptions.MaxWindowLog != 0)
+                if (decompressionOptions.MaxWindowLog2 != 0)
                 {
-                    SetWindowLog(decompressionOptions.MaxWindowLog);
+                    SetWindowLog(decompressionOptions.MaxWindowLog2);
                 }
 
                 if (decompressionOptions.Dictionary is not null)
