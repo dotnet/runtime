@@ -50,6 +50,7 @@ namespace System.Reflection
                 // called from a class constructor sees the assembly that triggered the cctor.
                 if (dmi.DeclaringTypeName == $"System.Runtime.CompilerServices.{nameof(ClassConstructorRunner)}"
                     && dmi.DeclaringAssemblyName?.StartsWith(CoreLib.Name, StringComparison.Ordinal) == true)
+                {
                     dmi = null;
                     continue;
                 }
