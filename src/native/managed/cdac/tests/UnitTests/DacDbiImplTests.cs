@@ -626,7 +626,8 @@ public unsafe class DacDbiImplTests
             MethodDefToDesc: TargetPointer.Null,
             TypeDefToMethodTable: TargetPointer.Null,
             TypeRefToMethodTable: TargetPointer.Null,
-            MethodDefToILCodeVersioningState: TargetPointer.Null);
+            MethodDefToILCodeVersioningState: TargetPointer.Null,
+            TableDataOffset: 0);
 
     private static void SetupLookupMap(Mock<ILoader> loader, ulong table, uint token, ulong result)
     {
