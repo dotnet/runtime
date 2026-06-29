@@ -3478,7 +3478,7 @@ namespace Internal.JitInterface
             instArg.constLookup.addr = null;
 
             MethodDesc caller = HandleToObject(callerHandle);
-            Debug.Assert(caller.IsAsyncVariant() && caller.IsAsyncThunk());
+            Debug.Assert(caller.SupportsAsyncVersionCodegen());
 
             MethodDesc taskReturningMethod = caller.GetTargetOfAsyncVariant();
             TypeDesc taskReturnType = taskReturningMethod.Signature.ReturnType;

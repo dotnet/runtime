@@ -150,11 +150,35 @@ namespace ILCompiler
             return method.GetTypicalMethodDefinition() is ReturnDroppingAsyncThunk;
         }
 
+        /// <summary>
+        /// Returns true if the method body is a compiler-generated thunk that forwards to the variant (async or sync) present in IL,
+        /// converting the method from async calling convention to standard, or vice versa.
+        /// </summary>
         public static bool IsAsyncThunk(this MethodDesc method)
         {
-            return (method.IsAsyncVariant() ^ method.IsAsync) || method.IsReturnDroppingAsyncThunk();
+            if (method.IsAsyncVariant() == method.IsAsync)
+                return false;
+
+            if (method.IsAsyncVariant() && !method.IsAsync)
+            {
+                // These methods use the IL present in metadata and the JIT transforms the method to use async calling convention.
+                Debug.Assert(method.SupportsAsyncVersionCodegen());
+                return false;
+            }
+
+            if (!method.IsAsyncVariant() && method.IsAsync)
+                return true;
+
+            if (method.IsReturnDroppingAsyncThunk())
+                return true;
+
+            throw new UnreachableException();
         }
 
+        /// <summary>
+        /// Returns true if the method body is a compiler-generated thunk created for runtime-async machinery.
+        /// This includes thunks that convert to or from async calling convention, as well as resumption stubs.
+        /// </summary>
         public static bool IsCompilerGeneratedILBodyForAsync(this MethodDesc method)
         {
             return method.IsAsyncThunk() || method is AsyncResumptionStub;
