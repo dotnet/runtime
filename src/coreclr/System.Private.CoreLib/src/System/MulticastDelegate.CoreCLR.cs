@@ -212,7 +212,7 @@ namespace System
                     int invocationCount = (int)_extraData;
                     for (int i = invocationCount; --i >= 0;)
                     {
-                        if (v.Equals(invocationList[i]))
+                        if (!v.Equals(invocationList[i]))
                         {
                             continue;
                         }
