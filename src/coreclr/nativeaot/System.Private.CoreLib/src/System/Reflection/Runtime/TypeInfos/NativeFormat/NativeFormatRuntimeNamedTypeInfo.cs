@@ -204,6 +204,47 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             return (this.ToType() == typeof(Nullable<>)) ? RuntimeGenericTypeParameters[0].ToType() : null;
         }
 
+        public sealed override Type GetEnumUnderlyingType()
+        {
+            Debug.Assert(IsActualEnum);
+
+            // Try to find the value__ instance field and read its type from the field signature.
+            // The instance field may be absent (metadata stripped), so fall back to inspecting
+            // the DefaultValue HandleType of the first static (enum member) field.
+            foreach (FieldHandle fieldHandle in _typeDefinition.Fields)
+            {
+                Field field = fieldHandle.GetField(_reader);
+                if (0 == (field.Flags & FieldAttributes.Static))
+                {
+                    Handle typeHandle = field.Signature.GetFieldSignature(_reader).Type;
+                    return typeHandle.Resolve(_reader, new TypeContext(null, null)).ToType();
+                }
+            }
+
+            foreach (FieldHandle fieldHandle in _typeDefinition.Fields)
+            {
+                Field field = fieldHandle.GetField(_reader);
+                if (0 != (field.Flags & FieldAttributes.Static))
+                {
+                    return field.DefaultValue.HandleType switch
+                    {
+                        HandleType.ConstantSByteValue => typeof(sbyte),
+                        HandleType.ConstantByteValue => typeof(byte),
+                        HandleType.ConstantInt16Value => typeof(short),
+                        HandleType.ConstantUInt16Value => typeof(ushort),
+                        HandleType.ConstantInt32Value => typeof(int),
+                        HandleType.ConstantUInt32Value => typeof(uint),
+                        HandleType.ConstantInt64Value => typeof(long),
+                        HandleType.ConstantUInt64Value => typeof(ulong),
+                        _ => typeof(int),
+                    };
+                }
+            }
+
+            // Empty enum with no accessible field metadata — fall back to base class (field-based discovery).
+            return base.GetEnumUnderlyingType();
+        }
+
         internal sealed override void GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags)
         {
             Debug.Assert(IsActualEnum);

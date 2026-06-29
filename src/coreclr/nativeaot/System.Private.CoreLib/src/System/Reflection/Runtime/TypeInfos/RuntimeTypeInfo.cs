@@ -401,7 +401,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public virtual Type? GetNullableUnderlyingType() => null;
 
-        public Type GetEnumUnderlyingType()
+        public virtual Type GetEnumUnderlyingType()
         {
             Debug.Assert(IsActualEnum);
             FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
