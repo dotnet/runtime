@@ -1543,8 +1543,8 @@ void EEJitManager::SetCpuInfo()
 
 #if defined(FEATURE_INTERPRETER) && (defined(TARGET_X86) || defined(TARGET_AMD64))
     // The interpreter only supports 128-bit vectors, so don't enable AVX. The ISA
-    // dependency normalization below then removes AVX2/AVX512 (and the dependent
-    // VectorT256/VectorT512), keeping the reported ISA support aligned with the
+    // dependency normalization below then removes AVX2/AVX512 and the dependent
+    // VectorT256/VectorT512, keeping the reported ISA support aligned with the
     // interpreter-only expectations.
     enableAVX = enableAVX && !interpreterOnly;
 #endif
