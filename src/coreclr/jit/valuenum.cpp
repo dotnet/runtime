@@ -14946,11 +14946,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_Unbox_TypeTest;
             break;
 
-        // A constant within any method.
-        case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
-            vnf = VNF_ManagedThreadId;
-            break;
-
         case CORINFO_HELP_GETREFANY:
             // TODO-CQ: This should really be interpreted as just a struct field reference, in terms of values.
             vnf = VNF_GetRefanyVal;
