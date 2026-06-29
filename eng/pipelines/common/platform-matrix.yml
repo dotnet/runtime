@@ -546,7 +546,7 @@ jobs:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: osx
+      osGroup: browser
       archType: wasm
       targetRid: browser-wasm
       platform: browser_wasm_mac
@@ -555,7 +555,6 @@ jobs:
         hostedOs: osx
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
-        crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # FreeBSD
