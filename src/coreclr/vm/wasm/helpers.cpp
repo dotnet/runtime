@@ -520,12 +520,16 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     PORTABILITY_ASSERT("FaultingExceptionFrame::UpdateRegDisplay_Impl is not implemented on wasm");
 }
 
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
+
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     pRD->IsCallerContextValid = FALSE;
 
     pRD->pCurrentContext->InterpreterIP = GetReturnAddress();
     pRD->pCurrentContext->InterpreterSP = GetSP();
+    // Recover the frame pointer so GC-info readers can locate frame slots.
+    pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer(GetSP());
 
     SyncRegDisplayToCurrentContext(pRD);
 
