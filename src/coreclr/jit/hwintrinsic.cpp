@@ -38,6 +38,21 @@ static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
         /* category */ category \
     },
 #include "hwintrinsiclistarm64.h"
+#elif defined(TARGET_WASM)
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+    { \
+            /* name */ #name, \
+           /* flags */ static_cast<HWIntrinsicFlag>(flag), \
+              /* id */ NI_##isa##_##name, \
+             /* ins */ t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, \
+             /* isa */ InstructionSet_##isa, \
+        /* simdSize */ simdSize, \
+         /* numArgs */ numArgs, \
+         /* intCost */ -1, \
+         /* fltCost */ -1, \
+        /* category */ category \
+    },
+#include "hwintrinsiclistwasm.h"
 #else
 #error Unsupported platform
 #endif
@@ -1033,6 +1048,11 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 //      SveAes_Arm64
     { NI_Illegal, NI_Illegal },                                 //      SveSha3_Arm64
     { NI_Illegal, NI_Illegal },                                 //      SveSm4_Arm64
+#elif defined(TARGET_WASM)
+    { NI_Illegal, NI_Illegal },                                 //      WasmBase
+    { NI_Illegal, NI_Illegal },                                 //      PackedSimd
+    { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
+    // TODO-WASM: Add PackedSimd intrinsic ranges
 #else
 #error Unsupported platform
 #endif
@@ -1055,6 +1075,8 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
         assert((info.simdSize == 8) || (info.simdSize == 16));
 #elif defined(TARGET_XARCH)
         assert((info.simdSize == 16) || (info.simdSize == 32) || (info.simdSize == 64));
+#elif defined(TARGET_WASM)
+        assert(info.simdSize == 16);
 #else
         unreached();
 #endif
@@ -1063,7 +1085,7 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
     if (info.numArgs != -1)
     {
         // We should only have an expected number of arguments
-#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH) || defined(TARGET_WASM)
         assert((info.numArgs >= 0) && (info.numArgs <= 5));
 #else
         unreached();
@@ -1076,6 +1098,7 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
 
 static void ValidateHWIntrinsicIsaRange(CORINFO_InstructionSet isa, const HWIntrinsicIsaRange& isaRange)
 {
+    // Wasm: keep validation enabled once ISA ranges and lists are properly defined/sorted.
     // Both entries should be illegal if either is
     if (isaRange.FirstId == NI_Illegal)
     {
@@ -1520,6 +1543,11 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
         return true;
     }
 #elif defined(TARGET_ARM64)
+    if (!HWIntrinsicInfo::HasImmediateOperand(id))
+    {
+        return false;
+    }
+#elif defined(TARGET_WASM)
     if (!HWIntrinsicInfo::HasImmediateOperand(id))
     {
         return false;
@@ -2172,9 +2200,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         var_types immSimdBaseType = simdBaseType;
         getHWIntrinsicImmTypes(intrinsic, sig, 1, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1, &immLowerBound, &immUpperBound);
-#else
+#elif defined(TARGET_XARCH)
         immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
         hasFullRangeImm = HWIntrinsicInfo::HasFullRangeImm(intrinsic);
+#elif defined(TARGET_WASM)
+        immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(intrinsic, simdBaseType);
 #endif
 
         if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseType, immOp1, mustExpand, immLowerBound, immUpperBound,

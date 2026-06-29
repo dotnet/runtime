@@ -80,7 +80,7 @@ namespace ILCompiler
             public const int Vaes = (1 << 15);
             public const int WaitPkg = (1 << 16);
             public const int X86Serialize = (1 << 17);
-            // (1 << 18) is AVX512Bmm in cpufeatures.h; not mapped here
+            public const int Avx512Bmm = (1 << 18); // NativeAOT does not currently consume this here.
             public const int Avx512Bf16 = (1 << 19);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)

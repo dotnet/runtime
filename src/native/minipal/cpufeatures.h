@@ -30,7 +30,7 @@
 #define XArchIntrinsicConstants_Vaes (1 << 15)
 #define XArchIntrinsicConstants_WaitPkg (1 << 16)
 #define XArchIntrinsicConstants_X86Serialize (1 << 17)
-#define XArchIntrinsicConstants_AVX512Bmm (1 << 18)
+#define XArchIntrinsicConstants_Avx512Bmm (1 << 18)
 #define XArchIntrinsicConstants_Avx512Bf16 (1 << 19)
 #endif // HOST_X86 || HOST_AMD64
 

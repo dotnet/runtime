@@ -13,9 +13,11 @@ internal record struct StressLogData(
     int TotalChunks,
     ulong TickFrequency,
     ulong StartTimestamp,
+    ulong StartTime,
     TargetPointer Logs);
 
 internal record struct ThreadStressLogData(
+    TargetPointer Address,
     TargetPointer NextPointer,
     ulong ThreadId,
     bool WriteHasWrapped,
@@ -52,6 +54,7 @@ Data descriptors used:
 | StressLog | TotalChunks | Total number of chunks across all thread-specific logs |
 | StressLog | TickFrequency | Number of ticks per second for stresslog timestamps |
 | StressLog | StartTimestamp | Timestamp when the stress log was started |
+| StressLog | StartTime | Wall-clock time when the stress log was started (FILETIME, 100ns units since Jan 1 1601) |
 | StressLog | ModuleOffset | Offset of the module in the stress log |
 | StressLog | Modules | Offset of the stress log's module table (if StressLogHasModuleTable is `1`) |
 | StressLog | Logs | Pointer to the thread-specific logs |
@@ -104,6 +107,7 @@ StressLogData GetStressLogData()
         stressLog.TotalChunks,
         stressLog.TickFrequency,
         stressLog.StartTimestamp,
+        stressLog.StartTime,
         stressLog.Logs);
 }
 
@@ -118,6 +122,7 @@ StressLogData GetStressLogData(TargetPointer stressLogPointer)
         stressLog.TotalChunks,
         stressLog.TickFrequency,
         stressLog.StartTimestamp,
+        stressLog.StartTime,
         stressLog.Logs);
 }
 
@@ -151,6 +156,7 @@ IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs)
         }
 
         yield return new ThreadStressLogData(
+            currentPointer,
             threadStressLog.Next,
             threadStressLog.ThreadId,
             threadStressLog.WriteHasWrapped,

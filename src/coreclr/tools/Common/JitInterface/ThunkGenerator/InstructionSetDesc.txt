@@ -26,7 +26,7 @@
 ; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numeric values definitions would be R2R format breaking change.
 
 ; The ISA definitions should also be mapped to `hwintrinsicIsaRangeArray` in hwintrinsic.cpp.
-; NEXT_AVAILABLE_R2R_BIT = 91
+; NEXT_AVAILABLE_R2R_BIT = 93
 
 ; Definition of X86 instruction sets
 definearch         ,X86   ,32Bit                ,X64, X64, X86
@@ -69,7 +69,7 @@ instructionset     ,X86   ,                     ,Avx512Bitalg       ,70 ,AVX512v
 instructionset     ,X86   ,                     ,Avx512Bitalg_VL    ,71 ,AVX512v3              ,avx512v3
 instructionset     ,X86   ,Avx512Vbmi2          ,                   ,77 ,AVX512v3              ,avx512v3
 instructionset     ,X86   ,Avx512Vbmi2_VL       ,                   ,78 ,AVX512v3              ,avx512v3
-instructionset     ,X86   ,                     ,Avx512Vnni         ,79 ,AVX512v3              ,avx512v3
+instructionset     ,X86   ,AvxVnni_V512         ,Avx512Vnni         ,79 ,AVX512v3              ,avx512v3
 instructionset     ,X86   ,                     ,Avx512Vpopcntdq    ,82 ,AVX512v3              ,avx512v3
 instructionset     ,X86   ,                     ,Avx512Vpopcntdq_VL ,83 ,AVX512v3              ,avx512v3
 
@@ -306,3 +306,15 @@ instructionsetgroup  ,armv8.6-a                  ,ARM64    ,armv8.5-a
 
 ; Technically, apple-m1 is v8.5+
 instructionsetgroup  ,apple-m1                   ,ARM64    ,armv8.5-a
+
+
+; Definition of Wasm instruction sets
+definearch           ,Wasm32      ,32Bit               ,        ,        ,Wasm
+
+instructionset       ,Wasm32      ,WasmBase            ,         ,91     ,WasmBase        ,base
+instructionset       ,Wasm32      ,PackedSimd          ,         ,92     ,PackedSimd      ,simd128
+instructionset       ,Wasm32      ,                      ,       ,       ,Vector128       ,
+
+vectorinstructionset ,Wasm32      ,Vector128
+implication          ,Wasm32      ,Vector128   ,PackedSimd
+implication          ,Wasm32      ,PackedSimd  ,WasmBase

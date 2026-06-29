@@ -462,7 +462,7 @@ int minipal_getcpufeatures(void)
             __cpuidex(cpuidInfo, 0x80000021, 0x0);
             if ((cpuidInfo[CPUID_EAX] & (1 << 23)) != 0)
             {
-                result |= XArchIntrinsicConstants_AVX512Bmm;
+                result |= XArchIntrinsicConstants_Avx512Bmm;
             }
         }
 
