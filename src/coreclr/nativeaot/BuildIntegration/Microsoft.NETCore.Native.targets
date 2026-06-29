@@ -192,6 +192,7 @@ The .NET Foundation licenses this file to you under the MIT license.
         <ShimObject>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe$(NativeObjectExt)</ShimObject>
         <ShimCompileRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.cl.rsp</ShimCompileRspFile>
         <ShimLinkRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.link.rsp</ShimLinkRspFile>
+        <ShimResourceFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.res</ShimResourceFile>
         <ShimCompileLinkRspFile>$(NativeIntermediateOutputPath)%(AssemblyName).aggregateexe.rsp</ShimCompileLinkRspFile>
         <ShimBinary>$(NativeOutputPath)%(AssemblyName)$(NativeExecutableExt)</ShimBinary>
         <ShimSymbol>$(NativeOutputPath)%(AssemblyName)$(NativeSymbolExt)</ShimSymbol>
@@ -390,6 +391,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="-exported_symbols_list /dev/null" Condition="'$(OutputType)' == 'exe' and '$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' == ''" />
       <CustomLinkerArg Include="-Wl,--version-script=&quot;$(ExportsFile)&quot;" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
       <CustomLinkerArg Include="-Wl,--export-dynamic" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(ExportsFile)' != ''" />
+      <CustomLinkerArg Include="-Wl,-u,DotNetRuntimeContractDescriptor" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(_targetOS)' != 'browser' and '$(DebuggerSupport)' != 'false'" />
       <CustomLinkerArg Include="-Wl,-dead_strip" Condition="'$(_IsApplePlatform)' == 'true'" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>

@@ -12,6 +12,7 @@
 #include <clrconfignocache.h>
 #include <limits>
 #include <minipal/guid.h>
+#include <limits.h>
 #include <new>
 #include <stdlib.h>
 
@@ -594,48 +595,6 @@ CrashReportEnumerateThreads(
     }
 }
 
-void
-CrashReportConfigure()
-{
-    // Read crash report configuration here rather than in PROCAbortInitialize
-    // because on Android the DOTNET_* environment variables are set via JNI
-    // after PAL_Initialize has already run.
-    CLRConfigNoCache enabledReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
-    DWORD reportEnabled = 0;
-    bool enableCrashReport = enabledReportCfg.IsSet() && enabledReportCfg.TryAsInteger(10, reportEnabled) && reportEnabled == 1;
-
-    CLRConfigNoCache enabledReportOnlyCfg = CLRConfigNoCache::Get("EnableCrashReportOnly", /*noprefix*/ false, &getenv);
-    DWORD reportOnlyEnabled = 0;
-    bool enableCrashReportOnly = enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, reportOnlyEnabled) && reportOnlyEnabled == 1;
-
-    if (!enableCrashReport && !enableCrashReportOnly)
-    {
-        return;
-    }
-
-    if (!EnsureCrashReportStackWalkerState())
-    {
-        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to allocate stack walker storage");
-        return;
-    }
-
-    CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
-    const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
-
-    InProcCrashReporterSettings settings = {};
-    settings.reportPath = dumpName;
-    settings.timeoutSeconds = GetCrashReportTimeoutSeconds();
-    settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
-    settings.walkStackCallback = CrashReportWalkStack;
-    settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
-    settings.moduleInfoCallback = CrashReportGetModuleInfo;
-    settings.frameLimitPerThread = GetCrashReportFrameLimitPerThread();
-
-    // Initialize the reporter and register the PAL signal-path callback last
-    // so PAL only observes the reporter after all VM callbacks are wired in.
-    InProcCrashReportInitialize(settings);
-}
-
 static
 bool
 TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int minValue, int maxValue, int* value)
@@ -670,6 +629,34 @@ TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int minValue, i
     return true;
 }
 
+// This runs during configuration, not from the crash signal path. maxFileCount
+// is a positive retention bound; values outside [1, INT32_MAX] fall back to the
+// default.
+static
+int32_t
+GetCrashReportMaxFileCount()
+{
+    int32_t maxFileCount = CRASHREPORT_DEFAULT_MAX_FILE_COUNT;
+
+    CLRConfigNoCache maxFileCountCfg = CLRConfigNoCache::Get("CrashReportMaxFileCount", /*noprefix*/ false, &getenv);
+    if (!maxFileCountCfg.IsSet())
+    {
+        return maxFileCount;
+    }
+
+    int configuredMaxFileCount;
+    if (TryParseCrashReportConfigurationInteger(maxFileCountCfg, 1, INT32_MAX, &configuredMaxFileCount))
+    {
+        maxFileCount = configuredMaxFileCount;
+    }
+    else
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report using default CrashReportMaxFileCount: invalid configured value");
+    }
+
+    return maxFileCount;
+}
+
 // Parses configuration during CrashReportConfigure initialization. This is not
 // async-signal-safe and must not be called from the crash-reporting path.
 // DOTNET_CrashReportTimeoutSeconds is a seconds-based watchdog knob: unset,
@@ -694,6 +681,54 @@ GetCrashReportTimeoutSeconds()
     }
 
     return timeoutSeconds;
+}
+
+void
+CrashReportConfigure()
+{
+    // Read crash report configuration here rather than in PROCAbortInitialize
+    // because on Android the DOTNET_* environment variables are set via JNI
+    // after PAL_Initialize has already run.
+    CLRConfigNoCache enabledReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
+    DWORD reportEnabled = 0;
+    bool enableCrashReport = enabledReportCfg.IsSet() && enabledReportCfg.TryAsInteger(10, reportEnabled) && reportEnabled == 1;
+
+    CLRConfigNoCache enabledReportOnlyCfg = CLRConfigNoCache::Get("EnableCrashReportOnly", /*noprefix*/ false, &getenv);
+    DWORD reportOnlyEnabled = 0;
+    bool enableCrashReportOnly = enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, reportOnlyEnabled) && reportOnlyEnabled == 1;
+
+    if (!enableCrashReport && !enableCrashReportOnly)
+    {
+        return;
+    }
+
+    if (!EnsureCrashReportStackWalkerState())
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to allocate stack walker storage");
+        return;
+    }
+
+    CLRConfigNoCache crashReportRootPathCfg = CLRConfigNoCache::Get("CrashReportRootPath", /*noprefix*/ false, &getenv);
+    const char* crashReportRootPath = crashReportRootPathCfg.IsSet() ? crashReportRootPathCfg.AsString() : nullptr;
+    bool rootConfigured = crashReportRootPath != nullptr && crashReportRootPath[0] != '\0';
+
+    InProcCrashReporterSettings settings = {};
+    if (rootConfigured)
+    {
+        settings.reportRootPath = crashReportRootPath;
+        settings.maxFileCount = GetCrashReportMaxFileCount();
+    }
+
+    settings.timeoutSeconds = GetCrashReportTimeoutSeconds();
+    settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
+    settings.walkStackCallback = CrashReportWalkStack;
+    settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
+    settings.moduleInfoCallback = CrashReportGetModuleInfo;
+    settings.frameLimitPerThread = GetCrashReportFrameLimitPerThread();
+
+    // Initialize the reporter and register the PAL signal-path callback last
+    // so PAL only observes the reporter after all VM callbacks are wired in.
+    InProcCrashReportInitialize(settings);
 }
 
 #endif // FEATURE_INPROC_CRASHREPORT

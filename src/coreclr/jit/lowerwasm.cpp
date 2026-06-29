@@ -105,7 +105,8 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
 
     BlockRange().Remove(controlExpr);
     BlockRange().InsertBefore(call, controlExpr);
-    GenTree* target = Ind(controlExpr);
+    // The PEP local holds a function pointer that is never null.
+    GenTree* target = m_compiler->gtNewIndir(TYP_I_IMPL, controlExpr, GTF_IND_NONFAULTING);
     BlockRange().InsertBefore(call, target);
 
     call->gtControlExpr = target;
@@ -371,6 +372,21 @@ void Lowering::LowerRotate(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// LowerCkfinite: Lowers a GT_CKFINITE node.
+//
+// Mark the operand as multiply-used since codegen needs to read it twice:
+// once for the finiteness check and once for the produced value.
+//
+// Arguments:
+//    node - the GT_CKFINITE node to be lowered
+//
+void Lowering::LowerCkfinite(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_CKFINITE));
+    SetMultiplyUsed(node->gtGetOp1() DEBUGARG("LowerCkfinite op1 (finiteness check)"));
+}
+
+//------------------------------------------------------------------------
 // LowerIndexAddr: Lowers a GT_INDEX_ADDR node
 //
 // Mark operands that need multiple uses for exception-inducing checks.
@@ -440,6 +456,11 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     if (indirNode->TypeIs(TYP_STRUCT))
     {
         return;
+    }
+
+    if (indirNode->OperIs(GT_IND) && ((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0))
+    {
+        SetMultiplyUsed(indirNode->Addr() DEBUGARG("ContainCheckIndir faulting load Addr"));
     }
 
     // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
@@ -794,4 +815,27 @@ void Lowering::AfterLowerArgsForCall(GenTreeCall* call)
         CallArg* thisArg = call->gtArgs.GetThisArg();
         SetMultiplyUsed(thisArg->GetNode() DEBUGARG("AfterLowerArgsForCall thisArg (null check)"));
     }
+}
+
+// --------------------------------------------------------
+// LowerHWIntrinsic: Lower a hardware intrinsic node.
+//
+// Arguments:
+//    node - The hardware intrinsic node.
+//
+GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
+{
+    NYI_WASM_SIMD("Lowering::LowerHWIntrinsic");
+    return node;
+}
+
+//----------------------------------------------------------------------------------------------
+// ContainCheckHWIntrinsic: Perform containment analysis for a hardware intrinsic node.
+//
+//  Arguments:
+//     node - The hardware intrinsic node.
+//
+void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
+{
+    NYI_WASM_SIMD("Lowering::ContainCheckHWIntrinsic");
 }

@@ -224,10 +224,22 @@ internal static class Emitter
                 break;
             }
             case MemberKind.FieldAddress:
-                sb.AppendLine($"        {{");
-                sb.AppendLine($"            layouts.Select(address, out var t, out var b, out var n, {NameArgs(member)});");
-                sb.AppendLine($"            {member.Name} = b + (ulong)t.Fields[n].Offset;");
-                sb.AppendLine($"        }}");
+                if (member.IsOptional)
+                {
+                    sb.AppendLine($"        {{");
+                    sb.AppendLine($"            if (layouts.TrySelect(address, out var t, out var b, out var n, {NameArgs(member)}))");
+                    sb.AppendLine($"                {member.Name} = b + (ulong)t.Fields[n].Offset;");
+                    sb.AppendLine($"            else");
+                    sb.AppendLine($"                {member.Name} = null;");
+                    sb.AppendLine($"        }}");
+                }
+                else
+                {
+                    sb.AppendLine($"        {{");
+                    sb.AppendLine($"            layouts.Select(address, out var t, out var b, out var n, {NameArgs(member)});");
+                    sb.AppendLine($"            {member.Name} = b + (ulong)t.Fields[n].Offset;");
+                    sb.AppendLine($"        }}");
+                }
                 break;
             case MemberKind.InstanceDataStart:
                 sb.AppendLine($"        {member.Name} = address + layouts.InstanceSize;");

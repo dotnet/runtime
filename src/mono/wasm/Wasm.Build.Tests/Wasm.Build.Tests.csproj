@@ -177,7 +177,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <!-- Wasm.Build.Tests are not a shipping project, PackageVersion will have a version suffix even for release branch, where actual runtime pack version doesn't have version suffix. Copy & paste to Wasi.Build.Tests -->
+      <!-- Wasm.Build.Tests are not a shipping project, PackageVersion will have a version suffix even for release branch, where actual runtime pack version doesn't have version suffix. -->
       <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' != ''">$(ProductVersion)</_RuntimePackCurrentVersion>
       <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' == ''">$(PackageVersion)</_RuntimePackCurrentVersion>
     </PropertyGroup>

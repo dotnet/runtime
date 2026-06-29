@@ -368,17 +368,7 @@ namespace ILCompiler.ObjectWriter
         // TODO-Wasm: for maintability, we should try and push some of this into the dependency graph when we do more stub generation.
         private void RegisterStubIndexAndSignature(WasmFuncType signature)
         {
-            Utf8String signatureKey = signature.GetMangledName(_nodeFactory.NameMangler);
-            if (!_uniqueSignatures.TryGetValue(signatureKey, out int signatureIndex))
-            {
-                signatureIndex = _uniqueSignatures.Count;
-                _uniqueSignatures.Add(signatureKey, signatureIndex);
-
-                SectionWriter typeSectionWriter = GetOrCreateSection(ObjectNodeSection.WasmTypeSection);
-                byte[] encodedSignature = new byte[signature.EncodeSize()];
-                signature.Encode(encodedSignature);
-                typeSectionWriter.EmitData(encodedSignature);
-            }
+            int signatureIndex = RegisterSignature(signature);
 
             SectionWriter functionSectionWriter = GetOrCreateSection(WasmObjectNodeSection.FunctionSection);
             functionSectionWriter.WriteULEB128((ulong)signatureIndex);
@@ -928,31 +918,27 @@ namespace ILCompiler.ObjectWriter
                             break;
                         }
 
-                        // TODO-Wasm: None of the IMAGE_REL type relocs should occur in Wasm
-                        // code, and we should add asserts for this once we've updated the necessary
-                        // dependency nodes to emit the proper reloc type on Wasm.
                         case RelocType.IMAGE_REL_BASED_ABSOLUTE:
                             // No action required
                             break;
 
                         case RelocType.IMAGE_REL_BASED_DIR64:
                         case RelocType.IMAGE_REL_BASED_HIGHLOW:
-                            //       Debug.Assert(betweenWebcilSections);
                             // This is an ImageBase-relative value in PE, but our image base
                             // for Webcil is virtual address 0
+                            Debug.Assert(symbolWebcilSection != null);
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + 0 + addend);
                             break;
                         case RelocType.IMAGE_REL_BASED_ADDR32NB:
-                            //       Debug.Assert(betweenWebcilSections);
+                            Debug.Assert(symbolWebcilSection != null);
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
                             break;
                         case RelocType.IMAGE_REL_BASED_REL32:
                         case RelocType.IMAGE_REL_BASED_RELPTR32:
-                            //      Debug.Assert(betweenWebcilSections);
+                            Debug.Assert(symbolWebcilSection != null);
                             Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset - (virtualRelocOffset + relocLength) + addend);
                             break;
                         case RelocType.IMAGE_REL_FILE_ABSOLUTE:
-                            //       Debug.Assert(betweenWebcilSections && symbolWebcilSection != null);
                             Debug.Assert(symbolWebcilSection != null);
                             long fileOffset = symbolWebcilSection.Header.PointerToRawData + definedSymbol.Value;
                             Relocation.WriteValue(reloc.Type, pData, fileOffset + addend);
@@ -1015,6 +1001,11 @@ namespace ILCompiler.ObjectWriter
                             Relocation.WriteValue(reloc.Type, pData, index + addend);
                             break;
                         }
+                        case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
+                        {
+                            Relocation.WriteValue(reloc.Type, pData, RtlRestoreContextTagIndex + addend);
+                            break;
+                        }
                         default:
                             // TODO-WASM: add other cases as needed;
                             // ignoring other reloc types for now
@@ -1044,19 +1035,49 @@ namespace ILCompiler.ObjectWriter
         public const int StackPointerGlobalIndex = 0;
         public const int ImageBaseGlobalIndex = 1;
         public const int TableBaseGlobalIndex = 2;
+        public const int RtlRestoreContextTagIndex = 0;
 
-        private WasmImport[] _defaultGlobalImports = new[]
+        private static readonly WasmFuncType RtlRestoreContextTagSignature = new(
+            new([]),
+            new([]));
+
+        private WasmImport[] CreateDefaultGlobalImports()
         {
-            new WasmImport("webcil", "stackPointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
-            new WasmImport("webcil", "imageBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
-            new WasmImport("webcil", "tableBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
-            new WasmImport("webcil", "table", import: new WasmTableImportType(), index: 0),
-        };
+            int rtlRestoreContextTagTypeIndex = RegisterSignature(RtlRestoreContextTagSignature);
+
+            return
+            [
+                new WasmImport("webcil", "stackPointer", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
+                new WasmImport("webcil", "imageBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
+                new WasmImport("webcil", "tableBase", import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
+                new WasmImport("webcil", "table", import: new WasmTableImportType(), index: 0),
+                new WasmImport("webcil", "rtlRestoreContextTag", import: new WasmTagImportType(rtlRestoreContextTagTypeIndex), index: RtlRestoreContextTagIndex),
+            ];
+        }
+
+        private int RegisterSignature(WasmFuncType signature)
+        {
+            Utf8String signatureKey = signature.GetMangledName(_nodeFactory.NameMangler);
+            if (_uniqueSignatures.TryGetValue(signatureKey, out int signatureIndex))
+            {
+                return signatureIndex;
+            }
+
+            signatureIndex = _uniqueSignatures.Count;
+            _uniqueSignatures.Add(signatureKey, signatureIndex);
+
+            SectionWriter typeSectionWriter = GetOrCreateSection(ObjectNodeSection.WasmTypeSection);
+            byte[] encodedSignature = new byte[signature.EncodeSize()];
+            signature.Encode(encodedSignature);
+            typeSectionWriter.EmitData(encodedSignature);
+
+            return signatureIndex;
+        }
 
         private void WriteImports()
         {
             int[] assignedImportIndices = new int[(int)WasmExternalKind.Count];
-            foreach (WasmImport import in _defaultGlobalImports)
+            foreach (WasmImport import in CreateDefaultGlobalImports())
             {
                 if (import.Index.HasValue)
                 {

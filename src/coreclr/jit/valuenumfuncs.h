@@ -14,7 +14,7 @@ ValueNumFuncDef(BitCast, 2, false, false)            // Args: 0: VN of the arg, 
 ValueNumFuncDef(ZeroObj, 1, false, false)            // Args: 0: VN of the class handle.
 
 ValueNumFuncDef(PtrToLoc, 2, false, true)            // Pointer (byref) to a local variable.  Args: VN's of: 0: local's number, 1: offset.
-ValueNumFuncDef(PtrToArrElem, 4, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: offset.
+ValueNumFuncDef(PtrToArrElem, 4, false, true)        // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: offset.
 ValueNumFuncDef(PtrToStatic, 3, false, true)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
                                                                    // Args: 0: (VN of) the box's address if the static is "boxed",
                                                                    //       1: (VN of) the field sequence,
@@ -219,7 +219,11 @@ ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((fl
     ValueNumFuncDef(MaxInt_UN, 2, true, false)
 
 #elif defined(TARGET_WASM)
-// No hardware intrinsics on WASM yet.
+#define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
+ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for wasm
+#include "hwintrinsiclistwasm.h"
+#define VNF_HWI_FIRST VNF_HWI_Vector128_As
+#define VNF_HWI_LAST  VNF_HWI_Vector128_op_UnaryPlus
 
 #else
 #error Unsupported platform

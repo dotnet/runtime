@@ -263,6 +263,11 @@ internal static class Parser
             string[]? rawNames = ctorNames ?? GetNamedStringArray(addrAttr, "Names");
             bool usePropertyName = !addrAttr.NamedArguments.Any(kv => kv.Key == "UsePropertyName" && kv.Value.Value is false);
             string descriptorName = rawNames is { Length: > 0 } ? rawNames[0] : prop.Name;
+
+            bool isNullable = prop.Type is INamedTypeSymbol named
+                && named.IsGenericType
+                && named.ConstructedFrom.ToDisplayString() == "System.Nullable<T>";
+
             model = new MemberModel(
                 Name: prop.Name,
                 Kind: MemberKind.FieldAddress,
@@ -270,8 +275,8 @@ internal static class Parser
                 PropertyOrReturnTypeFqn: prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 ReadKind: FieldReadKind.Pointer,
                 DataTypeArgumentFqn: null,
-                IsOptional: false,
-                IsNullable: false,
+                IsOptional: isNullable,
+                IsNullable: isNullable,
                 RawOffset: null,
                 LittleEndian: false,
                 HasSetter: false,

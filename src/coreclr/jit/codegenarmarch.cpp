@@ -333,6 +333,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_BFIZ:
             genCodeForBfiz(treeNode->AsOp());
             break;
+
+        case GT_BFX:
+            genCodeForBfx(treeNode->AsBfm());
+            break;
 #endif // TARGET_ARM64
 
         case GT_JMP:
@@ -1384,7 +1388,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     else
     {
         unsigned immWidth   = emitter::getBitWidth(size); // For ARM64, immWidth will be set to 32 or 64
-        unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal & (immWidth - 1);
+        unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->IconValue() & (immWidth - 1);
         GetEmitter()->emitIns_R_R_I(ins, size, dstReg, operand->GetRegNum(), shiftByImm);
     }
 
@@ -3293,19 +3297,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     assert(params.secondRetSize != EA_BYREF);
 #endif
 
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
-
-    // We need to propagate the debug information to the call instruction, so we can emit
-    // an IL to native mapping record for the call, to support managed return value debugging.
-    // We don't want tail call helper calls that were converted from normal calls to get a record,
-    // so we skip this hash table lookup logic in that case.
-    if (m_compiler->opts.compDbgInfo && m_compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
-    {
-        DebugInfo di;
-        (void)m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
-        params.debugInfo = di;
-    }
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
+    params.returnValueCall = call;
 
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
@@ -3373,7 +3367,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             emitter*       emitter  = GetEmitter();
             emitAttr       attr     = (emitAttr)(EA_CNS_TLSGD_RELOC | EA_CNS_RELOC_FLG | params.retSize);
             GenTreeIntCon* iconNode = target->AsIntCon();
-            params.methHnd          = (CORINFO_METHOD_HANDLE)iconNode->gtIconVal;
+            params.methHnd          = (CORINFO_METHOD_HANDLE)iconNode->IconValue();
             params.retSize          = EA_SET_FLG(params.retSize, EA_CNS_TLSGD_RELOC);
             params.noSafePoint      = true;
 
@@ -3405,7 +3399,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // ldr
             // add
             emitter->emitIns_Adrp_Ldr_Add(attr, REG_R0, target->GetRegNum(),
-                                          (ssize_t)params.methHnd DEBUGARG(iconNode->gtTargetHandle)
+                                          (ssize_t)params.methHnd DEBUGARG(iconNode->GetTargetHandle())
                                               DEBUGARG(iconNode->gtFlags));
         }
 #endif
@@ -4146,6 +4140,42 @@ void CodeGen::genCodeForMulLong(GenTreeOp* mul)
 #endif
 
     genProduceReg(mul);
+}
+
+//------------------------------------------------------------------------
+// genCodeForDivModOverflowCheck: Emit the (MinInt / -1) overflow check for a signed integer divide.
+//
+// Arguments:
+//    tree - the GT_DIV node
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genCodeForDivModOverflowCheck(GenTreeOp* tree)
+{
+    // Signed-division might overflow.
+    assert(tree->OperIs(GT_DIV));
+    assert(!tree->gtGetOp2()->IsIntegralConst(0));
+
+    emitter*  emit        = GetEmitter();
+    emitAttr  size        = EA_ATTR(genTypeSize(genActualType(tree->TypeGet())));
+    regNumber divisorReg  = tree->gtGetOp2()->GetRegNum();
+    regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
+
+    BasicBlock* sdivLabel = genCreateTempLabel();
+
+    // Check if the divisor is not -1; if so branch to 'sdivLabel'.
+    emit->emitIns_R_I(INS_cmp, size, divisorReg, -1);
+    inst_JMP(EJ_ne, sdivLabel);
+    // If control flow continues past here the 'divisorReg' is known to be -1.
+    //
+    // Issue the 'cmp dividendReg, 1' instruction.
+    // 'cmp' computes 'dividendReg - 1' and updates only the condition flags,
+    // setting the V (overflow) flag exactly when dividendReg is MinInt.
+    emit->emitIns_R_I(INS_cmp, size, dividendReg, 1);
+    genJumpToThrowHlpBlk(EJ_vs, SCK_ARITH_EXCPN); // if the V flag is set throw ArithmeticException
+
+    genDefineTempLabel(sdivLabel);
 }
 
 //------------------------------------------------------------------------

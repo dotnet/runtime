@@ -80,5 +80,28 @@ namespace System.Net.Security.Tests
                 Assert.Null(blob);
             });
         }
+
+        [Fact]
+        public async Task Client_UnknownSPN_ReturnsTargetUnknown()
+        {
+            using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
+            // Add a registered service to get a non-empty keytab (required on macOS)
+            kerberosExecutor.AddService("HTTP/linux.contoso.com");
+            kerberosExecutor.AddUser("user");
+
+            await kerberosExecutor.Invoke(() =>
+            {
+                // Use an SPN that is not registered in the KDC
+                using NegotiateAuthentication client = new NegotiateAuthentication(new NegotiateAuthenticationClientOptions
+                {
+                    Package = "Kerberos",
+                    Credential = new NetworkCredential("user", KerberosExecutor.DefaultUserPassword, "LINUX.CONTOSO.COM"),
+                    TargetName = "HTTP/nonexistent.linux.contoso.com"
+                });
+
+                client.GetOutgoingBlob((byte[])null, out NegotiateAuthenticationStatusCode statusCode);
+                Assert.Equal(NegotiateAuthenticationStatusCode.TargetUnknown, statusCode);
+            });
+        }
     }
 }

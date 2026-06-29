@@ -8886,6 +8886,40 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
 }
 
 
+void Debugger::SendCreateThreadAtInterpreterEntry(Thread *pRuntimeThread)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(pRuntimeThread != NULL);
+        PRECONDITION(pRuntimeThread == g_pEEInterface->GetThread());
+    }
+    CONTRACTL_END;
+
+    if (CORDBUnrecoverableError(this))
+        return;
+
+    if (!CORDebuggerAttached())
+        return;
+
+    {
+        GCX_PREEMP();
+        PollWaitingForHelper();
+    }
+
+    SENDIPCEVENT_BEGIN(this, pRuntimeThread);
+
+    if (CORDebuggerAttached())
+    {
+        ThreadStarted(pRuntimeThread);
+    }
+
+    SENDIPCEVENT_END;
+}
+
+
 //---------------------------------------------------------------------------------------
 //
 // DetachThread is called by Runtime threads when they are completing
