@@ -1893,6 +1893,17 @@ void EEJitManager::SetCpuInfo()
         preferredVectorBitWidth = 256;
     }
 
+#if defined(FEATURE_INTERPRETER)
+    if (interpreterOnly && (preferredVectorBitWidth > 128))
+    {
+        // The interpreter only supports 128-bit vectors. Clamp the preferred vector
+        // width so the Vector256/Vector512 marker ISAs set below (which run after
+        // EnsureValidInstructionSetSupport) are not reintroduced after AVX was left
+        // disabled above, keeping the reported ISA set consistent.
+        preferredVectorBitWidth = 128;
+    }
+#endif
+
     if (preferredVectorBitWidth >= 512)
     {
         CPUCompileFlags.Set(InstructionSet_Vector512);
