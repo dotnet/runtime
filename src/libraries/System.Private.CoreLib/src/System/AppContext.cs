@@ -55,8 +55,14 @@ namespace System
                 string? value = null;
                 if (TryGetHostPropertyValue(name, new StringHandleOnStack(ref value)))
                 {
-                    SetData(name, value);
-                    return value;
+                    lock (s_dataStore)
+                    {
+                        if (s_dataStore.TryGetValue(name, out object? existing))
+                            return existing;
+
+                        s_dataStore[name] = value;
+                        return value;
+                    }
                 }
             }
 #endif
