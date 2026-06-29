@@ -98,30 +98,30 @@ public partial class UpdateChromeVersions : MBU.Task
         }
     }
 
-    private static bool AreVersionsChanged(XmlDocument xmlDoc, ChromeVersionSpec version, string baseUrl)
+    private bool AreVersionsChanged(XmlDocument xmlDoc, ChromeVersionSpec version, string baseUrl)
     {
-        if (string.Equals(version.os, "Linux", StringComparison.OrdinalIgnoreCase))
+        string nodePrefix = version.os switch
         {
-            string linuxChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, "linux_ChromeBaseSnapshotUrl");
-            string linuxV8Version = GetNodeValue(xmlDoc, "linux_V8Version");
-            return version.v8_version != linuxV8Version ||
-                baseUrl != linuxChromeBaseSnapshotUrl;
-        }
-        else if (string.Equals(version.os, "Windows", StringComparison.OrdinalIgnoreCase))
+            _ when string.Equals(version.os, "Linux", StringComparison.OrdinalIgnoreCase) => "linux",
+            _ when string.Equals(version.os, "Windows", StringComparison.OrdinalIgnoreCase) => "win",
+            _ when string.Equals(version.os, "Mac", StringComparison.OrdinalIgnoreCase) => "macos",
+            _ => throw new Exception($"UpdateChromeVersions task was used with unknown OS: {version.os}")
+        };
+
+        string existingChromeVersion = GetNodeValue(xmlDoc, $"{nodePrefix}_ChromeVersion");
+        if (Version.TryParse(existingChromeVersion, out Version? existing) &&
+            Version.TryParse(version.version, out Version? candidate) &&
+            candidate <= existing)
         {
-            string winChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, "win_ChromeBaseSnapshotUrl");
-            string winV8Version = GetNodeValue(xmlDoc, "win_V8Version");
-            return version.v8_version != winV8Version ||
-                baseUrl != winChromeBaseSnapshotUrl;
+            Log.LogMessage(MessageImportance.High,
+                $"Skipping {version.os}: candidate version {version.version} is not newer than existing {existingChromeVersion}.");
+            return false;
         }
-        else if (string.Equals(version.os, "Mac", StringComparison.OrdinalIgnoreCase))
-        {
-            string macosChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, "macos_ChromeBaseSnapshotUrl");
-            string macosV8Version = GetNodeValue(xmlDoc, "macos_V8Version");
-            return version.v8_version != macosV8Version ||
-                baseUrl != macosChromeBaseSnapshotUrl;
-        }
-        throw new Exception($"UpdateChromeVersions task was used with unknown OS: {version.os}");
+
+        string existingChromeBaseSnapshotUrl = GetNodeValue(xmlDoc, $"{nodePrefix}_ChromeBaseSnapshotUrl");
+        string existingV8Version = GetNodeValue(xmlDoc, $"{nodePrefix}_V8Version");
+        return version.v8_version != existingV8Version ||
+            baseUrl != existingChromeBaseSnapshotUrl;
     }
 
     private static string GetNodeValue(XmlDocument xmlDoc, string nodeName)
