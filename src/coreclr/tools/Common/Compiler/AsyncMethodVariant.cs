@@ -156,6 +156,9 @@ namespace ILCompiler
         /// </summary>
         public static bool IsAsyncThunk(this MethodDesc method)
         {
+            if (method.IsReturnDroppingAsyncThunk())
+                return true;
+
             if (method.IsAsyncVariant() == method.IsAsync)
                 return false;
 
@@ -167,9 +170,6 @@ namespace ILCompiler
             }
 
             if (!method.IsAsyncVariant() && method.IsAsync)
-                return true;
-
-            if (method.IsReturnDroppingAsyncThunk())
                 return true;
 
             throw new UnreachableException();
