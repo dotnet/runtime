@@ -30,6 +30,22 @@ namespace Microsoft.Extensions.Primitives
             }
         }
 
+        // A change token whose registration succeeds but whose HasChanged throws.
+        private sealed class ThrowOnHasChangedChangeToken : IChangeToken
+        {
+            public int RegisterCalls { get; private set; }
+
+            public bool ActiveChangeCallbacks => true;
+
+            public bool HasChanged => throw new InvalidTimeZoneException();
+
+            public IDisposable RegisterChangeCallback(Action<object> callback, object state)
+            {
+                RegisterCalls++;
+                return null;
+            }
+        }
+
         [Fact]
         public void HasChangeFiresChange()
         {
@@ -468,6 +484,32 @@ namespace Microsoft.Extensions.Primitives
             // suppressed; the consumer must not be invoked again even though the token it would re-register on
             // has already changed.
             Assert.Equal(1, invocations);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void AsyncReRegistrationFailureIsNotRetriedAndPropagates(bool useStateOverload)
+        {
+            var firstToken = new TestChangeToken();
+            var throwingToken = new ThrowOnHasChangedChangeToken();
+            int produced = 0;
+            Func<IChangeToken> producer = () => produced++ == 0 ? firstToken : throwingToken;
+
+            if (useStateOverload)
+            {
+                ChangeToken.OnChange(producer, _ => Task.CompletedTask, new object());
+            }
+            else
+            {
+                ChangeToken.OnChange(producer, () => Task.CompletedTask);
+            }
+
+            // When the token fires, the synchronously-completed consumer triggers re-registration on the next token,
+            // whose HasChanged throws during registration. That exception must propagate to the code that triggers
+            // the change, and re-registration must be attempted exactly once.
+            Assert.Throws<InvalidTimeZoneException>(firstToken.Changed);
+            Assert.Equal(1, throwingToken.RegisterCalls);
         }
 
         [Theory]

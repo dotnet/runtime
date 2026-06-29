@@ -250,34 +250,36 @@ namespace Microsoft.Extensions.Primitives
                 // registering the callback once the consumer's task completes.
                 IChangeToken? token = ChangeTokenProducer();
 
+                Task consumerTask;
                 try
                 {
                     // The consumer is invoked synchronously here, so that synchronous exceptions from it are propagated
                     // to the code that triggers the change token, just like the sync overload does.
-                    Task consumerTask = _changeTokenConsumer(State);
-
-                    if (consumerTask is null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullConsumerTask);
-                    }
-
-                    if (consumerTask.Status == TaskStatus.RanToCompletion)
-                    {
-                        // The common case where the consumer completes synchronously: re-register without allocations.
-                        RegisterChangeTokenCallback(token);
-                    }
-                    else
-                    {
-                        // Asynchronous exceptions can't be propagated without blocking, so they are left unobserved
-                        // (meaning they can be observed only through TaskScheduler.UnobservedTaskException).
-                        _ = AwaitConsumerAndRegisterCallback(consumerTask, token);
-                    }
+                    consumerTask = _changeTokenConsumer(State);
                 }
                 catch
                 {
                     // We always want to ensure the callback is registered, even when the consumer throws synchronously.
                     RegisterChangeTokenCallback(token);
                     throw;
+                }
+
+                if (consumerTask is null)
+                {
+                    RegisterChangeTokenCallback(token);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullConsumerTask);
+                }
+
+                if (consumerTask.Status == TaskStatus.RanToCompletion)
+                {
+                    // The common case where the consumer completes synchronously: re-register without allocations.
+                    RegisterChangeTokenCallback(token);
+                }
+                else
+                {
+                    // Asynchronous exceptions can't be propagated without blocking, so they are left unobserved
+                    // (meaning they can be observed only through TaskScheduler.UnobservedTaskException).
+                    _ = AwaitConsumerAndRegisterCallback(consumerTask, token);
                 }
             }
 
