@@ -30,8 +30,8 @@ DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull:
         i32.load        0                                                                       // Load the size of the actual GenericDictionary on the Class
         local.get       2                                                                       // Load the GenericClassDictionaryDynamicHelperStubData parameter
         i32.load        OFFSETOF__GenericDictionaryDynamicHelperStubData_PortableEntryPoint__SlotOffset
-        i32.lt_s
-        br_if           0                                                                       // Branch to the logic to call the helper function if the size of the actual GenericDictionary on the Class is less than the SlotOffset
+        i32.le_s
+        br_if           0                                                                       // Branch to the logic to call the helper function if the size of the actual GenericDictionary on the Class is less than or equal to the SlotOffset
         local.get       3                                                                       // Load the SecondDir indirection
         local.get       2                                                                       // Load the GenericClassDictionaryDynamicHelperStubData parameter
         i32.load        OFFSETOF__GenericDictionaryDynamicHelperStubData_PortableEntryPoint__LastIndir
@@ -76,8 +76,8 @@ DynamicHelper_GenericDictionaryLookup_Method_SizeCheck_TestForNull:
         i32.load        0                                                                       // Load the size of the actual GenericDictionary on the Method
         local.get       2                                                                       // Load the GenericMethodDictionaryDynamicHelperStubData parameter
         i32.load        OFFSETOF__GenericDictionaryDynamicHelperStubData_PortableEntryPoint__SlotOffset
-        i32.lt_s
-        br_if           0                                                                       // Branch to the logic to call the helper function if the size of the actual GenericDictionary on the Method is less than the SlotOffset
+        i32.le_s
+        br_if           0                                                                       // Branch to the logic to call the helper function if the size of the actual GenericDictionary on the Method is less than or equal to the SlotOffset
         local.get       3                                                                       // Load the GenericDictionary
         local.get       2                                                                       // Load the GenericMethodDictionaryDynamicHelperStubData parameter
         i32.load        OFFSETOF__GenericDictionaryDynamicHelperStubData_PortableEntryPoint__LastIndir
