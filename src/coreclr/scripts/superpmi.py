@@ -20,6 +20,7 @@ import argparse
 import asyncio
 import csv
 import datetime
+import heapq
 import html
 import json
 import locale
@@ -2006,10 +2007,18 @@ def aggregate_diff_metrics(details_file):
     diffs_fields = ["Context", "Method full name", "Context size", "Base ActualCodeBytes", "Diff ActualCodeBytes", "Base PerfScore", "Diff PerfScore"]
     diffs = []
 
-    # Per-context throughput diffs (rows where PIN measured base != diff
-    # instruction count). Used by tpdiff to surface specific method examples.
+    # Per-context throughput diffs. Use bounded per-bucket heaps so very large
+    # MCH files don't blow up memory: four buckets (FullOpts|MinOpts) x
+    # (regression|improvement), each capped at TP_TOP_K. Each heap is a min-heap
+    # of (key, idx, row) where `key` is `pct` for regressions (keep largest)
+    # and `-pct` for improvements (keep most negative).
     tp_diffs_fields = ["Context", "Method full name", "MinOpts", "Base instructions", "Diff instructions"]
-    tp_diffs = []
+    TP_TOP_K = 200
+    tp_idx = 0
+    tp_heaps = {
+        ("FullOpts", "reg"): [], ("FullOpts", "imp"): [],
+        ("MinOpts",  "reg"): [], ("MinOpts",  "imp"): [],
+    }
 
     for row in read_csv(details_file):
         base_result = row["Base result"]
@@ -2049,8 +2058,18 @@ def aggregate_diff_metrics(details_file):
             base_dict["Diff executed instructions"] += base_insts
             diff_dict["Diff executed instructions"] += diff_insts
 
-            if base_insts != diff_insts:
-                tp_diffs.append({key: row[key] for key in tp_diffs_fields})
+            if base_insts > 0 and base_insts != diff_insts:
+                pct = (diff_insts - base_insts) / base_insts * 100
+                bucket = "MinOpts" if row["MinOpts"] == "True" else "FullOpts"
+                direction = "reg" if pct > 0 else "imp"
+                key = pct if direction == "reg" else -pct
+                tp_idx += 1
+                h = tp_heaps[(bucket, direction)]
+                entry = (key, tp_idx, {f: row[f] for f in tp_diffs_fields})
+                if len(h) < TP_TOP_K:
+                    heapq.heappush(h, entry)
+                elif key > h[0][0]:
+                    heapq.heapreplace(h, entry)
 
             base_perfscore = float(row["Base PerfScore"])
             diff_perfscore = float(row["Diff PerfScore"])
@@ -2088,6 +2107,8 @@ def aggregate_diff_metrics(details_file):
             d["Relative PerfScore Geomean (Diffs)"] = math.exp(sum_of_logs / d["Contexts with diffs"])
         else:
             d["Relative PerfScore Geomean (Diffs)"] = 1
+
+    tp_diffs = [record for h in tp_heaps.values() for (_, _, record) in h]
 
     return ({"Overall": base_overall, "MinOpts": base_minopts, "FullOpts": base_fullopts},
             {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts},
@@ -3267,9 +3288,6 @@ class SuperPMIReplayThroughputDiff:
 
 def write_tpdiff_markdown_summary(write_fh, base_jit_build_string_decoded, diff_jit_build_string_decoded, base_jit_options, diff_jit_options, tp_diffs, include_details):
 
-    # Tolerate the legacy 3-tuple shape from older saved JSON summaries.
-    tp_diffs = [t if len(t) >= 4 else (t[0], t[1], t[2], []) for t in tp_diffs]
-
     def write_top_context_section():
         if not base_jit_build_string_decoded:
             write_fh.write("{} Could not decode base JIT build string".format(html_color("red", "Warning:")))
@@ -3364,23 +3382,23 @@ def write_tpdiff_context_examples(write_fh, tp_diffs):
                    "Base instructions", "Diff instructions".
     """
 
+    # Escape values destined for a markdown table cell: '|' splits cells, '<>&'
+    # render as HTML on GitHub, and newlines break the row.
+    def md_cell(s):
+        return html.escape(s).replace("|", "&#124;").replace("\n", " ").replace("\r", "")
+
     # Flatten per-context rows; tag each with its originating collection.
     flat = []
     for (mch_file, _, _, tp_per_context) in tp_diffs:
         for row in tp_per_context:
-            try:
-                base_insts = int(row["Base instructions"])
-                diff_insts = int(row["Diff instructions"])
-            except (KeyError, ValueError):
-                continue
-            if base_insts <= 0 or diff_insts == base_insts:
-                continue
+            base_insts = int(row["Base instructions"])
+            diff_insts = int(row["Diff instructions"])
             pct = (diff_insts - base_insts) / base_insts * 100
             flat.append({
                 "Collection": mch_file,
-                "Method full name": row.get("Method full name", ""),
-                "Context": row.get("Context", ""),
-                "MinOpts": row.get("MinOpts", "False") == "True",
+                "Method full name": row["Method full name"],
+                "Context": row["Context"],
+                "MinOpts": row["MinOpts"] == "True",
                 "Base instructions": base_insts,
                 "Diff instructions": diff_insts,
                 "PDIFF pct": pct,
@@ -3403,12 +3421,10 @@ def write_tpdiff_context_examples(write_fh, tp_diffs):
             write_fh.write("|Collection|Context|Method|Base|Diff|PDIFF|\n")
             write_fh.write("|---|--:|---|--:|--:|--:|\n")
             for r in rows:
-                # Release JITs don't report MethodFullName; fall back to context number.
-                method = r["Method full name"] or "<no name reported by JIT>"
                 write_fh.write("|{}|{}|{}|{:,d}|{:,d}|{}|\n".format(
-                    r["Collection"],
+                    md_cell(r["Collection"]),
                     r["Context"],
-                    method,
+                    md_cell(r["Method full name"]),
                     r["Base instructions"],
                     r["Diff instructions"],
                     compute_and_format_pct(r["Base instructions"], r["Diff instructions"])))
