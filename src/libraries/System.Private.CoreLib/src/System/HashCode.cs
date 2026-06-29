@@ -316,11 +316,28 @@ namespace System
         /// </remarks>
         public void AddBytes(ReadOnlySpan<byte> value)
         {
-            if (value.Length < (sizeof(int) * 4))
+            if (value.Length >= (sizeof(int) * 4))
             {
-                goto Small;
+                // Add 16 bytes at a time until the input has fewer than sixteen bytes remaining.
+                Add16ByteBatches(ref value);
             }
 
+            // Add four bytes at a time until the input has fewer than four bytes remaining.
+            while (value.Length >= sizeof(int))
+            {
+                Add(BitConverter.ToInt32(value));
+                value = value.Slice(sizeof(int));
+            }
+
+            // Add the remaining bytes a single byte at a time.
+            foreach (byte b in value)
+            {
+                Add((int)b);
+            }
+        }
+
+        private void Add16ByteBatches(ref ReadonlySpan<byte> value)
+        {
             // Usually Add calls Initialize but if we haven't used HashCode before it won't have been called.
             if (_length == 0)
             {
@@ -360,20 +377,6 @@ namespace System
 
                 _length += 4;
                 value = value.Slice(sizeof(int) * 4);
-            }
-
-        Small:
-            // Add four bytes at a time until the input has fewer than four bytes remaining.
-            while (value.Length >= sizeof(int))
-            {
-                Add(BitConverter.ToInt32(value));
-                value = value.Slice(sizeof(int));
-            }
-
-            // Add the remaining bytes a single byte at a time.
-            foreach (byte b in value)
-            {
-                Add((int)b);
             }
         }
 
