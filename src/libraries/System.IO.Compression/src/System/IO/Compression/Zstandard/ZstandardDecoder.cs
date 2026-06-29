@@ -46,7 +46,7 @@ namespace System.IO.Compression
             {
                 if (maxWindowLog2 != 0)
                 {
-                    SetWindowLog(maxWindowLog2);
+                    SetWindowLog(maxWindowLog2, nameof(maxWindowLog2));
                 }
             }
             catch
@@ -128,7 +128,7 @@ namespace System.IO.Compression
             {
                 if (maxWindowLog2 != 0)
                 {
-                    SetWindowLog(maxWindowLog2);
+                    SetWindowLog(maxWindowLog2, nameof(maxWindowLog2));
                 }
 
                 SetDictionary(dictionary);
@@ -388,14 +388,14 @@ namespace System.IO.Compression
             ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
-        internal void SetWindowLog(int maxWindowLog)
+        internal void SetWindowLog(int maxWindowLog, string paramName = "maxWindowLog")
         {
             Debug.Assert(_context != null);
 
             if (maxWindowLog != 0)
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(maxWindowLog, ZstandardUtils.WindowLog_Min, nameof(maxWindowLog));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(maxWindowLog, ZstandardUtils.WindowLog_Max, nameof(maxWindowLog));
+                ArgumentOutOfRangeException.ThrowIfLessThan(maxWindowLog, ZstandardUtils.WindowLog_Min, paramName);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(maxWindowLog, ZstandardUtils.WindowLog_Max, paramName);
             }
 
             nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindowLog);

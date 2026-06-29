@@ -53,7 +53,7 @@ namespace System.IO.Compression
         /// <exception cref="IOException">Failed to create the <see cref="ZLibEncoder"/> instance.</exception>
         public ZLibEncoder(int quality, int windowLog2)
         {
-            _deflateEncoder = new DeflateEncoder(quality, windowLog2, CompressionFormat.ZLib);
+            _deflateEncoder = new DeflateEncoder(quality, windowLog2, CompressionFormat.ZLib, nameof(windowLog2));
         }
 
         /// <summary>
