@@ -538,7 +538,17 @@ DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPV
 #ifdef _DEBUG
             // Only in R2R mode are the module, dictionary index and dictionary slot provided as an input
             _ASSERTE(dictionaryIndexAndSlot != (DWORD)-1);
+#ifdef TARGET_WASM
+            // On wasm, R2R code lives in the function table and data in linear memory, so
+            // FindReadyToRunModule (a code-range lookup) can't resolve the signature's data address.
+            // Check that the signature lies within pModule's R2R image bounds instead.
+            ReadyToRunInfo * pR2RInfo = pModule->GetReadyToRunInfo();
+            TADDR sigAddr = dac_cast<TADDR>(signature);
+            TADDR imageBase = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase());
+            _ASSERT(sigAddr >= imageBase && sigAddr < imageBase + pR2RInfo->GetImage()->GetVirtualSize());
+#else
             _ASSERT(ReadyToRunInfo::IsNativeImageSharedBy(pModule, ExecutionManager::FindReadyToRunModule(dac_cast<TADDR>(signature))));
+#endif
 #endif
             dictionaryIndex = (dictionaryIndexAndSlot >> 16);
         }
