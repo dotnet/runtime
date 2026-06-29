@@ -357,8 +357,7 @@ int coreclr_initialize(
         (DWORD *)domainId);
 
     // The binder/AppDomain has now parsed the host probing path properties into its own
-    // structures and the managed AppContext.Setup has copied each property value into a
-    // managed string. Free the wide-string copies for the excluded properties (the rest are
+    // structures. Free the wide-string copies for the excluded properties (the rest are
     // owned by the CLR config above) and the full property arrays themselves.
     for (int i = 0; i < propertyCount; ++i)
     {
