@@ -40,8 +40,8 @@
     <Compile Include="System\Diagnostics\ThreadState.cs" />
     <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
     <Compile Include="System\Diagnostics\MonitoringDescriptionAttribute.cs" />
-    <Compile Include="System\Diagnostics\WindowsProcessStartArguments.cs" />
-    <Compile Include="System\Diagnostics\UnixProcessStartArguments.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsProcessStartArguments.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnixProcessStartArguments.cs" />
     <Compile Include="System\Collections\Specialized\StringDictionaryWrapper.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
