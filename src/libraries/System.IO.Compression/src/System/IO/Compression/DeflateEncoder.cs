@@ -55,20 +55,20 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not in the valid range (0-9 or -1), or <paramref name="windowLog2"/> is not in the valid range (8-15 or -1).</exception>
         /// <exception cref="IOException">Failed to create the <see cref="DeflateEncoder"/> instance.</exception>
         public DeflateEncoder(int quality, int windowLog2)
-            : this(quality, windowLog2, CompressionFormat.Deflate, nameof(windowLog2))
+            : this(quality, windowLog2, CompressionFormat.Deflate)
         {
         }
 
         /// <summary>
-        /// Internal constructor that accepts quality, windowLog (8-15), and format.
-        /// Validates both parameters and transforms windowLog to windowBits based on format.
+        /// Internal constructor that accepts quality, windowLog2 (8-15), and format.
+        /// Validates both parameters and transforms windowLog2 to windowBits based on format.
         /// </summary>
-        internal DeflateEncoder(int quality, int windowLog, CompressionFormat format, string windowLogParamName = "windowLog")
+        internal DeflateEncoder(int quality, int windowLog2, CompressionFormat format)
         {
             ValidateQuality(quality);
-            ValidateWindowLog(windowLog, windowLogParamName);
+            ValidateWindowLog(windowLog2);
 
-            int windowBits = CompressionFormatHelper.ResolveWindowBits(windowLog, format);
+            int windowBits = CompressionFormatHelper.ResolveWindowBits(windowLog2, format);
 
             int memLevel = quality == (int)ZLibNative.CompressionLevel.NoCompression
                 ? ZLibNative.Deflate_NoCompressionMemLevel
@@ -110,12 +110,12 @@ namespace System.IO.Compression
             }
         }
 
-        private static void ValidateWindowLog(int windowLog, string paramName)
+        private static void ValidateWindowLog(int windowLog2)
         {
-            if (windowLog != -1)
+            if (windowLog2 != -1)
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(windowLog, ZLibNative.MinWindowLog, paramName);
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog, ZLibNative.MaxWindowLog, paramName);
+                ArgumentOutOfRangeException.ThrowIfLessThan(windowLog2, ZLibNative.MinWindowLog, nameof(windowLog2));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog2, ZLibNative.MaxWindowLog, nameof(windowLog2));
             }
         }
 

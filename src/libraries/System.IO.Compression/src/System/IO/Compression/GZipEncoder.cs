@@ -53,7 +53,7 @@ namespace System.IO.Compression
         /// <exception cref="IOException">Failed to create the <see cref="GZipEncoder"/> instance.</exception>
         public GZipEncoder(int quality, int windowLog2)
         {
-            _deflateEncoder = new DeflateEncoder(quality, windowLog2, CompressionFormat.GZip, nameof(windowLog2));
+            _deflateEncoder = new DeflateEncoder(quality, windowLog2, CompressionFormat.GZip);
         }
 
         /// <summary>
