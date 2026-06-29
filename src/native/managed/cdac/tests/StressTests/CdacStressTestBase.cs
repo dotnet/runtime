@@ -195,11 +195,11 @@ public abstract class CdacStressTestBase
             Assert.Fail(
                 $"GCREFS stress test '{debuggeeName}' had {results.KnownIssues} known issue(s) " +
                 $"out of {results.TotalVerifications} verifications. " +
-                "Windows x86 / x64 do not accept any deferred frames in this PR's scope -- " +
-                "every transition Frame's caller-stack scan must succeed via the shared " +
-                "ICallingConvention.TryComputeArgGCRefMapBlob path. A non-zero count likely " +
-                "indicates the encoder declined a method it previously handled (regression " +
-                "in CallingConvention_1.ComputeArgGCRefMapBlobCore).\n" +
+                "Windows x86 / x64 are expected to enumerate every transition Frame's " +
+                "caller-stack refs via ICallingConvention.TryComputeArgGCRefMapBlob with no " +
+                "deferred frames. A non-zero KnownIssues count indicates the encoder declined " +
+                "a method it should support (e.g. a regression in ComputeArgGCRefMapBlobCore " +
+                "or a new code path returning E_NOTIMPL).\n" +
                 $"Log: {results.LogFilePath}\n\n{analysis}");
         }
     }

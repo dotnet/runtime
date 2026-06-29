@@ -50,7 +50,7 @@ public class CdacStressTests : CdacStressTestBase
     [MemberData(nameof(Debuggees))]
     public async Task GCRefStress_AllVerificationsPass(Debuggee debuggee)
     {
-        GetTargetPlatform(out OSPlatform os, out Architecture arch);
+        GetTargetPlatform(out OSPlatform os, out _);
 
         if (debuggee.WindowsOnly && os != OSPlatform.Windows)
             throw new SkipTestException($"{debuggee.Name} debuggee is Windows-only.");
