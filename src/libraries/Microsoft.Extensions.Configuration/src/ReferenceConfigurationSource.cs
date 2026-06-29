@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Configuration
         internal ReferenceConfigurationSource(
             IReadOnlyDictionary<string, ReferenceRule> concreteRules,
             IReadOnlyList<ReferenceRule> templateRules,
-            Func<string, ConfigurationExpansion?> parser)
+            Func<ConfigurationReferenceContext, ConfigurationExpansion?> parser)
         {
             ConcreteRules = concreteRules;
             TemplateRules = templateRules;
@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Configuration
 
         internal IReadOnlyList<ReferenceRule> TemplateRules { get; }
 
-        internal Func<string, ConfigurationExpansion?> Parser { get; }
+        internal Func<ConfigurationReferenceContext, ConfigurationExpansion?> Parser { get; }
 
         // The default IConfigurationSource.Build contract has no view of peer providers, so the
         // reference source can't satisfy it. ConfigurationBuilder and ConfigurationManager detect

@@ -703,6 +703,75 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Fact]
+        public void Parser_SeesSubjectKey()
+        {
+            // Both subjects hold the same value and are permitted; the parser recognises a reference only for
+            // Client1, keying off ctx.Key, so Client2 stays verbatim. This proves the subject key is threaded.
+            IConfigurationRoot root = BuilderWith(Dict(
+                    ("Shared:Credential", "secret"),
+                    ("Client1:Credential", "go"),
+                    ("Client2:Credential", "go")))
+                .AllowReferences(r =>
+                {
+                    r.Allow("Client1:Credential", "Shared:Credential").Allow("Client2:Credential", "Shared:Credential");
+                    r.Parser = static ctx => ctx.Key == "Client1:Credential"
+                        ? ConfigurationExpansion.Reference("Shared:Credential")
+                        : null;
+                })
+                .Build();
+
+            Assert.Equal("secret", root["Client1:Credential"]);
+            Assert.Equal("go", root["Client2:Credential"]);
+        }
+
+        [Fact]
+        public void Parser_CanInspectProvidersToChooseTarget()
+        {
+            // The recogniser probes the raw provider snapshot (no IConfiguration) to pick which key to name;
+            // the framework still rule-checks whatever it names.
+            IConfigurationRoot root = BuilderWith(Dict(
+                    ("Db:Primary", "primary"),
+                    ("App:Conn", "pick")))
+                .AllowReferences(r =>
+                {
+                    r.Allow("App:Conn", "Db:*");
+                    r.Parser = static ctx =>
+                    {
+                        if (ctx.Value != "pick")
+                        {
+                            return null;
+                        }
+                        foreach (IConfigurationProvider p in ctx.Providers)
+                        {
+                            if (p.TryGet("Db:Primary", out _))
+                            {
+                                return ConfigurationExpansion.Reference("Db:Primary");
+                            }
+                        }
+                        return ConfigurationExpansion.Reference("Db:Secondary");
+                    };
+                })
+                .Build();
+
+            Assert.Equal("primary", root["App:Conn"]);
+        }
+
+        [Fact]
+        public void Literal_Null_YieldsNoValue()
+        {
+            IConfigurationRoot root = BuilderWith(Dict(
+                    ("App:Path", "blank")))
+                .AllowReferences(r =>
+                {
+                    r.Allow("App:Path", "**");
+                    r.Parser = static ctx => ctx.Value == "blank" ? ConfigurationExpansion.Literal(null) : null;
+                })
+                .Build();
+
+            Assert.Null(root["App:Path"]);
+        }
+
+        [Fact]
         public void Value_Spec_IsTakenVerbatimWithoutFormatting()
         {
             IConfigurationRoot root = BuilderWith(Dict(
@@ -710,7 +779,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AllowReferences(r =>
                 {
                     r.Allow("App:Path", "**");
-                    r.Parser = static value => value == "literal"
+                    r.Parser = static ctx => ctx.Value == "literal"
                         ? ConfigurationExpansion.Literal("C:\\Program Files\\{app}")
                         : null;
                 })
@@ -729,7 +798,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AllowReferences(r =>
                 {
                     r.Allow("App:Conn", "Db:*");
-                    r.Parser = static value => value == "compose"
+                    r.Parser = static ctx => ctx.Value == "compose"
                         ? ConfigurationExpansion.Format("Server={0};Database={1}", "Db:Host", "Db:Name")
                         : null;
                 })
@@ -746,7 +815,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AllowReferences(r =>
                 {
                     r.Allow("App:Greeting", "**");
-                    r.Parser = static value => value == "shout"
+                    r.Parser = static ctx => ctx.Value == "shout"
                         ? ConfigurationExpansion.Format("HELLO")
                         : null;
                 })
@@ -766,7 +835,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AllowReferences(r =>
                 {
                     r.Allow("App:*", "**");
-                    r.Parser = static value => value switch
+                    r.Parser = static ctx => ctx.Value switch
                     {
                         "fmt" => ConfigurationExpansion.Format("{{x}}"),
                         "val" => ConfigurationExpansion.Literal("{{x}}"),
@@ -790,7 +859,7 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AllowReferences(r =>
                 {
                     r.Allow("App:Conn", "Db:*");
-                    r.Parser = static value => value == "compose"
+                    r.Parser = static ctx => ctx.Value == "compose"
                         ? ConfigurationExpansion.Format("{0}-{1}", "Db:Only")
                         : null;
                 });
@@ -808,11 +877,11 @@ namespace Microsoft.Extensions.Configuration.Test
                 .AllowReferences(r =>
                 {
                     r.Allow("App:Conn", "Db:Host").Allow("Db:Host", "Db:RealHost");
-                    r.Parser = static value => value switch
+                    r.Parser = static ctx => ctx.Value switch
                     {
                         "compose" => ConfigurationExpansion.Format("Server={0}", "Db:Host"),
-                        _ when value.StartsWith("ref(", StringComparison.Ordinal) && value.EndsWith(")", StringComparison.Ordinal)
-                            => ConfigurationExpansion.Reference(value.Substring(4, value.Length - 5)),
+                        _ when ctx.Value.StartsWith("ref(", StringComparison.Ordinal) && ctx.Value.EndsWith(")", StringComparison.Ordinal)
+                            => ConfigurationExpansion.Reference(ctx.Value.Substring(4, ctx.Value.Length - 5)),
                         _ => null,
                     };
                 })
@@ -834,10 +903,10 @@ namespace Microsoft.Extensions.Configuration.Test
                 {
                     r.Allow("Client1:Credential", "Shared:Credential").Allow("Client2:Credential", "Shared:Credential");
 
-                    Func<string, ConfigurationExpansion?> fallback = r.Parser;
-                    r.Parser = value => value.StartsWith("$ref ", StringComparison.Ordinal)
-                        ? ConfigurationExpansion.Reference(value.Substring("$ref ".Length).Trim())
-                        : fallback(value);
+                    Func<ConfigurationReferenceContext, ConfigurationExpansion?> fallback = r.Parser;
+                    r.Parser = ctx => ctx.Value.StartsWith("$ref ", StringComparison.Ordinal)
+                        ? ConfigurationExpansion.Reference(ctx.Value.Substring("$ref ".Length).Trim())
+                        : fallback(ctx);
                 })
                 .Build();
 

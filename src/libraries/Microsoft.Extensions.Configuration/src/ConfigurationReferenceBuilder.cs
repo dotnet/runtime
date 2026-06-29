@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Configuration
         private readonly Dictionary<string, ReferenceRule> _concreteRules =
             new Dictionary<string, ReferenceRule>(StringComparer.OrdinalIgnoreCase);
         private readonly List<ReferenceRule> _templateRules = new List<ReferenceRule>();
-        private Func<string, ConfigurationExpansion?> _parser = DefaultParse;
+        private Func<ConfigurationReferenceContext, ConfigurationExpansion?> _parser = DefaultParse;
 
         internal ConfigurationReferenceBuilder() { }
 
@@ -74,12 +74,13 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Gets or sets the recogniser that maps a raw configuration value to a <see cref="ConfigurationExpansion"/>,
-        /// or to <see langword="null"/> when the value is not a reference. It starts as the default recogniser, which
-        /// maps <c>ref(target)</c> to a reference and <c>format(template, ref1, ref2, ...)</c> to a composed value.
-        /// Replace it to recognise a different syntax; capture the current value first to fall back to it.
+        /// Gets or sets the recogniser that maps a value (and the upstream providers it may probe) to a
+        /// <see cref="ConfigurationExpansion"/>, or to <see langword="null"/> when the value is not a reference. It
+        /// starts as the default recogniser, which maps <c>ref(target)</c> to a reference and
+        /// <c>format(template, ref1, ref2, ...)</c> to a composed value. Replace it to recognise a different syntax;
+        /// capture the current value first to fall back to it.
         /// </summary>
-        public Func<string, ConfigurationExpansion?> Parser
+        public Func<ConfigurationReferenceContext, ConfigurationExpansion?> Parser
         {
             get => _parser;
             set
@@ -160,8 +161,10 @@ namespace Microsoft.Extensions.Configuration
             return start == 0 && end == raw.Length ? raw : raw.Substring(start, end - start);
         }
 
-        private static ConfigurationExpansion? DefaultParse(string value)
+        private static ConfigurationExpansion? DefaultParse(ConfigurationReferenceContext context)
         {
+            // The default recogniser is purely syntactic: it reads only the raw value, never the providers.
+            string value = context.Value;
             // An escaped marker (\ref(...) or \format(...)) is taken as the literal text with one backslash removed.
             if (value.StartsWith("\\" + ReferenceMarkerPrefix, StringComparison.Ordinal) ||
                 value.StartsWith("\\" + FormatMarkerPrefix, StringComparison.Ordinal))

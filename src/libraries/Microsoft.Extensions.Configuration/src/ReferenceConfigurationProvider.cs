@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Configuration
     {
         private readonly IReadOnlyDictionary<string, ReferenceRule> _concreteRules;
         private readonly List<ReferenceRule> _templateRules;
-        private readonly Func<string, ConfigurationExpansion?> _parser;
+        private readonly Func<ConfigurationReferenceContext, ConfigurationExpansion?> _parser;
         private readonly IReadOnlyList<IConfigurationProvider> _upstream;
         private readonly List<IDisposable> _upstreamRegistrations;
         private bool _disposed;
@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.Configuration
             var matched = new Dictionary<string, ConfigurationExpansion>(StringComparer.OrdinalIgnoreCase);
             foreach (KeyValuePair<string, ReferenceRule> kv in _concreteRules)
             {
-                if (kv.Value.Resolve(kv.Key, ReadUpstream(kv.Key), _parser) is { } spec)
+                if (kv.Value.Resolve(kv.Key, ReadUpstream(kv.Key), _parser, _upstream) is { } spec)
                 {
                     matched[kv.Key] = spec;
                 }
@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.Configuration
                         {
                             continue;
                         }
-                        if (env.Resolve(upstreamKey, ReadUpstream(upstreamKey), _parser) is { } spec)
+                        if (env.Resolve(upstreamKey, ReadUpstream(upstreamKey), _parser, _upstream) is { } spec)
                         {
                             matched[upstreamKey] = spec;
                         }
@@ -130,16 +130,17 @@ namespace Microsoft.Extensions.Configuration
 
         private void Materialise(string subject, ConfigurationExpansion spec, Dictionary<string, string?> values)
         {
-            if (spec.Template is null)
+            if (spec.Keys.Count == 0)
             {
-                string target = spec.ReferencedKeys[0]!;
+                // Verbatim literal (which may be null) or a zero-key format: the template is the value.
+                values[subject] = spec.Template;
+            }
+            else if (spec.Template is null)
+            {
+                string target = spec.Keys[0]!;
                 // Subject itself: always populated so we mask the raw reference literal.
                 values[subject] = OverlayAwareRead(target, values);
                 MirrorSubtree(target, subject, values);
-            }
-            else if (spec.ReferencedKeys.Count == 0)
-            {
-                values[subject] = spec.Template;
             }
             else
             {
@@ -149,7 +150,7 @@ namespace Microsoft.Extensions.Configuration
 
         private string Compose(string subject, ConfigurationExpansion spec, Dictionary<string, string?> values)
         {
-            StringValues references = spec.ReferencedKeys;
+            StringValues references = spec.Keys;
             int count = references.Count;
             // Compose only runs for the Format kind, so the template is non-null.
             string template = spec.Template!;
@@ -281,7 +282,7 @@ namespace Microsoft.Extensions.Configuration
             string[] subjectsByLengthDesc,
             Dictionary<string, string?> values)
         {
-            foreach (string? referenced in spec.ReferencedKeys)
+            foreach (string? referenced in spec.Keys)
             {
                 if (TryFindSubject(subjectsByLengthDesc, referenced!, out string? dep)
                     && !string.Equals(dep, subject, StringComparison.OrdinalIgnoreCase)

@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Configuration
         internal ConfigurationReferenceBuilder() { }
         public Microsoft.Extensions.Configuration.ConfigurationReferenceBuilder Allow(string subject, string target, params string[] additionalTargets) { throw null; }
         public Microsoft.Extensions.Configuration.ConfigurationReferenceBuilder Deny(string subject, string target, params string[] additionalTargets) { throw null; }
-        public System.Func<string, Microsoft.Extensions.Configuration.ConfigurationExpansion?> Parser { get { throw null; } set { } }
+        public System.Func<Microsoft.Extensions.Configuration.ConfigurationReferenceContext, Microsoft.Extensions.Configuration.ConfigurationExpansion?> Parser { get { throw null; } set { } }
     }
     public static partial class ChainedBuilderExtensions
     {
@@ -122,11 +122,20 @@ namespace Microsoft.Extensions.Configuration
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
-        public Microsoft.Extensions.Primitives.StringValues ReferencedKeys { get { throw null; } }
+        public Microsoft.Extensions.Primitives.StringValues Keys { get { throw null; } }
         public string? Template { get { throw null; } }
-        public static Microsoft.Extensions.Configuration.ConfigurationExpansion Format(string template, params string[] referencedKeys) { throw null; }
-        public static Microsoft.Extensions.Configuration.ConfigurationExpansion Literal(string value) { throw null; }
+        public static Microsoft.Extensions.Configuration.ConfigurationExpansion Format(string template, string key) { throw null; }
+        public static Microsoft.Extensions.Configuration.ConfigurationExpansion Format(string template, params string[] keys) { throw null; }
+        public static Microsoft.Extensions.Configuration.ConfigurationExpansion Literal(string? value) { throw null; }
         public static Microsoft.Extensions.Configuration.ConfigurationExpansion Reference(string key) { throw null; }
+    }
+    public readonly partial struct ConfigurationReferenceContext
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public string Key { get { throw null; } }
+        public System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.Configuration.IConfigurationProvider> Providers { get { throw null; } }
+        public string Value { get { throw null; } }
     }
     public abstract partial class StreamConfigurationProvider : Microsoft.Extensions.Configuration.ConfigurationProvider
     {

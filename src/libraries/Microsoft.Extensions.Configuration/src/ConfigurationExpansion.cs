@@ -14,10 +14,10 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public readonly struct ConfigurationExpansion
     {
-        private ConfigurationExpansion(string? template, StringValues referencedKeys)
+        private ConfigurationExpansion(string? template, StringValues keys)
         {
             Template = template;
-            ReferencedKeys = referencedKeys;
+            Keys = keys;
         }
 
         /// <summary>
@@ -35,36 +35,45 @@ namespace Microsoft.Extensions.Configuration
         /// Creates an expansion whose resolved value is <paramref name="value"/> verbatim. The value is taken as-is and is
         /// never passed through <see cref="string.Format(string, object[])"/>, so braces are safe.
         /// </summary>
-        /// <param name="value">The literal value the subject resolves to.</param>
-        public static ConfigurationExpansion Literal(string value)
+        /// <param name="value">The literal value the subject resolves to, or <see langword="null"/> for no value.</param>
+        public static ConfigurationExpansion Literal(string? value) => new ConfigurationExpansion(value, StringValues.Empty);
+
+        /// <summary>
+        /// Creates an expansion whose resolved value is <see cref="string.Format(string, object[])"/> applied to
+        /// <paramref name="template"/> with the resolved value of <paramref name="key"/> as the single argument.
+        /// </summary>
+        /// <param name="template">A composite format string (for example <c>"Server={0}"</c>).</param>
+        /// <param name="key">The target key whose resolved value fills the placeholder.</param>
+        public static ConfigurationExpansion Format(string template, string key)
         {
-            ArgumentNullException.ThrowIfNull(value);
-            return new ConfigurationExpansion(value, StringValues.Empty);
+            ArgumentNullException.ThrowIfNull(template);
+            ArgumentNullException.ThrowIfNull(key);
+            return new ConfigurationExpansion(template, new StringValues(key));
         }
 
         /// <summary>
         /// Creates an expansion whose resolved value is <see cref="string.Format(string, object[])"/> applied to
-        /// <paramref name="template"/> with the resolved values of <paramref name="referencedKeys"/> as arguments.
+        /// <paramref name="template"/> with the resolved values of <paramref name="keys"/> as arguments.
         /// </summary>
         /// <param name="template">A composite format string (for example <c>"Server={0};Port={1}"</c>).</param>
-        /// <param name="referencedKeys">The target keys whose resolved values fill the placeholders, in order.</param>
-        /// <remarks>If no referenced keys are supplied, the template is taken verbatim, without a formatting pass.</remarks>
-        public static ConfigurationExpansion Format(string template, params string[] referencedKeys)
+        /// <param name="keys">The target keys whose resolved values fill the placeholders, in order.</param>
+        /// <remarks>If no keys are supplied, the template is taken verbatim, without a formatting pass.</remarks>
+        public static ConfigurationExpansion Format(string template, params string[] keys)
         {
             ArgumentNullException.ThrowIfNull(template);
-            ArgumentNullException.ThrowIfNull(referencedKeys);
-            return new ConfigurationExpansion(template, referencedKeys.Length switch
+            ArgumentNullException.ThrowIfNull(keys);
+            return new ConfigurationExpansion(template, keys.Length switch
             {
                 0 => StringValues.Empty,
-                1 => new StringValues(referencedKeys[0]),
-                _ => new StringValues(referencedKeys),
+                1 => new StringValues(keys[0]),
+                _ => new StringValues(keys),
             });
         }
 
         /// <summary>
         /// Gets the literal value (for an expansion created by <see cref="Literal"/>) or the composite format
-        /// template (for one created by <see cref="Format"/>), or <see langword="null"/> for a reference created
-        /// by <see cref="Reference"/>.
+        /// template (for one created by <see cref="Format(string, string[])"/>), or <see langword="null"/> for a
+        /// reference created by <see cref="Reference"/>.
         /// </summary>
         public string? Template { get; }
 
@@ -72,6 +81,6 @@ namespace Microsoft.Extensions.Configuration
         /// Gets the keys this expansion refers to: empty for a verbatim literal, the single key for a reference or
         /// single-key format, or several keys for a multi-key format.
         /// </summary>
-        public StringValues ReferencedKeys { get; }
+        public StringValues Keys { get; }
     }
 }
