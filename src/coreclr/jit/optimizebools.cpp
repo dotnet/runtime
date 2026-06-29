@@ -1435,7 +1435,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
         return nullptr;
     }
 
-    ssize_t ival2 = opr2->AsIntCon()->gtIconVal;
+    ssize_t ival2 = opr2->AsIntCon()->IconValue();
 
     // Is the value a boolean?
     // Currently we only recognize constant 0/1.
@@ -1453,7 +1453,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
         if (pOptTest->isBool)
         {
             m_compiler->gtReverseCond(cond);
-            opr2->AsIntCon()->gtIconVal = 0;
+            opr2->AsIntCon()->SetIconValue(0);
         }
         else
         {

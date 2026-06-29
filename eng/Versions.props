@@ -15,7 +15,7 @@
     <PackageVersionNet7>7.0.20</PackageVersionNet7>
     <PackageVersionNet6>6.0.36</PackageVersionNet6>
     <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration>5</PreReleaseVersionIteration>
+    <PreReleaseVersionIteration>6</PreReleaseVersionIteration>
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
@@ -142,7 +142,7 @@
     <Antlr4BuildTasksVersion>12.14.0</Antlr4BuildTasksVersion>
     <Antlr4RuntimeStandardVersion>4.13.1</Antlr4RuntimeStandardVersion>
     <!-- Testing -->
-    <MicrosoftNETCoreCoreDisToolsVersion>1.6.0</MicrosoftNETCoreCoreDisToolsVersion>
+    <MicrosoftNETCoreCoreDisToolsVersion>1.7.0</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>17.4.0-preview-20220707-01</MicrosoftNETTestSdkVersion>
     <MicrosoftOneCollectRecordTraceVersion>0.1.33421</MicrosoftOneCollectRecordTraceVersion>
     <NUnitVersion>3.12.0</NUnitVersion>
@@ -172,7 +172,7 @@
     <EmsdkPackageVersion>$(MicrosoftNETCoreAppRefPackageVersion)</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
     <!-- The package path for python in src/mono/mono.proj needs to be updated if this changes-->
-    <EmsdkVersion>3.1.56</EmsdkVersion>
+    <EmsdkVersion>5.0.6</EmsdkVersion>
     <!-- WiX 5+ dependencies for MSI generation -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>

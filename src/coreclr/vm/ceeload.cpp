@@ -41,6 +41,11 @@
 #include "threads.h"
 #include "nativeimage.h"
 
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+#include <minipal/utf8.h>
+#include <minipal/getexepath.h>
+#endif // TARGET_UNIX && !DACCESS_COMPILE
+
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"
 
@@ -2217,10 +2222,9 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
     }
     CONTRACTL_END;
 
-    BOOL fIs80Plus;
     DWORD dwCharCount;
     LPCWSTR pString;
-    if (FAILED(GetMDImport()->GetUserString(token, &dwCharCount, &fIs80Plus, &pString)) ||
+    if (FAILED(GetMDImport()->GetUserString(token, &dwCharCount, &pString)) ||
         (pString == NULL))
     {
         THROW_BAD_FORMAT(BFA_BAD_STRING_TOKEN_RANGE, this);
@@ -2240,12 +2244,7 @@ void ModuleBase::InitializeStringData(DWORD token, EEStringData *pstrData, CQuic
     pstrData->SetStringBuffer(pSwapped);
 #endif // !!BIGENDIAN
 
-        // MD and String look at this bit in opposite ways.  Here's where we'll do the conversion.
-        // MD sets the bit to true if the string contains characters greater than 80.
-        // String sets the bit to true if the string doesn't contain characters greater than 80.
-
     pstrData->SetCharCount(dwCharCount);
-    pstrData->SetIsOnlyLowChars(!fIs80Plus);
 }
 
 
@@ -3583,6 +3582,14 @@ void Module::RunEagerFixupsUnlocked()
             {
                 _ASSERTE(IsReadyToRun());
                 GetReadyToRunInfo()->DisableAllR2RCode();
+
+#ifndef FEATURE_DYNAMIC_CODE_COMPILED
+                if (GetReadyToRunInfo()->HasStrippedILBodies())
+                {
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
+                        W("ReadyToRun code was disabled by a failed eager fixup, but the image has stripped IL bodies and this runtime has no JIT fallback."));
+                }
+#endif // !FEATURE_DYNAMIC_CODE_COMPILED
             }
             else
             {
@@ -3637,23 +3644,43 @@ BOOL Module::FixupNativeEntry(READYTORUN_IMPORT_SECTION* pSection, SIZE_T fixupI
 
 static LPCWSTR s_pCommandLine = NULL;
 
-// Retrieve the full command line for the current process.
-LPCWSTR GetManagedCommandLine()
+#ifdef TARGET_UNIX
+static LPWSTR s_pExePath = NULL;
+
+static LPWSTR GetExePath()
 {
-    LIMITED_METHOD_CONTRACT;
-    return s_pCommandLine;
+    LPWSTR pExePath = VolatileLoadWithoutBarrier(&s_pExePath);
+
+    if (pExePath == nullptr)
+    {
+        char* exePath = minipal_getexepath();
+        size_t exePathLen = minipal_get_length_utf8_to_utf16(exePath, strlen(exePath), 0);
+        pExePath = new WCHAR[exePathLen + 1];
+        minipal_convert_utf8_to_utf16(exePath, strlen(exePath), (CHAR16_T*)pExePath, exePathLen + 1, 0);
+        pExePath[exePathLen] = W('\0');
+        free(exePath);
+        s_pExePath = pExePath;
+    }
+
+    return pExePath;
 }
+#endif // TARGET_UNIX
 
 LPCWSTR GetCommandLineForDiagnostics()
 {
     // Get the managed command line.
-    LPCWSTR pCmdLine = GetManagedCommandLine();
+    LPCWSTR pCmdLine = VolatileLoadWithoutBarrier(&s_pCommandLine);
 
-    // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
+    // GetCommandLineForDiagnostics can be called without s_pCommandLine being initialized
+    // when the runtime is hosted without entrypoint assembly
     if (pCmdLine == nullptr)
     {
+#ifdef TARGET_WINDOWS
         // Use the result from GetCommandLineW() instead
         pCmdLine = GetCommandLineW();
+#else
+        pCmdLine = GetExePath();
+#endif // TARGET_WINDOWS
     }
 
     return pCmdLine;
@@ -3697,18 +3724,17 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     }
     CONTRACTL_END;
 
-    // Get the command line.
-    LPCWSTR osCommandLine = GetCommandLineW();
-
 #ifndef TARGET_UNIX
-    // On Windows, osCommandLine contains the executable and all arguments.
-    s_pCommandLine = osCommandLine;
+    // On Windows, GetCommandLineW contains the executable and all arguments.
+    s_pCommandLine = GetCommandLineW();
 #else
     // On UNIX, the PAL doesn't have the command line arguments, so we must build the command line.
-    // osCommandLine contains the full path to the executable.
-    SIZE_T  commandLineLen = (u16_strlen(osCommandLine) + 1);
+    // exePath contains the full path to the executable.
+    LPCWSTR exePath = GetExePath();
+    SIZE_T  commandLineLen = (u16_strlen(exePath) + 1);
 
-    // We will append pwzAssemblyPath to the 'corerun' osCommandLine
+    // Append assembly path to approximate the command line for generic hosts like `dotnet`.
+    // This isn't quite correct for apphost, as the app name will be duplicated.
     commandLineLen += (u16_strlen(pwzAssemblyPath) + 1);
 
     for (int i = 0; i < argc; i++)
@@ -3722,7 +3748,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     SIZE_T remainingLen    = commandLineLen;
     LPWSTR pCursor         = pNewCommandLine;
 
-    Append_Next_Item(&pCursor, &remainingLen, osCommandLine,   true);
+    Append_Next_Item(&pCursor, &remainingLen, exePath,   true);
     Append_Next_Item(&pCursor, &remainingLen, pwzAssemblyPath, (argc > 0));
 
     for (int i = 0; i < argc; i++)
