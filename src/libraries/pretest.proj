@@ -24,8 +24,8 @@
     <ProjectReference Include="$(ToolsProjectRoot)hotreload-delta-gen\Microsoft.DotNet.HotReload.Utils.Generator.BuildTool\Microsoft.DotNet.HotReload.Utils.Generator.BuildTool.csproj" />
     <ProjectReference Include="$(ToolsProjectRoot)hotreload-delta-gen\Microsoft.DotNet.HotReload.Utils.Generator.Tasks\Microsoft.DotNet.HotReload.Utils.Generator.Tasks.csproj" />
 
-    <!-- HelixTestTasks for batched WASM library tests on Helix -->
-    <ProjectReference Include="$(RepoTasksDir)HelixTestTasks\HelixTestTasks.csproj" Condition="'$(TargetOS)' == 'browser'" />
+    <!-- HelixTestTasks for batched library tests on Helix -->
+    <ProjectReference Include="$(RepoTasksDir)HelixTestTasks\HelixTestTasks.csproj" Condition="'$(TargetOS)' == 'browser' or ('$(TargetOS)' != 'wasi' and '$(TargetsMobile)' != 'true' and '$(BatchLibraryHelixWorkItems)' != 'false')" />
 
     <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'"/>
     <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'android'" />

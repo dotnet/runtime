@@ -16,12 +16,22 @@
     <BuildHelixWorkItemsDependsOn>BuildHelixCommand;StageDependenciesForHelix</BuildHelixWorkItemsDependsOn>
     <EnableDefaultBuildHelixWorkItems>true</EnableDefaultBuildHelixWorkItems>
     <HelixDependenciesStagingPath>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'helix-staging'))</HelixDependenciesStagingPath>
+    <BatchLibraryHelixWorkItems Condition="'$(BatchLibraryHelixWorkItems)' == ''">true</BatchLibraryHelixWorkItems>
+    <MaxTestsPerWorkItem Condition="'$(MaxTestsPerWorkItem)' == ''">20</MaxTestsPerWorkItem>
+    <_LibraryHelixBatchLargeThreshold Condition="'$(_LibraryHelixBatchLargeThreshold)' == ''">52428800</_LibraryHelixBatchLargeThreshold>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasi.targets" Condition="'$(TargetOS)' == 'wasi'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-browser.targets" Condition="'$(TargetOS)' == 'browser'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-mobile.targets" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'" />
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-superpmi-collect.targets" Condition="'$(SuperPmiCollect)' == 'true'" />
+
+  <UsingTask TaskName="Microsoft.DotNet.HelixTestTasks.GroupWorkItems"
+             AssemblyFile="$(HelixTestTasksAssemblyPath)"
+             Condition="'$(BatchLibraryHelixWorkItems)' == 'true'" />
+  <UsingTask TaskName="Microsoft.DotNet.HelixTestTasks.ComputeBatchTimeout"
+             AssemblyFile="$(HelixTestTasksAssemblyPath)"
+             Condition="'$(BatchLibraryHelixWorkItems)' == 'true'" />
 
   <PropertyGroup Condition="'$(_workItemTimeout)' == ''">
     <!-- Normal jobs have a 30 minute timeout for arm/arm64, and 15 minute timeout otherwise.
@@ -205,24 +215,33 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(HelixCommand)' == ''">
-      <HelixCommand Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' != 'true'">$(HelixCommandPrefix) &amp;&amp; </HelixCommand>
-      <HelixCommand Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' == 'true'">$(HelixCommandPrefix) &amp; </HelixCommand>
+      <HelixCommandPrefix Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' != 'true'">$(HelixCommandPrefix) &amp;&amp;</HelixCommandPrefix>
+      <HelixCommandPrefix Condition="'$(HelixCommandPrefix)' != '' and '$(WindowsShell)' == 'true'">$(HelixCommandPrefix) &amp;</HelixCommandPrefix>
 
-      <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' != 'true'">$(HelixCommand) dotnet dev-certs https &amp;&amp; </HelixCommand>
+      <HelixCommandPrefix Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' != 'true'">$(HelixCommandPrefix) dotnet dev-certs https &amp;&amp;</HelixCommandPrefix>
 
       <!-- on windows `dotnet dev-certs https -trust` shows a dialog, so instead install the certificate with powershell -->
-      <HelixCommand Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' == 'true'">$(HelixCommand) powershell -command &quot;dotnet dev-certs https --export-path devcerts.pfx --password PLACEHOLDER %3B $pw = ConvertTo-SecureString PLACEHOLDER -AsPlainText -Force %3B Import-PfxCertificate -FilePath devcerts.pfx -Password $pw -CertStoreLocation Cert:\LocalMachine\Root &quot; &amp;&amp; </HelixCommand>
+      <HelixCommandPrefix Condition="'$(InstallDevCerts)' == 'true' and '$(WindowsShell)' == 'true'">$(HelixCommandPrefix) powershell -command &quot;dotnet dev-certs https --export-path devcerts.pfx --password PLACEHOLDER %3B $pw = ConvertTo-SecureString PLACEHOLDER -AsPlainText -Force %3B Import-PfxCertificate -FilePath devcerts.pfx -Password $pw -CertStoreLocation Cert:\LocalMachine\Root &quot; &amp;&amp;</HelixCommandPrefix>
 
       <!--
         For Windows we need to use "call", since the command is going to be called from a batch script created by Helix.
         We "exit /b" at the end of RunTests.cmd. Helix runs some other commands after ours within the batch script,
         so if we don't use "call", then we cause the parent script to exit, and anything after will not be executed.
       -->
-      <HelixCommand Condition="'$(WindowsShell)' == 'true'">$(HelixCommand)call RunTests.cmd</HelixCommand>
-      <HelixCommand Condition="'$(WindowsShell)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+      <HelixRunnerEntryPoint Condition="'$(WindowsShell)' == 'true'">call RunTests.cmd</HelixRunnerEntryPoint>
+      <HelixBatchRunnerEntryPoint Condition="'$(WindowsShell)' == 'true'">call DesktopBatchRunner.cmd</HelixBatchRunnerEntryPoint>
+      <HelixRunnerEntryPoint Condition="'$(WindowsShell)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixRunnerEntryPoint) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixRunnerEntryPoint>
+      <HelixBatchRunnerEntryPoint Condition="'$(WindowsShell)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixBatchRunnerEntryPoint) --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixBatchRunnerEntryPoint>
 
-      <HelixCommand Condition="'$(WindowsShell)' != 'true'">$(HelixCommand)./RunTests.sh</HelixCommand>
-      <HelixCommand Condition="'$(WindowsShell)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+      <HelixRunnerEntryPoint Condition="'$(WindowsShell)' != 'true'">./RunTests.sh</HelixRunnerEntryPoint>
+      <HelixBatchRunnerEntryPoint Condition="'$(WindowsShell)' != 'true'">chmod +x DesktopBatchRunner.sh &amp;&amp; ./DesktopBatchRunner.sh</HelixBatchRunnerEntryPoint>
+      <HelixRunnerEntryPoint Condition="'$(WindowsShell)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixRunnerEntryPoint) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixRunnerEntryPoint>
+      <HelixBatchRunnerEntryPoint Condition="'$(WindowsShell)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixBatchRunnerEntryPoint) --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixBatchRunnerEntryPoint>
+
+      <HelixCommand Condition="'$(HelixCommandPrefix)' != ''">$(HelixCommandPrefix) </HelixCommand>
+      <HelixCommand>$(HelixCommand)$(HelixRunnerEntryPoint)</HelixCommand>
+      <_BatchHelixCommand Condition="'$(HelixCommandPrefix)' != ''">$(HelixCommandPrefix) </_BatchHelixCommand>
+      <_BatchHelixCommand>$(_BatchHelixCommand)$(HelixBatchRunnerEntryPoint)</_BatchHelixCommand>
     </PropertyGroup>
 
     <!-- FIXME: is this used? -->
@@ -300,7 +319,7 @@
       <HelixCorrelationPayload Condition="$(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic'))" Include="openssl" Uri="https://netcorenativeassets.blob.core.windows.net/resource-packages/external/android/openssl-1.1.1l-beta-1.zip" Destination="openssl" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(EnableDefaultBuildHelixWorkItems)' == 'true'">
+    <ItemGroup Condition="'$(EnableDefaultBuildHelixWorkItems)' == 'true' and '$(BatchLibraryHelixWorkItems)' != 'true'">
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
                                Condition="'$(IncludeHelixCorrelationPayload)' == 'true'"
                                AsArchive="$(HelixCorrelationPayload.EndsWith('.zip'))" />
@@ -312,6 +331,90 @@
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
         <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(TargetOS).$(TargetArchitecture).$(Configuration).mch;$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(EnableDefaultBuildHelixWorkItems)' == 'true' and '$(BatchLibraryHelixWorkItems)' == 'true'">
+      <HelixCorrelationPayload Include="$(HelixCorrelationPayload)"
+                               Condition="'$(IncludeHelixCorrelationPayload)' == 'true'"
+                               AsArchive="$(HelixCorrelationPayload.EndsWith('.zip'))" />
+
+      <_DefaultWorkItems Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)">
+        <BatchCompatible Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal'">true</BatchCompatible>
+        <BatchCompatible Condition="'$(Scenario)' != '' and '$(Scenario)' != 'normal'">false</BatchCompatible>
+        <BatchIncompatibilityReason Condition="'%(BatchCompatible)' != 'true'">Scenario=$(Scenario)</BatchIncompatibilityReason>
+        <RunnerType>Desktop</RunnerType>
+        <PlatformFamily Condition="'$(WindowsShell)' == 'true'">Windows</PlatformFamily>
+        <PlatformFamily Condition="'$(WindowsShell)' != 'true'">Unix</PlatformFamily>
+        <RuntimeFlavor>$(RuntimeFlavor)</RuntimeFlavor>
+        <TargetOS>$(TargetOS)</TargetOS>
+        <TargetArchitecture>$(TargetArchitecture)</TargetArchitecture>
+        <Scenario Condition="'$(Scenario)' == ''">normal</Scenario>
+        <Scenario Condition="'$(Scenario)' != ''">$(Scenario)</Scenario>
+        <TimeoutClass Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal'">Normal</TimeoutClass>
+        <TimeoutClass Condition="'$(Scenario)' != '' and '$(Scenario)' != 'normal'">Stress</TimeoutClass>
+        <PayloadShape>DesktopRuntime</PayloadShape>
+      </_DefaultWorkItems>
+
+      <_BatchCandidateWorkItems Include="@(_DefaultWorkItems)" Condition="'%(_DefaultWorkItems.BatchCompatible)' == 'true'" />
+      <_NonBatchWorkItems Include="@(_DefaultWorkItems)" Condition="'%(_DefaultWorkItems.BatchCompatible)' != 'true'" />
+
+      <HelixWorkItem Include="@(_NonBatchWorkItems -> '$(WorkItemPrefix)%(FileName)')">
+        <PayloadArchive>%(_NonBatchWorkItems.Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+        <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(TargetOS).$(TargetArchitecture).$(Configuration).mch;$(SuperPmiCollectionName).$(SuperPmiCollectionType).$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <GroupWorkItems Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''"
+                    Items="@(_BatchCandidateWorkItems)"
+                    BatchSize="$(MaxTestsPerWorkItem)"
+                    LargeThreshold="$(_LibraryHelixBatchLargeThreshold)"
+                    CompatibilityMetadataKeys="RunnerType;PlatformFamily;RuntimeFlavor;TargetOS;TargetArchitecture;Scenario;TimeoutClass;PayloadShape"
+                    BatchCompatibleMetadataKey="BatchCompatible">
+      <Output TaskParameter="GroupedItems" ItemName="_BatchGroupedItem" />
+    </GroupWorkItems>
+
+    <ItemGroup Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''">
+      <_BatchId Include="@(_BatchGroupedItem -> '%(BatchId)')" />
+      <_UniqueBatchId Include="@(_BatchId->Distinct())" />
+    </ItemGroup>
+
+    <RemoveDir Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''"
+               Directories="$(IntermediateOutputPath)helix-batches/" />
+    <MakeDir Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''"
+             Directories="$(IntermediateOutputPath)helix-batches/batch-%(_UniqueBatchId.Identity)/" />
+    <Copy Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''"
+          SourceFiles="@(_BatchGroupedItem)"
+          DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(_BatchGroupedItem.BatchId)/" />
+    <Copy Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != '' and '$(WindowsShell)' == 'true'"
+          SourceFiles="$(RepositoryEngineeringDir)testing\DesktopBatchRunner.cmd"
+          DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(_UniqueBatchId.Identity)/" />
+    <Copy Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != '' and '$(WindowsShell)' != 'true'"
+          SourceFiles="$(RepositoryEngineeringDir)testing\DesktopBatchRunner.sh"
+          DestinationFolder="$(IntermediateOutputPath)helix-batches/batch-%(_UniqueBatchId.Identity)/" />
+
+    <ComputeBatchTimeout Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''"
+                         GroupedItems="@(_BatchGroupedItem)"
+                         BatchIds="@(_UniqueBatchId)"
+                         ItemPrefix="$(WorkItemPrefix)Desktop-"
+                         BatchOutputDir="$(IntermediateOutputPath)helix-batches/">
+      <Output TaskParameter="TimedItems" ItemName="_BatchTimedItem" />
+    </ComputeBatchTimeout>
+
+    <ZipDirectory Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''"
+                  SourceDirectory="%(_BatchTimedItem.BatchDir)"
+                  DestinationFile="$(IntermediateOutputPath)helix-batches/%(_BatchTimedItem.Identity).zip"
+                  Overwrite="true" />
+
+    <Error Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != '' and '$(_BatchHelixCommand)' == ''"
+           Text="BatchLibraryHelixWorkItems requires the structured desktop batch command to be available. A custom HelixCommand cannot be batched by this target." />
+
+    <ItemGroup Condition="'$(BatchLibraryHelixWorkItems)' == 'true' and '$(EnableDefaultBuildHelixWorkItems)' == 'true' and '@(_BatchCandidateWorkItems)' != ''">
+      <HelixWorkItem Include="@(_BatchTimedItem)">
+        <PayloadArchive>$(IntermediateOutputPath)helix-batches/%(Identity).zip</PayloadArchive>
+        <Command>$(_BatchHelixCommand)</Command>
       </HelixWorkItem>
     </ItemGroup>
 

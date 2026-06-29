@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -18,12 +19,20 @@ namespace Microsoft.DotNet.HelixTestTasks;
 /// </summary>
 public class GroupWorkItems : Task
 {
+    private static readonly char[] s_compatibilityMetadataKeySeparators = { ';' };
+
     [Required]
     public ITaskItem[] Items { get; set; } = Array.Empty<ITaskItem>();
 
     public int BatchSize { get; set; } = 10;
 
     public long LargeThreshold { get; set; } = 52428800L; // 50 MB
+
+    public string CompatibilityMetadataKeys { get; set; } = string.Empty;
+
+    public string BatchCompatibleMetadataKey { get; set; } = string.Empty;
+
+    public bool StrictCompatibilityMetadata { get; set; }
 
     [Output]
     public ITaskItem[] GroupedItems { get; set; } = Array.Empty<ITaskItem>();
@@ -50,9 +59,14 @@ public class GroupWorkItems : Task
 
         var result = new List<ITaskItem>();
         int negativeBatchId = -1;
+        int nextBatchId = 0;
+        string[] compatibilityKeys = CompatibilityMetadataKeys
+            .Split(s_compatibilityMetadataKeySeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        string batchCompatibleMetadataKey = BatchCompatibleMetadataKey.Trim();
 
         // Separate large items (each gets its own batch)
-        var smallItems = new List<(ITaskItem item, long size)>();
+        var partitionedSmallItems = new Dictionary<string, List<(ITaskItem item, long size)>>(StringComparer.Ordinal);
+        var soloSmallItems = new List<(ITaskItem item, long size)>();
         foreach (var entry in itemsWithSize)
         {
             if (entry.size > LargeThreshold)
@@ -64,12 +78,25 @@ public class GroupWorkItems : Task
             }
             else
             {
-                smallItems.Add(entry);
+                if (IsSolo(entry.item, batchCompatibleMetadataKey, compatibilityKeys, out string partitionKey))
+                {
+                    soloSmallItems.Add(entry);
+                }
+                else
+                {
+                    if (!partitionedSmallItems.TryGetValue(partitionKey, out List<(ITaskItem item, long size)>? partitionItems))
+                    {
+                        partitionItems = new List<(ITaskItem item, long size)>();
+                        partitionedSmallItems.Add(partitionKey, partitionItems);
+                    }
+
+                    partitionItems.Add(entry);
+                }
             }
         }
 
         // Greedy bin-packing for small items
-        if (smallItems.Count > 0)
+        foreach (List<(ITaskItem item, long size)> smallItems in partitionedSmallItems.Values)
         {
             int numBatches = Math.Min(BatchSize, smallItems.Count);
             var batchSizes = new long[numBatches];
@@ -88,15 +115,77 @@ public class GroupWorkItems : Task
                 }
                 batchSizes[minIdx] += entry.size;
                 var newItem = new TaskItem(entry.item);
-                newItem.SetMetadata("BatchId", minIdx.ToString());
+                newItem.SetMetadata("BatchId", (nextBatchId + minIdx).ToString());
                 batchAssignments[minIdx].Add(newItem);
             }
 
             for (int i = 0; i < numBatches; i++)
                 result.AddRange(batchAssignments[i]);
+
+            nextBatchId += numBatches;
+        }
+
+        foreach (var entry in soloSmallItems)
+        {
+            var newItem = new TaskItem(entry.item);
+            newItem.SetMetadata("BatchId", nextBatchId.ToString());
+            nextBatchId++;
+            result.Add(newItem);
         }
 
         GroupedItems = result.ToArray();
         return !Log.HasLoggedErrors;
+    }
+
+    private bool IsSolo(ITaskItem item, string batchCompatibleMetadataKey, string[] compatibilityKeys, out string partitionKey)
+    {
+        partitionKey = string.Empty;
+
+        if (!string.IsNullOrEmpty(batchCompatibleMetadataKey))
+        {
+            string batchCompatible = item.GetMetadata(batchCompatibleMetadataKey);
+            if (!string.IsNullOrEmpty(batchCompatible) &&
+                !string.Equals(batchCompatible, "true", StringComparison.OrdinalIgnoreCase))
+            {
+                Log.LogMessage(
+                    MessageImportance.Low,
+                    "Keeping '{0}' in a solo batch because metadata '{1}' is '{2}'.",
+                    item.ItemSpec,
+                    batchCompatibleMetadataKey,
+                    batchCompatible);
+                return true;
+            }
+        }
+
+        if (compatibilityKeys.Length == 0)
+        {
+            return false;
+        }
+
+        string[] values = new string[compatibilityKeys.Length];
+        for (int i = 0; i < compatibilityKeys.Length; i++)
+        {
+            string key = compatibilityKeys[i];
+            string value = item.GetMetadata(key);
+            if (string.IsNullOrEmpty(value))
+            {
+                string message = $"Keeping '{item.ItemSpec}' in a solo batch because required compatibility metadata '{key}' is missing.";
+                if (StrictCompatibilityMetadata)
+                {
+                    Log.LogError(message);
+                }
+                else
+                {
+                    Log.LogMessage(MessageImportance.High, message);
+                }
+
+                return true;
+            }
+
+            values[i] = value;
+        }
+
+        partitionKey = string.Join('\u001f', compatibilityKeys.Zip(values, static (key, value) => key + "=" + value));
+        return false;
     }
 }
