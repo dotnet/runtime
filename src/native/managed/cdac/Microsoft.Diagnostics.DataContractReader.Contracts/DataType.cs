@@ -219,7 +219,6 @@ public enum DataType
     EnCAddedField,
     EnCAddedStaticField,
     EnCSyncBlockInfo,
-    EditAndContinueModule,
     UnorderedArrayBase,
 }
 

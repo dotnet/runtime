@@ -25,9 +25,6 @@ Data descriptors used:
 | `Module` | `DynamicMetadata` | Pointer to saved metadata for reflection emit modules |
 | `Module` | `MetadataGeneration` | Counter incremented each time a dynamic module re-serializes its saved metadata copy |
 | `Module` | `FieldDefToDescMap` | Mapping table |
-| `Module` | `PEAssembly` | Pointer to the module's `PEAssembly` |
-| `Module` | `Flags` | Module transient flags |
-| `EditAndContinueModule` | `ApplyChangesCount` | Counter incremented each time an EnC edit is applied |
 | `DynamicMetadata` | `Size` | Size of the dynamic metadata blob (as a 32bit uint) |
 | `DynamicMetadata` | `Data` | Start of dynamic metadata data array |
 | `PEAssembly` | `MDImportIsRW` | Non-zero when `MDImport` is a read-write importer |
@@ -135,12 +132,13 @@ AvailableMetadataType GetAvailableMetadataType(ModuleHandle handle)
     AvailableMetadataType flags = AvailableMetadataType.None;
 
     TargetPointer dynamicMetadata = Target.ReadPointer(handle.Address + /* Module::DynamicMetadata offset */);
+    uint metadataGeneration = Target.ReadPointer(handle.Address + /* Module::MetadataGeneration offset */);
 
     if (dynamicMetadata != TargetPointer.Null)
     {
         flags |= AvailableMetadataType.ReadWriteSavedCopy;
     }
-    else if (UseReadWriteMetadata(handle))
+    else if (metadataGeneration != 0)
     {
         flags |= AvailableMetadataType.ReadWrite;
     }
@@ -150,15 +148,6 @@ AvailableMetadataType GetAvailableMetadataType(ModuleHandle handle)
     }
 
     return flags;
-}
-
-bool UseReadWriteMetadata(ModuleHandle handle)
-{
-    TargetPointer PEAssembly = Target.Contracts.Loader.GetPEAssembly(handle.Address);
-    bool isEnCCapable = Target.Contracts.Loader.GetFlags(handle) & ModuleFlags.EncCapable != 0
-    bool hasRWMetadata = Target.Read<uint>(PEAssembly + /* PEAssembly::MDImportIsRW offset */) != 0;
-    bool hasMDImport = Target.ReadPointer(PEAssembly + /* PEAssembly::MDImport offset */) != TargetPointer.Null;
-    return hasRWMetadata && hasMDImport && isEnCCapable;
 }
 
 TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle)

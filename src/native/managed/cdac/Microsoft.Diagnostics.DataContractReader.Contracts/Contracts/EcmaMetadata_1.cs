@@ -337,7 +337,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         {
             flags |= AvailableMetadataType.ReadWriteSavedCopy;
         }
-        else if (UseReadWriteMetadata(handle))
+        else if (module.MetadataGeneration != 0)
         {
             flags |= AvailableMetadataType.ReadWrite;
         }
@@ -349,30 +349,10 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         return flags;
     }
 
-    private bool UseReadWriteMetadata(ModuleHandle handle)
-    {
-        ILoader loader = target.Contracts.Loader;
-        TargetPointer peAssemblyPtr = loader.GetPEAssembly(handle);
-        Data.PEAssembly peAssembly = target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
-        return peAssembly.MDImportIsRW != 0 && peAssembly.MDImport != TargetPointer.Null && (loader.GetFlags(handle) & ModuleFlags.EncCapable) != 0;
-    }
-
     private uint GetMetadataGeneration(ModuleHandle handle)
     {
         Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-
-        if (module.DynamicMetadata != TargetPointer.Null)
-        {
-            return module.MetadataGeneration;
-        }
-
-        if (UseReadWriteMetadata(handle))
-        {
-            Data.EditAndContinueModule encModule = target.ProcessedData.GetOrAdd<Data.EditAndContinueModule>(handle.Address);
-            return (uint)encModule.ApplyChangesCount;
-        }
-
-        return 0;
+        return module.MetadataGeneration;
     }
 
     private TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle)
@@ -385,8 +365,8 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
 
     private TargetEcmaMetadata GetReadWriteMetadata(ModuleHandle handle)
     {
-        Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        Data.PEAssembly peAssembly = target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
+        TargetPointer peAssemblyPtr = target.Contracts.Loader.GetPEAssembly(handle);
+        Data.PEAssembly peAssembly = target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
         Data.MDInternalRW mdRW = target.ProcessedData.GetOrAdd<Data.MDInternalRW>(peAssembly.MDImport);
         Data.CLiteWeightStgdbRW stgdb = target.ProcessedData.GetOrAdd<Data.CLiteWeightStgdbRW>(mdRW.Stgdb);
         Data.CMiniMdRW miniMd = target.ProcessedData.GetOrAdd<Data.CMiniMdRW>(stgdb.MiniMd);

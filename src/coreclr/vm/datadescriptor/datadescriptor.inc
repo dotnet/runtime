@@ -373,11 +373,6 @@ CDAC_TYPE_BEGIN(EnCSyncBlockInfo)
 CDAC_TYPE_INDETERMINATE(EnCSyncBlockInfo)
 CDAC_TYPE_FIELD(EnCSyncBlockInfo, T_POINTER, List, cdac_data<EnCSyncBlockInfo>::List)
 CDAC_TYPE_END(EnCSyncBlockInfo)
-
-CDAC_TYPE_BEGIN(EditAndContinueModule)
-CDAC_TYPE_INDETERMINATE(EditAndContinueModule)
-CDAC_TYPE_FIELD(EditAndContinueModule, T_INT32, ApplyChangesCount, cdac_data<EditAndContinueModule>::ApplyChangesCount)
-CDAC_TYPE_END(EditAndContinueModule)
 #endif // FEATURE_METADATA_UPDATER
 
 CDAC_TYPE_BEGIN(ModuleLookupMap)
