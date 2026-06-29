@@ -379,7 +379,7 @@ namespace System.Collections.Frozen.Tests
 
         [Fact]
         [OuterLoop]
-        [SkipOnPlatform(TestPlatforms.Browser, "Allocates ~1 GB strings; exhausts the constrained wasm browser heap.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public void ToFrozenSet_WithExtremelyLargeStrings()
         {
             // Test case with extremely large strings that exceed length bucket boundaries.

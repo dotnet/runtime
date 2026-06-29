@@ -747,7 +747,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(LargeTestCases))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Too slow on the single-threaded wasm interpreter (O(n^2) single-byte segment slicing).")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void TestJsonReaderLargestUtf8SegmentSizeOne(bool compactData, TestCaseType type, string jsonString)
         {
             // Skipping really large JSON since slicing them (O(n^2)) is too slow.
@@ -856,7 +856,7 @@ namespace System.Text.Json.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(SmallTestCases))]
-        [SkipOnPlatform(TestPlatforms.Browser, "Too slow on the single-threaded wasm interpreter (O(n^2) multi-segment slicing).")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void TestPartialJsonReaderSlicesMultiSegment(bool compactData, TestCaseType type, string jsonString)
         {
             _ = type;

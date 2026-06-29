@@ -21,8 +21,8 @@ namespace CoreXml.Test.XLinq
         // This ModuleCore entry point runs the full XNodeBuilder writer suite. On wasm the runtime
         // fails to shut down cleanly after it completes, so the test harness hangs until it times
         // out. It is [OuterLoop], so it never ran on single-threaded wasm before; gate it off
-        // Browser to keep the lane green while preserving coverage elsewhere.
-        [SkipOnPlatform(TestPlatforms.Browser, "The wasm runtime hangs at shutdown after this suite completes.")]
+        // CoreCLR Browser (Mono keeps running) to keep the lane green while preserving coverage elsewhere.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129973", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void RunTests()
         {
             TestInput.CommandLine = "";
