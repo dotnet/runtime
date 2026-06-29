@@ -1080,7 +1080,7 @@ internal class ARM64Unwinder(Target target)
         }
         if (spOffset < 0)
         {
-            context.Sp -= (ulong)spOffset;
+            context.Sp -= (ulong)-spOffset;
         }
 
         return true;
@@ -1130,7 +1130,7 @@ internal class ARM64Unwinder(Target target)
         }
         if (spOffset < 0)
         {
-            context.Sp -= (ulong)spOffset;
+            context.Sp -= (ulong)-spOffset;
         }
 
         return true;
@@ -1184,7 +1184,7 @@ internal class ARM64Unwinder(Target target)
         }
         if (spOffset < 0)
         {
-            context.Sp -= (ulong)spOffset;
+            context.Sp -= (ulong)-spOffset;
         }
 
         return true;
