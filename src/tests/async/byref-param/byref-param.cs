@@ -45,5 +45,5 @@ public class Async2ByrefParam
         return DoAsync();
     }
 
-    static async Task DoAsync() => await Task.Yield();
+    private static async Task DoAsync() => await Task.Yield();
 }

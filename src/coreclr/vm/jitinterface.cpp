@@ -15092,7 +15092,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
     {
         TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
-        if (tyHnd.GetInternalCorElementType() == ELEMENT_TYPE_BYREF)
+        if (tyHnd.IsByRef())
         {
             pCode->EmitLDC(0);
             pCode->EmitCONV_U();
