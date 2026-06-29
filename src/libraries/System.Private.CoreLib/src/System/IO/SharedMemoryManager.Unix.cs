@@ -498,10 +498,11 @@ namespace System.IO
                 {
                     error = Interop.Sys.GetLastErrorInfo();
                     fd.Dispose();
-                    if (error.Error == Interop.Error.EEXIST)
+                    if (error.Error == Interop.Error.EEXIST && transientRetryCount < TransientRetryCount)
                     {
                         // Another process created the file between our ENOENT check and our O_CREAT|O_EXCL attempt.
                         // Retry opening the existing file.
+                        transientRetryCount++;
                         continue;
                     }
                     throw Interop.GetExceptionForIoErrno(error, sharedMemoryFilePath);
