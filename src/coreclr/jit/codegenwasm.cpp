@@ -828,6 +828,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         return;
     }
 
+#ifdef FEATURE_HW_INTRINSICS
+    if (treeNode->OperIsHWIntrinsic())
+    {
+        genHWIntrinsic(treeNode->AsHWIntrinsic());
+        return;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     switch (treeNode->OperGet())
     {
         case GT_ADD:
@@ -1003,6 +1011,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_CKFINITE:
             genCkfinite(treeNode);
             break;
+
+#if defined(FEATURE_SIMD)
+        case GT_CNS_VEC:
+            genCodeForVectorConstant(treeNode);
+            break;
+#endif // FEATURE_SIMD
 
         default:
 #ifdef DEBUG
@@ -1883,6 +1897,22 @@ void CodeGen::genCodeForConstant(GenTree* treeNode)
     WasmProduceReg(treeNode);
 }
 
+#ifdef FEATURE_SIMD
+void CodeGen::genCodeForVectorConstant(GenTree* treeNode)
+{
+    assert(treeNode->IsCnsVec());
+    GenTreeVecCon* vecCon = treeNode->AsVecCon();
+
+    uint8_t bytes[16] = {};
+    memcpy(bytes, &vecCon->gtSimdVal, genTypeSize(vecCon->TypeGet()));
+
+    // There is only one type variant for v128.const, v128.const <byte[16]>
+    // and the bytes are reinterpreted according to whichever operation consumes the value.
+    GetEmitter()->emitIns_V128Imm(INS_v128_const, bytes);
+    WasmProduceReg(treeNode);
+}
+#endif
+
 //------------------------------------------------------------------------
 // genCodeForShift: Generate code for a shift or rotate operator
 //
@@ -2553,10 +2583,6 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     if (!varDsc->lvIsRegCandidate())
     {
         var_types type = varDsc->GetRegisterType(tree);
-        if (type == TYP_SIMD16)
-        {
-            NYI_WASM_SIMD("SIMD16 local load");
-        }
 
         GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
         GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), tree->GetLclNum(), 0);
@@ -2642,13 +2668,8 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_IND));
 
-    var_types type = tree->TypeGet();
-    if (type == TYP_SIMD16)
-    {
-        NYI_WASM_SIMD("SIMD16 indirect load");
-    }
-
-    instruction ins = ins_Load(type);
+    var_types   type = tree->TypeGet();
+    instruction ins  = ins_Load(type);
 
     genConsumeAddress(tree->Addr());
 
