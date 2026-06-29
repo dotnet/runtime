@@ -10,6 +10,7 @@ using System.Reflection.Runtime.General;
 using System.Text;
 
 using Internal.Metadata.NativeFormat;
+using Internal.Runtime.Augments;
 
 namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 {
