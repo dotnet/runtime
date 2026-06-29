@@ -366,7 +366,7 @@ namespace System.Diagnostics
 
         private bool StartCoreWithCallback(ProcessStartInfo startInfo, SafeFileHandle? stdinHandle, SafeFileHandle? stdoutHandle, SafeFileHandle? stderrHandle, Func<UnixProcessStartArguments, int> callback)
         {
-            SafeProcessHandle startedProcess = SafeProcessHandle.StartWithCallback(startInfo, stdinHandle!, stdoutHandle!, stderrHandle!, callback, out ProcessWaitState.Holder? waitStateHolder);
+            SafeProcessHandle startedProcess = SafeProcessHandle.StartWithCallback(startInfo, stdinHandle, stdoutHandle, stderrHandle, callback, out ProcessWaitState.Holder? waitStateHolder);
             return SetProcessHandle(startedProcess, waitStateHolder!);
         }
 

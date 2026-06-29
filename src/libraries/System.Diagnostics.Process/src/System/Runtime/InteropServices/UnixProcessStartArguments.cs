@@ -111,7 +111,7 @@ namespace System.Runtime.InteropServices
                 throw new InvalidOperationException(SR.Format(SR.UseShellExecuteNotSupportedForScenario, nameof(Start)));
             }
 
-            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            if ((OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || OperatingSystem.IsTvOS())
             {
                 throw new PlatformNotSupportedException();
             }
