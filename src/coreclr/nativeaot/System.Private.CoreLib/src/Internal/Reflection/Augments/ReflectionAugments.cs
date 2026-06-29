@@ -439,13 +439,28 @@ namespace Internal.Reflection.Augments
             if (info != null)
                 return info;
 
-            ReflectionCoreExecution.ExecutionEnvironment.GetEnumInfo(runtimeType.TypeHandle, out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
+            string[] unsortedNames;
+            object[] unsortedValues;
+            bool isFlags;
+            Type underlyingType;
+
+            RuntimeTypeHandle typeHandle = runtimeType.InternalTypeHandleIfAvailable;
+            if (!typeHandle.IsNull)
+            {
+                ReflectionCoreExecution.ExecutionEnvironment.GetEnumInfo(typeHandle, out unsortedNames, out unsortedValues, out isFlags);
+                underlyingType = RuntimeAugments.GetEnumUnderlyingType(typeHandle);
+            }
+            else
+            {
+                runtimeType.GetEnumValuesAndNamesForOpenType(out unsortedNames, out unsortedValues, out isFlags);
+                underlyingType = runtimeType.GetEnumUnderlyingType();
+            }
 
             // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
             // That codepath would bring functionality to compare everything that was ever allocated in the program.
             ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
 
-            info = create(RuntimeAugments.GetEnumUnderlyingType(type.TypeHandle), unsortedNames, unsortedValues, isFlags);
+            info = create(underlyingType, unsortedNames, unsortedValues, isFlags);
 
             runtimeType.GenericCache = info;
             return info;

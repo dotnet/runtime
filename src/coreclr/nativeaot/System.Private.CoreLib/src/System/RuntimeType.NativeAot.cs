@@ -100,9 +100,6 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            if (_pUnderlyingEEType == null)
-                return GetRuntimeTypeInfo().GetEnumName(rawValue);
-
             return Enum.GetName(this, rawValue);
         }
 
@@ -110,9 +107,6 @@ namespace System
         {
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
-
-            if (_pUnderlyingEEType == null)
-                return GetRuntimeTypeInfo().GetEnumNames();
 
             string[] ret = Enum.GetNamesNoCopy(this);
 
@@ -125,10 +119,7 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            if (_pUnderlyingEEType != null)
-                return Enum.InternalGetUnderlyingType(this);
-
-            return GetRuntimeTypeInfo().GetEnumUnderlyingType();
+            return Enum.InternalGetUnderlyingType(this);
         }
 
         public override Type? GetNullableUnderlyingType()
@@ -153,9 +144,6 @@ namespace System
 
             if (value is string valueAsString)
             {
-                if (_pUnderlyingEEType == null)
-                    return Array.IndexOf(GetRuntimeTypeInfo().GetEnumNames(), valueAsString) >= 0;
-
                 EnumInfo enumInfo = Enum.GetEnumInfo(this);
                 foreach (string name in enumInfo.Names)
                 {
@@ -170,27 +158,9 @@ namespace System
                 if (!Enum.TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
                 {
                     if (Type.IsIntegerType(value.GetType()))
-                    {
-                        Type underlyingType = _pUnderlyingEEType != null
-                            ? Enum.InternalGetUnderlyingType(this)
-                            : GetEnumUnderlyingType();
-                        throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), underlyingType));
-                    }
+                        throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), Enum.InternalGetUnderlyingType(this)));
                     else
                         throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
-                }
-
-                if (_pUnderlyingEEType == null)
-                {
-                    // Open generic enum: can't have actual enum instances, only integer values are allowed.
-                    if (value is Enum)
-                        throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, value.GetType(), this));
-
-                    Type underlyingType = GetEnumUnderlyingType();
-                    if (Type.GetTypeCode(underlyingType) != Type.GetTypeCode(value.GetType()))
-                        throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), underlyingType));
-
-                    return GetRuntimeTypeInfo().GetEnumName(rawValue) != null;
                 }
 
                 if (value is Enum)
@@ -215,35 +185,24 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            if (_pUnderlyingEEType == null)
-            {
-                Array underlyingValues = GetRuntimeTypeInfo().GetEnumValuesAsUnderlyingType();
-                Array result = Array.CreateInstance(this, underlyingValues.Length);
-                Array.Copy(underlyingValues, result, underlyingValues.Length);
-                return result;
-            }
-
             Array values = Enum.GetValuesAsUnderlyingTypeNoCopy(this);
             int count = values.Length;
 
             // Without universal shared generics, chances are slim that we'll have the appropriate
             // array type available. Offer an escape hatch that avoids a missing metadata exception
             // at the cost of a small appcompat risk.
-            Array result2 = AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed ?
+            Array result = AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed ?
                 Array.CreateInstance(Enum.InternalGetUnderlyingType(this), count) :
                 Array.CreateInstance(this, count);
 
-            Array.Copy(values, result2, values.Length);
-            return result2;
+            Array.Copy(values, result, values.Length);
+            return result;
         }
 
         public override Array GetEnumValuesAsUnderlyingType()
         {
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
-
-            if (_pUnderlyingEEType == null)
-                return GetRuntimeTypeInfo().GetEnumValuesAsUnderlyingType();
 
             return Enum.GetValuesAsUnderlyingType(this);
         }

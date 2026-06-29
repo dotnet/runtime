@@ -27,12 +27,26 @@ namespace System
             Debug.Assert(enumType != null);
             Debug.Assert(enumType.IsEnum);
 
-            return enumType.TypeHandle.ToMethodTable()->ElementType switch
+            MethodTable* pEEType = enumType.ToMethodTableMayBeNull();
+            if (pEEType != null)
             {
-                EETypeElementType.SByte or EETypeElementType.Byte => GetEnumInfo<byte>(enumType),
-                EETypeElementType.Int16 or EETypeElementType.UInt16 => GetEnumInfo<ushort>(enumType),
-                EETypeElementType.Int32 or EETypeElementType.UInt32 => GetEnumInfo<uint>(enumType),
-                EETypeElementType.Int64 or EETypeElementType.UInt64 => GetEnumInfo<ulong>(enumType),
+                return pEEType->ElementType switch
+                {
+                    EETypeElementType.SByte or EETypeElementType.Byte => GetEnumInfo<byte>(enumType),
+                    EETypeElementType.Int16 or EETypeElementType.UInt16 => GetEnumInfo<ushort>(enumType),
+                    EETypeElementType.Int32 or EETypeElementType.UInt32 => GetEnumInfo<uint>(enumType),
+                    EETypeElementType.Int64 or EETypeElementType.UInt64 => GetEnumInfo<ulong>(enumType),
+                    _ => throw new NotSupportedException(),
+                };
+            }
+
+            // Open generic enum: dispatch based on underlying type from field-based reflection.
+            return Type.GetTypeCode(enumType.GetRuntimeTypeInfo().GetEnumUnderlyingType()) switch
+            {
+                TypeCode.SByte or TypeCode.Byte => GetEnumInfo<byte>(enumType),
+                TypeCode.Int16 or TypeCode.UInt16 => GetEnumInfo<ushort>(enumType),
+                TypeCode.Int32 or TypeCode.UInt32 => GetEnumInfo<uint>(enumType),
+                TypeCode.Int64 or TypeCode.UInt64 => GetEnumInfo<ulong>(enumType),
                 _ => throw new NotSupportedException(),
             };
         }

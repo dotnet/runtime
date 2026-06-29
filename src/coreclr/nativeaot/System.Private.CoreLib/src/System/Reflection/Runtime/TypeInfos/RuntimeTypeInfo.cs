@@ -412,50 +412,26 @@ namespace System.Reflection.Runtime.TypeInfos
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Literal fields on open generic enum types are never trimmed")]
-        public virtual string[] GetEnumNames()
+        internal void GetEnumValuesAndNamesForOpenType(out string[] names, out object[] values, out bool isFlags)
         {
+            Debug.Assert(IsActualEnum);
             FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            object[] keys = new object[fields.Length];
-            string[] names = new string[fields.Length];
+            names = new string[fields.Length];
+            values = new object[fields.Length];
             for (int i = 0; i < fields.Length; i++)
             {
-                keys[i] = fields[i].GetRawConstantValue()!;
                 names[i] = fields[i].Name;
+                // Convert to unsigned storage type to match NativeFormatEnumInfo behavior.
+                values[i] = fields[i].GetRawConstantValue() switch
+                {
+                    sbyte sb => (byte)sb,
+                    short s => (ushort)s,
+                    int n => (uint)n,
+                    long l => (ulong)l,
+                    object v => v  // byte, ushort, uint, ulong - already unsigned
+                };
             }
-            Array.Sort(keys, names);
-            return names;
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
-            Justification = "Literal fields on open generic enum types are never trimmed")]
-        public virtual string? GetEnumName(ulong rawValue)
-        {
-            FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            foreach (FieldInfo field in fields)
-            {
-                IConvertible ic = (IConvertible)field.GetRawConstantValue()!;
-                ulong fieldRawValue = ic.GetTypeCode() == TypeCode.UInt64
-                    ? ic.ToUInt64(null)
-                    : unchecked((ulong)ic.ToInt64(null));
-                if (fieldRawValue == rawValue)
-                    return field.Name;
-            }
-            return null;
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
-            Justification = "Literal fields on open generic enum types are never trimmed")]
-        public virtual Array GetEnumValuesAsUnderlyingType()
-        {
-            FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            object[] rawValues = new object[fields.Length];
-            for (int i = 0; i < fields.Length; i++)
-                rawValues[i] = fields[i].GetRawConstantValue()!;
-            Array.Sort(rawValues);
-            Type underlyingType = GetEnumUnderlyingType();
-            Array result = Array.CreateInstance(underlyingType, rawValues.Length);
-            rawValues.CopyTo(result, 0);
-            return result;
+            isFlags = IsDefined(typeof(FlagsAttribute), false);
         }
 
         public Type MakeArrayType()
