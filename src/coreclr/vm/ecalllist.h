@@ -261,12 +261,7 @@ FCFuncStart(gThreadFuncs)
 FCFuncEnd()
 
 FCFuncStart(gObjectHeaderFuncs)
-    FCFuncElement("AcquireInternal", ObjHeader_AcquireThinLock)
-    FCFuncElement("Release", ObjHeader_ReleaseThinLock)
-FCFuncEnd()
-
-FCFuncStart(gMonitorFuncs)
-    FCFuncElement("GetLockHandleIfExists", Monitor_GetLockHandleIfExists)
+    FCFuncElement("GetLockHandleIfExists", ObjectHeader_GetLockHandleIfExists)
 FCFuncEnd()
 
 
@@ -408,10 +403,7 @@ FCClassElement("Math", "System", gMathFuncs)
 FCClassElement("MathF", "System", gMathFFuncs)
 FCClassElement("MetadataImport", "System.Reflection", gMetaDataImport)
 FCClassElement("MethodTable", "System.Runtime.CompilerServices", gMethodTableFuncs)
-FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
-
 FCClassElement("ObjectHeader", "System.Threading", gObjectHeaderFuncs)
-
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gRuntimeHelpers)

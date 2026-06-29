@@ -9091,7 +9091,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (isAwait)
                     {
                         _impResolveToken(CORINFO_TOKENKIND_Await);
-                        if (resolvedToken.hMethod == NO_METHOD_HANDLE)
+                        if ((resolvedToken.hMethod == NO_METHOD_HANDLE) || !impCheckOptimizeAwait(awaitOffset))
                         {
                             // This can happen in cases when the Task-returning method is not a runtime Async
                             // function. For example "T M1<T>(T arg) => arg" when called with a Task argument.
@@ -11153,6 +11153,37 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
     return;
 #undef _impResolveToken
+}
+
+//------------------------------------------------------------------------
+// impCheckOptimizeAwait:
+//   Check if an await at a specified offset should be optimized.
+//
+// Arguments:
+//   awaitOffset - The offset of the await
+//
+// Returns:
+//     True if we should use the async variant.
+//
+bool Compiler::impCheckOptimizeAwait(IL_OFFSET awaitOffset)
+{
+#ifdef DEBUG
+    static ConfigMethodRange s_jitOptimizeAwaitRange;
+    s_jitOptimizeAwaitRange.EnsureInit(JitConfig.JitOptimizeAwaitRange());
+
+    unsigned hash = impInlineRoot()->info.compMethodHash();
+    hash          = ((hash << 5) + hash) ^ (compIsForInlining() ? compInlineContext->GetOrdinal() : 0);
+    hash          = ((hash << 5) + hash) ^ awaitOffset;
+
+    if ((JitConfig.JitAwaitHashBreak() != -1) && (hash == (unsigned)JitConfig.JitAwaitHashBreak()))
+    {
+        assert(!"JitAwaitHashBreak reached");
+    }
+
+    return s_jitOptimizeAwaitRange.Contains(hash);
+#else
+    return true;
+#endif
 }
 
 //------------------------------------------------------------------------
