@@ -428,7 +428,8 @@ namespace System.Reflection.Runtime.TypeInfos
                     short s => (ushort)s,
                     int n => (uint)n,
                     long l => (ulong)l,
-                    object v => v  // byte, ushort, uint, ulong - already unsigned
+                    object v => v,  // byte, ushort, uint, ulong - already unsigned
+                    null => null
                 };
             }
             isFlags = IsDefined(typeof(FlagsAttribute), false);
