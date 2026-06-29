@@ -2459,7 +2459,7 @@ public:
     //
 
     // get the method desc given the interface method desc
-    static MethodDesc *GetMethodDescForInterfaceMethodAndServer(TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer);
+    static MethodDesc *GetMethodDescForInterfaceMethodAndServer(TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer, MethodTable* pServerMT);
 
 #ifdef FEATURE_COMINTEROP
     // get the method desc given the interface method desc on a COM implemented server

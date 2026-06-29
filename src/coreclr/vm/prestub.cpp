@@ -3794,6 +3794,8 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
                 if (objRef == NULL)
                     COMPlusThrow(kNullReferenceException);
 
+                MethodTable* pMTObjRef = objRef->GetMethodTable();
+
                 GCX_PREEMP();
 
                 // Duplicated logic from JIT_VirtualFunctionPointer_Framed
@@ -3803,7 +3805,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
                 }
                 else
                 {
-                    result = pMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, th);
+                    result = pMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, pMTObjRef, th);
                 }
 
                 GCPROTECT_END();

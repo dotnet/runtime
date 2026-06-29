@@ -1932,7 +1932,7 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
 // The following resolve virtual dispatch for the given method on the given
 // object down to an actual address to call, including any
 // handling of context proxies and other thunking layers.
-MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
+MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis, MethodTable* pMTOfThis)
 {
     CONTRACT(MethodDesc *)
     {
@@ -1948,14 +1948,6 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
     }
     CONTRACT_END;
 
-    // Method table of target (might be instantiated)
-    MethodTable *pObjMT;
-    
-    {
-        GCX_COOP();
-        pObjMT = (*orThis)->GetMethodTable();
-    }
-
     // This is the static method descriptor describing the call.
     // It is not the destination of the call, which we must compute.
     MethodDesc* pStaticMD = this;
@@ -1967,8 +1959,8 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
     MethodDesc *pTargetMDBeforeGenericMethodArgs =
         pStaticMD->IsInterface()
         ? MethodTable::GetMethodDescForInterfaceMethodAndServer(TypeHandle(pStaticMD->GetMethodTable()),
-                                                                pStaticMDWithoutGenericMethodArgs,orThis)
-        : pObjMT->GetMethodDescForSlot(pStaticMDWithoutGenericMethodArgs->GetSlot());
+                                                                pStaticMDWithoutGenericMethodArgs,orThis, pMTOfThis)
+        : pMTOfThis->GetMethodDescForSlot(pStaticMDWithoutGenericMethodArgs->GetSlot());
 
     pTargetMDBeforeGenericMethodArgs->CheckRestore();
 
@@ -1988,7 +1980,7 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
     {
         pTargetMT = ClassLoader::LoadGenericInstantiationThrowing(pTargetMT->GetModule(),
                                                                   pTargetMT->GetCl(),
-                                                                  pTargetMDBeforeGenericMethodArgs->GetExactClassInstantiation(TypeHandle(pObjMT))).GetMethodTable();
+                                                                  pTargetMDBeforeGenericMethodArgs->GetExactClassInstantiation(TypeHandle(pMTOfThis))).GetMethodTable();
     }
 
     RETURN(MethodDesc::FindOrCreateAssociatedMethodDesc(
@@ -2031,7 +2023,7 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
 }
 
 //*******************************************************************************
-PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
+PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
     CONTRACTL
     {
@@ -2047,7 +2039,7 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Type
     if (HasMethodInstantiation())
     {
         CheckRestore();
-        MethodDesc *pResultMD = ResolveGenericVirtualMethod(orThis);
+        MethodDesc *pResultMD = ResolveGenericVirtualMethod(orThis, pMTOfThis);
         
         // If we're remoting this call we can't call directly on the returned
         // method desc, we need to go through a stub that guarantees we end up
@@ -2062,19 +2054,14 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Type
     
     if (IsInterface())
     {
-        MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH,this,orThis);
+        MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH,this,orThis, pMTOfThis);
         return pTargetMD->GetSingleCallableAddrOfCode();
     }
     
-    MethodTable *pObjMT;
-    {
-        GCX_COOP();
-        pObjMT = (*orThis)->GetMethodTable();
-    }
-    return pObjMT->GetRestoredSlot(GetSlot());
+    return pMTOfThis->GetRestoredSlot(GetSlot());
 }
 
-MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
+MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
     CONTRACT(MethodDesc*)
     {
@@ -2095,28 +2082,23 @@ MethodDesc* MethodDesc::GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHa
     if (pStaticMD->HasMethodInstantiation())
     {
         CheckRestore();
-        RETURN(ResolveGenericVirtualMethod(orThis));
+        RETURN(ResolveGenericVirtualMethod(orThis, pMTOfThis));
     }
 
     if (pStaticMD->IsInterface())
     {
-        RETURN(MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, pStaticMD, orThis));
+        RETURN(MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, pStaticMD, orThis, pMTOfThis));
     }
 
     // Method table of target (might be instantiated)
-    MethodTable *pObjMT;
-    {
-        GCX_COOP();
-        pObjMT = (*orThis)->GetMethodTable();
-    }
-    RETURN(pObjMT->GetMethodDescForSlot(pStaticMD->GetSlot()));
+    RETURN(pMTOfThis->GetMethodDescForSlot(pStaticMD->GetSlot()));
 }
 
 //*******************************************************************************
 // The following resolve virtual dispatch for the given method on the given
 // object down to an actual address to call, including any
 // handling of context proxies and other thunking layers.
-PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH)
+PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
 {
     CONTRACT(PCODE)
     {
@@ -2127,7 +2109,7 @@ PCODE MethodDesc::GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeH
     }
     CONTRACT_END;
 
-    MethodDesc *pTargetMD = GetMethodDescOfVirtualizedCode(orThis, staticTH);
+    MethodDesc *pTargetMD = GetMethodDescOfVirtualizedCode(orThis, pMTOfThis, staticTH);
     RETURN(pTargetMD->GetMultiCallableAddrOfCode());
 }
 
@@ -2308,7 +2290,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
 }
 
 //*******************************************************************************
-PCODE MethodDesc::GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType)
+PCODE MethodDesc::GetCallTarget(OBJECTREF* pThisObj, MethodTable *pMTThis, TypeHandle ownerType)
 {
     CONTRACTL
     {
@@ -2323,9 +2305,10 @@ PCODE MethodDesc::GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType)
     if (IsVtableMethod() && !GetMethodTable()->IsValueType())
     {
         CONSISTENCY_CHECK(NULL != pThisObj);
+        _ASSERTE(NULL != pMTThis);
         if (ownerType.IsNull())
             ownerType = GetMethodTable();
-        pTarget = GetSingleCallableAddrOfVirtualizedCode(pThisObj, ownerType);
+        pTarget = GetSingleCallableAddrOfVirtualizedCode(pThisObj, pMTThis, ownerType);
     }
     else
     {

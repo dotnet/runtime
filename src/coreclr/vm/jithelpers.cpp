@@ -721,10 +721,11 @@ extern "C" PCODE QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnSt
     }
     else
     {
+        MethodTable *pMTObjRef = objRef->GetMethodTable();
         GCX_PREEMP();
         // This is the new way of resolving a virtual call, including generic virtual methods.
         // The code is now also used by reflection, remoting etc.
-        addr = pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, staticTH);
+        addr = pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, pMTObjRef, staticTH);
         _ASSERTE(addr);
     }
 

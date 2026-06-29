@@ -2215,8 +2215,9 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
         // method on.
         //
         {
+            MethodTable *pMT = objRef->GetMethodTable();
             GCX_PREEMP();
-            pDE->m_targetCodeAddr = pDE->m_md->GetCallTarget(&objRef, pDE->m_ownerTypeHandle);
+            pDE->m_targetCodeAddr = pDE->m_md->GetCallTarget(&objRef, pMT, pDE->m_ownerTypeHandle);
         }
 
         GCPROTECT_END();
@@ -2225,7 +2226,7 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
     {
         {
             GCX_PREEMP();
-            pDE->m_targetCodeAddr = pDE->m_md->GetCallTarget(NULL, pDE->m_ownerTypeHandle);
+            pDE->m_targetCodeAddr = pDE->m_md->GetCallTarget(NULL, NULL, pDE->m_ownerTypeHandle);
         }
     }
 

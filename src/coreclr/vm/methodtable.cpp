@@ -469,7 +469,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 //==========================================================================================
 // get the method desc given the interface method desc
 /* static */ MethodDesc *MethodTable::GetMethodDescForInterfaceMethodAndServer(
-                            TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer)
+                            TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer, MethodTable* pServerMT)
 {
     CONTRACT(MethodDesc*)
     {
@@ -494,13 +494,6 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
     MethodTable * pItfMT =  ownerType.GetMethodTable();
     _ASSERTE(pItfMT != NULL);
 #endif // _DEBUG
-
-    MethodTable *pServerMT;
-    {
-        GCX_COOP();
-        pServerMT = (*pServer)->GetMethodTable();
-    }
-    _ASSERTE(pServerMT != NULL);
 
 #ifdef FEATURE_COMINTEROP
     if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())

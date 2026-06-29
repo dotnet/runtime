@@ -919,7 +919,7 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
 
     {
         GCX_PREEMP();
-        pCallTarget = pCtorMD->GetCallTarget(NULL, th);
+        pCallTarget = pCtorMD->GetSingleCallableAddrOfCode();
     }
 
     MethodDescCallSite ctorCallSite(pCtorMD, pCallTarget, th);
