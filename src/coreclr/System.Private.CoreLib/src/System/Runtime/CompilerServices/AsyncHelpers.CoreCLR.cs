@@ -899,14 +899,10 @@ namespace System.Runtime.CompilerServices
             // NOTE, any changes done to this method need to be replicated in InstrumentedDispatchContinuations as well.
             private unsafe void DispatchContinuations()
             {
-                if (RuntimeAsyncInstrumentationHelpers.InstrumentCheckPoint)
+                if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
                 {
-                    AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
-                    if (flags != AsyncInstrumentation.Flags.Disabled)
-                    {
-                        InstrumentedDispatchContinuations(flags);
-                        return;
-                    }
+                    InstrumentedDispatchContinuations(flags);
+                    return;
                 }
 
                 // Intentionally skip initialization for this state; the Push
@@ -1001,14 +997,14 @@ namespace System.Runtime.CompilerServices
                         return;
                     }
 
-                    if (RuntimeAsyncInstrumentationHelpers.InstrumentCheckPoint)
+                    if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out flags))
                     {
                         SetContinuationState(asyncDispatcherInfo.NextContinuation);
 
                         awaitState.Pop();
                         refDispatcherInfo = asyncDispatcherInfo.Next;
 
-                        InstrumentedDispatchContinuations(AsyncInstrumentation.ActiveFlags);
+                        InstrumentedDispatchContinuations(flags);
                         return;
                     }
                 }
@@ -1126,7 +1122,7 @@ namespace System.Runtime.CompilerServices
                         return;
                     }
 
-                    flags = AsyncInstrumentation.ActiveFlags;
+                    flags = AsyncInstrumentation.LoadFlags();
                 }
             }
 
@@ -1248,14 +1244,10 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void FinalizeRuntimeAsyncTask<T>(ref RuntimeAsyncAwaitState state, RuntimeAsyncTask<T> task)
         {
-            if (RuntimeAsyncInstrumentationHelpers.InstrumentCheckPoint)
+            if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags))
             {
-                AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
-                if (flags != AsyncInstrumentation.Flags.Disabled)
-                {
-                    InstrumentedFinalizeRuntimeAsyncTask(task, ref state, flags);
-                    return;
-                }
+                InstrumentedFinalizeRuntimeAsyncTask(task, ref state, flags);
+                return;
             }
 
             task.HandleSuspended(ref state);
@@ -1561,12 +1553,6 @@ namespace System.Runtime.CompilerServices
         // These methods should not throw - exceptions would break the dispatch loop.
         internal static class RuntimeAsyncInstrumentationHelpers
         {
-            public static bool InstrumentCheckPoint
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get => AsyncInstrumentation.IsSupported && AsyncInstrumentation.ActiveFlags != AsyncInstrumentation.Flags.Disabled;
-            }
-
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static void SyncPointCheck(ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation curContinuation)
             {
