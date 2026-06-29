@@ -568,7 +568,7 @@ namespace System.Net.Http.Functional.Tests
         // Browser+CoreCLR currently surfaces a TaskCanceledException (100s HttpClient.Timeout)
         // instead of the expected HttpRequestException ("TypeError: Failed to fetch"); the
         // CoreCLR-wasm streaming-request-over-HTTP/1 path differs from Mono-wasm (which passes).
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/129758", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129758", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
         public async Task BrowserHttpHandler_StreamingRequest_Http1Fails()
         {
             var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
