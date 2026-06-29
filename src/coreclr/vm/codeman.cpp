@@ -1539,7 +1539,17 @@ void EEJitManager::SetCpuInfo()
 
     // x86-64-v3
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX))
+    bool enableAVX = ((cpuFeatures & XArchIntrinsicConstants_Avx) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX);
+
+#if defined(FEATURE_INTERPRETER)
+    // The interpreter only supports 128-bit vectors, so don't enable AVX. The ISA
+    // dependency normalization below then removes AVX2/AVX512 (and the dependent
+    // VectorT256/VectorT512), keeping the reported ISA support aligned with the
+    // interpreter-only expectations.
+    enableAVX = enableAVX && !interpreterOnly;
+#endif
+
+    if (enableAVX)
     {
         CPUCompileFlags.Set(InstructionSet_AVX);
     }
@@ -1790,18 +1800,6 @@ void EEJitManager::SetCpuInfo()
     if (((cpuFeatures & RiscV64IntrinsicConstants_Zbs) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zbs))
     {
         CPUCompileFlags.Set(InstructionSet_Zbs);
-    }
-#endif
-
-#if defined(FEATURE_INTERPRETER) && (defined(TARGET_X86) || defined(TARGET_AMD64))
-    if (interpreterOnly)
-    {
-        // The interpreter only supports 128-bit vectors, so clear AVX to let the
-        // dependency resolution below cascade-remove AVX2, AVX512, Vector256 and Vector512
-        // while keeping Vector128 and X86Base, matching the x86-64-v2 ReadyToRun baseline
-        // used for these targets so the reported ISA stays in sync with R2R and the
-        // 128-bit path is taken.
-        CPUCompileFlags.Clear(InstructionSet_AVX);
     }
 #endif
 
