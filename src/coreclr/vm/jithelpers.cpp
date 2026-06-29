@@ -1913,7 +1913,7 @@ HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32
     if (!COMDelegate::IsTrueMulticastDelegate(del) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
         MethodDesc* pMD = (MethodDesc*)extraData;
-        if ((pMD == nullptr) && (del->GetMethodPtrAux() == NULL))
+        if ((pMD == nullptr) && (del->GetMethodPtrAux() == (PCODE)NULL))
         {
             pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
         }
@@ -1964,7 +1964,7 @@ HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64
     if (!COMDelegate::IsTrueMulticastDelegate(del) && (extraData != DELEGATE_MARKER_UNMANAGEDFPTR))
     {
         MethodDesc* pMD = (MethodDesc*)extraData;
-        if ((pMD == nullptr) && (del->GetMethodPtrAux() == NULL))
+        if ((pMD == nullptr) && (del->GetMethodPtrAux() == (PCODE)NULL))
         {
             pMD = NonVirtualEntry2MethodDesc(del->GetMethodPtr());
         }
