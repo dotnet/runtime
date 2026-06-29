@@ -7514,6 +7514,7 @@ static bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
 //
 COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
     MethodDesc* ftn,
+    MethodDesc* ilFtn,
     COR_ILMETHOD_DECODER* header,
     CORINFO_METHOD_INFO* methInfo,
     CORINFO_CONTEXT_HANDLE exactContext)
@@ -7529,10 +7530,6 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
 
     /* Grab information from the IL header */
     SigPointer localSig{};
-
-    // For async versions we get the IL of the ordinary variant and pass the
-    // JIT a flag indicating that.
-    MethodDesc* ilFtn = ftn->SupportsAsyncVersionCodegen() ? ftn->GetOrdinaryVariant() : ftn;
 
     MethodInfoWorkerContext cxt{ ftn, header };
 
@@ -7740,22 +7737,24 @@ CEEInfo::getMethodInfo(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* ftn = GetMethod(ftnHnd);
+    MethodDesc* ilFtn = ftn->GetOrdinaryVariantIfAsyncVersion();
+
     COR_ILMETHOD* pILHeader;
-    if (ftn->MayHaveILHeader() && (pILHeader = ftn->GetILHeader()) != NULL)
+    if (ilFtn->MayHaveILHeader() && (pILHeader = ilFtn->GetILHeader()) != NULL)
     {
         // Get the IL header and set it.
-        COR_ILMETHOD_DECODER header(pILHeader, ftn->GetMDImport(), NULL);
-        getMethodInfoWorker(ftn, &header, methInfo, context);
+        COR_ILMETHOD_DECODER header(pILHeader, ilFtn->GetMDImport(), NULL);
+        getMethodInfoWorker(ftn, ilFtn, &header, methInfo, context);
         result = true;
     }
-    else if (ftn->IsIL() || ftn->IsDynamicMethod())
+    else if (ilFtn->IsIL() || ilFtn->IsDynamicMethod())
     {
         // IL methods with no IL header indicate there is no implementation defined in metadata.
-        // NOTE: P/Invoke methods are also IL methods with no IL header,
-        // but it is generally not profitable to inline the marshalling IL.
-        // As a result, we skip inlining the marshalling IL.
+        // NOTE: P/Invoke methods have marshalling IL but it is generally not
+        // profitable to inline it. The IsIL check above returns false for them
+        // and thus we will not inline them.
         // P/Invokes that don't require marshalling can still be inlined directly by the JIT.
-        getMethodInfoWorker(ftn, NULL, methInfo, context);
+        getMethodInfoWorker(ftn, ilFtn, NULL, methInfo, context);
         result = true;
     }
 
@@ -7940,7 +7939,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             else if (pCallee->IsIL())
             {
                 CORINFO_METHOD_INFO methodInfo;
-                getMethodInfoWorker(pCallee, NULL, &methodInfo);
+                getMethodInfoWorker(pCallee, pCallee->GetOrdinaryVariantIfAsyncVersion(), NULL, &methodInfo);
                 if (methodInfo.EHcount > 0)
                 {
                     result = INLINE_FAIL;
@@ -11018,7 +11017,7 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(config != NULL);
-    COR_ILMETHOD_DECODER* ilHeader = getMethodInfoWorker(m_pMethodBeingCompiled, m_ILHeader, &m_MethodInfo);
+    COR_ILMETHOD_DECODER* ilHeader = getMethodInfoWorker(m_pMethodBeingCompiled, m_pMethodBeingCompiled->GetOrdinaryVariantIfAsyncVersion(), m_ILHeader, &m_MethodInfo);
 
     // The header maybe replaced during the call to getMethodInfoWorker. This is most probable
     // when the input is null (that is, no metadata), but we can also examine the method and generate
@@ -13206,11 +13205,7 @@ void CEECodeGenInfo::getEHinfo(
 
     bool isMethodBeingCompiled = pMD == m_pMethodBeingCompiled;
 
-    if (pMD->SupportsAsyncVersionCodegen())
-    {
-        // Get the EH info from the ordinary variant.
-        pMD = pMD->GetOrdinaryVariant();
-    }
+    pMD = pMD->GetOrdinaryVariantIfAsyncVersion();
 
     COR_ILMETHOD* pILHeader;
     if (pMD->IsDynamicMethod())
