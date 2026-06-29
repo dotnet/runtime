@@ -87,7 +87,7 @@ public partial class UpdateChromeVersions : MBU.Task
             }
             if (VersionsChanged)
             {
-                UpdateEnvVarsForPRFile(versions);
+                UpdateEnvVarsForPRFile(chromeVersionsXmlDoc, versions);
             }
             return !Log.HasLoggedErrors;
         }
@@ -161,22 +161,22 @@ public partial class UpdateChromeVersions : MBU.Task
         return true;
     }
 
-    private void UpdateEnvVarsForPRFile(List<ChromeVersionSpec> versions)
+    private void UpdateEnvVarsForPRFile(XmlDocument xmlDoc, List<ChromeVersionSpec> versions)
     {
         using StreamWriter writer = new StreamWriter(EnvVarsForPRPath);
         foreach (var version in versions)
         {
             if (string.Equals(version.os, "Linux", StringComparison.OrdinalIgnoreCase))
             {
-                writer.WriteLine($"CHROME_LINUX_VER={version.version}");
+                writer.WriteLine($"CHROME_LINUX_VER={GetNodeValue(xmlDoc, "linux_ChromeVersion")}");
             }
             else if (string.Equals(version.os, "Windows", StringComparison.OrdinalIgnoreCase))
             {
-                writer.WriteLine($"CHROME_WIN_VER={version.version}");
+                writer.WriteLine($"CHROME_WIN_VER={GetNodeValue(xmlDoc, "win_ChromeVersion")}");
             }
             else if (string.Equals(version.os, "Mac", StringComparison.OrdinalIgnoreCase))
             {
-                writer.WriteLine($"CHROME_MAC_VER={version.version}");
+                writer.WriteLine($"CHROME_MAC_VER={GetNodeValue(xmlDoc, "macos_ChromeVersion")}");
             }
             else
             {
