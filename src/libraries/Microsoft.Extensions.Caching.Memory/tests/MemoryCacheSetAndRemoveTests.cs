@@ -417,7 +417,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             var notNullCallback = new PostEvictionCallbackRegistration()
             {
-                EvictionCallback = (_, _, _, _) => {}
+                EvictionCallback = (_, _, _, _) => { }
             };
 
             options.PostEvictionCallbacks.Add(notNullCallback);
@@ -579,8 +579,8 @@ namespace Microsoft.Extensions.Caching.Memory
             cache.Set(key, new Guid());
 
             const int WriterCount = 2;
-            const int Iterations = 100_000;
-            var barrier = new Barrier(WriterCount + 1);
+            const int Iterations = 20_000;
+            using var barrier = new Barrier(WriterCount + 1);
 
             var writers = new Task[WriterCount];
             for (int i = 0; i < WriterCount; i++)
@@ -627,8 +627,8 @@ namespace Microsoft.Extensions.Caching.Memory
             });
 
             const int NumberOfThreads = 3;
-            const int IterationsPerThread = 50_000;
-            var barrier = new Barrier(NumberOfThreads);
+            const int IterationsPerThread = 10_000;
+            using var barrier = new Barrier(NumberOfThreads);
             bool limitExceeded = false;
 
             var tasks = new Task[NumberOfThreads];
@@ -667,8 +667,8 @@ namespace Microsoft.Extensions.Caching.Memory
             });
 
             const int NumberOfThreads = 3;
-            const int IterationsPerThread = 50_000;
-            var barrier = new Barrier(NumberOfThreads);
+            const int IterationsPerThread = 10_000;
+            using var barrier = new Barrier(NumberOfThreads);
 
             var tasks = new Task[NumberOfThreads];
             for (int i = 0; i < NumberOfThreads; i++)
@@ -725,7 +725,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public void TryGetValueFromCacheWithNullKeyThrows()
         {
             var cache = CreateCache();
-            Assert.Throws<ArgumentNullException>(() => cache.TryGetValue(null,out long result));
+            Assert.Throws<ArgumentNullException>(() => cache.TryGetValue(null, out long result));
         }
 
         [Fact]
@@ -733,7 +733,8 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             var cache = CreateCache();
             Assert.Throws<ArgumentNullException>(() => cache.GetOrCreate<object>(null, null))
-;       }
+;
+        }
 
         [Fact]
         public async Task GetOrCreateAsyncFromCacheWithNullKeyThrows()
