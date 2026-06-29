@@ -91,7 +91,7 @@ namespace System.IO.Compression
                 }
                 if (windowLog2 != 0)
                 {
-                    SetWindowLog(_context, windowLog2, nameof(windowLog2));
+                    SetWindowLog(_context, windowLog2);
                 }
             }
             catch
@@ -120,7 +120,7 @@ namespace System.IO.Compression
 
                 if (windowLog2 != 0)
                 {
-                    SetWindowLog(_context, windowLog2, nameof(windowLog2));
+                    SetWindowLog(_context, windowLog2);
                 }
             }
             catch
@@ -326,7 +326,7 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> or <paramref name="windowLog2"/> is out of the valid range.</exception>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog2)
         {
-            return TryCompressCore(source, destination, out bytesWritten, quality, windowLog2, null, nameof(windowLog2));
+            return TryCompressCore(source, destination, out bytesWritten, quality, windowLog2, null);
         }
 
         /// <summary>Attempts to compress the specified data with the specified dictionary and window size.</summary>
@@ -341,10 +341,10 @@ namespace System.IO.Compression
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary, int windowLog2)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
-            return TryCompressCore(source, destination, out bytesWritten, 0, windowLog2, dictionary, nameof(windowLog2));
+            return TryCompressCore(source, destination, out bytesWritten, 0, windowLog2, dictionary);
         }
 
-        internal static bool TryCompressCore(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog, ZstandardDictionary? dictionary, string windowLogParamName = "windowLog")
+        internal static bool TryCompressCore(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog2, ZstandardDictionary? dictionary)
         {
             bytesWritten = 0;
 
@@ -363,9 +363,9 @@ namespace System.IO.Compression
                 SetQuality(ctx, quality);
             }
 
-            if (windowLog != 0)
+            if (windowLog2 != 0)
             {
-                SetWindowLog(ctx, windowLog, windowLogParamName);
+                SetWindowLog(ctx, windowLog2);
             }
 
             unsafe
@@ -467,15 +467,15 @@ namespace System.IO.Compression
             SetParameter(handle, Interop.Zstd.ZstdCParameter.ZSTD_c_compressionLevel, quality);
         }
 
-        internal static void SetWindowLog(SafeZstdCompressHandle handle, int windowLog, string paramName = "windowLog")
+        internal static void SetWindowLog(SafeZstdCompressHandle handle, int windowLog2)
         {
-            if (windowLog != 0)
+            if (windowLog2 != 0)
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(windowLog, ZstandardUtils.WindowLog_Min, paramName);
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog, ZstandardUtils.WindowLog_Max, paramName);
+                ArgumentOutOfRangeException.ThrowIfLessThan(windowLog2, ZstandardUtils.WindowLog_Min, nameof(windowLog2));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(windowLog2, ZstandardUtils.WindowLog_Max, nameof(windowLog2));
             }
 
-            SetParameter(handle, Interop.Zstd.ZstdCParameter.ZSTD_c_windowLog, windowLog);
+            SetParameter(handle, Interop.Zstd.ZstdCParameter.ZSTD_c_windowLog, windowLog2);
         }
 
         internal void SetDictionary(ZstandardDictionary dictionary)
