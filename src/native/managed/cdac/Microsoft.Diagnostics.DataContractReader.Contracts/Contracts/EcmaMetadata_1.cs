@@ -18,7 +18,6 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     private const byte HEAP_STRING_4 = 0x01;
     private const byte HEAP_GUID_4 = 0x02;
     private const byte HEAP_BLOB_4 = 0x04;
-    private const uint ModuleFlagsEncCapable = 0x200;
     private readonly Dictionary<ModuleHandle, (uint Generation, MetadataReaderProvider? Provider)> _metadata = [];
     private readonly Dictionary<ModuleHandle, TargetSpan> _readOnlyMetadataAddress = [];
 
@@ -26,11 +25,6 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     {
         if (scope == FlushScope.All)
         {
-            foreach ((uint _, MetadataReaderProvider? provider) in _metadata.Values)
-            {
-                provider?.Dispose();
-            }
-
             _metadata.Clear();
             _readOnlyMetadataAddress.Clear();
         }
@@ -343,7 +337,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         {
             flags |= AvailableMetadataType.ReadWriteSavedCopy;
         }
-        else if (UseReadWriteMetadata(module))
+        else if (UseReadWriteMetadata(handle))
         {
             flags |= AvailableMetadataType.ReadWrite;
         }
@@ -355,27 +349,26 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         return flags;
     }
 
-    private bool UseReadWriteMetadata(Data.Module module)
+    private bool UseReadWriteMetadata(ModuleHandle handle)
     {
-        if (module.PEAssembly == TargetPointer.Null)
-            return false;
-
-        Data.PEAssembly peAssembly = target.ProcessedData.GetOrAdd<Data.PEAssembly>(module.PEAssembly);
-        return peAssembly.MDImportIsRW != 0 && peAssembly.MDImport != TargetPointer.Null && (module.Flags & ModuleFlagsEncCapable) != 0;
+        ILoader loader = target.Contracts.Loader;
+        TargetPointer peAssemblyPtr = loader.GetPEAssembly(handle);
+        Data.PEAssembly peAssembly = target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssemblyPtr);
+        return peAssembly.MDImportIsRW != 0 && peAssembly.MDImport != TargetPointer.Null && (loader.GetFlags(handle) & ModuleFlags.EncCapable) != 0;
     }
 
     private uint GetMetadataGeneration(ModuleHandle handle)
     {
-        Data.Module module = new(target, handle.Address); // do not cache
+        Data.Module module = target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
 
         if (module.DynamicMetadata != TargetPointer.Null)
         {
             return module.MetadataGeneration;
         }
 
-        if (UseReadWriteMetadata(module))
+        if (UseReadWriteMetadata(handle))
         {
-            Data.EditAndContinueModule encModule = new(target, handle.Address); // do not cache
+            Data.EditAndContinueModule encModule = target.ProcessedData.GetOrAdd<Data.EditAndContinueModule>(handle.Address);
             return (uint)encModule.ApplyChangesCount;
         }
 
@@ -397,7 +390,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         Data.MDInternalRW mdRW = target.ProcessedData.GetOrAdd<Data.MDInternalRW>(peAssembly.MDImport);
         Data.CLiteWeightStgdbRW stgdb = target.ProcessedData.GetOrAdd<Data.CLiteWeightStgdbRW>(mdRW.Stgdb);
         Data.CMiniMdRW miniMd = target.ProcessedData.GetOrAdd<Data.CMiniMdRW>(stgdb.MiniMd);
-        Data.CMiniMdSchema schema = new(target, miniMd.Schema);
+        Data.CMiniMdSchema schema = target.ProcessedData.GetOrAdd<Data.CMiniMdSchema>(miniMd.Schema);
 
         int tableCount = checked((int)miniMd.TableCount);
         if ((uint)tableCount > (uint)MetadataTokens.TableCount)
@@ -422,10 +415,6 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         bool largeStringHeap = (schema.Heaps & HEAP_STRING_4) != 0;
         bool largeGuidHeap = (schema.Heaps & HEAP_GUID_4) != 0;
         bool largeBlobHeap = (schema.Heaps & HEAP_BLOB_4) != 0;
-
-        bool variableColumnsAll4Bytes =
-            miniMd.All4ByteColumns != 0;
-
         byte[] stringHeap = ReadStoragePool(miniMd.StringHeap);
         byte[] blobHeap = ReadStoragePool(miniMd.BlobHeap);
         byte[] userStringHeap = ReadStoragePool(miniMd.UserStringHeap);
@@ -447,7 +436,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
             largeGuidHeap,
             rowCounts,
             isSorted,
-            variableColumnsAll4Bytes);
+            miniMd.All4ByteColumns);
         return new TargetEcmaMetadata(ecmaSchema, tables, stringHeap, userStringHeap, blobHeap, guidHeap);
     }
 
@@ -456,7 +445,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         List<(TargetPointer Data, uint Size)> segments = [];
         long totalSize = 0;
 
-        Data.StgPool head = new(target, poolAddress);
+        Data.StgPool head = target.ProcessedData.GetOrAdd<Data.StgPool>(poolAddress);
         TargetPointer segData = head.SegData;
         uint dataSize = head.DataSize;
         TargetPointer nextSegment = head.NextSegment;
@@ -473,7 +462,7 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
                 break;
             }
 
-            Data.StgPoolSeg segment = new(target, nextSegment);
+            Data.StgPoolSeg segment = target.ProcessedData.GetOrAdd<Data.StgPoolSeg>(nextSegment);
             segData = segment.SegData;
             dataSize = segment.DataSize;
             nextSegment = segment.NextSegment;

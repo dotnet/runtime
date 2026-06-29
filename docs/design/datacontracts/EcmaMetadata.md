@@ -53,10 +53,10 @@ Data descriptors used:
 | `StgPoolSeg` | `NextSegment` | Pointer to the next pool segment, or null |
 | `StgPoolSeg` | `DataSize` | Live byte count of this extension segment |
 
-### Contract Constants:
-| Name | Type | Purpose | Value |
-| --- | --- | --- | --- |
-| `ModuleFlagsEncCapable` | uint | `Module` transient-flags bit (`IS_ENC_CAPABLE`) indicating the module is an `EditAndContinueModule` | `0x200` |
+Contracts used:
+| Contract Name |
+| --- |
+| `Loader` |
 
 
 ```csharp
@@ -154,11 +154,8 @@ AvailableMetadataType GetAvailableMetadataType(ModuleHandle handle)
 
 bool UseReadWriteMetadata(ModuleHandle handle)
 {
-    TargetPointer PEAssembly = Target.ReadPointer(handle.Address + /* Module::PEAssembly offset */);
-    if (PEAssembly == TargetPointer.Null)
-        return false;
-
-    bool isEnCCapable = (Target.Read<uint>(handle.Address + /* Module::Flags offset */) & ModuleFlagsEncCapable) != 0;
+    TargetPointer PEAssembly = Target.Contracts.Loader.GetPEAssembly(handle.Address);
+    bool isEnCCapable = Target.Contracts.Loader.GetFlags(handle) & ModuleFlags.EncCapable != 0
     bool hasRWMetadata = Target.Read<uint>(PEAssembly + /* PEAssembly::MDImportIsRW offset */) != 0;
     bool hasMDImport = Target.ReadPointer(PEAssembly + /* PEAssembly::MDImport offset */) != TargetPointer.Null;
     return hasRWMetadata && hasMDImport && isEnCCapable;

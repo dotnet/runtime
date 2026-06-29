@@ -11,7 +11,7 @@ internal sealed partial class CMiniMdRW : IData<CMiniMdRW>
 {
     [FieldAddress] public TargetPointer Schema { get; }
     [Field] public uint TableCount { get; }
-    [Field] public uint All4ByteColumns { get; }
+    [Field(UnderlyingBoolType = typeof(uint))] public bool All4ByteColumns { get; }
     [FieldAddress] public TargetPointer Tables { get; }
     [FieldAddress] public TargetPointer StringHeap { get; }
     [FieldAddress] public TargetPointer BlobHeap { get; }
