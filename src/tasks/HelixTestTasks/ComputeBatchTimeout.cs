@@ -51,14 +51,27 @@ public class ComputeBatchTimeout : Task
         // Sanitize MSBuild-provided knobs: fall back to defaults on non-positive values, and cap
         // MaximumMinutes below 24h so the "hh" specifier in the formatted Timeout cannot wrap
         // (e.g. 1440 minutes would render as 00:00:00). Also ensure the floor never exceeds the cap.
+        // Warn whenever a value is corrected so a pipeline misconfiguration is diagnosable in the log.
         if (MinutesPerSuite <= 0)
+        {
+            Log.LogWarning("{0} must be positive but was {1}; falling back to default 20.", nameof(MinutesPerSuite), MinutesPerSuite);
             MinutesPerSuite = 20;
+        }
         if (MinimumMinutes <= 0)
+        {
+            Log.LogWarning("{0} must be positive but was {1}; falling back to default 30.", nameof(MinimumMinutes), MinimumMinutes);
             MinimumMinutes = 30;
+        }
         if (MaximumMinutes <= 0 || MaximumMinutes > 1439)
+        {
+            Log.LogWarning("{0} must be in the range [1, 1439] but was {1}; falling back to default 1439.", nameof(MaximumMinutes), MaximumMinutes);
             MaximumMinutes = 1439;
+        }
         if (MinimumMinutes > MaximumMinutes)
+        {
+            Log.LogWarning("{0} ({1}) exceeds {2} ({3}); clamping {0} to {3}.", nameof(MinimumMinutes), MinimumMinutes, nameof(MaximumMinutes), MaximumMinutes);
             MinimumMinutes = MaximumMinutes;
+        }
 
         var counts = new Dictionary<string, int>();
         foreach (var item in GroupedItems)
