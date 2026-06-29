@@ -381,8 +381,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         }
 
         insFlags flags = CodeGenInterface::instInfo[ins];
-        return ((flags & INS_FLAGS_APX_EVEX_PROMOTABLE) != 0)
-            || IsBMIInstruction(ins) || IsKMOVInstruction(ins);
+        return ((flags & INS_FLAGS_APX_EVEX_PROMOTABLE) != 0) || IsBMIInstruction(ins) || IsKMOVInstruction(ins);
     }
 
     // Fast path: most SIMD instructions have Encoding_EVEX set directly.
@@ -2203,7 +2202,8 @@ bool emitter::TakesRex2Prefix(const instrDesc* id) const
         // Skip instructions whose length is observed by the runtime/unwinder.
         if (ins == INS_i_jmp || ins == INS_tail_i_jmp)
         {
-            // These instructions have hard-coded instruction length in some VM stubs, stressing REX2 encoding may change the instruction length and cause issues, like infinite loop in the case of jmp.
+            // These instructions have hard-coded instruction length in some VM stubs, stressing REX2 encoding may
+            // change the instruction length and cause issues, like infinite loop in the case of jmp.
             return false;
         }
         return true;
@@ -5243,8 +5243,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 
     if ((code & 0xFF00) != 0)
     {
-        sz += (IsSimdInstruction(ins) || TakesEvexPrefix(id)) ? emitInsSize(id, code, includeRexPrefixSize)
-                                                                         : 5;
+        sz += (IsSimdInstruction(ins) || TakesEvexPrefix(id)) ? emitInsSize(id, code, includeRexPrefixSize) : 5;
     }
     else
     {
@@ -5321,8 +5320,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSVCalcDisp(instrDesc* id, code_t code,
                 SetEvexCompressedDisplacement(id);
             }
         }
-        else if (TakesEvexPrefix(id) &&
-                 !(IsApxExtendedEvexInstruction(ins) && !IsSimdInstruction(ins)))
+        else if (TakesEvexPrefix(id) && !(IsApxExtendedEvexInstruction(ins) && !IsSimdInstruction(ins)))
         {
             // EVEX requires compressed displacement to fit in a byte
             dspInByte = false;
