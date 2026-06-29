@@ -28,25 +28,19 @@ namespace System
             Debug.Assert(enumType.IsEnum);
 
             MethodTable* pEEType = enumType.ToMethodTableMayBeNull();
-            if (pEEType != null)
+            if (pEEType == null)
             {
-                return pEEType->ElementType switch
-                {
-                    EETypeElementType.SByte or EETypeElementType.Byte => GetEnumInfo<byte>(enumType),
-                    EETypeElementType.Int16 or EETypeElementType.UInt16 => GetEnumInfo<ushort>(enumType),
-                    EETypeElementType.Int32 or EETypeElementType.UInt32 => GetEnumInfo<uint>(enumType),
-                    EETypeElementType.Int64 or EETypeElementType.UInt64 => GetEnumInfo<ulong>(enumType),
-                    _ => throw new NotSupportedException(),
-                };
+                // Open generic enum: get the underlying type's EEType to drive the element type switch below.
+                Type underlyingType = enumType.GetRuntimeTypeInfo().GetEnumUnderlyingType();
+                pEEType = underlyingType.TypeHandle.ToMethodTable();
             }
 
-            // Open generic enum: dispatch based on underlying type from field-based reflection.
-            return Type.GetTypeCode(enumType.GetRuntimeTypeInfo().GetEnumUnderlyingType()) switch
+            return pEEType->ElementType switch
             {
-                TypeCode.SByte or TypeCode.Byte => GetEnumInfo<byte>(enumType),
-                TypeCode.Int16 or TypeCode.UInt16 => GetEnumInfo<ushort>(enumType),
-                TypeCode.Int32 or TypeCode.UInt32 => GetEnumInfo<uint>(enumType),
-                TypeCode.Int64 or TypeCode.UInt64 => GetEnumInfo<ulong>(enumType),
+                EETypeElementType.SByte or EETypeElementType.Byte => GetEnumInfo<byte>(enumType),
+                EETypeElementType.Int16 or EETypeElementType.UInt16 => GetEnumInfo<ushort>(enumType),
+                EETypeElementType.Int32 or EETypeElementType.UInt32 => GetEnumInfo<uint>(enumType),
+                EETypeElementType.Int64 or EETypeElementType.UInt64 => GetEnumInfo<ulong>(enumType),
                 _ => throw new NotSupportedException(),
             };
         }
