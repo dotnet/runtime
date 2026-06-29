@@ -5196,7 +5196,7 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
             // Find all matching candidates and partition them to
             // be continous in memory at [matchesBegin, matchesEnd - 1]
             //
-            matchesEnd = std::partition(matchesBegin + 1, predInfo.end(), [candidateA](PredInfo candidateB) {
+            matchesEnd = partition(matchesBegin + 1, predInfo.end(), [candidateA](PredInfo candidateB) {
                 // Consider: bypass this for statements that can't cause exceptions.
                 //
                 if (!BasicBlock::sameEHRegion(candidateA.m_block, candidateB.m_block))
