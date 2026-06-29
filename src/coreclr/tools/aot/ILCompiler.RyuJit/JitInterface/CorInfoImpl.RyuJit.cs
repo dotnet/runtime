@@ -133,7 +133,7 @@ namespace Internal.JitInterface
             }
 
             int offset = 0;
-            bool shouldAddPACOpCode = false;
+            bool shouldAddPacOpCode = false;
             while (offset < blobData.Length)
             {
                 codeOffset = Math.Max(codeOffset, blobData[offset++]);
@@ -194,7 +194,7 @@ namespace Internal.JitInterface
                         // TODO-PAC: Support prologs that adjust SP before signing LR.
                         // Currently we require PAC to be emitted before any stack adjustment.
                         Debug.Assert(spOffset == 0);
-                        shouldAddPACOpCode = true;
+                        shouldAddPacOpCode = true;
                         break;
                 }
             }
@@ -205,7 +205,7 @@ namespace Internal.JitInterface
 
                 using (BinaryWriter cfiWriter = new BinaryWriter(cfiStream))
                 {
-                    if (shouldAddPACOpCode)
+                    if (shouldAddPacOpCode)
                     {
                         cfiWriter.Write((byte)codeOffset);
                         cfiWriter.Write((byte)CFI_OPCODE.CFI_NEGATE_RA_STATE);
