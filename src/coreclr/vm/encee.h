@@ -297,7 +297,6 @@ public:
     }
 };
 
-
 // Information about an instance field value added by EnC
 // When an instance field is added to an object, we will lazily create an EnCAddedField
 // for EACH instance of that object, but there will be a single EnCFieldDesc.
