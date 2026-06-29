@@ -3214,7 +3214,7 @@ NoSpecialCase:
     case DispatchStubAddrSlot:
         {
             // Encode containing type
-           if (entryKind == DevirtualizedMethodDescSlot)
+            if (entryKind == DevirtualizedMethodDescSlot)
             {
                 // For shared GVM devirtualization use the devirtualized method owner type from pTemplateMD.
                 _ASSERTE(pTemplateMD != NULL);
