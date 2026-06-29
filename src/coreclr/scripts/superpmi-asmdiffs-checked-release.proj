@@ -54,6 +54,9 @@
     <SPMI_Partition Include="windows-arm64" Platform="windows" Architecture="arm64" />
     <SPMI_Partition Include="linux-x64" Platform="linux" Architecture="x64" />
     <SPMI_Partition Include="linux-arm64" Platform="linux" Architecture="arm64" />
+    <!-- wasm is a cross-target altjit; on an x64 host we diff the wasm jit between
+         checked and release builds against MCHs collected for the wasm crossgen2 scenario. -->
+    <SPMI_Partition Include="browser-wasm" Platform="browser" Architecture="wasm" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Architecture)' == 'x86'">

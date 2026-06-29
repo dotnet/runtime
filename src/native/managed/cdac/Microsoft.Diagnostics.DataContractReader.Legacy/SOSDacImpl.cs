@@ -33,15 +33,12 @@ public sealed unsafe partial class SOSDacImpl
     : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
       ISOSDacInterface6, ISOSDacInterface7, ISOSDacInterface8, ISOSDacInterface9, ISOSDacInterface10,
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,
-      ISOSDacInterface16
+      ISOSDacInterface16, ISOSDacInterface17
 {
+    private const uint DefaultAppDomainId = 1;
+
     private readonly Target _target;
 
-    // When this class is created, the runtime may not have loaded the string and object method tables and set the global pointers.
-    // This is also the case for the GetUsefulGlobals API, which can be called as part of load notifications before runtime start.
-    // They should be set when actually requested via other DAC APIs, so we lazily read the global pointers.
-    private readonly Lazy<TargetPointer> _stringMethodTable;
-    private readonly Lazy<TargetPointer> _objectMethodTable;
     private readonly ulong _rcwMask = 1UL;
 
     private readonly ISOSDacInterface? _legacyImpl;
@@ -67,11 +64,6 @@ public sealed unsafe partial class SOSDacImpl
     public SOSDacImpl(Target target, object? legacyObj)
     {
         _target = target;
-        _stringMethodTable = new Lazy<TargetPointer>(
-            () => _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.StringMethodTable)));
-
-        _objectMethodTable = new Lazy<TargetPointer>(
-            () => _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable)));
 
         // Get all the interfaces for delegating to the legacy DAC
         if (legacyObj is not null)
@@ -116,48 +108,46 @@ public sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
+
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     int ISOSDacInterface.GetAppDomainData(ClrDataAddress addr, DacpAppDomainData* data)
     {
         int hr = HResults.S_OK;
         try
         {
-            if (addr == 0)
-                throw new ArgumentException();
-
             *data = default;
-            data->AppDomainPtr = addr;
-            TargetPointer systemDomainPointer = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-            ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPointer).ToClrDataAddress(_target);
             Contracts.ILoader loader = _target.Contracts.Loader;
+            TargetPointer appDomain = loader.GetAppDomain();
+            if (appDomain == TargetPointer.Null)
+                throw new InvalidOperationException();
+
+            data->AppDomainPtr = appDomain.ToClrDataAddress(_target);
             TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
             data->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->appDomainStage = DacpAppDomainDataStage.STAGE_OPEN;
-            if (addr != systemDomain)
+
+            data->dwId = DefaultAppDomainId;
+
+            IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
+                appDomain,
+                AssemblyIterationFlags.IncludeLoading |
+                AssemblyIterationFlags.IncludeLoaded |
+                AssemblyIterationFlags.IncludeExecution);
+
+            foreach (Contracts.ModuleHandle module in modules)
             {
-                TargetPointer pAppDomain = addr.ToTargetPointer(_target);
-                data->dwId = _target.ReadGlobal<uint>(Constants.Globals.DefaultADID);
-
-                IEnumerable<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
-                    pAppDomain,
-                    AssemblyIterationFlags.IncludeLoading |
-                    AssemblyIterationFlags.IncludeLoaded |
-                    AssemblyIterationFlags.IncludeExecution);
-
-                foreach (Contracts.ModuleHandle module in modules)
+                if (loader.IsAssemblyLoaded(module))
                 {
-                    if (loader.IsAssemblyLoaded(module))
-                    {
-                        data->AssemblyCount++;
-                    }
+                    data->AssemblyCount++;
                 }
-
-                IEnumerable<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
-                    pAppDomain,
-                    AssemblyIterationFlags.IncludeFailedToLoad);
-                data->FailedAssemblyCount = failedModules.Count();
             }
+
+            IEnumerable<Contracts.ModuleHandle> failedModules = loader.GetModuleHandles(
+                appDomain,
+                AssemblyIterationFlags.IncludeFailedToLoad);
+            data->FailedAssemblyCount = failedModules.Count();
         }
         catch (System.Exception ex)
         {
@@ -193,8 +183,7 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             uint i = 0;
-            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
 
             if (appDomain != TargetPointer.Null && values.Length > 0)
             {
@@ -227,30 +216,26 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
+    // addr is ignored -- only one AppDomain exists in CoreCLR.
     int ISOSDacInterface.GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
     {
         int hr = HResults.S_OK;
         try
         {
             ILoader loader = _target.Contracts.Loader;
-            TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-            ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
 
             string? friendlyName = null;
-            if (addr != systemDomain)
+            try
             {
-                try
-                {
-                    friendlyName = loader.GetAppDomainFriendlyName();
-                }
-                catch (VirtualReadException)
-                {
-                    // The FriendlyName field is a PTR_CWSTR (pointer to wide char string).
-                    // ReadUtf16String throws VirtualReadException when the pointer targets
-                    // unreadable memory (e.g. the name is not yet set during early init).
-                    // The native DAC handles this via PTR_AppDomain->m_friendlyName.IsValid()
-                    // and falls through to return an empty string. Match that behavior here.
-                }
+                friendlyName = loader.GetAppDomainFriendlyName();
+            }
+            catch (VirtualReadException)
+            {
+                // The FriendlyName field is a PTR_CWSTR (pointer to wide char string).
+                // ReadUtf16String throws VirtualReadException when the pointer targets
+                // unreadable memory (e.g. the name is not yet set during early init).
+                // The native DAC handles this via PTR_AppDomain->m_friendlyName.IsValid()
+                // and falls through to return an empty string. Match that behavior here.
             }
 
             if (friendlyName is null || friendlyName.Length == 0)
@@ -308,10 +293,9 @@ public sealed unsafe partial class SOSDacImpl
         try
         {
             appDomainStoreData->sharedDomain = 0;
-            TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-            appDomainStoreData->systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
-            TargetPointer appDomainPtr = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            appDomainStoreData->DomainCount = _target.ReadPointer(appDomainPtr) != 0 ? 1 : 0;
+            appDomainStoreData->systemDomain = 0;
+            TargetPointer defaultAppDomain = _target.Contracts.Loader.GetAppDomain();
+            appDomainStoreData->DomainCount = defaultAppDomain != TargetPointer.Null ? 1 : 0;
         }
         catch (System.Exception ex)
         {
@@ -363,9 +347,8 @@ public sealed unsafe partial class SOSDacImpl
             data->AssemblyPtr = assembly;
             data->DomainPtr = domain;
 
-            TargetPointer ppAppDomain = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            TargetPointer pAppDomain = _target.ReadPointer(ppAppDomain);
-            data->ParentDomain = pAppDomain.ToClrDataAddress(_target);
+            TargetPointer defaultAppDomain = _target.Contracts.Loader.GetAppDomain();
+            data->ParentDomain = defaultAppDomain.ToClrDataAddress(_target);
 
             ILoader loader = _target.Contracts.Loader;
             Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromAssemblyPtr(assembly.ToTargetPointer(_target));
@@ -406,22 +389,18 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
+    // addr is ignored, only one AppDomain exists in CoreCLR.
     int ISOSDacInterface.GetAssemblyList(ClrDataAddress addr, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? values, int* pNeeded)
     {
         int hr = HResults.S_OK;
 
         try
         {
-            if (addr == 0)
-                throw new ArgumentException();
-            TargetPointer appDomain = addr.ToTargetPointer(_target);
-            TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-            ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
-            if (addr == systemDomain)
-                // We shouldn't be asking for the assemblies in SystemDomain
-                throw new ArgumentException();
-
             ILoader loader = _target.Contracts.Loader;
+            TargetPointer appDomain = loader.GetAppDomain();
+            if (appDomain == TargetPointer.Null)
+                throw new InvalidOperationException();
+
             List<Contracts.ModuleHandle> modules = loader.GetModuleHandles(
                 appDomain,
                 AssemblyIterationFlags.IncludeLoading |
@@ -813,10 +792,12 @@ public sealed unsafe partial class SOSDacImpl
             {
                 data->MethodDescPtr = eman.GetMethodDesc(cbh).ToClrDataAddress(_target);
 
-                data->JITType = eman.GetJITType(cbh) switch
+                Contracts.CodeKind codeKind = eman.GetCodeKind(targetCodePointer);
+                data->JITType = codeKind switch
                 {
-                    Contracts.JitType.Jit => JitTypes.TYPE_JIT,
-                    Contracts.JitType.R2R => JitTypes.TYPE_PJIT,
+                    Contracts.CodeKind.Jitted => JitTypes.TYPE_JIT,
+                    Contracts.CodeKind.ReadyToRun => JitTypes.TYPE_PJIT,
+                    Contracts.CodeKind.Interpreter => JitTypes.TYPE_INTERPRETER,
                     _ => JitTypes.TYPE_UNKNOWN,
                 };
 
@@ -825,7 +806,13 @@ public sealed unsafe partial class SOSDacImpl
 
                 data->MethodStart = eman.GetStartAddress(cbh).Value;
 
-                IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+                // Mirrors native ClrDataAccess::GetCodeHeaderData which routes through
+                // EECodeInfo::GetCodeManager()->GetFunctionSize: interpreter code uses the
+                // interpreter-specific GC info encoding, all other code uses the platform
+                // GC info encoding.
+                IGCInfoHandle gcInfoHandle = codeKind == Contracts.CodeKind.Interpreter
+                    ? gcInfo.DecodeInterpreterGCInfo(pGcInfo, gcVersion)
+                    : gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
                 data->MethodSize = gcInfo.GetCodeLength(gcInfoHandle);
 
                 eman.GetMethodRegionInfo(cbh, out uint hotRegionSize, out TargetPointer coldRegionStart, out uint coldRegionSize);
@@ -1071,7 +1058,7 @@ public sealed unsafe partial class SOSDacImpl
 
             IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-            ISignatureDecoder signatureDecoder = _target.Contracts.SignatureDecoder;
+            ISignature signatureContract = _target.Contracts.Signature;
 
             TargetPointer fieldDescTargetPtr = fieldDesc.ToTargetPointer(_target);
             CorElementType fieldDescType = rtsContract.GetFieldDescType(fieldDescTargetPtr);
@@ -1090,7 +1077,7 @@ public sealed unsafe partial class SOSDacImpl
             try
             {
                 // try to completely decode the signature
-                TypeHandle foundTypeHandle = signatureDecoder.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
+                TypeHandle foundTypeHandle = signatureContract.DecodeFieldSignature(fieldDef.Signature, moduleHandle, ctx);
 
                 // get the MT of the type
                 // This is an implementation detail of the DAC that we replicate here to get method tables for non-MT types
@@ -1634,8 +1621,7 @@ public sealed unsafe partial class SOSDacImpl
             IGC gc = _target.Contracts.GC;
             List<HandleData> handles = gc.GetHandles(types);
 
-            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
             ClrDataAddress appDomainClrAddress = appDomain.ToClrDataAddress(_target);
 
             SOSHandleData[] sosHandles = new SOSHandleData[handles.Count];
@@ -1908,9 +1894,9 @@ public sealed unsafe partial class SOSDacImpl
             GCHeapData heapData = gc.GetHeapData(addr.ToTargetPointer(_target));
 
             data->heapAddr = addr;
-            data->internal_root_array = heapData.InternalRootArray.ToClrDataAddress(_target);
-            data->internal_root_array_index = heapData.InternalRootArrayIndex.Value;
-            data->heap_analyze_success = heapData.HeapAnalyzeSuccess ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
+            data->internal_root_array = (heapData.InternalRootArray ?? TargetPointer.Null).ToClrDataAddress(_target);
+            data->internal_root_array_index = (heapData.InternalRootArrayIndex ?? default).Value;
+            data->heap_analyze_success = (heapData.HeapAnalyzeSuccess ?? false) ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
@@ -1954,9 +1940,9 @@ public sealed unsafe partial class SOSDacImpl
             GCHeapData heapData = gc.GetHeapData();
 
             data->heapAddr = 0; // Not applicable for static data
-            data->internal_root_array = heapData.InternalRootArray.ToClrDataAddress(_target);
-            data->internal_root_array_index = heapData.InternalRootArrayIndex.Value;
-            data->heap_analyze_success = heapData.HeapAnalyzeSuccess ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
+            data->internal_root_array = (heapData.InternalRootArray ?? TargetPointer.Null).ToClrDataAddress(_target);
+            data->internal_root_array_index = (heapData.InternalRootArrayIndex ?? default).Value;
+            data->heap_analyze_success = (heapData.HeapAnalyzeSuccess ?? false) ? (int)Interop.BOOL.TRUE : (int)Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
@@ -2204,6 +2190,7 @@ public sealed unsafe partial class SOSDacImpl
 
         return _target.ReadPointer(pThunk + 2);
     }
+
     int ISOSDacInterface.GetJumpThunkTarget(void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD)
     {
         int hr = HResults.S_OK;
@@ -2219,7 +2206,7 @@ public sealed unsafe partial class SOSDacImpl
 
             // Context is not stored in the target, but in our own process
             context.FillFromBuffer(new Span<byte>(ctx, (int)context.Size));
-            TargetPointer pThunk = context.InstructionPointer;
+            TargetPointer pThunk = context.InstructionPointer.AsTargetPointer;
 
             if (IsJumpRel64(pThunk))
             {
@@ -2306,7 +2293,7 @@ public sealed unsafe partial class SOSDacImpl
             if (nativeCodeAddr != TargetCodePointer.Null)
             {
                 data->bHasNativeCode = 1;
-                data->NativeCodeAddr = nativeCodeAddr.ToAddress(_target).ToClrDataAddress(_target);
+                data->NativeCodeAddr = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCodeAddr).ToAddress(_target).ToClrDataAddress(_target);
             }
             else
             {
@@ -2518,7 +2505,8 @@ public sealed unsafe partial class SOSDacImpl
         ILCodeVersionHandle ilCodeVersion = cv.GetILCodeVersion(nativeCodeVersion);
 
         pReJitData->rejitID = rejit.GetRejitId(ilCodeVersion).Value;
-        pReJitData->NativeCodeAddr = cv.GetNativeCode(nativeCodeVersion).Value;
+        TargetCodePointer nativeCode = cv.GetNativeCode(nativeCodeVersion);
+        pReJitData->NativeCodeAddr = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode).Value;
 
         if (nativeCodeVersion.CodeVersionNodeAddress != activeNativeCodeVersion.CodeVersionNodeAddress ||
             nativeCodeVersion.MethodDescAddress != activeNativeCodeVersion.MethodDescAddress)
@@ -2874,7 +2862,7 @@ public sealed unsafe partial class SOSDacImpl
             TargetPointer mtAddress = mt.ToTargetPointer(_target);
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             TypeHandle typeHandle = rtsContract.GetTypeHandle(mtAddress);
-            data->FirstField = rtsContract.GetFieldDescList(typeHandle).ToClrDataAddress(_target);
+            data->FirstField = rtsContract.GetFieldDescList(typeHandle).FirstOrDefault().ToClrDataAddress(_target);
             data->wNumInstanceFields = rtsContract.GetNumInstanceFields(typeHandle);
             data->wNumStaticFields = rtsContract.GetNumStaticFields(typeHandle);
             data->wNumThreadStaticFields = rtsContract.GetNumThreadStaticFields(typeHandle);
@@ -3150,16 +3138,18 @@ public sealed unsafe partial class SOSDacImpl
 
             data->LoaderAllocator = contract.GetLoaderAllocator(handle).ToClrDataAddress(_target);
 
-            Target.TypeInfo lookupMapTypeInfo = _target.GetTypeInfo(DataType.ModuleLookupMap);
-            ulong tableDataOffset = (ulong)lookupMapTypeInfo.Fields[Constants.FieldNames.ModuleLookupMap.TableData].Offset;
-
             Contracts.ModuleLookupTables tables = contract.GetLookupTables(handle);
-            data->FieldDefToDescMap = _target.ReadPointer(tables.FieldDefToDesc + tableDataOffset).ToClrDataAddress(_target);
-            data->ManifestModuleReferencesMap = _target.ReadPointer(tables.ManifestModuleReferences + tableDataOffset).ToClrDataAddress(_target);
-            data->MemberRefToDescMap = _target.ReadPointer(tables.MemberRefToDesc + tableDataOffset).ToClrDataAddress(_target);
-            data->MethodDefToDescMap = _target.ReadPointer(tables.MethodDefToDesc + tableDataOffset).ToClrDataAddress(_target);
-            data->TypeDefToMethodTableMap = _target.ReadPointer(tables.TypeDefToMethodTable + tableDataOffset).ToClrDataAddress(_target);
-            data->TypeRefToMethodTableMap = _target.ReadPointer(tables.TypeRefToMethodTable + tableDataOffset).ToClrDataAddress(_target);
+            data->FieldDefToDescMap = ReadMapBase(_target, tables.FieldDefToDesc, tables.TableDataOffset);
+            data->ManifestModuleReferencesMap = ReadMapBase(_target, tables.ManifestModuleReferences, tables.TableDataOffset);
+            data->MemberRefToDescMap = ReadMapBase(_target, tables.MemberRefToDesc, tables.TableDataOffset);
+            data->MethodDefToDescMap = ReadMapBase(_target, tables.MethodDefToDesc, tables.TableDataOffset);
+            data->TypeDefToMethodTableMap = ReadMapBase(_target, tables.TypeDefToMethodTable, tables.TableDataOffset);
+            data->TypeRefToMethodTableMap = ReadMapBase(_target, tables.TypeRefToMethodTable, tables.TableDataOffset);
+
+            static ClrDataAddress ReadMapBase(Target target, TargetPointer table, uint offset)
+                => table == TargetPointer.Null
+                    ? default
+                    : target.ReadPointer(table + offset).ToClrDataAddress(target);
 
             // Always 0 - .NET no longer has these concepts
             data->dwModuleID = 0;
@@ -3341,17 +3331,17 @@ public sealed unsafe partial class SOSDacImpl
                 // Free objects have their component count explicitly set at the same offset as that for arrays
                 // Update the size to include those components
                 Target.TypeInfo arrayTypeInfo = _target.GetTypeInfo(DataType.Array);
-                ulong numComponentsOffset = (ulong)_target.GetTypeInfo(DataType.Array).Fields[Constants.FieldNames.Array.NumComponents].Offset;
+                ulong numComponentsOffset = (ulong)arrayTypeInfo.Fields[Constants.FieldNames.Array.NumComponents].Offset;
                 data->Size += _target.Read<uint>(objAddr + numComponentsOffset) * data->dwComponentSize;
             }
-            else if (mt == _stringMethodTable.Value)
+            else if (mt == runtimeTypeSystemContract.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.String))
             {
                 data->ObjectType = DacpObjectType.OBJ_STRING;
 
                 // Update the size to include the string character components
                 data->Size += (uint)objectContract.GetStringValue(objPtr).Length * data->dwComponentSize;
             }
-            else if (mt == _objectMethodTable.Value)
+            else if (mt == runtimeTypeSystemContract.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.Object))
             {
                 data->ObjectType = DacpObjectType.OBJ_OBJECT;
             }
@@ -3386,7 +3376,7 @@ public sealed unsafe partial class SOSDacImpl
             }
 
             // Populate COM data if this is a COM object
-            if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0
+            if (_target.Contracts.FeatureFlags.IsEnabled(Contracts.RuntimeFeature.COMInterop)
                 && objectContract.GetBuiltInComData(objPtr, out TargetPointer rcw, out TargetPointer ccw, out _))
             {
                 data->RCW = rcw & ~(_rcwMask);
@@ -3446,17 +3436,25 @@ public sealed unsafe partial class SOSDacImpl
         if (_legacyImpl is not null)
         {
             char[] stringDataLocal = new char[count];
-            uint neededLocal;
+            uint neededLocal = 0;
             int hrLocal;
             fixed (char* ptr = stringDataLocal)
             {
-                hrLocal = _legacyImpl.GetObjectStringData(obj, count, ptr, &neededLocal);
+                // Invoke the legacy DAC under the same argument contract the caller gave the cDAC:
+                // only pass an output buffer when the caller did, and only request the size-out when
+                // the caller did. This keeps the HRESULT comparison apples-to-apples.
+                char* stringDataArg = stringData is null ? null : ptr;
+                uint* pNeededArg = pNeeded is null ? null : &neededLocal;
+                hrLocal = _legacyImpl.GetObjectStringData(obj, count, stringDataArg, pNeededArg);
             }
+
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
                 Debug.Assert(pNeeded == null || *pNeeded == neededLocal);
-                Debug.Assert(stringData == null || new ReadOnlySpan<char>(stringDataLocal, 0, (int)neededLocal - 1).SequenceEqual(new string(stringData)));
+                // Compare against the legacy buffer using the cDAC string length: neededLocal is only
+                // populated when a size-out was requested from the legacy DAC (mirroring the caller).
+                Debug.Assert(stringData == null || new ReadOnlySpan<char>(stringDataLocal, 0, new string(stringData).Length).SequenceEqual(new string(stringData)));
             }
         }
 #endif
@@ -4034,13 +4032,73 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetStackReferences(int osThreadID, DacComNullableByRef<ISOSStackRefEnum> ppEnum)
     {
-        // Stack reference enumeration is not yet complete in the cDAC — capital-F Frame
-        // GC root scanning (ScanFrameRoots) is still pending. Fall through to the legacy
-        // DAC so that consumers (dump tests, SOS) continue to work while the implementation
-        // is in progress.
-        return _legacyImpl is not null
-            ? _legacyImpl.GetStackReferences(osThreadID, ppEnum)
-            : HResults.E_NOTIMPL;
+        int hr = HResults.S_OK;
+        try
+        {
+            IThread threadContract = _target.Contracts.Thread;
+            IStackWalk stackWalkContract = _target.Contracts.StackWalk;
+            ThreadData? matchingThread = null;
+
+            ThreadStoreData threadStore = threadContract.GetThreadStoreData();
+            TargetPointer threadAddr = threadStore.FirstThread;
+            while (threadAddr != TargetPointer.Null)
+            {
+                ThreadData td = threadContract.GetThreadData(threadAddr);
+                if (td.OSId.Value == (ulong)osThreadID)
+                {
+                    matchingThread = td;
+                    break;
+                }
+                threadAddr = td.NextThread;
+            }
+
+            if (matchingThread is null)
+            {
+                throw new ArgumentException($"No thread with OS ID {osThreadID} was found.");
+            }
+
+            IReadOnlyList<StackReferenceData> refs = stackWalkContract.WalkStackReferences(matchingThread.Value, false);
+
+            SOSStackRefData[] sosRefs = new SOSStackRefData[refs.Count];
+            for (int i = 0; i < refs.Count; i++)
+            {
+                sosRefs[i] = new SOSStackRefData
+                {
+                    HasRegisterInformation = refs[i].HasRegisterInformation ? 1 : 0,
+                    Register = refs[i].Register,
+                    Offset = refs[i].Offset,
+                    Address = refs[i].Address.Value,
+                    Object = refs[i].Object.Value,
+                    Flags = refs[i].Flags,
+                    Source = refs[i].Source.Value,
+                    SourceType = refs[i].SourceType switch
+                    {
+                        StackSourceType.InstructionPointer => SOSStackSourceType.SOS_StackSourceIP,
+                        StackSourceType.Frame => SOSStackSourceType.SOS_StackSourceFrame,
+                        StackSourceType.Other => SOSStackSourceType.SOS_StackSourceOther,
+                        _ => throw new UnreachableException($"Unexpected {nameof(StackSourceType)}: {refs[i].SourceType}"),
+                    },
+                    StackPointer = refs[i].StackPointer.Value,
+                };
+            }
+
+            ppEnum.Interface = new SOSStackRefEnum(sosRefs);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            // Validate that the legacy DAC produces the same HResult.
+            // We pass isNullRef: false to request actual enumeration, but we don't
+            // compare individual refs — that's done by cdacstress.cpp at runtime.
+            int hrLocal = _legacyImpl.GetStackReferences(osThreadID, new DacComNullableByRef<ISOSStackRefEnum>(isNullRef: false));
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+        return hr;
     }
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)
@@ -4158,8 +4216,7 @@ public sealed unsafe partial class SOSDacImpl
                             data->HoldingThread = threadPtr.ToClrDataAddress(_target);
                         }
 
-                        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-                        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+                        TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
                         data->appDomainPtr = appDomain.ToClrDataAddress(_target);
 
                         data->AdditionalThreadCount = syncBlock.GetAdditionalThreadCount(syncBlockAddr);
@@ -4252,8 +4309,7 @@ public sealed unsafe partial class SOSDacImpl
             data->allocContextLimit = threadData.AllocContextLimit.ToClrDataAddress(_target);
             data->fiberData = 0;    // Always set to 0 - fibers are no longer supported
 
-            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
-            TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+            TargetPointer appDomain = _target.Contracts.Loader.GetAppDomain();
             data->context = appDomain.ToClrDataAddress(_target);
             data->domain = appDomain.ToClrDataAddress(_target);
 
@@ -4443,21 +4499,12 @@ public sealed unsafe partial class SOSDacImpl
         {
             if (data == null)
                 throw new ArgumentException();
-            data->ArrayMethodTable = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ObjectArrayMethodTable))
-                .ToClrDataAddress(_target);
-            data->StringMethodTable = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.StringMethodTable))
-                .ToClrDataAddress(_target);
-            data->ObjectMethodTable = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable))
-                .ToClrDataAddress(_target);
-            data->ExceptionMethodTable = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ExceptionMethodTable))
-                .ToClrDataAddress(_target);
-            data->FreeMethodTable = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable))
-                .ToClrDataAddress(_target);
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            data->ArrayMethodTable = rts.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.Array).ToClrDataAddress(_target);
+            data->StringMethodTable = rts.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.String).ToClrDataAddress(_target);
+            data->ObjectMethodTable = rts.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.Object).ToClrDataAddress(_target);
+            data->ExceptionMethodTable = rts.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.Exception).ToClrDataAddress(_target);
+            data->FreeMethodTable = rts.GetWellKnownMethodTable(Contracts.WellKnownMethodTable.Free).ToClrDataAddress(_target);
         }
         catch (System.Exception ex)
         {
@@ -4668,7 +4715,7 @@ public sealed unsafe partial class SOSDacImpl
     }
 #endif
 
-    private int TraverseLoaderHeapCore(ClrDataAddress loaderHeapAddr, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
+    private int TraverseLoaderHeapCore(TargetPointer loaderHeapAddr, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
     {
         int hr = HResults.S_OK;
 #if DEBUG
@@ -4677,13 +4724,12 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         try
         {
-            if (loaderHeapAddr == 0 || pCallback is null)
+            if (loaderHeapAddr == TargetPointer.Null || pCallback is null)
                 throw new ArgumentException();
             int iterationMax = 8192;
 
             Contracts.ILoader loader = _target.Contracts.Loader;
-            TargetPointer heapAddr = loaderHeapAddr.ToTargetPointer(_target);
-            TargetPointer block = loader.GetFirstLoaderHeapBlock(heapAddr);
+            TargetPointer block = loader.GetFirstLoaderHeapBlock(loaderHeapAddr);
             TargetPointer firstBlock = block;
             int i = 0;
             while (block != TargetPointer.Null && i++ < iterationMax)
@@ -4717,7 +4763,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
     {
-        int hr = TraverseLoaderHeapCore(loaderHeapAddr, pCallback);
+        int hr = TraverseLoaderHeapCore(loaderHeapAddr.ToTargetPointer(_target), pCallback);
 #if DEBUG
         if (_legacyImpl is not null)
         {
@@ -4862,8 +4908,57 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, int heaptype, void* pCallback)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.TraverseVirtCallStubHeap(pAppDomain, heaptype, pCallback) : HResults.E_NOTIMPL;
+    int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, VCSHeapType heaptype, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            // Native DAC only validates pAppDomain here; traversal always uses the global loader allocator.
+            if (pAppDomain == 0 || pCallback is null)
+                throw new ArgumentException();
+
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
+            IReadOnlyDictionary<Contracts.LoaderAllocatorHeapType, TargetPointer> heaps = loader.GetLoaderAllocatorHeaps(globalLoaderAllocator);
+
+            if (!heaps.ContainsKey(Contracts.LoaderAllocatorHeapType.IndcellHeap))
+                throw new NullReferenceException();
+
+            Contracts.LoaderAllocatorHeapType heapKey = heaptype switch
+            {
+                VCSHeapType.IndcellHeap => Contracts.LoaderAllocatorHeapType.IndcellHeap,
+                VCSHeapType.CacheEntryHeap => Contracts.LoaderAllocatorHeapType.CacheEntryHeap,
+                _ => throw new ArgumentException(),
+            };
+
+            if (heaps.TryGetValue(heapKey, out TargetPointer heap) && heap != TargetPointer.Null)
+            {
+                hr = TraverseLoaderHeapCore(heap, pCallback);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            int cdacCount = DebugTraverseLoaderHeapBlocks.Count;
+            delegate* unmanaged<ulong, nuint, Interop.BOOL, void> debugCallbackPtr = &TraverseLoaderHeapDebugCallback;
+            int hrLocal = _legacyImpl.TraverseVirtCallStubHeap(pAppDomain, heaptype, debugCallbackPtr);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(DebugTraverseLoaderHeapBlocks.Count == 0,
+                    $"cDAC found {cdacCount} blocks, DAC matched {_debugTraverseLoaderDebugCount}, {DebugTraverseLoaderHeapBlocks.Count} unmatched");
+                Debug.Assert(_debugTraverseLoaderDebugCount == (uint)cdacCount,
+                    $"cDAC: {cdacCount} blocks, DAC: {_debugTraverseLoaderDebugCount} blocks");
+            }
+        }
+#endif
+        return hr;
+    }
 #endregion ISOSDacInterface
 
     #region ISOSDacInterface2
@@ -4900,7 +4995,7 @@ public sealed unsafe partial class SOSDacImpl
 
             *inDCOMProxy = (int)Interop.BOOL.FALSE;
 
-            if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) == 0)
+            if (!_target.Contracts.FeatureFlags.IsEnabled(Contracts.RuntimeFeature.COMInterop))
             {
                 hr = HResults.E_NOTIMPL;
             }
@@ -5133,7 +5228,8 @@ public sealed unsafe partial class SOSDacImpl
     int ISOSDacInterface4.GetClrNotification(ClrDataAddress[] arguments, int count, int* pNeeded)
     {
         int hr = HResults.S_OK;
-        uint MaxClrNotificationArgs = _target.ReadGlobal<uint>(Constants.Globals.MaxClrNotificationArgs);
+        _target.TryReadGlobal<uint>(Constants.Globals.MaxClrNotificationArgs, out uint? maxArgs);
+        uint MaxClrNotificationArgs = maxArgs ?? 0;
         try
         {
             *pNeeded = (int)MaxClrNotificationArgs;
@@ -5211,19 +5307,18 @@ public sealed unsafe partial class SOSDacImpl
             {
                 r2rImageEnd = r2rImageBase + r2rSize;
             }
-            ClrDataAddress r2rImageBaseAddr = r2rImageBase.ToClrDataAddress(_target);
-            ClrDataAddress r2rImageEndAddr = r2rImageEnd.ToClrDataAddress(_target);
 
             bool isEligibleForTieredCompilation = runtimeTypeSystemContract.IsEligibleForTieredCompilation(methodDescHandle);
 
             int count = 0;
             foreach (NativeCodeVersionHandle nativeCodeVersionHandle in codeVersions.GetNativeCodeVersions(methodDescPtr, ilCodeVersionHandle))
             {
-                ClrDataAddress nativeCodeAddr = codeVersions.GetNativeCode(nativeCodeVersionHandle).Value;
-                nativeCodeAddrs[count].nativeCodeAddr = nativeCodeAddr;
+                TargetCodePointer nativeCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(codeVersions.GetNativeCode(nativeCodeVersionHandle));
+                TargetPointer nativeCodeAddr = nativeCode.ToAddress(_target);
+                nativeCodeAddrs[count].nativeCodeAddr = nativeCodeAddr.ToClrDataAddress(_target);
                 nativeCodeAddrs[count].nativeCodeVersionNodePtr = nativeCodeVersionHandle.CodeVersionNodeAddress.ToClrDataAddress(_target);
 
-                if (r2rImageBaseAddr <= nativeCodeAddr && nativeCodeAddr < r2rImageEndAddr)
+                if (r2rImageBase <= nativeCodeAddr && nativeCodeAddr < r2rImageEnd)
                 {
                     nativeCodeAddrs[count].optimizationTier = DacpTieredVersionData.OptimizationTier.ReadyToRun;
                 }
@@ -6161,9 +6256,101 @@ public sealed unsafe partial class SOSDacImpl
 
     #region ISOSDacInterface11
     int ISOSDacInterface11.IsTrackedType(ClrDataAddress objAddr, Interop.BOOL* isTrackedType, Interop.BOOL* hasTaggedMemory)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl11 is not null ? _legacyImpl11.IsTrackedType(objAddr, isTrackedType, hasTaggedMemory) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (objAddr == 0 || isTrackedType == null || hasTaggedMemory == null)
+                throw new ArgumentException();
+
+            *isTrackedType = Interop.BOOL.FALSE;
+            *hasTaggedMemory = Interop.BOOL.FALSE;
+
+            TargetPointer objPtr = objAddr.ToTargetPointer(_target);
+            Contracts.IObject objectContract = _target.Contracts.Object;
+
+            TargetPointer mt = objectContract.GetMethodTableAddress(objPtr);
+            if (mt == TargetPointer.Null)
+                throw new ArgumentException();
+
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            TypeHandle mtHandle = rtsContract.GetTypeHandle(mt);
+            if (rtsContract.IsTrackedReferenceWithFinalizer(mtHandle))
+                *isTrackedType = Interop.BOOL.TRUE;
+
+            hr = (*isTrackedType == Interop.BOOL.TRUE) ? HResults.S_OK : HResults.S_FALSE;
+
+            if (_target.Contracts.TryGetContract<IObjectiveCMarshal>(out IObjectiveCMarshal? objcContract))
+            {
+                TargetPointer taggedMemoryPtr = objcContract.GetTaggedMemory(objPtr, out _);
+                if (taggedMemoryPtr != TargetPointer.Null)
+                    *hasTaggedMemory = Interop.BOOL.TRUE;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl11 is not null)
+        {
+            Interop.BOOL isTrackedTypeLocal;
+            Interop.BOOL hasTaggedMemoryLocal;
+            int hrLocal = _legacyImpl11.IsTrackedType(objAddr, &isTrackedTypeLocal, &hasTaggedMemoryLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(*isTrackedType == isTrackedTypeLocal);
+                Debug.Assert(*hasTaggedMemory == hasTaggedMemoryLocal);
+            }
+        }
+#endif
+        return hr;
+    }
+
     int ISOSDacInterface11.GetTaggedMemory(ClrDataAddress objAddr, ClrDataAddress* taggedMemory, nuint* taggedMemorySizeInBytes)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl11 is not null ? _legacyImpl11.GetTaggedMemory(objAddr, taggedMemory, taggedMemorySizeInBytes) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_FALSE;
+        try
+        {
+            if (objAddr == 0 || taggedMemory == null || taggedMemorySizeInBytes == null)
+                throw new ArgumentException();
+
+            *taggedMemory = 0;
+            *taggedMemorySizeInBytes = 0;
+
+            TargetPointer objPtr = objAddr.ToTargetPointer(_target);
+            if (_target.Contracts.TryGetContract<IObjectiveCMarshal>(out IObjectiveCMarshal? objcContract))
+            {
+                TargetPointer taggedMemoryPtr = objcContract.GetTaggedMemory(objPtr, out TargetNUInt taggedMemorySizeNUInt);
+                if (taggedMemoryPtr != TargetPointer.Null)
+                {
+                    *taggedMemory = taggedMemoryPtr.ToClrDataAddress(_target);
+                    *taggedMemorySizeInBytes = (nuint)taggedMemorySizeNUInt.Value;
+                    hr = HResults.S_OK;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl11 is not null)
+        {
+            ClrDataAddress taggedMemoryLocal;
+            nuint taggedMemorySizeInBytesLocal;
+            int hrLocal = _legacyImpl11.GetTaggedMemory(objAddr, &taggedMemoryLocal, &taggedMemorySizeInBytesLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK || hr == HResults.S_FALSE)
+            {
+                Debug.Assert(*taggedMemory == taggedMemoryLocal);
+                Debug.Assert(*taggedMemorySizeInBytes == taggedMemorySizeInBytesLocal);
+            }
+        }
+#endif
+        return hr;
+    }
     #endregion ISOSDacInterface11
 
     #region ISOSDacInterface12
@@ -6207,7 +6394,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
     {
-        int hr = TraverseLoaderHeapCore(loaderHeapAddr, pCallback);
+        int hr = TraverseLoaderHeapCore(loaderHeapAddr.ToTargetPointer(_target), pCallback);
 #if DEBUG
         if (_legacyImpl13 is not null)
         {
@@ -6270,28 +6457,28 @@ public sealed unsafe partial class SOSDacImpl
     // Static ANSI string pointers for all known heap names, in the canonical order matching
     // LoaderAllocatorLoaderHeapNames in request.cpp. These are process-lifetime allocations,
     // equivalent to static const char* literals in C++.
-    private static readonly (string Name, nint AnsiPtr)[] s_heapNameEntries = InitializeHeapNameEntries();
-    private (string Name, nint AnsiPtr)[]? _filteredHeapNameEntries;
+    private static readonly (LoaderAllocatorHeapType HeapType, nint AnsiPtr)[] s_heapNameEntries = InitializeHeapNameEntries();
+    private (LoaderAllocatorHeapType HeapType, nint AnsiPtr)[]? _filteredHeapNameEntries;
 
-    private static (string Name, nint AnsiPtr)[] InitializeHeapNameEntries()
+    private static (LoaderAllocatorHeapType heapType, nint AnsiPtr)[] InitializeHeapNameEntries()
     {
         // Order must match LoaderAllocatorLoaderHeapNames in src/coreclr/debug/daccess/request.cpp
-        string[] names =
+        LoaderAllocatorHeapType[] heapTypes =
         [
-            "LowFrequencyHeap",
-            "HighFrequencyHeap",
-            "StaticsHeap",
-            "StubHeap",
-            "ExecutableHeap",
-            "FixupPrecodeHeap",
-            "NewStubPrecodeHeap",
-            "DynamicHelpersStubHeap",
-            "IndcellHeap",
-            "CacheEntryHeap",
+            LoaderAllocatorHeapType.LowFrequencyHeap,
+            LoaderAllocatorHeapType.HighFrequencyHeap,
+            LoaderAllocatorHeapType.StaticsHeap,
+            LoaderAllocatorHeapType.StubHeap,
+            LoaderAllocatorHeapType.ExecutableHeap,
+            LoaderAllocatorHeapType.FixupPrecodeHeap,
+            LoaderAllocatorHeapType.NewStubPrecodeHeap,
+            LoaderAllocatorHeapType.DynamicHelpersStubHeap,
+            LoaderAllocatorHeapType.IndcellHeap,
+            LoaderAllocatorHeapType.CacheEntryHeap
         ];
-        var entries = new (string, nint)[names.Length];
-        for (int i = 0; i < names.Length; i++)
-            entries[i] = (names[i], Marshal.StringToHGlobalAnsi(names[i]));
+        var entries = new (LoaderAllocatorHeapType, nint)[heapTypes.Length];
+        for (int i = 0; i < heapTypes.Length; i++)
+            entries[i] = (heapTypes[i], Marshal.StringToHGlobalAnsi(heapTypes[i].ToString()));
         return entries;
     }
 
@@ -6299,7 +6486,7 @@ public sealed unsafe partial class SOSDacImpl
     // data descriptor fields exist. This mirrors the DAC's compile-time
     // LoaderAllocatorLoaderHeapNames array and ensures a fixed count/ordering
     // regardless of per-loader-allocator runtime state (e.g. VCS manager being null).
-    private (string Name, nint AnsiPtr)[] GetFilteredHeapNameEntries()
+    private (LoaderAllocatorHeapType HeapType, nint AnsiPtr)[] GetFilteredHeapNameEntries()
     {
         if (_filteredHeapNameEntries is not null)
             return _filteredHeapNameEntries;
@@ -6307,12 +6494,12 @@ public sealed unsafe partial class SOSDacImpl
         Target.TypeInfo laType = _target.GetTypeInfo(DataType.LoaderAllocator);
         Target.TypeInfo vcsType = _target.GetTypeInfo(DataType.VirtualCallStubManager);
 
-        var entries = new List<(string Name, nint AnsiPtr)>();
+        var entries = new List<(LoaderAllocatorHeapType HeapType, nint AnsiPtr)>();
         foreach (var entry in s_heapNameEntries)
         {
-            bool include = entry.Name is "IndcellHeap" or "CacheEntryHeap"
-                ? vcsType.Fields.ContainsKey(entry.Name)
-                : laType.Fields.ContainsKey(entry.Name);
+            bool include = entry.HeapType is LoaderAllocatorHeapType.IndcellHeap or LoaderAllocatorHeapType.CacheEntryHeap
+                ? vcsType.Fields.ContainsKey(entry.HeapType.ToString())
+                : laType.Fields.ContainsKey(entry.HeapType.ToString());
             if (include)
                 entries.Add(entry);
         }
@@ -6371,15 +6558,13 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
     {
-        if (loaderAllocator == 0)
-            return HResults.E_INVALIDARG;
-
         int hr = HResults.S_OK;
         try
         {
+            if (loaderAllocator == 0)
+                throw new ArgumentException("loaderAllocator cannot be zero.", nameof(loaderAllocator));
             Contracts.ILoader contract = _target.Contracts.Loader;
-            IReadOnlyDictionary<string, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
-
+            IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> heaps = contract.GetLoaderAllocatorHeaps(loaderAllocator.ToTargetPointer(_target));
             var filteredEntries = GetFilteredHeapNameEntries();
             int loaderHeapCount = filteredEntries.Length;
 
@@ -6390,17 +6575,14 @@ public sealed unsafe partial class SOSDacImpl
             {
                 if (count < loaderHeapCount)
                 {
-                    hr = HResults.E_INVALIDARG;
+                    throw new ArgumentException($"The count parameter ({count}) is less than the number of loader heaps ({loaderHeapCount}).", nameof(count));
                 }
-                else
+                for (int i = 0; i < loaderHeapCount; i++)
                 {
-                    for (int i = 0; i < loaderHeapCount; i++)
-                    {
-                        pLoaderHeaps[i] = heaps.TryGetValue(filteredEntries[i].Name, out TargetPointer heapAddr)
-                            ? heapAddr.ToClrDataAddress(_target)
-                            : 0;
-                        pKinds[i] = 0; // LoaderHeapKindNormal
-                    }
+                    pLoaderHeaps[i] = heaps.TryGetValue(filteredEntries[i].HeapType, out TargetPointer heapAddr)
+                        ? heapAddr.ToClrDataAddress(_target)
+                        : 0;
+                    pKinds[i] = 0; // LoaderHeapKindNormal
                 }
             }
         }
@@ -6434,6 +6616,7 @@ public sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
+
     int ISOSDacInterface13.GetHandleTableMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
     {
         int hr = HResults.S_OK;
@@ -6511,7 +6694,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface13.LockedFlush()
     {
-        _target.Flush();
+        _target.Flush(FlushScope.All);
 
         // As long as any part of cDAC falls back to the legacy DAC, we need to propagate the Flush call
         if (_legacyImpl13 is not null)
@@ -6912,4 +7095,258 @@ public sealed unsafe partial class SOSDacImpl
         return hr;
     }
     #endregion ISOSDacInterface16
+
+    #region ISOSDacInterface17
+
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSStressLogThreadEnum : ISOSStressLogThreadEnum
+    {
+        private readonly SOSThreadStressLogData[] _threads;
+        private uint _index;
+
+        public SOSStressLogThreadEnum(SOSThreadStressLogData[] threads)
+        {
+            _threads = threads;
+        }
+
+        int ISOSStressLogThreadEnum.Next(uint count, SOSThreadStressLogData[] values, uint* pFetched)
+        {
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pFetched is null || values is null)
+                    throw new NullReferenceException();
+
+                *pFetched = 0;
+                count = Math.Min(count, (uint)values.Length);
+                uint written = 0;
+                while (written < count && _index < _threads.Length)
+                    values[written++] = _threads[(int)_index++];
+
+                *pFetched = written;
+                hr = written < count ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+
+            return hr;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            _index = Math.Min(_index + count, (uint)_threads.Length);
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Reset()
+        {
+            _index = 0;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            if (pCount is null) return HResults.E_POINTER;
+            *pCount = (uint)_threads.Length;
+            return HResults.S_OK;
+        }
+    }
+
+    [GeneratedComClass]
+    internal sealed unsafe partial class SOSStressLogMsgEnum : ISOSStressLogMsgEnum
+    {
+        private readonly Target _target;
+        private readonly Contracts.StressMsgData[] _messages;
+        private uint _index;
+        private uint _lastBatchStart;
+        private uint _lastBatchCount;
+
+        public SOSStressLogMsgEnum(Target target, IEnumerable<Contracts.StressMsgData> messages)
+        {
+            _target = target;
+            _messages = messages.ToArray();
+        }
+
+        int ISOSStressLogMsgEnum.Next(uint count, SOSStressMsgData[] values, uint* pFetched)
+        {
+            int hr = HResults.S_OK;
+            try
+            {
+                if (pFetched is null || values is null)
+                    throw new NullReferenceException();
+
+                *pFetched = 0;
+                count = Math.Min(count, (uint)values.Length);
+                _lastBatchStart = _index;
+                uint written = 0;
+
+                while (written < count && _index < _messages.Length)
+                {
+                    Contracts.StressMsgData msg = _messages[(int)_index++];
+                    values[written] = new SOSStressMsgData
+                    {
+                        Facility = msg.Facility,
+                        FormatString = msg.FormatString.ToClrDataAddress(_target),
+                        Timestamp = msg.Timestamp,
+                        ArgumentCount = (uint)msg.Args.Count,
+                    };
+                    written++;
+                }
+
+                _lastBatchCount = written;
+                *pFetched = written;
+                hr = written < count ? HResults.S_FALSE : HResults.S_OK;
+            }
+            catch (System.Exception ex)
+            {
+                hr = ex.HResult;
+            }
+
+            return hr;
+        }
+
+        int ISOSStressLogMsgEnum.GetArguments(uint messageIndex, uint argCount, ClrDataAddress[] args, uint* pFetched)
+        {
+            if (pFetched is null || args is null)
+                return HResults.E_POINTER;
+
+            *pFetched = 0;
+
+            if (messageIndex >= _lastBatchCount)
+                return HResults.E_INVALIDARG;
+
+            Contracts.StressMsgData msg = _messages[(int)(_lastBatchStart + messageIndex)];
+            uint toFetch = Math.Min(argCount, (uint)msg.Args.Count);
+            toFetch = Math.Min(toFetch, (uint)args.Length);
+
+            for (uint i = 0; i < toFetch; i++)
+                args[i] = msg.Args[(int)i].ToClrDataAddress(_target);
+
+            *pFetched = toFetch;
+            return toFetch < argCount ? HResults.S_FALSE : HResults.S_OK;
+        }
+
+        int ISOSEnum.Skip(uint count)
+        {
+            _index = Math.Min(_index + count, (uint)_messages.Length);
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.Reset()
+        {
+            _index = 0;
+            _lastBatchStart = 0;
+            _lastBatchCount = 0;
+            return HResults.S_OK;
+        }
+
+        int ISOSEnum.GetCount(uint* pCount)
+        {
+            if (pCount is null) return HResults.E_POINTER;
+            *pCount = (uint)_messages.Length;
+            return HResults.S_OK;
+        }
+    }
+
+    int ISOSDacInterface17.GetStressLogData(SOSStressLogData* data)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (data is null)
+                return HResults.E_POINTER;
+
+            *data = default;
+
+            Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
+            if (!stressLogContract.HasStressLog())
+                return HResults.S_FALSE;
+
+            Contracts.StressLogData logData = stressLogContract.GetStressLogData();
+            data->LoggedFacilities = logData.LoggedFacilities;
+            data->Level = logData.Level;
+            data->MaxSizePerThread = logData.MaxSizePerThread;
+            data->MaxSizeTotal = logData.MaxSizeTotal;
+            data->TotalChunks = logData.TotalChunks;
+            data->TickFrequency = logData.TickFrequency;
+            data->StartTimestamp = logData.StartTimestamp;
+            data->StartTime = logData.StartTime;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface17.GetStressLogThreadEnumerator(DacComNullableByRef<ISOSStressLogThreadEnum> ppEnum)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
+            if (!stressLogContract.HasStressLog())
+                return HResults.S_FALSE;
+
+            Contracts.StressLogData logData = stressLogContract.GetStressLogData();
+
+            var threads = stressLogContract.GetThreadStressLogs(logData.Logs)
+                .Select(t => new SOSThreadStressLogData
+                {
+                    ThreadLogAddress = t.Address.ToClrDataAddress(_target),
+                    ThreadId = t.ThreadId,
+                })
+                .ToArray();
+            ppEnum.Interface = new SOSStressLogThreadEnum(threads);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface17.GetStressLogMessageEnumerator(
+        ClrDataAddress threadStressLogAddress,
+        DacComNullableByRef<ISOSStressLogMsgEnum> ppEnum)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
+            if (!stressLogContract.HasStressLog())
+                return HResults.S_FALSE;
+
+            Contracts.StressLogData logData = stressLogContract.GetStressLogData();
+
+            // Find the matching thread
+            Contracts.ThreadStressLogData? matchedThread = null;
+            foreach (var thread in stressLogContract.GetThreadStressLogs(logData.Logs))
+            {
+                if (thread.Address == threadStressLogAddress.ToTargetPointer(_target))
+                {
+                    matchedThread = thread;
+                    break;
+                }
+            }
+
+            if (matchedThread is null)
+                return HResults.E_INVALIDARG;
+
+            IEnumerable<Contracts.StressMsgData> messages = stressLogContract.GetStressMessages(matchedThread.Value);
+            ppEnum.Interface = new SOSStressLogMsgEnum(_target, messages);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    #endregion ISOSDacInterface17
 }

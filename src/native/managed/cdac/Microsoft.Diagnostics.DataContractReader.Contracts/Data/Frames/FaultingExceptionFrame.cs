@@ -3,18 +3,9 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class FaultingExceptionFrame : IData<FaultingExceptionFrame>
+[CdacType(nameof(DataType.FaultingExceptionFrame))]
+internal partial class FaultingExceptionFrame : IData<FaultingExceptionFrame>
 {
-    static FaultingExceptionFrame IData<FaultingExceptionFrame>.Create(Target target, TargetPointer address)
-        => new FaultingExceptionFrame(target, address);
-
-    public FaultingExceptionFrame(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.FaultingExceptionFrame);
-        TargetContext = address + (ulong)type.Fields[nameof(TargetContext)].Offset;
-        Address = address;
-    }
-
-    public TargetPointer Address { get; }
+    [FieldAddress]
     public TargetPointer TargetContext { get; }
 }

@@ -1,23 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class AppDomain : IData<AppDomain>
+[CdacType(nameof(DataType.AppDomain))]
+internal sealed partial class AppDomain : IData<AppDomain>
 {
-    static AppDomain IData<AppDomain>.Create(Target target, TargetPointer address) => new AppDomain(target, address);
-    public AppDomain(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.AppDomain);
+    [Field] public TargetPointer RootAssembly { get; }
 
-        RootAssembly = target.ReadPointerField(address, type, nameof(RootAssembly));
-        AssemblyList = address + (ulong)type.Fields[nameof(AssemblyList)].Offset;
-        FriendlyName = target.ReadPointerField(address, type, nameof(FriendlyName));
-    }
+    [FieldAddress]
+    public TargetPointer AssemblyList { get; }
 
-    public TargetPointer RootAssembly { get; init; }
-    public TargetPointer AssemblyList { get; init; }
-    public TargetPointer FriendlyName { get; init; }
+    [Field] public TargetPointer FriendlyName { get; }
 }

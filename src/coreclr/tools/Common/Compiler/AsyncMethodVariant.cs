@@ -160,6 +160,11 @@ namespace ILCompiler
             return method.IsAsyncThunk() || method is AsyncResumptionStub;
         }
 
+        public static bool RequiresSaveRestoreOfAsyncContexts(this MethodDesc method)
+        {
+            return method.IsAsync && method.IsAsyncVariant();
+        }
+
         public static MethodDesc GetAsyncVariant(this MethodDesc method)
         {
             Debug.Assert(!method.IsAsyncVariant());
@@ -170,6 +175,12 @@ namespace ILCompiler
         {
             Debug.Assert(method.IsAsyncVariant());
             return ((CompilerTypeSystemContext)method.Context).GetTargetOfAsyncVariantMethod(method);
+        }
+
+        public static MethodDesc GetTargetOfReturnDroppingAsyncThunk(this MethodDesc method)
+        {
+            Debug.Assert(method.IsReturnDroppingAsyncThunk());
+            return ((CompilerTypeSystemContext)method.Context).GetTargetOfReturnDroppingThunk(method);
         }
     }
 }

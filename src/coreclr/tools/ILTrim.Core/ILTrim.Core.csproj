@@ -10,9 +10,6 @@
     <TypeSystemPath>$(ToolsCommonPath)TypeSystem\</TypeSystemPath>
     <DefineConstants>$(DefineConstants);ILTRIM</DefineConstants>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../aot/ILCompiler.DependencyAnalysisFramework/ILCompiler.DependencyAnalysisFramework.csproj" />

@@ -68,6 +68,7 @@ namespace TestLibrary
         public static bool IsWindows => OperatingSystem.IsWindows();
         public static bool IsLinux => OperatingSystem.IsLinux();
         public static bool IsFreeBSD => OperatingSystem.IsFreeBSD();
+        public static bool IsOpenBSD => OperatingSystem.IsOSPlatform("OpenBSD");
         public static bool IsMacOSX => OperatingSystem.IsMacOS();
         public static bool IsWindowsNanoServer => (!IsWindowsIoTCore && GetInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
 

@@ -702,11 +702,12 @@ namespace
 
         // For a Runtime Async method the methoddef maps to a Task-returning thunk with runtime-provided implementation,
         // while the default IL belongs to the Async implementation variant.
+        // Similarly we can get here for an async variant of a task-returning method where we use the original method's
+        // IL and create an async version.
         // By default the config captures the default methoddesc, which would be a thunk, thus no IL header.
         // So, if config provides no header and we see an implementation method desc, then just ask the method desc itself.
         if (ilHeader == NULL && pMD->IsAsyncVariantMethod())
         {
-            _ASSERTE(!pMD->IsAsyncThunkMethod());
             ilHeader = pMD->GetILHeader();
         }
 
@@ -826,9 +827,15 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 #ifdef FEATURE_INTERPRETER
         if (isInterpreterCode)
         {
-            // If this is interpreter code, we need to get the native code start address from the interpreter Precode
+            // If this is interpreter code, get the native code start address from the
+            // interpreter entrypoint data: PortableEntryPoint interpreter data when
+            // FEATURE_PORTABLE_ENTRYPOINTS is enabled, otherwise the interpreter Precode.
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            InterpByteCodeStart* interpreterCode = (InterpByteCodeStart*)PortableEntryPoint::GetInterpreterData(pCode);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
             InterpreterPrecode* pPrecode = InterpreterPrecode::FromEntryPoint(pCode);
             InterpByteCodeStart* interpreterCode = dac_cast<InterpByteCodeStart*>(pPrecode->GetData()->ByteCodeAddr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
             pNativeCodeStartAddress = PINSTRToPCODE(dac_cast<TADDR>(interpreterCode));
         }
 #endif // FEATURE_INTERPRETER
@@ -1887,6 +1894,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
         {
             bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
 
+            INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frame);
             INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
             INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
@@ -1941,12 +1949,16 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock* pTransitionBlock, Method
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
             UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         }
         EX_CATCH
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-            _ASSERTE(ohThrowable);
-            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
+            // ohThrowable can be NULL when we've caught the ResumeAfterCatchException
+            if (ohThrowable != NULL)
+            {
+                StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)pTransitionBlock, pMD, NULL);
+            }
             EX_RETHROW;
         }
         EX_END_CATCH
@@ -2049,23 +2061,25 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         frames.interpMethodContextFrame.pStack = sp;
         frames.interpMethodContextFrame.pRetVal = (retBuff != NULL) ? (int8_t*)retBuff : sp;
 
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frames.interpreterFrame);
         InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
         ArgumentRegisters *pArgumentRegisters = (ArgumentRegisters*)(((uint8_t*)pTransitionBlock) + TransitionBlock::GetOffsetOfArgumentRegisters());
 
-    #if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
         pArgumentRegisters->RCX = (INT_PTR)*frames.interpreterFrame.GetContinuationPtr();
-    #elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64)
         pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-    #elif defined(TARGET_ARM)
+#elif defined(TARGET_ARM)
         pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-    #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-    #elif defined(TARGET_WASM)
+#elif defined(TARGET_WASM)
         // We do not yet have an ABI for WebAssembly native code to handle here.
-    #else
+#else
         #error Unsupported architecture
-    #endif
+#endif
 
         frames.interpreterFrame.Pop();
 
@@ -2095,6 +2109,13 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
 
     TransitionBlock block{};
     block.m_ReturnAddress = (TADDR)callerIp;
+#ifdef TARGET_WASM
+    // m_StackPointer is in a union, and doesn't get zero-initialized by the {} initializer, so we need to explicitly set it to 0 here. 
+    // The WebAssembly codegen will use this field to determine where the stack base is, and if it's not set to 0 then the WebAssembly
+    // codegen will think that the stack base is at some random offset from the actual stack base, which will cause stack accesses to
+    // be incorrect.
+    block.m_StackPointer = 0;
+#endif
     (void)ExecuteInterpretedMethod(&block, (TADDR)targetIp, retBuff);
 }
 
@@ -2148,10 +2169,13 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
         EX_CATCH
         {
             OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
-            _ASSERTE(ohThrowable);
-            if (finishedPrestubPortion)
+            // WASM-TODO, other implementation of calling InvokeManagedMethod in a try/catch
+            // have _ASSERTE(ohThrowable) here, but I found this to cause a problem
+            // when using C++ eh to unwind across a block of R2R Wasm code from one
+            // interpreter block to another.
+            if (ohThrowable != NULL && finishedPrestubPortion)
             {
-                StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)block, pMethod, NULL);
+                StackTraceInfo::AppendElement(ObjectFromHandle(ohThrowable), 0, (UINT_PTR)block, pMethod, NULL);
             }
             EX_RETHROW;
         }
@@ -2545,7 +2569,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             // Check to see if the entrypoint is into the interpreter. If so, grab the interpreter codes from the stub and put that directly
             // into the MethodDesc
             TADDR functionAddress = GetOrCreatePrecode()->GetTarget();
-            TADDR byteCodeStartOrFunctionAddress = GetInterpreterCodeFromInterpreterPrecodeIfPresent(functionAddress);
+            TADDR byteCodeStartOrFunctionAddress = GetInterpreterCodeFromEntryPointIfPresent(functionAddress);
             if (byteCodeStartOrFunctionAddress != functionAddress)
             {
                 // Then we must have an InterpByteCodeStart
@@ -2716,6 +2740,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pEMFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
 
@@ -2734,11 +2759,15 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         PTR_READYTORUN_IMPORT_SECTION pImportSection;
         if (sectionIndex != (DWORD)-1)
         {
+            // On some platforms (everywhere except wasm) we can get the section index from the callsite,
+            // so we don't have to search for it.
             pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
             _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
         }
         else
         {
+            // On some platforms (currently only wasm) we would need to bloat the R2R binary a bit to store
+            // the section index, so we search for it instead.
             pImportSection = pModule->GetImportSectionForRVA(rva);
         }
         _ASSERTE(pImportSection != NULL);
@@ -2993,6 +3022,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         }
     }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCode);
+#endif
+
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();
     if (g_externalMethodFixupTraceActiveCount > 0)
@@ -3003,6 +3036,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pEMFrame->Pop(CURRENT_THREAD);          // Pop the ExternalMethodFrame from the frame stack
 
@@ -3349,7 +3383,20 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     RVA rva = pNativeImage->GetDataRva((TADDR)pCell);
 
-    PTR_READYTORUN_IMPORT_SECTION pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
+    PTR_READYTORUN_IMPORT_SECTION pImportSection;
+    if (sectionIndex != (DWORD)-1)
+    {
+        // On some platforms (everywhere except wasm) we can get the section index from the callsite,
+        // so we don't have to search for it.
+        pImportSection = pModule->GetImportSectionFromIndex(sectionIndex);
+    }
+    else
+    {
+        // On some platforms (currently only wasm) we would need to bloat the R2R binary a bit to store
+        // the section index, so we search for it instead.
+        pImportSection = pModule->GetImportSectionForRVA(rva);
+    }
+
     _ASSERTE(pImportSection == pModule->GetImportSectionForRVA(rva));
 
     _ASSERTE(pImportSection->EntrySize == sizeof(TADDR));
@@ -3380,6 +3427,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
     switch (kind)
     {
+#ifndef TARGET_WASM
     case READYTORUN_FIXUP_NewObject:
         th = ZapSig::DecodeType(pModule, pInfoModule, pBlob);
         th.AsMethodTable()->EnsureInstanceActive();
@@ -3431,7 +3479,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
             pMD->EnsureActive();
         }
         break;
-
+#endif // !TARGET_WASM
     case READYTORUN_FIXUP_ThisObjDictionaryLookup:
     case READYTORUN_FIXUP_TypeDictionaryLookup:
     case READYTORUN_FIXUP_MethodDictionaryLookup:
@@ -3452,6 +3500,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         {
             switch (kind)
             {
+#ifndef TARGET_WASM
             case READYTORUN_FIXUP_IsInstanceOf:
             case READYTORUN_FIXUP_ChkCast:
                 {
@@ -3541,7 +3590,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                     }
                 }
                 break;
-
+#endif // !TARGET_WASM
             default:
                 UNREACHABLE();
             }
@@ -3565,6 +3614,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     {
         switch (kind)
         {
+#ifndef TARGET_WASM
         case READYTORUN_FIXUP_NewObject:
             {
                 bool fHasSideEffectsUnused;
@@ -3610,7 +3660,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
                     if (ctorData.pArg4 != NULL || ctorData.pArg5 != NULL)
                     {
-                        // This should never happen - we should never get collectible or wrapper delegates here
+                        // This should never happen - we should never get collectible delegates here
                         _ASSERTE(false);
                         pDelegateCtor = NULL;
                     }
@@ -3638,7 +3688,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 }
             }
             break;
-
+#endif // !TARGET_WASM
         case READYTORUN_FIXUP_ThisObjDictionaryLookup:
         case READYTORUN_FIXUP_TypeDictionaryLookup:
         case READYTORUN_FIXUP_MethodDictionaryLookup:
@@ -3685,6 +3735,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
 
     pFrame->Push(CURRENT_THREAD);
 
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -3781,6 +3832,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
 
     pFrame->Pop(CURRENT_THREAD);
 

@@ -1810,6 +1810,235 @@ void Compiler::fgDebugCheckTryFinallyExits()
 #endif // DEBUG
 
 //------------------------------------------------------------------------
+// fgRemoveUnreachableTry: Remove EH regions whose try entry is not
+//    reachable from the method entry.
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
+// Notes:
+//    Walks the EH table; for each entry whose try entry is not in the DFS
+//    reachable set: retargets any callfinally pairs that target the handler
+//    to its continuation, unprotects every block in the try/filter/handler,
+//    clears stale tryIndex/hndIndex on those blocks, and drops the EH table
+//    entry. After all dead entries are dropped, recomputes the DFS and runs
+//    fgRemoveBlocksOutsideDfsTree to delete the now-unreachable blocks.
+//
+//    The standard DFS is EH-aware (AllSuccessorEnumerator visits EH
+//    successors), so try-reachability normally implies handler/filter
+//    reachability; the callfinally retargeting handles the case where
+//    finally-cloning has left live callfinally pairs into an otherwise-dead
+//    handler.
+//
+PhaseStatus Compiler::fgRemoveUnreachableTry()
+{
+    JITDUMP("\n*************** In fgRemoveUnreachableTry()\n");
+
+    assert(!fgFuncletsCreated);
+    assert(fgPredsComputed);
+
+    bool enabled = true;
+#ifdef DEBUG
+    enabled = (JitConfig.JitEnableRemoveUnreachableTry() == 1);
+#endif
+
+    if (!enabled)
+    {
+        JITDUMP("Unreachable try removal disabled by config.\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+    if (compHndBBtabCount == 0)
+    {
+        JITDUMP("No EH in this method; nothing to do.\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+    if (opts.MinOpts())
+    {
+        JITDUMP("Method compiled with MinOpts; skipping.\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+    if (opts.compDbgCode)
+    {
+        JITDUMP("Method compiled with debug codegen; skipping.\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // Compute DFS if the caller didn't supply one; the EH-aware DFS makes
+    // try-reachability imply handler/filter reachability for the common case.
+    //
+    bool ownsDfs = false;
+    if (m_dfsTree == nullptr)
+    {
+        m_dfsTree = fgComputeDfs();
+        ownsDfs   = true;
+    }
+
+    // PASS 1: For each dead-try region, retarget any callfinally pairs that
+    // target the handler so the now-dead handler has no live preds.
+    //
+    bool foundDead = false;
+
+    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    {
+        EHblkDsc* const   HBtab  = &compHndBBtab[XTnum];
+        BasicBlock* const tryBeg = HBtab->ebdTryBeg;
+        BasicBlock* const hndBeg = HBtab->ebdHndBeg;
+
+        if (m_dfsTree->Contains(tryBeg))
+        {
+            continue;
+        }
+
+        foundDead = true;
+        JITDUMP("EH#%u try entry " FMT_BB " is unreachable.\n", XTnum, tryBeg->bbNum);
+
+        // Filters are only reached via EH-succ from try blocks, so an
+        // unreachable try implies an unreachable filter.
+        //
+        if (HBtab->HasFilter())
+        {
+            assert(!m_dfsTree->Contains(HBtab->ebdFilter));
+        }
+
+        if (HBtab->HasFinallyHandler())
+        {
+            for (BasicBlock* const pred : hndBeg->PredBlocksEditing())
+            {
+                if (!pred->KindIs(BBJ_CALLFINALLY) || !pred->isBBCallFinallyPair())
+                {
+                    continue;
+                }
+
+                BasicBlock* const tail         = pred->Next();
+                BasicBlock* const continuation = tail->GetFinallyContinuation();
+
+                JITDUMP("  retargeting callfinally " FMT_BB " to continuation " FMT_BB ", removing tail " FMT_BB "\n",
+                        pred->bbNum, continuation->bbNum, tail->bbNum);
+
+                fgPrepareCallFinallyRetForRemoval(tail);
+                fgRemoveBlock(tail, /* unreachable */ true);
+
+                fgRemoveRefPred(pred->GetTargetEdge());
+                FlowEdge* const newEdge = fgAddRefPred(continuation, pred);
+                pred->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
+                pred->RemoveFlags(BBF_RETLESS_CALL);
+
+                // Bypassing the finally body invalidates the local profile.
+                //
+                if (pred->hasProfileWeight())
+                {
+                    fgPgoConsistent = false;
+                }
+            }
+        }
+
+        // Non-finally handlers can stay DFS-reachable via two-pass EH
+        // dispatch from an outer filter; PASS 3's EH-entry removal + PASS 4's
+        // DFS rebuild will make them unreachable.
+    }
+
+    if (!foundDead)
+    {
+        JITDUMP("No unreachable EH regions found.\n");
+        if (ownsDfs)
+        {
+            fgInvalidateDfsTree();
+        }
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // PASS 2: Unprotect blocks in dead regions and drop the artificial
+    // bbRefs on handler/filter entries so the dead-block pass can remove them.
+    //
+    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    {
+        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
+        if (m_dfsTree->Contains(HBtab->ebdTryBeg))
+        {
+            continue;
+        }
+
+        for (BasicBlock* const block : Blocks(HBtab->ebdTryBeg, HBtab->ebdTryLast))
+        {
+            block->RemoveFlags(BBF_DONT_REMOVE);
+        }
+        for (BasicBlock* const block : Blocks(HBtab->ebdHndBeg, HBtab->ebdHndLast))
+        {
+            block->RemoveFlags(BBF_DONT_REMOVE);
+        }
+        if (HBtab->HasFilter())
+        {
+            for (BasicBlock* const block : Blocks(HBtab->ebdFilter, HBtab->BBFilterLast()))
+            {
+                block->RemoveFlags(BBF_DONT_REMOVE);
+            }
+        }
+
+        assert(HBtab->ebdHndBeg->bbRefs >= 1);
+        HBtab->ebdHndBeg->bbRefs--;
+
+        if (HBtab->HasFilter())
+        {
+            assert(HBtab->ebdFilter->bbRefs >= 1);
+            HBtab->ebdFilter->bbRefs--;
+        }
+    }
+
+    // PASS 3: Drop the EH table entries for the dead regions, clearing the
+    // try/hnd index on any block still claimed by them so fgRemoveEHTableEntry
+    // is satisfied.
+    //
+    unsigned removedCount = 0;
+    for (unsigned XTnum = 0; XTnum < compHndBBtabCount;)
+    {
+        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
+        if (m_dfsTree->Contains(HBtab->ebdTryBeg))
+        {
+            XTnum++;
+            continue;
+        }
+
+        for (BasicBlock* const block : Blocks())
+        {
+            if (block->hasTryIndex() && block->getTryIndex() == XTnum)
+            {
+                block->clearTryIndex();
+            }
+            if (block->hasHndIndex() && block->getHndIndex() == XTnum)
+            {
+                block->clearHndIndex();
+            }
+        }
+
+        JITDUMP("Dropping EH#%u (try entry " FMT_BB ")\n", XTnum, HBtab->ebdTryBeg->bbNum);
+        fgUpdateACDsBeforeEHTableEntryRemoval(XTnum);
+        fgRemoveEHTableEntry(XTnum);
+        removedCount++;
+    }
+
+    // PASS 4: Rebuild the DFS; PASS 1 and PASS 3 both invalidate it.
+    //
+    fgInvalidateDfsTree();
+    m_dfsTree = fgComputeDfs();
+
+    // PASS 5: Remove the now-unreachable blocks.
+    //
+    fgRemoveBlocksOutsideDfsTree();
+
+    // Leave the DFS in the same state we found it: invalidate if we computed
+    // it ourselves, otherwise leave a fresh one for the caller.
+    //
+    fgInvalidateDfsTree();
+    if (!ownsDfs)
+    {
+        m_dfsTree = fgComputeDfs();
+    }
+
+    JITDUMP("\nfgRemoveUnreachableTry removed %u unreachable EH region(s)\n", removedCount);
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
 // fgMergeFinallyChains: tail merge finally invocations
 //
 // Returns:
@@ -2075,247 +2304,6 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     }
 
     return true;
-}
-
-//------------------------------------------------------------------------
-// fgTailMergeThrows: Tail merge throw blocks and blocks with no return calls.
-//
-// Returns:
-//    PhaseStatus indicating what, if anything, was changed.
-//
-// Notes:
-//    Scans the flow graph for throw blocks and blocks with no return calls
-//    that can be merged, and opportunistically merges them.
-//
-//    Does not handle throws yet as the analysis is more costly and less
-//    likely to pay off. So analysis is restricted to blocks with just one
-//    statement.
-//
-//    For throw helper call merging, we are looking for examples like
-//    the below. Here BB17 and BB21 have identical trees that call noreturn
-//    methods, so we can modify BB16 to branch to BB21 and delete BB17.
-//
-//    Also note as a quirk of how we model flow that both BB17 and BB21
-//    have successor blocks. We don't turn these into true throw blocks
-//    until morph.
-//
-//    BB16 [005..006) -> BB18 (cond), preds={} succs={BB17,BB18}
-//
-//    *  JTRUE     void
-//    \--*  NE        int
-//       ...
-//
-//    BB17 [005..006), preds={} succs={BB19}
-//
-//    *  CALL      void   ThrowHelper.ThrowArgumentOutOfRangeException
-//    \--*  CNS_INT   int    33
-//
-//    BB20 [005..006) -> BB22 (cond), preds={} succs={BB21,BB22}
-//
-//    *  JTRUE     void
-//    \--*  LE        int
-//       ...
-//
-//    BB21 [005..006), preds={} succs={BB22}
-//
-//    *  CALL      void   ThrowHelper.ThrowArgumentOutOfRangeException
-//    \--*  CNS_INT   int    33
-//
-PhaseStatus Compiler::fgTailMergeThrows()
-{
-    noway_assert(opts.OptimizationEnabled());
-
-    JITDUMP("\n*************** In fgTailMergeThrows\n");
-
-    // Early out case for most methods. Throw helpers are rare.
-    if (optNoReturnCallCount < 2)
-    {
-        JITDUMP("Method does not have multiple noreturn calls.\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-    else
-    {
-        JITDUMP("Scanning the %u candidates\n", optNoReturnCallCount);
-    }
-
-    // This transformation requires block pred lists to be built
-    // so that flow can be safely updated.
-    assert(fgPredsComputed);
-
-    struct ThrowHelper
-    {
-        BasicBlock*  m_block;
-        GenTreeCall* m_call;
-
-        ThrowHelper()
-            : m_block(nullptr)
-            , m_call(nullptr)
-        {
-        }
-
-        ThrowHelper(BasicBlock* block, GenTreeCall* call)
-            : m_block(block)
-            , m_call(call)
-        {
-        }
-
-        static bool Equals(const ThrowHelper& x, const ThrowHelper& y)
-        {
-            return BasicBlock::sameEHRegion(x.m_block, y.m_block) && GenTreeCall::Equals(x.m_call, y.m_call);
-        }
-
-        static unsigned GetHashCode(const ThrowHelper& x)
-        {
-            return static_cast<unsigned>(reinterpret_cast<uintptr_t>(x.m_call->gtCallMethHnd));
-        }
-    };
-
-    typedef JitHashTable<ThrowHelper, ThrowHelper, BasicBlock*> CallToBlockMap;
-
-    CompAllocator   allocator(getAllocator(CMK_TailMergeThrows));
-    CallToBlockMap  callMap(allocator);
-    BlockToBlockMap blockMap(allocator);
-
-    // We run two passes here.
-    //
-    // The first pass finds candidate blocks. The first candidate for
-    // each unique kind of throw is chosen as the canonical example of
-    // that kind of throw.  Subsequent matching candidates are mapped
-    // to that throw.
-    //
-    // The second pass modifies flow so that predecessors of
-    // non-canonical throw blocks now transfer control to the
-    // appropriate canonical block.
-
-    // First pass
-    //
-    // Scan for THROW blocks. Note early on in compilation (before morph)
-    // noreturn blocks are not marked as BBJ_THROW.
-    //
-    // Walk blocks from last to first so that any branches we
-    // introduce to the canonical blocks end up lexically forward
-    // and there is less jumbled flow to sort out later.
-    for (BasicBlock* block = fgLastBB; block != nullptr; block = block->Prev())
-    {
-        // Workaround: don't consider try entry blocks as candidates
-        // for merging; if the canonical throw is later in the same try,
-        // we'll create invalid flow.
-        if (bbIsTryBeg(block))
-        {
-            continue;
-        }
-
-        // We only look at the first statement for throw helper calls.
-        // Remainder of the block will be dead code.
-        //
-        // Throw helper calls could show up later in the block; we
-        // won't try merging those as we'd need to match up all the
-        // prior statements or split the block at this point, etc.
-        //
-        Statement* const stmt = block->firstStmt();
-
-        if (stmt == nullptr)
-        {
-            continue;
-        }
-
-        // ...that is a call
-        GenTree* const tree = stmt->GetRootNode();
-
-        if (!tree->IsCall())
-        {
-            continue;
-        }
-
-        // ...that does not return
-        GenTreeCall* const call = tree->AsCall();
-
-        if (!call->IsNoReturn())
-        {
-            continue;
-        }
-
-        // Ok, we've found a suitable call. See if this is one we know
-        // about already, or something new.
-        BasicBlock* canonicalBlock = nullptr;
-
-        JITDUMP("\n*** Does not return call\n");
-        DISPTREE(call);
-
-        // Have we found an equivalent call already?
-        ThrowHelper key(block, call);
-        if (callMap.Lookup(key, &canonicalBlock))
-        {
-            // Yes, this one can be optimized away...
-            JITDUMP("    in " FMT_BB " can be dup'd to canonical " FMT_BB "\n", block->bbNum, canonicalBlock->bbNum);
-            blockMap.Set(block, canonicalBlock);
-        }
-        else
-        {
-            // No, add this as the canonical example
-            JITDUMP("    in " FMT_BB " is unique, marking it as canonical\n", block->bbNum);
-            callMap.Set(key, block);
-        }
-    }
-
-    // Bail if no candidates were found
-    const unsigned numCandidates = blockMap.GetCount();
-    if (numCandidates == 0)
-    {
-        JITDUMP("\n*************** no throws can be tail merged, sorry\n");
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
-    JITDUMP("\n*** found %d merge candidates, rewriting flow\n\n", numCandidates);
-    bool modifiedProfile = false;
-
-    // Second pass.
-    //
-    // We walk the map rather than the block list, to save a bit of time.
-    for (BlockToBlockMap::Node* const iter : BlockToBlockMap::KeyValueIteration(&blockMap))
-    {
-        BasicBlock* const nonCanonicalBlock = iter->GetKey();
-        BasicBlock* const canonicalBlock    = iter->GetValue();
-        weight_t          removedWeight     = BB_ZERO_WEIGHT;
-
-        // Walk pred list of the non canonical block, updating flow to target
-        // the canonical block instead.
-        for (FlowEdge* const predEdge : nonCanonicalBlock->PredEdgesEditing())
-        {
-            removedWeight += predEdge->getLikelyWeight();
-            BasicBlock* const predBlock = predEdge->getSourceBlock();
-            JITDUMP("*** " FMT_BB " now branching to " FMT_BB "\n", predBlock->bbNum, canonicalBlock->bbNum);
-            fgReplaceJumpTarget(predBlock, nonCanonicalBlock, canonicalBlock);
-        }
-
-        if (canonicalBlock->hasProfileWeight())
-        {
-            canonicalBlock->increaseBBProfileWeight(removedWeight);
-            modifiedProfile = true;
-
-            // Don't bother updating flow into nonCanonicalBlock, since it is now unreachable
-        }
-    }
-
-    // In practice, when we have true profile data, we can repair it locally above, since the no-return
-    // calls mean that there is no contribution from the throw blocks to any of their successors.
-    // However, these blocks won't be morphed into BBJ_THROW blocks until later,
-    // so mark profile data as inconsistent for now.
-    if (modifiedProfile)
-    {
-        JITDUMP(
-            "fgTailMergeThrows: Modified flow into no-return blocks that still have successors. Data %s inconsistent.\n",
-            fgPgoConsistent ? "is now" : "was already");
-        fgPgoConsistent = false;
-    }
-
-    // Update the count of noreturn call sites
-    //
-    JITDUMP("Made %u updates\n", numCandidates);
-    assert(numCandidates < optNoReturnCallCount);
-    optNoReturnCallCount -= numCandidates;
-
-    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------

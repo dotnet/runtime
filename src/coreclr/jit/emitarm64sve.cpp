@@ -2741,26 +2741,11 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
         case INS_sve_ldr:
             assert(insOptsNone(opt));
             assert(isScalableVectorSize(size));
-            assert(isGeneralRegister(reg2)); // nnnnn
+            assert(isGeneralRegisterOrSP(reg2)); // nnnnn
             assert(insScalableOptsNone(sopt));
-
-            // imm is the number of bytes to offset by. The instruction requires a multiple of the
-            // vector length ([#imm mul vl]). If it doesn't fit then stash the resulting address
-            // into a register.
-            if (emitIns_valid_imm_for_scaled_sve_ldst_offset(imm))
-            {
-                // TODO-SVE: This assumes 128bit SVE.
-                imm = imm / 16;
-            }
-            else
-            {
-                regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
-                reg2 = rsvdReg;
-                imm  = 0;
-            }
-
             assert(isValidSimm<9>(imm));
+
+            reg2 = encodingSPtoZR(reg2);
 
             if (isVectorRegister(reg1))
             {
@@ -2776,26 +2761,11 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
         case INS_sve_str:
             assert(insOptsNone(opt));
             assert(isScalableVectorSize(size));
-            assert(isGeneralRegister(reg2)); // nnnnn
+            assert(isGeneralRegisterOrSP(reg2)); // nnnnn
             assert(insScalableOptsNone(sopt));
-
-            // imm is the number of bytes to offset by. The instruction requires a multiple of the
-            // vector length ([#imm mul vl]). If it doesn't fit then stash the resulting address
-            // into a register.
-            if (emitIns_valid_imm_for_scaled_sve_ldst_offset(imm))
-            {
-                // TODO-SVE: This assumes 128bit SVE.
-                imm = imm / 16;
-            }
-            else
-            {
-                regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
-                reg2 = rsvdReg;
-                imm  = 0;
-            }
-
             assert(isValidSimm<9>(imm));
+
+            reg2 = encodingSPtoZR(reg2);
 
             if (isVectorRegister(reg1))
             {
@@ -3043,6 +3013,15 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
             assert(insSveMovOptsUnpredicated(mopt));
             assert(isValidMovprfxReg(mopt, reg1, reg2, reg3));
             emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, /* canSkip */ true, INS_OPTS_NONE, mopt);
+            emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
+            return;
+
+        case INS_sve_sqxtnt:
+        case INS_sve_uqxtnt:
+        case INS_sve_sqxtunt:
+            // RMW instructions without movprfx support, use mov instead
+            assert(insSveMovOptsUnpredicated(mopt));
+            emitIns_Mov(INS_sve_mov, attr, reg1, reg2, /* canSkip */ true, opt);
             emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
             return;
 

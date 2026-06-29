@@ -1131,13 +1131,6 @@ void LOADCallDllMain(DWORD dwReason, LPVOID lpReserved)
 {
     MODSTRUCT *module = nullptr;
     BOOL InLoadOrder = TRUE; /* true if in load order, false for reverse */
-    CPalThread *pThread;
-
-    pThread = InternalGetCurrentThread();
-    if (UserCreatedThread != pThread->GetThreadType())
-    {
-        return;
-    }
 
     /* Validate dwReason */
     switch(dwReason)

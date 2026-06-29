@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography
                 return secretAgreement;
             }
 
-            private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
+            private unsafe byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
             {
                 if (!(otherPartyPublicKey is ECDiffieHellmanAppleCryptoPublicKey secTransPubKey))
                 {
