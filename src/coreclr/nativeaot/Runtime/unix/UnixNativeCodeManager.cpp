@@ -1066,11 +1066,6 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
 
 #elif defined(TARGET_ARM64)
 
-// ret
-// 1101 0110 0101 1111 0000 00xx xxx0 0000
-#define RET_BITS 0xD65F0000
-#define RET_MASK 0xFFFFFC1F
-
 // ldr with unsigned immediate
 // 1x11 1001 x1xx xxxx xxxx xxxx xxxx xxxx
 #define LDR_BITS1 0xB9400000
@@ -1115,12 +1110,6 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
     ASSERT(pNativeMethodInfo != NULL);
 
     uint32_t* start  = (uint32_t*)pNativeMethodInfo->pMethodStartAddress;
-
-    uint32_t currentInstr = *(uint32_t*)pvAddress;
-    if ((currentInstr & RET_MASK) == RET_BITS)
-    {
-        return 1;
-    }
 
     // Since we stop on branches, the search is roughly limited by the containing basic block.
     // We typically examine just 1-5 instructions and in rare cases up to 30.
@@ -1437,6 +1426,16 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         // unambiguous. Partial prologs can save FP/LR before FP is established, and some
         // epilog layouts adjust SP before the final AUTIASP/RET sequence.
         if (IsInProlog(pMethodInfo, (PTR_VOID)pRegisterSet->IP) == 1)
+        {
+            return false;
+        }
+
+        // At RET, FP/LR/SP have already been restored to the caller state so
+        // PAC cannot safely use the current frame's signing metadata there.
+        constexpr uint32_t RetBits = 0xD65F0000;
+        constexpr uint32_t RetMask = 0xFFFFFC1F;
+        uint32_t currentInstr = *(uint32_t*)pRegisterSet->IP;
+        if ((currentInstr & RetMask) == RetBits)
         {
             return false;
         }
