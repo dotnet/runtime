@@ -47,19 +47,6 @@ namespace System.Text.Json.SourceGeneration
 
             internal const string JsonSerializableAttributeFullName = "System.Text.Json.Serialization.JsonSerializableAttribute";
 
-            // Exception message baked into generated metadata for derived types that cannot be
-            // resolved against their base. Like other generated exception strings (and unlike
-            // source-gen diagnostics) it is intentionally not localized so generated output stays
-            // deterministic across build cultures. {0} = derived type, {1} = base type.
-            private const string OpenGenericDerivedTypeCouldNotBeResolvedExceptionMessage =
-                "The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}'.";
-
-            // Exception message baked into generated metadata for inferred derived types that are
-            // less accessible than their base. Not localized for the same determinism reasons as
-            // above. {0} = derived type, {1} = base type.
-            private const string InferredDerivedTypeIsNotAccessibleExceptionMessage =
-                "The inferred derived type '{0}' must be at least as accessible as the polymorphic base type '{1}'.";
-
             private readonly KnownTypeSymbols _knownSymbols;
             private readonly bool _compilationContainsCoreJsonTypes;
 
@@ -990,7 +977,7 @@ namespace System.Text.Json.SourceGeneration
                 string? typeDiscriminatorPropertyName = null;
                 TypeRef? polymorphicClassifierFactoryType = null;
                 List<DerivedTypeSpec>? derivedTypes = null;
-                string? unresolvedDerivedTypeError = null;
+                bool hasExplicitDerivedTypeAttribute = false;
                 ImmutableArray<TypedConstant> closedTypeDerivedTypes = default;
                 bool hasUnionTypeClassifierSpecified = false;
                 bool isUnionType = IsUnionType(typeToGenerate.Type);
@@ -1061,6 +1048,7 @@ namespace System.Text.Json.SourceGeneration
                     if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonDerivedTypeAttributeType))
                     {
                         Debug.Assert(attributeData.ConstructorArguments.Length > 0);
+                        hasExplicitDerivedTypeAttribute = true;
                         var derivedType = (ITypeSymbol)attributeData.ConstructorArguments[0].Value!;
 
                         if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
@@ -1069,18 +1057,11 @@ namespace System.Text.Json.SourceGeneration
                                     unboundDerived, typeToGenerate.Type,
                                     out INamedTypeSymbol? resolvedType, out string? failureReason))
                             {
+                                // An open generic derived type that cannot be unified against this base
+                                // has no concrete type to emit. Surface it at build time and drop the
+                                // entry; source-gen reports invalid polymorphic configurations through
+                                // diagnostics rather than baking runtime throws into generated metadata.
                                 ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, attributeData.GetLocation(), derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
-
-                                // An open generic derived type that cannot be unified against this
-                                // base has no concrete type to emit. Rather than dropping the entry
-                                // (which would silently serialize the base non-polymorphically), record
-                                // the failure so the emitter generates a JsonTypeInfo factory that throws
-                                // the same way the reflection-based resolver does.
-                                unresolvedDerivedTypeError ??= string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    OpenGenericDerivedTypeCouldNotBeResolvedExceptionMessage,
-                                    derivedType.ToDisplayString(),
-                                    typeToGenerate.Type.ToDisplayString());
                                 continue;
                             }
 
@@ -1176,14 +1157,13 @@ namespace System.Text.Json.SourceGeneration
                 // enabled, the base type is marked [IsClosedType] with a non-empty derived type set, and
                 // no explicit [JsonDerivedType] attributes were specified (explicit registration wins).
                 if (options?.InferClosedTypePolymorphism is true &&
-                    derivedTypes is null &&
-                    unresolvedDerivedTypeError is null &&
+                    !hasExplicitDerivedTypeAttribute &&
                     !closedTypeDerivedTypes.IsDefaultOrEmpty)
                 {
-                    InferClosedTypeDerivedTypes(typeToGenerate, closedTypeDerivedTypes, ref derivedTypes, ref unresolvedDerivedTypeError);
+                    InferClosedTypeDerivedTypes(typeToGenerate, closedTypeDerivedTypes, ref derivedTypes);
                 }
 
-                if (hasPolymorphicAttribute || derivedTypes is { Count: > 0 } || unresolvedDerivedTypeError is not null)
+                if (hasPolymorphicAttribute || derivedTypes is { Count: > 0 })
                 {
                     polymorphismOptions = new PolymorphismOptionsSpec
                     {
@@ -1192,7 +1172,6 @@ namespace System.Text.Json.SourceGeneration
                         TypeClassifierFactoryType = polymorphicClassifierFactoryType,
                         TypeDiscriminatorPropertyName = typeDiscriminatorPropertyName,
                         UnknownDerivedTypeHandling = unknownDerivedTypeHandling,
-                        UnresolvedDerivedTypeError = unresolvedDerivedTypeError,
                     };
                 }
 
@@ -1213,8 +1192,7 @@ namespace System.Text.Json.SourceGeneration
             private void InferClosedTypeDerivedTypes(
                 in TypeToGenerate typeToGenerate,
                 ImmutableArray<TypedConstant> closedTypeDerivedTypes,
-                ref List<DerivedTypeSpec>? derivedTypes,
-                ref string? unresolvedDerivedTypeError)
+                ref List<DerivedTypeSpec>? derivedTypes)
             {
                 int baseAccessibility = GetEffectiveAccessibility(typeToGenerate.Type);
                 HashSet<string>? seenDiscriminators = null;
@@ -1230,17 +1208,13 @@ namespace System.Text.Json.SourceGeneration
 
                     if (derivedType is INamedTypeSymbol { IsUnboundGenericType: true } unboundDerived)
                     {
-                        if (!TryResolveOpenGenericDerivedType(unboundDerived, typeToGenerate.Type, out INamedTypeSymbol? resolvedType, out _))
+                        if (!TryResolveOpenGenericDerivedType(unboundDerived, typeToGenerate.Type, out INamedTypeSymbol? resolvedType, out string? failureReason))
                         {
                             // An inferred open generic derived type that cannot be unified against this
-                            // base has no concrete type to emit. The reflection path throws here, so
-                            // record the failure and let the emitter generate a throwing factory rather
-                            // than silently serializing the base non-polymorphically.
-                            unresolvedDerivedTypeError ??= string.Format(
-                                CultureInfo.InvariantCulture,
-                                OpenGenericDerivedTypeCouldNotBeResolvedExceptionMessage,
-                                derivedType.ToDisplayString(),
-                                typeToGenerate.Type.ToDisplayString());
+                            // base has no concrete type to emit. Surface it at build time and drop the
+                            // entry, mirroring the established source-gen handling for unresolvable
+                            // [JsonDerivedType] registrations.
+                            ReportDiagnostic(DiagnosticDescriptors.OpenGenericDerivedTypeCouldNotBeResolved, typeToGenerate.Location, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString(), failureReason);
                             continue;
                         }
 
@@ -1256,14 +1230,10 @@ namespace System.Text.Json.SourceGeneration
 
                     if (GetEffectiveAccessibility(derivedType) < baseAccessibility)
                     {
-                        // The reflection path throws for inferred derived types less accessible than the
-                        // base; mirror that by emitting a throwing factory instead of dropping the entry.
+                        // The inferred derived type is less accessible than the base. Surface it at
+                        // build time and drop the entry; source-gen reports invalid polymorphic
+                        // configurations through diagnostics rather than baking runtime throws.
                         ReportDiagnostic(DiagnosticDescriptors.InferredDerivedTypeIsNotAccessible, typeToGenerate.Location, derivedType.ToDisplayString(), typeToGenerate.Type.ToDisplayString());
-                        unresolvedDerivedTypeError ??= string.Format(
-                            CultureInfo.InvariantCulture,
-                            InferredDerivedTypeIsNotAccessibleExceptionMessage,
-                            derivedType.ToDisplayString(),
-                            typeToGenerate.Type.ToDisplayString());
                         continue;
                     }
 

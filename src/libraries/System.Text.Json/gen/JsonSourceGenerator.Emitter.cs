@@ -242,11 +242,6 @@ namespace System.Text.Json.SourceGeneration
 
             private SourceText? GenerateTypeInfo(ContextGenerationSpec contextSpec, TypeGenerationSpec typeGenerationSpec)
             {
-                if (typeGenerationSpec.PolymorphismOptions?.UnresolvedDerivedTypeError is not null)
-                {
-                    return GenerateForTypeWithUnresolvedPolymorphism(contextSpec, typeGenerationSpec);
-                }
-
                 switch (typeGenerationSpec.ClassType)
                 {
                     case ClassType.BuiltInSupportType:
@@ -352,27 +347,6 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine($"""
                     jsonTypeInfo = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}(options, {JsonMetadataServicesTypeRef}.GetUnsupportedTypeConverter<{typeFQN}>());
                     """);
-
-                GenerateTypeInfoFactoryFooter(writer);
-
-                return CompleteSourceFileAndReturnText(writer);
-            }
-
-            private static SourceText GenerateForTypeWithUnresolvedPolymorphism(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
-            {
-                Debug.Assert(typeMetadata.PolymorphismOptions?.UnresolvedDerivedTypeError is not null);
-
-                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
-
-                GenerateTypeInfoFactoryHeader(writer, typeMetadata);
-
-                // A registered derived type could not be resolved against this base type. Emit a
-                // factory body that throws the same way the reflection-based resolver does, rather
-                // than silently producing non-polymorphic metadata. The throw is the only statement
-                // inside the 'if (!TryGetTypeInfoForRuntimeCustomConverter(...))' block, so the
-                // normal 'return jsonTypeInfo' path (taken when a runtime custom converter applies)
-                // remains reachable and the method still compiles.
-                writer.WriteLine($"""throw new {InvalidOperationExceptionTypeRef}("{typeMetadata.PolymorphismOptions!.UnresolvedDerivedTypeError}");""");
 
                 GenerateTypeInfoFactoryFooter(writer);
 

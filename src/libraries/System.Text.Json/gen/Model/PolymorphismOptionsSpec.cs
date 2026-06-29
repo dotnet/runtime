@@ -26,15 +26,5 @@ namespace System.Text.Json.SourceGeneration
         public required string? TypeDiscriminatorPropertyName { get; init; }
 
         public required JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get; init; }
-
-        /// <summary>
-        /// When set, a registered derived type could not be resolved against this base type
-        /// (e.g. an open generic derived type that fails unification). The value is a
-        /// pre-formatted, non-localized message describing the failure. The emitter generates
-        /// a <see cref="System.Text.Json.Serialization.Metadata.JsonTypeInfo"/> factory that
-        /// throws this message so the generated metadata fails the same way reflection does,
-        /// instead of silently serializing the base type non-polymorphically.
-        /// </summary>
-        public required string? UnresolvedDerivedTypeError { get; init; }
     }
 }
