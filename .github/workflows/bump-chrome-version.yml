@@ -50,8 +50,8 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            const { CHROME_LINUX_VER, CHROME_WIN_VER } = process.env;
-            const title = `[wasm] Bump chrome for testing - linux: ${CHROME_LINUX_VER}, windows: ${CHROME_WIN_VER}`;
+            const { CHROME_LINUX_VER, CHROME_WIN_VER, CHROME_MAC_VER } = process.env;
+            const title = `[wasm] Bump chrome for testing - linux: ${CHROME_LINUX_VER}, windows: ${CHROME_WIN_VER}, mac: ${CHROME_MAC_VER}`;
             const { data: pullRequest } = await github.rest.pulls.create({
               base: context.ref,
               head: "update-chrome-version-${{ github.run_id }}",
