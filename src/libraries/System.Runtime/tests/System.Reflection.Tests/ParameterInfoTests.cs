@@ -341,9 +341,8 @@ namespace System.Reflection.Tests
             string[] names = openEnumType.GetEnumNames();
             Assert.Equal(new[] { "Zero", "One" }, names);
 
-            Array values = openEnumType.GetEnumValuesAsUnderlyingType();
+            byte[] values = Assert.IsType<byte[]>(openEnumType.GetEnumValuesAsUnderlyingType());
             Assert.Equal(new byte[] { 0, 1 }, values);
-
             Assert.Equal("Zero", openEnumType.GetEnumName((byte)0));
             Assert.Equal("One", openEnumType.GetEnumName((byte)1));
 
