@@ -78,9 +78,9 @@ namespace System.IO.Compression
         [Fact]
         public void StaticWindowLogProperties_ReturnExpectedValues()
         {
-            Assert.Equal(15, ZLibCompressionOptions.DefaultWindowLog);
-            Assert.Equal(8, ZLibCompressionOptions.MinWindowLog);
-            Assert.Equal(15, ZLibCompressionOptions.MaxWindowLog);
+            Assert.Equal(15, ZLibCompressionOptions.DefaultWindowLog2);
+            Assert.Equal(8, ZLibCompressionOptions.MinWindowLog2);
+            Assert.Equal(15, ZLibCompressionOptions.MaxWindowLog2);
         }
     }
 }
