@@ -2,21 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Provides an abstraction over platform specific calling conventions (specifically, the calling convention
-// utilized by the JIT on that platform). The caller enumerates each argument of a signature in turn, and is 
+// utilized by the JIT on that platform). The caller enumerates each argument of a signature in turn, and is
 // provided with information mapping that argument into registers and/or stack locations.
+
+#nullable disable
 
 using System;
 using System.Diagnostics;
 
 using Internal.JitInterface;
-using Internal.NativeFormat;
-using Internal.TypeSystem;
 using Internal.CorConstants;
-using Internal;
-using ILCompiler.DependencyAnalysis.Wasm;
+using Internal.TypeSystem;
+#if READYTORUN
+using Internal.NativeFormat;
+#endif
 
 
-namespace ILCompiler.DependencyAnalysis.ReadyToRun
+namespace Internal.CallingConvention
 {
     public enum CORCOMPILE_GCREFMAP_TOKENS : byte
     {
@@ -34,175 +36,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         ManagedStatic,
         StdCall,
         /*FastCall, CDecl */
-    }
-
-    internal struct TypeHandle
-    {
-        public TypeHandle(TypeDesc type)
-        {
-            _type = type;
-            _isByRef = _type.IsByRef;
-            if (_isByRef)
-            {
-                _type = ((ByRefType)_type).ParameterType;
-            }
-        }
-
-        private readonly TypeDesc _type;
-        private readonly bool _isByRef;
-
-        public bool Equals(TypeHandle other)
-        {
-            return _isByRef == other._isByRef && _type == other._type;
-        }
-
-        public override int GetHashCode() { return (int)_type.GetHashCode(); }
-
-        public bool IsNull() { return _type == null && !_isByRef; }
-        public bool IsValueType() { if (_isByRef) return false; return _type.IsValueType; }
-        public bool IsPointerType() { if (_isByRef) return false; return _type.IsPointer; }
-
-        public bool HasIndeterminateSize() { return IsValueType() && ((DefType)_type).InstanceFieldSize.IsIndeterminate; }
-
-        public int PointerSize => _type.Context.Target.PointerSize;
-
-        public int GetSize()
-        {
-            if (IsValueType())
-                return ((DefType)_type).InstanceFieldSize.AsInt;
-            else
-                return PointerSize;
-        }
-
-        public bool RequiresAlign8()
-        {
-            if (_type.Context.Target.Architecture != TargetArchitecture.ARM)
-            {
-                return false;
-            }
-            if (_isByRef)
-            {
-                return false;
-            }
-            return _type.RequiresAlign8();
-        }
-
-        public bool IsHomogeneousAggregate()
-        {
-            TargetArchitecture targetArch = _type.Context.Target.Architecture;
-            if ((targetArch != TargetArchitecture.ARM) && (targetArch != TargetArchitecture.ARM64))
-            {
-                return false;
-            }
-            if (_isByRef)
-            {
-                return false;
-            }
-            return _type is DefType defType && defType.IsHomogeneousAggregate;
-        }
-
-        public int GetHomogeneousAggregateElementSize()
-        {
-            Debug.Assert(IsHomogeneousAggregate());
-            switch (_type.Context.Target.Architecture)
-            {
-                case TargetArchitecture.ARM:
-                    return RequiresAlign8() ? 8 : 4;
-
-                case TargetArchitecture.ARM64:
-                    return ((DefType)_type).GetHomogeneousAggregateElementSize();
-            }
-            throw new InvalidOperationException();
-        }
-
-        public CorElementType GetCorElementType()
-        {
-            if (_isByRef)
-            {
-                return CorElementType.ELEMENT_TYPE_BYREF;
-            }
-
-            Internal.TypeSystem.TypeFlags category = _type.UnderlyingType.Category;
-            // We use the UnderlyingType to handle Enums properly
-            return category switch
-            {
-                Internal.TypeSystem.TypeFlags.Boolean => CorElementType.ELEMENT_TYPE_BOOLEAN,
-                Internal.TypeSystem.TypeFlags.Char => CorElementType.ELEMENT_TYPE_CHAR,
-                Internal.TypeSystem.TypeFlags.SByte => CorElementType.ELEMENT_TYPE_I1,
-                Internal.TypeSystem.TypeFlags.Byte => CorElementType.ELEMENT_TYPE_U1,
-                Internal.TypeSystem.TypeFlags.Int16 => CorElementType.ELEMENT_TYPE_I2,
-                Internal.TypeSystem.TypeFlags.UInt16 => CorElementType.ELEMENT_TYPE_U2,
-                Internal.TypeSystem.TypeFlags.Int32 => CorElementType.ELEMENT_TYPE_I4,
-                Internal.TypeSystem.TypeFlags.UInt32 => CorElementType.ELEMENT_TYPE_U4,
-                Internal.TypeSystem.TypeFlags.Int64 => CorElementType.ELEMENT_TYPE_I8,
-                Internal.TypeSystem.TypeFlags.UInt64 => CorElementType.ELEMENT_TYPE_U8,
-                Internal.TypeSystem.TypeFlags.IntPtr => CorElementType.ELEMENT_TYPE_I,
-                Internal.TypeSystem.TypeFlags.UIntPtr => CorElementType.ELEMENT_TYPE_U,
-                Internal.TypeSystem.TypeFlags.Single => CorElementType.ELEMENT_TYPE_R4,
-                Internal.TypeSystem.TypeFlags.Double => CorElementType.ELEMENT_TYPE_R8,
-                Internal.TypeSystem.TypeFlags.ValueType => CorElementType.ELEMENT_TYPE_VALUETYPE,
-                Internal.TypeSystem.TypeFlags.Nullable => CorElementType.ELEMENT_TYPE_VALUETYPE,
-                Internal.TypeSystem.TypeFlags.Void => CorElementType.ELEMENT_TYPE_VOID,
-                Internal.TypeSystem.TypeFlags.Pointer => CorElementType.ELEMENT_TYPE_PTR,
-                Internal.TypeSystem.TypeFlags.FunctionPointer => CorElementType.ELEMENT_TYPE_FNPTR,
-
-                _ => CorElementType.ELEMENT_TYPE_CLASS
-            };
-        }
-
-        private static int[] s_elemSizes = new int[]
-        {
-            0, //ELEMENT_TYPE_END          0x0
-            0, //ELEMENT_TYPE_VOID         0x1
-            1, //ELEMENT_TYPE_BOOLEAN      0x2
-            2, //ELEMENT_TYPE_CHAR         0x3
-            1, //ELEMENT_TYPE_I1           0x4
-            1, //ELEMENT_TYPE_U1           0x5
-            2, //ELEMENT_TYPE_I2           0x6
-            2, //ELEMENT_TYPE_U2           0x7
-            4, //ELEMENT_TYPE_I4           0x8
-            4, //ELEMENT_TYPE_U4           0x9
-            8, //ELEMENT_TYPE_I8           0xa
-            8, //ELEMENT_TYPE_U8           0xb
-            4, //ELEMENT_TYPE_R4           0xc
-            8, //ELEMENT_TYPE_R8           0xd
-            -2,//ELEMENT_TYPE_STRING       0xe
-            -2,//ELEMENT_TYPE_PTR          0xf
-            -2,//ELEMENT_TYPE_BYREF        0x10
-            -1,//ELEMENT_TYPE_VALUETYPE    0x11
-            -2,//ELEMENT_TYPE_CLASS        0x12
-            0, //ELEMENT_TYPE_VAR          0x13
-            -2,//ELEMENT_TYPE_ARRAY        0x14
-            0, //ELEMENT_TYPE_GENERICINST  0x15
-            0, //ELEMENT_TYPE_TYPEDBYREF   0x16
-            0, // UNUSED                   0x17
-            -2,//ELEMENT_TYPE_I            0x18
-            -2,//ELEMENT_TYPE_U            0x19
-            0, // UNUSED                   0x1a
-            -2,//ELEMENT_TYPE_FPTR         0x1b
-            -2,//ELEMENT_TYPE_OBJECT       0x1c
-            -2,//ELEMENT_TYPE_SZARRAY      0x1d
-        };
-
-        public static int GetElemSize(CorElementType t, TypeHandle thValueType)
-        {
-            if (((int)t) <= 0x1d)
-            {
-                int elemSize = s_elemSizes[(int)t];
-                if (elemSize == -1)
-                {
-                    return (int)thValueType.GetSize();
-                }
-                if (elemSize == -2)
-                {
-                    return thValueType.PointerSize;
-                }
-                return elemSize;
-            }
-            return 0;
-        }
-
-        public TypeDesc GetRuntimeTypeHandle() { return _type; }
     }
 
     // Describes how a single argument is laid out in registers and/or stack locations when given as an input to a
@@ -248,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             m_byteStackIndex = -1;
             m_byteStackSize = 0;
             m_floatFlags = 0;
-            m_structFields = new FpStructInRegistersInfo();
+            m_structFields = default;
 
             m_fRequires64BitAlignment = false;
         }
@@ -263,7 +96,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly TransitionBlock _transitionBlock;
 
         // Offset of the argument relative to the base. On AMD64 on Unix, it can have a special
-        // value that represent a struct that contain both general purpose and floating point fields 
+        // value that represent a struct that contain both general purpose and floating point fields
         // passed in registers.
         private readonly int _offset;
 
@@ -285,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         // Returns true if the ArgDestination represents a homogeneous aggregate struct
-        bool IsHomogeneousAggregate()
+        private bool IsHomogeneousAggregate()
         {
             return _argLocDescForStructInRegs.HasValue;
         }
@@ -314,14 +147,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         //  fn - promotion function to apply to each managed object pointer
         //  sc - scan context to pass to the promotion function
         //  fieldBytes - size of the structure
-        internal void ReportPointersFromStructInRegisters(TypeDesc type, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
+        internal void ReportPointersFromStructInRegisters(ITypeHandle type, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
         {
             Debug.Assert(IsStructPassedInRegs());
 
             int genRegDest = GetStructGenRegDestinationAddress();
 
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor;
-            SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(type, out descriptor);
+            type.GetSystemVAmd64PassStructInRegisterDescriptor(out descriptor);
 
             for (int i = 0; i < descriptor.eightByteCount; i++)
             {
@@ -346,12 +179,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
     }
 
-    internal class ArgIteratorData
+    internal class ArgIteratorData<TTypeHandle> where TTypeHandle : ITypeHandle
     {
         public ArgIteratorData(bool hasThis,
                         bool isVarArg,
-                        TypeHandle[] parameterTypes,
-                        TypeHandle returnType)
+                        TTypeHandle[] parameterTypes,
+                        TTypeHandle returnType)
         {
             _hasThis = hasThis;
             _isVarArg = isVarArg;
@@ -361,15 +194,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private bool _hasThis;
         private bool _isVarArg;
-        private TypeHandle[] _parameterTypes;
-        private TypeHandle _returnType;
+        private TTypeHandle[] _parameterTypes;
+        private TTypeHandle _returnType;
 
         public override bool Equals(object obj)
         {
             if (this == obj)
                 return true;
 
-            ArgIteratorData other = obj as ArgIteratorData;
+            ArgIteratorData<TTypeHandle> other = obj as ArgIteratorData<TTypeHandle>;
             if (other == null)
                 return false;
 
@@ -391,9 +224,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int GetHashCode()
         {
+#if READYTORUN
             return 37 + (_parameterTypes == null ?
                 _returnType.GetHashCode() :
                 VersionResilientHashCode.GenericInstanceHashCode(_returnType.GetHashCode(), _parameterTypes));
+#else
+            int hashcode = 37 + _returnType.GetHashCode();
+            if (_parameterTypes != null)
+            {
+                for (int i = 0; i < _parameterTypes.Length; i++)
+                    hashcode = hashcode * 31 + _parameterTypes[i].GetHashCode();
+            }
+            return hashcode;
+#endif
         }
 
         public bool HasThis() { return _hasThis; }
@@ -401,21 +244,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int NumFixedArgs() { return _parameterTypes != null ? _parameterTypes.Length : 0; }
 
         // Argument iteration.
-        public CorElementType GetArgumentType(int argNum, out TypeHandle thArgType)
+        public CorElementType GetArgumentType(int argNum, out TTypeHandle thArgType)
         {
             thArgType = _parameterTypes[argNum];
             CorElementType returnValue = thArgType.GetCorElementType();
             return returnValue;
         }
 
-        public TypeHandle GetByRefArgumentType(int argNum)
+        public TTypeHandle GetByRefArgumentType(int argNum)
         {
             return (argNum < _parameterTypes.Length && _parameterTypes[argNum].GetCorElementType() == CorElementType.ELEMENT_TYPE_BYREF) ?
                 _parameterTypes[argNum] :
-                default(TypeHandle);
+                default;
         }
 
-        public CorElementType GetReturnType(out TypeHandle thRetType)
+        public CorElementType GetReturnType(out TTypeHandle thRetType)
         {
             thRetType = _returnType;
             return thRetType.GetCorElementType();
@@ -430,28 +273,29 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     // performance critical code.
     //
     // The ARGITERATOR_BASE argument of the template is provider of the parsed
-    // method signature. Typically, the arg iterator works on top of MetaSig. 
+    // method signature. Typically, the arg iterator works on top of MetaSig.
     // Reflection invoke uses alternative implementation to save signature parsing
     // time because of it has the parsed signature available.
     //-----------------------------------------------------------------------
     //template<class ARGITERATOR_BASE>
-    internal struct ArgIterator
+    internal struct ArgIterator<TTypeHandle> where TTypeHandle : ITypeHandle
     {
-        private readonly TypeSystemContext _context;
-
         private readonly TransitionBlock _transitionBlock;
 
         private bool _hasThis;
         private bool _hasParamType;
         private bool _hasAsyncContinuation;
         private bool _extraFunctionPointerArg;
-        private ArgIteratorData _argData;
+        private ArgIteratorData<TTypeHandle> _argData;
         private bool[] _forcedByRefParams;
         private bool _skipFirstArg;
         private bool _extraObjectFirstArg;
         private CallingConventions _interpreterCallingConvention;
         private bool _hasArgLocDescForStructInRegs;
         private ArgLocDesc _argLocDescForStructInRegs;
+        private TTypeHandle _objectTypeHandle;
+        private TTypeHandle _intPtrTypeHandle;
+        private bool _isWindows;
 
         public bool HasThis => _hasThis;
         public bool IsVarArg => _argData.IsVarArg();
@@ -460,13 +304,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int NumFixedArgs => _argData.NumFixedArgs() + (_extraFunctionPointerArg ? 1 : 0) + (_extraObjectFirstArg ? 1 : 0);
 
         // Argument iteration.
-        public CorElementType GetArgumentType(int argNum, out TypeHandle thArgType, out bool forceByRefReturn)
+        public CorElementType GetArgumentType(int argNum, out TTypeHandle thArgType, out bool forceByRefReturn)
         {
             forceByRefReturn = false;
 
             if (_extraObjectFirstArg && argNum == 0)
             {
-                thArgType = new TypeHandle(_context.GetWellKnownType(WellKnownType.Object));
+                thArgType = _objectTypeHandle;
                 return CorElementType.ELEMENT_TYPE_CLASS;
             }
 
@@ -478,14 +322,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (_extraFunctionPointerArg && argNum == _argData.NumFixedArgs())
             {
-                thArgType = new TypeHandle(_context.GetWellKnownType(WellKnownType.IntPtr));
+                thArgType = _intPtrTypeHandle;
                 return CorElementType.ELEMENT_TYPE_I;
             }
 
             return _argData.GetArgumentType(argNum, out thArgType);
         }
 
-        public CorElementType GetReturnType(out TypeHandle thRetType, out bool forceByRefReturn)
+        public CorElementType GetReturnType(out TTypeHandle thRetType, out bool forceByRefReturn)
         {
             if (_forcedByRefParams != null && _forcedByRefParams.Length > 0)
                 forceByRefReturn = _forcedByRefParams[0];
@@ -498,7 +342,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void Reset()
         {
             _argType = default(CorElementType);
-            _argTypeHandle = default(TypeHandle);
+            _argTypeHandle = default;
             _argSize = 0;
             _argNum = 0;
             _argForceByRef = false;
@@ -510,18 +354,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         // Constructor
         //------------------------------------------------------------
         public ArgIterator(
-            TypeSystemContext context,
-            ArgIteratorData argData, 
-            CallingConventions callConv, 
+            TransitionBlock transitionBlock,
+            ArgIteratorData<TTypeHandle> argData,
+            CallingConventions callConv,
             bool hasParamType,
             bool hasAsyncContinuation,
-            bool extraFunctionPointerArg, 
-            bool[] forcedByRefParams, 
-            bool skipFirstArg, 
-            bool extraObjectFirstArg)
+            bool extraFunctionPointerArg,
+            bool[] forcedByRefParams,
+            bool skipFirstArg,
+            bool extraObjectFirstArg,
+            bool isWindows,
+            TTypeHandle objectTypeHandle,
+            TTypeHandle intPtrTypeHandle)
         {
-            this = default(ArgIterator);
-            _context = context;
+            this = default(ArgIterator<TTypeHandle>);
+            _transitionBlock = transitionBlock;
             _argData = argData;
             _hasThis = callConv == CallingConventions.ManagedInstance;
             _hasParamType = hasParamType;
@@ -531,7 +378,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _skipFirstArg = skipFirstArg;
             _extraObjectFirstArg = extraObjectFirstArg;
             _interpreterCallingConvention = callConv;
-            _transitionBlock = TransitionBlock.FromTarget(context.Target);
+            _isWindows = isWindows;
+            _objectTypeHandle = objectTypeHandle;
+            _intPtrTypeHandle = intPtrTypeHandle;
         }
 
         private uint SizeOfArgStack()
@@ -583,7 +432,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        // Is there a hidden parameter for the return parameter? 
+        // Is there a hidden parameter for the return parameter?
         //
         public bool HasRetBuffArg()
         {
@@ -805,7 +654,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         // Each time this is called, this returns a byte offset of the next
         // argument from the TransitionBlock* pointer. This offset can be positive *or* negative.
         //
-        // Returns TransitionBlock::InvalidOffset once you've hit the end 
+        // Returns TransitionBlock::InvalidOffset once you've hit the end
         // of the list.
         //------------------------------------------------------------
         public int GetNextOffset()
@@ -908,11 +757,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             CorElementType argType = GetArgumentType(_argNum, out _argTypeHandle, out _argForceByRef);
 
-            _argTypeHandleOfByRefParam = (argType == CorElementType.ELEMENT_TYPE_BYREF ? _argData.GetByRefArgumentType(_argNum) : default(TypeHandle));
+            _argTypeHandleOfByRefParam = (argType == CorElementType.ELEMENT_TYPE_BYREF ? _argData.GetByRefArgumentType(_argNum) : default);
 
             _argNum++;
 
-            int argSize = TypeHandle.GetElemSize(argType, _argTypeHandle);
+            int argSize = ITypeHandle.GetElemSize(argType, _argTypeHandle);
 
             _argType = argType;
             _argSize = argSize;
@@ -962,7 +811,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             case CorElementType.ELEMENT_TYPE_VALUETYPE:
                             {
                                 SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR descriptor;
-                                SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(_argTypeHandle.GetRuntimeTypeHandle(), out descriptor);
+                                _argTypeHandle.GetSystemVAmd64PassStructInRegisterDescriptor(out descriptor);
 
                                 if (descriptor.passedInRegisters)
                                 {
@@ -988,7 +837,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     // Check if we have enough registers available for the struct passing
                                     if ((cFPRegs + _x64UnixIdxFPReg <= TransitionBlock.X64UnixTransitionBlock.NUM_FLOAT_ARGUMENT_REGISTERS) && (cGenRegs + _x64UnixIdxGenReg) <= _transitionBlock.NumArgumentRegisters)
                                     {
-                                        _argLocDescForStructInRegs = new ArgLocDesc();
+                                        _argLocDescForStructInRegs = default;
                                         _argLocDescForStructInRegs.m_cGenReg = (short)cGenRegs;
                                         _argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
                                         _argLocDescForStructInRegs.m_idxGenReg = _x64UnixIdxGenReg;
@@ -1080,7 +929,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         int align;
                         if (isValueType)
                         {
-                            align = Math.Clamp(((DefType)_argTypeHandle.GetRuntimeTypeHandle()).InstanceFieldAlignment.AsInt, 8, 16);
+                            align = Math.Clamp(_argTypeHandle.GetFieldAlignment(), 8, 16);
                         }
                         else
                         {
@@ -1127,7 +976,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                             case CorElementType.ELEMENT_TYPE_VALUETYPE:
                                 {
-                                    // Value type case: extract the alignment requirement, note that this has to handle 
+                                    // Value type case: extract the alignment requirement, note that this has to handle
                                     // the interop "native value types".
                                     fRequiresAlign64Bit = _argTypeHandle.RequiresAlign8();
 
@@ -1183,7 +1032,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             {
                                 if ((_armWFPRegs & wAllocMask) == 0)
                                 {
-                                    // We found one, mark the register or registers as used. 
+                                    // We found one, mark the register or registers as used.
                                     _armWFPRegs |= wAllocMask;
 
                                     // Indicate the registers used to the caller and return.
@@ -1218,7 +1067,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             if (fRequiresAlign64Bit)
                             {
                                 // The argument requires 64-bit alignment. Align either the next general argument register if
-                                // we have any left.  See step C.3 in the algorithm in the ABI spec.       
+                                // we have any left.  See step C.3 in the algorithm in the ABI spec.
                                 _armIdxGenReg = ALIGN_UP(_armIdxGenReg, 2);
                             }
 
@@ -1249,7 +1098,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         if (fRequiresAlign64Bit)
                         {
                             // The argument requires 64-bit alignment. If it is going to be passed on the stack, align
-                            // the next stack slot.  See step C.6 in the algorithm in the ABI spec.  
+                            // the next stack slot.  See step C.6 in the algorithm in the ABI spec.
                             _armOfsStack = ALIGN_UP(_armOfsStack, _transitionBlock.PointerSize * 2);
                         }
 
@@ -1284,7 +1133,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     // that are passed in FP argument registers if possible.
                                     if (_argTypeHandle.IsHomogeneousAggregate())
                                     {
-                                        _argLocDescForStructInRegs = new ArgLocDesc();
+                                        _argLocDescForStructInRegs = default;
                                         _argLocDescForStructInRegs.m_idxFloatReg = _arm64IdxFPReg;
 
                                         int haElementSize = _argTypeHandle.GetHomogeneousAggregateElementSize();
@@ -1347,7 +1196,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 _arm64IdxGenReg += regSlots;
                                 return argOfsInner;
                             }
-                            else if (_context.Target.IsWindows && IsVarArg && (_arm64IdxGenReg < 8))
+                            else if (_isWindows && IsVarArg && (_arm64IdxGenReg < 8))
                             {
                                 // Address the Windows ARM64 varargs case where an arg is split between regs and stack.
                                 // This can happen in the varargs case because the first 64 bytes of the stack are loaded
@@ -1421,8 +1270,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     }
                                     else
                                     {
-                                        info = RiscVLoongArch64FpStruct.GetFpStructInRegistersInfo(
-                                            _argTypeHandle.GetRuntimeTypeHandle(), TargetArchitecture.RiscV64);
+                                        info = _argTypeHandle.GetFpStructInRegistersInfo(TargetArchitecture.RiscV64);
                                         if (info.flags != FpStruct.UseIntCallConv)
                                         {
                                             cFPRegs = ((info.flags & FpStruct.BothFloat) != 0) ? 2 : 1;
@@ -1450,7 +1298,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                                 if ((1 + _rvLa64IdxFPReg <= _transitionBlock.NumArgumentRegisters) && (1 + _rvLa64IdxGenReg <= _transitionBlock.NumArgumentRegisters))
                                 {
-                                    _argLocDescForStructInRegs = new ArgLocDesc();
+                                    _argLocDescForStructInRegs = default;
                                     _argLocDescForStructInRegs.m_idxFloatReg = _rvLa64IdxFPReg;
                                     _argLocDescForStructInRegs.m_cFloatReg = 1;
 
@@ -1476,7 +1324,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 if (info.flags != FpStruct.UseIntCallConv)
                                 {
                                     Debug.Assert((info.flags & (FpStruct.OnlyOne | FpStruct.BothFloat)) != 0);
-                                    _argLocDescForStructInRegs = new ArgLocDesc();
+                                    _argLocDescForStructInRegs = default;
                                     _hasArgLocDescForStructInRegs = true;
                                     _argLocDescForStructInRegs.m_idxFloatReg = _rvLa64IdxFPReg;
                                     _argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
@@ -1525,14 +1373,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public CorElementType GetArgType(out TypeHandle pTypeHandle)
+        public CorElementType GetArgType(out TTypeHandle pTypeHandle)
         {
             //        LIMITED_METHOD_CONTRACT;
             pTypeHandle = _argTypeHandle;
             return _argType;
         }
 
-        public CorElementType GetByRefArgType(out TypeHandle pByRefArgTypeHandle)
+        public CorElementType GetByRefArgType(out TTypeHandle pByRefArgTypeHandle)
         {
             //        LIMITED_METHOD_CONTRACT;
             pByRefArgTypeHandle = _argTypeHandleOfByRefParam;
@@ -1591,7 +1439,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 int nArgs = NumFixedArgs;
                 for (int i = (_skipFirstArg ? 1 : 0); i < nArgs; i++)
                 {
-                    TypeHandle thArgType;
+                    TTypeHandle thArgType;
                     bool argForcedToBeByref;
                     CorElementType type = GetArgumentType(i, out thArgType, out argForcedToBeByref);
                     if (argForcedToBeByref)
@@ -1599,7 +1447,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     if (!_transitionBlock.IsArgumentInRegister(ref numRegistersUsed, type, thArgType))
                     {
-                        int structSize = TypeHandle.GetElemSize(type, thArgType);
+                        int structSize = ITypeHandle.GetElemSize(type, thArgType);
 
                         nSizeOfArgStack += _transitionBlock.StackElemSize(structSize);
 
@@ -1663,8 +1511,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                         else
                         {
-                            // All stack arguments take just one stack slot on AMD64 because of arguments bigger 
-                            // than a stack slot are passed by reference. 
+                            // All stack arguments take just one stack slot on AMD64 because of arguments bigger
+                            // than a stack slot are passed by reference.
                             stackElemSize = _transitionBlock.PointerSize;
                         }
                     }
@@ -1722,7 +1570,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 case TargetArchitecture.Wasm32:
                     {
-                        ArgLocDesc pLoc = new ArgLocDesc();
+                        ArgLocDesc pLoc = default;
                         int byteArgSize = GetArgSize();
 
                         if (IsArgPassedByRef())
@@ -1735,7 +1583,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         //        LIMITED_METHOD_CONTRACT;
 
-                        ArgLocDesc pLoc = new ArgLocDesc();
+                        ArgLocDesc pLoc = default;
 
                         pLoc.m_fRequires64BitAlignment = _armRequires64BitAlignment;
 
@@ -1778,7 +1626,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         //        LIMITED_METHOD_CONTRACT;
 
-                        ArgLocDesc pLoc = new ArgLocDesc();
+                        ArgLocDesc pLoc = default;
 
                         if (_transitionBlock.IsFloatArgumentRegisterOffset(argOffset))
                         {
@@ -1829,7 +1677,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         //        LIMITED_METHOD_CONTRACT;
 
-                        ArgLocDesc pLoc = new ArgLocDesc();
+                        ArgLocDesc pLoc = default;
 
                         if (_transitionBlock.IsFloatArgumentRegisterOffset(argOffset))
                         {
@@ -1844,8 +1692,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         int byteArgSize = GetArgSize();
 
                         // Composites greater than 16bytes are passed by reference
-                        TypeHandle dummy;
-                        if (GetArgType(out dummy) == CorElementType.ELEMENT_TYPE_VALUETYPE && GetArgSize() > _transitionBlock.EnregisteredParamTypeMaxSize)
+                        if (GetArgType(out _) == CorElementType.ELEMENT_TYPE_VALUETYPE && GetArgSize() > _transitionBlock.EnregisteredParamTypeMaxSize)
                         {
                             byteArgSize = _transitionBlock.PointerSize;
                         }
@@ -1880,13 +1727,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         if (argOffset == TransitionBlock.StructInRegsOffset)
                         {
-                            // We always already have argLocDesc for structs passed in registers, we 
+                            // We always already have argLocDesc for structs passed in registers, we
                             // compute it in the GetNextOffset for those since it is always needed.
                             Debug.Assert(false);
                             return null;
                         }
 
-                        ArgLocDesc pLoc = new ArgLocDesc();
+                        ArgLocDesc pLoc = default;
 
                         if (_transitionBlock.IsFloatArgumentRegisterOffset(argOffset))
                         {
@@ -1932,8 +1779,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         // Cached information about last argument
         private CorElementType _argType;
         private int _argSize;
-        private TypeHandle _argTypeHandle;
-        private TypeHandle _argTypeHandleOfByRefParam;
+        private TTypeHandle _argTypeHandle;
+        private TTypeHandle _argTypeHandleOfByRefParam;
         private bool _argForceByRef;
 
         private int _x86OfsStack;           // Current position of the stack iterator
@@ -1974,7 +1821,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private uint _returnedFpFieldOffset1st;
         private uint _returnedFpFieldOffset2nd;
 
-        /*        ITERATION_STARTED               = 0x0001,   
+        /*      ITERATION_STARTED               = 0x0001,
                 SIZE_OF_ARG_STACK_COMPUTED      = 0x0002,
                 RETURN_FLAGS_COMPUTED           = 0x0004,
                 RETURN_HAS_RET_BUFFER           = 0x0008,   // Cached value of HasRetBuffArg
@@ -2011,7 +1858,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private void ComputeReturnFlags()
         {
-            TypeHandle thRetType;
+            TTypeHandle thRetType;
             CorElementType type = GetReturnType(out thRetType, out _RETURN_HAS_RET_BUFFER);
 
             if (!_RETURN_HAS_RET_BUFFER)

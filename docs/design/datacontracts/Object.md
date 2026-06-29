@@ -221,6 +221,7 @@ DelegateInfo GetDelegateInfo(TargetPointer address)
     Data.Delegate del = new Data.Delegate(target, address);
 
     // Classify the delegate from its invocation count and auxiliary pointer.
+    // This does not handle open virtual delegates correctly.
     DelegateType delegateType = target.ReadNInt(address + /* Delegate::InvocationCount offset */) switch
     {
         0  => del.MethodPtrAux == TargetCodePointer.Null
