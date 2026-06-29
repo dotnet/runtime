@@ -403,11 +403,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public virtual Type GetEnumUnderlyingType()
         {
-            Debug.Assert(IsActualEnum);
-            FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            if (fields is not { Length: 1 })
-                throw new ArgumentException(SR.Argument_InvalidEnum, "enumType");
-            return fields[0].FieldType;
+            throw new NotSupportedException();
         }
 
         internal virtual void GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags)
