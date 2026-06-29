@@ -18042,6 +18042,15 @@ bool emitter::TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber
         return false;
     }
 
+    // PAGEOFFSET_12L maps to R_AARCH64_LDST64_ABS_LO12_NC, whose scaled offset requires the target
+    // to be 8-byte aligned. In R2R the relocatable loads always go through pointer-aligned
+    // indirection cells, but NativeAOT can emit a direct 64-bit load of byte-packed frozen data
+    // (only 4-byte aligned), which the linker rejects. Restrict the fold to non-NativeAOT.
+    if (m_compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        return false;
+    }
+
     // The load must overwrite its own base so the full cell address is provably dead.
     if (reg1 != reg2)
     {
