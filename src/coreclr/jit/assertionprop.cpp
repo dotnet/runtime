@@ -3383,9 +3383,7 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
             assert(genTypeSize(tree->TypeGet()) == curAssertion.GetOp2().GetSimdSize());
 
             // We can't bash a LCL_VAR into a GenTreeVecCon (different node size), so allocate a fresh node.
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            memcpy(&vecCon->gtSimdVal, curAssertion.GetOp2().GetSimdConstant(), genTypeSize(tree->TypeGet()));
-            newTree = vecCon;
+            newTree = gtNewVconNode(tree->TypeGet(), curAssertion.GetOp2().GetSimdConstant());
             break;
         }
 #endif // FEATURE_HW_INTRINSICS

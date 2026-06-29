@@ -1275,8 +1275,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_VectorT_Create:
+        {
+            assert(sig->numArgs == 1);
+            op1     = impPopStack().val;
+            retNode = gtNewSimdCreateBroadcastNode(retType, op1, simdBaseType, simdSize);
+            break;
+        }
+
         case NI_Vector64_CreateScalar:
         case NI_Vector128_CreateScalar:
+        case NI_VectorT_CreateScalar:
         {
             assert(sig->numArgs == 1);
 
@@ -1287,6 +1296,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_CreateSequence:
         case NI_Vector128_CreateSequence:
+        case NI_VectorT_CreateSequence:
         {
             assert(sig->numArgs == 2);
 
@@ -1355,6 +1365,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector64_CreateScalarUnsafe:
         case NI_Vector128_CreateScalarUnsafe:
+        case NI_VectorT_CreateScalarUnsafe:
         {
             assert(sig->numArgs == 1);
 
@@ -3012,6 +3023,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateFalseMaskUInt64:
         {
             // Import as a constant vector 0
+
+            if (retType == TYP_SIMD)
+            {
+                retNode = gtNewSimdVconNode(retType, simdBaseType, SimdScalableRepeated, 0);
+                break;
+            }
+
             GenTreeVecCon* vecCon = gtNewVconNode(retType);
             vecCon->gtSimdVal     = simd_t::Zero();
             retNode               = vecCon;
@@ -3032,20 +3050,33 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             op1 = impPopStack().val;
 
-            // Where possible, import a constant mask to allow for optimisations.
+            // Where possible, import a constant vector to allow for optimisations.
             if (op1->IsIntegralConst())
             {
                 int64_t pattern = op1->AsIntConCommon()->IntegralValue();
-                simd_t  simdVal;
 
-                if (EvaluateSimdPatternToVector(simdBaseType, &simdVal, (SveMaskPattern)pattern))
+                if (retType == TYP_SIMD)
                 {
-                    retNode = gtNewVconNode(retType, &simdVal);
-                    break;
+                    if ((pattern == SVE_PATTERN_ALL) || (pattern == SVE_PATTERN_POW2))
+                    {
+                        retNode = gtNewSimdVconNode(retType, simdBaseType, SimdScalableRepeated,
+                                                    SimdAllBitsSetForElementType(simdBaseType));
+                        break;
+                    }
+                }
+                else
+                {
+                    simd_t simdVal;
+
+                    if (EvaluateSimdPatternToVector(simdBaseType, &simdVal, (SveMaskPattern)pattern))
+                    {
+                        retNode = gtNewVconNode(retType, &simdVal);
+                        break;
+                    }
                 }
             }
 
-            // Was not able to generate a pattern, instead import a truemaskall
+            // Was not able to generate a pattern, instead import the intrinsic node.
             retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseType, simdSize);
             break;
         }
@@ -3660,7 +3691,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 }
 
 //------------------------------------------------------------------------
-// gtNewSimdAllTrueMaskNode: Create a mask with all bits set to true
+// gtNewSimdTrueMaskNode: Create a mask with all bits set to true for
+// the base type.
+// Eg: A u64int mask would be 10001000...
 //
 // Arguments:
 //    simdBaseType -- the base type of the nodes being masked
@@ -3668,13 +3701,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 // Return Value:
 //    The mask
 //
-GenTree* Compiler::gtNewSimdAllTrueMaskNode(var_types simdBaseType)
+GenTree* Compiler::gtNewSimdTrueMaskNode(var_types simdBaseType)
 {
     // Import as a constant mask
 
-    GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
+#if defined(DEBUG)
+    if (JitConfig.JitUseScalableVectorT())
+    {
+        return gtNewMskConNode(TYP_MASK, simdBaseType, 1);
+    }
+#endif // DEBUG
 
-    // TODO-SVE: For agnostic VL, vector type may not be simd16_t
+    GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
 
     bool found = EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
     assert(found);
@@ -3691,6 +3729,14 @@ GenTree* Compiler::gtNewSimdAllTrueMaskNode(var_types simdBaseType)
 GenTree* Compiler::gtNewSimdFalseMaskByteNode()
 {
     // Import as a constant mask 0
+
+#if defined(DEBUG)
+    if (JitConfig.JitUseScalableVectorT())
+    {
+        return gtNewMskConNode(TYP_MASK, TYP_BYTE, 0);
+    }
+#endif // DEBUG
+
     GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
     mskCon->gtSimdMaskVal = simdmask_t::Zero();
     return mskCon;

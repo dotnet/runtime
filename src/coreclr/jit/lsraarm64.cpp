@@ -749,6 +749,61 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // Directly encode constant to instructions.
             }
+            else if (vecCon->TypeIs(TYP_SIMD))
+            {
+                simdscalable_t             simdVal = vecCon->gtSimdScalableVal;
+                Arm64SimdScalableConstInfo info    = Arm64SimdScalableConstInfo::Decode(simdVal);
+
+                // If the constant doesn't fit into the instructions, then temps will be required
+                switch (simdVal.gtSimdScalableKind)
+                {
+                    case SimdScalableRepeated:
+                    {
+                        if (!info.CanEncodeRepeated<emitter>(simdVal))
+                        {
+                            buildInternalIntRegisterDefForNode(tree);
+                            buildInternalRegisterUses();
+                        }
+                        break;
+                    }
+
+                    case SimdScalableSequence:
+                    {
+                        const bool indexNeedsReg = info.IndexNeedsSequenceReg<emitter>();
+                        const bool stepNeedsReg  = info.StepNeedsSequenceReg<emitter>();
+
+                        if (indexNeedsReg)
+                        {
+                            buildInternalIntRegisterDefForNode(tree);
+                        }
+
+                        if (stepNeedsReg)
+                        {
+                            buildInternalIntRegisterDefForNode(tree);
+                        }
+
+                        if (indexNeedsReg || stepNeedsReg)
+                        {
+                            buildInternalRegisterUses();
+                        }
+                        break;
+                    }
+
+                    case SimdScalableScalar:
+                    {
+                        if (!info.CanEncodeScalar<emitter>(simdVal, emitActualTypeSize(info.baseType)))
+                        {
+                            buildInternalIntRegisterDefForNode(tree);
+                            buildInternalRegisterUses();
+                        }
+                        break;
+                    }
+
+                    default:
+                        unreached();
+                        break;
+                }
+            }
             else
             {
                 // Reserve int to load constant from memory (IF_LARGELDC)
@@ -770,7 +825,15 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             GenTreeMskCon* mskCon = tree->AsMskCon();
 
-            if (mskCon->IsAllBitsSet() || mskCon->IsZero())
+            var_types maskBaseType = TYP_BYTE;
+#if defined(DEBUG)
+            if (JitConfig.JitUseScalableVectorT())
+            {
+                maskBaseType = mskCon->gtSimdScalableMaskVal.gtSimdMaskScalableBaseType;
+            }
+#endif // DEBUG
+
+            if (mskCon->IsAllBitsSet(maskBaseType) || mskCon->IsZero())
             {
                 // Directly encode constant to instructions.
             }
@@ -1439,6 +1502,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // Build any additional special cases
     switch (intrin.id)
     {
+        case NI_VectorT_Create:
+        case NI_VectorT_CreateScalarUnsafe:
+            // FP values need moving into a GP register
+            if (varTypeIsFloating(intrin.baseType))
+            {
+                buildInternalIntRegisterDefForNode(intrinsicTree);
+            }
+            break;
+
         case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
         case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
         case NI_Sve2_GatherVectorNonTemporal:
