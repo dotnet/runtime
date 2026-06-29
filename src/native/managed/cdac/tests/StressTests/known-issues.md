@@ -68,64 +68,6 @@ need to be handled — that case currently isn't reachable because
   more structured mechanism (e.g., ETW events or StressLog) for better
   tooling integration and reduced I/O overhead during stress runs.
 
-## Known intermittent failure: x86 stress flake (cDAC EnumGcRefs misses callee-saved register refs during EH-rich startup)
-
-Pattern (~20% of full x86 suite runs trigger this on at least one
-debuggee):
-
-```
-[FAIL] Thread=0x... IP=0x... cDAC=7 RT=45 frames=12 (match=5 mismatch=7 known_nie=0)
-  Frame #4 System.RuntimeType.SplitName(...) [MISMATCH] cDAC=0 RT=1 SP_cDAC=0x0 SP_RT=0x0
-      [ONLY(RT)] Addr=0x0 Obj=0x... Flags=0x0 Reg=6 Off=0
-  Frame #5 System.RuntimeType.GetNestedType(...) [MISMATCH] cDAC=0 RT=3 ...
-      [ONLY(RT)] Addr=0x0 Obj=0x... Flags=0x0 Reg=6 Off=0
-      ...
-  ... continues up through System.Diagnostics.Tracing.EventSource frames
-```
-
-Signature: the RT-only refs are concentrated in callee-saved registers
-(`Reg=6` ESI, `Reg=7` EDI) on frames whose stack trace runs through
-`NativeRuntimeEventSource..cctor()` -> `EventSource.Initialize` ->
-`RuntimeType.GetNestedType` -> `RuntimeType.SplitName`. The frames
-otherwise unwind cleanly and surrounding frames match.
-
-x86-only -- x64 and arm64 stress runs are consistently clean. This is
-not the previously-tracked x64 GC-stress crashes #129545/#129546
-(those are completely different crashes in `MethodTable::Validate`
-during managed exception unwind).
-
-Investigation so far:
-- `HasFrameBeenUnwoundByAnyActiveException` is NOT the cause: across
-  ~77k invocations during a reproduced flake it returned `false` every
-  time, matching the runtime's behavior.
-- `EnumerateLiveSlots` returns 0 slots for the affected frames at the
-  cDAC-computed `relativeOffset` (small values like 0x2d / 0x1f / 0x14).
-  The runtime sees ESI/EDI live at those frames -- so either cDAC's IP
-  differs from the runtime's view of the frame, or our partially-
-  interruptible call-site matching has an off-by-one when the trigger
-  fires between (rather than exactly at) call sites.
-
-Most likely root cause is one of:
-1. For partially-interruptible methods, our `activeCallSite` match
-   requires `transition.Offset == instructionOffset` exactly. If the
-   IP cDAC reads for a frame mid-EH-dispatch is not the call-site
-   return-address offset (e.g., it's the call-instruction offset or
-   somewhere mid-instruction), the match fails and no register refs
-   are emitted.
-2. The runtime tracks callee-saved register values across unwinds via
-   REGDISPLAY's `pCallerContext`; cDAC re-unwinds via
-   `Context.Clone().Unwind()` each call. A divergent context state
-   would produce a divergent IP and thus a divergent live-mask.
-3. Some x86-specific frame-type handling difference between cDAC's
-   `StackWalk_1` iteration and the runtime's `StackWalk` during the
-   EH-dispatch-of-managed-exceptions path.
-
-Resolving this requires a follow-up investigation that compares the
-IPs cDAC and the runtime see for these specific frames during a
-reproduced flake (e.g., by adding per-frame instruction-pointer logging
-to both sides of the stress harness and diffing them). It is x86-only,
-flaky, and not gated on this PR.
-
 ## Log Format
 
 Each verification emits a single header line followed by, on `[FAIL]` or
