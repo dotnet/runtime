@@ -87,6 +87,29 @@ namespace System.Text.Json.Serialization.Metadata
 
             JsonPolymorphismOptions? options = JsonPolymorphismOptions.CreateFromAttributeDeclarations(typeInfo.Type, out JsonPolymorphicAttribute? polymorphicAttribute);
 
+#if NET11_0_OR_GREATER
+            // IsClosedTypeAttribute is a .NET 11 addition emitted by the compiler for closed
+            // hierarchies, so closed-type polymorphism inference is only possible on runtimes
+            // where the attribute type exists. On down-level targets the feature is a no-op.
+            if (typeInfo.Options.InferClosedTypePolymorphism &&
+                (options is null || options.DerivedTypes.Count == 0) &&
+                typeInfo.Type.GetCustomAttribute<IsClosedTypeAttribute>(inherit: false) is { DerivedTypes.Length: > 0 } closedTypeAttribute)
+            {
+                options ??= new();
+                int baseAccessibility = GetEffectiveAccessibility(typeInfo.Type);
+
+                foreach (Type derivedType in closedTypeAttribute.DerivedTypes)
+                {
+                    if (GetEffectiveAccessibility(derivedType) < baseAccessibility)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_InferredDerivedTypeIsNotAccessible(typeInfo.Type, derivedType);
+                    }
+
+                    options.DerivedTypes.Add(new JsonDerivedType(derivedType, derivedType.Name));
+                }
+            }
+#endif
+
             if (options is not null)
             {
                 ResolveOpenGenericDerivedTypes(typeInfo.Type, options.DerivedTypes);
@@ -155,6 +178,42 @@ namespace System.Text.Json.Serialization.Metadata
                 derivedTypes[i] = new JsonDerivedType(resolvedType!, entry.TypeDiscriminator);
             }
         }
+
+#if NET11_0_OR_GREATER
+        /// <summary>
+        /// Computes the effective accessibility rank of a type for closed-hierarchy inference:
+        /// 2 = publicly visible, 1 = internal/assembly visible, 0 = private or protected.
+        /// The effective rank is the most restrictive level across the type's nesting chain.
+        /// </summary>
+        private static int GetEffectiveAccessibility(Type type)
+        {
+            int rank = 2;
+
+            for (Type? current = type; current is not null; current = current.IsNested ? current.DeclaringType : null)
+            {
+                int level;
+                if (current.IsPublic || current.IsNestedPublic)
+                {
+                    level = 2;
+                }
+                else if (current.IsNestedFamily || current.IsNestedFamANDAssem || current.IsNestedPrivate)
+                {
+                    level = 0;
+                }
+                else
+                {
+                    level = 1;
+                }
+
+                if (level < rank)
+                {
+                    rank = level;
+                }
+            }
+
+            return rank;
+        }
+#endif
 
         /// <summary>
         /// Reflection-side resolver: closes <paramref name="openDerivedType"/> against the

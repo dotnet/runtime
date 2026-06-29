@@ -286,6 +286,16 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1237`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
 |  __`SYSLIB1238`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
 |  __`SYSLIB1239`__ | _`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator._ |
+|  __`SYSLIB1240`__ | Derived type is not a supported polymorphic derived type. |
+|  __`SYSLIB1241`__ | Inferred derived type is less accessible than the polymorphic base type. |
+|  __`SYSLIB1242`__ | Inferred derived types produce a duplicate type discriminator. |
+|  __`SYSLIB1243`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1244`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1245`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1246`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1247`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1248`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1249`__ | _`SYSLIB1240`-`SYSLIB1249` reserved for System.Text.Json.SourceGeneration._ |
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
 

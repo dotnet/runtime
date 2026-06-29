@@ -261,6 +261,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? UnsafeAccessorAttributeType => GetOrResolveType("System.Runtime.CompilerServices.UnsafeAccessorAttribute", ref _UnsafeAccessorAttributeType);
         private Option<INamedTypeSymbol?> _UnsafeAccessorAttributeType;
 
+        public INamedTypeSymbol? IsClosedTypeAttributeType => GetOrResolveType("System.Runtime.CompilerServices.IsClosedTypeAttribute", ref _IsClosedTypeAttributeType);
+        private Option<INamedTypeSymbol?> _IsClosedTypeAttributeType;
+
         // OverloadResolutionPriorityAttribute was added in .NET 9; its presence indicates
         // the runtime also supports generic type parameters in UnsafeAccessor.
         public bool SupportsGenericUnsafeAccessors => UnsafeAccessorAttributeType is not null

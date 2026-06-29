@@ -219,6 +219,24 @@
   <data name="OpenGenericDerivedTypeCouldNotBeResolvedMessageFormat" xml:space="preserve">
     <value>The open generic derived type '{0}' could not be resolved for the polymorphic base type '{1}': {2}.</value>
   </data>
+  <data name="DerivedTypeIsNotSupportedTitle" xml:space="preserve">
+    <value>Derived type is not a supported polymorphic derived type.</value>
+  </data>
+  <data name="DerivedTypeIsNotSupportedMessageFormat" xml:space="preserve">
+    <value>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type.</value>
+  </data>
+  <data name="InferredDerivedTypeIsNotAccessibleTitle" xml:space="preserve">
+    <value>Inferred derived type is less accessible than the polymorphic base type.</value>
+  </data>
+  <data name="InferredDerivedTypeIsNotAccessibleMessageFormat" xml:space="preserve">
+    <value>The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</value>
+  </data>
+  <data name="InferredDerivedTypeDiscriminatorCollisionTitle" xml:space="preserve">
+    <value>Inferred derived types produce a duplicate type discriminator.</value>
+  </data>
+  <data name="InferredDerivedTypeDiscriminatorCollisionMessageFormat" xml:space="preserve">
+    <value>The inferred type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Inferred derived types must have unique names.</value>
+  </data>
   <data name="Polymorphism_OpenGeneric_Reason_NotAssignable" xml:space="preserve">
     <value>the derived type is not assignable to the base type</value>
   </data>

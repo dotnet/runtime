@@ -2497,10 +2497,12 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1240 // Derived type is intentionally not assignable to the base type for these tests.
         [JsonDerivedType(typeof(Guid))]
         public class PolymorphicClassWithStructDerivedTypeAttribute
         {
         }
+#pragma warning restore SYSLIB1240
 
         [Fact]
         public async Task PolymorphicClassWithObjectDerivedTypeAttribute_ThrowsInvalidOperationException()
@@ -2509,10 +2511,12 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1240 // Derived type is intentionally not assignable to the base type for these tests.
         [JsonDerivedType(typeof(object), "object")]
         public class PolymorphicClassWithObjectDerivedTypeAttribute
         {
         }
+#pragma warning restore SYSLIB1240
 
         [Fact]
         public async Task PolymorphicClassWithNonAssignableDerivedTypeAttribute_ThrowsInvalidOperationException()
@@ -2521,10 +2525,12 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(value));
         }
 
+#pragma warning disable SYSLIB1240 // Derived type is intentionally not assignable to the base type for these tests.
         [JsonDerivedType(typeof(object))]
         public class PolymorphicClassWithNonAssignableDerivedTypeAttribute
         {
         }
+#pragma warning restore SYSLIB1240
 
 
         [Fact]

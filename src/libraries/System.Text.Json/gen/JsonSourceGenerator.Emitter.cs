@@ -242,6 +242,11 @@ namespace System.Text.Json.SourceGeneration
 
             private SourceText? GenerateTypeInfo(ContextGenerationSpec contextSpec, TypeGenerationSpec typeGenerationSpec)
             {
+                if (typeGenerationSpec.PolymorphismOptions?.UnresolvedDerivedTypeError is not null)
+                {
+                    return GenerateForTypeWithUnresolvedPolymorphism(contextSpec, typeGenerationSpec);
+                }
+
                 switch (typeGenerationSpec.ClassType)
                 {
                     case ClassType.BuiltInSupportType:
@@ -347,6 +352,27 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine($"""
                     jsonTypeInfo = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}(options, {JsonMetadataServicesTypeRef}.GetUnsupportedTypeConverter<{typeFQN}>());
                     """);
+
+                GenerateTypeInfoFactoryFooter(writer);
+
+                return CompleteSourceFileAndReturnText(writer);
+            }
+
+            private static SourceText GenerateForTypeWithUnresolvedPolymorphism(ContextGenerationSpec contextSpec, TypeGenerationSpec typeMetadata)
+            {
+                Debug.Assert(typeMetadata.PolymorphismOptions?.UnresolvedDerivedTypeError is not null);
+
+                SourceWriter writer = CreateSourceWriterWithContextHeader(contextSpec);
+
+                GenerateTypeInfoFactoryHeader(writer, typeMetadata);
+
+                // A registered derived type could not be resolved against this base type. Emit a
+                // factory body that throws the same way the reflection-based resolver does, rather
+                // than silently producing non-polymorphic metadata. The throw is the only statement
+                // inside the 'if (!TryGetTypeInfoForRuntimeCustomConverter(...))' block, so the
+                // normal 'return jsonTypeInfo' path (taken when a runtime custom converter applies)
+                // remains reachable and the method still compiles.
+                writer.WriteLine($"""throw new {InvalidOperationExceptionTypeRef}("{typeMetadata.PolymorphismOptions!.UnresolvedDerivedTypeError}");""");
 
                 GenerateTypeInfoFactoryFooter(writer);
 
@@ -686,20 +712,6 @@ namespace System.Text.Json.SourceGeneration
                 // the canonical switch arm (preferring the non-Nullable<T> sibling so
                 // most-derived dispatch reports typeof(T)). The null payload is handled
                 // separately by the `null =>` arm via nullCase.
-                int switchArmCount = 0;
-                bool armsMergeDeclaredCases = false;
-                foreach (UnionCaseSpec caseSpec in unionCases)
-                {
-                    if (caseSpec.IsSwitchArm)
-                    {
-                        switchArmCount++;
-                    }
-                    else
-                    {
-                        armsMergeDeclaredCases = true;
-                    }
-                }
-
                 string unionCasesExpr = unionCases.Count == 0
                     ? $"global::System.Array.Empty<{JsonUnionCaseInfoTypeRef}>()"
                     : $$"""new {{JsonUnionCaseInfoTypeRef}}[] { {{string.Join(", ", unionCases.Select(c => $"new {JsonUnionCaseInfoTypeRef}(typeof({c.CaseType.FullyQualifiedName})) {{ IsNullable = {(c.IsNullable ? "true" : "false")} }}"))}} }""";
@@ -748,22 +760,7 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine("},");
 
                     // The deconstructor switch has no `_` arm — it relies on the union's
-                    // declared case set being exhaustively covered by its arms. Roslyn's
-                    // union exhaustiveness analyzer fails to recognize coverage in two
-                    // shapes today: (a) when switchArmCount == 1 the switch looks
-                    // non-exhaustive on `object?`-shaped surface area, and (b) when
-                    // Foo(T)+Foo(Nullable<T>) overloads merge into a single `T` arm the
-                    // Nullable<T> declared case isn't seen as covered. Tracked by
-                    // https://github.com/dotnet/roslyn/issues/83666; the fix is present
-                    // in Roslyn 5.9.0-1.26279.1 and later. Once the compiler bundled by
-                    // this repo's SDK reaches that version this pragma and the
-                    // `armsMergeDeclaredCases` plumbing can be removed.
-                    bool needsExhaustivenessPragma = switchArmCount == 1 || armsMergeDeclaredCases;
-                    if (needsExhaustivenessPragma)
-                    {
-                        writer.WriteLine("#pragma warning disable CS8509 // https://github.com/dotnet/roslyn/issues/83666");
-                    }
-
+                    // declared case set being exhaustively covered by its arms.
                     writer.WriteLine($"UnionDeconstructor = static ({genericArg} value) =>");
                     writer.WriteLine('{');
                     writer.Indentation++;
@@ -816,11 +813,6 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine("};");
                     writer.Indentation--;
                     writer.WriteLine("},");
-
-                    if (needsExhaustivenessPragma)
-                    {
-                        writer.WriteLine("#pragma warning restore CS8509");
-                    }
                 }
 
                 writer.WriteLine("TypeClassifier = null,");
@@ -2118,6 +2110,9 @@ namespace System.Text.Json.SourceGeneration
 
                 if (optionsSpec.IncludeFields is bool includeFields)
                     writer.WriteLine($"IncludeFields = {FormatBoolLiteral(includeFields)},");
+
+                if (optionsSpec.InferClosedTypePolymorphism is bool inferClosedTypePolymorphism)
+                    writer.WriteLine($"InferClosedTypePolymorphism = {FormatBoolLiteral(inferClosedTypePolymorphism)},");
 
                 if (optionsSpec.MaxDepth is int maxDepth)
                     writer.WriteLine($"MaxDepth = {maxDepth},");

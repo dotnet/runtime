@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <AssemblyName>System.Text.Json.ClosedTypeTestFixtures</AssemblyName>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <!-- IsClosedTypeAttribute only exists on .NET 11+, so this fixture targets the current TFM. -->
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Nullable>disable</Nullable>
+    <TestStrongNameKeyId>Microsoft</TestStrongNameKeyId>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ClosedTypeTestFixtures.il" />
+  </ItemGroup>
+</Project>
