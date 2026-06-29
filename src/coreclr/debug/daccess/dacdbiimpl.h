@@ -123,7 +123,7 @@ public:
 
     HRESULT STDMETHODCALLTYPE IsValidObject(CORDB_ADDRESS obj, OUT BOOL * pResult);
 
-    HRESULT STDMETHODCALLTYPE CreateRefWalk(RefWalkHandle * pHandle, BOOL walkStacks, BOOL walkFQ, UINT32 handleWalkMask);
+    HRESULT STDMETHODCALLTYPE CreateRefWalk(RefWalkHandle * pHandle, BOOL walkStacks, UINT32 handleWalkMask);
     HRESULT STDMETHODCALLTYPE DeleteRefWalk(RefWalkHandle handle);
     HRESULT STDMETHODCALLTYPE WalkRefs(RefWalkHandle handle, ULONG count, OUT DacGcReference * objects, OUT ULONG *pFetched);
 
@@ -151,7 +151,7 @@ public:
                                               OUT PCODE *pDiagnosticIP,
                                               OUT CORDB_ADDRESS *pNextContinuation,
                                               OUT UINT32 *pState);
-    HRESULT STDMETHODCALLTYPE GetAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, OUT DacDbiArrayList<AsyncLocalData>* pAsyncLocals);
+    HRESULT STDMETHODCALLTYPE EnumerateAsyncLocals(VMPTR_MethodDesc vmMethod, CORDB_ADDRESS codeAddr, UINT32 state, FP_ASYNC_LOCAL_CALLBACK fpCallback, CALLBACK_DATA pUserData);
     HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(VMPTR_MethodDesc vmMethod, OUT UINT32* pIndex);
 
 private:
@@ -279,7 +279,7 @@ public:
     HRESULT STDMETHODCALLTYPE GetCollectibleTypeStaticAddress(VMPTR_FieldDesc vmField, OUT CORDB_ADDRESS * pRetVal);
 
     // Get information about a field added with Edit And Continue.
-    HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData, OUT BOOL * pfStatic);
+    HRESULT STDMETHODCALLTYPE GetEnCHangingFieldInfo(const EnCHangingFieldInfo * pEnCFieldInfo, OUT FieldData * pFieldData);
 
     // EnumerateTypeHandleParams gets the necessary data for a type handle, i.e. its type
     // parameters, e.g. "String" and "List<int>" from the type handle for
@@ -573,7 +573,6 @@ private:
 // ============================================================================
 
     using ClrDataAccess::GetModuleData;
-    using ClrDataAccess::GetAddressType;
 
 public:
     // Get the full path and file name to the assembly's manifest module.
@@ -599,8 +598,8 @@ public:
 
     HRESULT STDMETHODCALLTYPE GetModuleForAssembly(VMPTR_Assembly vmAssembly, OUT VMPTR_Module * pModule, OUT BOOL * pIsModuleLoaded);
 
-    // Get the "type" of address.
-    HRESULT STDMETHODCALLTYPE GetAddressType(CORDB_ADDRESS address, OUT AddressType * pRetVal);
+    // Get whether the specified address is managed code.
+    HRESULT STDMETHODCALLTYPE IsManagedCode(CORDB_ADDRESS address, OUT BOOL * pIsManaged);
 
 
     // Enumerate the assemblies in the appdomain.
@@ -730,10 +729,6 @@ public:
 
     // DacDbi API: Get the context for a particular thread of the target process
     HRESULT STDMETHODCALLTYPE GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContextBuffer);
-
-    // This is a simple helper function to convert a CONTEXT to a DebuggerREGDISPLAY.  We need to do this
-    // inside DDI because the RS has no notion of REGDISPLAY.
-    HRESULT STDMETHODCALLTYPE ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * pInContext, DebuggerREGDISPLAY * pOutDRD, BOOL fActive);
 
     // Check if the given method is a DiagnosticHidden or an LCG method.
     HRESULT STDMETHODCALLTYPE IsDiagnosticsHiddenOrLCGMethod(VMPTR_MethodDesc vmMethodDesc, OUT DynamicMethodType * pRetVal);
@@ -895,7 +890,7 @@ private:
 
 public:
     // API for picking up the info needed for a debugger to look up an image from its search path.
-    HRESULT STDMETHODCALLTYPE GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult);
+    HRESULT STDMETHODCALLTYPE GetModuleMetaDataFileInfo(VMPTR_Module vmModule, DWORD * pTimeStamp, DWORD * pImageSize, IStringHolder* pStrFilename, OUT BOOL * pResult);
 };
 
 
@@ -959,7 +954,7 @@ protected:
 class DacRefWalker
 {
 public:
-    DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask, BOOL resolvePointers);
+    DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, UINT32 handleMask, BOOL resolvePointers);
     ~DacRefWalker();
 
     HRESULT Init();
@@ -972,7 +967,7 @@ private:
 
 private:
     ClrDataAccess *mDac;
-    BOOL mWalkStacks, mWalkFQ;
+    BOOL mWalkStacks;
     UINT32 mHandleMask;
 
     // Stacks
@@ -981,11 +976,6 @@ private:
 
     // Handles
     DacHandleWalker *mHandleWalker;
-
-    // FQ
-    PTR_PTR_Object mFQStart;
-    PTR_PTR_Object mFQEnd;
-    PTR_PTR_Object mFQCurr;
 };
 
 #endif // _DACDBI_IMPL_H_

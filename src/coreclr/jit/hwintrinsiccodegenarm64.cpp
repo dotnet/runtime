@@ -1374,18 +1374,52 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
 
-            case NI_AdvSimd_AbsoluteCompareLessThan:
-            case NI_AdvSimd_AbsoluteCompareLessThanOrEqual:
             case NI_AdvSimd_CompareLessThan:
             case NI_AdvSimd_CompareLessThanOrEqual:
-            case NI_AdvSimd_Arm64_AbsoluteCompareLessThan:
-            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanScalar:
-            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqual:
-            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqualScalar:
             case NI_AdvSimd_Arm64_CompareLessThan:
             case NI_AdvSimd_Arm64_CompareLessThanScalar:
             case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
             case NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar:
+                // If the second operand is a contained zero, we can emit the
+                // 'less than [or equal to] zero' form directly instead of
+                // materializing a zero vector and swapping the operands.
+                if (intrin.op2->isContained())
+                {
+                    assert(intrin.op2->IsVectorZero());
+
+                    instruction zeroIns = INS_invalid;
+                    switch (ins)
+                    {
+                        case INS_cmgt:
+                            zeroIns = INS_cmlt;
+                            break;
+                        case INS_cmge:
+                            zeroIns = INS_cmle;
+                            break;
+                        case INS_fcmgt:
+                            zeroIns = INS_fcmlt;
+                            break;
+                        case INS_fcmge:
+                            zeroIns = INS_fcmle;
+                            break;
+                        default:
+                            unreached();
+                    }
+
+                    GetEmitter()->emitIns_R_R(zeroIns, emitSize, targetReg, op1Reg, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
+                }
+                break;
+
+            case NI_AdvSimd_AbsoluteCompareLessThan:
+            case NI_AdvSimd_AbsoluteCompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThan:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanScalar:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqualScalar:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
                 break;
 
@@ -2228,7 +2262,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve2_CreateWhileReadAfterWriteMaskUInt16:
             case NI_Sve2_CreateWhileReadAfterWriteMaskUInt32:
             case NI_Sve2_CreateWhileReadAfterWriteMaskUInt64:
-                // WHILERW operands are always pointers (64-bit), so emitSize is always EA_8BYTE.
+            case NI_Sve2_CreateWhileWriteAfterReadMaskByte:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskDouble:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskInt16:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskInt32:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskInt64:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskSByte:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskSingle:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskUInt16:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskUInt32:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskUInt64:
+                // WHILERW/WHILEWR operands are always pointers (64-bit), so emitSize is always EA_8BYTE.
                 // No signed/unsigned instruction variant exists.
                 GetEmitter()->emitIns_R_R_R(ins, EA_8BYTE, targetReg, op1Reg, op2Reg, opt);
                 break;
