@@ -276,7 +276,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             hr = ex.HResult;
         }
 
-        if (!resolved)
+        if (!resolved && hr == HResults.S_OK)
         {
             hr = CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED;
         }
