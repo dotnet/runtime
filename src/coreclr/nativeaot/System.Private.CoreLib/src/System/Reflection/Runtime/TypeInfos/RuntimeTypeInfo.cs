@@ -410,29 +410,9 @@ namespace System.Reflection.Runtime.TypeInfos
             return fields[0].FieldType;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
-            Justification = "Literal fields on open generic enum types are never trimmed")]
         internal virtual void GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags)
         {
-            Debug.Assert(IsActualEnum);
-            FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            unsortedNames = new string[fields.Length];
-            unsortedValues = new object[fields.Length];
-            for (int i = 0; i < fields.Length; i++)
-            {
-                unsortedNames[i] = fields[i].Name;
-                // Convert signed underlying types to unsigned storage types, matching NativeFormat metadata behavior.
-                unsortedValues[i] = fields[i].GetRawConstantValue() switch
-                {
-                    sbyte sb => (byte)sb,
-                    short s => (ushort)s,
-                    int n => (uint)n,
-                    long l => (ulong)l,
-                    object v => v,  // byte, ushort, uint, ulong - already unsigned
-                    null => null
-                };
-            }
-            isFlags = IsDefined(typeof(FlagsAttribute), false);
+            throw new NotSupportedException();
         }
 
         public Type MakeArrayType()
