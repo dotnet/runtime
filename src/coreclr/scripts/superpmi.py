@@ -2008,7 +2008,7 @@ def aggregate_diff_metrics(details_file):
 
     # Per-context throughput diffs (rows where PIN measured base != diff
     # instruction count). Used by tpdiff to surface specific method examples.
-    tp_diffs_fields = ["Context", "Method full name", "MinOpts", "Base instructions", "Diff instructions"]
+    tp_diffs_fields = ["Context", "MinOpts", "Base instructions", "Diff instructions"]
     tp_diffs = []
 
     for row in read_csv(details_file):
@@ -3357,14 +3357,8 @@ def write_tpdiff_context_examples(write_fh, tp_diffs):
         write_fh : file handle for file to output to
         tp_diffs : list of (mch_file, base_metrics, diff_metrics, tp_per_context)
                    where tp_per_context is a list of dicts with keys
-                   "Context", "Method full name", "MinOpts",
-                   "Base instructions", "Diff instructions".
+                   "Context", "MinOpts", "Base instructions", "Diff instructions".
     """
-
-    # Escape values destined for a markdown table cell: '|' splits cells, '<>&'
-    # render as HTML on GitHub, and newlines break the row.
-    def md_cell(s):
-        return html.escape(s).replace("|", "&#124;").replace("\n", " ").replace("\r", "")
 
     # Flatten per-context rows; tag each with its originating collection.
     flat = []
@@ -3375,7 +3369,6 @@ def write_tpdiff_context_examples(write_fh, tp_diffs):
             pct = (diff_insts - base_insts) / base_insts * 100
             flat.append({
                 "Collection": mch_file,
-                "Method full name": row["Method full name"],
                 "Context": row["Context"],
                 "MinOpts": row["MinOpts"] == "True",
                 "Base instructions": base_insts,
@@ -3397,13 +3390,12 @@ def write_tpdiff_context_examples(write_fh, tp_diffs):
         if not rows:
             return
         with DetailsSection(write_fh, title):
-            write_fh.write("|Collection|Context|Method|Base|Diff|PDIFF|\n")
-            write_fh.write("|---|--:|---|--:|--:|--:|\n")
+            write_fh.write("|Collection|Context|Base|Diff|PDIFF|\n")
+            write_fh.write("|---|--:|--:|--:|--:|\n")
             for r in rows:
-                write_fh.write("|{}|{}|{}|{:,d}|{:,d}|{}|\n".format(
-                    md_cell(r["Collection"]),
+                write_fh.write("|{}|{}|{:,d}|{:,d}|{}|\n".format(
+                    r["Collection"],
                     r["Context"],
-                    md_cell(r["Method full name"]),
                     r["Base instructions"],
                     r["Diff instructions"],
                     compute_and_format_pct(r["Base instructions"], r["Diff instructions"])))
