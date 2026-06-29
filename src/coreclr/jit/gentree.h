@@ -1222,6 +1222,12 @@ public:
 
     bool IsNotGcDef() const
     {
+        // A non-GC typed value (eg native int reinterpreted as byref) cannot designate a movable object.
+        if (!varTypeIsGC(TypeGet()))
+        {
+            return true;
+        }
+
         if (IsIntegralConst(0) || OperIs(GT_LCL_ADDR, GT_LCLHEAP))
         {
             return true;
