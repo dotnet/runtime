@@ -11598,17 +11598,17 @@ void Compiler::gtUpdateStmtSideEffects(Statement* stmt)
             // and whose children do not have ordering side effects, should not have the ordering side effect flag set.
             if (((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !tree->OperSupportsOrderingSideEffect())
             {
-                bool childHasOrderingSideEffect = false;
-                tree->VisitOperands([&childHasOrderingSideEffect](GenTree* operand) -> GenTree::VisitResult {
+                bool hasChildWithOrderSideEff = false;
+                tree->VisitOperands([&hasChildWithOrderSideEff](GenTree* operand) -> GenTree::VisitResult {
                     if ((operand->gtFlags & GTF_ORDER_SIDEEFF) != 0)
                     {
-                        childHasOrderingSideEffect = true;
+                        hasChildWithOrderSideEff = true;
                         return GenTree::VisitResult::Abort;
                     }
                     return GenTree::VisitResult::Continue;
                 });
 
-                if (!childHasOrderingSideEffect)
+                if (!hasChildWithOrderSideEff)
                 {
                     tree->gtFlags &= ~GTF_ORDER_SIDEEFF;
                 }
