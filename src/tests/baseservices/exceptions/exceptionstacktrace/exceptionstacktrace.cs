@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -122,6 +123,25 @@ public static class Program
                 "Program.RethrowViaThrowException()"
             });
         }
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]
+    public static void ExceptionToString_FullPdbAssembly_IncludesSourceLine()
+    {
+        string assemblyPath = Path.Combine(Environment.CurrentDirectory, "FullPdbTestAssembly.dll");
+        string pdbPath = Path.ChangeExtension(assemblyPath, ".pdb");
+        Assert.True(File.Exists(assemblyPath), $"Expected test assembly at '{assemblyPath}'.");
+        Assert.True(File.Exists(pdbPath), $"Expected full PDB at '{pdbPath}'.");
+
+        Assembly assembly = Assembly.LoadFrom(assemblyPath);
+        Type throwerType = assembly.GetType("FullPdbTestAssembly.FullPdbThrower", throwOnError: true);
+        MethodInfo getExceptionString = throwerType.GetMethod("GetExceptionString", BindingFlags.Public | BindingFlags.Static);
+        Assert.NotNull(getExceptionString);
+
+        string exceptionText = (string)getExceptionString.Invoke(null, null);
+        Assert.Contains("FullPdbTestAssembly.FullPdbThrower.Throw()", exceptionText);
+        Assert.Contains("FullPdbThrower.cs:line", exceptionText);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

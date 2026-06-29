@@ -13,6 +13,21 @@
     <PackageReference Include="xunit.analyzers" Version="$(XUnitAnalyzersVersion)" />
   </ItemGroup>
 
+  <!-- Copy DiaSymReader native into the Core_Root root, matching the runtime pack layout the
+       product runtime probes for next to coreclr.dll. -->
+  <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+    <_DiaSymReaderTargetArch>$(TargetArchitecture)</_DiaSymReaderTargetArch>
+    <_DiaSymReaderTargetArch Condition="'$(TargetArchitecture)' == 'x64'">amd64</_DiaSymReaderTargetArch>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <!-- DiaSymReader native is needed to read classic/full PDBs; it ships in the runtime pack
+         root (see Microsoft.NETCore.App.Runtime.props) but isn't part of the CoreCLR build
+         output that Core_Root is otherwise assembled from. GeneratePathProperty exposes the
+         restored package location as $(PkgMicrosoft_DiaSymReader_Native). -->
+    <PackageReference Include="Microsoft.DiaSymReader.Native" Version="$(MicrosoftDiaSymReaderNativeVersion)" ExcludeAssets="all" GeneratePathProperty="true" />
+    <RuntimeCopyLocalItems Include="$(PkgMicrosoft_DiaSymReader_Native)\runtimes\win\native\Microsoft.DiaSymReader.Native.$(_DiaSymReaderTargetArch).dll" />
+  </ItemGroup>
+
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
 
   <Target Name="AddLibrariesToCoreRoot" BeforeTargets="CopyDependencyToCoreRoot" DependsOnTargets="ResolveLibrariesFromLocalBuild">

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestKind>BuildOnly</CLRTestKind>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>Full</DebugType>
+    <IsTestProject>false</IsTestProject>
+    <Optimize>false</Optimize>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="FullPdbThrower.cs" />
+  </ItemGroup>
+  <!--
+    GetTargetPath only returns the primary output (the .dll), so the classic PDB is not
+    copied by the referencing project. Expose it as an additional output with a TargetPath
+    so the parent ProjectReference (OutputItemType=Content) copies it next to the .dll.
+  -->
+  <Target Name="GetFullPdbTargetPath" DependsOnTargets="GetTargetPath" Returns="@(FullPdbTargetPath)">
+    <ItemGroup>
+      <FullPdbTargetPath Include="$(TargetDir)$(AssemblyName).pdb">
+        <TargetPath>$(AssemblyName).pdb</TargetPath>
+      </FullPdbTargetPath>
+    </ItemGroup>
+  </Target>
+</Project>
