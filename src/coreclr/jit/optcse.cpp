@@ -4757,6 +4757,61 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
         }
     }
 
+#if defined(TARGET_XARCH)
+    // For shared-constant CSE: not every use can fold the +delta into a useful encoding.
+    // Address-mode uses (IND, LEA, ADD) absorb the delta into a lea/disp; compare/call/return
+    // consume the value with no register-write follow-on. But ALU ops like XOR/AND/OR/MUL
+    // must MATERIALIZE the value into a fresh register before consuming it, which on AMD pays
+    // the 2-cycle "complex-lea" latency and can extend the critical path. Charge for those
+    // uses so the heuristic prefers keeping the original mov-imm at the use site when most
+    // consumers are computes. See issue #92170.
+    //
+    if (candidate->IsSharedConst())
+    {
+        weight_t computeUseWtCnt = 0;
+        for (treeStmtLst* lst = &candidate->CseDsc()->csdTreeList; lst != nullptr; lst = lst->tslNext)
+        {
+            GenTree* const useTree = lst->tslTree;
+            if (!IS_CSE_USE(useTree->gtCSEnum))
+            {
+                continue;
+            }
+            Compiler::FindLinkData link   = m_compiler->gtFindLink(lst->tslStmt, useTree);
+            GenTree* const         parent = link.parent;
+            if (parent == nullptr)
+            {
+                continue;
+            }
+            switch (parent->OperGet())
+            {
+                case GT_XOR:
+                case GT_AND:
+                case GT_OR:
+                case GT_MUL:
+                case GT_MULHI:
+                case GT_NEG:
+                case GT_NOT:
+                case GT_BSWAP:
+                case GT_BSWAP16:
+                    computeUseWtCnt += lst->tslBlock->getBBWeight(m_compiler);
+                    break;
+                default:
+                    // ADD/SUB fold into lea; IND/STOREIND/LEA fold into addressing mode;
+                    // CMP/EQ/NE/LT/.. and CALL/RETURN don't extend a dep chain through a
+                    // written register. No extra charge.
+                    break;
+            }
+        }
+        if (computeUseWtCnt > 0)
+        {
+            // Charge ~2 cycles per compute use to model the complex-lea materialization
+            // cost on AMD (lea r, [base+index+disp] is 2 cycles on Zen, vs 1 cycle for a
+            // simple `add reg, imm` or a `mov reg, imm`).
+            extra_yes_cost += (unsigned)(computeUseWtCnt * 2);
+        }
+    }
+#endif
+
     // estimate the cost from lost codesize reduction if we do not perform the CSE
     if (candidate->Size() > cse_use_cost)
     {
