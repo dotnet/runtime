@@ -33,7 +33,7 @@ jobs:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Ubuntu.2604.ArmArch.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8@sha256:2a0400a4274972efa528f4447831ee25bc9f1c412868fde9152379ebcc895e42
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (AzureLinux.3.0.ArmArch.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-arm64v8@sha256:a730f1f2943a1b8a314e2bb29b07026b59eced86552f5eebf89207bdc32231a1
+        - (AzureLinux.3.0.ArmArch.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-arm64v8@sha256:9bd59d4f58cfb8d3cef24116d175445b35f26ed647078a97c58eba308711aea9
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
@@ -76,8 +76,8 @@ jobs:
               - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-amd64@sha256:f481273f9ce3fe5e1b005a088dbc4299640729c7edcc1f9e0f7bbc005218f531
               # Additional distros on non-PR builds for broader coverage
               - ${{ if or(eq(variables['isRollingBuild'], true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-                - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:275ee9ce9f6cfccf08e6e785da4912989198ea8b5f66d7ad07b21118be5b83e5
-                - (Centos.10.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64@sha256:19c124401ae9dbe9abf8e62f7b8fb7f38198eb1d3789c9433b1d0a6f2d30bf36
+                - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:55365142148944e7d4162afa2ac96c72dc7eb1c1d8c8e58d594b806373c4caf6
+                - (Centos.10.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64@sha256:6e8b95d5b6f7224489aa8dad55a26c004c8571b99e5209bc58594706927962b1
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
@@ -101,19 +101,19 @@ jobs:
 
     # iOS Simulator/Mac Catalyst arm64
     - ${{ if in(parameters.platform, 'iossimulator_arm64', 'tvossimulator_arm64', 'maccatalyst_arm64') }}:
-      - OSX.15.Arm64.Open
+      - $(helix_macos_ios_simulator_arm64)
 
     # iOS/tvOS Simulator x64 & MacCatalyst x64
     - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64', 'maccatalyst_x64') }}:
-      - OSX.15.Amd64.Open
+      - $(helix_macos_ios_simulator_x64)
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
-      - osx.15.amd64.iphone.open
+      - $(helix_macos_ios_device)
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
-      - osx.15.amd64.appletv.open
+      - $(helix_macos_tvos_device)
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:

@@ -1300,8 +1300,38 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 // We may have increased the loop extent (moved the end) to accommodate try regions
                 // that begin in the loop but can end outside. Find the last such block...
                 //
-                loop->VisitLoopBlocksPostOrder([&](BasicBlock* block) {
+                AddCodeDscMap* const acdMap = fgGetAddCodeDscMap();
+
+                loop->VisitLoopBlocksPostOrder([&, this](BasicBlock* block) {
                     endCursor = max(endCursor, block->bbPreorderNum + 1);
+
+                    // If this loop block is the header of a try region that requires runtime
+                    // resumption, also account for the throw-helper blocks of that try region.
+                    // Those blocks form the try interval's end-block (per VisitWasmSuccs they
+                    // are sequenced after the region's true successors), and the try interval
+                    // must perfectly nest inside this loop interval.
+                    //
+                    FlowGraphTryRegion* const innerTry = tryRegions->GetTryRegionByHeader(block);
+                    if ((acdMap != nullptr) && (innerTry != nullptr) && innerTry->RequiresRuntimeResumption())
+                    {
+                        AcdKeyDesignator dsg;
+                        const unsigned   blockData = bbThrowIndex(block, &dsg);
+                        for (const AddCodeDscKey& key : AddCodeDscMap::KeyIteration(acdMap))
+                        {
+                            if (key.Data() != blockData)
+                            {
+                                continue;
+                            }
+
+                            AddCodeDsc* acd = nullptr;
+                            acdMap->Lookup(key, &acd);
+
+                            if (acd->acdUsed && (acd->acdDstBlk != nullptr))
+                            {
+                                endCursor = max(endCursor, acd->acdDstBlk->bbPreorderNum + 1);
+                            }
+                        }
+                    }
                     return BasicBlockVisit::Continue;
                 });
 
@@ -1329,9 +1359,20 @@ PhaseStatus Compiler::fgWasmControlFlow()
             // This interval will inspire a try_table in codegen to handle the resumption
             // request from the runtime.
             //
-            unsigned            endCursor   = cursor + tryRegion->NumBlocks();
-            WasmInterval* const tryInterval = WasmInterval::NewTry(this, block, initialLayout[endCursor]);
+            unsigned const      tryEndCursor = cursor + tryRegion->NumBlocks();
+            WasmInterval* const tryInterval  = WasmInterval::NewTry(this, block, initialLayout[tryEndCursor]);
             fgWasmIntervals->push_back(tryInterval);
+
+            // Pair the TRY with an [exnref]-wrapper Block whose end lands at the
+            // BBF_CATCH_RESUMPTION dispatcher so catch_ref resumes there.
+            //
+            assert(block->KindIs(BBJ_COND));
+            BasicBlock* const cresume = block->GetTrueTarget();
+            assert((cresume != nullptr) && cresume->HasFlag(BBF_CATCH_RESUMPTION));
+            unsigned const      wrapperEndCursor = max(tryEndCursor, cresume->bbPreorderNum);
+            WasmInterval* const wrapperInterval =
+                WasmInterval::NewExnRefWrapper(this, block, initialLayout[wrapperEndCursor]);
+            fgWasmIntervals->push_back(wrapperInterval);
         }
 
         // Now see where block branches to...
@@ -1356,10 +1397,18 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
+            // A branch out of a wasm try/catch needs an explicit Block target
+            // even when the succ is contiguous or cold.
+            //
+            EHblkDsc* const blockTryDsc            = ehGetBlockTryDsc(block);
+            bool const      isCrossingTryCatchExit = (blockTryDsc != nullptr) && blockTryDsc->HasCatchHandler() &&
+                                                !bbInTryRegions(ehGetIndex(blockTryDsc), succ);
+
             // Branch to next needs no block, unless this is a switch or next is a throw helper.
             // We may need to branch to a throw helper mid-block, so can't always fall through.
             //
-            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH) && !(succ->HasFlag(BBF_THROW_HELPER)))
+            if ((succNum == (cursor + 1)) && !block->KindIs(BBJ_SWITCH) && !(succ->HasFlag(BBF_THROW_HELPER)) &&
+                !isCrossingTryCatchExit)
             {
                 continue;
             }
@@ -1367,7 +1416,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
             // Branch to cold block needs no block (presumably something EH related).
             // Eventually we need to case these out and handle them better.
             //
-            if (succNum >= numBlocks)
+            if ((succNum >= numBlocks) && !isCrossingTryCatchExit)
             {
                 continue;
             }
@@ -1385,17 +1434,19 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
-            // Non-contiguous, non-subsumed forward branch
+            // Non-contiguous, non-subsumed forward branch. Start the Block at the try
+            // header when crossing a try-catch exit so it encloses the wrapper.
             //
-            WasmInterval* const branch = WasmInterval::NewBlock(this, block, initialLayout[succNum]);
+            BasicBlock* const   blockStart = isCrossingTryCatchExit ? blockTryDsc->ebdTryBeg : block;
+            WasmInterval* const branch     = WasmInterval::NewBlock(this, blockStart, initialLayout[succNum]);
             fgWasmIntervals->push_back(branch);
 
             // Remember an interval end here
             //
             scratch[succNum] = branch;
 
-            JITDUMP("Adding block interval for " FMT_BB "[%u] -> " FMT_BB "[%u]\n", block->bbNum, cursor, succ->bbNum,
-                    succNum);
+            JITDUMP("Adding block interval for " FMT_BB "[%u] -> " FMT_BB "[%u]\n", blockStart->bbNum,
+                    blockStart->bbPreorderNum, succ->bbNum, succNum);
         }
     }
 
@@ -1411,6 +1462,46 @@ PhaseStatus Compiler::fgWasmControlFlow()
         }
         JITDUMP("--------------\n\n");
     }
+
+    // Verify that try intervals perfectly nest with respect to loop intervals
+    // (either disjoint or one fully contains the other). If a try overlapped a
+    // loop, later conflict resolution would widen the try's start back past the
+    // loop header, leaving codegen unable to find GT_WASM_JEXCEPT at the try's
+    // start block.
+    //
+    for (WasmInterval* const tryI : *fgWasmIntervals)
+    {
+        if (!tryI->IsTry())
+        {
+            continue;
+        }
+
+        for (WasmInterval* const loopI : *fgWasmIntervals)
+        {
+            if (!loopI->IsLoop())
+            {
+                continue;
+            }
+
+            const unsigned ts = tryI->Start();
+            const unsigned te = tryI->End();
+            const unsigned ls = loopI->Start();
+            const unsigned le = loopI->End();
+
+            const bool disjoint     = (te <= ls) || (le <= ts);
+            const bool loopContains = (ls <= ts) && (te <= le);
+            const bool tryContains  = (ts <= ls) && (le <= te);
+
+            if (!(disjoint || loopContains || tryContains))
+            {
+                JITDUMP("Try interval ");
+                JITDUMPEXEC(tryI->Dump());
+                JITDUMP(" overlaps loop interval ");
+                JITDUMPEXEC(loopI->Dump());
+                assert(!"Try and loop intervals must perfectly nest");
+            }
+        }
+    }
 #endif
 
     // -----------------------------------------------
@@ -1423,6 +1514,15 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // Since this is only looking at prior intervals it could be
     // merged with (2) above.
     //
+
+    // Cross-try-exit Block intervals are backdated to start at the try
+    // header; sort by Start so resolve sees intervals in non-decreasing
+    // start order.
+    //
+    jitstd::sort(fgWasmIntervals->begin(), fgWasmIntervals->end(), [](WasmInterval* i1, WasmInterval* i2) {
+        return i1->Start() < i2->Start();
+    });
+
     auto resolve = [this](WasmInterval* const current) {
         for (WasmInterval* prior : *fgWasmIntervals)
         {
@@ -1549,7 +1649,18 @@ PhaseStatus Compiler::fgWasmControlFlow()
             return i1->IsBlock();
         }
 
-        // Either both are blocks or both are trys.
+        // Order regular blocks before ExnRef-wrapper blocks so the wrapper
+        // sits immediately outside its paired TRY (depth 0 from catch_ref).
+        //
+        if (i1->IsBlock())
+        {
+            if (i1->IsExnRefWrapper() != i2->IsExnRefWrapper())
+            {
+                return i2->IsExnRefWrapper();
+            }
+        }
+
+        // Either both are (regular or wrapper) blocks, or both are trys.
         //
         return false;
     };
@@ -1669,6 +1780,189 @@ PhaseStatus Compiler::fgWasmControlFlow()
     assert(!fgTrysContiguous());
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+PhaseStatus Compiler::fgWasmSpillRefs()
+{
+    bool anyChanges = false;
+
+    jitstd::vector<GenTree*> defs(getAllocator(CMK_WasmSpillRefs));
+    jitstd::vector<unsigned> spillSlotsToZeroAtEndOfBlock(getAllocator(CMK_WasmSpillRefs));
+
+    for (BasicBlock* const block : Blocks())
+    {
+        // The defs list should already be empty because we walked all the nodes in the previous block,
+        //  which should have led to visiting all uses
+        assert(defs.empty());
+
+        // LIR edges cannot span blocks, so we can safely clear the list of live values per-block
+        defs.clear();
+
+        if (m_wasmSpillSlots != nullptr)
+        {
+            // Flag all our spill slot vars as no longer in use so they can be reused in the new block
+            for (WasmSpillSlot& slot : *m_wasmSpillSlots)
+            {
+                slot.inUse = false;
+            }
+        }
+
+        for (GenTree* tree : LIR::AsRange(block))
+        {
+            if (tree->IsCall())
+            {
+                // For any ref/byref values live at the point of a call, spill them into pinned slots
+                //  on the stack where the GC can see them so it won't move them.
+                if (!defs.empty())
+                {
+                    if (m_wasmSpillSlots == nullptr)
+                    {
+                        m_wasmSpillSlots = new (this, CMK_WasmSpillRefs)
+                            jitstd::vector<WasmSpillSlot>(getAllocator(CMK_WasmSpillRefs));
+                    }
+
+                    JITDUMP("Spilling %zu live ref(s) for call\n", defs.size());
+                    DISPNODE(tree);
+                    for (GenTree* def : defs)
+                    {
+                        JITDUMP("    ");
+                        DISPNODE(def);
+
+                        int spillSlot = -1;
+                        // Find an existing spill slot of the right type (byref or ref) that isn't in use
+                        for (WasmSpillSlot& slot : *m_wasmSpillSlots)
+                        {
+                            if (slot.inUse)
+                                continue;
+                            if (slot.byRef != def->TypeIs(TYP_BYREF))
+                                continue;
+
+                            spillSlot  = slot.lclNum;
+                            slot.inUse = true;
+                            break;
+                        }
+
+                        // We didn't find an available spill slot so make a new one
+                        if (spillSlot == -1)
+                        {
+                            spillSlot               = lvaGrabTemp(false DEBUGARG("WasmSpillRefs spill slot"));
+                            LclVarDsc* const varDsc = lvaGetDesc(spillSlot);
+                            varDsc->lvType          = def->TypeGet();
+                            varDsc->lvPinned        = true;
+                            varDsc->lvMustInit      = true;
+                            lvaSetVarDoNotEnregister(spillSlot DEBUGARG(DoNotEnregisterReason::WasmGCVisibility));
+                            WasmSpillSlot slotDesc;
+                            slotDesc.lclNum = spillSlot;
+                            slotDesc.byRef  = def->TypeIs(TYP_BYREF);
+                            slotDesc.inUse  = true;
+                            m_wasmSpillSlots->push_back(slotDesc);
+                        }
+
+                        GenTreeLclVar* spill  = gtNewStoreLclVarNode(spillSlot, def);
+                        GenTreeLclVar* reload = gtNewLclVarNode(spillSlot, def->TypeGet());
+                        LIR::Use       use;
+                        noway_assert(LIR::AsRange(block).TryGetUse(def, &use));
+                        LIR::AsRange(block).InsertAfter(def, spill);
+                        LIR::AsRange(block).InsertAfter(spill, reload);
+                        use.ReplaceWith(reload);
+
+                        // The user will expect to have child nodes that have the multiply-used flag set, so when
+                        //  we replace the expression with the reload node, we need to transfer the flag
+                        if (def->gtLIRFlags & LIR::Flags::MultiplyUsed)
+                        {
+                            JITDUMP("Transferring multiply-used flag from [%06u] to [%06u] for spill\n",
+                                    Compiler::dspTreeID(def), Compiler::dspTreeID(reload));
+                            def->gtLIRFlags &= ~LIR::Flags::MultiplyUsed;
+                            reload->gtLIRFlags |= LIR::Flags::MultiplyUsed;
+                        }
+
+                        spillSlotsToZeroAtEndOfBlock.push_back(spillSlot);
+
+                        anyChanges = true;
+                    }
+
+                    defs.clear();
+                }
+            }
+
+            // FIXME: Should this happen before the spilling of the live defs list?
+            // I think the answer is no, because live defs being passed as arguments to the current call
+            //  are not guaranteed to ever end up in memory where the GC can see them unless we spill
+            //  them. If we can somehow guarantee that all callees will spill their ref parameters
+            //  immediately, we could do this before the block above.
+
+            // Remove used nodes from defs list, they're no longer meaningfully 'live'.
+            tree->VisitOperands([&defs](GenTree* op) {
+                if (!op->IsValue())
+                    return GenTree::VisitResult::Continue;
+                if (!op->TypeIs(TYP_REF, TYP_BYREF))
+                    return GenTree::VisitResult::Continue;
+
+                for (size_t i = defs.size(); i > 0; i--)
+                {
+                    if (op == defs[i - 1])
+                    {
+                        defs[i - 1] = defs[defs.size() - 1];
+                        defs.pop_back();
+                        break;
+                    }
+                }
+
+                return GenTree::VisitResult::Continue;
+            });
+
+            // We only care about used values, and invariant nodes can't produce movable GC refs, so skip
+            //  nodes appropriately
+            if (!tree->IsValue() || tree->IsUnusedValue() || tree->IsInvariant() || !tree->TypeIs(TYP_REF, TYP_BYREF))
+            {
+                continue;
+            }
+
+            // If a value is just a GT_LCL_VAR that isn't address-exposed, by construction we ensure that
+            //  it won't be mutated between its def (here) and its use (the call that would produce a spill)
+            //  and we won't need to spill it.
+            if (tree->OperIs(GT_LCL_VAR))
+            {
+                GenTreeLclVarCommon* lclVar = tree->AsLclVarCommon();
+                LclVarDsc*           dsc    = lvaGetDesc(lclVar);
+                if (!dsc->IsAddressExposed())
+                {
+                    continue;
+                }
+            }
+
+            // We have a ref sourced from something like a call result or an indirection that hasn't been
+            //  spilled yet, so record it for potential spilling at the next call.
+            defs.push_back(tree);
+        }
+
+        // For the spill slots we used, zero them at the end of the block to avoid keeping objects pinned way longer
+        //  than absolutely necessary.
+        if (spillSlotsToZeroAtEndOfBlock.size())
+        {
+            // There's no point in wasting time zeroing slots immediately before a return at the end of the block
+            //  since the GC will have no opportunity to inspect the slots. We could potentially do this for throws
+            //  too, but it's possible the exception would be caught and the method would continue running
+            if (!block->KindIs(BBJ_RETURN))
+            {
+                for (unsigned lclNum : spillSlotsToZeroAtEndOfBlock)
+                {
+                    GenTree*   zero  = gtNewZeroConNode(TYP_I_IMPL);
+                    GenTree*   store = gtNewStoreLclVarNode(lclNum, zero);
+                    LIR::Range range = LIR::SeqTree(this, store);
+                    LIR::InsertBeforeTerminator(block, std::move(range));
+                }
+            }
+
+            spillSlotsToZeroAtEndOfBlock.clear();
+        }
+    }
+
+    if (m_wasmSpillSlots != nullptr)
+    {
+        JITDUMP("Total allocated spill slot count was %zu\n", m_wasmSpillSlots->size());
+    }
+    return anyChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 #ifdef DEBUG
@@ -2185,14 +2479,8 @@ PhaseStatus Compiler::fgWasmEhFlow()
         assert(EHblkDsc::ebdIsSameTry(ehGetDsc(catchingTryIndex), ehGetDsc(innermostDispatchingTryIndex)));
 
         // If the continuationBlock is within the dispatching try, we have to bail out for now.
-        // Note bbFindInnermostCommonTryRegion takes and returns a biased index.
         //
-        unsigned const biasedCommonEnclosingTryIndex =
-            bbFindInnermostCommonTryRegion(innermostDispatchingTryIndex + 1, continuationBlock);
-        unsigned const commonEnclosingTryIndex =
-            (biasedCommonEnclosingTryIndex == 0) ? EHblkDsc::NO_ENCLOSING_INDEX : (biasedCommonEnclosingTryIndex - 1);
-
-        if (commonEnclosingTryIndex == innermostDispatchingTryIndex)
+        if (bbInTryRegions(innermostDispatchingTryIndex, continuationBlock))
         {
             JITDUMP("Continuation " FMT_BB " is within dispatching try EH#%02u, marking as catch resumption\n",
                     continuationBlock->bbNum, innermostDispatchingTryIndex);
@@ -2382,6 +2670,15 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         cases[i] = nullptr;
     }
 
+    // Track the unique edge per continuation block. When many cases share the
+    // same continuation (e.g. a large mutual-protect catch set whose handlers
+    // all `leave` to the same target) this avoids an O(N^2) cost in
+    // fgAddRefPred (which must do an O(preds) scan of the destination's
+    // pred list per call) -- we just bump dup counts directly for duplicates.
+    //
+    BlockToFlowEdgeMap* const continuationEdges =
+        new (this, CMK_FlowEdge) BlockToFlowEdgeMap(getAllocator(CMK_FlowEdge));
+
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
         assert(catchRetBlock->KindIs(BBJ_EHCATCHRET));
@@ -2392,13 +2689,28 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         assert(biasedCaseIndex < caseCount);
 
         JITDUMP("  case %u: " FMT_BB "\n", biasedCaseIndex, continuation->bbNum);
-        FlowEdge* caseEdge = fgAddRefPred(continuation, switchBlock);
+
+        FlowEdge* caseEdge;
+        if (continuationEdges->Lookup(continuation, &caseEdge))
+        {
+            // Edge from switchBlock to this continuation already exists; just
+            // bump the dup count (and the destination's ref count) instead of
+            // doing another linear pred-list scan via fgAddRefPred.
+            //
+            caseEdge->incrementDupCount();
+            continuation->bbRefs++;
+        }
+        else
+        {
+            caseEdge = fgAddRefPred(continuation, switchBlock);
+            continuationEdges->Set(continuation, caseEdge);
+
+            // We only get here on exception
+            caseEdge->setLikelihood(0);
+        }
 
         assert(cases[biasedCaseIndex] == nullptr);
         cases[biasedCaseIndex] = caseEdge;
-
-        // We only get here on exception
-        caseEdge->setLikelihood(0);
         caseNumber++;
     }
 
@@ -2446,7 +2758,10 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         BasicBlock* const continuation = catchRetBlock->GetTarget();
         if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
         {
-            succs[succNumber] = fgGetPredForBlock(continuation, switchBlock);
+            FlowEdge*  edge  = nullptr;
+            bool const found = continuationEdges->Lookup(continuation, &edge);
+            assert(found);
+            succs[succNumber] = edge;
             succNumber++;
         }
     }
@@ -2671,7 +2986,12 @@ PhaseStatus Compiler::fgWasmVirtualIP()
             // block (later we can refine this to something like: blocks that have calls
             // or will inspire calls during codegen).
             //
-            if (!block->isEmpty())
+            // Also refresh BBJ_CALLFINALLY blocks: the implicit call_indirect to the
+            // finally funclet is emitted at codegen time and the runtime EH walker
+            // would otherwise see the stale try-region virtualIP and re-dispatch the
+            // same finally during unwind.
+            //
+            if (!block->isEmpty() || block->KindIs(BBJ_CALLFINALLY))
             {
                 updateVirtualIPOnFrame(func, block);
             }

@@ -415,7 +415,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(size->isContained());
 
         // If amount is zero then return null in regCnt
-        size_t amount = size->AsIntCon()->gtIconVal;
+        size_t amount = size->AsIntCon()->IconValue();
         if (amount == 0)
         {
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, regCnt);
@@ -454,7 +454,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     if (size->IsCnsIntOrI())
     {
         // 'amount' is the total number of bytes to localloc to properly STACK_ALIGN
-        target_size_t amount = (target_size_t)size->AsIntCon()->gtIconVal;
+        target_size_t amount = (target_size_t)size->AsIntCon()->IconValue();
         amount               = AlignUp(amount, STACK_ALIGN);
 
         // For small allocations we will generate up to four push instructions (either 2 or 4, exactly,
@@ -715,9 +715,12 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_MUL:
             ins = INS_MUL;
             break;
-#if !defined(USE_HELPERS_FOR_INT_DIV)
+#if !USE_HELPERS_FOR_INT_DIV
         case GT_DIV:
             ins = INS_sdiv;
+            break;
+        case GT_UDIV:
+            ins = INS_udiv;
             break;
 #endif // !USE_HELPERS_FOR_INT_DIV
         case GT_LSH:
@@ -1066,7 +1069,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
     // on float/double args.
     noway_assert(tree->OperIs(GT_DIV) || !varTypeIsFloating(tree));
 
-#if defined(USE_HELPERS_FOR_INT_DIV)
+#if USE_HELPERS_FOR_INT_DIV
     noway_assert(!varTypeIsIntOrI(tree));
 #endif // USE_HELPERS_FOR_INT_DIV
 
@@ -1097,9 +1100,37 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
         emit->emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
     }
-    else // an signed integer divide operation
+    else // an integer divide operation
     {
-        // TODO-ARM-Bug: handle zero division exception.
+        // Generate the required runtime checks for the integer divide.
+        ExceptionSetFlags exSetFlags = tree->OperExceptions(m_compiler);
+
+        // (AnyVal / 0) => DivideByZeroException
+        if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
+        {
+            if (src2->IsIntegralConst(0))
+            {
+                // We unconditionally throw a divide by zero exception
+                genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
+
+                // We still need to call genProduceReg
+                genProduceReg(tree);
+
+                return;
+            }
+            else
+            {
+                // Check whether the divisor is zero and, if so, branch to the throw helper
+                emit->emitIns_R_I(INS_cmp, attr, src2->GetRegNum(), 0);
+                genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
+            }
+        }
+
+        // (MinInt / -1) => ArithmeticException
+        if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+        {
+            genCodeForDivModOverflowCheck(tree);
+        }
 
         emit->emitIns_R_R_R(ins, attr, dst->GetRegNum(), src1->GetRegNum(), src2->GetRegNum());
     }

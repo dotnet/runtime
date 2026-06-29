@@ -54,6 +54,10 @@ public abstract class ContractRegistry
     /// </summary>
     public virtual IPlatformMetadata PlatformMetadata => GetContract<IPlatformMetadata>();
     /// <summary>
+    /// Gets an instance of the FeatureFlags contract for the target.
+    /// </summary>
+    public virtual IFeatureFlags FeatureFlags => GetContract<IFeatureFlags>();
+    /// <summary>
     /// Gets an instance of the PrecodeStubs contract for the target.
     /// </summary>
     public virtual IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
@@ -128,6 +132,10 @@ public abstract class ContractRegistry
     /// Gets an instance of the Debugger contract for the target.
     /// </summary>
     public virtual IDebugger Debugger => GetContract<IDebugger>();
+    /// <summary>
+    /// Gets an instance of the StressLog contract for the target.
+    /// </summary>
+    public virtual IStressLog StressLog => GetContract<IStressLog>();
 
     /// <summary>
     /// Gets an instance of the RuntimeMutableTypeSystem contract for the target.

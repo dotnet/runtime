@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-haiku;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-openbsd;$(NetCoreAppCurrent)-haiku;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This is needed so that code for TlsCipherSuite will have no namespace (causes compile errors) when used within T4 template  -->
     <DefineConstants>$(DefineConstants);PRODUCT</DefineConstants>
@@ -34,6 +34,8 @@
              Link="Common\System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\LocalAppContextSwitches.Net.cs"
              Link="Common\System\Net\LocalAppContextSwitches.Net.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs"
+             Link="Common\System\Runtime\CompilerServices\RuntimeAsyncMethodGenerationAttribute.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
