@@ -412,17 +412,17 @@ namespace System.Reflection.Runtime.TypeInfos
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
             Justification = "Literal fields on open generic enum types are never trimmed")]
-        internal void GetEnumValuesAndNamesForOpenType(out string[] names, out object[] values, out bool isFlags)
+        internal virtual void GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags)
         {
             Debug.Assert(IsActualEnum);
             FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            names = new string[fields.Length];
-            values = new object[fields.Length];
+            unsortedNames = new string[fields.Length];
+            unsortedValues = new object[fields.Length];
             for (int i = 0; i < fields.Length; i++)
             {
-                names[i] = fields[i].Name;
-                // Convert to unsigned storage type to match NativeFormatEnumInfo behavior.
-                values[i] = fields[i].GetRawConstantValue() switch
+                unsortedNames[i] = fields[i].Name;
+                // Convert signed underlying types to unsigned storage types, matching NativeFormat metadata behavior.
+                unsortedValues[i] = fields[i].GetRawConstantValue() switch
                 {
                     sbyte sb => (byte)sb,
                     short s => (ushort)s,
