@@ -438,19 +438,10 @@ namespace Microsoft.Win32.SafeHandles
                 ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref stdout, ref stdoutRefAdded);
                 ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref stderr, ref stderrRefAdded);
 
-                WindowsProcessStartArguments args = new()
-                {
-                    StandardInput = stdin,
-                    StandardOutput = stdout,
-                    StandardError = stderr,
-                    ProcessStartInfo = startInfo,
-                };
-
                 fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
                 fixed (char* environmentBlockPtr = environmentBlock)
                 {
-                    args.Arguments = commandLinePtr;
-                    args.EnvironmentVariables = environmentBlockPtr;
+                    WindowsProcessStartArguments args = new(commandLinePtr, environmentBlockPtr, stdin, stdout, stderr, startInfo);
 
                     nint processHandle = callback(args);
                     if (IsInvalidHandle(processHandle))

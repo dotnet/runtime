@@ -472,9 +472,8 @@ namespace System.Diagnostics
 }
 namespace System.Runtime.InteropServices
 {
-    public ref struct WindowsProcessStartArguments
+    public readonly ref struct WindowsProcessStartArguments
     {
-        public WindowsProcessStartArguments() { }
         [System.CLSCompliantAttribute(false)]
         public unsafe char* Arguments { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
@@ -486,9 +485,8 @@ namespace System.Runtime.InteropServices
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.WindowsProcessStartArguments, System.IntPtr> callback) { throw null; }
     }
-    public ref struct UnixProcessStartArguments
+    public readonly ref struct UnixProcessStartArguments
     {
-        public UnixProcessStartArguments() { }
         [System.CLSCompliantAttribute(false)]
         public unsafe byte* ResolvedPath { get { throw null; } }
         [System.CLSCompliantAttribute(false)]

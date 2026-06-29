@@ -290,16 +290,14 @@ namespace Microsoft.Win32.SafeHandles
                     stderrRawFd = stderrHandle.DangerousGetHandle();
                 }
 
-                UnixProcessStartArguments args = new()
-                {
-                    ResolvedPath = resolvedPathMarshaller.ToUnmanaged(),
-                    Arguments = argvPtr,
-                    EnvironmentVariables = envpPtr,
-                    StandardInput = stdinRawFd,
-                    StandardOutput = stdoutRawFd,
-                    StandardError = stderrRawFd,
-                    ProcessStartInfo = startInfo,
-                };
+                UnixProcessStartArguments args = new(
+                    resolvedPathMarshaller.ToUnmanaged(),
+                    argvPtr,
+                    envpPtr,
+                    stdinRawFd,
+                    stdoutRawFd,
+                    stderrRawFd,
+                    startInfo);
 
                 // Lock to avoid races with OnSigChild
                 // By using a ReaderWriterLock we allow multiple processes to start concurrently.

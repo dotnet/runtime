@@ -8,11 +8,19 @@ namespace System.Runtime.InteropServices
 {
     /// <summary>
     /// Provides the prepared data required to start a process via a user-supplied callback.
-    /// This ref struct is populated by the <see cref="WindowsProcessStartArguments.Start(ProcessStartInfo, Func{WindowsProcessStartArguments, IntPtr})"/> method.
+    /// This ref struct is populated by the <see cref="Start(ProcessStartInfo, Func{WindowsProcessStartArguments, nint})"/> method.
     /// </summary>
-    public ref struct WindowsProcessStartArguments
+    public readonly ref struct WindowsProcessStartArguments
     {
-        public WindowsProcessStartArguments() { }
+        internal unsafe WindowsProcessStartArguments(char* arguments, char* environmentVariables, nint standardInput, nint standardOutput, nint standardError, ProcessStartInfo processStartInfo)
+        {
+            Arguments = arguments;
+            EnvironmentVariables = environmentVariables;
+            StandardInput = standardInput;
+            StandardOutput = standardOutput;
+            StandardError = standardError;
+            ProcessStartInfo = processStartInfo;
+        }
 
         /// <summary>
         /// Gets a pointer to the command-line arguments for the process.
@@ -22,7 +30,7 @@ namespace System.Runtime.InteropServices
         /// The memory pointed to by this property is only valid for the duration of the callback invocation.
         /// </remarks>
         [CLSCompliant(false)]
-        public unsafe char* Arguments { get; internal set; }
+        public unsafe char* Arguments { get; }
 
         /// <summary>
         /// Gets a pointer to the environment variables block for the new process.
@@ -34,28 +42,28 @@ namespace System.Runtime.InteropServices
         /// This block is UTF-16; if passed to CreateProcess, include CREATE_UNICODE_ENVIRONMENT.
         /// </remarks>
         [CLSCompliant(false)]
-        public unsafe char* EnvironmentVariables { get; internal set; }
+        public unsafe char* EnvironmentVariables { get; }
 
         /// <summary>
         /// Gets the raw handle to use as the standard input for the new process.
         /// </summary>
-        public nint StandardInput { get; internal set; }
+        public nint StandardInput { get; }
 
         /// <summary>
         /// Gets the raw handle to use as the standard output for the new process.
         /// </summary>
-        public nint StandardOutput { get; internal set; }
+        public nint StandardOutput { get; }
 
         /// <summary>
         /// Gets the raw handle to use as the standard error for the new process.
         /// </summary>
-        public nint StandardError { get; internal set; }
+        public nint StandardError { get; }
 
         /// <summary>
         /// Gets the original <see cref="ProcessStartInfo"/> provided by the user,
         /// allowing the callback to inspect any additional configuration.
         /// </summary>
-        public ProcessStartInfo ProcessStartInfo { get; internal set; } = null!;
+        public ProcessStartInfo ProcessStartInfo { get; }
 
         /// <summary>
         /// Starts a new process by preparing all necessary arguments (standard handles, command line, environment)
