@@ -278,7 +278,7 @@ namespace System
             if (target == null)
                 ThrowNullThisInDelegateToInstance();
             _target = target;
-            _methodPtr = (nuint)methodPtr;
+            _methodPtr = methodPtr;
         }
 
         [DebuggerNonUserCode]
@@ -286,7 +286,7 @@ namespace System
         private void CtorClosedStatic(object target, IntPtr methodPtr)
         {
             _target = target;
-            _methodPtr = (nuint)methodPtr;
+            _methodPtr = methodPtr;
         }
 
         [DebuggerNonUserCode]
@@ -296,7 +296,7 @@ namespace System
             if (target == null)
                 ThrowNullThisInDelegateToInstance();
             _target = target;
-            _methodPtr = (nuint)AdjustTarget(target, methodPtr);
+            _methodPtr = AdjustTarget(target, methodPtr);
         }
 
         [DebuggerNonUserCode]
@@ -304,7 +304,7 @@ namespace System
         private void CtorOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
             _target = this;
-            _methodPtr = (nuint)shuffleThunk;
+            _methodPtr = shuffleThunk;
             _methodPtrAux = methodPtr;
         }
 
@@ -313,7 +313,7 @@ namespace System
         private void CtorVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk)
         {
             _target = this;
-            _methodPtr = (nuint)shuffleThunk;
+            _methodPtr = shuffleThunk;
             InitializeVirtualCallStub(methodPtr);
         }
 
@@ -322,7 +322,7 @@ namespace System
         private void CtorCollectibleClosedStatic(object target, IntPtr methodPtr, IntPtr gchandle)
         {
             _target = target;
-            _methodPtr = (nuint)methodPtr;
+            _methodPtr = methodPtr;
             _helperObject = GCHandle.InternalGet(gchandle);
             Debug.Assert(HasSingleTarget);
         }
@@ -332,7 +332,7 @@ namespace System
         private void CtorCollectibleOpened(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
             _target = this;
-            _methodPtr = (nuint)shuffleThunk;
+            _methodPtr = shuffleThunk;
             _methodPtrAux = methodPtr;
             _helperObject = GCHandle.InternalGet(gchandle);
             Debug.Assert(HasSingleTarget);
@@ -343,7 +343,7 @@ namespace System
         private void CtorCollectibleVirtualDispatch(object target, IntPtr methodPtr, IntPtr shuffleThunk, IntPtr gchandle)
         {
             _target = this;
-            _methodPtr = (nuint)shuffleThunk;
+            _methodPtr = shuffleThunk;
             _helperObject = GCHandle.InternalGet(gchandle);
             Debug.Assert(HasSingleTarget);
             InitializeVirtualCallStub(methodPtr);

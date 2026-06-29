@@ -32,18 +32,18 @@ namespace System
 
         // _methodPtr is a pointer to the method we will invoke
         // It could be a small thunk if this is a static or UM call
-        internal nuint _methodPtr;
+        internal IntPtr _methodPtr;
 
         // In the case of a static method passed to a delegate, this field stores
         // whatever _methodPtr would have stored: and _methodPtr points to a
         // small thunk which removes the "this" pointer before going on
         // to _methodPtrAux.
-        internal nint _methodPtrAux;
+        internal IntPtr _methodPtrAux;
 
         // this stores the multicast count, UnmanagedMarker or target MethodDesc
         internal nint _extraData;
 
-        internal bool IsUnmanagedFunctionPtr => _extraData == UnmanagedMarker;
+        private bool IsUnmanagedFunctionPtr => _extraData == UnmanagedMarker;
 
         public partial bool HasSingleTarget => _helperObject is null || _helperObject.GetType() != typeof(object[]);
 
@@ -52,14 +52,14 @@ namespace System
                 ? invocations[^1].Target
                 : IsUnmanagedFunctionPtr || _methodPtrAux != 0 ? null : _target;
 
-        private nuint MethodDesc
+        private unsafe MethodDesc* MethodDesc
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 Debug.Assert(HasSingleTarget);
                 Debug.Assert(!IsUnmanagedFunctionPtr);
-                return _extraData != 0 ? (nuint)_extraData : GetMethodDesc();
+                return _extraData != 0 ? (MethodDesc*)_extraData : GetMethodDesc();
             }
         }
 
@@ -159,7 +159,7 @@ namespace System
 
         // equals returns true IIF the delegate is not null and has the
         // same target, method and invocation list as this object
-        public override bool Equals([NotNullWhen(true)] object? obj)
+        public override unsafe bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null)
                 return false;
@@ -223,7 +223,7 @@ namespace System
             return MethodDesc == other.MethodDesc;
         }
 
-        public override int GetHashCode()
+        public override unsafe int GetHashCode()
         {
             if (TryGetInvocations(out ReadOnlySpan<MulticastDelegate> invocations))
             {
@@ -240,7 +240,7 @@ namespace System
                 return HashCode.Combine(_methodPtr, _methodPtr);
             }
 
-            int hashCode = MethodDesc.GetHashCode();
+            int hashCode = ((nuint)MethodDesc).GetHashCode();
             if (_methodPtrAux == 0 && _target != null)
             {
                 hashCode += RuntimeHelpers.GetHashCode(_target) * 33;
@@ -267,7 +267,7 @@ namespace System
             }
         }
 
-        private MethodInfo GetMethodImplCore()
+        private unsafe MethodInfo GetMethodImplCore()
         {
             // should be handled by GetMethodImpl
             Debug.Assert(HasSingleTarget);
@@ -578,7 +578,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMulticastInvokeSlow")]
         private static unsafe partial void* GetMulticastInvokeSlow(MethodTable* pMT);
 
-        internal unsafe nuint GetMulticastInvoke()
+        internal unsafe IntPtr GetMulticastInvoke()
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
             void* ptr = GetMulticastInvoke(pMT);
@@ -589,7 +589,7 @@ namespace System
                 Debug.Assert(ptr == GetMulticastInvoke(pMT));
             }
             // No GC.KeepAlive() since the caller must keep instance alive to use returned pointer.
-            return (nuint)ptr;
+            return (IntPtr)ptr;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -603,7 +603,7 @@ namespace System
             return (IntPtr)ptr;
         }
 
-        internal static IRuntimeMethodInfo CreateMethodInfo(nuint methodDesc)
+        internal static unsafe IRuntimeMethodInfo CreateMethodInfo(MethodDesc* methodDesc)
         {
             IRuntimeMethodInfo? methodInfo = null;
             CreateMethodInfo(methodDesc, ObjectHandleOnStack.Create(ref methodInfo));
@@ -611,22 +611,22 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_CreateMethodInfo")]
-        private static partial void CreateMethodInfo(nuint methodDesc, ObjectHandleOnStack retMethodInfo);
+        private static unsafe partial void CreateMethodInfo(MethodDesc* methodDesc, ObjectHandleOnStack retMethodInfo);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private nuint GetMethodDesc()
+        private unsafe MethodDesc* GetMethodDesc()
         {
-            Delegate d = this;
-            nuint desc = GetMethodDesc(ObjectHandleOnStack.Create(ref d));
+            Delegate instance = this;
+            MethodDesc* methodDesc = GetMethodDesc(ObjectHandleOnStack.Create(ref instance));
             if (!IsUnmanagedFunctionPtr)
             {
-                _extraData = (nint)desc;
+                _extraData = (nint)methodDesc;
             }
-            return desc;
+            return methodDesc;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_GetMethodDesc")]
-        private static partial nuint GetMethodDesc(ObjectHandleOnStack instance);
+        private static unsafe partial MethodDesc* GetMethodDesc(ObjectHandleOnStack instance);
 
         internal static IntPtr AdjustTarget(object target, IntPtr methodPtr)
         {
