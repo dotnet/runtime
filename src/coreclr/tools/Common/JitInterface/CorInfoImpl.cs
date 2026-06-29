@@ -3518,10 +3518,7 @@ namespace Internal.JitInterface
                 {
                     // TODO-Async: the instantiation argument would have to be obtained through a runtime
                     // generic dictionary lookup, which is not yet emitted here, so defer to the runtime JIT.
-                    // The scanner already tracks the dependencies for this case (see ILImporter.Scanner.cs,
-                    // GetGenericLookupHelper(MethodDictionary, ...) + CanonicalEntrypoint), so a future change
-                    // could emit a runtime lookup instead of bailing out of R2R compilation.
-                    throw new RequiresRuntimeJitException(runtimeDeterminedResult.ToString());
+                    throw new RequiresRuntimeJitException($"getAwaitReturnCall: runtime-determined exact instantiation requires runtime JIT ({runtimeDeterminedResult})");
                 }
 
                 instArg.constLookup = CreateConstLookupToSymbol(
