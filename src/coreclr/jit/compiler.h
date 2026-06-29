@@ -10611,7 +10611,8 @@ public:
         unsigned structSize = info.compCompHnd->getClassSize(clsHnd);
 #ifdef FEATURE_SIMD
 #ifdef TARGET_ARM64
-        const uint32_t max = compExactlyDependsOn(InstructionSet_VectorT) ? MAX_SVE_REGSIZE_BYTES : FP_REGSIZE_BYTES;
+        const uint32_t max =
+            compOpportunisticallyDependsOn(InstructionSet_VectorT) ? MAX_SVE_REGSIZE_BYTES : FP_REGSIZE_BYTES;
 #else
         const uint32_t max = getMaxVectorByteLength();
 #endif // TARGET_ARM64
