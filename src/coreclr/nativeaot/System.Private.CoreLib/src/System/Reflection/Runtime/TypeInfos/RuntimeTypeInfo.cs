@@ -404,7 +404,6 @@ namespace System.Reflection.Runtime.TypeInfos
         public Type GetEnumUnderlyingType()
         {
             Debug.Assert(IsActualEnum);
-            Debug.Assert(IsActualEnum);
             FieldInfo[] fields = GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             if (fields is not { Length: 1 })
                 throw new ArgumentException(SR.Argument_InvalidEnum, "enumType");
