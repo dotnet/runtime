@@ -12,7 +12,11 @@ namespace System
 {
     public static partial class Environment
     {
-        public static int CurrentManagedThreadId => Threading.ManagedThreadId.Current;
+        public static int CurrentManagedThreadId
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Threading.ManagedThreadId.Current;
+        }
 
         // Terminates this process with the given exit code.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_Exit")]
