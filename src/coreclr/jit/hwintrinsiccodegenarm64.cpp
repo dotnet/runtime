@@ -292,11 +292,12 @@ static void genEmitCreateWhileMask(emitter*            emit,
 // genEmbeddedMaskedHWIntrinsic: Generates the code for an embedded masked hardware intrinsic.
 //
 // Arguments:
-//    intrinCndSel -- the conditional select HWIntrinsic.
-//    targetReg    -- the target register of the HWIntrinsic node.
+//    cndSelNode -- the conditional select HWIntrinsic node.
+//    targetReg  -- the target register of the HWIntrinsic node.
 //
-void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNumber targetReg)
+void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNumber targetReg)
 {
+    const HWIntrinsic intrinCndSel(cndSelNode);
     assert(intrinCndSel.id == NI_Sve_ConditionalSelect);
 
     GenTree* maskOp    = intrinCndSel.op1;
@@ -319,6 +320,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
     regNumber embMaskOp3Reg = REG_NA;
     regNumber embMaskOp4Reg = REG_NA;
     regNumber falseReg      = falseOp->GetRegNum();
+    regNumber tempReg       = REG_NA;
 
     switch (intrinEmbMask.numOperands)
     {
@@ -344,6 +346,12 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
 
         default:
             unreached();
+    }
+
+    if (intrinEmbMask.id == NI_Sve_MultiplyAddRotateComplex)
+    {
+        assert(intrinEmbMask.numOperands == 4);
+        tempReg = internalRegisters.GetSingle(cndSelNode, RBM_ALLFLOAT);
     }
 
     emitAttr        emitSize = EA_SCALABLE;
@@ -726,6 +734,26 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
         GenTree* immOp = embMaskOp->AsHWIntrinsic()->Op(intrinEmbMask.numOperands);
         assert(immOp->isContained() == (immOp->GetRegNum() == REG_NA));
 
+        if ((intrinEmbMask.id == NI_Sve_MultiplyAddRotateComplex) && (targetReg != embMaskOp1Reg))
+        {
+            if (targetReg == embMaskOp2Reg)
+            {
+                GetEmitter()->emitInsSve_Mov(INS_sve_mov, EA_SCALABLE, tempReg, embMaskOp2Reg, /* canSkip */ true,
+                                             opt);
+                embMaskOp2Reg = tempReg;
+                if (embMaskOp3Reg == targetReg)
+                {
+                    embMaskOp3Reg = tempReg;
+                }
+            }
+            else if (targetReg == embMaskOp3Reg)
+            {
+                GetEmitter()->emitInsSve_Mov(INS_sve_mov, EA_SCALABLE, tempReg, embMaskOp3Reg, /* canSkip */ true,
+                                             opt);
+                embMaskOp3Reg = tempReg;
+            }
+        }
+
         int                    numInstrs = ((mopt != INS_SVE_MOV_OPTS_UNPRED) || (targetReg != embMaskOp1Reg)) ? 2 : 1;
         HWIntrinsicImmOpHelper helper(this, immOp, embMaskOp->AsHWIntrinsic(), numInstrs);
         for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -771,6 +799,8 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNu
 #ifdef DEBUG
 void CodeGen::checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg)
 {
+    const bool canRepairTargetOverlap = (intrin.id == NI_Sve_MultiplyAddRotateComplex);
+
     GenTree* rmwOp;
     switch (intrin.id)
     {
@@ -814,14 +844,16 @@ void CodeGen::checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg)
             case 3:
                 if (rmwReg != intrin.op3->GetRegNum())
                 {
-                    assert((targetReg != intrin.op3->GetRegNum()) || genIsSameLocalVar(rmwOp, intrin.op3));
+                    assert(canRepairTargetOverlap || (targetReg != intrin.op3->GetRegNum()) ||
+                           genIsSameLocalVar(rmwOp, intrin.op3));
                 }
                 FALLTHROUGH;
 
             case 2:
                 if (rmwReg != intrin.op2->GetRegNum())
                 {
-                    assert((targetReg != intrin.op2->GetRegNum()) || genIsSameLocalVar(rmwOp, intrin.op2));
+                    assert(canRepairTargetOverlap || (targetReg != intrin.op2->GetRegNum()) ||
+                           genIsSameLocalVar(rmwOp, intrin.op2));
                 }
                 if (rmwReg != intrin.op1->GetRegNum())
                 {
@@ -1039,7 +1071,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         else if (intrin.id == NI_Sve_ConditionalSelect && intrin.op2->IsEmbMaskOp())
         {
             // Handle case where op2 is operation that needs embedded mask
-            genEmbeddedMaskedHWIntrinsic(intrin, targetReg);
+            genEmbeddedMaskedHWIntrinsic(node, targetReg);
         }
         else
         {

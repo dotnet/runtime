@@ -1436,26 +1436,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // Build any immediates
     BuildHWIntrinsicImmediate(intrinsicTree, intrin);
 
-    // Build any additional special cases
-    switch (intrin.id)
-    {
-        case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
-        case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
-        case NI_Sve2_GatherVectorNonTemporal:
-        case NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal:
-        case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
-        case NI_Sve2_Scatter16BitNarrowingNonTemporal:
-        case NI_Sve2_Scatter32BitNarrowingNonTemporal:
-        case NI_Sve2_ScatterNonTemporal:
-            if (!varTypeIsSIMD(intrin.op2->gtType))
-            {
-                buildInternalFloatRegisterDefForNode(intrinsicTree, internalFloatRegCandidates());
-            }
-            break;
-
-        default:
-            break;
-    }
+    // Build any internal temporary registers
+    BuildHWIntrinsicTempRegs(intrinsicTree, intrin, embeddedOp);
 
     // Build all Operands
     for (size_t opNum = 1; opNum <= intrin.numOperands; opNum++)
@@ -1806,6 +1788,47 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
     if (needBranchTargetReg)
     {
         buildInternalIntRegisterDefForNode(intrinsicTree);
+    }
+}
+
+//------------------------------------------------------------------------
+// BuildHWIntrinsicTempRegs: Build temporary registers used by HWIntrinsic codegen.
+//
+// Arguments:
+//    intrinsicTree - Intrinsic tree node for which need to build RefPositions for
+//    intrin        - Underlying intrinsic
+//    embeddedOp    - Embedded mask operand of intrinsicTree, if any
+//
+void LinearScan::BuildHWIntrinsicTempRegs(GenTreeHWIntrinsic* intrinsicTree,
+                                          const HWIntrinsic   intrin,
+                                          GenTreeHWIntrinsic* embeddedOp)
+{
+    switch (intrin.id)
+    {
+        case NI_Sve2_GatherVectorInt16SignExtendNonTemporal:
+        case NI_Sve2_GatherVectorInt32SignExtendNonTemporal:
+        case NI_Sve2_GatherVectorNonTemporal:
+        case NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal:
+        case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
+        case NI_Sve2_Scatter16BitNarrowingNonTemporal:
+        case NI_Sve2_Scatter32BitNarrowingNonTemporal:
+        case NI_Sve2_ScatterNonTemporal:
+            if (!varTypeIsSIMD(intrin.op2->gtType))
+            {
+                buildInternalFloatRegisterDefForNode(intrinsicTree, internalFloatRegCandidates());
+            }
+            break;
+
+        case NI_Sve_ConditionalSelect:
+            if ((embeddedOp != nullptr) && embeddedOp->OperIsHWIntrinsic(NI_Sve_MultiplyAddRotateComplex))
+            {
+                buildInternalFloatRegisterDefForNode(intrinsicTree, internalFloatRegCandidates());
+                setInternalRegsDelayFree = true;
+            }
+            break;
+
+        default:
+            break;
     }
 }
 

@@ -1019,7 +1019,7 @@ protected:
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_ARM64
-    void genEmbeddedMaskedHWIntrinsic(const HWIntrinsic intrinCndSel, regNumber targetReg);
+    void genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNumber targetReg);
 
 #ifdef DEBUG
     void checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg);
