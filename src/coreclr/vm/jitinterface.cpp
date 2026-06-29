@@ -629,7 +629,7 @@ int CEEInfo::getStringLiteral (
     {
         ULONG dwCharCount;
         LPCWSTR pString;
-        if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
+        if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, &pString)))
         {
             _ASSERTE(dwCharCount >= 0 && dwCharCount <= INT_MAX);
             int length = (int)dwCharCount;
@@ -1085,7 +1085,9 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                 // we cannot resolve to an Async variant in such case.
                 // return NULL, so that caller would re-resolve as a regular method call
-                pMD = pMD->ReturnsTaskOrValueTask() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
+                // For COM-import interface calls we do not have an async variant of the COM interop stub, and
+                // in any case there would be no benefit of creating one.
+                pMD = pMD->ReturnsTaskOrValueTask() && !pMD->GetClass()->IsComImport() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
             }
             break;
 
@@ -1310,7 +1312,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isG
         typeIndex = MethodTableAuxiliaryData::GetThreadStaticsInfo(pMT->GetAuxiliaryData())->NonGCTlsIndex.GetIndexOffset();
     }
 
-    assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
+    _ASSERTE(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
 
     EE_TO_JIT_TRANSITION();
     return typeIndex;
@@ -3324,9 +3326,21 @@ NoSpecialCase:
         _ASSERTE(false);
     }
 
+    FinishComputeRuntimeLookup(sigBuilder, pCallerMD, pResultLookup);
+}
+
+void CEEInfo::FinishComputeRuntimeLookup(
+    SigBuilder& sigBuilder,
+    MethodDesc* pCallerMD,
+    CORINFO_LOOKUP* pResultLookup)
+{
+    CORINFO_RUNTIME_LOOKUP* pResult = &pResultLookup->runtimeLookup;
     DictionaryEntrySignatureSource signatureSource = FromJIT;
 
     WORD slot;
+
+    MethodDesc* pContextMD = pCallerMD;
+    MethodTable* pContextMT = pCallerMD->GetMethodTable();
 
     // It's a method dictionary lookup
     if (pResultLookup->lookupKind.runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
@@ -5591,17 +5605,6 @@ void CEEInfo::getCallInfo(
         }
     }
 
-    pResult->wrapperDelegateInvoke = FALSE;
-
-    if (m_pMethodBeingCompiled->IsDynamicMethod())
-    {
-        auto pMD = m_pMethodBeingCompiled->AsDynamicMethodDesc();
-        if (pMD->IsILStub() && pMD->IsWrapperDelegateStub())
-        {
-            pResult->wrapperDelegateInvoke = TRUE;
-        }
-    }
-
     EE_TO_JIT_TRANSITION();
 }
 
@@ -7527,10 +7530,14 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
     /* Grab information from the IL header */
     SigPointer localSig{};
 
+    // For async versions we get the IL of the ordinary variant and pass the
+    // JIT a flag indicating that.
+    MethodDesc* ilFtn = ftn->SupportsAsyncVersionCodegen() ? ftn->GetOrdinaryVariant() : ftn;
+
     MethodInfoWorkerContext cxt{ ftn, header };
 
     TransientMethodDetails* detailsMaybe = NULL;
-    if (FindTransientMethodDetails(ftn, &detailsMaybe))
+    if (FindTransientMethodDetails(ilFtn, &detailsMaybe))
     {
         cxt.UpdateWith(*detailsMaybe);
         scopeHnd = cxt.CreateScopeHandle();
@@ -7589,9 +7596,9 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
             localSig = SigPointer{ cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig };
         }
     }
-    else if (ftn->IsDynamicMethod())
+    else if (ilFtn->IsDynamicMethod())
     {
-        DynamicResolver* pResolver = ftn->AsDynamicMethodDesc()->GetResolver();
+        DynamicResolver* pResolver = ilFtn->AsDynamicMethodDesc()->GetResolver();
         scopeHnd = MakeDynamicScope(pResolver);
 
         unsigned int EHCount;
@@ -7602,7 +7609,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
         methInfo->EHcount = (unsigned short)EHCount;
         localSig = pResolver->GetLocalSig();
     }
-    else if (ftn->TryGenerateTransientILImplementation(&cxt.TransientResolver, &cxt.Header))
+    else if (ilFtn->TryGenerateTransientILImplementation(&cxt.TransientResolver, &cxt.Header))
     {
         scopeHnd = cxt.CreateScopeHandle();
 
@@ -7612,7 +7619,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
     }
     else
     {
-        _ASSERTE(!ftn->IsIntrinsic() && "Non-implementable intrinsic methods should have a throwing body");
+        _ASSERTE(!ilFtn->IsIntrinsic() && "Non-implementable intrinsic methods should have a throwing body");
         ThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
@@ -7622,7 +7629,9 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
                     ((ftn->AcquiresInstMethodTableFromThis() ? CORINFO_GENERICS_CTXT_FROM_THIS : 0) |
                         (ftn->RequiresInstMethodTableArg() ? CORINFO_GENERICS_CTXT_FROM_METHODTABLE : 0) |
                         (ftn->RequiresInstMethodDescArg() ? CORINFO_GENERICS_CTXT_FROM_METHODDESC : 0) |
-                        (ftn->RequiresAsyncContextSaveAndRestore() ? CORINFO_ASYNC_SAVE_CONTEXTS : 0)));
+                        (ftn->RequiresAsyncContextSaveAndRestore() ? CORINFO_ASYNC_SAVE_CONTEXTS : 0) |
+                        (ilFtn != ftn ? CORINFO_ASYNC_VERSION : 0)));
+
 
     if (methInfo->options & CORINFO_GENERICS_CTXT_MASK)
     {
@@ -7693,7 +7702,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
         CONV_TO_JITSIG_FLAGS_LOCALSIG,
         &methInfo->locals);
 
-    COR_ILMETHOD_DECODER* ilHeader = cxt.Header;
+    COR_ILMETHOD_DECODER* pILHeader = cxt.Header;
 
     // If we have transient method details we need to handle
     // the lifetime of the details.
@@ -7709,7 +7718,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
         cxt.UpdateWith({});
     }
 
-    return ilHeader;
+    return pILHeader;
 } // getMethodInfoWorker
 
 //---------------------------------------------------------------------------------------
@@ -8421,7 +8430,6 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
 }
 
 static void getEHinfoHelper(
-    CORINFO_METHOD_HANDLE   ftnHnd,
     unsigned                EHnumber,
     CORINFO_EH_CLAUSE*      clause,
     COR_ILMETHOD_DECODER*   pILHeader)
@@ -8470,7 +8478,7 @@ void CEEInfo::getEHinfo(
     else
     {
         COR_ILMETHOD_DECODER header(ftn->GetILHeader(), ftn->GetMDImport(), NULL);
-        getEHinfoHelper(ftnHnd, EHnumber, clause, &header);
+        getEHinfoHelper(EHnumber, clause, &header);
     }
 
     EE_TO_JIT_TRANSITION();
@@ -8762,15 +8770,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
             return false;
         }
-
-        // If we devirtualized into a default interface method on a generic type, we should actually return an
-        // instantiating stub but this is not happening.
-        // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
-        if (pDevirtMD->GetMethodTable()->IsInterface() && pDevirtMD->HasClassInstantiation())
-        {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_DIM;
-            return false;
-        }
     }
     else
     {
@@ -8833,51 +8832,112 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     bool isArray = false;
     bool isGenericVirtual = false;
 
-    if (pApproxMT->IsInterface())
-    {
-        // As noted above, we can't yet handle generic interfaces
-        // with default methods.
-        _ASSERTE(!pDevirtMD->HasClassInstantiation());
-
-    }
-    else if (pBaseMT->IsInterface() && pObjMT->IsArray())
+    if (pBaseMT->IsInterface() && pObjMT->IsArray())
     {
         isArray = true;
     }
-    else
+    else if (!pApproxMT->IsInterface())
     {
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
 
+    MethodDesc* pInstantiatedMD = pDevirtMD;
+
     // This is generic virtual method devirtualization.
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
-        MethodDesc* pPrimaryMD = pDevirtMD;
+        MethodDesc* pPrimaryMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
+
         pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
-        if (pDevirtMD->IsSharedByGenericMethodInstantiations())
-        {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-            return false;
-        }
+
+        pInstantiatedMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
 
         isGenericVirtual = true;
     }
 
-    if (isArray || isGenericVirtual)
+    MethodDesc* pInstArgMD = pDevirtMD;
+    bool isUnboxingStubOfInstantiatingStub = false;
+
+    if (pDevirtMD->IsUnboxingStub())
     {
-        if (pDevirtMD->IsInstantiatingStub())
+        // RequiresInstMethodDescArg and RequiresInstMethodTableArg are only valid for canonical instantiatins,
+        // use pDevirtMD instead of pInstantiatedMD for pInstArgMD.
+        //
+        pInstArgMD = pDevirtMD->GetWrappedMethodDesc();
+        if (pInstArgMD->IsInstantiatingStub())
         {
-            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pDevirtMD;
-            info->instParamLookup.constLookup.accessType = IAT_VALUE;
+            isUnboxingStubOfInstantiatingStub = true;
+        }
+    }
+    else if (pDevirtMD->IsInstantiatingStub())
+    {
+        pInstArgMD = pDevirtMD->GetWrappedMethodDesc();
+    }
+
+    if (pInstArgMD->RequiresInstMethodDescArg())
+    {
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()))
+        {
+            // If we end up with a shared MethodTable that is not exact,
+            // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
         }
 
-        info->tokenLookupContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
+        {
+            // TODO: Support for runtime lookup
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
+        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstantiatedMD;
+        info->instParamLookup.constLookup.accessType = IAT_VALUE;
     }
-    else
+    else if (pInstArgMD->RequiresInstMethodTableArg())
     {
-        info->tokenLookupContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
+        if (!pDevirtMD->IsUnboxingStub() && TypeHandle::IsCanonicalSubtypeInstantiation(pExactMT->GetInstantiation()))
+        {
+            // If we end up with a shared MethodTable that is not exact,
+            // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
+        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pExactMT;
+        info->instParamLookup.constLookup.accessType = IAT_VALUE;
+    }
+    else if (isUnboxingStubOfInstantiatingStub)
+    {
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()) ||
+            TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
+        {
+            // This is an unboxing stub that points to an instantiating stub that requires a runtime lookup.
+            // Bail out.
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
+        // pInstArgMD is the wrapped instantiating stub in the unboxing stub.
+        //
+        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstArgMD;
+        info->instParamLookup.constLookup.accessType = IAT_VALUE;
+    }
+
+    pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
+    info->tokenLookupContext = (isArray || isGenericVirtual)
+        ? MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pInstantiatedMD)
+        : MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
+
+    // If we devirtualized into an unboxing stub, also hand back the unboxed entry
+    // so the jit can perform the unboxing transformation.
+    //
+    if (pDevirtMD->IsUnboxingStub())
+    {
+        MethodDesc* pUnboxedMD = pDevirtMD->GetMethodTable()->GetUnboxedEntryPointMD(pDevirtMD);
+        info->resolvedTokenDevirtualizedUnboxedMethod.hMethod = (CORINFO_METHOD_HANDLE) pUnboxedMD;
     }
 
     // Success! Pass back the results.
@@ -8907,81 +8967,6 @@ bool CEEInfo::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
     return result;
 }
 
-/*********************************************************************/
-CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
-    CORINFO_METHOD_HANDLE ftn,
-    bool* requiresInstMethodTableArg)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_METHOD_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    MethodDesc* pMD = GetMethod(ftn);
-    bool requiresInstMTArg = false;
-
-    if (pMD->IsUnboxingStub())
-    {
-        MethodTable* pMT = pMD->GetMethodTable();
-        MethodDesc* pUnboxedMD = pMT->GetUnboxedEntryPointMD(pMD);
-
-        result = (CORINFO_METHOD_HANDLE)pUnboxedMD;
-        requiresInstMTArg = !!pUnboxedMD->RequiresInstMethodTableArg();
-    }
-
-    *requiresInstMethodTableArg = requiresInstMTArg;
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-/*********************************************************************/
-CORINFO_METHOD_HANDLE CEEInfo::getInstantiatedEntry(
-    CORINFO_METHOD_HANDLE ftn,
-    CORINFO_METHOD_HANDLE* methodArg,
-    CORINFO_CLASS_HANDLE* classArg)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_METHOD_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    *methodArg = NULL;
-    *classArg = NULL;
-
-    MethodDesc* pMD = GetMethod(ftn);
-    bool requiresInstMTArg = false;
-
-    if (pMD->IsInstantiatingStub())
-    {
-        result = (CORINFO_METHOD_HANDLE) pMD->GetWrappedMethodDesc();
-
-        if (pMD->HasMethodInstantiation())
-        {
-            *methodArg = ftn;
-        }
-        else
-        {
-            *classArg = (CORINFO_CLASS_HANDLE)pMD->GetMethodTable();
-        }
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
 CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
     CORINFO_METHOD_HANDLE ftn,
     bool* variantIsThunk)
@@ -8999,7 +8984,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
     MethodDesc* pMD = GetMethod(ftn);
     MethodDesc* pAsyncOtherVariant = NULL;
 
-    if (pMD->ReturnsTaskOrValueTask())
+    if (pMD->ReturnsTaskOrValueTask() && !pMD->GetClass()->IsComImport())
     {
          pAsyncOtherVariant = pMD->GetAsyncVariant();
     }
@@ -10334,9 +10319,6 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     pEEInfoOut->offsetOfDelegateInstance    = OFFSETOF__DelegateObject__target;
     pEEInfoOut->offsetOfDelegateFirstTarget = OFFSETOF__DelegateObject__methodPtr;
 
-    // Wrapper delegate offsets
-    pEEInfoOut->offsetOfWrapperDelegateIndirectCell = OFFSETOF__DelegateObject__methodPtrAux;
-
     pEEInfoOut->sizeOfReversePInvokeFrame = TARGET_POINTER_SIZE * READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits;
 
     // The following assert doesn't work in cross-bitness scenarios since the pointer size differs.
@@ -10376,6 +10358,139 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->finishSuspensionWithContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINISH_SUSPENSION_WITH_CONTINUATION_CONTEXT));
 
     EE_TO_JIT_TRANSITION();
+}
+
+CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    MethodDesc* pMD = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    instArg->lookupKind.needsRuntimeLookup = false;
+    instArg->constLookup.accessType = IAT_VALUE;
+    instArg->constLookup.addr = NULL;
+
+    MethodDesc* pCallerMD = GetMethod(callerHandle);
+
+    _ASSERTE(pCallerMD->IsAsyncVariantMethod() && pCallerMD->IsAsyncThunkMethod());
+
+    MetaSig sig(pCallerMD);
+    TypeHandle retType = sig.GetRetTypeHandleThrowing();
+    MethodDesc* pTypicalAwaitMD;
+
+    if (pCallerMD->IsAsyncVariantForValueTaskReturningMethod())
+    {
+        if (sig.IsReturnTypeVoid())
+        {
+            pTypicalAwaitMD = pMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUETASK_WITH_RESULT);
+        }
+        else
+        {
+            pTypicalAwaitMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_VALUETASK_OF_T_WITH_RESULT);
+            pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&retType, 1), TRUE);
+        }
+    }
+    else
+    {
+        if (sig.IsReturnTypeVoid())
+        {
+            pTypicalAwaitMD = pMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK_WITH_RESULT);
+        }
+        else
+        {
+            pTypicalAwaitMD = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__TRANSPARENT_AWAIT_TASK_OF_T_WITH_RESULT);
+            pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&retType, 1), TRUE);
+        }
+    }
+
+    if (pMD->RequiresInstArg())
+    {
+        if (retType.IsCanonicalSubtype())
+        {
+            ComputeRuntimeLookupForAwaitCall(pCallerMD, pTypicalAwaitMD, instArg);
+        }
+        else
+        {
+            MethodDesc* pContext = MethodDesc::FindOrCreateAssociatedMethodDesc(pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&retType, 1), FALSE);
+            instArg->lookupKind.needsRuntimeLookup = false;
+            instArg->constLookup.accessType = IAT_VALUE;
+            instArg->constLookup.addr = pContext;
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return CORINFO_METHOD_HANDLE(pMD);
+}
+
+// Compute the runtime lookup for the instantiation argument for an
+// AsyncHelpers.TransparentAwait call, to be used for wrapping a return value
+// from pCallerMD for its runtime async version.
+// For example, if pCallerMD is ValueTask<List<T>> Foo<T>(), then we call this
+// for the runtime async version of Foo and it gives a runtime lookup that
+// computes the method desc for AsyncHelpers.TransparentAwait<List<T>>.
+void CEEInfo::ComputeRuntimeLookupForAwaitCall(MethodDesc* pCallerMD, MethodDesc* pTypicalAwaitMD, CORINFO_LOOKUP* lookup)
+{
+    lookup->lookupKind.needsRuntimeLookup = true;
+
+    CORINFO_RUNTIME_LOOKUP* rlookup = &lookup->runtimeLookup;
+
+    rlookup->signature = NULL;
+    rlookup->indirectFirstOffset = 0;
+    rlookup->indirectSecondOffset = 0;
+
+    rlookup->sizeOffset = CORINFO_NO_SIZE_CHECK;
+    rlookup->indirections = CORINFO_USEHELPER;
+
+    if (pCallerMD->RequiresInstMethodDescArg())
+    {
+        lookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
+        rlookup->helper = CORINFO_HELP_RUNTIMEHANDLE_METHOD;
+    }
+    else if (pCallerMD->RequiresInstMethodTableArg())
+    {
+        lookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_CLASSPARAM;
+        rlookup->helper = CORINFO_HELP_RUNTIMEHANDLE_CLASS;
+    }
+    else
+    {
+        lookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
+        rlookup->helper = CORINFO_HELP_RUNTIMEHANDLE_CLASS;
+    }
+
+    SigBuilder sigBuilder;
+    sigBuilder.AppendData(MethodDescSlot);
+
+    if (lookup->lookupKind.runtimeLookupKind != CORINFO_LOOKUP_METHODPARAM)
+    {
+        sigBuilder.AppendData(pCallerMD->GetMethodTable()->GetNumDicts() - 1);
+    }
+
+    // Containing type
+    sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
+    sigBuilder.AppendPointer(pTypicalAwaitMD->GetMethodTable());
+
+    // Method flags
+    sigBuilder.AppendData(ENCODE_METHOD_SIG_MethodInstantiation | ENCODE_METHOD_SIG_InstantiatingStub);
+
+    // Method
+    sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
+    sigBuilder.AppendPointer(pTypicalAwaitMD->GetMethodTable());
+    sigBuilder.AppendData(RidFromToken(pTypicalAwaitMD->GetMemberDef()));
+
+    // Finally the instantiation.
+    SigPointer resultSig = pCallerMD->GetAsyncThunkResultTypeSig();
+     // 1 argument
+    sigBuilder.AppendData(1);
+    resultSig.ConvertToInternalExactlyOne(pCallerMD->GetModule(), NULL, &sigBuilder);
+
+    FinishComputeRuntimeLookup(sigBuilder, pCallerMD, lookup);
 }
 
 static MethodTable* getContinuationType(
@@ -10949,6 +11064,9 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
     {
         helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
         _ASSERTE(PortableEntryPoint::GetMethodDesc((PCODE)targetAddr) == helperMD);
+#ifdef FEATURE_READYTORUN
+        _ASSERTE(PortableEntryPoint::GetActualCode((PCODE)targetAddr) != NULL);
+#endif
     }
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -12182,6 +12300,16 @@ void CEEJitInfo::recordRelocation(void *       location,
         break;
     }
 
+    case CorInfoReloc::ARM64_PAGEOFFSET_12L:
+    {
+        _ASSERTE(addlDelta == 0);
+
+        // Write the 12 bits page offset into the ldr instruction.
+        INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
+        PutArm64Rel12Ldr((UINT32 *)locationRW, imm12);
+        break;
+    }
+
 #endif // TARGET_ARM64
 
 #ifdef TARGET_LOONGARCH64
@@ -13076,19 +13204,27 @@ void CEECodeGenInfo::getEHinfo(
 
     MethodDesc* pMD = GetMethod(ftn);
 
+    bool isMethodBeingCompiled = pMD == m_pMethodBeingCompiled;
+
+    if (pMD->SupportsAsyncVersionCodegen())
+    {
+        // Get the EH info from the ordinary variant.
+        pMD = pMD->GetOrdinaryVariant();
+    }
+
     COR_ILMETHOD* pILHeader;
-    if (IsDynamicMethodHandle(ftn))
+    if (pMD->IsDynamicMethod())
     {
         pMD->AsDynamicMethodDesc()->GetResolver()->GetEHInfo(EHnumber, clause);
     }
-    else if (pMD == m_pMethodBeingCompiled)
+    else if (isMethodBeingCompiled)
     {
-        getEHinfoHelper(ftn, EHnumber, clause, m_ILHeader);
+        getEHinfoHelper(EHnumber, clause, m_ILHeader);
     }
     else if (pMD->MayHaveILHeader() && (pILHeader = pMD->GetILHeader()) != NULL)
     {
         COR_ILMETHOD_DECODER header(pILHeader, pMD->GetMDImport(), NULL);
-        getEHinfoHelper(ftn, EHnumber, clause, &header);
+        getEHinfoHelper(EHnumber, clause, &header);
     }
     else if (pMD->IsIL())
     {
@@ -13098,7 +13234,7 @@ void CEECodeGenInfo::getEHinfo(
             _ASSERTE(!"Expected to be able to find transient method details in getEHinfo");
         }
 
-        getEHinfoHelper(ftn, EHnumber, clause, details->Header);
+        getEHinfoHelper(EHnumber, clause, details->Header);
     }
     else
     {
@@ -14559,8 +14695,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 }
             }
 
-            // Strip off method instantiation for comparison if the method is generic virtual.
-            if (pDeclMethod->HasMethodInstantiation())
+            // Strip off method instantiation for comparison if the method is generic virtual or generic DIM.
+            if (pDeclMethod->HasMethodInstantiation() || pDeclMethod->IsInterface())
             {
                 if (pImplMethodRuntime != NULL)
                 {

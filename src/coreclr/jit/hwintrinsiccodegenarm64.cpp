@@ -1362,18 +1362,52 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
 
-            case NI_AdvSimd_AbsoluteCompareLessThan:
-            case NI_AdvSimd_AbsoluteCompareLessThanOrEqual:
             case NI_AdvSimd_CompareLessThan:
             case NI_AdvSimd_CompareLessThanOrEqual:
-            case NI_AdvSimd_Arm64_AbsoluteCompareLessThan:
-            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanScalar:
-            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqual:
-            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqualScalar:
             case NI_AdvSimd_Arm64_CompareLessThan:
             case NI_AdvSimd_Arm64_CompareLessThanScalar:
             case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
             case NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar:
+                // If the second operand is a contained zero, we can emit the
+                // 'less than [or equal to] zero' form directly instead of
+                // materializing a zero vector and swapping the operands.
+                if (intrin.op2->isContained())
+                {
+                    assert(intrin.op2->IsVectorZero());
+
+                    instruction zeroIns = INS_invalid;
+                    switch (ins)
+                    {
+                        case INS_cmgt:
+                            zeroIns = INS_cmlt;
+                            break;
+                        case INS_cmge:
+                            zeroIns = INS_cmle;
+                            break;
+                        case INS_fcmgt:
+                            zeroIns = INS_fcmlt;
+                            break;
+                        case INS_fcmge:
+                            zeroIns = INS_fcmle;
+                            break;
+                        default:
+                            unreached();
+                    }
+
+                    GetEmitter()->emitIns_R_R(zeroIns, emitSize, targetReg, op1Reg, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
+                }
+                break;
+
+            case NI_AdvSimd_AbsoluteCompareLessThan:
+            case NI_AdvSimd_AbsoluteCompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThan:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanScalar:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqualScalar:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
                 break;
 
@@ -1500,8 +1534,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 assert(isRMW);
                 GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
 
-                const int resultIndex = (int)intrin.op2->AsIntCon()->gtIconVal;
-                const int valueIndex  = (int)intrin.op4->AsIntCon()->gtIconVal;
+                const int resultIndex = (int)intrin.op2->AsIntCon()->IconValue();
+                const int valueIndex  = (int)intrin.op4->AsIntCon()->IconValue();
                 GetEmitter()->emitIns_R_R_I_I(ins, emitSize, targetReg, op3Reg, resultIndex, valueIndex, opt);
             }
             break;
@@ -1712,7 +1746,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     if (intrin.op1->isContainedIntOrIImmed())
                     {
                         // movi/movni reg, #imm8
-                        const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                        const ssize_t dataValue = intrin.op1->AsIntCon()->IconValue();
                         GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
                     }
                     else
@@ -1771,7 +1805,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (intrin.op1->isContainedIntOrIImmed())
                 {
-                    const ssize_t dataValue = intrin.op1->AsIntCon()->gtIconVal;
+                    const ssize_t dataValue = intrin.op1->AsIntCon()->IconValue();
                     GetEmitter()->emitIns_R_I(INS_movi, emitSize, targetReg, dataValue, opt);
                 }
                 else if (GetEmitter()->IsMovInstruction(ins))
@@ -2211,7 +2245,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve2_CreateWhileReadAfterWriteMaskUInt16:
             case NI_Sve2_CreateWhileReadAfterWriteMaskUInt32:
             case NI_Sve2_CreateWhileReadAfterWriteMaskUInt64:
-                // WHILERW operands are always pointers (64-bit), so emitSize is always EA_8BYTE.
+            case NI_Sve2_CreateWhileWriteAfterReadMaskByte:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskDouble:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskInt16:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskInt32:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskInt64:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskSByte:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskSingle:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskUInt16:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskUInt32:
+            case NI_Sve2_CreateWhileWriteAfterReadMaskUInt64:
+                // WHILERW/WHILEWR operands are always pointers (64-bit), so emitSize is always EA_8BYTE.
                 // No signed/unsigned instruction variant exists.
                 GetEmitter()->emitIns_R_R_R(ins, EA_8BYTE, targetReg, op1Reg, op2Reg, opt);
                 break;
@@ -2672,8 +2716,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // Both immediates are constant, emit the intruction.
 
                     assert(intrin.op2->isContainedIntOrIImmed() && intrin.op3->isContainedIntOrIImmed());
-                    int           scale   = (int)intrin.op2->AsIntCon()->gtIconVal;
-                    insSvePattern pattern = (insSvePattern)intrin.op3->AsIntCon()->gtIconVal;
+                    int           scale   = (int)intrin.op2->AsIntCon()->IconValue();
+                    insSvePattern pattern = (insSvePattern)intrin.op3->AsIntCon()->IconValue();
                     GetEmitter()->emitIns_R_R_PATTERN_I(ins, emitSize, targetReg, op1Reg, pattern, scale, opt);
                 }
                 else
@@ -2944,8 +2988,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(intrin.op4->isContainedIntOrIImmed() && intrin.op5->isContainedIntOrIImmed());
                     GetEmitter()->emitInsSve_R_R_R_R_I_I(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg,
-                                                         intrin.op4->AsIntCon()->gtIconVal,
-                                                         intrin.op5->AsIntCon()->gtIconVal, opt);
+                                                         intrin.op4->AsIntCon()->IconValue(),
+                                                         intrin.op5->AsIntCon()->IconValue(), opt);
                 }
                 else
                 {
@@ -3048,8 +3092,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     assert(intrin.op4->isContainedIntOrIImmed() && intrin.op5->isContainedIntOrIImmed());
                     GetEmitter()->emitInsSve_R_R_R_R_I_I(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg,
-                                                         intrin.op4->AsIntCon()->gtIconVal,
-                                                         intrin.op5->AsIntCon()->gtIconVal, opt);
+                                                         intrin.op4->AsIntCon()->IconValue(),
+                                                         intrin.op5->AsIntCon()->IconValue(), opt);
                 }
                 else
                 {

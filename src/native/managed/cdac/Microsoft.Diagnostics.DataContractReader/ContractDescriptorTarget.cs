@@ -143,9 +143,9 @@ public sealed unsafe class ContractDescriptorTarget : Target
         BuildDescriptors(forceBuild: true);
     }
 
-    public override void Flush()
+    public override void Flush(FlushScope scope)
     {
-        base.Flush();
+        base.Flush(scope);
 
         BuildDescriptors();
     }
@@ -713,6 +713,14 @@ public sealed unsafe class ContractDescriptorTarget : Target
         return new TargetNUInt(value);
     }
 
+    public override TargetNInt ReadNInt(ulong address)
+    {
+        if (!TryReadNInt(address, _config, _dataTargetDelegates, out long value))
+            throw new VirtualReadException($"Failed to read nint at 0x{address:x8}.");
+
+        return new TargetNInt(value);
+    }
+
     private static bool TryReadPointer(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out TargetPointer pointer)
     {
         pointer = TargetPointer.Null;
@@ -734,6 +742,25 @@ public sealed unsafe class ContractDescriptorTarget : Target
         }
         else if (config.PointerSize == sizeof(ulong)
             && TryRead(address, config.IsLittleEndian, dataTargetDelegates, out ulong value64))
+        {
+            value = value64;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryReadNInt(ulong address, Configuration config, DataTargetDelegates dataTargetDelegates, out long value)
+    {
+        value = 0;
+        if (config.PointerSize == sizeof(uint)
+            && TryRead(address, config.IsLittleEndian, dataTargetDelegates, out int value32))
+        {
+            value = value32;
+            return true;
+        }
+        else if (config.PointerSize == sizeof(ulong)
+            && TryRead(address, config.IsLittleEndian, dataTargetDelegates, out long value64))
         {
             value = value64;
             return true;
