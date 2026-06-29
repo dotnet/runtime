@@ -20,7 +20,6 @@ import argparse
 import asyncio
 import csv
 import datetime
-import heapq
 import html
 import json
 import locale
@@ -2007,18 +2006,10 @@ def aggregate_diff_metrics(details_file):
     diffs_fields = ["Context", "Method full name", "Context size", "Base ActualCodeBytes", "Diff ActualCodeBytes", "Base PerfScore", "Diff PerfScore"]
     diffs = []
 
-    # Per-context throughput diffs. Use bounded per-bucket heaps so very large
-    # MCH files don't blow up memory: four buckets (FullOpts|MinOpts) x
-    # (regression|improvement), each capped at TP_TOP_K. Each heap is a min-heap
-    # of (key, idx, row) where `key` is `pct` for regressions (keep largest)
-    # and `-pct` for improvements (keep most negative).
+    # Per-context throughput diffs (rows where PIN measured base != diff
+    # instruction count). Used by tpdiff to surface specific method examples.
     tp_diffs_fields = ["Context", "Method full name", "MinOpts", "Base instructions", "Diff instructions"]
-    TP_TOP_K = 200
-    tp_idx = 0
-    tp_heaps = {
-        ("FullOpts", "reg"): [], ("FullOpts", "imp"): [],
-        ("MinOpts",  "reg"): [], ("MinOpts",  "imp"): [],
-    }
+    tp_diffs = []
 
     for row in read_csv(details_file):
         base_result = row["Base result"]
@@ -2059,17 +2050,7 @@ def aggregate_diff_metrics(details_file):
             diff_dict["Diff executed instructions"] += diff_insts
 
             if base_insts > 0 and base_insts != diff_insts:
-                pct = (diff_insts - base_insts) / base_insts * 100
-                bucket = "MinOpts" if row["MinOpts"] == "True" else "FullOpts"
-                direction = "reg" if pct > 0 else "imp"
-                key = pct if direction == "reg" else -pct
-                tp_idx += 1
-                h = tp_heaps[(bucket, direction)]
-                entry = (key, tp_idx, {f: row[f] for f in tp_diffs_fields})
-                if len(h) < TP_TOP_K:
-                    heapq.heappush(h, entry)
-                elif key > h[0][0]:
-                    heapq.heapreplace(h, entry)
+                tp_diffs.append({f: row[f] for f in tp_diffs_fields})
 
             base_perfscore = float(row["Base PerfScore"])
             diff_perfscore = float(row["Diff PerfScore"])
@@ -2107,8 +2088,6 @@ def aggregate_diff_metrics(details_file):
             d["Relative PerfScore Geomean (Diffs)"] = math.exp(sum_of_logs / d["Contexts with diffs"])
         else:
             d["Relative PerfScore Geomean (Diffs)"] = 1
-
-    tp_diffs = [record for h in tp_heaps.values() for (_, _, record) in h]
 
     return ({"Overall": base_overall, "MinOpts": base_minopts, "FullOpts": base_fullopts},
             {"Overall": diff_overall, "MinOpts": diff_minopts, "FullOpts": diff_fullopts},
