@@ -279,6 +279,16 @@ static bool TryGetSpForPacSigning(const PacFrameInfo& pacFrameInfo,
         (pacFrameInfo.cfaOffset - pacFrameInfo.lrOffset - pacFrameInfo.pacCfaOffset);
     return true;
 }
+
+static bool IsRetInstruction(PTR_VOID pvAddress)
+{
+    // ret
+    // 1101 0110 0101 1111 0000 00xx xxx0 0000
+    constexpr uint32_t RetBits = 0xD65F0000;
+    constexpr uint32_t RetMask = 0xFFFFFC1F;
+    uint32_t currentInstr = *(uint32_t*)pvAddress;
+    return (currentInstr & RetMask) == RetBits;
+}
 #endif // TARGET_ARM64
 
 // Virtually unwind stack to the caller of the context specified by the REGDISPLAY
@@ -1432,10 +1442,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
         // At RET, FP/LR/SP have already been restored to the caller state so
         // PAC cannot safely use the current frame's signing metadata there.
-        constexpr uint32_t RetBits = 0xD65F0000;
-        constexpr uint32_t RetMask = 0xFFFFFC1F;
-        uint32_t currentInstr = *(uint32_t*)pRegisterSet->IP;
-        if ((currentInstr & RetMask) == RetBits)
+        if (IsRetInstruction((PTR_VOID)pRegisterSet->IP))
         {
             return false;
         }
@@ -1454,15 +1461,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
         // can't figure, possibly a breakpoint instruction
         return false;
     }
-
-#if defined(TARGET_ARM64)
-    if (pacPresent && epilogueInstructions != 0)
-    {
-        // In an epilog, LR/SP may already be partially restored. Avoid hijacking
-        // until the saved LR slot and signing SP can be identified unambiguously.
-        return false;
-    }
-#endif
 
     if (epilogueInstructions > 0)
     {
