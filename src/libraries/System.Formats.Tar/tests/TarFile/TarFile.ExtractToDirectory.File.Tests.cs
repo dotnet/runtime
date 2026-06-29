@@ -506,7 +506,7 @@ namespace System.Formats.Tar.Tests
             string linkPath = Path.Combine(destDir, "link");
             string outsideFilePath = Path.Combine(destDir, "link", "test.txt");
             Assert.False(File.Exists(linkPath) || Directory.Exists(linkPath), "link should not have been created.");
-            Assert.False(File.Exists(outsideFilePath) || Directory.Exists(linkPath), "traversal link should not have been created.");
+            Assert.False(File.Exists(outsideFilePath) || Directory.Exists(outsideFilePath), "traversal link should not have been created.");
         }
 
 

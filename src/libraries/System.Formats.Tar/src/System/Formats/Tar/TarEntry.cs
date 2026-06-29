@@ -415,7 +415,9 @@ namespace System.Formats.Tar
             return (fileDestinationPath, linkTargetPath);
         }
 
-        // Check if the file destination path or the link target path escapes the destination directory, by walking through the relative path components and resolving symlinks at each step.
+        // Check whether a path escapes the destination directory by walking through its relative components and resolving any
+        // symlinks/junctions that already exist on disk (including ones extracted from earlier entries in the same archive).
+        // This prevents later entries from escaping the extraction root through symlink/junction traversal.
         private static bool FilePathEscapesDirectory(string destinationDirectoryPath, string fileDestinationPath)
         {
             // Windows is case insensitive while Linux is case sensitive
@@ -458,16 +460,7 @@ namespace System.Formats.Tar
             foreach (string component in components)
             {
                 current = Path.Combine(current, component);
-
-                if (Path.Exists(current))
-                {
-                    string? resolved = ResolveSymlink(current);
-                    if (resolved is null)
-                    {
-                        return true;
-                    }
-                    current = resolved;
-                }
+                current = ResolveSymlink(current);
 
                 string normalizedCurrent = Path.GetFullPath(current);
                 if (!normalizedCurrent.StartsWith(destPrefix, pathComparison) &&
@@ -480,15 +473,18 @@ namespace System.Formats.Tar
             return false;
         }
 
-        private static string? ResolveSymlink(string path)
+        private static string ResolveSymlink(string path)
         {
-            FileSystemInfo? target = new FileInfo(path).ResolveLinkTarget(returnFinalTarget: true);
+            var info = new FileInfo(path);
 
-            if (target is null)
+            // Check LinkTarget first so dangling symlinks/junctions (whose final target doesn't exist yet)
+            // are still resolved to their raw target, rather than being treated as a non-link.
+            if (info.LinkTarget is null)
             {
                 return Path.GetFullPath(path);
             }
 
+            FileSystemInfo target = info.ResolveLinkTarget(returnFinalTarget: true) ?? info;
             return target.FullName;
         }
 
@@ -512,12 +508,7 @@ namespace System.Formats.Tar
                 current = Path.Combine(current, component);
                 if (Path.Exists(current))
                 {
-                    string? resolved = ResolveSymlink(current);
-                    if (resolved is null)
-                    {
-                        return current;
-                    }
-                    current = resolved;
+                    current = ResolveSymlink(current);
                 }
             }
 
