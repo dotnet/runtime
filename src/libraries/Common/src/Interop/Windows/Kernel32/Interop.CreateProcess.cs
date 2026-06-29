@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateProcessW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool CreateProcess(
@@ -66,6 +67,7 @@ internal static partial class Interop
             internal void* lpAttributeList;
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool InitializeProcThreadAttributeList(
@@ -74,6 +76,7 @@ internal static partial class Interop
             int dwFlags,
             ref nuint lpSize);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool UpdateProcThreadAttribute(
@@ -85,6 +88,7 @@ internal static partial class Interop
             void* lpPreviousValue,
             nuint* lpReturnSize);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         internal static unsafe partial void DeleteProcThreadAttributeList(void* lpAttributeList);
     }
