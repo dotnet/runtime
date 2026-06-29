@@ -3,15 +3,15 @@
 
 // This assembly provides closed-type hierarchies annotated with
 // System.Runtime.CompilerServices.IsClosedTypeAttribute. That attribute is reserved for
-// compiler usage (applying it in C# source is a hard CS8335 error), and the 'closed'
-// keyword that would make the C# compiler emit it is not yet available, so the metadata
-// is hand-authored in IL here. It is consumed by closed-type polymorphism inference tests
-// for both the reflection-based and source-generated serializers.
+// compiler use (applying it in C# source is a hard CS8335 error), and the 'closed' keyword
+// that would make the C# compiler emit it does not exist yet, so the metadata is
+// hand-authored in IL here. It is consumed by the reflection-based closed-type polymorphism
+// inference tests in System.Text.Json.Tests.
 //
-// The IsClosedTypeAttribute custom-attribute blob uses a single named property
-// 'DerivedTypes' of type System.Type[]. Types are intentionally property-less: the tests
-// assert on the emitted '$type' discriminator and the deserialized runtime type, which is
-// sufficient to prove that polymorphism was inferred.
+// The IsClosedTypeAttribute blob carries a single named property 'DerivedTypes' of type
+// System.Type[]. The fixture types are intentionally property-less: the tests assert on the
+// emitted '$type' discriminator and the deserialized runtime type, which is sufficient to
+// prove that polymorphism was inferred.
 
 .assembly extern System.Runtime
 {
