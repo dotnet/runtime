@@ -279,7 +279,7 @@ namespace System.Runtime.CompilerServices
             private SynchronizationContext? _synchronizationContext;
             private ExecutionContext? _executionContext;
 
-            public void Push(Thread thread)
+            public AsyncContexts(Thread thread)
             {
                 _synchronizationContext = thread._synchronizationContext;
                 _executionContext = thread._executionContext;
@@ -766,7 +766,7 @@ namespace System.Runtime.CompilerServices
                 m_stateObject = value;
             }
 
-            internal unsafe bool HandleSuspended(ref AsyncContexts contexts, ref RuntimeAsyncAwaitState state)
+            internal unsafe bool HandleSuspended(ref RuntimeAsyncAwaitState state)
             {
                 Thread? currentThread = state.CurrentThread;
                 Debug.Assert(currentThread != null);
@@ -790,7 +790,6 @@ namespace System.Runtime.CompilerServices
 
                 SetContinuationState(headContinuation);
 
-                bool returnValue = false;
                 try
                 {
                     if (stackState->CriticalNotifier is { } critNotifier)
@@ -867,18 +866,17 @@ namespace System.Runtime.CompilerServices
                         stackState->Notifier!.OnCompleted(GetContinuationAction());
                     }
 
-                    returnValue = true;
+                    return true;
                 }
                 catch (Exception ex)
                 {
                     Task.ThrowAsync(ex, targetContext: null);
                 }
 
-                contexts.Pop(state.CurrentThread!);
-                return returnValue;
+                return false;
             }
 
-            internal void InstrumentedHandleSuspended(AsyncInstrumentation.Flags flags, ref AsyncContexts contexts, ref RuntimeAsyncAwaitState state)
+            internal void InstrumentedHandleSuspended(AsyncInstrumentation.Flags flags, ref RuntimeAsyncAwaitState state)
             {
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
@@ -886,7 +884,7 @@ namespace System.Runtime.CompilerServices
 
                     AsyncDebugger.HandleSuspended(nextContinuation);
 
-                    if (!HandleSuspended(ref contexts, ref state))
+                    if (!HandleSuspended(ref state))
                     {
                         AsyncDebugger.HandleSuspendedFailed(this, nextContinuation);
                     }
@@ -894,7 +892,7 @@ namespace System.Runtime.CompilerServices
                     return;
                 }
 
-                HandleSuspended(ref contexts, ref state);
+                HandleSuspended(ref state);
             }
 
 #pragma warning disable CA1822 // Mark members as static
@@ -926,8 +924,7 @@ namespace System.Runtime.CompilerServices
                 ref RuntimeAsyncAwaitState awaitState = ref t_runtimeAsyncAwaitState;
                 awaitState.Push(&stackState);
 
-                AsyncContexts contexts = default;
-                contexts.Push(awaitState.CurrentThread!);
+                AsyncContexts contexts = new AsyncContexts(awaitState.CurrentThread!);
 
                 ref AsyncDispatcherInfo* refDispatcherInfo = ref AsyncDispatcherInfo.t_current;
 
@@ -958,8 +955,9 @@ namespace System.Runtime.CompilerServices
                         if (newContinuation != null)
                         {
                             newContinuation.Next = nextContinuation;
-                            HandleSuspended(ref contexts, ref awaitState);
+                            HandleSuspended(ref awaitState);
 
+                            contexts.Pop(awaitState.CurrentThread!);
                             awaitState.Pop();
                             refDispatcherInfo = asyncDispatcherInfo.Next;
                             return;
@@ -1041,8 +1039,7 @@ namespace System.Runtime.CompilerServices
                 ref RuntimeAsyncAwaitState awaitState = ref t_runtimeAsyncAwaitState;
                 awaitState.Push(&stackState);
 
-                AsyncContexts contexts = default;
-                contexts.Push(awaitState.CurrentThread!);
+                AsyncContexts contexts = new AsyncContexts(awaitState.CurrentThread!);
 
                 ref AsyncDispatcherInfo* refDispatcherInfo = ref AsyncDispatcherInfo.t_current;
 
@@ -1080,8 +1077,9 @@ namespace System.Runtime.CompilerServices
                             newContinuation.Next = nextContinuation;
 
                             RuntimeAsyncInstrumentationHelpers.AwaitSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation, newContinuation, awaitState.SentinelContinuation!.Next);
-                            InstrumentedHandleSuspended(flags, ref contexts, ref awaitState);
+                            InstrumentedHandleSuspended(flags, ref awaitState);
 
+                            contexts.Pop(awaitState.CurrentThread!);
                             awaitState.Pop();
                             refDispatcherInfo = asyncDispatcherInfo.Next;
                             return;
@@ -1243,7 +1241,7 @@ namespace System.Runtime.CompilerServices
             };
         }
 
-        private static void InstrumentedFinalizeRuntimeAsyncTask<T>(RuntimeAsyncTask<T> task, ref AsyncContexts contexts, ref RuntimeAsyncAwaitState state, AsyncInstrumentation.Flags flags)
+        private static void InstrumentedFinalizeRuntimeAsyncTask<T>(RuntimeAsyncTask<T> task, ref RuntimeAsyncAwaitState state, AsyncInstrumentation.Flags flags)
         {
             if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags))
             {
@@ -1263,7 +1261,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            task.InstrumentedHandleSuspended(flags, ref contexts, ref state);
+            task.InstrumentedHandleSuspended(flags, ref state);
             return;
         }
 
@@ -1271,20 +1269,21 @@ namespace System.Runtime.CompilerServices
         {
             // We restore back to the leaf context to call OnCompleted, so we
             // need to push/pop contexts around that as well.
-            AsyncContexts contexts = default;
-            contexts.Push(state.CurrentThread!);
+            AsyncContexts contexts = new AsyncContexts(state.CurrentThread!);
 
             if (RuntimeAsyncInstrumentationHelpers.InstrumentCheckPoint)
             {
                 AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
                 if (flags != AsyncInstrumentation.Flags.Disabled)
                 {
-                    InstrumentedFinalizeRuntimeAsyncTask(task, ref contexts, ref state, flags);
+                    InstrumentedFinalizeRuntimeAsyncTask(task, ref state, flags);
+                    contexts.Pop(state.CurrentThread!);
                     return;
                 }
             }
 
-            task.HandleSuspended(ref contexts, ref state);
+            task.HandleSuspended(ref state);
+            contexts.Pop(state.CurrentThread!);
         }
 
         // Change return type to RuntimeAsyncTask<T?> -- no benefit since this is used for Task returning thunks only
