@@ -77,11 +77,9 @@ namespace System.IO.Compression
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             EnsureNotDisposed();
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-            return Task.CompletedTask;
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled(cancellationToken) :
+                Task.CompletedTask;
         }
 
         public override long Seek(long offset, SeekOrigin origin)

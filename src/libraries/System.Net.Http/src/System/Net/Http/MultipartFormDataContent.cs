@@ -63,15 +63,10 @@ namespace System.Net.Http
             base.Add(content);
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
-        {
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
-            if (GetType() == typeof(MultipartFormDataContent))
-            {
-                return SerializeToStreamAsyncCore(stream, context, cancellationToken);
-            }
-            return base.SerializeToStreamAsync(stream, context, cancellationToken);
-        }
+            GetType() == typeof(MultipartFormDataContent) ? SerializeToStreamAsyncCore(stream, context, cancellationToken) :
+            base.SerializeToStreamAsync(stream, context, cancellationToken);
     }
 }

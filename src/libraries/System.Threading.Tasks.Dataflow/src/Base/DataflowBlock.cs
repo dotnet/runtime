@@ -1401,15 +1401,10 @@ namespace System.Threading.Tasks.Dataflow
         public static Task<bool> OutputAvailableAsync<TOutput>(
             this ISourceBlock<TOutput> source, CancellationToken cancellationToken)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Common.CreateTaskFromCancellation<bool>(cancellationToken);
-            }
-            return Impl(source, cancellationToken);
+            return
+                source is null ? throw new ArgumentNullException(nameof(source)) :
+                cancellationToken.IsCancellationRequested ? Common.CreateTaskFromCancellation<bool>(cancellationToken) :
+                Impl(source, cancellationToken);
 
             static async Task<bool> Impl(ISourceBlock<TOutput> source, CancellationToken cancellationToken)
             {

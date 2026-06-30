@@ -90,11 +90,9 @@ namespace System.Net.Http
 
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-            return Task.CompletedTask;
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled(cancellationToken) :
+                Task.CompletedTask;
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken token)
@@ -198,11 +196,9 @@ namespace System.Net.Http
                 return Task.CompletedTask;
             }
 
-            if (_chunkedMode == WinHttpChunkMode.Manual)
-            {
-                return InternalWriteChunkedModeAsync(buffer, offset, count);
-            }
-            return InternalWriteDataAsync(buffer, offset, count);
+            return _chunkedMode == WinHttpChunkMode.Manual ?
+                InternalWriteChunkedModeAsync(buffer, offset, count) :
+                InternalWriteDataAsync(buffer, offset, count);
         }
 
         private async Task InternalWriteChunkedModeAsync(byte[] buffer, int offset, int count)

@@ -198,15 +198,10 @@ namespace System.Security.Cryptography
             if (GetType() != typeof(CryptoStream))
                 return base.FlushAsync(cancellationToken);
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-            if (!_canWrite)
-            {
-                return Task.CompletedTask;
-            }
-            return _stream.FlushAsync(cancellationToken);
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled(cancellationToken) :
+                !_canWrite ? Task.CompletedTask :
+                _stream.FlushAsync(cancellationToken);
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -804,11 +799,9 @@ namespace System.Security.Cryptography
 
         public override ValueTask DisposeAsync()
         {
-            if (GetType() != typeof(CryptoStream))
-            {
-                return base.DisposeAsync();
-            }
-            return DisposeAsyncCore();
+            return GetType() != typeof(CryptoStream) ?
+                base.DisposeAsync() :
+                DisposeAsyncCore();
         }
 
         private async ValueTask DisposeAsyncCore()

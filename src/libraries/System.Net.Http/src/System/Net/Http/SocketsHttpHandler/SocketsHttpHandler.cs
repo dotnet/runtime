@@ -619,11 +619,9 @@ namespace System.Net.Http
                 return Task.FromException<HttpResponseMessage>(error);
             }
 
-            if (_handler is { } handler)
-            {
-                return handler.SendAsync(request, cancellationToken);
-            }
-            return CreateHandlerAndSendAsync(request, cancellationToken);
+            return _handler is { } handler
+                ? handler.SendAsync(request, cancellationToken)
+                : CreateHandlerAndSendAsync(request, cancellationToken);
 
             // SetupHandlerChain may block for a few seconds in some environments.
             // E.g. during the first access of HttpClient.DefaultProxy - https://github.com/dotnet/runtime/issues/115301.

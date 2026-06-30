@@ -1660,11 +1660,9 @@ namespace System.Net.Http
         {
             // If the start offset is 0, it means we haven't consumed any data since the last FillAsync.
             // If so, read until we either find the next new line or we hit the MaxResponseHeadersLength limit.
-            if (_readBuffer.ActiveStartOffset == 0)
-            {
-                return ReadUntilEndOfHeaderAsync(async);
-            }
-            return FillAsync(async);
+            return _readBuffer.ActiveStartOffset == 0
+                ? ReadUntilEndOfHeaderAsync(async)
+                : FillAsync(async);
 
             // This method guarantees that the next call to ParseHeaders will consume at least one header.
             // This is the slow path, but guarantees O(n) worst-case parsing complexity.
@@ -1788,11 +1786,9 @@ namespace System.Net.Http
             // Do an unbuffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == default, "Read ahead task should have been consumed as part of the headers.");
 
-            if (NetEventSource.Log.IsEnabled())
-            {
-                return ReadAndLogBytesReadAsync(destination);
-            }
-            return _stream.ReadAsync(destination);
+            return NetEventSource.Log.IsEnabled()
+                ? ReadAndLogBytesReadAsync(destination)
+                : _stream.ReadAsync(destination);
 
             async ValueTask<int> ReadAndLogBytesReadAsync(Memory<byte> destination)
             {
@@ -1834,11 +1830,9 @@ namespace System.Net.Http
             // buffer, so just do an unbuffered read.
             // Also avoid avoid using the internal buffer if the user requested a zero-byte read to allow
             // underlying streams to efficiently handle such a read (e.g. SslStream defering buffer allocation).
-            if (destination.Length >= _readBuffer.Capacity || destination.Length == 0)
-            {
-                return ReadAsync(destination);
-            }
-            return ReadBufferedAsyncCore(destination);
+            return destination.Length >= _readBuffer.Capacity || destination.Length == 0 ?
+                ReadAsync(destination) :
+                ReadBufferedAsyncCore(destination);
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]

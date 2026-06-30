@@ -701,11 +701,7 @@ namespace System.Xml
 
         private Task FlushElementAsync()
         {
-            if (_writeState == WriteState.Element)
-            {
-                return AutoCompleteAsync(WriteState.Content);
-            }
-            return Task.CompletedTask;
+            return _writeState == WriteState.Element ? AutoCompleteAsync(WriteState.Content) : Task.CompletedTask;
         }
 
         protected void StartComment()
@@ -1741,11 +1737,7 @@ namespace System.Xml
 
         private Task FlushBase64Async()
         {
-            if (_trailByteCount > 0)
-            {
-                return FlushTrailBytesAsync();
-            }
-            return Task.CompletedTask;
+            return _trailByteCount > 0 ? FlushTrailBytesAsync() : Task.CompletedTask;
         }
 
         private void FlushTrailBytes()

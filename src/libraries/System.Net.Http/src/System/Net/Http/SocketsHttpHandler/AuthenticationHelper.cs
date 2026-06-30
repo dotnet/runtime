@@ -205,11 +205,9 @@ namespace System.Net.Http
 
         private static ValueTask<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool async, bool isProxyAuth, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
-            if (isProxyAuth)
-            {
-                return pool.SendWithVersionDetectionAndRetryAsync(request, async, doRequestAuth, cancellationToken);
-            }
-            return pool.SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
+            return isProxyAuth ?
+                pool.SendWithVersionDetectionAndRetryAsync(request, async, doRequestAuth, cancellationToken) :
+                pool.SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
         }
 
         private static async ValueTask<HttpResponseMessage> SendWithAuthAsync(HttpRequestMessage request, Uri authUri, bool async, ICredentials credentials, bool preAuthenticate, bool isProxyAuth, bool doRequestAuth, HttpConnectionPool pool, CancellationToken cancellationToken)

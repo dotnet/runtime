@@ -247,14 +247,7 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Completion"]/*' />
         public Task Completion
         {
-            get
-            {
-                if (_defaultTarget != null)
-                {
-                    return _defaultTarget.Completion;
-                }
-                return _spscTarget!.Completion;
-            }
+            get { return _defaultTarget != null ? _defaultTarget.Completion : _spscTarget!.Completion; }
         }
 
         /// <summary>Posts an item to the <see cref="System.Threading.Tasks.Dataflow.ITargetBlock{T}"/>.</summary>

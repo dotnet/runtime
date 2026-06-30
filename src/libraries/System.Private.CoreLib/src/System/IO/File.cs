@@ -874,11 +874,9 @@ namespace System.IO
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-            return Core(path, bytes, cancellationToken);
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled(cancellationToken)
+                : Core(path, bytes, cancellationToken);
 
             static async Task Core(string path, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken)
             {
@@ -1115,11 +1113,9 @@ namespace System.IO
         {
             Validate(path, encoding);
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<string>(cancellationToken);
-            }
-            return InternalReadAllTextAsync(path, encoding, cancellationToken);
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled<string>(cancellationToken)
+                : InternalReadAllTextAsync(path, encoding, cancellationToken);
         }
 
         private static async Task<string> InternalReadAllTextAsync(string path, Encoding encoding, CancellationToken cancellationToken)
@@ -1218,11 +1214,9 @@ namespace System.IO
 #endif
 
 #pragma warning disable CA2025
-            if (fileLength > 0)
-            {
-                return InternalReadAllBytesAsync(sfh, (int)fileLength, cancellationToken);
-            }
-            return InternalReadAllBytesUnknownLengthAsync(sfh, cancellationToken);
+            return fileLength > 0 ?
+                InternalReadAllBytesAsync(sfh, (int)fileLength, cancellationToken) :
+                InternalReadAllBytesUnknownLengthAsync(sfh, cancellationToken);
 #pragma warning restore
         }
 
@@ -1309,11 +1303,9 @@ namespace System.IO
         {
             ArgumentException.ThrowIfNullOrEmpty(path);
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-            return Core(path, bytes, cancellationToken);
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled(cancellationToken)
+                : Core(path, bytes, cancellationToken);
 
             static async Task Core(string path, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken)
             {
@@ -1329,11 +1321,9 @@ namespace System.IO
         {
             Validate(path, encoding);
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<string[]>(cancellationToken);
-            }
-            return InternalReadAllLinesAsync(path, encoding, cancellationToken);
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled<string[]>(cancellationToken)
+                : InternalReadAllLinesAsync(path, encoding, cancellationToken);
         }
 
         private static async Task<string[]> InternalReadAllLinesAsync(string path, Encoding encoding, CancellationToken cancellationToken)

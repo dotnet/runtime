@@ -217,15 +217,10 @@ namespace System.IO.IsolatedStorage
 
         public override ValueTask DisposeAsync()
         {
-            if (GetType() != typeof(IsolatedStorageFileStream))
-            {
-                return base.DisposeAsync();
-            }
-            if (_fs != null)
-            {
-                return _fs.DisposeAsync();
-            }
-            return default;
+            return
+                GetType() != typeof(IsolatedStorageFileStream) ? base.DisposeAsync() :
+                _fs != null ? _fs.DisposeAsync() :
+                default;
         }
 
         public override void Flush()

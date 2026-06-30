@@ -1429,14 +1429,8 @@ namespace System.IO
 
             public override Task<int> ReadAsync(char[] buffer, int index, int count) => Task.FromResult(0);
 
-            public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return ValueTask.FromCanceled<int>(cancellationToken);
-                }
-                return default;
-            }
+            public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) : default;
 
             public override int ReadBlock(char[] buffer, int index, int count) => 0;
 
@@ -1444,49 +1438,25 @@ namespace System.IO
 
             public override Task<int> ReadBlockAsync(char[] buffer, int index, int count) => Task.FromResult(0);
 
-            public override ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return ValueTask.FromCanceled<int>(cancellationToken);
-                }
-                return default;
-            }
+            public override ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) : default;
 
             public override string? ReadLine() => null;
 
             public override Task<string?> ReadLineAsync() => Task.FromResult<string?>(null);
 
-            public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return ValueTask.FromCanceled<string?>(cancellationToken);
-                }
-                return default;
-            }
+            public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<string?>(cancellationToken) : default;
 
             public override string ReadToEnd() => "";
 
             public override Task<string> ReadToEndAsync() => Task.FromResult("");
 
-            public override Task<string> ReadToEndAsync(CancellationToken cancellationToken)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return Task.FromCanceled<string>(cancellationToken);
-                }
-                return Task.FromResult("");
-            }
+            public override Task<string> ReadToEndAsync(CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? Task.FromCanceled<string>(cancellationToken) : Task.FromResult("");
 
-            internal override ValueTask<int> ReadAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return ValueTask.FromCanceled<int>(cancellationToken);
-                }
-                return default;
-            }
+            internal override ValueTask<int> ReadAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) : default;
 
             internal override int ReadBuffer() => 0;
         }

@@ -32,11 +32,9 @@ namespace System.Threading.Tasks
 
         public ValueTask<T> WaitWithCancellationAsync(bool async, CancellationToken cancellationToken)
         {
-            if (async)
-            {
-                return WaitWithCancellationAsync(cancellationToken);
-            }
-            return new ValueTask<T>(WaitWithCancellation(cancellationToken));
+            return async ?
+                WaitWithCancellationAsync(cancellationToken) :
+                new ValueTask<T>(WaitWithCancellation(cancellationToken));
         }
     }
 }

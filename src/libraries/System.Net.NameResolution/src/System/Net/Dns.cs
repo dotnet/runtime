@@ -666,20 +666,16 @@ namespace System.Net
 
             if (cancellationToken.IsCancellationRequested)
             {
-                if (justAddresses)
-                {
-                    return Task.FromCanceled<IPAddress[]>(cancellationToken);
-                }
-                return Task.FromCanceled<IPHostEntry>(cancellationToken);
+                return justAddresses ? (Task)
+                    Task.FromCanceled<IPAddress[]>(cancellationToken) :
+                    Task.FromCanceled<IPHostEntry>(cancellationToken);
             }
 
             if (!ValidateAddressFamily(ref family, hostName, justAddresses, out object? resultOnFailure))
             {
-                if (justAddresses)
-                {
-                    return Task.FromResult((IPAddress[])resultOnFailure);
-                }
-                return Task.FromResult((IPHostEntry)resultOnFailure);
+                return justAddresses ? (Task)
+                    Task.FromResult((IPAddress[])resultOnFailure) :
+                    Task.FromResult((IPHostEntry)resultOnFailure);
             }
 
             object asyncState;
@@ -695,11 +691,9 @@ namespace System.Net
 
                 if (justReturnParsedIp)
                 {
-                    if (justAddresses)
-                    {
-                        return Task.FromResult(family == AddressFamily.Unspecified || ipAddress.AddressFamily == family ? new[] { ipAddress } : Array.Empty<IPAddress>());
-                    }
-                    return Task.FromResult(CreateHostEntryForAddress(ipAddress));
+                    return justAddresses ? (Task)
+                        Task.FromResult(family == AddressFamily.Unspecified || ipAddress.AddressFamily == family ? new[] { ipAddress } : Array.Empty<IPAddress>()) :
+                        Task.FromResult(CreateHostEntryForAddress(ipAddress));
                 }
 
                 asyncState = family == AddressFamily.Unspecified ? (object)ipAddress : new KeyValuePair<IPAddress, AddressFamily>(ipAddress, family);
@@ -714,11 +708,9 @@ namespace System.Net
                 {
                     NameResolutionActivity activity = NameResolutionTelemetry.Log.BeforeResolution(hostName);
                     NameResolutionTelemetry.Log.AfterResolution(hostName, activity, answer: null, exception: invalidDomainException);
-                    if (justAddresses)
-                    {
-                        return Task.FromException<IPAddress[]>(invalidDomainException!);
-                    }
-                    return Task.FromException<IPHostEntry>(invalidDomainException!);
+                    return justAddresses ? (Task)
+                        Task.FromException<IPAddress[]>(invalidDomainException!) :
+                        Task.FromException<IPHostEntry>(invalidDomainException!);
                 }
 
                 // For localhost subdomains (RFC 6761 Section 6.3), we try the OS resolver first.

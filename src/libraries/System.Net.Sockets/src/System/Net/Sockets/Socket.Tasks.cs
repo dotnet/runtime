@@ -1033,11 +1033,9 @@ namespace System.Net.Sockets
 
                 ReleaseForSyncCompletion();
 
-                if (error == SocketError.Success)
-                {
-                    return new ValueTask<Socket>(acceptSocket);
-                }
-                return ValueTask.FromException<Socket>(CreateException(error));
+                return error == SocketError.Success ?
+                    new ValueTask<Socket>(acceptSocket) :
+                    ValueTask.FromException<Socket>(CreateException(error));
             }
 
             /// <summary>Initiates a receive operation on the associated socket.</summary>
@@ -1055,11 +1053,9 @@ namespace System.Net.Sockets
 
                 ReleaseForSyncCompletion();
 
-                if (error == SocketError.Success)
-                {
-                    return new ValueTask<int>(bytesTransferred);
-                }
-                return ValueTask.FromException<int>(CreateException(error));
+                return error == SocketError.Success ?
+                    new ValueTask<int>(bytesTransferred) :
+                    ValueTask.FromException<int>(CreateException(error));
             }
 
             public ValueTask<SocketReceiveFromResult> ReceiveFromAsync(Socket socket, CancellationToken cancellationToken)
@@ -1076,11 +1072,9 @@ namespace System.Net.Sockets
 
                 ReleaseForSyncCompletion();
 
-                if (error == SocketError.Success)
-                {
-                    return new ValueTask<SocketReceiveFromResult>(new SocketReceiveFromResult() { ReceivedBytes = bytesTransferred, RemoteEndPoint = remoteEndPoint });
-                }
-                return ValueTask.FromException<SocketReceiveFromResult>(CreateException(error));
+                return error == SocketError.Success ?
+                    new ValueTask<SocketReceiveFromResult>(new SocketReceiveFromResult() { ReceivedBytes = bytesTransferred, RemoteEndPoint = remoteEndPoint }) :
+                    ValueTask.FromException<SocketReceiveFromResult>(CreateException(error));
             }
 
             internal ValueTask<int> ReceiveFromSocketAddressAsync(Socket socket, CancellationToken cancellationToken)
@@ -1096,11 +1090,9 @@ namespace System.Net.Sockets
 
                 ReleaseForSyncCompletion();
 
-                if (error == SocketError.Success)
-                {
-                    return new ValueTask<int>(bytesTransferred);
-                }
-                return ValueTask.FromException<int>(CreateException(error));
+                return error == SocketError.Success ?
+                    new ValueTask<int>(bytesTransferred) :
+                    ValueTask.FromException<int>(CreateException(error));
             }
 
             public ValueTask<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket socket, CancellationToken cancellationToken)
@@ -1119,11 +1111,9 @@ namespace System.Net.Sockets
 
                 ReleaseForSyncCompletion();
 
-                if (error == SocketError.Success)
-                {
-                    return new ValueTask<SocketReceiveMessageFromResult>(new SocketReceiveMessageFromResult() { ReceivedBytes = bytesTransferred, RemoteEndPoint = remoteEndPoint, SocketFlags = socketFlags, PacketInformation = packetInformation });
-                }
-                return ValueTask.FromException<SocketReceiveMessageFromResult>(CreateException(error));
+                return error == SocketError.Success ?
+                    new ValueTask<SocketReceiveMessageFromResult>(new SocketReceiveMessageFromResult() { ReceivedBytes = bytesTransferred, RemoteEndPoint = remoteEndPoint, SocketFlags = socketFlags, PacketInformation = packetInformation }) :
+                    ValueTask.FromException<SocketReceiveMessageFromResult>(CreateException(error));
             }
 
             /// <summary>Initiates a send operation on the associated socket.</summary>
@@ -1141,11 +1131,9 @@ namespace System.Net.Sockets
 
                 ReleaseForSyncCompletion();
 
-                if (error == SocketError.Success)
-                {
-                    return new ValueTask<int>(bytesTransferred);
-                }
-                return ValueTask.FromException<int>(CreateException(error));
+                return error == SocketError.Success ?
+                    new ValueTask<int>(bytesTransferred) :
+                    ValueTask.FromException<int>(CreateException(error));
             }
 
             public ValueTask SendAsyncForNetworkStream(Socket socket, CancellationToken cancellationToken)
@@ -1160,11 +1148,9 @@ namespace System.Net.Sockets
 
                 ReleaseForSyncCompletion();
 
-                if (error == SocketError.Success)
-                {
-                    return default;
-                }
-                return ValueTask.FromException(CreateException(error));
+                return error == SocketError.Success ?
+                    default :
+                    ValueTask.FromException(CreateException(error));
             }
 
             public ValueTask SendPacketsAsync(Socket socket, CancellationToken cancellationToken)
@@ -1179,11 +1165,9 @@ namespace System.Net.Sockets
 
                 ReleaseForSyncCompletion();
 
-                if (error == SocketError.Success)
-                {
-                    return default;
-                }
-                return ValueTask.FromException(CreateException(error));
+                return error == SocketError.Success ?
+                    default :
+                    ValueTask.FromException(CreateException(error));
             }
 
             public ValueTask<int> SendToAsync(Socket socket, CancellationToken cancellationToken)
@@ -1199,11 +1183,9 @@ namespace System.Net.Sockets
 
                 ReleaseForSyncCompletion();
 
-                if (error == SocketError.Success)
-                {
-                    return new ValueTask<int>(bytesTransferred);
-                }
-                return ValueTask.FromException<int>(CreateException(error));
+                return error == SocketError.Success ?
+                    new ValueTask<int>(bytesTransferred) :
+                    ValueTask.FromException<int>(CreateException(error));
             }
 
             public ValueTask ConnectAsync(Socket socket, CancellationToken cancellationToken)
@@ -1226,11 +1208,9 @@ namespace System.Net.Sockets
 
                 ReleaseForSyncCompletion();
 
-                if (error == SocketError.Success)
-                {
-                    return default;
-                }
-                return ValueTask.FromException(CreateException(error));
+                return error == SocketError.Success ?
+                    default :
+                    ValueTask.FromException(CreateException(error));
             }
 
             public ValueTask DisconnectAsync(Socket socket, CancellationToken cancellationToken)
@@ -1245,11 +1225,9 @@ namespace System.Net.Sockets
 
                 ReleaseForSyncCompletion();
 
-                if (error == SocketError.Success)
-                {
-                    return ValueTask.CompletedTask;
-                }
-                return ValueTask.FromException(CreateException(error));
+                return error == SocketError.Success ?
+                    ValueTask.CompletedTask :
+                    ValueTask.FromException(CreateException(error));
             }
 
             /// <summary>Gets the status of the operation.</summary>

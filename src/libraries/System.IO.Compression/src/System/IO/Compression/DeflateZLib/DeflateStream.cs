@@ -222,11 +222,9 @@ namespace System.IO.Compression
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
 
-            if (_mode != CompressionMode.Compress)
-            {
-                return Task.CompletedTask;
-            }
-            return Core(cancellationToken);
+            return _mode != CompressionMode.Compress ?
+                Task.CompletedTask :
+                Core(cancellationToken);
 
             async Task Core(CancellationToken cancellationToken)
             {
@@ -759,11 +757,9 @@ namespace System.IO.Compression
 
         public override ValueTask DisposeAsync()
         {
-            if (GetType() == typeof(DeflateStream))
-            {
-                return Core();
-            }
-            return base.DisposeAsync();
+            return GetType() == typeof(DeflateStream) ?
+                Core() :
+                base.DisposeAsync();
 
             async ValueTask Core()
             {
@@ -849,15 +845,10 @@ namespace System.IO.Compression
             EnsureNoActiveAsyncOperation();
             EnsureNotDisposed();
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return ValueTask.FromCanceled(cancellationToken);
-            }
-            if (buffer.IsEmpty)
-            {
-                return default;
-            }
-            return Core(buffer, cancellationToken);
+            return
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled(cancellationToken) :
+                buffer.IsEmpty ? default :
+                Core(buffer, cancellationToken);
 
             async ValueTask Core(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {

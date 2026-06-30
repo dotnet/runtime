@@ -1630,15 +1630,10 @@ namespace System.Net.Http
                 {
                     ValidateCopyToArguments(destination, bufferSize);
                     Http2Stream? http2Stream = _http2Stream;
-                    if (http2Stream is null)
-                    {
-                        return Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream))));
-                    }
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        return Task.FromCanceled<int>(cancellationToken);
-                    }
-                    return http2Stream.CopyToAsync(_responseMessage, destination, bufferSize, cancellationToken);
+                    return
+                        http2Stream is null ? Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)))) :
+                        cancellationToken.IsCancellationRequested ? Task.FromCanceled<int>(cancellationToken) :
+                        http2Stream.CopyToAsync(_responseMessage, destination, bufferSize, cancellationToken);
                 }
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)

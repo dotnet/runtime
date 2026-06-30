@@ -282,11 +282,7 @@ namespace System.Data.Common
             {
                 try
                 {
-                    if (IsDBNull(ordinal))
-                    {
-                        return ADP.TrueTask;
-                    }
-                    return ADP.FalseTask;
+                    return IsDBNull(ordinal) ? ADP.TrueTask : ADP.FalseTask;
                 }
                 catch (Exception e)
                 {
@@ -311,11 +307,7 @@ namespace System.Data.Common
             {
                 try
                 {
-                    if (Read())
-                    {
-                        return ADP.TrueTask;
-                    }
-                    return ADP.FalseTask;
+                    return Read() ? ADP.TrueTask : ADP.FalseTask;
                 }
                 catch (Exception e)
                 {
@@ -336,11 +328,7 @@ namespace System.Data.Common
             {
                 try
                 {
-                    if (NextResult())
-                    {
-                        return ADP.TrueTask;
-                    }
-                    return ADP.FalseTask;
+                    return NextResult() ? ADP.TrueTask : ADP.FalseTask;
                 }
                 catch (Exception e)
                 {

@@ -201,18 +201,10 @@ namespace System.IO.Pipes
             }
         }
 
-        public Task WaitForConnectionAsync(CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-            if (IsAsync)
-            {
-                return WaitForConnectionCoreAsync(cancellationToken).AsTask();
-            }
-            return AsyncOverSyncWithIoCancellation.InvokeAsync(static s => s.WaitForConnection(), this, cancellationToken).AsTask();
-        }
+        public Task WaitForConnectionAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+            IsAsync ? WaitForConnectionCoreAsync(cancellationToken).AsTask() :
+            AsyncOverSyncWithIoCancellation.InvokeAsync(static s => s.WaitForConnection(), this, cancellationToken).AsTask();
 
         public void Disconnect()
         {

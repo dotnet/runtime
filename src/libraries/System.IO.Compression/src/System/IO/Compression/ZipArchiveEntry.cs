@@ -1672,11 +1672,9 @@ namespace System.IO.Compression
                 ThrowIfDisposed();
                 Debug.Assert(CanWrite);
 
-                if (!buffer.IsEmpty)
-                {
-                    return Core(buffer, cancellationToken);
-                }
-                return default;
+                return !buffer.IsEmpty ?
+                    Core(buffer, cancellationToken) :
+                    default;
 
                 async ValueTask Core(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {

@@ -284,11 +284,9 @@ namespace System.IO.Strategies
 
             ValueTask<int> readResult = ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken);
 
-            if (readResult.IsCompletedSuccessfully)
-            {
-                return _lastSyncCompletedReadTask.GetTask(readResult.Result);
-            }
-            return readResult.AsTask();
+            return readResult.IsCompletedSuccessfully
+                ? _lastSyncCompletedReadTask.GetTask(readResult.Result)
+                : readResult.AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -838,11 +836,9 @@ namespace System.IO.Strategies
             EnsureNotClosed();
             EnsureCanRead();
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled<int>(cancellationToken);
-            }
-            return CopyToAsyncCore(destination, bufferSize, cancellationToken);
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled<int>(cancellationToken) :
+                CopyToAsyncCore(destination, bufferSize, cancellationToken);
         }
 
         private async Task CopyToAsyncCore(Stream destination, int bufferSize, CancellationToken cancellationToken)

@@ -86,16 +86,11 @@ namespace System.Net.Http
             }
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
-        {
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
-            if (GetType() == typeof(FormUrlEncodedContent))
-            {
-                return SerializeToStreamAsyncCore(stream, cancellationToken);
-            }
-            return base.SerializeToStreamAsync(stream, context, cancellationToken);
-        }
+            GetType() == typeof(FormUrlEncodedContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
+            base.SerializeToStreamAsync(stream, context, cancellationToken);
 
         internal override Stream? TryCreateContentReadStream() =>
             GetType() == typeof(FormUrlEncodedContent) ? CreateMemoryStreamForByteArray() : // type check ensures we use possible derived type's CreateContentReadStreamAsync override

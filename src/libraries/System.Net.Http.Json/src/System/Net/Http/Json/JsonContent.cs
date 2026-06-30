@@ -114,11 +114,9 @@ namespace System.Net.Http.Json
         {
             Encoding? targetEncoding = JsonHelpers.GetEncoding(this);
 
-            if (targetEncoding != null && targetEncoding != Encoding.UTF8)
-            {
-                return SerializeToStreamAsyncTranscoding(targetStream, async: true, targetEncoding, cancellationToken);
-            }
-            return JsonSerializer.SerializeAsync(targetStream, Value, _typeInfo, cancellationToken);
+            return targetEncoding != null && targetEncoding != Encoding.UTF8
+                ? SerializeToStreamAsyncTranscoding(targetStream, async: true, targetEncoding, cancellationToken)
+                : JsonSerializer.SerializeAsync(targetStream, Value, _typeInfo, cancellationToken);
         }
 
         private async Task SerializeToStreamAsyncTranscoding(Stream targetStream, bool async, Encoding targetEncoding, CancellationToken cancellationToken)

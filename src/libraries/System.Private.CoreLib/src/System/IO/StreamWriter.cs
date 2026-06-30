@@ -244,14 +244,10 @@ namespace System.IO
             }
         }
 
-        public override ValueTask DisposeAsync()
-        {
-            if (GetType() != typeof(StreamWriter))
-            {
-                return base.DisposeAsync();
-            }
-            return DisposeAsyncCore();
-        }
+        public override ValueTask DisposeAsync() =>
+            GetType() != typeof(StreamWriter) ?
+                base.DisposeAsync() :
+                DisposeAsyncCore();
 
         private async ValueTask DisposeAsyncCore()
         {

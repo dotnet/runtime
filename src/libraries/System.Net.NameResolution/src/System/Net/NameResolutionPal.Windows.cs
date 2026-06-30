@@ -406,17 +406,7 @@ namespace System.Net
 
             public bool JustAddresses { get; }
 
-            public Task Task
-            {
-                get
-                {
-                    if (JustAddresses)
-                    {
-                        return (Task)IPAddressArrayBuilder.Task;
-                    }
-                    return IPHostEntryBuilder.Task;
-                }
-            }
+            public Task Task => JustAddresses ? (Task)IPAddressArrayBuilder.Task : IPHostEntryBuilder.Task;
 
             internal GetAddrInfoExContext* Context => (GetAddrInfoExContext*)handle;
 

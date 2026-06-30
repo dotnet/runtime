@@ -632,14 +632,8 @@ namespace System.Formats.Tar
 
         public override void Flush() { }
 
-        public override Task FlushAsync(CancellationToken cancellationToken)
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-            return Task.CompletedTask;
-        }
+        public override Task FlushAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) : Task.CompletedTask;
 
         public override void SetLength(long value) => throw new NotSupportedException(SR.IO_NotSupported_UnwritableStream);
 

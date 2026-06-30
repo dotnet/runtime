@@ -28,11 +28,9 @@ namespace System.Net
         {
             ThrowIfDisposed();
             // Nothing to do.
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-            return Task.CompletedTask;
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled(cancellationToken) :
+                Task.CompletedTask;
         }
 
         public override long Length

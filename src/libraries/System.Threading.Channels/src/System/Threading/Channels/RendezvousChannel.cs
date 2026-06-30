@@ -199,11 +199,9 @@ namespace System.Threading.Channels
                     // If we're done writing, a read will never be possible.
                     if (parent._doneWriting is not null)
                     {
-                        if (parent._doneWriting != ChannelUtilities.s_doneWritingSentinel)
-                        {
-                            return new ValueTask<bool>(Task.FromException<bool>(parent._doneWriting));
-                        }
-                        return default;
+                        return parent._doneWriting != ChannelUtilities.s_doneWritingSentinel ?
+                            new ValueTask<bool>(Task.FromException<bool>(parent._doneWriting)) :
+                            default;
                     }
 
                     // If there are any writers waiting, a read is possible.
@@ -350,11 +348,9 @@ namespace System.Threading.Channels
                     // If we're done writing, a read will never be possible.
                     if (parent._doneWriting is not null)
                     {
-                        if (parent._doneWriting != ChannelUtilities.s_doneWritingSentinel)
-                        {
-                            return new ValueTask<bool>(Task.FromException<bool>(parent._doneWriting));
-                        }
-                        return default;
+                        return parent._doneWriting != ChannelUtilities.s_doneWritingSentinel ?
+                            new ValueTask<bool>(Task.FromException<bool>(parent._doneWriting)) :
+                            default;
                     }
 
                     // If there are any readers waiting, a write is possible.

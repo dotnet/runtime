@@ -26,11 +26,9 @@ namespace System.Net.Http
             public sealed override Task FlushAsync(CancellationToken ignored)
             {
                 HttpConnection? connection = _connection;
-                if (connection != null)
-                {
-                    return connection.FlushAsync(async: true).AsTask();
-                }
-                return default!;
+                return connection != null ?
+                    connection.FlushAsync(async: true).AsTask() :
+                    default!;
             }
 
             public sealed override int Read(Span<byte> buffer) => throw new NotSupportedException();

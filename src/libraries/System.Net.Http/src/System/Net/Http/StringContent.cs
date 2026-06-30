@@ -102,16 +102,11 @@ namespace System.Net.Http
         /// <param name="context">Information about the transport, like channel binding token. This parameter may be <see langword="null" />.</param>
         /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
-        {
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) =>
             // Only skip the original protected virtual SerializeToStreamAsync if this
             // isn't a derived type that may have overridden the behavior.
-            if (GetType() == typeof(StringContent))
-            {
-                return SerializeToStreamAsyncCore(stream, cancellationToken);
-            }
-            return base.SerializeToStreamAsync(stream, context, cancellationToken);
-        }
+            GetType() == typeof(StringContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
+            base.SerializeToStreamAsync(stream, context, cancellationToken);
 
         internal override Stream? TryCreateContentReadStream() =>
             GetType() == typeof(StringContent) ? CreateMemoryStreamForByteArray() : // type check ensures we use possible derived type's CreateContentReadStreamAsync override

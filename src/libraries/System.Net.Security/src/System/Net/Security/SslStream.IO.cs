@@ -99,11 +99,9 @@ namespace System.Net.Security
             }
             else
             {
-                if (isAsync)
-                {
-                    return ForceAuthenticationAsync<AsyncReadWriteAdapter>(IsServer, null, cancellationToken);
-                }
-                return ForceAuthenticationAsync<SyncReadWriteAdapter>(IsServer, null, cancellationToken);
+                return isAsync ?
+                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(IsServer, null, cancellationToken) :
+                    ForceAuthenticationAsync<SyncReadWriteAdapter>(IsServer, null, cancellationToken);
             }
         }
 

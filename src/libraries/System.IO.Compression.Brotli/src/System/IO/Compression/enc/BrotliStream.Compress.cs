@@ -148,11 +148,9 @@ namespace System.IO.Compression
             EnsureNoActiveAsyncOperation();
             EnsureNotDisposed();
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return ValueTask.FromCanceled(cancellationToken);
-            }
-            return WriteAsyncMemoryCore(buffer, cancellationToken);
+            return cancellationToken.IsCancellationRequested ?
+                ValueTask.FromCanceled(cancellationToken) :
+                WriteAsyncMemoryCore(buffer, cancellationToken);
         }
 
         private async ValueTask WriteAsyncMemoryCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, bool isFinalBlock = false)
@@ -222,11 +220,7 @@ namespace System.IO.Compression
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
 
-            if (_mode != CompressionMode.Compress)
-            {
-                return Task.CompletedTask;
-            }
-            return FlushAsyncCore(cancellationToken);
+            return _mode != CompressionMode.Compress ? Task.CompletedTask : FlushAsyncCore(cancellationToken);
         }
 
         private async Task FlushAsyncCore(CancellationToken cancellationToken)

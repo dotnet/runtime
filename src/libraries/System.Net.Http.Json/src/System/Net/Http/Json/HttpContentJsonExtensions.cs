@@ -133,11 +133,9 @@ namespace System.Net.Http.Json
         {
             Task<Stream> task = ReadHttpContentStreamAsync(content, cancellationToken);
 
-            if (JsonHelpers.GetEncoding(content) is Encoding sourceEncoding && sourceEncoding != Encoding.UTF8)
-            {
-                return GetTranscodingStreamAsync(task, sourceEncoding);
-            }
-            return new(task);
+            return JsonHelpers.GetEncoding(content) is Encoding sourceEncoding && sourceEncoding != Encoding.UTF8
+                ? GetTranscodingStreamAsync(task, sourceEncoding)
+                : new(task);
         }
 
         private static async ValueTask<Stream> GetTranscodingStreamAsync(Task<Stream> task, Encoding sourceEncoding)

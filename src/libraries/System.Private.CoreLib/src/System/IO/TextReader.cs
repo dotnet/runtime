@@ -377,26 +377,14 @@ namespace System.IO
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return ValueTask.FromCanceled<string?>(cancellationToken);
-                }
-                return new ValueTask<string?>(ReadLine());
-            }
+                => cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<string?>(cancellationToken) : new ValueTask<string?>(ReadLine());
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task<string> ReadToEndAsync() => Task.FromResult(ReadToEnd());
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task<string> ReadToEndAsync(CancellationToken cancellationToken)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    return Task.FromCanceled<string>(cancellationToken);
-                }
-                return Task.FromResult(ReadToEnd());
-            }
+                => cancellationToken.IsCancellationRequested ? Task.FromCanceled<string>(cancellationToken) : Task.FromResult(ReadToEnd());
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
