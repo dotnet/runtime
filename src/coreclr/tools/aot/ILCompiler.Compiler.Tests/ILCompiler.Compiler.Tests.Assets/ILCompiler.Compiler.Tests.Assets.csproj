@@ -12,7 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="ManglerCollision.*\**" />
     <ProjectReference Include="..\..\..\..\nativeaot\Test.CoreLib\src\Test.CoreLib.csproj" />
   </ItemGroup>
 

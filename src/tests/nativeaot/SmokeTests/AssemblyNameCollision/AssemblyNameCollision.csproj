@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="AssemblyWithDot\AssemblyWithDot.csproj" Aliases="AssemblyWithDot" />
     <ProjectReference Include="AssemblyWithUnderscore\AssemblyWithUnderscore.csproj" Aliases="AssemblyWithUnderscore" />
