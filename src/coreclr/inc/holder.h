@@ -13,6 +13,7 @@
 
 #include <utility>
 #include <type_traits>
+#include <memory>
 
 #if defined(FEATURE_COMINTEROP) && !defined(STRIKE)
 #include <Inspectable.h>
@@ -979,7 +980,7 @@ public:
     LifetimeHolder& operator=(LifetimeHolder&& other)
     {
         STATIC_CONTRACT_WRAPPER;
-        if (this != &other)
+        if (this != std::addressof(other))
         {
             Free();
             m_value = other.Detach();
