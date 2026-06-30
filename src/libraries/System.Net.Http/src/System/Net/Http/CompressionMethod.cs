@@ -8,23 +8,8 @@ namespace System.Net.Http;
 /// </summary>
 public enum CompressionMethod
 {
-    /// <summary>
-    /// GZip compression, corresponding to the <c>gzip</c> content coding.
-    /// </summary>
-    GZip,
-
-    /// <summary>
-    /// Deflate (zlib) compression, corresponding to the <c>deflate</c> content coding.
-    /// </summary>
-    Deflate,
-
-    /// <summary>
-    /// Brotli compression, corresponding to the <c>br</c> content coding.
-    /// </summary>
-    Brotli,
-
-    /// <summary>
-    /// Zstandard compression, corresponding to the <c>zstd</c> content coding.
-    /// </summary>
-    Zstandard,
+    GZip = 0x1,
+    Deflate = 0x2,
+    Brotli = 0x4,
+    Zstandard = 0x8
 }
