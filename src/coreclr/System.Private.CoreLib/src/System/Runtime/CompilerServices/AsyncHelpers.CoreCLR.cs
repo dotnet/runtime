@@ -766,7 +766,7 @@ namespace System.Runtime.CompilerServices
                 m_stateObject = value;
             }
 
-            internal unsafe bool HandleSuspended(ref RuntimeAsyncAwaitState state)
+            internal unsafe bool HandleSuspended(ref AsyncContexts contexts, ref RuntimeAsyncAwaitState state)
             {
                 Thread? currentThread = state.CurrentThread;
                 Debug.Assert(currentThread != null);
@@ -790,6 +790,7 @@ namespace System.Runtime.CompilerServices
 
                 SetContinuationState(headContinuation);
 
+                bool returnValue = false;
                 try
                 {
                     if (stackState->CriticalNotifier is { } critNotifier)
@@ -866,17 +867,18 @@ namespace System.Runtime.CompilerServices
                         stackState->Notifier!.OnCompleted(GetContinuationAction());
                     }
 
-                    return true;
+                    returnValue = true;
                 }
                 catch (Exception ex)
                 {
                     Task.ThrowAsync(ex, targetContext: null);
                 }
 
-                return false;
+                contexts.Pop(state.CurrentThread!);
+                return returnValue;
             }
 
-            internal void InstrumentedHandleSuspended(AsyncInstrumentation.Flags flags, ref RuntimeAsyncAwaitState state)
+            internal void InstrumentedHandleSuspended(AsyncInstrumentation.Flags flags, ref AsyncContexts contexts, ref RuntimeAsyncAwaitState state)
             {
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
@@ -884,7 +886,7 @@ namespace System.Runtime.CompilerServices
 
                     AsyncDebugger.HandleSuspended(nextContinuation);
 
-                    if (!HandleSuspended(ref state))
+                    if (!HandleSuspended(ref contexts, ref state))
                     {
                         AsyncDebugger.HandleSuspendedFailed(this, nextContinuation);
                     }
@@ -892,7 +894,7 @@ namespace System.Runtime.CompilerServices
                     return;
                 }
 
-                HandleSuspended(ref state);
+                HandleSuspended(ref contexts, ref state);
             }
 
 #pragma warning disable CA1822 // Mark members as static
@@ -956,9 +958,8 @@ namespace System.Runtime.CompilerServices
                         if (newContinuation != null)
                         {
                             newContinuation.Next = nextContinuation;
-                            HandleSuspended(ref awaitState);
+                            HandleSuspended(ref contexts, ref awaitState);
 
-                            contexts.Pop(awaitState.CurrentThread!);
                             awaitState.Pop();
                             refDispatcherInfo = asyncDispatcherInfo.Next;
                             return;
@@ -1079,9 +1080,8 @@ namespace System.Runtime.CompilerServices
                             newContinuation.Next = nextContinuation;
 
                             RuntimeAsyncInstrumentationHelpers.AwaitSuspendedRuntimeAsyncContext(ref asyncDispatcherInfo, flags, curContinuation, newContinuation, awaitState.SentinelContinuation!.Next);
-                            InstrumentedHandleSuspended(flags, ref awaitState);
+                            InstrumentedHandleSuspended(flags, ref contexts, ref awaitState);
 
-                            contexts.Pop(awaitState.CurrentThread!);
                             awaitState.Pop();
                             refDispatcherInfo = asyncDispatcherInfo.Next;
                             return;
@@ -1243,7 +1243,7 @@ namespace System.Runtime.CompilerServices
             };
         }
 
-        private static void InstrumentedFinalizeRuntimeAsyncTask<T>(RuntimeAsyncTask<T> task, ref RuntimeAsyncAwaitState state, AsyncInstrumentation.Flags flags)
+        private static void InstrumentedFinalizeRuntimeAsyncTask<T>(RuntimeAsyncTask<T> task, ref AsyncContexts contexts, ref RuntimeAsyncAwaitState state, AsyncInstrumentation.Flags flags)
         {
             if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags))
             {
@@ -1263,24 +1263,28 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            task.InstrumentedHandleSuspended(flags, ref state);
+            task.InstrumentedHandleSuspended(flags, ref contexts, ref state);
             return;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void FinalizeRuntimeAsyncTask<T>(ref RuntimeAsyncAwaitState state, RuntimeAsyncTask<T> task)
         {
+            // We restore back to the leaf context to call OnCompleted, so we
+            // need to push/pop contexts around that as well.
+            AsyncContexts contexts = default;
+            contexts.Push(state.CurrentThread!);
+
             if (RuntimeAsyncInstrumentationHelpers.InstrumentCheckPoint)
             {
                 AsyncInstrumentation.Flags flags = AsyncInstrumentation.SyncActiveFlags();
                 if (flags != AsyncInstrumentation.Flags.Disabled)
                 {
-                    InstrumentedFinalizeRuntimeAsyncTask(task, ref state, flags);
+                    InstrumentedFinalizeRuntimeAsyncTask(task, ref contexts, ref state, flags);
                     return;
                 }
             }
 
-            task.HandleSuspended(ref state);
+            task.HandleSuspended(ref contexts, ref state);
         }
 
         // Change return type to RuntimeAsyncTask<T?> -- no benefit since this is used for Task returning thunks only
@@ -1290,14 +1294,14 @@ namespace System.Runtime.CompilerServices
         private static Task<T?> CreateRuntimeAsyncTask<T>(ref RuntimeAsyncAwaitState state)
         {
             RuntimeAsyncTask<T?> result = new();
-            FinalizeRuntimeAsyncTask(ref state, result!);
+            FinalizeRuntimeAsyncTask(ref state, result);
             return result;
         }
 
         private static Task CreateRuntimeAsyncTask(ref RuntimeAsyncAwaitState state)
         {
             RuntimeAsyncTask<VoidTaskResult> result = new();
-            FinalizeRuntimeAsyncTask(ref state, result!);
+            FinalizeRuntimeAsyncTask(ref state, result);
             return result;
         }
 
