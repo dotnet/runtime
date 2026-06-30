@@ -1963,11 +1963,11 @@ bool EvaluateSimdPatternToVector(simd_t* result, SveMaskPattern pattern)
 
         if (i < finalOne)
         {
-            memset(&output, 0xFF, sizeof(TBase));
+            output = static_cast<TBase>(1);
         }
         else
         {
-            memset(&output, 0x00, sizeof(TBase));
+            output = static_cast<TBase>(0);
         }
 
         memcpy(&result->u8[i * sizeof(TBase)], &output, sizeof(TBase));
