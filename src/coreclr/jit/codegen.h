@@ -226,6 +226,7 @@ protected:
     void                       ensureCurrentFuncIsUnwindable();
     void                       genEmitIf(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndIf();
+    void                       genEmitFunctionEnd(bool emitTerminalUnreachable = true);
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
@@ -795,6 +796,9 @@ protected:
 
 #if defined(TARGET_WASM)
     void genCodeForConstant(GenTree* treeNode);
+#if defined(FEATURE_SIMD)
+    void genCodeForVectorConstant(GenTree* treeNode);
+#endif
     void genCatchArg(GenTree* treeNode);
 #endif
 

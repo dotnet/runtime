@@ -1484,6 +1484,74 @@ namespace Internal.JitInterface
             }
 
 #if READYTORUN
+            bool isArray = decl.OwningType.IsInterface && objType.IsArray;
+            bool contextIsMethod = isArray || decl.HasInstantiation;
+#else
+            bool contextIsMethod = decl.HasInstantiation;
+#endif
+            MethodDesc instArgTarget = unboxingStub ? nonUnboxingImpl : impl;
+            bool requiresInstMethodDescArg = instArgTarget.RequiresInstMethodDescArg();
+            bool requiresInstMethodTableArg = instArgTarget.RequiresInstMethodTableArg();
+
+            // For unboxing stubs whose unboxed entry needs a MethodTable inst arg, the boxed object supplies the exact MT.
+            // For MethodDesc cases we always need to supply the exact MD.
+            if (requiresInstMethodDescArg || (requiresInstMethodTableArg && !unboxingStub))
+            {
+                if (originalImpl.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    // If we end up with a shared MethodTable that is not exact,
+                    // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+
+                if (originalImpl.IsRuntimeDeterminedExactMethod || originalImpl.IsSharedByGenericInstantiations)
+                {
+                    // TODO: Support for runtime lookup
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+            }
+
+#if READYTORUN
+            if (isArray)
+            {
+                // Array interface devirt is not yet supported by R2R.
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+#endif
+
+            if (requiresInstMethodDescArg)
+            {
+                if (unboxingStub)
+                {
+                    // Bail out for now. We need an unboxing stub that points to an instantiated method.
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+#if READYTORUN
+                MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
+
+#else
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodGenericDictionary(originalImpl));
+#endif
+            }
+            else if (requiresInstMethodTableArg)
+            {
+                if (!unboxingStub)
+                {
+#if READYTORUN
+                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
+
+#else
+                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
+#endif
+                }
+            }
+
+#if READYTORUN
             // Testing has not shown that concerns about virtual matching are significant
             // Only generate verification for builds with the stress mode enabled
             if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
@@ -1497,7 +1565,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->tokenLookupContext = contextFromType(owningType);
+            info->tokenLookupContext = contextIsMethod ? contextFromMethod(originalImpl) : contextFromType(owningType);
 
             return true;
 
@@ -1546,7 +1614,7 @@ namespace Internal.JitInterface
             {
                 method = method.GetTargetOfAsyncVariant();
             }
-            else if (method.Signature.ReturnsTaskOrValueTask())
+            else if (HasCallableAsyncVariant(method))
             {
                 method = method.GetAsyncVariant();
             }
@@ -1874,15 +1942,7 @@ namespace Internal.JitInterface
 
                 if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)
                 {
-                    // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
-                    // we cannot resolve to an Async variant in such case.
-                    // return NULL, so that caller would re-resolve as a regular method call
-                    bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
-
-                    // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
-                    allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
-
-                    method = allowAsyncVariant
+                    method = HasCallableAsyncVariant(method)
                         ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
                         : null;
                 }
@@ -1953,6 +2013,33 @@ namespace Internal.JitInterface
             pResolvedToken.cbTypeSpec = 0;
             pResolvedToken.pMethodSpec = null;
             pResolvedToken.cbMethodSpec = 0;
+        }
+
+        private static bool HasCallableAsyncVariant(MethodDesc method)
+        {
+            // In some cases a method that returns Task is not actually
+            // TaskReturning (i.e. it might return T). We cannot resolve to an
+            // async variant in such case.
+            if (!method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask())
+            {
+                return false;
+            }
+
+            // Don't get async variant of Delegate.Invoke method; the pointed
+            // to method is not an async variant either.
+            if (method.OwningType.IsDelegate)
+            {
+                return false;
+            }
+
+            // Don't get async variant of ComImport methods since we do not
+            // generate any runtime async entry points for them.
+            if (method.OwningType.IsComImport)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
@@ -4277,6 +4364,7 @@ namespace Internal.JitInterface
                 CorInfoReloc.ARM64_BRANCH26 => RelocType.IMAGE_REL_BASED_ARM64_BRANCH26,
                 CorInfoReloc.ARM64_PAGEBASE_REL21 => RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
                 CorInfoReloc.ARM64_PAGEOFFSET_12A => RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A,
+                CorInfoReloc.ARM64_PAGEOFFSET_12L => RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L,
                 CorInfoReloc.ARM64_LIN_TLSDESC_ADR_PAGE21 => RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21,
                 CorInfoReloc.ARM64_LIN_TLSDESC_LD64_LO12 => RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12,
                 CorInfoReloc.ARM64_LIN_TLSDESC_ADD_LO12 => RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12,

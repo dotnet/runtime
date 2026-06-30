@@ -1181,6 +1181,7 @@ CDAC_TYPE_END(TransitionBlock)
 CDAC_TYPE_BEGIN(FuncEvalFrame)
 CDAC_TYPE_SIZE(sizeof(FuncEvalFrame))
 CDAC_TYPE_FIELD(FuncEvalFrame, T_POINTER, DebuggerEvalPtr, cdac_data<FuncEvalFrame>::DebuggerEvalPtr)
+CDAC_TYPE_FIELD(FuncEvalFrame, TYPE(CodePointer), ReturnAddress, cdac_data<FuncEvalFrame>::ReturnAddress)
 CDAC_TYPE_END(FuncEvalFrame)
 
 CDAC_TYPE_BEGIN(DebuggerEval)
@@ -1725,6 +1726,7 @@ CDAC_GLOBAL_CONTRACT(AuxiliarySymbols, c1)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL_CONTRACT(BuiltInCOM, c1)
 #endif // FEATURE_COMINTEROP
+CDAC_GLOBAL_CONTRACT(CallingConvention, c1)
 CDAC_GLOBAL_CONTRACT(CodeVersions, c1)
 CDAC_GLOBAL_CONTRACT(CodeNotifications, c1)
 #ifdef FEATURE_COMWRAPPERS

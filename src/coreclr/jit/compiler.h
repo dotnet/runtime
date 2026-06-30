@@ -2354,6 +2354,11 @@ class FlowGraphTryRegion
     // region to some descendant region.
     jitstd::vector<FlowEdge*> m_entryEdges;
 
+    // In-try blocks that have no flow-graph predecessors. The wasm DFS will not
+    // reach them via normal succs, so they are surfaced as fake successors of
+    // the try entry by FgWasm::VisitWasmSuccs.
+    jitstd::vector<BasicBlock*> m_unreachableBlocks;
+
     bool m_requiresRuntimeResumption;
     bool m_hasSideEntry;
 
@@ -2394,6 +2399,11 @@ public:
     const jitstd::vector<FlowEdge*>& EntryEdges() const
     {
         return m_entryEdges;
+    }
+
+    const jitstd::vector<BasicBlock*>& UnreachableBlocks() const
+    {
+        return m_unreachableBlocks;
     }
 
     // True if resumption from a catch in this or in an enclosed
@@ -5142,6 +5152,11 @@ protected:
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
 #if defined(FEATURE_HW_INTRINSICS)
+    GenTree* impSimdCreate(NamedIntrinsic    intrinsic,
+                           CORINFO_SIG_INFO* sig,
+                           var_types         simdBaseType,
+                           var_types         retType,
+                           unsigned          simdSize);
     GenTree* impSimdCreateScalarHalf(GenTree* op1);
     GenTree* impSimdToScalarHalf(GenTree* op1, CORINFO_CLASS_HANDLE halfClsHnd);
 #endif // FEATURE_HW_INTRINSICS
@@ -5194,6 +5209,13 @@ protected:
                             int                prefixFlags,
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
+
+    GenTree* impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                CORINFO_CALL_INFO*      callInfo,
+                                CORINFO_CONTEXT_HANDLE  exactContextHnd,
+                                bool                    exactContextNeedsRuntimeLookup,
+                                unsigned                clsFlags,
+                                bool                    isReadonlyCall);
 
     void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
 
@@ -5458,6 +5480,7 @@ public:
     bool impMatchIsInstBooleanConversion(const BYTE* codeAddr, const BYTE* codeEndp, int* consumed);
 
     const BYTE* impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal, IL_OFFSET* awaitOffset);
+    bool impCheckOptimizeAwait(IL_OFFSET awaitOffset);
 
     GenTree* impCastClassOrIsInstToTree(
         GenTree* op1, GenTree* op2, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass, bool* booleanCheck, IL_OFFSET ilOffset);
@@ -5680,6 +5703,7 @@ private:
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
     bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
     bool impWrapTopOfStackInAwait();
+    bool impFoldAwaitedTopOfStack();
     void impPoisonImplicitByrefsBeforeReturn();
 
     // A free list of linked list nodes used to represent to-do stacks of basic blocks.
@@ -5768,14 +5792,12 @@ private:
     void impConvertToUserCallAndMarkForInlining(GenTreeCall* call);
     void impMarkInlineCandidate(GenTree*               call,
                                 CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                bool                   exactContextNeedsRuntimeLookup,
                                 CORINFO_CALL_INFO*     callInfo,
                                 InlineContext*         inlinersContext);
 
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       uint8_t                candidateIndex,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
-                                      bool                   exactContextNeedsRuntimeLookup,
                                       CORINFO_CALL_INFO*     callInfo,
                                       InlineContext*         inlinersContext,
                                       InlineResult*          inlineResult);

@@ -117,12 +117,12 @@ jobs:
           displayName: 'generic managed test artifacts'
 
     # Create Core_Root
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) -arch $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Core_Root
       condition: succeeded()
 
     # Create Core_Root
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) release $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) release -arch $(archType) $(crossArg) generatelayoutonly $(librariesOverrideArg)
       displayName: Create Release Core_Root
       condition: succeeded()
 
