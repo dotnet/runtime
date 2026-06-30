@@ -17,8 +17,7 @@
 #include "cdacdata.h"
 
 class AllocMemTracker;
-enum class AsyncVariantLookup : int;
-
+enum class AsyncVariantLookup;
 //========================================================================================
 // The hash table types defined in this header file are used by the loader to
 // look up instantiation-specific methods:
