@@ -159,6 +159,77 @@ namespace System.Diagnostics.Tests
             Assert.Equal(0, process.ExitCode);
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public unsafe void ChildProcess_CanBreakAwayFromJob(bool killOnParentExit)
+        {
+            using Process process = CreateProcess(arg =>
+            {
+                using (Process grandChild = CreateProcess(() =>
+                {
+                    return RemoteExecutor.SuccessExitCode;
+                }))
+                {
+                    grandChild.StartInfo.KillOnParentExit = bool.Parse(arg);
+                    grandChild.StartInfo.RedirectStandardOutput = true;
+
+                    ProcessStartInfo grandChildStartInfo = grandChild.StartInfo;
+
+                    using Process started = WindowsProcessStartArguments.Start(grandChildStartInfo, (WindowsProcessStartArguments args) =>
+                    {
+                        Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
+                        Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
+                        Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
+
+                        startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
+                        startupInfoEx.StartupInfo.hStdInput = args.StandardInput;
+                        startupInfoEx.StartupInfo.hStdOutput = args.StandardOutput;
+                        startupInfoEx.StartupInfo.hStdError = args.StandardError;
+                        startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
+
+                        bool retVal = Interop.Kernel32.CreateProcess(
+                            null,
+                            args.Arguments,
+                            ref unused_SecAttrs,
+                            ref unused_SecAttrs,
+                            bInheritHandles: true,
+                            Interop.Kernel32.CREATE_BREAKAWAY_FROM_JOB | Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
+                            args.EnvironmentVariables,
+                            null,
+                            &startupInfoEx,
+                            &processInfo
+                        );
+
+                        if (!retVal)
+                        {
+                            throw new Win32Exception();
+                        }
+
+                        Interop.Kernel32.CloseHandle(processInfo.hThread);
+
+                        return processInfo.hProcess;
+                    });
+
+                    started.WaitForExit(WaitInMS);
+                    return started.ExitCode;
+                }
+            }, killOnParentExit.ToString());
+
+            process.StartInfo.KillOnParentExit = killOnParentExit;
+            process.Start();
+
+            try
+            {
+                process.WaitForExit(WaitInMS);
+                Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
+            }
+            finally
+            {
+                process.Kill();
+            }
+        }
+
         private unsafe int RunWithInvalidHandles(ProcessStartInfo startInfo)
         {
             const nint INVALID_HANDLE_VALUE = -1;
