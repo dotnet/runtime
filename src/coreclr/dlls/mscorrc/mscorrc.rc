@@ -606,6 +606,7 @@ BEGIN
         BFA_INVALID_TOKEN_IN_MANIFESTRES        "Invalid token saved in ManifestResource."
         BFA_EMPTY_ASSEMDEF_NAME                 "Empty assembly simple name."
         BFA_BAD_IL                              "Bad IL format."
+        BFA_STRIPPED_IL_BODY                    "A method body required at runtime was stripped from the ReadyToRun image and this runtime has no JIT to compile it."
         BFA_CLASSLOAD_VALUETYPEMISMATCH         "Could not load type '%1' from assembly '%2' due to value type mismatch."
         BFA_METHODDECL_NOT_A_METHODDEF          "Method declaration is not a methoddef."
         BFA_DUPLICATE_DELEGATE_METHOD           "Duplicate definition for runtime implemented delegate method."

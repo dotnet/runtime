@@ -703,6 +703,16 @@ namespace
         if (status == COR_ILMETHOD_DECODER::FORMAT_ERROR)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
+        Module* pModule = pMD->GetModule();
+        if (pModule->IsReadyToRun()
+            && pModule->GetReadyToRunInfo()->HasStrippedILBodies()
+            && pHeader->GetCodeSize() == 2
+            && pHeader->Code[0] == 0x14  // ldnull
+            && pHeader->Code[1] == 0x7A) // throw
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_STRIPPED_IL_BODY);
+        }
+
         return pHeader;
     }
 

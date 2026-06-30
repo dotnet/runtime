@@ -462,6 +462,7 @@
 #define IDS_EE_INTEROP_STUB_CA_NO_ACCESS_TO_STUB_METHOD             0x2111
 #endif
 
+#define BFA_STRIPPED_IL_BODY                    0x2112
 #define BFA_REFERENCE_ASSEMBLY                  0x2113
 
 #define IDS_E_FIELDACCESS                       0x2114
