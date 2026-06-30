@@ -154,6 +154,7 @@ namespace System.Xml.Serialization
         {
             Array? choiceArray = choiceSources as Array;
 
+            // Special case for arrays, as the enumerator is know to be more efficient than indexing
             if (o is Array array)
             {
                 IEnumerator e = array.GetEnumerator();
@@ -164,17 +165,12 @@ namespace System.Xml.Serialization
                     object? choiceSource = choiceArray?.GetValue(c++);
                     WriteElements(ai, choiceSource, elements, text, choice, true, true);
                 }
-
-                return;
             }
-
-            var arr = o as IList;
-
-            if (arr != null)
+            else if (o is IList list)
             {
-                for (int i = 0; i < arr.Count; i++)
+                for (int i = 0; i < list.Count; i++)
                 {
-                    object? ai = arr[i];
+                    object? ai = list[i];
                     object? choiceSource = choiceArray?.GetValue(i);
                     WriteElements(ai, choiceSource, elements, text, choice, true, true);
                 }
