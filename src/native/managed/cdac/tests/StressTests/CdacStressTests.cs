@@ -52,6 +52,9 @@ public class CdacStressTests : CdacStressTestBase
     {
         GetTargetPlatform(out OSPlatform os, out _);
 
+        // TODO(https://github.com/dotnet/runtime/issues/130008): extend GCREFS stress coverage to non-Windows / ARM
+        // targets once ICallingConvention.TryComputeArgGCRefMapBlob supports them (SystemV-AMD64 / ARM64
+        // struct-in-register classification, ARM32 ABI port).
         if (debuggee.WindowsOnly && os != OSPlatform.Windows)
             throw new SkipTestException($"{debuggee.Name} debuggee is Windows-only.");
 

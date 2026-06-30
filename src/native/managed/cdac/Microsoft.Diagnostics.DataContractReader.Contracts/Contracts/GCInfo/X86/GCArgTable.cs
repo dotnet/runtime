@@ -292,10 +292,7 @@ public class GCArgTable
                     regMask = val & 0x7;
                     byrefRegMask = val >> 4;
                     // Code delta is 32-bit and is added to curOffs (mirrors `scanOffs +=` in
-                    // native gc_unwind_x86.inl scanArgRegTable case 0xFB). The pre-PR cDAC port
-                    // assigned `curOffs = ...` here, which silently truncated method-relative
-                    // offsets for the first 0xFB call site and corrupted all subsequent calls
-                    // in long methods (e.g. EventSource cctors).
+                    // native gc_unwind_x86.inl scanArgRegTable case 0xFB).
                     curOffs += _target.Read<uint>(offset);
                     offset += 4;
                     argCnt = _target.Read<uint>(offset);
