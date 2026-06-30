@@ -151,28 +151,15 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Returns true if the method body is a compiler-generated thunk that forwards to the variant (async or sync) present in IL,
-        /// converting the method from async calling convention to standard, or vice versa.
+        /// Returns true if the natural calling convention of the MethodDesc's defintion requires adaptation to match
+        /// the calling convention of the MethodDesc itself. This is true when the MethodDesc's "async-ness" is
+        /// different than the "async-ness" defined in metadata (its definition's .IsAsync property), or for
+        /// return-dropping async thunks. This may necessitate a thunk to convert between the two calling conventions,
+        /// or a JIT transformation (see CORINFO_ASYNC_VERSION).
         /// </summary>
         public static bool IsAsyncThunk(this MethodDesc method)
         {
-            if (method.IsReturnDroppingAsyncThunk())
-                return true;
-
-            if (method.IsAsyncVariant() == method.IsAsync)
-                return false;
-
-            if (method.IsAsyncVariant() && !method.IsAsync)
-            {
-                // These methods use the IL present in metadata and the JIT transforms the method to use async calling convention.
-                Debug.Assert(method.SupportsAsyncVersionCodegen());
-                return false;
-            }
-
-            if (!method.IsAsyncVariant() && method.IsAsync)
-                return true;
-
-            throw new UnreachableException();
+            return (method.IsAsyncVariant() ^ method.IsAsync) || method.IsReturnDroppingAsyncThunk();
         }
 
         /// <summary>
@@ -181,7 +168,7 @@ namespace ILCompiler
         /// </summary>
         public static bool IsCompilerGeneratedILBodyForAsync(this MethodDesc method)
         {
-            return method.IsAsyncThunk() || method is AsyncResumptionStub;
+            return (method.IsAsyncThunk() && !method.SupportsAsyncVersionCodegen()) || method is AsyncResumptionStub;
         }
 
         public static bool RequiresSaveRestoreOfAsyncContexts(this MethodDesc method)

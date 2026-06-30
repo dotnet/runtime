@@ -207,6 +207,6 @@ namespace ILCompiler
         /// </summary>
         /// <param name="method"></param>
         /// <returns></returns>
-        public static bool SupportsAsyncVersionCodegen(this MethodDesc method) => method.IsAsyncVariant() && !method.IsAsync;
+        public static bool SupportsAsyncVersionCodegen(this MethodDesc method) => method.IsAsyncVariant() && method.IsAsyncThunk() && !method.IsReturnDroppingAsyncThunk();
     }
 }
