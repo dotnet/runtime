@@ -3,16 +3,9 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class EEILException : IData<EEILException>
+[CdacType(nameof(DataType.EEILException))]
+internal sealed partial class EEILException : IData<EEILException>
 {
-    static EEILException IData<EEILException>.Create(Target target, TargetPointer address) => new EEILException(target, address);
-    public EEILException(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.EEILException);
-        Address = address;
-        Clauses = address + (ulong)type.Fields[nameof(Clauses)].Offset;
-    }
-
-    public TargetPointer Address { get; init; }
-    public TargetPointer Clauses { get; init; }
+    [FieldAddress]
+    public TargetPointer Clauses { get; }
 }

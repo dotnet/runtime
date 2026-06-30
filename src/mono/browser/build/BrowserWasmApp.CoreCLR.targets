@@ -27,7 +27,7 @@
     <WasmEnableSIMD>true</WasmEnableSIMD>
     <WasmClang>emcc</WasmClang>
 
-    <_WasmDefaultFlags>-fwasm-exceptions -msimd128</_WasmDefaultFlags>
+    <_WasmDefaultFlags>-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128</_WasmDefaultFlags>
 
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Build</WasmBuildAppAfterThisTarget>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
@@ -57,6 +57,23 @@
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
   </PropertyGroup>
+
+  <!-- Diagnostics: transform Mono-style WasmPerformanceInstrumentation property into CoreCLR env vars.
+       Input format: "all,interval=0" or "N:Namespace" or "all" (Mono convention)
+       Output: DOTNET_WasmPerformanceInstrumentation=<MethodSet filter> ('all' mapped to '*')
+               DOTNET_EventPipeThreadSamplingRate=<ms> (if interval= specified) -->
+  <PropertyGroup Condition="'$(EnableDiagnostics)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''">
+    <_WasmPerfInstFilter>$(WasmPerformanceInstrumentation)</_WasmPerfInstFilter>
+    <_WasmPerfInstInterval></_WasmPerfInstInterval>
+    <_WasmPerfInstInterval Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring($([MSBuild]::Add($(WasmPerformanceInstrumentation.IndexOf(',interval=')), 10))))</_WasmPerfInstInterval>
+    <_WasmPerfInstFilter Condition="$(WasmPerformanceInstrumentation.Contains(',interval='))">$(WasmPerformanceInstrumentation.Substring(0, $(WasmPerformanceInstrumentation.IndexOf(',interval='))))</_WasmPerfInstFilter>
+    <_WasmPerfInstInterval Condition="'$(_WasmPerfInstInterval)' != '' and $(_WasmPerfInstInterval.Contains(','))">$(_WasmPerfInstInterval.Substring(0, $(_WasmPerfInstInterval.IndexOf(','))))</_WasmPerfInstInterval>
+    <_WasmPerfInstFilter Condition="'$(_WasmPerfInstFilter)' == 'all'">*</_WasmPerfInstFilter>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(EnableDiagnostics)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''">
+    <WasmEnvironmentVariable Include="DOTNET_WasmPerformanceInstrumentation" Value="$(_WasmPerfInstFilter)" />
+    <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
+  </ItemGroup>
 
   <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods -->
   <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
@@ -91,6 +108,17 @@
            NativeLibrary items are converted to NativeFileReference items later in the
            flow (in _CoreCLRPrepareForNativeBuild) so we have to inspect both here. -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and (@(NativeFileReference->Count()) &gt; 0 or @(NativeLibrary->Count()) &gt; 0)">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(EnableDiagnostics)' == 'true'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmPerformanceInstrumentation)' != ''">true</WasmBuildNative>
+    </PropertyGroup>
+
+    <!-- When publishing a trimmed app, default to relinking in Release, matching the Mono
+         path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets). This is what bakes the
+         app's own [UnmanagedCallersOnly] reverse thunks into dotnet.native.wasm; the runtime
+         pack only ships thunks for the framework's own [UnmanagedCallersOnly] methods. -->
+    <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(Configuration)' == 'Release'">true</WasmBuildNative>
     </PropertyGroup>
   </Target>
 
@@ -167,6 +195,122 @@
           Condition="'$(IsBrowserWasmProject)' == 'true' and
                      '$(WasmBuildingForNestedPublish)' != 'true' and
                      '$(UsingBrowserRuntimeWorkload)' != 'true'" />
+
+  <!-- The SDK declares this in Microsoft.NET.ConflictResolution.targets for every Microsoft.NET.Sdk build
+       (which every browser-wasm app is). Re-declare it here, guarded, so the task resolves on user systems
+       regardless of import order; the guard also lets the target degrade gracefully where the SDK build
+       tasks assembly is unavailable. -->
+  <UsingTask TaskName="ResolvePackageFileConflicts"
+             AssemblyFile="$(MicrosoftNETBuildTasksAssembly)"
+             Condition="'$(MicrosoftNETBuildTasksAssembly)' != '' and Exists('$(MicrosoftNETBuildTasksAssembly)')" />
+
+  <!-- ==================== Resolve runtime-pack vs app-local assembly conflicts by version ====================
+
+    For a self-contained browser-wasm app, @(ReferenceCopyLocalPaths) can contain two copies of the
+    same assembly: the runtime-pack copy (under $(MicrosoftNetCoreAppRuntimePackDir)) and an app-local
+    copy referenced out-of-band at a different version. ComputeWasmBuildAssets dedupes the webcil bundle
+    candidates by relative path (first-wins, version-blind), so the wrong copy can shadow the other one
+    in _framework. The canonical case is System.Runtime.Serialization.Formatters: the shared framework
+    ships a non-functional 8.1.0.0 stub while the app references the functional 11.0.0.0 build, so an
+    Assembly.Load for 11.0.0.0 then fails with FileNotFoundException.
+
+    Resolve the shadowed pairs with the SDK's own conflict resolver (ResolvePackageFileConflicts) — the
+    same task SDK publish uses (Microsoft.NET.ConflictResolution.targets) — so the higher AssemblyVersion
+    wins, exactly as a desktop self-contained publish would. This is version-based, not an unconditional
+    app-local preference: when the runtime-pack copy is the higher version it is the one that is kept. The
+    wasm build path normally never reaches that resolver for runtime-pack files, which is why the stub
+    leaks into _framework. We feed the resolver only the same-named runtime-pack/app-local pairs that deploy
+    to the _framework root (no culture subdirectory) and drop whichever copies it discards; assemblies that
+    exist in just one place, and culture-specific satellites, are untouched.
+
+    Robustness on user systems: ResolvePackageFileConflicts ships in the .NET SDK, so it is present for any
+    Microsoft.NET.Sdk browser-wasm build (in-repo or on a user machine). If the SDK build tasks assembly is
+    somehow unavailable, fall back to "app-local wins" (drop the shadowed runtime-pack copies) so the fix
+    still applies — matching how a self-contained app loads assemblies.
+
+    DependsOnTargets=ResolveReferences guarantees @(ReferenceCopyLocalPaths) is populated before we prune;
+    _GatherWasmFilesToBuild (unlike _ComputeWasmBuildCandidates) does not pull it in on its own.
+  -->
+  <Target Name="_CoreCLRResolveRuntimePackVsAppLocalConflicts"
+          BeforeTargets="_ComputeWasmBuildCandidates;_GatherWasmFilesToBuild"
+          DependsOnTargets="ResolveReferences"
+          Condition="'$(IsBrowserWasmProject)' == 'true'">
+    <PropertyGroup>
+      <!-- Resolve the runtime pack dir the same way the WebAssembly SDK does (Browser.targets): prefer
+           the property, fall back to the ResolvedRuntimePack metadata (WBT/Helix-created projects leave
+           the property empty). A browser-wasm CoreCLR app resolves exactly one runtime pack
+           (Microsoft.NETCore.App), so the metadata expansion is unambiguous — the same single-pack
+           assumption the SDK's own Browser.targets relies on. Normalize once (full path + trailing slash)
+           so the StartsWith checks below reliably match %(FullPath), which uses native separators. All
+           comparisons use the OrdinalIgnoreCase StringComparison so a casing difference between the
+           property and the enumerated item paths (common on case-insensitive filesystems) cannot silently
+           misclassify a copy. Path membership uses StartsWith(string, StringComparison); name membership
+           uses IndexOf(string, StringComparison) with the "!= -1" test kept OUTSIDE the $() (MSBuild's
+           property-function expander returns the int index but rejects a trailing comparison operator
+           inside the $(), which is the MSB4184 trap). Both overloads exist on .NET Framework MSBuild;
+           the Contains(string, StringComparison) overload does not, so it is avoided. -->
+      <_CoreCLRRuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_CoreCLRRuntimePackDir>
+      <_CoreCLRRuntimePackDir Condition="'$(_CoreCLRRuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_CoreCLRRuntimePackDir>
+      <_CoreCLRRuntimePackDir Condition="'$(_CoreCLRRuntimePackDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_CoreCLRRuntimePackDir)'))</_CoreCLRRuntimePackDir>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
+      <!-- Split copy-local managed assemblies into app-local vs runtime-pack copies. Restrict both sets to
+           assemblies that deploy to the _framework root: ComputeWasmBuildAssets keys the bundle on a culture-
+           qualified RelativePath (_framework/<culture>/<name> for satellites, _framework/<name> otherwise), so
+           same-named satellites in different cultures never actually collide. Matching the conflict set only by
+           file name would wrongly pair them, so we exclude anything with a culture/subdirectory (empty
+           DestinationSubDirectory and Culture == root deployment). Satellite-vs-satellite version skew is out of
+           scope here and is left to the downstream first-wins dedup. -->
+      <_CoreCLRAppLocalAssembly Include="@(ReferenceCopyLocalPaths)"
+                                Condition="'%(Extension)' == '.dll' and '%(ReferenceCopyLocalPaths.DestinationSubDirectory)' == '' and '%(ReferenceCopyLocalPaths.Culture)' == '' and !$([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)', System.StringComparison.OrdinalIgnoreCase))" />
+      <_CoreCLRRuntimePackAssembly Include="@(ReferenceCopyLocalPaths)"
+                                   Condition="'%(Extension)' == '.dll' and '%(ReferenceCopyLocalPaths.DestinationSubDirectory)' == '' and '%(ReferenceCopyLocalPaths.Culture)' == '' and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)', System.StringComparison.OrdinalIgnoreCase))" />
+    </ItemGroup>
+    <PropertyGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
+      <!-- ;-delimited name lists wrapped in leading/trailing ';' so an IndexOf of ';name;' below is an
+           exact whole-name membership test (never a substring of a longer name). -->
+      <_CoreCLRAppLocalAssemblyNames>;@(_CoreCLRAppLocalAssembly->'%(FileName)%(Extension)');</_CoreCLRAppLocalAssemblyNames>
+      <_CoreCLRRuntimePackAssemblyNames>;@(_CoreCLRRuntimePackAssembly->'%(FileName)%(Extension)');</_CoreCLRRuntimePackAssemblyNames>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != ''">
+      <!-- The conflict set: copies of the same file name present in BOTH the runtime pack and app-local. -->
+      <_CoreCLRConflictCandidate Include="@(_CoreCLRRuntimePackAssembly)"
+                                 Condition="$(_CoreCLRAppLocalAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase)) != -1" />
+      <_CoreCLRConflictCandidate Include="@(_CoreCLRAppLocalAssembly)"
+                                 Condition="$(_CoreCLRRuntimePackAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase)) != -1" />
+    </ItemGroup>
+
+    <!-- Version-based resolution (parity with SDK publish/desktop): keep the higher AssemblyVersion.
+         PreferredPackages mirrors the SDK publish call (_HandlePackageFileConflictsForPublish) so that an
+         exact AssemblyVersion+FileVersion tie is broken the same way publish breaks it (preferring the
+         framework package) instead of being left to the downstream first-wins dedup. The property is
+         populated by ResolveTargetingPackAssets, which runs as part of our ResolveReferences dependency. -->
+    <ResolvePackageFileConflicts Condition="'@(_CoreCLRConflictCandidate)' != '' and Exists('$(MicrosoftNETBuildTasksAssembly)')"
+                                 ReferenceCopyLocalPaths="@(_CoreCLRConflictCandidate)"
+                                 PreferredPackages="$(PackageConflictPreferredPackages)">
+      <Output TaskParameter="ReferenceCopyLocalPathsWithoutConflicts" ItemName="_CoreCLRConflictWinners" />
+    </ResolvePackageFileConflicts>
+    <!-- Drop the discarded copies. Mirror the SDK's _HandlePackageFileConflicts (remove every candidate, then
+         re-add the winners) instead of removing a computed "loser" subset by identity: @(ReferenceCopyLocalPaths)
+         removal matches on ItemSpec only, so an Exclude-derived loser list is fragile if an ItemSpec ever repeats
+         with different metadata. ReferenceCopyLocalPathsWithoutConflicts carries the winners' full metadata, so
+         re-including them is lossless, and removing both candidate copies first guarantees the loser is gone. -->
+    <ItemGroup Condition="'@(_CoreCLRConflictCandidate)' != '' and Exists('$(MicrosoftNETBuildTasksAssembly)')">
+      <ReferenceCopyLocalPaths Remove="@(_CoreCLRConflictCandidate)" />
+      <ReferenceCopyLocalPaths Include="@(_CoreCLRConflictWinners)" />
+    </ItemGroup>
+
+    <!-- Fallback when the SDK conflict-resolution task is unavailable: prefer app-local (copy-local wins). Same
+         root-only restriction as the split above so a runtime-pack satellite is never removed on a bare file-name
+         match against an unrelated app-local satellite in a different culture. -->
+    <ItemGroup Condition="'$(_CoreCLRRuntimePackDir)' != '' and '@(_CoreCLRConflictCandidate)' != '' and !Exists('$(MicrosoftNETBuildTasksAssembly)')">
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
+                               Condition="'%(Extension)' == '.dll'
+                                          and '%(ReferenceCopyLocalPaths.DestinationSubDirectory)' == '' and '%(ReferenceCopyLocalPaths.Culture)' == ''
+                                          and $([System.String]::Copy('%(FullPath)').StartsWith('$(_CoreCLRRuntimePackDir)', System.StringComparison.OrdinalIgnoreCase))
+                                          and $(_CoreCLRAppLocalAssemblyNames.IndexOf(';%(FileName)%(Extension);', System.StringComparison.OrdinalIgnoreCase)) != -1" />
+    </ItemGroup>
+  </Target>
 
   <!-- ======================== Core Orchestrator ======================== -->
 
@@ -321,6 +465,7 @@
       <_EmccCommonFlags Include="-v"  Condition="'$(EmccVerbose)' == 'true'" />
       <_EmccCommonFlags Include="-g"  Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
       <_EmccCommonFlags Include="-fwasm-exceptions" />
+      <_EmccCommonFlags Include="-sWASM_LEGACY_EXCEPTIONS=0" />
       <_EmccCommonFlags Include="-msimd128" />
     </ItemGroup>
 
@@ -395,7 +540,8 @@
       <_WasmPInvokeModules Include="%(_WasmSourceFileToCompile.FileName)" Condition="'%(_WasmSourceFileToCompile.ScanForPInvokes)' != 'false'" />
       <_WasmPInvokeModules Include="libSystem.Native" />
       <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
-      <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+      <_WasmPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_WasmIgnoredPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
       <_WasmPInvokeModules Include="libSystem.Native.Browser" />
       <_WasmPInvokeModules Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
     </ItemGroup>
@@ -423,10 +569,12 @@
     <ManagedToNativeGenerator
       Assemblies="@(_WasmManagedAssemblies)"
       PInvokeModules="@(_WasmPInvokeModules)"
+      IgnoredPInvokeModules="@(_WasmIgnoredPInvokeModules)"
       PInvokeOutputPath="$(_WasmPInvokeTablePath)"
       ReversePInvokeOutputPath="$(_WasmReversePInvokeTablePath)"
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
       CacheFilePath="$(_WasmM2NCachePath)"
+      TargetOS="browser"
       IsLibraryMode="$(_IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
@@ -523,9 +671,9 @@
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Runtime.InteropServices.JavaScript.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.Globalization.Native.a" Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a"                     Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a"                   Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a"                   Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicuuc.a" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicui18n.a" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libicudata.a" Condition="'$(InvariantGlobalization)' != 'true'" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libSystem.IO.Compression.Native.a" />
       <_CoreCLRNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libz.a" />
 
@@ -555,7 +703,6 @@
 
       <!-- ES6 module output -->
       <_EmccLinkStepArgs Include="-s EXPORT_ES6=1" />
-      <_EmccLinkStepArgs Include="-lexports.js" />
 
       <!-- Memory configuration -->
       <_EmccLinkStepArgs Include="-s INITIAL_MEMORY=$(WasmInitialHeapSize)" />
@@ -597,6 +744,12 @@
 
       <!-- Extra user flags -->
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
+
+      <!-- -lexports.js to set MINIFY_WASM_EXPORT_NAMES=0 -->
+      <_EmccLinkStepArgs Include="-lexports.js" />
+      <!-- Ensure the CoreCLR WASM globals/tags are exported -->
+      <_EmccLinkStepArgs Include="-Wl,--export=__stack_pointer" />
+      <_EmccLinkStepArgs Include="-Wl,--export=__coreclr_wasm_rtlrestorecontext_tag" />
 
       <!-- Linker error limit -->
       <_EmccLinkStepArgs Include="-Wl,--error-limit=0" />

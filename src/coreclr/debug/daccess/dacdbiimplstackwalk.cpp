@@ -339,9 +339,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::UnwindStackWalkFrame(StackWalkHan
     return hr;
 }
 
-bool g_fSkipStackCheck     = false;
-bool g_fSkipStackCheckInit = false;
-
 // Check whether the specified CONTEXT is valid.  The only check we perform right now is whether the
 // SP in the specified CONTEXT is in the stack range of the thread.
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       vmThread,
@@ -355,27 +352,14 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckContext(VMPTR_Thread       v
         return S_OK;
     }
 
-    if (!g_fSkipStackCheckInit)
-    {
-        g_fSkipStackCheck = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_DbgSkipStackCheck) != 0);
-        g_fSkipStackCheckInit = true;
-    }
+    // We don't have the backing store boundaries stored on the thread, but this is just
+    // a sanity check anyway.
+    Thread * pThread = vmThread.GetDacPtr();
+    PTR_VOID sp = GetSP(reinterpret_cast<const T_CONTEXT *>(pContext));
 
-    // Skip this check if the customer has set the reg key/env var.  This is necessary for AutoCad.  They
-    // enable fiber mode by calling the Win32 API ConvertThreadToFiber(), but when a managed debugger is
-    // attached, they don't actually call into our hosting APIs such as SwitchInLogicalThreadState().  This
-    // leads to the cached stack range on the Thread object being stale.
-    if (!g_fSkipStackCheck)
+    if ((sp < pThread->GetCachedStackLimit()) || (pThread->GetCachedStackBase() <= sp))
     {
-        // We don't have the backing store boundaries stored on the thread, but this is just
-        // a sanity check anyway.
-        Thread * pThread = vmThread.GetDacPtr();
-        PTR_VOID sp = GetSP(reinterpret_cast<const T_CONTEXT *>(pContext));
-
-        if ((sp < pThread->GetCachedStackLimit()) || (pThread->GetCachedStackBase() <= sp))
-        {
-            return CORDBG_E_NON_MATCHING_CONTEXT;
-        }
+        return CORDBG_E_NON_MATCHING_CONTEXT;
     }
 
     return S_OK;
@@ -743,30 +727,6 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::IsLeafFrame(VMPTR_Thread vmThread
     return hr;
 }
 
-// This is a simple helper function to convert a CONTEXT to a DebuggerREGDISPLAY.  We need to do this
-// inside DDI because the RS has no notion of REGDISPLAY.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * pInContext, DebuggerREGDISPLAY * pOutDRD, BOOL fActive)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        // This is a bit cumbersome.  First we need to convert the CONTEXT into a REGDISPLAY.  Then we need
-        // to convert the REGDISPLAY to a DebuggerREGDISPLAY.
-        T_CONTEXT tmpContext = { };
-        CopyMemory(&tmpContext, pInContext, sizeof(*pInContext));
-
-        REGDISPLAY rd;
-        FillRegDisplay(&rd, &tmpContext);
-
-        SetDebuggerREGDISPLAYFromREGDISPLAY(pOutDRD, &rd);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
 //---------------------------------------------------------------------------------------
 //
 // Fill in the structure with information about the current frame at which the stackwalker is stopped.
@@ -824,9 +784,6 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
         //
 
         pFrameData->eType = Debugger_STRData::cMethodFrame;
-
-        _ASSERTE(pFrameData->rd != NULL);
-        SetDebuggerREGDISPLAYFromREGDISPLAY(pFrameData->rd, pCF->GetRegisterSet());
 
         _ASSERTE(pFrameData->ctx != NULL);
         GetStackWalkCurrentContext(pIter, pFrameData->ctx);

@@ -1611,7 +1611,11 @@ namespace System.Threading.Tasks
         internal static readonly Task<VoidTaskResult> s_cachedCompleted = new Task<VoidTaskResult>(false, default, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, default);
 
         /// <summary>Gets a task that's already been completed successfully.</summary>
-        public static Task CompletedTask => s_cachedCompleted;
+        public static Task CompletedTask
+        {
+            [Intrinsic]
+            get => s_cachedCompleted;
+        }
 
         /// <summary>
         /// Provides an event that can be used to wait for completion.
@@ -3618,10 +3622,22 @@ namespace System.Threading.Tasks
 
             switch (continuationObject)
             {
+#if !MONO
+                // Runtime async continuation is very cheap to check for since
+                // it is sealed. Its semantics cannot be described by
+                // ITaskCompletionAction because it should be inlined when
+                // there is only one, but run in parallel when there are
+                // multiple.
+                case RuntimeAsyncTaskContinuation tc:
+                    tc.Execute(canInline: canInlineContinuations);
+                    LogFinishCompletionNotification();
+                    return;
+#endif
+
                 // Handle the single IAsyncStateMachineBox case.  This could be handled as part of the ITaskCompletionAction
                 // but we want to ensure that inlining is properly handled in the face of schedulers, so its behavior
-                // needs to be customized ala raw Actions.  This is also the most important case, as it represents the
-                // most common form of continuation, so we check it first.
+                // needs to be customized ala raw Actions.  This is also one of the most important cases, as it represents the
+                // most common form of continuation, so we check it early.
                 case IAsyncStateMachineBox stateMachineBox:
                     AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
                     LogFinishCompletionNotification();
@@ -3698,6 +3714,12 @@ namespace System.Threading.Tasks
                                 log.RunningContinuationList(Id, i, currentContinuation);
                             switch (currentContinuation)
                             {
+#if !MONO
+                                case RuntimeAsyncTaskContinuation tc:
+                                    tc.Execute(canInline: false);
+                                    break;
+#endif
+
                                 case IAsyncStateMachineBox stateMachineBox:
                                     AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, allowInlining: false);
                                     break;
@@ -3731,6 +3753,12 @@ namespace System.Threading.Tasks
 
                 switch (currentContinuation)
                 {
+#if !MONO
+                    case RuntimeAsyncTaskContinuation tc:
+                        tc.Execute(canInlineContinuations);
+                        break;
+#endif
+
                     case IAsyncStateMachineBox stateMachineBox:
                         AwaitTaskContinuation.RunOrScheduleAction(stateMachineBox, canInlineContinuations);
                         break;
@@ -4765,7 +4793,7 @@ namespace System.Threading.Tasks
 
         // Record a continuation task or action.
         // Return true if and only if we successfully queued a continuation.
-        private bool AddTaskContinuation(object tc, bool addBeforeOthers)
+        internal bool AddTaskContinuation(object tc, bool addBeforeOthers)
         {
             Debug.Assert(tc != null);
 
@@ -5517,6 +5545,7 @@ namespace System.Threading.Tasks
         /// <param name="result">The result to store into the completed task.</param>
         /// <returns>The successfully completed task.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
+        [Intrinsic]
         public static unsafe Task<TResult> FromResult<TResult>(TResult result)
         {
             // The goal of this function is to be give back a cached task if possible, or to otherwise give back a new task.
@@ -7199,6 +7228,8 @@ namespace System.Threading.Tasks
 
             return new UnwrapPromise<TResult>(outerTask, lookForOce);
         }
+
+        internal object? ContinuationForDiagnostics => m_continuationObject != this ? m_continuationObject : null;
 
         internal virtual Delegate[]? GetDelegateContinuationsForDebugger()
         {

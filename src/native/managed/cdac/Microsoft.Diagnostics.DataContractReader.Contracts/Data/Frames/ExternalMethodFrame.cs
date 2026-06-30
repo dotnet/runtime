@@ -3,16 +3,8 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal class ExternalMethodFrame : IData<ExternalMethodFrame>
+[CdacType(nameof(DataType.ExternalMethodFrame))]
+internal partial class ExternalMethodFrame : IData<ExternalMethodFrame>
 {
-    static ExternalMethodFrame IData<ExternalMethodFrame>.Create(Target target, TargetPointer address)
-        => new ExternalMethodFrame(target, address);
-
-    public ExternalMethodFrame(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ExternalMethodFrame);
-        Indirection = target.ReadPointerField(address, type, nameof(Indirection));
-    }
-
-    public TargetPointer Indirection { get; }
+    [Field] public TargetPointer Indirection { get; }
 }

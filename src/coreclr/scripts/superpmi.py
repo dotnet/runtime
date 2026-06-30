@@ -1095,6 +1095,19 @@ class SuperPMICollect:
                         rsp_write_handle.write("-r:" + os.path.join(self.core_root, "netstandard.dll") + "\n")
                         rsp_write_handle.write("--parallelism:1" + "\n")
                         rsp_write_handle.write("--jitpath:" + os.path.join(self.core_root, self.collection_shim_name) + "\n")
+                        # If we are cross-compiling (target != host), tell crossgen2 explicitly which
+                        # OS/architecture to generate code for. For wasm targets, also pass the wasm
+                        # object format and the crossgen2 codegen option that's required by the wasm
+                        # cross-compiling JIT (mirroring src/coreclr/crossgen-corelib.proj).
+                        if self.coreclr_args.target_arch != self.coreclr_args.arch or self.coreclr_args.target_os != self.coreclr_args.host_os:
+                            rsp_write_handle.write("--targetarch:" + self.coreclr_args.target_arch + "\n")
+                            rsp_write_handle.write("--targetos:" + self.coreclr_args.target_os + "\n")
+                        if self.coreclr_args.target_arch == "wasm":
+                            rsp_write_handle.write("--obj-format:wasm" + "\n")
+                            # FIXME: Remove JitWasmNyiToR2RUnsupported once wasm codegen covers all cases
+                            rsp_write_handle.write("--codegenopt:JitWasmNyiToR2RUnsupported=1" + "\n")
+                            # FIXME: Remove JitWasmSimdNyiToR2RUnsupported once wasm codegen covers all SIMD cases
+                            rsp_write_handle.write("--codegenopt:JitWasmSimdNyiToR2RUnsupported=1" + "\n")
                         for var, value in dotnet_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
@@ -1719,6 +1732,13 @@ class SuperPMIReplay:
             if self.coreclr_args.arch != self.coreclr_args.target_arch:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
+            if self.coreclr_args.target_arch == "wasm":
+                # FIXME: Remove JitWasmSimdNyiToR2RUnsupported as soon as we have collections which include the option
+                repro_flags += [
+                    "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1",
+                    "-jit2option", "force", "JitWasmSimdNyiToR2RUnsupported=1"
+                ]
+
             if not self.coreclr_args.sequential and not self.coreclr_args.compile:
                 if not self.coreclr_args.parallelism:
                     common_flags += [ "-p" ]
@@ -2196,6 +2216,12 @@ class SuperPMIReplayAsmDiffs:
                 "-jitoption", "force", "AltJitNgen=*"
             ]
 
+        if self.coreclr_args.target_arch == "wasm":
+            # FIXME: Remove JitWasmSimdNyiToR2RUnsupported as soon as we have collections which include the option
+            altjit_replay_flags += [
+                "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1"
+            ]
+
         # Keep track if any MCH file replay had asm diffs
         files_with_asm_diffs = []
         files_with_replay_failures = []
@@ -2268,6 +2294,25 @@ class SuperPMIReplayAsmDiffs:
                     # that both Release compilers can interpret). However, we rarely or never compare
                     # two Release compilers, so this is safest.
                     flags += [ "-ignoreStoredConfig" ]
+
+                    # `-ignoreStoredConfig` drops any codegenopt the collection recorded into the
+                    # MCH stored config. For wasm we need to re-supply
+                    # `JitWasmNyiToR2RUnsupported=1` (set by crossgen-corelib.proj during collection)
+                    # so that unimplemented opcodes turn into R2R-unsupported skips rather than
+                    # asserts. FIXME: remove once wasm codegen covers all cases.
+                    if self.coreclr_args.target_arch == "wasm":
+                        flags += [
+                            "-jitoption", "force", "JitWasmNyiToR2RUnsupported=1",
+                            "-jit2option", "force", "JitWasmNyiToR2RUnsupported=1"
+                        ]
+
+                # TODO: Remove this (and add under the above ignoreStoredConfig option)
+                # once we have collections which include JitWasmSimdNyiToR2RUnsupported
+                if self.coreclr_args.target_arch == "wasm":
+                    flags += [
+                            "-jitoption", "force", "JitWasmSimdNyiToR2RUnsupported=1",
+                            "-jit2option", "force", "JitWasmSimdNyiToR2RUnsupported=1"
+                    ]
 
                 # Change the working directory to the Core_Root we will call SuperPMI from.
                 # This is done to allow libcoredistools to be loaded correctly on unix
@@ -2359,6 +2404,21 @@ class SuperPMIReplayAsmDiffs:
                                 if proc.returncode != 0:
                                     # No miss/replay failure is expected in contexts that were reported as having diffs since then they succeeded during the diffs run.
                                     raise create_exception()
+
+                                # A Wasm JIT may exit successfully without writing any disassembly to DOTNET_JitStdOutFile. For example, the wasm JIT
+                                # with JitWasmSimdNyiToR2RUnsupported=1 exits via
+                                # implReadyToRunUnsupported() (CORJIT_R2R_UNSUPPORTED) for NYI_WASM_SIMD during import, so no code is produced. This is an expected behavior.
+                                # TODO-WASM: This check can potentially be removed once we no longer have any NYI's in the import stage.
+                                if not os.path.exists(item_path) and self.coreclr_args.target_arch == "wasm":
+                                    # Log a warning so that unexpected misses (vs the expected JitWasmSimdNyiToR2RUnsupported path) remain diagnosable
+                                    # rather than being silently masked as empty diffs.
+                                    stderr_snippet = stderr.decode(errors='replace').strip().splitlines()
+                                    stderr_first_line = stderr_snippet[0] if stderr_snippet else ""
+                                    logging.warning(
+                                        "%sNo JitStdOutFile produced for wasm context %s at %s (exit=%d, stderr first line: %r). "
+                                        "Treating as empty diff; verify this is the expected JitWasmSimdNyiToR2RUnsupported path.",
+                                        print_prefix, context_index, item_path, proc.returncode, stderr_first_line)
+                                    return ""
 
                                 try:
                                     with open(item_path, 'r') as file_handle:
@@ -5064,11 +5124,16 @@ def setup_args(args):
                 logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
                 coreclr_args.mch_arch = coreclr_args.arch
 
-        # For wasm assume we are doing altjit cross-compilation and set mch_arch to 'arch'
+        # For wasm assume we are doing altjit cross-compilation and set mch_arch to 'arch'.
+        # Also force --altjit on, since the wasm JIT is always a cross-target altjit and replay
+        # requires AltJit=* to avoid CORJIT_SKIPPED.
         if coreclr_args.target_arch == "wasm":
             if coreclr_args.mch_arch == coreclr_args.target_arch and coreclr_args.mch_arch != coreclr_args.arch:
                 logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
                 coreclr_args.mch_arch = coreclr_args.arch
+            if not getattr(args, 'altjit', False):
+                logging.warning("Overriding 'altjit' to True for wasm cross-target JIT")
+                args.altjit = True
 
     def verify_superpmi_common_args():
 

@@ -54,6 +54,9 @@
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Runtime\CompilerServices\IntrinsicAttribute.cs">
       <Link>IntrinsicAttribute.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Text\Utf8Span.cs">
+      <Link>Internal\Text\Utf8Span.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\ArrayType.Canon.cs">
       <Link>Internal\TypeSystem\ArrayType.Canon.cs</Link>
     </Compile>
@@ -116,6 +119,9 @@
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\CastingHelper.cs">
       <Link>Internal\TypeSystem\CastingHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\TypeSystem\Canon\CastingHelper.Canon.cs">
+      <Link>Internal\TypeSystem\CastingHelper.Canon.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\DefType.cs">
       <Link>Internal\TypeSystem\DefType.cs</Link>

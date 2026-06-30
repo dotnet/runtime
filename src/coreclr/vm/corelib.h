@@ -229,7 +229,7 @@ DEFINE_METHOD(DECIMAL,              CURRENCY_CTOR,          .ctor,              
 
 DEFINE_CLASS_U(System,                 Delegate,            NoClass)
 DEFINE_FIELD_U(_target,                    DelegateObject,   _target)
-DEFINE_FIELD_U(_methodBase,                DelegateObject,   _methodBase)
+DEFINE_FIELD_U(_helperObject,               DelegateObject,   _helperObject)
 DEFINE_FIELD_U(_methodPtr,                 DelegateObject,   _methodPtr)
 DEFINE_FIELD_U(_methodPtrAux,              DelegateObject,   _methodPtrAux)
 DEFINE_CLASS(DELEGATE,              System,                 Delegate)
@@ -278,6 +278,7 @@ DEFINE_CLASS(RUNE,                  Text,                   Rune)
 DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
+DEFINE_METHOD(ENVIRONMENT,       CURRENT_MANAGED_THREAD_ID, get_CurrentManagedThreadId, NoSig)
 DEFINE_METHOD(ENVIRONMENT,       GET_RESOURCE_STRING, GetResourceString, SM_PtrChar_PtrStr_PtrException_RetVoid)
 DEFINE_METHOD(ENVIRONMENT,       INITIALIZE_COMMAND_LINE_ARGS, InitializeCommandLineArgs, SM_PtrChar_Int_PtrPtrChar_PtrArrStr_PtrException_RetVoid)
 DEFINE_METHOD(ENVIRONMENT,       CALL_ENTRY_POINT, CallEntryPoint, SM_IntPtr_PtrArrStr_PtrInt_Bool_PtrException_RetVoid)
@@ -460,6 +461,9 @@ DEFINE_FIELD_U(_buckets, GCHandleSetObject, _buckets)
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(OBJCMARSHAL,    ObjectiveC, ObjectiveCMarshal)
 DEFINE_METHOD(OBJCMARSHAL,   INVOKEUNHANDLEDEXCEPTIONPROPAGATION,    InvokeUnhandledExceptionPropagation,    SM_PtrException_IntPtr_PtrIntPtr_PtrException_RetVoidPtr)
+DEFINE_FIELD(OBJCMARSHAL, OBJECTS, s_objects)
+DEFINE_CLASS_U(ObjectiveC, ObjectiveCMarshal+ObjcTrackingInformation, ObjcTrackingInformationObject)
+DEFINE_FIELD_U(_memory, ObjcTrackingInformationObject, _memory)
 #endif // FEATURE_OBJCMARSHAL
 
 DEFINE_CLASS_U(Interop, TypeMapLazyDictionary+CallbackContext, CallbackContext)
@@ -626,7 +630,6 @@ DEFINE_CLASS(OLE_AUT_BINDER,        System,                 OleAutBinder)
 END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
-DEFINE_FIELD(MONITOR,               CONDITION_TABLE,        s_conditionTable)
 DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_ENTER, SynchronizedMethodEnter, SM_Obj_RefBool_RetVoid)
 DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_EXIT,  SynchronizedMethodExit,  SM_Obj_RefBool_RetVoid)
 
@@ -716,8 +719,13 @@ DEFINE_METHOD(ASYNC_HELPERS,      VALUETASK_FROM_EXCEPTION, ValueTaskFromExcepti
 DEFINE_METHOD(ASYNC_HELPERS,      VALUETASK_FROM_EXCEPTION_1, ValueTaskFromException, GM_Exception_RetValueTaskOfT)
 
 DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT,            TransparentAwait, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_OF_T,       TransparentAwaitOfT, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUE_TASK,   TransparentAwaitValueTask, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUE_TASK_OF_T, TransparentAwaitValueTaskOfT, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_TASK_WITH_RESULT,                TransparentAwaitWithResult, SM_Task_RetVoid)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUETASK_WITH_RESULT,           TransparentAwaitWithResult, SM_ValueTask_RetVoid)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_TASK_OF_T_WITH_RESULT,           TransparentAwaitWithResult, GM_TaskOfT_RetT)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_VALUETASK_OF_T_WITH_RESULT,      TransparentAwaitWithResult, GM_ValueTaskOfT_RetT)
 DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK_RESULT,     CompletedTaskResult, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK,            CompletedTask, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_EXECUTION_CONTEXT, CaptureExecutionContext, NoSig)

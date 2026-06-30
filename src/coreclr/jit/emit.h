@@ -482,13 +482,15 @@ struct EmitCallParams
     BitVec    ptrVars       = BitVecOps::UninitVal();
     regMaskTP gcrefRegs     = RBM_NONE;
     regMaskTP byrefRegs     = RBM_NONE;
-    DebugInfo debugInfo;
-    regNumber ireg        = REG_NA;
-    regNumber xreg        = REG_NA;
-    unsigned  xmul        = 0;
-    ssize_t   disp        = 0;
-    bool      isJump      = false;
-    bool      noSafePoint = false;
+    regNumber ireg          = REG_NA;
+    regNumber xreg          = REG_NA;
+    unsigned  xmul          = 0;
+    ssize_t   disp          = 0;
+    bool      isJump        = false;
+    bool      noSafePoint   = false;
+    // If this call should have managed return value debug info associated with it, this is the call to associate it
+    // with.
+    GenTreeCall* returnValueCall = nullptr;
 #ifdef TARGET_WASM
     CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = nullptr;
 #endif
@@ -687,6 +689,9 @@ protected:
         instruction _idIns : 11;
 #elif defined(TARGET_LOONGARCH64)
         // TODO-LoongArch64: not include SIMD-vector.
+        static_assert(INS_count <= 512);
+        instruction _idIns : 9;
+#elif defined(TARGET_WASM)
         static_assert(INS_count <= 512);
         instruction _idIns : 9;
 #else
@@ -1321,6 +1326,17 @@ protected:
         {
             return _idInsFmt == IF_TRY_TABLE;
         }
+
+        bool idIsV128Imm() const
+        {
+            return _idInsFmt == IF_V128;
+        }
+
+        bool idIsMemargLaneImm() const
+        {
+            return _idInsFmt == IF_MEMARG_LANE;
+        }
+
 #endif
 
 #ifdef TARGET_ARM64
@@ -2412,6 +2428,41 @@ protected:
         void idImm(unsigned int i)
         {
             imm = i;
+        }
+    };
+
+    struct instrDescV128Imm : instrDesc
+    {
+        instrDescV128Imm() = delete;
+
+        uint8_t v128Bytes[16];
+
+        void idV128Const(const uint8_t bytes[16])
+        {
+            assert(bytes != nullptr);
+            memcpy(v128Bytes, bytes, 16);
+        }
+
+        const uint8_t* idV128Const() const
+        {
+            return v128Bytes;
+        }
+    };
+
+    struct instrDescMemargLane : instrDescCns
+    {
+        instrDescMemargLane() = delete;
+
+        uint8_t lane;
+
+        void idLaneIdx(uint8_t idx)
+        {
+            lane = idx;
+        }
+
+        uint8_t idLaneIdx() const
+        {
+            return lane;
         }
     };
 #endif // TARGET_WASM

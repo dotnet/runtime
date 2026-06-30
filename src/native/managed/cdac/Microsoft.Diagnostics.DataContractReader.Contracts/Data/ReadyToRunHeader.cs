@@ -3,19 +3,9 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class ReadyToRunHeader : IData<ReadyToRunHeader>
+[CdacType(nameof(DataType.ReadyToRunHeader))]
+internal sealed partial class ReadyToRunHeader : IData<ReadyToRunHeader>
 {
-    static ReadyToRunHeader IData<ReadyToRunHeader>.Create(Target target, TargetPointer address)
-        => new ReadyToRunHeader(target, address);
-
-    public ReadyToRunHeader(Target target, TargetPointer address)
-    {
-        Target.TypeInfo type = target.GetTypeInfo(DataType.ReadyToRunHeader);
-
-        MajorVersion = target.ReadField<ushort>(address, type, nameof(MajorVersion));
-        MinorVersion = target.ReadField<ushort>(address, type, nameof(MinorVersion));
-    }
-
-    public ushort MajorVersion { get; }
-    public ushort MinorVersion { get; }
+    [Field] public ushort MajorVersion { get; }
+    [Field] public ushort MinorVersion { get; }
 }
