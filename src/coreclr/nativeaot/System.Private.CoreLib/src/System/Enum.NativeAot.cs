@@ -152,7 +152,7 @@ namespace System
 
         internal static Type InternalGetUnderlyingType(RuntimeType enumType)
         {
-            Debug.Assert(enumType..IsActualEnum);
+            Debug.Assert(enumType.IsActualEnum);
             return GetEnumInfo(enumType).UnderlyingType;
         }
     }
