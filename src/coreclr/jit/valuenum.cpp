@@ -15040,7 +15040,6 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
     bool mayRunCctor = s_helperCallProperties.MayRunCctor(helpFunc);
     bool noThrow     = s_helperCallProperties.NoThrow(helpFunc);
 
-
     ValueNumPair vnpExc = ValueNumStore::VNPForEmptyExcSet();
 
     // If the JIT helper can throw an exception make sure that we fill in
