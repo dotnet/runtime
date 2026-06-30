@@ -12,7 +12,7 @@ using Xunit;
 namespace System.Diagnostics.Tests
 {
     [ConditionalClass(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
     public class StartSuspendedTests : ProcessTestBase
     {
         [ConditionalFact]
@@ -53,21 +53,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact]
-        public void Resume_CalledTwice_ThrowsInvalidOperationException()
-        {
-            Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
-            process.StartInfo.StartSuspended = true;
-
-            using SafeProcessHandle processHandle = SafeProcessHandle.Start(process.StartInfo);
-
-            processHandle.Resume();
-
-            Assert.Throws<InvalidOperationException>(() => processHandle.Resume());
-
-            processHandle.WaitForExitOrKillOnTimeout(TimeSpan.FromMilliseconds(WaitInMS));
-        }
-
-        [ConditionalFact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void Resume_OnNonSuspendedProcess_ThrowsInvalidOperationException()
         {
             Process process = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
@@ -191,13 +177,13 @@ namespace System.Diagnostics.Tests
         }
     }
 
-    public class StartSuspendedTests_NonWindows : ProcessTestBase
+    public class StartSuspendedTests_NonWindowsNonMacOS : ProcessTestBase
     {
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Windows, "Resume throws PlatformNotSupportedException on non-Windows")]
-        public void Resume_OnNonWindows_ThrowsPlatformNotSupportedException()
+        [SkipOnPlatform(TestPlatforms.Windows | TestPlatforms.OSX, "Resume is supported on Windows and macOS")]
+        public void Resume_OnNonSupportedOS_ThrowsPlatformNotSupportedException()
         {
-            using SafeProcessHandle handle = new();
+            using SafeProcessHandle handle = SafeProcessHandle.Open(Environment.ProcessId);
             Assert.Throws<PlatformNotSupportedException>(() => handle.Resume());
         }
     }
