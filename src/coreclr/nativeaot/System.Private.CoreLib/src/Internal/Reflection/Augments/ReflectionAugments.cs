@@ -431,16 +431,6 @@ namespace Internal.Reflection.Augments
 
         public static Assembly[] GetLoadedAssemblies() => RuntimeAssemblyInfo.GetLoadedAssemblies();
 
-#pragma warning disable IDE0060
-        public static EnumInfo GetEnumInfo(Type type, Func<Type, string[], object[], bool, EnumInfo> create)
-        {
-            RuntimeTypeInfo runtimeType = type.ToRuntimeTypeInfo();
-            if (runtimeType.GenericCache is EnumInfo info)
-                return info;
-            return runtimeType.CreateAndCacheEnumInfo();
-        }
-#pragma warning restore IDE0060
-
         public static DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
         {
             RuntimeTypeInfo runtimeType = type.ToRuntimeTypeInfo();
