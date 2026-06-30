@@ -1380,11 +1380,7 @@ HRESULT DebuggerRCThread::AsyncStop(void)
         NOTHROW;
         GC_NOTRIGGER;
 
-#ifdef TARGET_X86
         PRECONDITION(!ThisIsHelperThreadWorker());
-#else
-        PRECONDITION(!ThisIsHelperThreadWorker());
-#endif
     }
     CONTRACTL_END;
 
