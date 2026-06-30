@@ -647,6 +647,7 @@ public static partial class XmlSerializerTests
         Assert.Single(actual.CustomItems);
         Assert.Equal("testElement", actual.CustomItems[0].Name);
         Assert.Contains(actual.CustomItems[0].CustomAttributes, n => n is CustomAttribute a && a.LocalName == "customAttribute" && a.Value == "customValue");
+    }
 
     [Fact]
     public static void Xml_Struct()
