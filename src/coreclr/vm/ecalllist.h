@@ -68,7 +68,6 @@ FCFuncStart(gStringFuncs)
 FCFuncEnd()
 
 FCFuncStart(gEnvironmentFuncs)
-    FCFuncElement("get_CurrentManagedThreadId", JIT_GetCurrentManagedThreadId)
     FCFuncElement("set_ExitCode", EnvironmentNative::SetExitCode)
     FCFuncElement("get_ExitCode", EnvironmentNative::GetExitCode)
 FCFuncEnd()

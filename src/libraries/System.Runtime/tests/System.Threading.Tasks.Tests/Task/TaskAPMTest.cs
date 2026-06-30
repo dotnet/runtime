@@ -64,7 +64,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(asyncResult.CompletedSynchronously, "Should not have completed synchronously.");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         [InlineData(true)]
         [InlineData(false)]
@@ -89,7 +89,7 @@ namespace System.Threading.Tasks.Tests
             Assert.False(asyncResult.CompletedSynchronously, "Should not have completed synchronously.");
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [OuterLoop]
         [InlineData(true)]
         [InlineData(false)]

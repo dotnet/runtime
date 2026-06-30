@@ -4777,6 +4777,13 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
         // We want the more complex tree to be evaluated first.
         if ((level < lvl2) && !multiOp->AsHWIntrinsic()->IsUserCall() && gtCanSwapOrder(op1, op2))
         {
+#if defined(TARGET_WASM)
+            // TODO-WASM-CQ: Wasm's stack-machine codegen requires operands to be evaluated in
+            // source order, so we cannot honor GTF_REVERSE_OPS here. For commutative HW
+            // intrinsics we could instead physically swap multiOp->Op(1)/Op(2) to retain the
+            // CQ benefit (mirroring the binary commutative path in gtSetEvalOrder). For now,
+            // just skip the swap to keep evaluation order intact.
+#else
             if (multiOp->IsReverseOp())
             {
                 multiOp->ClearReverseOp();
@@ -4787,6 +4794,7 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             }
 
             std::swap(level, lvl2);
+#endif // TARGET_WASM
         }
 
         if (level < 1)

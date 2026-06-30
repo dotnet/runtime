@@ -4086,6 +4086,15 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_Sha3_XorRotateRight:
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op3));
+                if (intrin.op3->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op3);
+                }
+                break;
+
             default:
                 unreached();
         }

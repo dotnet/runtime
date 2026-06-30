@@ -1690,6 +1690,7 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                 case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
                 case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
                 case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+                case NI_Sve_ShiftRightArithmeticForDivide:
                     needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
                     break;
 
@@ -1697,6 +1698,8 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                 case NI_AdvSimd_ExtractVector128:
                 case NI_AdvSimd_StoreSelectedScalar:
                 case NI_AdvSimd_Arm64_StoreSelectedScalar:
+                case NI_Sha3_XorRotateRight:
+                case NI_Sve_AddRotateComplex:
                 case NI_Sve_Prefetch16Bit:
                 case NI_Sve_Prefetch32Bit:
                 case NI_Sve_Prefetch64Bit:
@@ -1780,14 +1783,6 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                     needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
                     // Ensure that internal does not collide with destination.
                     setInternalRegsDelayFree = true;
-                    break;
-
-                case NI_Sve_ShiftRightArithmeticForDivide:
-                    needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
-                    break;
-
-                case NI_Sve_AddRotateComplex:
-                    needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                     break;
 
                 case NI_Sve_MultiplyAddRotateComplex:
