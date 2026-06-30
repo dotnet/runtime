@@ -402,11 +402,6 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public virtual Type? GetNullableUnderlyingType() => null;
 
-        public virtual Type GetEnumUnderlyingType()
-        {
-            throw new NotSupportedException();
-        }
-
         internal virtual void GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags)
         {
             throw new NotSupportedException();
@@ -417,7 +412,12 @@ namespace System.Reflection.Runtime.TypeInfos
             Debug.Assert(IsActualEnum);
 
             GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
-            Type underlyingType = GetEnumUnderlyingType();
+            
+            // Generic enums are guaranteed to have generic type definition MethodTable,
+            // so we can always use RuntimeAugments to get the underlying type.
+            RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
+            Debug.Assert(!typeHandle.IsNull);
+            Type underlyingType = RuntimeAugments.GetEnumUnderlyingType(typeHandle);
 
             // Sort by unsigned storage type to match Enum ordering semantics.
             // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.

@@ -90,9 +90,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 ? _key.GenericTypeArguments[0].ToType()
                 : null;
 
-        public sealed override Type GetEnumUnderlyingType() =>
-            GenericTypeDefinitionTypeInfo.GetEnumUnderlyingType();
-
         internal sealed override void GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags) =>
             GenericTypeDefinitionTypeInfo.GetEnumValuesAndNames(out unsortedNames, out unsortedValues, out isFlags);
 

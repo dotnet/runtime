@@ -205,42 +205,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             return (this.ToType() == typeof(Nullable<>)) ? RuntimeGenericTypeParameters[0].ToType() : null;
         }
 
-        public sealed override Type GetEnumUnderlyingType()
-        {
-            Debug.Assert(IsActualEnum);
-
-            // If we have a runtime type handle (closed type), use the fast runtime path.
-            RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
-            if (!typeHandle.IsNull)
-                return RuntimeAugments.GetEnumUnderlyingType(typeHandle);
-
-            // For open generic types (no EEType), infer the underlying type from the DefaultValue
-            // HandleType of the first static (enum member) field. This avoids pulling in type
-            // resolution infrastructure (Handle.Resolve) which would increase binary size.
-            foreach (FieldHandle fieldHandle in _typeDefinition.Fields)
-            {
-                Field field = fieldHandle.GetField(_reader);
-                if (0 != (field.Flags & FieldAttributes.Static))
-                {
-                    return field.DefaultValue.HandleType switch
-                    {
-                        HandleType.ConstantSByteValue => typeof(sbyte),
-                        HandleType.ConstantByteValue => typeof(byte),
-                        HandleType.ConstantInt16Value => typeof(short),
-                        HandleType.ConstantUInt16Value => typeof(ushort),
-                        HandleType.ConstantInt32Value => typeof(int),
-                        HandleType.ConstantUInt32Value => typeof(uint),
-                        HandleType.ConstantInt64Value => typeof(long),
-                        HandleType.ConstantUInt64Value => typeof(ulong),
-                        _ => typeof(int),
-                    };
-                }
-            }
-
-            // Empty enum: default to int.
-            return typeof(int);
-        }
-
         internal sealed override void GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags)
         {
             Debug.Assert(IsActualEnum);
