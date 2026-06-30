@@ -4705,8 +4705,8 @@ namespace System.Runtime.Intrinsics.Arm
         internal Sm4() { }
         public static new bool IsSupported { get { throw null; } }
 
-        public static Vector128<uint> Encode(System.Runtime.Intrinsics.Vector128<uint> a, System.Runtime.Intrinsics.Vector128<uint> b) { throw null; }
-        public static Vector128<uint> KeyUpdate(System.Runtime.Intrinsics.Vector128<uint> a, System.Runtime.Intrinsics.Vector128<uint> b) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> Encode(System.Runtime.Intrinsics.Vector128<uint> value, System.Runtime.Intrinsics.Vector128<uint> roundKeys) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> KeyUpdate(System.Runtime.Intrinsics.Vector128<uint> value, System.Runtime.Intrinsics.Vector128<uint> constant) { throw null; }
         public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
         {
             internal Arm64() { }
@@ -7329,8 +7329,8 @@ namespace System.Runtime.Intrinsics.Arm
     {
         internal SveSm4() { }
         public static new bool IsSupported { get { throw null; } }
-        public static System.Numerics.Vector<uint> Encode(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
-        public static System.Numerics.Vector<uint> KeyUpdate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<uint> Encode(System.Numerics.Vector<uint> value, System.Numerics.Vector<uint> roundKeys) { throw null; }
+        public static System.Numerics.Vector<uint> KeyUpdate(System.Numerics.Vector<uint> value, System.Numerics.Vector<uint> constant) { throw null; }
         public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
         {
             internal Arm64() { }
