@@ -234,6 +234,7 @@
     <Compile Include="Compiler\CompositeImageSettings.cs" />
     <Compile Include="Compiler\CryptographicHashProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AllMethodsOnTypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ArrayInterfaceMethodsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InheritedVirtualMethodsNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" Link="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
