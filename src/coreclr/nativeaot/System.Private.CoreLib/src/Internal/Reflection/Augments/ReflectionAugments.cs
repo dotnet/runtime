@@ -439,7 +439,8 @@ namespace Internal.Reflection.Augments
             EnumInfo enumInfo;
             if (runtimeTypeInfo.IsConstructedGenericType)
             {
-                // Constructed generic enum instantiations share names/values/underlying type with the generic definition.
+                // Constructed generic instantiations may be missing MethodTable that we need to get
+                // the underlying type. Delegate them to generic type definitions that have it.
                 enumInfo = Enum.GetEnumInfo((RuntimeType)runtimeTypeInfo.GetGenericTypeDefinition());
             }
             else
