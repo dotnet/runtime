@@ -606,6 +606,11 @@ namespace Internal.Runtime.Augments
             return InvokeUtils.CheckArgument(srcObject, dstType.ToMethodTable(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
         }
 
+        public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle? binderBundle, out bool copyBack)
+        {
+            return InvokeUtils.CheckArgument(srcObject, dstType.ToMethodTable(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle, out copyBack);
+        }
+
         // FieldInfo.SetValueDirect() has a completely different set of rules on how to coerce the argument from
         // the other Reflection api.
         public static object CheckArgumentForDirectFieldAccess(object srcObject, RuntimeTypeHandle dstType)
