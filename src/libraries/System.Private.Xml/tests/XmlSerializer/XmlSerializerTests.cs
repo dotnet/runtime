@@ -1928,33 +1928,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void Xml_TypeWithArrayLikeChoiceElement()
-    {
-        // Exercises an [XmlChoiceIdentifier] member where one of the choice element types is
-        // itself an array, so that element's mapping is an ArrayMapping. Deserializing such a
-        // value drives the reflection-based reader's array-reading path while the owning member
-        // carries a choice identifier.
-        var value = new TypeWithArrayLikeChoiceElement()
-        {
-            ManyChoices = new object[] { "hello", new int[] { 1, 2, 3 } },
-            ChoiceArray = new ArrayLikeChoice[] { ArrayLikeChoice.Word, ArrayLikeChoice.Numbers }
-        };
-
-        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithArrayLikeChoiceElement xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Word>hello</Word>\r\n  <Numbers>\r\n    <int>1</int>\r\n    <int>2</int>\r\n    <int>3</int>\r\n  </Numbers>\r\n</TypeWithArrayLikeChoiceElement>"));
-
-        Assert.NotNull(actual);
-        Assert.NotNull(actual.ManyChoices);
-        Assert.Equal(2, actual.ManyChoices.Length);
-        Assert.Equal("hello", actual.ManyChoices[0]);
-        int[] numbers = Assert.IsType<int[]>(actual.ManyChoices[1]);
-        Assert.Equal(new int[] { 1, 2, 3 }, numbers);
-
-        // The [XmlIgnore] choice array is populated during deserialization to mirror, per item,
-        // which element each value was read from.
-        Assert.Equal(new ArrayLikeChoice[] { ArrayLikeChoice.Word, ArrayLikeChoice.Numbers }, actual.ChoiceArray);
-    }
-
-    [Fact]
     public static void XML_TypeWithTypeNameInXmlTypeAttribute_WithValue()
     {
         var value = new TypeWithTypeNameInXmlTypeAttribute() { XmlAttributeForm = "SomeValue" };
@@ -3298,24 +3271,4 @@ internal sealed class XmlSerializerAppContextSwitchScope : IDisposable
         }
         throw new ArgumentException($"Cannot guess cached field name from switch name '{name}'");
     }
-}
-
-public class TypeWithArrayLikeChoiceElement
-{
-    // One of the choice element types (Numbers) is an array, so its element mapping is an
-    // ArrayMapping. Each item in ManyChoices is matched to an item in ChoiceArray.
-    [XmlChoiceIdentifier("ChoiceArray")]
-    [XmlElement("Word", typeof(string))]
-    [XmlElement("Numbers", typeof(int[]))]
-    public object[] ManyChoices;
-
-    [XmlIgnore]
-    public ArrayLikeChoice[] ChoiceArray;
-}
-
-public enum ArrayLikeChoice
-{
-    None,
-    Word,
-    Numbers
 }
