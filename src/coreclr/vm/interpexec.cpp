@@ -23,6 +23,16 @@ extern "C" void SamplingProfiler_OnSamplepoint();
 // for numeric_limits
 #include <limits>
 #include <functional>
+#include <atomic>
+
+// Compiler reordering barrier. Prevents the compiler from moving memory accesses across this
+// point. It emits no instructions and provides no CPU or cross-thread ordering; use it only to
+// order accesses with respect to asynchronous interruption on the SAME thread, such as a stack
+// overflow or other hardware-exception handler.
+static inline void CompilerBarrier()
+{
+    std::atomic_signal_fence(std::memory_order_acq_rel);
+}
 
 struct InterpDispatchCacheEntry
 {
@@ -1332,6 +1342,19 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
     // small subset of frames high.
     pFrame->ip = ip;
     pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Resolve .override before compilation: if a MethodImpl has remapped
+    // targetMethod's vtable slot, switch to the overriding method so we
+    // compile the correct body. Cache the result on the original MethodDesc
+    // so callers that check IsInterpreterCodeInitialized don't re-resolve.
+    MethodDesc* pOriginalMethod = targetMethod;
+    if (targetMethod->IsVtableSlot())
+    {
+        targetMethod = MethodTable::MapMethodDeclToMethodImpl(targetMethod);
+    }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
     {
         GCX_PREEMP();
         if (targetMethod->ShouldCallPrestub())
@@ -1343,11 +1366,22 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
         }
     }
     InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
+
     if (targetIp == NULL)
     {
         // The prestub wasn't able to setup an interpreter code, so it will never be able to.
         targetMethod->PoisonInterpreterCode();
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        if (pOriginalMethod != targetMethod)
+            pOriginalMethod->PoisonInterpreterCode();
+#endif
     }
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    else if (pOriginalMethod != targetMethod)
+    {
+        pOriginalMethod->SetInterpreterCode(targetIp);
+    }
+#endif
 
     return targetIp;
 }
@@ -3411,7 +3445,11 @@ SWITCH_OPCODE:
                                 if (!pChildFrame)
                                 {
                                     pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                                    // We make sure that a new frame can't be seen with invalid ip/next when a stack
+                                    // overflow is triggered at a location outside of our control.
+                                    pChildFrame->ip = NULL;
                                     pChildFrame->pNext = NULL;
+                                    CompilerBarrier();
                                     pFrame->pNext = pChildFrame;
                                 }
                                 pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, LOCAL_VAR_ADDR(callArgsOffset, int8_t));
@@ -3516,7 +3554,11 @@ CALL_INTERP_METHOD:
                             if (!pChildFrame)
                             {
                                 pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                                // We make sure that a new frame can't be seen with invalid ip/next when a stack
+                                // overflow is triggered at a location outside of our control.
+                                pChildFrame->ip = NULL;
                                 pChildFrame->pNext = NULL;
+                                CompilerBarrier();
                                 pFrame->pNext = pChildFrame;
                             }
                             pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, callArgsAddress);
@@ -4363,7 +4405,11 @@ do                                                                      \
                         if (!pChildFrame)
                         {
                             pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                            // We make sure that a new frame can't be seen with invalid ip/next when a stack
+                            // overflow is triggered at a location outside of our control.
+                            pChildFrame->ip = NULL;
                             pChildFrame->pNext = NULL;
+                            CompilerBarrier();
                             pFrame->pNext = pChildFrame;
                         }
                         // Set the frame to the same values as the caller frame.

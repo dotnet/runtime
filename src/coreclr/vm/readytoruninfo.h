@@ -479,6 +479,14 @@ struct GenericDictionaryDynamicHelperStubData
     GenericHandleArgs *HandleArgs;
 };
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+struct GenericDictionaryDynamicHelperStubData_PortableEntryPoint
+{
+    PCODE HelperFunctionTableIndex;
+    GenericDictionaryDynamicHelperStubData stubData;
+};
+#endif
+
 class ReadyToRunLoadedImage
 {
     TADDR m_pImageBase;

@@ -237,7 +237,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isIntegerRegister(id->idReg1()) || // ZR
                    isVectorRegister(id->idReg1()));
             assert(isIntegerRegister(id->idReg2())); // SP
-            assert((emitGetInsSC(id) == 0) || (id->idIsTlsGD()));
+            assert((emitGetInsSC(id) == 0) || id->idIsTlsGD() || id->idIsReloc());
             assert(insOptsNone(id->idInsOpt()));
             break;
 
@@ -5906,6 +5906,13 @@ void emitter::emitIns_R_R_I(instruction     ins,
             }
         }
 
+        // Try to fold a preceding relocatable "adrp/add" page-offset into this load, turning
+        // "adrp Rd,sym; add Rd,Rd,#:lo12:sym; ldr Rd,[Rd]" into "adrp Rd,sym; ldr Rd,[Rd,#:lo12:sym]".
+        if ((fmt == IF_LS_2A) && m_compiler->opts.compReloc && TryFoldPageOffsetIntoLdr(ins, attr, reg1, reg2))
+        {
+            return;
+        }
+
         // Try to optimize a load/store with an alternative instruction.
         if (isLdrStr && m_compiler->opts.OptimizationEnabled() &&
             OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, false, -1, -1 DEBUG_ARG(false)))
@@ -11423,6 +11430,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 emitRecordRelocation(odst, (void*)emitGetInsSC(id), CorInfoReloc::ARM64_LIN_TLSDESC_LD64_LO12);
             }
+            else if (id->idIsReloc())
+            {
+                // "ldr Rt,[Rn,#:lo12:sym]" with the page offset folded in from a preceding adrp/add pair.
+                emitRecordRelocation(odst, (void*)emitGetInsSC(id), CorInfoReloc::ARM64_PAGEOFFSET_12L);
+            }
             break;
 
         case IF_LS_2B: // LS_2B   .X.......Xiiiiii iiiiiinnnnnttttt      Rt Rn    imm(0-4095)
@@ -13856,9 +13868,21 @@ void emitter::emitDispInsHelp(
 
         case IF_LS_2A: // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn
             assert(insOptsNone(id->idInsOpt()));
-            assert((emitGetInsSC(id) == 0) || id->idIsTlsGD());
+            assert((emitGetInsSC(id) == 0) || id->idIsTlsGD() || id->idIsReloc());
             emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
-            emitDispAddrRI(id->idReg2(), id->idInsOpt(), 0);
+            if (id->idIsReloc() && !id->idIsTlsGD())
+            {
+                // "ldr Rt,[Rn,#:lo12:sym]" with the page offset folded in from a preceding adrp/add pair.
+                printf("[");
+                emitDispReg(id->idReg2(), EA_PTRSIZE, true);
+                printf("[LOW RELOC ");
+                emitDispImm((ssize_t)emitGetInsSC(id), false);
+                printf("]]");
+            }
+            else
+            {
+                emitDispAddrRI(id->idReg2(), id->idInsOpt(), 0);
+            }
             break;
 
         case IF_LS_2B: // LS_2B   .X.......Xiiiiii iiiiiinnnnnttttt      Rt Rn    imm(0-4095)
@@ -17891,7 +17915,7 @@ bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, e
         return false;
     }
 
-    if ((emitLastIns->idInsFmt() != IF_LS_2A) || emitLastIns->idIsTlsGD())
+    if ((emitLastIns->idInsFmt() != IF_LS_2A) || emitLastIns->idIsTlsGD() || emitLastIns->idIsReloc())
     {
         return false;
     }
@@ -17990,6 +18014,80 @@ bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, e
     {
         id->idGCrefReg2(GCT_GCREF);
     }
+
+    dispIns(id);
+    appendToCurIG(id);
+    return true;
+}
+
+//-----------------------------------------------------------------------------------
+// TryFoldPageOffsetIntoLdr: Fold the page offset of an immediately preceding relocatable
+//   "add Rd, Rd, #:lo12:sym" (PAGEOFFSET_12A) into a "ldr Rd, [Rd]" so that the pair
+//   "adrp Rd, sym; add Rd, Rd, #:lo12:sym; ldr Rd, [Rd]" becomes the shorter
+//   "adrp Rd, sym; ldr Rd, [Rd, #:lo12:sym]" using a PAGEOFFSET_12L relocation.
+//
+// Arguments:
+//   ins  - The load instruction being emitted (must be INS_ldr to fold).
+//   attr - The operand attributes of the load.
+//   reg1 - The destination register of the load.
+//   reg2 - The base (address) register of the load.
+//
+// Returns:
+//   True if the fold was performed and the (relocatable) load was emitted; false otherwise.
+//
+bool emitter::TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
+{
+    if (ins != INS_ldr)
+    {
+        return false;
+    }
+
+    // The load must overwrite its own base so the full cell address is provably dead.
+    if (reg1 != reg2)
+    {
+        return false;
+    }
+
+    // PAGEOFFSET_12L patches a 64-bit LDR (offset scaled by 8); restrict to 64-bit general-register
+    // loads (this includes GCREF/BYREF, which are EA_8BYTE in a general register).
+    if ((EA_SIZE(attr) != EA_8BYTE) || !isGeneralRegister(reg1))
+    {
+        return false;
+    }
+
+    if (!emitCanPeepholeLastIns())
+    {
+        return false;
+    }
+
+    if (m_compiler->compGeneratingUnwindProlog || m_compiler->compGeneratingUnwindEpilog)
+    {
+        // Don't remove instructions while generating the "unwind" part of prologs or epilogs.
+        return false;
+    }
+
+    // The previous instruction must be the "add Rd, Rd, #:lo12:sym" half of an adrp/add reloc pair.
+    instrDesc* prevId = emitLastIns;
+    if ((prevId->idIns() != INS_add) || (prevId->idInsFmt() != IF_DI_2A) || !prevId->idIsReloc() ||
+        prevId->idIsTlsGD() || (prevId->idReg1() != reg1) || (prevId->idReg2() != reg1))
+    {
+        return false;
+    }
+
+    void* sym = prevId->idAddr()->iiaAddr;
+
+    // Drop the "add"; the preceding "adrp" already put the page base of 'sym' into reg1.
+    emitRemoveLastInstruction();
+
+    // Emit "ldr reg1, [reg1]" carrying a PAGEOFFSET_12L relocation against 'sym'. The instruction
+    // encodes a zero offset; the relocation deposits the scaled :lo12: page offset of 'sym'.
+    instrDesc* id = emitNewInstrSC(attr, (ssize_t)sym);
+    id->idIns(INS_ldr);
+    id->idInsFmt(IF_LS_2A);
+    id->idInsOpt(INS_OPTS_NONE);
+    id->idReg1(reg1);
+    id->idReg2(reg1);
+    id->idSetIsDspReloc();
 
     dispIns(id);
     appendToCurIG(id);

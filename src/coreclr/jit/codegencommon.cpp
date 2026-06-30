@@ -5851,8 +5851,10 @@ void CodeGen::genFnProlog()
 
     genZeroInitFrame(untrLclHi, untrLclLo, initReg, &initRegZeroed);
 
-#ifndef TARGET_WASM // TODO-WASM: enable as needed.
+    // Save the generic context arg in the prolog so GetParamTypeArg can report it.
     genReportGenericContextArg(initReg, &initRegZeroed);
+
+#ifndef TARGET_WASM // TODO-WASM: enable as needed.
 
 #ifdef JIT32_GCENCODER
     // Initialize the LocalAllocSP slot if there is localloc in the function.

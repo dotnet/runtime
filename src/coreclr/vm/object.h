@@ -1743,6 +1743,7 @@ typedef BStrWrapper*     BSTRWRAPPEROBJECTREF;
 
 #endif // FEATURE_COMINTEROP
 
+#define DELEGATE_MARKER_UNMANAGEDFPTR (-1)
 
 // This class corresponds to System.MulticastDelegate on the managed side.
 class DelegateObject : public Object

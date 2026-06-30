@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-openbsd;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-illumos;$(NetCoreAppCurrent)-solaris;$(NetCoreAppCurrent)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
@@ -12,34 +12,37 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.Process_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <IsiOSLike Condition="'$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</IsiOSLike>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
     <Compile Include="System\Collections\Specialized\DictionaryWrapper.cs" />
+    <Compile Include="System\Collections\Specialized\StringDictionaryWrapper.cs" />
     <Compile Include="System\Diagnostics\AsyncStreamReader.cs" />
     <Compile Include="System\Diagnostics\DataReceivedEventArgs.cs" />
+    <Compile Include="System\Diagnostics\MonitoringDescriptionAttribute.cs" />
     <Compile Include="System\Diagnostics\Process.cs" />
     <Compile Include="System\Diagnostics\Process.Multiplexing.cs" />
     <Compile Include="System\Diagnostics\Process.Scenarios.cs" />
     <Compile Include="System\Diagnostics\ProcessExitStatus.cs" />
-    <Compile Include="System\Diagnostics\ProcessOutputLine.cs" />
-    <Compile Include="System\Diagnostics\ProcessTextOutput.cs" />
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />
     <Compile Include="System\Diagnostics\ProcessModule.cs" />
     <Compile Include="System\Diagnostics\ProcessModuleCollection.cs" />
+    <Compile Include="System\Diagnostics\ProcessOutputLine.cs" />
     <Compile Include="System\Diagnostics\ProcessPriorityClass.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.cs" />
-    <Compile Include="System\Diagnostics\ProcessUtils.cs" />
+    <Compile Include="System\Diagnostics\ProcessTextOutput.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.cs" />
     <Compile Include="System\Diagnostics\ProcessThreadCollection.cs" />
+    <Compile Include="System\Diagnostics\ProcessUtils.cs" />
     <Compile Include="System\Diagnostics\ProcessWindowStyle.cs" />
     <Compile Include="System\Diagnostics\ThreadInfo.cs" />
     <Compile Include="System\Diagnostics\ThreadPriorityLevel.cs" />
     <Compile Include="System\Diagnostics\ThreadState.cs" />
     <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
-    <Compile Include="System\Diagnostics\MonitoringDescriptionAttribute.cs" />
-    <Compile Include="System\Collections\Specialized\StringDictionaryWrapper.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnixProcessStartArguments.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsProcessStartArguments.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Runtime\Serialization\SerializationGuard.cs"
@@ -390,6 +393,20 @@
              Link="Common\Interop\FreeBSD\Interop.Process.cs" />
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs"
              Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'openbsd'">
+    <Compile Include="System\Diagnostics\Process.BSD.cs" />
+    <Compile Include="System\Diagnostics\Process.OpenBSD.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.OpenBSD.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.OpenBSD.cs" />
+    <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.Sysctl.cs"
+             Link="Common\Interop\BSD\System.Native\Interop.Sysctl.cs" />
+    <Compile Include="$(CommonPath)Interop\OpenBSD\Interop.Process.cs"
+             Link="Common\Interop\OpenBSD\Interop.Process.cs" />
+    <Compile Include="$(CommonPath)Interop\OpenBSD\Interop.Process.GetProcInfo.cs"
+             Link="Common\Interop\OpenBSD\Interop.Process.GetProcInfo.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'solaris'">
