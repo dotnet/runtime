@@ -457,8 +457,7 @@ namespace Internal.Reflection.Augments
             // That codepath would bring functionality to compare everything that was ever allocated in the program.
             ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
 
-            EETypeElementType elementType = methodTable->ElementType;
-            EnumInfo info = elementType switch
+            EnumInfo info = methodTable->ElementType switch
             {
                 EETypeElementType.SByte => CreateEnumInfoTyped<byte>(typeof(sbyte), unsortedNames, unsortedValues, isFlags),
                 EETypeElementType.Byte => CreateEnumInfoTyped<byte>(typeof(byte), unsortedNames, unsortedValues, isFlags),
