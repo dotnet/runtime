@@ -185,19 +185,24 @@ namespace System.Diagnostics.Tests
                         startupInfoEx.StartupInfo.hStdError = args.StandardError;
                         startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
 
+                        int creationFlags = Interop.Kernel32.CREATE_BREAKAWAY_FROM_JOB | Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT;
+                        if (args.EnvironmentVariables != null)
+                        {
+                            creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_UNICODE_ENVIRONMENT;
+                        }
+
                         bool retVal = Interop.Kernel32.CreateProcess(
                             null,
                             args.Arguments,
                             ref unused_SecAttrs,
                             ref unused_SecAttrs,
                             bInheritHandles: true,
-                            Interop.Kernel32.CREATE_BREAKAWAY_FROM_JOB | Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
+                            creationFlags,
                             args.EnvironmentVariables,
                             null,
                             &startupInfoEx,
                             &processInfo
                         );
-
                         if (!retVal)
                         {
                             throw new Win32Exception();
@@ -208,8 +213,15 @@ namespace System.Diagnostics.Tests
                         return processInfo.hProcess;
                     });
 
-                    started.WaitForExit(WaitInMS);
-                    return started.ExitCode;
+                    try
+                    {
+                        Assert.True(started.WaitForExit(WaitInMS));
+                        return started.ExitCode;
+                    }
+                    finally
+                    {
+                        started.Kill();
+                    }
                 }
             });
 
