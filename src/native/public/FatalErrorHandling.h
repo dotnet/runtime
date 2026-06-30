@@ -56,13 +56,19 @@ struct FatalErrorInfo
 
     // Platform-specific exception/signal information, if available.
     // On Windows, cast to PEXCEPTION_RECORD.
-    // On non-Windows, cast to siginfo_t*.
+    // On Linux and other signal-based Unix platforms, cast to siginfo_t*.
+    // On Apple platforms (macOS, iOS, ...), this is always NULL because the
+    // runtime handles hardware faults through Mach exceptions rather than POSIX
+    // signals; the faulting code location is reported through the address field.
     // May be NULL.
     void* info;
 
     // Platform-specific thread context at the point of failure, if available.
     // On Windows, cast to PCONTEXT.
-    // On non-Windows, cast to ucontext_t*.
+    // On Linux and other signal-based Unix platforms, cast to ucontext_t*.
+    // On Apple platforms (macOS, iOS, ...), cast to the Mach thread state for
+    // the current architecture: arm_thread_state64_t* on arm64 or
+    // x86_thread_state64_t* on x64.
     // May be NULL.
     void* context;
 

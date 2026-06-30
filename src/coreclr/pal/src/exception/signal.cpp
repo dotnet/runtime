@@ -115,26 +115,18 @@ struct sigaction g_previous_sigint;
 struct sigaction g_previous_sigquit;
 struct sigaction g_previous_sigabrt;
 
-// Thread-local stash for the native signal context. These are set in
-// common_signal_handler before converting to PAL types, and retrieved by
+// Thread-local stash for the native exception context. These are set in
+// common_signal_handler (signal-based platforms) or the Mach exception path
+// (Apple) before converting to PAL types, and retrieved by
 // PAL_GetNativeExceptionPointers for use in the fatal error handler API.
-static thread_local siginfo_t* t_lastSiginfo = NULL;
+static thread_local void* t_lastSiginfo = NULL;
 static thread_local void* t_lastSigcontext = NULL;
 
-struct NativeExceptionPointerHolder
+void PAL_SetNativeExceptionPointers(void* info, void* context)
 {
-    NativeExceptionPointerHolder(siginfo_t* siginfo, void* sigcontext)
-    {
-        t_lastSiginfo = siginfo;
-        t_lastSigcontext = sigcontext;
-    }
-
-    ~NativeExceptionPointerHolder() noexcept
-    {
-        t_lastSiginfo = NULL;
-        t_lastSigcontext = NULL;
-    }
-};
+    t_lastSiginfo = info;
+    t_lastSigcontext = context;
+}
 
 PALIMPORT VOID PALAPI PAL_GetNativeExceptionPointers(void** siginfo, void** sigcontext)
 {

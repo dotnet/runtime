@@ -368,7 +368,7 @@ RestoreCompleteContext(
 #endif
 
 __attribute__((noinline))
-static void PAL_DispatchExceptionInner(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord)
+static void PAL_DispatchExceptionInner(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachExceptionInfo *pMachExceptionInfo)
 {
     // Stash the inner context record into a local in a frame other than PAL_DispatchException
     // to ensure we have a compiler-defined callee stack frame state to record the context record
@@ -384,6 +384,10 @@ static void PAL_DispatchExceptionInner(PCONTEXT pContext, PEXCEPTION_RECORD pExR
         PAL_SEHException exception(pExRecord, pContext, true);
 
         TRACE("PAL_DispatchException(EC %08x EA %p)\n", pExRecord->ExceptionCode, pExRecord->ExceptionAddress);
+
+        // Stash the Mach-native thread state so that, if this exception turns into
+        // a fatal error, the fatal error handler API can surface it.
+        NativeExceptionPointerHolder nativeExceptionPointers(NULL, &pMachExceptionInfo->ThreadState);
 
         continueExecution = SEHProcessException(&exception);
         if (continueExecution)
@@ -428,7 +432,7 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
     __asan_handle_no_return();
     CPalThread *pThread = InternalGetCurrentThread();
 
-    PAL_DispatchExceptionInner(pContext, pExRecord);
+    PAL_DispatchExceptionInner(pContext, pExRecord, pMachExceptionInfo);
 
     // Send the forward request to the exception thread to process
     MachMessage sSendMessage;

@@ -66,6 +66,21 @@ static int DOTNET_CALLCONV HandlerWithLog(int hresult, void* pErrorInfo)
     return SkipDefaultHandler;
 }
 
+// Handler that reports which native exception fields were populated. Used to
+// verify that a native exception (for example, an access violation) supplies
+// the platform-specific siginfo/exception-record and thread context pointers.
+static int DOTNET_CALLCONV HandlerCheckInfo(int hresult, void* pErrorInfo)
+{
+    WriteStdErr("FATAL_HANDLER_INVOKED\n");
+
+    FatalErrorInfo* info = static_cast<FatalErrorInfo*>(pErrorInfo);
+    WriteStdErr("FATAL_INFO:");
+    WriteStdErr(info->info != NULL ? "info=1," : "info=0,");
+    WriteStdErr(info->context != NULL ? "context=1\n" : "context=0\n");
+
+    return SkipDefaultHandler;
+}
+
 // Exported accessors — managed code P/Invokes these to get native function pointers.
 using FatalErrorHandler = int (DOTNET_CALLCONV *)(int hresult, void* errorData);
 
@@ -82,4 +97,9 @@ extern "C" DLL_EXPORT FatalErrorHandler GetHandlerRunDefault()
 extern "C" DLL_EXPORT FatalErrorHandler GetHandlerWithLog()
 {
     return HandlerWithLog;
+}
+
+extern "C" DLL_EXPORT FatalErrorHandler GetHandlerCheckInfo()
+{
+    return HandlerCheckInfo;
 }
