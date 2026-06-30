@@ -102,9 +102,11 @@ public unsafe class ThreadTests
     {
         const uint id = 1;
         const ulong osId = 1234;
-        // Include a flag (AbortRequested) that the contract previously dropped to verify the
-        // full raw m_State bitfield is now reported verbatim.
-        const uint state = (uint)(ThreadState.WaitSleepJoin | ThreadState.Background | ThreadState.AbortRequested);
+        // Wrapped bits (Background, WaitSleepJoin, CoInitialized, DebugSuspendPending) plus an
+        // unwrapped runtime bit (TS_Dead = 0x800) to verify only the wrapped bits are exposed.
+        const uint wrapped = (uint)(ThreadState.Background | ThreadState.WaitSleepJoin | ThreadState.CoInitialized | ThreadState.DebugSuspendPending);
+        const uint unwrapped = 0x00000800; // TS_Dead - not part of the contract enum
+        const uint state = wrapped | unwrapped;
         MockThread? thread = null;
 
         TestPlaceholderTarget target = CreateTarget(
@@ -117,11 +119,13 @@ public unsafe class ThreadTests
 
         IThread contract = target.Contracts.Thread;
         ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
-        Assert.Equal(state, (uint)data.State);
+        Assert.Equal(wrapped, (uint)data.State);
         Assert.True(data.State.HasFlag(ThreadState.Background));
         Assert.True(data.State.HasFlag(ThreadState.WaitSleepJoin));
-        Assert.True(data.State.HasFlag(ThreadState.AbortRequested));
+        Assert.True(data.State.HasFlag(ThreadState.CoInitialized));
+        Assert.True(data.State.HasFlag(ThreadState.DebugSuspendPending));
         Assert.False(data.State.HasFlag(ThreadState.Stopped));
+        Assert.Equal(0u, (uint)data.State & unwrapped);
     }
 
     [Theory]

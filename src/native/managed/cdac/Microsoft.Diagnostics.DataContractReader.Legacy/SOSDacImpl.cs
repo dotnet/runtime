@@ -4335,7 +4335,12 @@ public sealed unsafe partial class SOSDacImpl
             {
                 Debug.Assert(data->corThreadId == dataLocal.corThreadId, $"cDAC: {data->corThreadId}, DAC: {dataLocal.corThreadId}");
                 Debug.Assert(data->osThreadId == dataLocal.osThreadId, $"cDAC: {data->osThreadId}, DAC: {dataLocal.osThreadId}");
-                Debug.Assert(data->state == dataLocal.state, $"cDAC: {data->state}, DAC: {dataLocal.state}");
+                // The cDAC exposes only the subset of Thread::m_State bits wrapped by the
+                // ThreadState contract enum; mask the legacy raw state the same way before comparing.
+                int wrappedStateMask = 0;
+                foreach (Contracts.ThreadState stateFlag in Enum.GetValues<Contracts.ThreadState>())
+                    wrappedStateMask |= (int)stateFlag;
+                Debug.Assert(data->state == (dataLocal.state & wrappedStateMask), $"cDAC: {data->state}, DAC: {dataLocal.state & wrappedStateMask}");
                 Debug.Assert(data->preemptiveGCDisabled == dataLocal.preemptiveGCDisabled, $"cDAC: {data->preemptiveGCDisabled}, DAC: {dataLocal.preemptiveGCDisabled}");
                 Debug.Assert(data->allocContextPtr == dataLocal.allocContextPtr, $"cDAC: {data->allocContextPtr:x}, DAC: {dataLocal.allocContextPtr:x}");
                 Debug.Assert(data->allocContextLimit == dataLocal.allocContextLimit, $"cDAC: {data->allocContextLimit:x}, DAC: {dataLocal.allocContextLimit:x}");
