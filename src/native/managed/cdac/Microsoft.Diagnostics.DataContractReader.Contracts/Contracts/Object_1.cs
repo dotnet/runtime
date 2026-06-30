@@ -163,10 +163,8 @@ internal readonly struct Object_1 : IObject
     {
         Data.Delegate del = _target.ProcessedData.GetOrAdd<Data.Delegate>(address);
 
-        // Classify by invocation count first:
-        // anything other than 0 indicates a multicast/wrapper/special-sig delegate
-        // that this API does not interpret further. Only when invocationCount==0
-        // do MethodPtr/MethodPtrAux unambiguously identify a closed/open delegate.
+        // Classify by invocation count first to handle multicast and unmanaged.
+        // This does not handle open virtual delegates correctly.
         DelegateType delegateType = DelegateType.Unknown;
         if (del.InvocationCount.Value == 0)
         {

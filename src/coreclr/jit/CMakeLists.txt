@@ -716,11 +716,12 @@ else()
 endif()
 
 create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME})
-install_clr(TARGETS clrjit DESTINATIONS . sharedFramework COMPONENT jit)
+install_clr(TARGETS clrjit DESTINATIONS . COMPONENT jit)
 
 if (NOT CLR_CROSS_COMPONENTS_BUILD)
     # Install the clrjit into the sharedframework dir only when we're not doing a cross-components build.
     # We never want to ship the cross-component JIT (it would never be used).
+    install_clr(TARGETS clrjit DESTINATIONS sharedFramework COMPONENT jit)
     install_clr(TARGETS clrjit DESTINATIONS sharedFramework COMPONENT alljits)
 endif()
 
