@@ -189,7 +189,7 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
             }
             else
             {
-                pEntry.Release(); //while we're still under lock
+                pEntry.Free(); //while we're still under lock
             }
         }
 #ifdef _DEBUG
@@ -198,14 +198,14 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
             LOG((LF_APPDOMAIN, LL_INFO10000, "Avoided adding String literal to appdomain map: size: %d bytes\n", pStringData->GetCharCount()));
         }
 #endif
-        pEntry.SuppressRelease();
+        StringLiteralEntry* entry = pEntry.Detach();
         STRINGREF *pStrObj = NULL;
         // Retrieve the string objectref from the string literal entry.
-        pStrObj = pEntry->GetStringObject();
+        pStrObj = entry->GetStringObject();
         _ASSERTE(!bAddIfNotFound || pStrObj);
 
 
-        if (pStrObj != nullptr && ppPinnedString != nullptr && preferFrozenObjectHeap && pEntry->IsStringFrozen())
+        if (pStrObj != nullptr && ppPinnedString != nullptr && preferFrozenObjectHeap && entry->IsStringFrozen())
         {
             *ppPinnedString = *reinterpret_cast<void**>(pStrObj);
         }
@@ -277,13 +277,13 @@ STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNo
                 }
                 else
                 {
-                    pEntry.Release(); // while we're under lock
+                    pEntry.Free(); // while we're under lock
                 }
             }
-            pEntry.SuppressRelease();
+            StringLiteralEntry* entry = pEntry.Detach();
             // Retrieve the string objectref from the string literal entry.
             STRINGREF *pStrObj = NULL;
-            pStrObj = pEntry->GetStringObject();
+            pStrObj = entry->GetStringObject();
             return pStrObj;
         }
     }
@@ -506,8 +506,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
         _ASSERT(preferFrozenObjHeap);
         StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateFrozenEntry(pStringData, strObj));
         m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
-        pEntry.SuppressRelease();
-        pRet = pEntry;
+        pRet = pEntry.Detach();
         _ASSERT(pRet->IsStringFrozen());
     }
     else
@@ -525,8 +524,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
             pStrObj.SuppressRelease();
             // Insert the handle to the string into the hash table.
             m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
-            pEntry.SuppressRelease();
-            pRet = pEntry;
+            pRet = pEntry.Detach();
         }
         GCPROTECT_END();
     }
@@ -569,8 +567,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString
 
         // Insert the handle to the string into the hash table.
         m_StringToEntryHashTable->InsertValue(&StringData, (LPVOID)pEntry, FALSE);
-        pEntry.SuppressRelease();
-        pRet = pEntry;
+        pRet = pEntry.Detach();
     }
 
     return pRet;
