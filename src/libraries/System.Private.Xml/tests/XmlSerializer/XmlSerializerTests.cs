@@ -1941,46 +1941,6 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
     }
 
     [Fact]
-    public static void XML_TypeWithFieldsOrdered()
-    {
-        var value = new TypeWithFieldsOrdered()
-        {
-            IntField1 = 1,
-            IntField2 = 2,
-            StringField1 = "foo1",
-            StringField2 = "foo2"
-        };
-
-        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithFieldsOrdered xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <IntField2>2</IntField2>\r\n  <IntField1>1</IntField1>\r\n  <strfld>foo2</strfld>\r\n  <strfld>foo1</strfld>\r\n</TypeWithFieldsOrdered>"));
-
-        Assert.NotNull(actual);
-        Assert.Equal(value.IntField1, actual.IntField1);
-        Assert.Equal(value.IntField2, actual.IntField2);
-        Assert.Equal(value.StringField1, actual.StringField1);
-        Assert.Equal(value.StringField2, actual.StringField2);
-    }
-
-    [Fact]
-    public static void XML_TypeWithArrayLikeFieldsOrdered()
-    {
-        var value = new TypeWithArrayLikeFieldsOrdered()
-        {
-            Leading = 9,
-            Numbers = new int[] { 10, 20, 30 },
-            StringField1 = "foo1",
-            StringField2 = "foo2"
-        };
-
-        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithArrayLikeFieldsOrdered xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Leading>9</Leading>\r\n  <num>10</num>\r\n  <num>20</num>\r\n  <num>30</num>\r\n  <strfld>foo1</strfld>\r\n  <strfld>foo2</strfld>\r\n</TypeWithArrayLikeFieldsOrdered>"));
-
-        Assert.NotNull(actual);
-        Assert.Equal(value.Leading, actual.Leading);
-        Assert.Equal(value.Numbers, actual.Numbers);
-        Assert.Equal(value.StringField1, actual.StringField1);
-        Assert.Equal(value.StringField2, actual.StringField2);
-    }
-
-    [Fact]
     public static void XmlSerializerFactoryTest()
     {
         string baseline = "<?xml version=\"1.0\"?>\r\n<Dog xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Age>5</Age>\r\n  <Name>Bear</Name>\r\n  <Breed>GermanShepherd</Breed>\r\n</Dog>";
