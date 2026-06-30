@@ -406,8 +406,6 @@ namespace System.Net
 
             public Task<DnsQueryRawResult> StartAsync()
             {
-                ValidateServerPorts(_servers);
-
                 _handle = new DnsQuerySafeHandle();
                 _selfHandle = new GCHandle<DnsQueryAsyncState>(this);
 
@@ -564,19 +562,35 @@ namespace System.Net
             }
         }
 
-        // DnsQueryEx always queries DNS servers on the standard port 53 and requires the
-        // sockaddr port field passed to the API to be left as 0; supplying any other
-        // non-zero port results in ERROR_INVALID_PARAMETER. We accept either 0 ("use the
-        // default port") or 53 (the port DnsQueryEx will actually use) and normalize both
-        // to 0 when building the native server list (see WriteSockAddr). Any other port
-        // cannot be honored on Windows and is rejected here.
-        private static void ValidateServerPorts(IPEndPoint[] servers)
+        // Validates that the caller-specified DNS servers can be honored by DnsQueryEx.
+        // Both restrictions are specific to the Windows DnsQueryEx API, so they live in
+        // the PAL rather than the cross-platform constructor:
+        //  * DnsQueryEx always queries DNS servers on the standard port 53 and requires
+        //    the sockaddr port field passed to the API to be left as 0; supplying any
+        //    other non-zero port results in ERROR_INVALID_PARAMETER. We accept either 0
+        //    ("use the default port") or 53 (the port DnsQueryEx will actually use) and
+        //    normalize both to 0 when building the native server list (see WriteSockAddr).
+        //    Any other port cannot be honored on Windows and is rejected here.
+        //  * DnsQueryEx encodes a single address family for the whole DNS_ADDR_ARRAY, so
+        //    all endpoints must share one family; mixed IPv4/IPv6 lists are rejected.
+        public static void ValidateServers(IPEndPoint[] servers)
         {
+            if (servers.Length == 0)
+            {
+                return;
+            }
+
+            AddressFamily family = servers[0].AddressFamily;
             foreach (IPEndPoint ep in servers)
             {
                 if (ep.Port != 0 && ep.Port != 53)
                 {
                     throw new PlatformNotSupportedException(SR.net_dns_custom_port_not_supported);
+                }
+
+                if (ep.AddressFamily != family)
+                {
+                    throw new ArgumentException(SR.net_dns_mixed_address_families, nameof(DnsResolverOptions.Servers));
                 }
             }
         }
@@ -587,8 +601,6 @@ namespace System.Net
         private static unsafe DnsQueryRawResult DnsQueryExSync(IPEndPoint[] servers, string name, ushort queryType, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            ValidateServerPorts(servers);
 
             IntPtr namePtr = IntPtr.Zero;
             IntPtr serverListPtr = IntPtr.Zero;
@@ -652,17 +664,10 @@ namespace System.Net
         {
             int count = servers.Length;
 
-            // DnsQueryEx encodes a single address family for the whole array, so all
-            // endpoints must share one. Reject mixed IPv4/IPv6 lists up front instead
-            // of producing an inconsistent DNS_ADDR_ARRAY.
+            // DnsQueryEx encodes a single address family for the whole array. The caller
+            // (DnsResolver constructor, via ValidateServers) has already rejected mixed
+            // IPv4/IPv6 lists, so it is safe to take the family from the first endpoint.
             AddressFamily family = servers[0].AddressFamily;
-            for (int i = 1; i < count; i++)
-            {
-                if (servers[i].AddressFamily != family)
-                {
-                    throw new ArgumentException(SR.net_dns_mixed_address_families, nameof(DnsResolverOptions.Servers));
-                }
-            }
 
             int headerSize = sizeof(Interop.Dnsapi.DNS_ADDR_ARRAY);
             int addrSize = sizeof(Interop.Dnsapi.DNS_ADDR);

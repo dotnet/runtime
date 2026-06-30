@@ -317,16 +317,31 @@ namespace System.Net.NameResolution.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
-        public async Task DnsResolver_CustomServer_NonStandardPort_ThrowsPlatformNotSupported()
+        public void DnsResolver_CustomServer_NonStandardPort_ThrowsPlatformNotSupported()
         {
-            // DnsQueryEx only supports custom DNS servers on the standard port 53.
+            // DnsQueryEx only supports custom DNS servers on the standard port 53, so the
+            // resolver rejects any other port when it is constructed.
             DnsResolverOptions opts = new DnsResolverOptions
             {
                 Servers = { new IPEndPoint(IPAddress.Loopback, 5353) }
             };
-            using DnsResolver r = new DnsResolver(opts);
-            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => r.ResolveAddressesAsync(TestHost));
-            Assert.Throws<PlatformNotSupportedException>(() => r.ResolveAddresses(TestHost));
+            Assert.Throws<PlatformNotSupportedException>(() => new DnsResolver(opts));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        public void DnsResolver_CustomServers_MixedAddressFamilies_ThrowsArgumentException()
+        {
+            // DnsQueryEx encodes a single address family for the whole server list, so the
+            // resolver rejects mixed IPv4/IPv6 server lists when it is constructed.
+            DnsResolverOptions opts = new DnsResolverOptions
+            {
+                Servers =
+                {
+                    new IPEndPoint(IPAddress.Loopback, 53),
+                    new IPEndPoint(IPAddress.IPv6Loopback, 53),
+                }
+            };
+            Assert.Throws<ArgumentException>(() => new DnsResolver(opts));
         }
 
         // ---- Reverse-arpa name building (covers both IPv4 and IPv6 paths used by ResolvePtr(IPAddress)) ----

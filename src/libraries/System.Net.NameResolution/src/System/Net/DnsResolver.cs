@@ -49,6 +49,10 @@ namespace System.Net
                 }
                 _servers[i] = new IPEndPoint(server.Address, server.Port);
             }
+
+            // Let the platform reject any server configuration it cannot honor
+            // (e.g. custom ports or mixed address families on Windows).
+            DnsResolverPal.ValidateServers(_servers);
         }
 
         /// <summary>

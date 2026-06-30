@@ -9,6 +9,10 @@ namespace System.Net
 {
     internal static partial class DnsResolverPal
     {
+        // No platform-specific server restrictions to enforce; resolution itself is
+        // unsupported and throws PlatformNotSupportedException at query time.
+        public static void ValidateServers(IPEndPoint[] servers) => _ = servers;
+
         public static Task<DnsResult<AddressRecord>> ResolveAddresses(IPEndPoint[] servers, bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
             => throw new PlatformNotSupportedException();
 
