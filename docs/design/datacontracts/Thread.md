@@ -37,7 +37,7 @@ enum ThreadState
     InSTA               = 0x00004000,    // Thread hosts an STA
     InMTA               = 0x00008000,    // Thread is part of the MTA
     Stopped             = 0x00010000,    // Thread has started to shut down
-    SyncSuspended       = 0x00080000,    // Suspended via WaitSuspendEvent
+    SyncSuspended       = 0x00080000,    // Thread has suspended itself at a safe point in response to a debugger suspend request
     DebugWillSync       = 0x00100000,    // Debugger will wait for this thread to sync
     ThreadPoolWorker    = 0x01000000,    // is this a threadpool worker thread?
     WaitSleepJoin       = 0x02000000,    // Thread is in a Sleep(), Wait(), Join()

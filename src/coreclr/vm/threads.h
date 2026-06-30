@@ -538,7 +538,7 @@ public:
 
         // unused                 = 0x00040000,
 
-        TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent. [cDAC] [Thread]: Contract depends on this value.
+        TS_SyncSuspended          = 0x00080000,    // Thread has suspended itself at a safe point in response to a debugger suspend request. [cDAC] [Thread]: Contract depends on this value.
         TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync. [cDAC] [Thread]: Contract depends on this value.
 
         TS_StackCrawlNeeded       = 0x00200000,    // A stackcrawl is needed on this thread, such as for thread abort
