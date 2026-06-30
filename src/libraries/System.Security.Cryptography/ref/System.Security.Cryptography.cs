@@ -326,6 +326,8 @@ namespace System.Security.Cryptography
     {
         public CngAlgorithm(string algorithm) { }
         public string Algorithm { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public static System.Security.Cryptography.CngAlgorithm CompositeMLDsa { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm ECDiffieHellman { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm ECDiffieHellmanP256 { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithm ECDiffieHellmanP384 { get { throw null; } }
@@ -355,6 +357,8 @@ namespace System.Security.Cryptography
     {
         public CngAlgorithmGroup(string algorithmGroup) { }
         public string AlgorithmGroup { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        public static System.Security.Cryptography.CngAlgorithmGroup CompositeMLDsa { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithmGroup DiffieHellman { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithmGroup Dsa { get { throw null; } }
         public static System.Security.Cryptography.CngAlgorithmGroup ECDiffieHellman { get { throw null; } }

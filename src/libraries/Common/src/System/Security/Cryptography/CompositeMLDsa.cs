@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
 #pragma warning restore SA1001
 #endif
     {
-        private static readonly string[] s_knownOids =
+        private protected static readonly string[] KnownOids =
         [
             Oids.MLDsa44WithRSA2048PssPreHashSha256,
             Oids.MLDsa44WithRSA2048Pkcs15PreHashSha256,
@@ -666,7 +666,7 @@ namespace System.Security.Cryptography
             Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
-            KeyFormatHelper.ReadSubjectPublicKeyInfo(s_knownOids, source, SubjectPublicKeyReader, out int read, out CompositeMLDsa dsa);
+            KeyFormatHelper.ReadSubjectPublicKeyInfo(KnownOids, source, SubjectPublicKeyReader, out int read, out CompositeMLDsa dsa);
             Debug.Assert(read == source.Length);
             return dsa;
 
@@ -861,7 +861,7 @@ namespace System.Security.Cryptography
             Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
-            KeyFormatHelper.ReadPkcs8(s_knownOids, source, PrivateKeyReader, out int read, out CompositeMLDsa dsa);
+            KeyFormatHelper.ReadPkcs8(KnownOids, source, PrivateKeyReader, out int read, out CompositeMLDsa dsa);
             Debug.Assert(read == source.Length);
             return dsa;
 
@@ -1977,7 +1977,7 @@ namespace System.Security.Cryptography
             return algorithm;
         }
 
-        private static void ThrowIfNotSupported()
+        private protected static void ThrowIfNotSupported()
         {
             if (!IsSupported)
             {
@@ -1993,6 +1993,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, typeof(CompositeMLDsa));
+        private protected void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, typeof(CompositeMLDsa));
     }
 }
