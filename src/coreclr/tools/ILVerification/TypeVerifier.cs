@@ -106,7 +106,8 @@ namespace Internal.TypeVerifier
             TypeDefinition typeDefinition = _module.MetadataReader.GetTypeDefinition(_typeDefinitionHandle);
             EcmaType type = _module.GetType(_typeDefinitionHandle);
 
-            if (type.IsInterface)
+            // Read the metadata bit directly to avoid resolving an invalid base type.
+            if ((typeDefinition.Attributes & System.Reflection.TypeAttributes.Interface) != 0)
             {
                 return;
             }
