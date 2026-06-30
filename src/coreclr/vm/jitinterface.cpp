@@ -15143,10 +15143,18 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
     {
         TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
-        DWORD loc = pCode->NewLocal(LocalDesc(tyHnd));
-        pCode->EmitLDLOCA(loc);
-        pCode->EmitINITOBJ(pCode->GetToken(tyHnd));
-        pCode->EmitLDLOC(loc);
+        if (tyHnd.IsByRef())
+        {
+            pCode->EmitLDC(0);
+            pCode->EmitCONV_U();
+        }
+        else
+        {
+            DWORD loc = pCode->NewLocal(LocalDesc(tyHnd));
+            pCode->EmitLDLOCA(loc);
+            pCode->EmitINITOBJ(pCode->GetToken(tyHnd));
+            pCode->EmitLDLOC(loc);
+        }
         numArgs++;
     }
 
