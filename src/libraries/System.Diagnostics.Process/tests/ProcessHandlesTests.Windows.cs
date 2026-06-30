@@ -191,7 +191,7 @@ namespace System.Diagnostics.Tests
                             creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_UNICODE_ENVIRONMENT;
                         }
 
-                        bool retVal = Interop.Kernel32.CreateProcess(
+                        if (!Interop.Kernel32.CreateProcess(
                             null,
                             args.Arguments,
                             ref unused_SecAttrs,
@@ -202,8 +202,7 @@ namespace System.Diagnostics.Tests
                             null,
                             &startupInfoEx,
                             &processInfo
-                        );
-                        if (!retVal)
+                        ))
                         {
                             throw new Win32Exception();
                         }
@@ -230,7 +229,7 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                process.WaitForExit(WaitInMS);
+Assert.True(process.WaitForExit(WaitInMS));
                 Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
             }
             finally
