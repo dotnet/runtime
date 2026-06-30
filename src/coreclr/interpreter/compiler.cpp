@@ -4054,6 +4054,29 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
 
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetDelegate:
         {
+            constexpr size_t sequenceSize = 16;
+            if ((m_ip - m_pILCode) < sequenceSize)
+            {
+                goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+            const uint8_t* argumentsStart = m_ip - sequenceSize;
+            if (argumentsStart[0] != CEE_PREFIX1)
+            {
+                goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+            uint32_t ldftn = (uint32_t)argumentsStart[1] + 256;
+            if (ldftn != CEE_LDVIRTFTN && ldftn != CEE_LDFTN)
+            {
+                goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+            uint32_t methodToken = getU4LittleEndian(argumentsStart + 2);
+            if (argumentsStart[6] != CEE_LDSFLDA)
+            {
+                goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+            uint32_t fieldToken = getU4LittleEndian(argumentsStart + 7);
+
+            // TODO: implement
             goto FAIL_TO_EXPAND_INTRINSIC;
         }
 
@@ -5053,7 +5076,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation ||
                     ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation ||
                     ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend ||
-                    ni == NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait);
+                    ni == NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait ||
+                    ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_GetDelegate);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
                 if (EmitNamedIntrinsicCall(ni, callInfo.kind == CORINFO_CALL, resolvedCallToken.hClass, callInfo.hMethod, callInfo.sig))
@@ -10192,7 +10216,7 @@ retry_emit:
                 // a normal call in this case.
                 bool isTailCall = !m_isAsyncVersionOfSyncMethod;
                 EmitCall(m_pConstrainedToken, readonly, isTailCall /* tailcall */, false /*newObj*/, false /*isCalli*/);
-                EmitRet(methodInfo); // The tail-call infrastructure in the interpreter is not 100% guaranteed to do a 
+                EmitRet(methodInfo); // The tail-call infrastructure in the interpreter is not 100% guaranteed to do a
                            // tail-call, so inject the ret logic here to cover that case.
                 linkBBlocks = false;
                 break;
