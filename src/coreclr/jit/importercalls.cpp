@@ -3376,23 +3376,23 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #if defined(TARGET_XARCH)
             // We can't guarantee that all overloads for the xplat intrinsics can be
             // handled by the AltJit, so limit only the platform specific intrinsics
-            assert((LAST_NI_Vector512 + 1) == FIRST_NI_X86Base);
+            assert((LAST_NI_Vector + 1) == FIRST_NI_X86Base);
 
-            if (ni < LAST_NI_Vector512)
+            if (ni < LAST_NI_Vector)
 #elif defined(TARGET_ARM64)
             // We can't guarantee that all overloads for the xplat intrinsics can be
             // handled by the AltJit, so limit only the platform specific intrinsics
-            assert((LAST_NI_Vector128 + 1) == FIRST_NI_AdvSimd);
+            assert((LAST_NI_Vector + 1) == FIRST_NI_AdvSimd);
 
-            if (ni < LAST_NI_Vector128)
+            if (ni < LAST_NI_Vector)
 #elif defined(TARGET_WASM)
             NYI_WASM_SIMD("impHWIntrinsic");
-            if (ni < LAST_NI_Vector128)
+            if (ni < LAST_NI_Vector)
 #else
 #error Unsupported platform
 #endif
             {
-                // Several of the NI_Vector64/128/256 APIs do not have
+                // Several of the NI_Vector APIs do not have
                 // all overloads as intrinsic today so they will assert
                 return nullptr;
             }

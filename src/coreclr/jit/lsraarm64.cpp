@@ -2329,8 +2329,7 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
 
     switch (intrinsicId)
     {
-        case NI_Vector64_CreateScalarUnsafe:
-        case NI_Vector128_CreateScalarUnsafe:
+        case NI_Vector_CreateScalarUnsafe:
             if (varTypeIsFloating(intrinsicTree->Op(1)))
             {
                 delayFreeOp = intrinsicTree->Op(1);
@@ -2346,8 +2345,7 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             }
             break;
 
-        case NI_Vector64_ToScalar:
-        case NI_Vector128_ToScalar:
+        case NI_Vector_ToScalar:
             if (varTypeIsFloating(intrinsicTree))
             {
                 delayFreeOp = intrinsicTree->Op(1);
@@ -2355,10 +2353,9 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             }
             break;
 
-        case NI_Vector64_ToVector128Unsafe:
-        case NI_Vector128_AsVector128Unsafe:
-        case NI_Vector128_AsVector3:
-        case NI_Vector128_GetLower:
+        case NI_Vector_ToVector128Unsafe:
+        case NI_Vector_AsVector3:
+        case NI_Vector_GetLower:
             delayFreeOp = intrinsicTree->Op(1);
             assert(delayFreeOp != nullptr);
             break;
