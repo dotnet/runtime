@@ -443,12 +443,20 @@ struct CLRMapViewTraits final
 using CLRMapViewHolder = LifetimeHolder<CLRMapViewTraits>;
 
 #ifdef TARGET_UNIX
+struct PALPEFileTraits final
+{
+    using Type = void*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type ptr)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-FORCEINLINE void VoidPALUnloadPEFile(void *ptr) { PAL_LOADUnloadPEFile(ptr); }
-typedef Wrapper<void *, DoNothing, VoidPALUnloadPEFile> PALPEFileHolder;
-#else
-typedef Wrapper<void *, DoNothing, DoNothing> PALPEFileHolder;
+        if (ptr != NULL)
+            PAL_LOADUnloadPEFile(ptr);
 #endif
+    }
+};
+using PALPEFileHolder = LifetimeHolder<PALPEFileTraits>;
 #endif // TARGET_UNIX
 
 #define SetupThreadForComCall(OOMRetVal)            \
