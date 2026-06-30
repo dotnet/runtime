@@ -312,6 +312,25 @@ namespace System.Diagnostics
         [SupportedOSPlatform("windows")]
         public bool KillOnParentExit { get; set; }
 
+        /// <summary>
+        /// Gets or sets a <see cref="PseudoTerminal"/> that will be used as the controlling terminal for the child process.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// When set, the child process will be spawned with the specified pseudo-terminal as its controlling terminal.
+        /// All standard streams (stdin, stdout, stderr) of the child process will be connected to the PTY.
+        /// The <see cref="Process.StandardError"/> stream is not opened separately; stderr is available through
+        /// <see cref="Process.StandardOutput"/> together with stdout.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="UseShellExecute"/>,
+        /// <see cref="RedirectStandardInput"/>, <see cref="RedirectStandardOutput"/>, <see cref="RedirectStandardError"/>,
+        /// <see cref="StandardInputHandle"/>, <see cref="StandardOutputHandle"/>, or <see cref="StandardErrorHandle"/>.
+        /// </para>
+        /// </remarks>
+        /// <value>A <see cref="PseudoTerminal"/> to use as the controlling terminal, or <see langword="null"/> for the default behavior.</value>
+        public PseudoTerminal? PseudoTerminal { get; set; }
+
         public Encoding? StandardInputEncoding { get; set; }
 
         public Encoding? StandardErrorEncoding { get; set; }
@@ -429,11 +448,13 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.FileNameMissing);
             }
-            if (StandardInputEncoding != null && !RedirectStandardInput)
+            bool usesPseudoTerminal = PseudoTerminal is not null;
+
+            if (StandardInputEncoding != null && !RedirectStandardInput && !usesPseudoTerminal)
             {
                 throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
             }
-            if (StandardOutputEncoding != null && !RedirectStandardOutput)
+            if (StandardOutputEncoding != null && !RedirectStandardOutput && !usesPseudoTerminal)
             {
                 throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
             }
@@ -462,6 +483,11 @@ namespace System.Diagnostics
             if (UseShellExecute && (anyRedirection || anyHandle))
             {
                 throw new InvalidOperationException(SR.CantRedirectStreams);
+            }
+
+            if (usesPseudoTerminal && (UseShellExecute || anyRedirection || anyHandle))
+            {
+                throw new InvalidOperationException(SR.PseudoTerminalCannotBeCombined);
             }
 
             if (StartDetached && UseShellExecute)

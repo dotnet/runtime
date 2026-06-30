@@ -85,6 +85,9 @@ namespace System.Diagnostics
         internal AsyncStreamReader? _error;
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
+        private static UTF8Encoding? s_utf8EncodingWithoutBom;
+
+        private static UTF8Encoding Utf8EncodingWithoutBom => s_utf8EncodingWithoutBom ??= new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
         /// <devdoc>
         ///    <para>
@@ -1263,21 +1266,25 @@ namespace System.Diagnostics
 
                     // After releasing the lock, open the null device handle once (if needed for StartDetached)
                     // or fall back to the console handles. The null device handle will be disposed in the finally block below.
-                    if (startInfo.StartDetached)
+                    if (startInfo.PseudoTerminal is not null)
                     {
-                        if (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
+                        SetChildHandlesForPseudoTerminal(startInfo.PseudoTerminal, ref childInputHandle, ref childOutputHandle, ref childErrorHandle);
+                    }
+                    else if (childInputHandle is null || childOutputHandle is null || childErrorHandle is null)
+                    {
+                        if (startInfo.StartDetached)
                         {
                             SafeFileHandle nullDeviceHandle = File.OpenNullHandle();
                             childInputHandle ??= nullDeviceHandle;
                             childOutputHandle ??= nullDeviceHandle;
                             childErrorHandle ??= nullDeviceHandle;
                         }
-                    }
-                    else if (ProcessUtils.PlatformSupportsConsole)
-                    {
-                        childInputHandle ??= Console.OpenStandardInputHandle();
-                        childOutputHandle ??= Console.OpenStandardOutputHandle();
-                        childErrorHandle ??= Console.OpenStandardErrorHandle();
+                        else if (ProcessUtils.PlatformSupportsConsole)
+                        {
+                            childInputHandle ??= Console.OpenStandardInputHandle();
+                            childOutputHandle ??= Console.OpenStandardOutputHandle();
+                            childErrorHandle ??= Console.OpenStandardErrorHandle();
+                        }
                     }
 
                     ProcessStartInfo.ValidateInheritedHandles(childInputHandle, childOutputHandle, childErrorHandle, inheritedHandles);
@@ -1304,17 +1311,21 @@ namespace System.Diagnostics
                 // because these handles are not owned and won't be closed by Dispose.
                 // We don't dispose handles that were passed in
                 // by the caller via StartInfo.StandardInputHandle/OutputHandle/ErrorHandle.
-                if (startInfo.StandardInputHandle is null)
+                // When PTY is used, the child handles are owned by the PseudoTerminal object.
+                if (startInfo.PseudoTerminal is null)
                 {
-                    childInputHandle?.Dispose();
-                }
-                if (startInfo.StandardOutputHandle is null)
-                {
-                    childOutputHandle?.Dispose();
-                }
-                if (startInfo.StandardErrorHandle is null)
-                {
-                    childErrorHandle?.Dispose();
+                    if (startInfo.StandardInputHandle is null)
+                    {
+                        childInputHandle?.Dispose();
+                    }
+                    if (startInfo.StandardOutputHandle is null)
+                    {
+                        childOutputHandle?.Dispose();
+                    }
+                    if (startInfo.StandardErrorHandle is null)
+                    {
+                        childErrorHandle?.Dispose();
+                    }
                 }
             }
 
@@ -1335,6 +1346,11 @@ namespace System.Diagnostics
             {
                 _standardError = new StreamReader(OpenStream(parentErrorPipeHandle!, FileAccess.Read),
                     startInfo.StandardErrorEncoding ?? GetStandardOutputEncoding(), true, StreamBufferSize);
+            }
+
+            if (startInfo.PseudoTerminal is not null)
+            {
+                OpenPseudoTerminalStreams(startInfo);
             }
 
             return true;

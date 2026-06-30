@@ -354,6 +354,7 @@ namespace System.Diagnostics
         public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardInputHandle { get { throw null; } set { } }
         public System.Text.Encoding? StandardOutputEncoding { get { throw null; } set { } }
         public Microsoft.Win32.SafeHandles.SafeFileHandle? StandardOutputHandle { get { throw null; } set { } }
+        public System.Diagnostics.PseudoTerminal? PseudoTerminal { get { throw null; } set { } }
         public bool StartDetached { get { throw null; } set { } }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public bool StartSuspended { get { throw null; } set { } }
@@ -371,6 +372,22 @@ namespace System.Diagnostics
         [System.ComponentModel.EditorAttribute("System.Diagnostics.Design.WorkingDirectoryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string WorkingDirectory { get { throw null; } set { } }
+    }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+    public partial class PseudoTerminal : System.IDisposable
+    {
+        internal PseudoTerminal() { }
+        public static System.Diagnostics.PseudoTerminal Create(System.Diagnostics.PseudoTerminalOptions options) { throw null; }
+        public void Dispose() { }
+        public void Resize(int columns, int rows) { }
+    }
+    public partial class PseudoTerminalOptions
+    {
+        public PseudoTerminalOptions(int columns, int rows) { }
+        public int Columns { get { throw null; } }
+        public int Rows { get { throw null; } }
     }
     public sealed partial class ProcessTextOutput
     {

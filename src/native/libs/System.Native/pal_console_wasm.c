@@ -129,3 +129,24 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 void SystemNative_UninitializeTerminal(void)
 {
 }
+
+int32_t SystemNative_OpenPseudoTerminal(intptr_t* primaryFd, intptr_t* secondaryFd, int32_t columns, int32_t rows)
+{
+    (void)columns;
+    (void)rows;
+    assert(primaryFd != NULL);
+    assert(secondaryFd != NULL);
+    *primaryFd = -1;
+    *secondaryFd = -1;
+    errno = ENOTSUP;
+    return -1;
+}
+
+int32_t SystemNative_ResizePseudoTerminal(intptr_t primaryFd, int32_t columns, int32_t rows)
+{
+    (void)primaryFd;
+    (void)columns;
+    (void)rows;
+    errno = ENOTSUP;
+    return -1;
+}

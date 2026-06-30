@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <signal.h>
 
+
 int32_t SystemNative_GetWindowSize(intptr_t fd, WinSize* windowSize)
 {
     assert(windowSize != NULL);
@@ -477,4 +478,140 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 void SystemNative_UninitializeTerminal(void)
 {
     UninitializeTerminal();
+}
+
+int32_t SystemNative_OpenPseudoTerminal(intptr_t* primaryFd, intptr_t* secondaryFd, int32_t columns, int32_t rows)
+{
+    assert(primaryFd != NULL);
+    assert(secondaryFd != NULL);
+
+    int primary = -1, secondary = -1;
+
+    // Open the primary side of the PTY
+#if HAVE_O_CLOEXEC
+    primary = posix_openpt(O_RDWR | O_NOCTTY | O_CLOEXEC);
+#else
+    primary = posix_openpt(O_RDWR | O_NOCTTY);
+#endif
+    if (primary == -1)
+    {
+        *primaryFd = -1;
+        *secondaryFd = -1;
+        return -1;
+    }
+
+#if !HAVE_O_CLOEXEC
+    // Set close-on-exec on primary if O_CLOEXEC wasn't available
+    if (fcntl(primary, F_SETFD, FD_CLOEXEC) == -1)
+    {
+        int error = errno;
+        close(primary);
+        *primaryFd = -1;
+        *secondaryFd = -1;
+        errno = error;
+        return -1;
+    }
+#endif
+
+    // Grant access to the secondary and unlock it
+    if (grantpt(primary) == -1 || unlockpt(primary) == -1)
+    {
+        int error = errno;
+        close(primary);
+        *primaryFd = -1;
+        *secondaryFd = -1;
+        errno = error;
+        return -1;
+    }
+
+    // Get the name of the secondary
+    char* secondaryName = ptsname(primary);
+    if (secondaryName == NULL)
+    {
+        int error = errno;
+        close(primary);
+        *primaryFd = -1;
+        *secondaryFd = -1;
+        errno = error;
+        return -1;
+    }
+
+    // Open the secondary side
+#if HAVE_O_CLOEXEC
+    secondary = open(secondaryName, O_RDWR | O_NOCTTY | O_CLOEXEC);
+#else
+    secondary = open(secondaryName, O_RDWR | O_NOCTTY);
+#endif
+    if (secondary == -1)
+    {
+        int error = errno;
+        close(primary);
+        *primaryFd = -1;
+        *secondaryFd = -1;
+        errno = error;
+        return -1;
+    }
+
+#if !HAVE_O_CLOEXEC
+    // Set close-on-exec on secondary if O_CLOEXEC wasn't available
+    if (fcntl(secondary, F_SETFD, FD_CLOEXEC) == -1)
+    {
+        int error = errno;
+        close(primary);
+        close(secondary);
+        *primaryFd = -1;
+        *secondaryFd = -1;
+        errno = error;
+        return -1;
+    }
+#endif
+
+    // Set window size if requested
+    if (columns > 0 && rows > 0)
+    {
+#if HAVE_IOCTL && HAVE_TIOCGWINSZ
+        struct winsize ws;
+        memset(&ws, 0, sizeof(ws));
+        ws.ws_col = (unsigned short)columns;
+        ws.ws_row = (unsigned short)rows;
+
+        if (ioctl(secondary, TIOCSWINSZ, &ws) == -1)
+        {
+            int error = errno;
+            close(primary);
+            close(secondary);
+            *primaryFd = -1;
+            *secondaryFd = -1;
+            errno = error;
+            return -1;
+        }
+#endif
+    }
+
+    *primaryFd = primary;
+    *secondaryFd = secondary;
+    return 0;
+}
+
+int32_t SystemNative_ResizePseudoTerminal(intptr_t primaryFd, int32_t columns, int32_t rows)
+{
+#if HAVE_IOCTL && HAVE_TIOCGWINSZ
+    struct winsize ws;
+    memset(&ws, 0, sizeof(ws));
+    ws.ws_col = (unsigned short)columns;
+    ws.ws_row = (unsigned short)rows;
+
+    if (ioctl(ToFileDescriptor(primaryFd), TIOCSWINSZ, &ws) == -1)
+    {
+        return -1;
+    }
+
+    return 0;
+#else
+    (void)primaryFd;
+    (void)columns;
+    (void)rows;
+    errno = ENOTSUP;
+    return -1;
+#endif
 }
