@@ -31,27 +31,16 @@ internal static partial class Interop
 
         // ---- DnsQueryEx options ----
         internal const ulong DNS_QUERY_STANDARD = 0x00000000;
-        internal const ulong DNS_QUERY_RETURN_MESSAGE = 0x00020000;
 
         // ---- Query request versions ----
         internal const uint DNS_QUERY_REQUEST_VERSION1 = 0x1;
-        internal const uint DNS_QUERY_REQUEST_VERSION3 = 0x3;
 
         // ---- DNS_ADDR address family marker — addresses are stored in SOCKADDR form ----
         internal const ushort AF_INET = 2;
         internal const ushort AF_INET6 = 23;
 
-        // ---- DNS_CUSTOM_SERVER server types ----
-        internal const uint DNS_CUSTOM_SERVER_TYPE_UDP = 0x1;
-        internal const uint DNS_CUSTOM_SERVER_TYPE_DOH = 0x2;
-
-        // ---- DNS_CUSTOM_SERVER usage flags ----
-        internal const ulong DNS_CUSTOM_SERVER_UDP_FALLBACK = 0x1;
-
         // ---- DnsFreeType for DnsFree ----
-        internal const int DnsFreeFlat = 0;
         internal const int DnsFreeRecordList = 1;
-        internal const int DnsFreeParsedMessageFields = 2;
 
         [LibraryImport(Libraries.Dnsapi, EntryPoint = "DnsQueryEx")]
         internal static unsafe partial int DnsQueryEx(

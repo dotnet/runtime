@@ -460,8 +460,8 @@ namespace System.Net
             if (a.Records.Count > 0 || b.Records.Count > 0)
             {
                 AddressRecord[] merged = [.. a.Records, .. b.Records];
-                TimeSpan mergedTtl = MinNonZero(a.NegativeCacheTtl, b.NegativeCacheTtl);
-                return new DnsResult<AddressRecord>(DnsResponseCode.NoError, merged, mergedTtl);
+                // A positive result carries no negative-cache TTL.
+                return new DnsResult<AddressRecord>(DnsResponseCode.NoError, merged, TimeSpan.Zero);
             }
 
             DnsResponseCode chosenRc = a.ResponseCode == DnsResponseCode.NxDomain || b.ResponseCode == DnsResponseCode.NxDomain

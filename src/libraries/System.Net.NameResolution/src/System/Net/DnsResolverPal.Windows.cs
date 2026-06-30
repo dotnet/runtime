@@ -184,7 +184,7 @@ namespace System.Net
                     IntPtr dataPtr = cur + sizeof(Interop.Dnsapi.DNS_RECORD_HEADER);
                     ref readonly Interop.Dnsapi.DNS_TXT_DATA data = ref AsStruct<Interop.Dnsapi.DNS_TXT_DATA>(dataPtr);
                     // DNS_TXT_DATA: uint dwStringCount; followed by array of PCWSTR.
-                    uint count = data.dwStringCount;
+                    int count = (int)data.dwStringCount;
                     IntPtr stringsPtr = dataPtr + sizeof(Interop.Dnsapi.DNS_TXT_DATA);
                     if (IntPtr.Size > sizeof(Interop.Dnsapi.DNS_TXT_DATA))
                     {

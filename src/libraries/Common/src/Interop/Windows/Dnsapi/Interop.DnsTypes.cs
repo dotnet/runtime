@@ -23,24 +23,6 @@ internal static partial class Interop
             public IntPtr pQueryContext;
         }
 
-        // DNS_QUERY_REQUEST3 — Win11 Build 22000+
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct DNS_QUERY_REQUEST3
-        {
-            public uint Version;
-            public char* QueryName;
-            public ushort QueryType;
-            public ulong QueryOptions;
-            public DNS_ADDR_ARRAY* pDnsServerList;
-            public uint InterfaceIndex;
-            public delegate* unmanaged[Stdcall]<nint, nint, void> pQueryCompletionCallback;
-            public IntPtr pQueryContext;
-            public int IsNetworkQueryRequired;   // BOOL
-            public uint RequiredNetworkIndex;
-            public uint cCustomServers;
-            public DNS_CUSTOM_SERVER* pCustomServers;
-        }
-
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct DNS_QUERY_RESULT
         {
@@ -88,15 +70,6 @@ internal static partial class Interop
             public uint Reserved2;
             // followed by AddrCount entries of DNS_ADDR
             // (we allocate the trailing array contiguously)
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct DNS_CUSTOM_SERVER
-        {
-            public uint dwServerType;       // DNS_CUSTOM_SERVER_TYPE_*
-            public ulong ullFlags;
-            public char* pwszTemplate;      // PCWSTR (DoH only)
-            public fixed byte ServerAddr[32]; // SOCKADDR
         }
 
         // ---- DNS_RECORD (variable layout: header + Data union) ----
