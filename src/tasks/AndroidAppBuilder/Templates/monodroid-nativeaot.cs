@@ -120,16 +120,18 @@ internal unsafe struct JNIEnv
     {
         fixed (JNIEnv* thisptr = &this)
         {
-            byte isCopy = 0;
-            byte* chars = NativeInterface->GetStringUTFChars(thisptr, str, &isCopy);
+            byte* chars = NativeInterface->GetStringUTFChars(thisptr, str, null);
             if (chars is null)
                 return null;
 
-            string result = Marshal.PtrToStringUTF8((nint)chars)!;
-            if (isCopy != 0)
+            try
+            {
+                return Marshal.PtrToStringUTF8((nint)chars)!;
+            }
+            finally
+            {
                 NativeInterface->ReleaseStringUTFChars(thisptr, str, chars);
-
-            return result;
+            }
         }
     }
 
