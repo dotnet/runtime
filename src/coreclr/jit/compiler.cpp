@@ -1115,6 +1115,15 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 howToReturnStruct = SPK_ByValue;
                 useType           = TYP_STRUCT;
 
+#elif defined(TARGET_POWERPC64)
+
+                // On PPC64LE non-HFA struct that is 1-16 bytes is returned by value in one/two register(s)
+                // Per PPC64LE ELFv2 ABI: non-HFA structs up to 16 bytes can be returned in GPRs
+                // - Structs <= 8 bytes: returned in r3
+                // - Structs 9-16 bytes: returned in r3 and r4
+                howToReturnStruct = SPK_ByValue;
+                useType           = TYP_STRUCT;
+
 #else //  TARGET_XXX
 
                 noway_assert(!"Unhandled TARGET in getReturnTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");

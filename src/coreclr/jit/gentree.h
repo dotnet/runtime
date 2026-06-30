@@ -4275,7 +4275,7 @@ struct ReturnTypeDesc
 private:
     var_types m_regType[MAX_RET_REG_COUNT];
 
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64)
     // Structs according to hardware floating-point calling convention are passed as two logical fields, each in
     // separate register, disregarding struct layout such as packing, custom alignment, padding with empty structs, etc.
     // We need size (can be derived from m_regType) & offset of each field for memory load/stores

@@ -29736,6 +29736,19 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 m_fieldOffset[1] = TARGET_POINTER_SIZE;
             }
 
+#elif defined(TARGET_POWERPC64)
+
+            // PPC64LE ELFv2 ABI: Non-HFA struct returned in integer registers (up to 16 bytes in r3-r4)
+            assert(structSize <= (2 * TARGET_POINTER_SIZE));
+            BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+            comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
+            for (unsigned i = 0; i < 2; ++i)
+            {
+                m_regType[i] = comp->getJitGCType(gcPtrs[i]);
+            }
+            m_fieldOffset[0] = 0;
+            m_fieldOffset[1] = TARGET_POINTER_SIZE;
+
 #elif defined(TARGET_X86)
 
             // an 8-byte struct returned using two registers
@@ -30044,6 +30057,21 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
             assert(varTypeUsesFloatReg(regType));
             resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // F0 or F1
         }
+    }
+
+#elif defined(TARGET_POWERPC64)
+    var_types regType = GetReturnRegType(idx);
+    // For PPC64LE, non-HFA structs up to 16 bytes are returned in GPRs (r3-r4)
+    if (!varTypeUsesFloatReg(regType))
+    {
+        noway_assert(idx < 2);                              // Up to 2 return registers for 16-byte structs
+        resultReg = (idx == 0) ? REG_INTRET : REG_INTRET_1; // R3 or R4
+    }
+    else
+    {
+        // Float/double returns - not supported in this implementation yet
+        noway_assert(!"Float struct returns not yet implemented for PPC64LE");
+        resultReg = REG_NA;
     }
 
 #endif // TARGET_XXX
