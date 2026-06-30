@@ -273,4 +273,13 @@ public record X86GCInfo : IGCInfoDecoder
 
     IReadOnlyList<LiveSlot> IGCInfoDecoder.EnumerateLiveSlots(uint instructionOffset, GcSlotEnumerationOptions options)
         => throw new NotSupportedException("x86 GC info live-slot enumeration through IGCInfoDecoder is not yet implemented; the underlying InfoHdr/Transitions data is decoded but the IGCInfoDecoder.EnumerateLiveSlots adapter is future work.");
+
+    GCInfoHeader IGCInfoDecoder.GetHeader()
+        => throw new NotSupportedException("x86 GC info header projection for the expanded IGCInfo surface is not yet implemented.");
+
+    IReadOnlyList<uint> IGCInfoDecoder.GetSafePoints()
+        => throw new NotSupportedException("x86 GC info safe-point enumeration for the expanded IGCInfo surface is not yet implemented.");
+
+    IReadOnlyList<GCSlotLifetime> IGCInfoDecoder.GetSlotLifetimes()
+        => throw new NotSupportedException("x86 GC info slot lifetime enumeration for the expanded IGCInfo surface is not yet implemented.");
 }

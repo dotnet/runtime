@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 using ILCompiler.Reflection.ReadyToRun;
 
@@ -129,6 +130,7 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     private uint _numSafePoints;
     private uint _numInterruptibleRanges;
     private List<InterruptibleRange> _interruptibleRanges = [];
+    private List<uint> _safePoints = [];
     private int _safePointBitOffset;
 
     /* Slot Table Fields */
@@ -332,11 +334,16 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
 
     private IEnumerable<DecodePoints> DecodeSafePoints()
     {
-        // Save the position of the safe point data for FindSafePoint
         _safePointBitOffset = _bitOffset;
-        // skip over safe point data
         uint numBitsPerOffset = CeilOfLog2(TTraits.NormalizeCodeOffset(_codeLength));
-        _bitOffset += (int)(numBitsPerOffset * _numSafePoints);
+
+        _safePoints = new List<uint>((int)_numSafePoints);
+        for (uint i = 0; i < _numSafePoints; i++)
+        {
+            uint offset = TTraits.DenormalizeCodeOffset((uint)_reader.ReadBits((int)numBitsPerOffset, ref _bitOffset));
+            _safePoints.Add(offset);
+        }
+
         yield break;
     }
 
@@ -528,6 +535,335 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     {
         EnsureDecodedTo(DecodePoints.InterruptibleRanges);
         return _interruptibleRanges;
+    }
+
+    public IReadOnlyList<uint> GetSafePoints()
+    {
+        EnsureDecodedTo(DecodePoints.InterruptibleRanges);
+        return _safePoints;
+    }
+
+    public GCInfoHeader GetHeader()
+    {
+        EnsureDecodedTo(DecodePoints.ReversePInvoke);
+
+        GcInfoHeaderFlags genericsInstContextFlags = _headerFlags & GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK;
+        SpecialSlot? gsCookie = _gsCookieStackSlot != TTraits.NO_GS_COOKIE ? new SpecialSlot(_gsCookieStackSlot) : null;
+        SpecialSlot? pspSym = _pspSymStackSlot != TTraits.NO_PSP_SYM ? new SpecialSlot(_pspSymStackSlot) : null;
+        SpecialSlot? genericsInstContext = _genericsInstContextStackSlot != TTraits.NO_GENERICS_INST_CONTEXT ? new SpecialSlot(_genericsInstContextStackSlot) : null;
+
+        GenericsContextKind genericsContextKind = genericsInstContextFlags switch
+        {
+            GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MD => GenericsContextKind.MethodDesc,
+            GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_MT => GenericsContextKind.MethodHandle,
+            GcInfoHeaderFlags.GC_INFO_HAS_GENERICS_INST_CONTEXT_THIS => GenericsContextKind.This,
+            _ => GenericsContextKind.MethodDesc,
+        };
+
+        bool flag80Set = _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_WANTS_REPORT_ONLY_LEAF);
+        bool wantsReportOnlyLeaf = _arch == RuntimeInfoArchitecture.X64 && _gcVersion < 4 ? flag80Set : true;
+        bool hasTailCalls = _arch is RuntimeInfoArchitecture.Arm or RuntimeInfoArchitecture.Arm64 or RuntimeInfoArchitecture.LoongArch64 or RuntimeInfoArchitecture.RiscV64
+            && flag80Set;
+
+        return new GCInfoHeader(
+            Version: _gcVersion,
+            CodeSize: _codeLength,
+            PrologSize: _validRangeStart,
+            StackBaseRegister: _stackBaseRegister,
+            SizeOfStackParameterArea: _fixedStackParameterScratchArea,
+            IsVarArg: _headerFlags.HasFlag(GcInfoHeaderFlags.GC_INFO_IS_VARARG),
+            WantsReportOnlyLeaf: wantsReportOnlyLeaf,
+            HasTailCalls: hasTailCalls,
+            GSCookie: gsCookie,
+            GSCookieValidRangeStart: _validRangeStart,
+            GSCookieValidRangeEnd: _validRangeEnd,
+            PSPSym: pspSym,
+            GenericsInstContext: genericsInstContext,
+            GenericsInstContextKind: genericsContextKind);
+    }
+
+    public IReadOnlyList<GCSlotLifetime> GetSlotLifetimes()
+    {
+        EnsureDecodedTo(DecodePoints.SlotTable);
+
+        List<GCSlotLifetime> lifetimes = [];
+        uint numTracked = NumTrackedSlots;
+
+        // Untracked slots are always live for the entire method
+        for (uint slotIndex = numTracked; slotIndex < _numSlots; slotIndex++)
+        {
+            GcSlotDesc slot = _slots[(int)slotIndex];
+            uint gcFlags = (uint)slot.Flags & ((uint)GcSlotFlags.GC_SLOT_INTERIOR | (uint)GcSlotFlags.GC_SLOT_PINNED | (uint)GcSlotFlags.GC_SLOT_UNTRACKED);
+            lifetimes.Add(new GCSlotLifetime(slot.IsRegister, slot.RegisterNumber, slot.SpOffset, (uint)slot.Base, gcFlags, 0, _codeLength));
+        }
+
+        if (numTracked == 0)
+            return lifetimes;
+
+        // For methods with only safe points (not fully interruptible),
+        // decode tracked slot lifetimes from the per-safe-point bitmaps.
+        if (_numInterruptibleRanges == 0)
+        {
+            if (_numSafePoints == 0)
+                return lifetimes;
+
+            int safePointBitPos = _liveStateBitOffset;
+
+            // Read indirect live state table header
+            uint numBitsPerOffset = 0;
+            if (_reader.ReadBits(1, ref safePointBitPos) != 0)
+            {
+                numBitsPerOffset = (uint)_reader.DecodeVarLengthUnsigned(TTraits.POINTER_SIZE_ENCBASE, ref safePointBitPos) + 1;
+            }
+
+            // For each safe point, read the live slot bitmap.
+            // Safe points are independent snapshots. We emit lifetimes spanning
+            // from the first safe point where a slot is live to the last consecutive
+            // safe point where it remains live.
+            IReadOnlyList<uint> safePoints = GetSafePoints();
+            uint[] liveStart = new uint[numTracked];
+            bool[] prevLive = new bool[numTracked];
+
+            for (uint sp = 0; sp < _numSafePoints; sp++)
+            {
+                bool[] curLive = new bool[numTracked];
+                int spBitOffset;
+
+                if (numBitsPerOffset != 0)
+                {
+                    // Indirect table: read offset pointer for this safe point
+                    int offsetTablePos = safePointBitPos;
+                    int spOffsetBit = offsetTablePos + (int)(sp * numBitsPerOffset);
+                    uint liveStatesOffset = (uint)_reader.ReadBits((int)numBitsPerOffset, ref spOffsetBit);
+                    int liveStatesStart = (int)(((uint)offsetTablePos + _numSafePoints * numBitsPerOffset + 7) & (~7u));
+                    spBitOffset = (int)(liveStatesStart + liveStatesOffset);
+
+                    if (_reader.ReadBits(1, ref spBitOffset) != 0)
+                    {
+                        // RLE encoded
+                        bool fSkip = _reader.ReadBits(1, ref spBitOffset) == 0;
+                        bool fReport = true;
+                        uint readSlots = (uint)_reader.DecodeVarLengthUnsigned(
+                            fSkip ? TTraits.LIVESTATE_RLE_SKIP_ENCBASE : TTraits.LIVESTATE_RLE_RUN_ENCBASE, ref spBitOffset);
+                        fSkip = !fSkip;
+                        while (readSlots < numTracked)
+                        {
+                            uint cnt = (uint)_reader.DecodeVarLengthUnsigned(
+                                fSkip ? TTraits.LIVESTATE_RLE_SKIP_ENCBASE : TTraits.LIVESTATE_RLE_RUN_ENCBASE, ref spBitOffset) + 1;
+                            if (fReport)
+                            {
+                                for (uint si = readSlots; si < readSlots + cnt; si++)
+                                    curLive[si] = true;
+                            }
+                            readSlots += cnt;
+                            fSkip = !fSkip;
+                            fReport = !fReport;
+                        }
+                    }
+                    else
+                    {
+                        for (uint si = 0; si < numTracked; si++)
+                            curLive[si] = _reader.ReadBits(1, ref spBitOffset) != 0;
+                    }
+                }
+                else
+                {
+                    // Direct bitmap: numTracked bits per safe point
+                    spBitOffset = safePointBitPos + (int)(sp * numTracked);
+                    for (uint si = 0; si < numTracked; si++)
+                        curLive[si] = _reader.ReadBits(1, ref spBitOffset) != 0;
+                }
+
+                uint spOffset = safePoints[(int)sp];
+
+                for (uint si = 0; si < numTracked; si++)
+                {
+                    if (curLive[si] && !prevLive[si])
+                    {
+                        // Slot became live at this safe point
+                        liveStart[si] = spOffset;
+                    }
+                    else if (!curLive[si] && prevLive[si])
+                    {
+                        // Slot is dead -- emit lifetime ending after previous safe point
+                        EmitSlotLifetime(si, liveStart[si], safePoints[(int)(sp - 1)] + 1, lifetimes);
+                    }
+                }
+
+                Array.Copy(curLive, prevLive, numTracked);
+            }
+
+            // Close any slots still live at the last safe point
+            uint lastSpOffset = safePoints[(int)(_numSafePoints - 1)];
+            for (uint si = 0; si < numTracked; si++)
+            {
+                if (prevLive[si])
+                    EmitSlotLifetime(si, liveStart[si], lastSpOffset + 1, lifetimes);
+            }
+
+            return lifetimes;
+        }
+
+        int bitOffset = _liveStateBitOffset;
+
+        // Skip indirect live state table header and safe point data
+        if (_numSafePoints > 0 && _reader.ReadBits(1, ref bitOffset) != 0)
+        {
+            _reader.DecodeVarLengthUnsigned(TTraits.POINTER_SIZE_ENCBASE, ref bitOffset);
+        }
+        bitOffset += (int)(_numSafePoints * numTracked);
+
+        // Compute total interruptible length
+        uint numInterruptibleLength = 0;
+        for (int i = 0; i < _interruptibleRanges.Count; i++)
+        {
+            uint normStart = TTraits.NormalizeCodeOffset(_interruptibleRanges[i].StartOffset);
+            uint normStop = TTraits.NormalizeCodeOffset(_interruptibleRanges[i].EndOffset);
+            numInterruptibleLength += normStop - normStart;
+        }
+
+        uint numChunks = (numInterruptibleLength + TTraits.NUM_NORM_CODE_OFFSETS_PER_CHUNK - 1) / TTraits.NUM_NORM_CODE_OFFSETS_PER_CHUNK;
+        uint numBitsPerPointer = (uint)_reader.DecodeVarLengthUnsigned(TTraits.POINTER_SIZE_ENCBASE, ref bitOffset);
+        if (numBitsPerPointer == 0)
+            return lifetimes;
+
+        int pointerTablePos = bitOffset;
+        int chunksStartPos = (int)(((uint)pointerTablePos + numChunks * numBitsPerPointer + 7) & (~7u));
+
+        // Track per-slot live state across chunks: slotIndex -> beginCodeOffset
+        Dictionary<uint, uint> activeSlots = [];
+
+        for (uint chunk = 0; chunk < numChunks; chunk++)
+        {
+            bitOffset = pointerTablePos + (int)(chunk * numBitsPerPointer);
+            uint chunkPointer = (uint)_reader.ReadBits((int)numBitsPerPointer, ref bitOffset);
+            if (chunkPointer == 0)
+                continue;
+
+            int chunkPos = (int)(chunksStartPos + chunkPointer - 1);
+            bitOffset = chunkPos;
+
+            // Read couldBeLive bitvector
+            List<uint> couldBeLiveSlots = ReadCouldBeLiveSlots(ref bitOffset, numTracked);
+
+            int finalStateBitOffset = bitOffset;
+            int transitionBitOffset = bitOffset + couldBeLiveSlots.Count;
+
+            uint chunkStartNormOffset = chunk * TTraits.NUM_NORM_CODE_OFFSETS_PER_CHUNK;
+
+            for (int i = 0; i < couldBeLiveSlots.Count; i++)
+            {
+                uint slotIndex = couldBeLiveSlots[i];
+                uint finalState = (uint)_reader.ReadBits(1, ref finalStateBitOffset);
+
+                // Collect transitions within this chunk
+                List<uint> transitions = [];
+                while (_reader.ReadBits(1, ref transitionBitOffset) != 0)
+                {
+                    uint transOffset = (uint)_reader.ReadBits(TTraits.NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2, ref transitionBitOffset);
+                    transitions.Add(transOffset);
+                }
+
+                // Initial state = finalState XOR (transitions.Count % 2)
+                uint currentState = finalState ^ (uint)(transitions.Count % 2);
+
+                // Walk transitions and track lifetime boundaries
+                uint prevNormOffset = chunkStartNormOffset;
+                foreach (uint transOffset in transitions)
+                {
+                    uint absNormOffset = chunkStartNormOffset + transOffset;
+                    if (currentState != 0 && !activeSlots.ContainsKey(slotIndex))
+                    {
+                        // Slot is live and we haven't recorded its start yet
+                        activeSlots[slotIndex] = DenormInterruptibleOffset(prevNormOffset);
+                    }
+                    else if (currentState == 0 && activeSlots.TryGetValue(slotIndex, out uint beginOffset))
+                    {
+                        // Slot just died
+                        EmitSlotLifetime(slotIndex, beginOffset, DenormInterruptibleOffset(absNormOffset), lifetimes);
+                        activeSlots.Remove(slotIndex);
+                    }
+                    currentState ^= 1;
+                    prevNormOffset = absNormOffset;
+                }
+
+                // End of chunk state
+                if (currentState != 0 && !activeSlots.ContainsKey(slotIndex))
+                    activeSlots[slotIndex] = DenormInterruptibleOffset(prevNormOffset);
+                else if (currentState == 0 && activeSlots.TryGetValue(slotIndex, out uint begin))
+                {
+                    EmitSlotLifetime(slotIndex, begin, DenormInterruptibleOffset(prevNormOffset), lifetimes);
+                    activeSlots.Remove(slotIndex);
+                }
+            }
+        }
+
+        // Close any remaining open lifetimes
+        foreach ((uint slotIndex, uint beginOffset) in activeSlots)
+            EmitSlotLifetime(slotIndex, beginOffset, _codeLength, lifetimes);
+
+        return lifetimes;
+    }
+
+    private List<uint> ReadCouldBeLiveSlots(ref int bitOffset, uint numTracked)
+    {
+        List<uint> slots = [];
+        if (_reader.ReadBits(1, ref bitOffset) != 0)
+        {
+            // RLE encoded
+            bool fSkip = _reader.ReadBits(1, ref bitOffset) == 0;
+            bool fReport = true;
+            uint readSlots = (uint)_reader.DecodeVarLengthUnsigned(
+                fSkip ? TTraits.LIVESTATE_RLE_SKIP_ENCBASE : TTraits.LIVESTATE_RLE_RUN_ENCBASE, ref bitOffset);
+            fSkip = !fSkip;
+            while (readSlots < numTracked)
+            {
+                uint cnt = (uint)_reader.DecodeVarLengthUnsigned(
+                    fSkip ? TTraits.LIVESTATE_RLE_SKIP_ENCBASE : TTraits.LIVESTATE_RLE_RUN_ENCBASE, ref bitOffset) + 1;
+                if (fReport)
+                {
+                    for (uint j = 0; j < cnt; j++)
+                        slots.Add(readSlots + j);
+                }
+                readSlots += cnt;
+                fSkip = !fSkip;
+                fReport = !fReport;
+            }
+        }
+        else
+        {
+            for (uint i = 0; i < numTracked; i++)
+            {
+                if (_reader.ReadBits(1, ref bitOffset) != 0)
+                    slots.Add(i);
+            }
+        }
+        return slots;
+    }
+
+    private uint DenormInterruptibleOffset(uint normOffset)
+    {
+        uint accumulated = 0;
+        for (int i = 0; i < _interruptibleRanges.Count; i++)
+        {
+            uint normStart = TTraits.NormalizeCodeOffset(_interruptibleRanges[i].StartOffset);
+            uint normStop = TTraits.NormalizeCodeOffset(_interruptibleRanges[i].EndOffset);
+            uint rangeLen = normStop - normStart;
+            if (normOffset < accumulated + rangeLen)
+            {
+                uint delta = normOffset - accumulated;
+                return TTraits.DenormalizeCodeOffset(normStart + delta);
+            }
+            accumulated += rangeLen;
+        }
+        return _codeLength;
+    }
+
+    private void EmitSlotLifetime(uint slotIndex, uint beginOffset, uint endOffset, List<GCSlotLifetime> lifetimes)
+    {
+        GcSlotDesc slot = _slots[(int)slotIndex];
+        uint gcFlags = (uint)slot.Flags & ((uint)GcSlotFlags.GC_SLOT_INTERIOR | (uint)GcSlotFlags.GC_SLOT_PINNED);
+        lifetimes.Add(new GCSlotLifetime(slot.IsRegister, slot.RegisterNumber, slot.SpOffset, (uint)slot.Base, gcFlags, beginOffset, endOffset));
     }
 
     public uint NumTrackedSlots => _numSlots - _numUntrackedSlots;
@@ -859,19 +1195,14 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
     {
         EnsureDecodedTo(DecodePoints.InterruptibleRanges);
 
-        uint normBreakOffset = TTraits.NormalizeCodeOffset(codeOffset);
-        uint numBitsPerOffset = CeilOfLog2(TTraits.NormalizeCodeOffset(_codeLength));
-
         // TODO(stackref): The native FindSafePoint uses binary search (NarrowSafePointSearch)
         // when numSafePoints > 32. This is a performance optimization only — no correctness impact.
         // Linear scan through safe point offsets from the saved position
-        int scanOffset = _safePointBitOffset;
-        for (uint i = 0; i < _numSafePoints; i++)
+        for (uint i = 0; i < _safePoints.Count; i++)
         {
-            uint spOffset = (uint)_reader.ReadBits((int)numBitsPerOffset, ref scanOffset);
-            if (spOffset == normBreakOffset)
+            if (_safePoints[(int)i] == codeOffset)
                 return i;
-            if (spOffset > normBreakOffset)
+            if (_safePoints[(int)i] > codeOffset)
                 break;
         }
 

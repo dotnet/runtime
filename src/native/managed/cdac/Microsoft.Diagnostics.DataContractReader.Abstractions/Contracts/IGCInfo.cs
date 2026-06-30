@@ -42,6 +42,51 @@ public record struct GcSlotEnumerationOptions
     public bool ReportFPBasedSlotsOnly { get; set; }
 }
 
+/// <summary>Header fields decoded from the GC info stream for a method.</summary>
+public readonly record struct GCInfoHeader(
+    uint Version,
+    uint CodeSize,
+    uint PrologSize,
+    uint StackBaseRegister,
+    uint SizeOfStackParameterArea,
+    bool IsVarArg,
+    bool WantsReportOnlyLeaf,
+    bool HasTailCalls,
+    SpecialSlot? GSCookie,
+    uint GSCookieValidRangeStart,
+    uint GSCookieValidRangeEnd,
+    SpecialSlot? PSPSym,
+    SpecialSlot? GenericsInstContext,
+    GenericsContextKind GenericsInstContextKind);
+
+/// <summary>Stack offset of a special GC info slot (GS cookie, PSP sym, or generics inst context).</summary>
+public readonly record struct SpecialSlot(int SpOffset);
+
+/// <summary>Kind of the generics instantiation context.</summary>
+public enum GenericsContextKind
+{
+    MethodDesc = 0,
+    MethodHandle = 1,
+    This = 2,
+}
+
+/// <summary>Unified lifetime of a GC slot (register or stack).</summary>
+/// <param name="IsRegister">True if the slot is a CPU register; false if it is a stack location.</param>
+/// <param name="RegisterNumber">Register number (meaningful only when IsRegister is true).</param>
+/// <param name="SpOffset">Stack offset from the base (meaningful only when IsRegister is false).</param>
+/// <param name="BaseRegister">Stack base register (meaningful only when IsRegister is false).</param>
+/// <param name="GcFlags">GC slot flags: 0x1 = interior pointer, 0x2 = pinned.</param>
+/// <param name="BeginOffset">Code offset where the slot becomes live.</param>
+/// <param name="EndOffset">Code offset where the slot becomes dead (exclusive).</param>
+public readonly record struct GCSlotLifetime(
+    bool IsRegister,
+    uint RegisterNumber,
+    int SpOffset,
+    uint BaseRegister,
+    uint GcFlags,
+    uint BeginOffset,
+    uint EndOffset);
+
 public interface IGCInfo : IContract
 {
     static string IContract.Name { get; } = nameof(GCInfo);
@@ -54,7 +99,10 @@ public interface IGCInfo : IContract
     uint GetSizeOfStackParameterArea(IGCInfoHandle handle) => throw new NotImplementedException();
     uint GetCalleePoppedArgumentsSize(IGCInfoHandle handle) => throw new NotImplementedException();
     IReadOnlyList<InterruptibleRange> GetInterruptibleRanges(IGCInfoHandle handle) => throw new NotImplementedException();
+    IReadOnlyList<uint> GetSafePoints(IGCInfoHandle handle) => throw new NotImplementedException();
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options) => throw new NotImplementedException();
+    GCInfoHeader GetHeader(IGCInfoHandle handle) => throw new NotImplementedException();
+    IReadOnlyList<GCSlotLifetime> GetSlotLifetimes(IGCInfoHandle handle) => throw new NotImplementedException();
 }
 
 public readonly struct GCInfo : IGCInfo
