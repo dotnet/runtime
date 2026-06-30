@@ -21,18 +21,6 @@ internal readonly struct Thread_1 : IThread
     };
 
     [Flags]
-    private enum ThreadState_1
-    {
-        Hijacked = 0x80,
-        Background = 0x200,
-        Unstarted = 0x400,
-        Stopped = 0x10000,
-        ThreadPoolWorker = 0x1000000,
-        WaitSleepJoin = 0x2000000,
-        Detached = unchecked((int)0x80000000)
-    }
-
-    [Flags]
     private enum ExceptionFlags
     {
         DebuggerInterceptInfo = 0x00000200,
@@ -78,26 +66,6 @@ internal readonly struct Thread_1 : IThread
             threadStore.DeadCount);
     }
 
-    private static Contracts.ThreadState GetThreadState(ThreadState_1 state)
-    {
-        Contracts.ThreadState result = Contracts.ThreadState.Unknown;
-        if (state.HasFlag(ThreadState_1.Hijacked))
-            result |= Contracts.ThreadState.Hijacked;
-        if (state.HasFlag(ThreadState_1.Background))
-            result |= Contracts.ThreadState.Background;
-        if (state.HasFlag(ThreadState_1.Unstarted))
-            result |= Contracts.ThreadState.Unstarted;
-        if (state.HasFlag(ThreadState_1.Stopped))
-            result |= Contracts.ThreadState.Stopped;
-        if (state.HasFlag(ThreadState_1.WaitSleepJoin))
-            result |= Contracts.ThreadState.WaitSleepJoin;
-        if (state.HasFlag(ThreadState_1.ThreadPoolWorker))
-            result |= Contracts.ThreadState.ThreadPoolWorker;
-        if (state.HasFlag(ThreadState_1.Detached))
-            result |= Contracts.ThreadState.Detached;
-        return result;
-    }
-
     ThreadData IThread.GetThreadData(TargetPointer threadPointer)
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
@@ -136,7 +104,7 @@ internal readonly struct Thread_1 : IThread
             threadPointer,
             thread.Id,
             thread.OSId,
-            GetThreadState((ThreadState_1)thread.State),
+            (ThreadState)thread.State,
             (thread.PreemptiveGCDisabled & 0x1) != 0,
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Pointer ?? TargetPointer.Null,
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Limit ?? TargetPointer.Null,

@@ -102,7 +102,9 @@ public unsafe class ThreadTests
     {
         const uint id = 1;
         const ulong osId = 1234;
-        const uint state = (uint)(ThreadState.WaitSleepJoin | ThreadState.Background);
+        // Include a flag (AbortRequested) that the contract previously dropped to verify the
+        // full raw m_State bitfield is now reported verbatim.
+        const uint state = (uint)(ThreadState.WaitSleepJoin | ThreadState.Background | ThreadState.AbortRequested);
         MockThread? thread = null;
 
         TestPlaceholderTarget target = CreateTarget(
@@ -115,8 +117,10 @@ public unsafe class ThreadTests
 
         IThread contract = target.Contracts.Thread;
         ThreadData data = contract.GetThreadData(new TargetPointer(thread!.Address));
+        Assert.Equal(state, (uint)data.State);
         Assert.True(data.State.HasFlag(ThreadState.Background));
         Assert.True(data.State.HasFlag(ThreadState.WaitSleepJoin));
+        Assert.True(data.State.HasFlag(ThreadState.AbortRequested));
         Assert.False(data.State.HasFlag(ThreadState.Stopped));
     }
 
