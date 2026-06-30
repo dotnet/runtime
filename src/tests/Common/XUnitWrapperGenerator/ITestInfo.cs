@@ -270,6 +270,10 @@ public sealed class ConditionalTest : ITestInfo
         {
             platformCheckConditions.Add(@"global::System.OperatingSystem.IsFreeBSD()");
         }
+        if (platform.HasFlag(Xunit.TestPlatforms.OpenBSD))
+        {
+            platformCheckConditions.Add(@"global::System.OperatingSystem.IsOSPlatform(""OpenBSD"")");
+        }
         if (platform.HasFlag(Xunit.TestPlatforms.NetBSD))
         {
             platformCheckConditions.Add(@"global::System.OperatingSystem.IsOSPlatform(""NetBSD"")");

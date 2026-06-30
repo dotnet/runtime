@@ -3208,7 +3208,7 @@ void emitter::emitIns_R_R_R(instruction ins,
                 }
             }
 
-#if !defined(USE_HELPERS_FOR_INT_DIV)
+#if !USE_HELPERS_FOR_INT_DIV
             FALLTHROUGH;
         case INS_sdiv:
         case INS_udiv:
@@ -4683,12 +4683,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     }
 #endif
 
-    /* Managed RetVal: emit sequence point for the call */
-    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
-    }
-
     /*
         We need to allocate the appropriate instruction descriptor based
         on whether this is a direct/indirect call, and whether we need to
@@ -5307,9 +5301,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         assert(ins == INS_movw || ins == INS_movt);
         distVal = (ssize_t)emitOffsetToPtr(dstOffs);
 
-        // ILC defines method symbols with the thumb bit already set, so don't add it here.
-        // For ReadyToRun and non-relocatable code (runtime JIT), we set it ourselves.
-        if (!m_compiler->IsNativeAot())
+        // ILC and crossgen2 defines method symbols with the thumb bit already set, so don't add it here.
+        // Assume compilations with relocs will put the thumb bit in the symbol.
+        // For non-relocatable code (runtime JIT), we set it ourselves.
+        if (!(m_compiler->opts.compReloc))
         {
             distVal += 1;
         }

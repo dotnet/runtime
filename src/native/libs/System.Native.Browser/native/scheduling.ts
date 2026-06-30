@@ -81,9 +81,12 @@ export function SystemJS_ScheduleFinalization(): void {
     }
 }
 
-export function SystemJS_ScheduleDiagnosticServer(): void {
+export function SystemJS_ScheduleDiagnosticServer(delayMs: number): void {
     if (_ems_.ABORT || _ems_.DOTNET.isAborting) {
         // runtime is shutting down
+        return;
+    }
+    if (delayMs !== 0 && (_ems_.ENVIRONMENT_IS_SHELL || _ems_.DOTNET.lastScheduledDiagnosticServerId)) {
         return;
     }
     if (_ems_.DOTNET.lastScheduledDiagnosticServerId) {
@@ -91,7 +94,7 @@ export function SystemJS_ScheduleDiagnosticServer(): void {
         _ems_.runtimeKeepalivePop();
         _ems_.DOTNET.lastScheduledDiagnosticServerId = undefined;
     }
-    _ems_.DOTNET.lastScheduledDiagnosticServerId = _ems_.safeSetTimeout(SystemJS_ScheduleDiagnosticServerTick, 0);
+    _ems_.DOTNET.lastScheduledDiagnosticServerId = _ems_.safeSetTimeout(SystemJS_ScheduleDiagnosticServerTick, delayMs);
 
     function SystemJS_ScheduleDiagnosticServerTick(): void {
         try {

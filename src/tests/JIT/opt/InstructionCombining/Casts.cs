@@ -484,7 +484,7 @@ namespace TestMultipleCasts
         [MethodImpl(MethodImplOptions.NoInlining)]
         static uint CastUIntULongUInt(uint x)
         {
-            //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-NOT: mov {{w[0-9]+}}, {{w[0-9]+}}
             return (uint)(ulong)x;
         }
 

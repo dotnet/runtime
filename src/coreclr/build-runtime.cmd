@@ -138,6 +138,7 @@ if [!__PassThroughArgs!]==[] (
 
 if /i "%1" == "-hostos"              (set __HostOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-arch"                (set __TargetArch=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-targetrid"           (set __TargetRid=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-outputrid"           (set __TargetRid=%2&shift&shift&goto Arg_Loop)
@@ -591,6 +592,7 @@ echo.
 echo.-? -h -help --help: view this message.
 echo -all: Builds all configurations and platforms.
 echo Build architecture: one of -x64, -x86, -arm, -arm64, -loongarch64, -riscv64 ^(default: -x64^).
+echo                     Can also be set with "-arch ^<value^>" ^(e.g. -arch arm64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo -component ^<name^> : specify this option one or more times to limit components built to those specified.
 echo                     Allowed ^<name^>: hosts jit alljits runtime paltests iltools nativeaot spmi

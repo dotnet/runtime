@@ -5,15 +5,58 @@ This contract encapsulates support for walking the stack of managed threads.
 ## APIs of contract
 
 ```csharp
-public interface IStackDataFrameHandle { };
+public interface IStackDataFrameHandle
+{
+    // Describes what the current Context/FrameIter of this handle represents.
+    StackWalkState State { get; }
+}
+
+public enum StackWalkState
+{
+    Complete,
+    Error,
+    // Current Context represents a managed method.
+    Frameless,
+    // Current Context is the seed native context from init (the thread's saved
+    // CONTEXT). FrameIter may or may not be on a Frame.
+    InitialNativeContext,
+    // Current Context is native, produced by unwinding a managed frame down to
+    // an M2U boundary. FrameIter is on the explicit Frame at the transition.
+    NativeMarker,
+    // FrameIter is on an explicit Frame (FrameAddress is valid), but the
+    // current Context has not yet been bridged through that Frame. Bridging
+    // occurs via UpdateContextFromCurrentFrame; the next step advances past
+    // this Frame.
+    Frame,
+    SkippedFrame,
+}
 ```
 
 ```csharp
 // Creates a stack walk and returns a handle
 IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData);
 
+// Creates a stack walk and returns a handle, using a caller-provided seed CONTEXT.
+// `contextBuffer` must be at least `IPlatformAgnosticContext.Size` bytes.
+// `isFirst` indicates whether the seed frame should be treated as the active leaf.
+IEnumerable<IStackDataFrameHandle> CreateStackWalk(
+    ThreadData threadData,
+    byte[] contextBuffer,
+    bool isFirst = true);
+
 // Gets the thread context at the given stack dataframe.
-byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
+// `flags` lets the caller request platform-specific shaping of the returned context.
+byte[] GetRawContext(
+    IStackDataFrameHandle stackDataFrameHandle,
+    StackwalkFlag flags = StackwalkFlag.Default);
+
+[Flags]
+enum StackwalkFlag
+{
+    Default = 0,
+    X86ESPIgnoresCalleePoppedArgs = 0x1,
+}
+
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 
@@ -43,6 +86,13 @@ DebuggerEvalData GetDebuggerEvalData(TargetPointer funcEvalFrameAddress);
 // Walks the stack and returns all GC references found on each frame.
 // This is the primary API for GC reference enumeration, used by SOSDacImpl.GetStackReferences.
 IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData);
+
+// Returns a context for the thread, trying (in order): the debugger filter context,
+// the OS thread context, or a context derived from the explicit Frame chain.
+byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags);
+
+// Returns the saved TargetContext pointer carried by the head Frame, if applicable.
+TargetPointer GetRedirectedContextPointer(ThreadData threadData);
 ```
 
 ## Version 1
@@ -86,6 +136,7 @@ This contract depends on the following descriptors:
 | `ReadyToRunInfo` | `ImportSections` | Pointer to array of `READYTORUN_IMPORT_SECTION` structs for GCRefMap resolution |
 | `ReadyToRunInfo` | `NumImportSections` | Count of import sections in the array |
 | `FuncEvalFrame` | `DebuggerEvalPtr` | Pointer to the Frame's DebuggerEval object |
+| `FuncEvalFrame` | `ReturnAddress` | Return address of the frame |
 | `DebuggerEval` | `TargetContext` | Context saved inside DebuggerEval |
 | `DebuggerEval` | `EvalUsesHijack` | Flag used in processing FuncEvalFrame |
 | `DebuggerEval` | `MethodToken` | Metadata token of the method being evaluated |
@@ -118,6 +169,10 @@ This contract depends on the following descriptors:
 | `ExceptionInfo` | `PassNumber` | Exception handling pass (1 or 2) |
 | `ExceptionInfo` | `ClauseForCatchHandlerStartPC` | Start PC offset of the catch handler clause, used for interruptible offset override |
 | `ExceptionInfo` | `ClauseForCatchHandlerEndPC` | End PC offset of the catch handler clause, used for interruptible offset override |
+| `GCFrame` | `Next` | Pointer to the next `GCFrame` toward the top of the chain |
+| `GCFrame` | `ObjRefs` | Pointer to the array of protected object reference slots |
+| `GCFrame` | `NumObjRefs` | Count of protected object reference slots starting at `ObjRefs` |
+| `GCFrame` | `GCFlags` | `GC_CALL_*` promotion flags applied when reporting the protected slots |
 
 Global variables used:
 | Global Name | Type | Purpose |
@@ -129,6 +184,9 @@ Constants used:
 | --- | --- | --- | --- |
 | `ExceptionFlags` (`exstatecommon.h`) | `Ex_UnwindHasStarted` | `0x00000004` | Bit flag in `ExceptionInfo.ExceptionFlags` indicating exception unwinding (2nd pass) has started. Used by `IsInStackRegionUnwoundBySpecifiedException` to skip ExInfo trackers still in the 1st pass. |
 | `InlinedCallFrameMarker` (`exceptionhandling.h`) | `ExceptionHandlingHelper` | `2 (64-bit), 1(32-bit)` | Used to determine whether an active call on an InlinedCallFrame is an EH helper. |
+| N/A | `REDIRECTSTUB_ESTABLISHER_OFFSET_RBP` | 0 | AMD64 offset for redirect stubs. |
+| N/A | `REDIRECTSTUB_SP_OFFSET_CONTEXT` | 0 | ARM, ARM64, Loongarch & RISCV64 offset for redirect stubs. |
+| N/A | `REDIRECTSTUB_EBP_OFFSET_CONTEXT` | -4 | X86 offset for redirect stubs. |
 
 Contracts used:
 | Contract Name |
@@ -137,6 +195,7 @@ Contracts used:
 | `Thread` |
 | `RuntimeTypeSystem` |
 | `GCInfo` |
+| `Exception` |
 
 
 ### Stackwalk Algorithm
@@ -427,8 +486,13 @@ The rest of the APIs convey state about the stack walk at a given point which fa
 
 This context is not guaranteed to be complete. Not all capital "F" Frames store the entire context, some only store the IP/SP/FP. Therefore, at points where the context is based on these Frames it will be incomplete.
 ```csharp
-byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
+byte[] GetRawContext(
+    IStackDataFrameHandle stackDataFrameHandle,
+    StackwalkFlag flags = StackwalkFlag.Default);
 ```
+
+##### `StackwalkFlag.X86ESPIgnoresCalleePoppedArgs`
+See [comment](https://github.com/dotnet/runtime/blob/7f8276da27a20943339702df0abdfc02e21110a4/src/coreclr/debug/daccess/dacdbiimplstackwalk.cpp#L1016-L1063)
 
 
 `GetFrameAddress` gets the address of the current capital "F" Frame. This is only valid if the `IStackDataFrameHandle` is at a point where the context is based on a capital "F" Frame. For example, it is not valid when when the current context was created by using the stack frame unwinder.
@@ -457,7 +521,7 @@ TargetPointer GetMethodDescPtr(TargetPointer framePtr)
 * This API can either be at a capital 'F' frame or a managed frame unlike the TargetPointer overload which only works at capital 'F' frames.
 * This API handles the special ReportInteropMD case which happens under the following conditions
     1. The dataFrame is at an `InlinedCallFrame`
-    2. The dataFrame is in a `SW_SKIPPED_FRAME` state
+    2. The dataFrame is in a `SkippedFrame` state
     3. The InlinedCallFrame's return address is managed code
     4. The InlinedCallFrame's return address method has a MDContext arg
 
@@ -553,9 +617,44 @@ IReadOnlyList<StackReferenceData> WalkStackReferences(ThreadData threadData)
 
 The implementation uses the same stack walk algorithm as `CreateStackWalk`, but integrates the GC-aware `Filter` directly (rather than consuming pre-generated frames) and performs GC reference enumeration at each frame. See [GC Stack Reference Scanning](#gc-stack-reference-scanning) for details.
 
+`GetContext` returns a thread context by trying three sources in order: (1) the debugger filter context from `ThreadData.DebuggerFilterContext` (when `ThreadContextSource.Debugger` is requested), (2) the OS thread context via `TryGetThreadContext`, or (3) a context derived from walking the explicit Frame chain (`Thread::Frame` linked list), returning the first frame that yields a usable context:
+* If the current Frame is an `InterpreterFrame`, clear the context and update it from the Frame. Return the resulting bytes.
+* Otherwise, clear the context and update it from the current Frame; accept the context when both the stack pointer and instruction pointer are non-zero (e.g. `RedirectedThreadFrame`, `InlinedCallFrame`, `DynamicHelperFrame`). Mark `RawContextFlags = FullContextFlags` so callers know SP/PC/FP are valid.
+
+If no Frame in the chain produces a usable context (thread is not running managed code), a zeroed context of the target architecture's size is returned.
+
+`GetRedirectedContextPointer` returns the saved `TargetContext` pointer carried by the head Frame when that Frame is a `RedirectedThreadFrame` (a `ResumableFrame`). Otherwise it returns `TargetPointer.Null`.
+
+#### CreateStackWalk with a caller-provided CONTEXT
+
+`CreateStackWalk(ThreadData, byte[], bool isFirst)` seeds the walker from `contextBuffer` rather than from the thread's saved CONTEXT. `isFirst` (default `true`) is used to determine whether the walker starts with internal state `isFirst` set to true.
+
+1. Compute the caller SP by cloning the seed context and unwinding the clone.
+2. Iterate the explicit Frame chain; update context from the first Frame `>= callerSP` (on non-x86) or after the additional ReturnAddress/FP cross-check See [text](https://github.com/dotnet/runtime/blob/ad50b412069ee7f274c585d191df797ac5548525/src/coreclr/vm/stackwalk.cpp#L1238). Do not update if no Frame meets these criteria.
+3. For every Frame whose `GetCurrentReturnAddress() == seedIP`, rewrite the seed context via `UpdateContextFromCurrentFrame` and record the matched Frame type.
+4. After the loop, if a match was found, override the first walker state `IsFirst` (true for `ResumableFrame`/`RedirectedThreadFrame`, and for `HijackFrame` on non-x86) and `IsInterrupted` (true for `FaultingExceptionFrame`/`SoftwareExceptionFrame`).
+
+The frame iterator is left positioned at the first Frame `>= callerSP`, if such a frame exists.
+
+#### Hijack-stub recovery in `Next()`
+
+The runtime installs a small set of redirect/hijack stubs whose code blocks are tracked in `Debugger::s_hijackFunction`. When the walker is stopped at one of these stubs (state is `InitialNativeContext` or `NativeMarker` and the IP falls inside one of the tracked ranges), the on-thread CONTEXT does not represent the real pre-hijack execution state — the real CONTEXT was stashed on the stack by the stub at entry. `Next()` recovers it before continuing.
+
+The recovery step is driven by `IDebugger.GetHijackKind(controlPC)`, which returns a `HijackKind`:
+
+* `HijackKind.None` — the IP is not inside any tracked stub; `Next()` does nothing special.
+* `HijackKind.UnhandledException` — the IP is inside the `ExceptionHijack` stub. The saved `PT_CONTEXT*` is at `*SP` (the stub pushed it directly), so the implementation reads `*context.StackPointer`.
+* `HijackKind.Other` — the IP is inside another redirect stub. The saved `PT_CONTEXT*` is at a fixed offset from SP or FP, matching the `REDIRECTSTUB_*` constants.
+
+When a non-`None` `HijackKind` is returned, the walker:
+
+1. Reads the saved CONTEXT pointer from the appropriate stack slot, then materializes a fresh `IPlatformAgnosticContext` from target memory at that address.
+2. Reclassifies the walker state from the recovered IP.
+3. Re-runs the CONTEXT/Frame-chain reconciliation step (see [CreateStackWalk with a caller-provided CONTEXT](#createstackwalk-with-a-caller-provided-context)) against the freshly created `FrameIterator`, then writes back the updated walker state.
+
 ### GC Stack Reference Scanning
 
-`WalkStackReferences` scans the stack for GC references by walking through each frame and reporting live object references and interior pointers. The native equivalent is `DacStackReferenceWalker` which calls `GcStackCrawlCallBack` at each frame.
+`WalkStackReferences` scans the stack for GC references by walking through each frame and reporting live object references and interior pointers, then reporting the thread's GCFrame (GCPROTECT) chain and in-flight exception (ExInfo) chain. This mirrors the GC's own root enumeration, `ScanStackRoots`.
 
 #### Stack Walk Integration
 
@@ -564,9 +663,9 @@ The GC reference walk uses the `Filter` function to drive the stack walk. `Filte
 Key state tracked during the walk:
 
 - **IsInterrupted**: Set when transitioning to a managed frame from a `FaultingExceptionFrame` or `SoftwareExceptionFrame` (frames with `FRAME_ATTR_EXCEPTION`). When true, the managed frame's GC enumeration uses `ExecutionAborted` mode, which causes the GcInfoDecoder to skip live slot reporting at non-interruptible offsets.
-- **LastProcessedFrameType**: Records the frame type when processing `SW_FRAME` state, so `UpdateState` can detect exception frames during the transition to `SW_FRAMELESS`.
+- **LastProcessedFrameType**: Records the frame type when processing `Frame` state, so `UpdateState` can detect exception frames during the transition to `Frameless`.
 - **IsFirst**: Preserved during skipped frame processing (native `SFITER_SKIPPED_FRAME_FUNCTION` does not modify `IsFirst`), ensuring the subsequent managed frame is still treated as the leaf/active frame.
-- **GetReturnAddress gating**: In `SW_FRAME` state, `UpdateContextFromFrame` is only called when `GetReturnAddress()` returns a non-null value. This matches native behavior where the context is only updated when the frame has a valid return address.
+- **GetReturnAddress gating**: In `Frame` state, `UpdateContextFromFrame` is only called when `GetReturnAddress()` returns a non-null value. This matches native behavior where the context is only updated when the frame has a valid return address.
 
 #### Per-Frame GC Enumeration
 
@@ -587,64 +686,16 @@ At each frame yielded by `Filter`, the walk determines whether to scan for GC re
 - **PrestubMethodFrame / CallCountingHelperFrame**: Use signature-based scanning.
 - Other frame types: No GC roots to report.
 
-See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path and [Signature-Based Scanning](#signature-based-scanning) for the signature decoding path.
+See [GCRefMap Format and Resolution](#gcrefmap-format-and-resolution) for the GCRefMap scanning path. The signature-based scanning fallback (`PromoteCallerStack`) is currently a stub awaiting an `ICallingConvention` contract port; the stress harness handles the resulting gaps via a deferred-frame sentinel (see [tests/StressTests/known-issues.md](../../../src/native/managed/cdac/tests/StressTests/known-issues.md) and tracking issue [dotnet/runtime#127765](https://github.com/dotnet/runtime/issues/127765)).
 
-### Signature-Based Scanning
+#### GCFrame and Exception Tracker Roots
 
-When a transition frame's calling convention is not described by a precomputed GCRefMap (`PrestubMethodFrame`, `CallCountingHelperFrame`, and the fallback path for `StubDispatchFrame`/`ExternalMethodFrame`), the GC reference walk classifies caller-stack arguments by decoding the callee's method signature. This corresponds to native `TransitionFrame::PromoteCallerStack` (`src/coreclr/vm/frames.cpp`).
+After walking the thread's frames, `WalkStackReferences` reports two additional sets of roots that the GC keeps alive but that are not surfaced by per-frame GC info (matching native `gcenv.ee.cpp` `ScanStackRoots`):
 
-#### GcSignatureTypeProvider
+- **GCFrame (GCPROTECT) chain**: starting from `Thread.GCFrame` (obtained via the `Thread` contract's `GetThreadData`), each `GCFrame` is walked via its `Next` pointer until TargetPointer.Null is reached. For each node, the `NumObjRefs` slots starting at `ObjRefs` are reported, applying the node's `GCFlags` (`GC_CALL_INTERIOR` / `GC_CALL_PINNED`) as the promotion flags. This mirrors native `GCFrame::GcScanRoots`.
+- **Exception tracker (ExInfo) chain**: starting from the thread's exception tracker, each in-flight exception object (the current one and any superseded/nested ones reached via `PreviousNestedInfo`) is reported through its thrown-object slot.
 
-`GcSignatureTypeProvider` is an `IRuntimeSignatureTypeProvider<GcTypeKind, GcSignatureContext>` that classifies each parameter type into one of:
-
-```csharp
-internal enum GcTypeKind
-{
-    None,       // Non-GC primitive that fits in a single slot
-    Ref,        // Object reference (TYPE_GC_REF)
-    Interior,   // Managed pointer / byref (TYPE_GC_BYREF)
-    Other,      // Value type that may contain GC refs, or any type larger than a slot
-}
-```
-
-The provider is scoped to the method's containing module (captured at construction) so that `TypeDef` and `TypeRef` tokens can be resolved to a loaded `MethodTable` via the module's `TypeDefToMethodTable` / `TypeRefToMethodTable` lookup tables. The decoder's generic context is a `GcSignatureContext(TypeHandle classContext, MethodDescHandle methodContext)` carrying the method's class and method instantiations.
-
-The provider classifies primitives directly (`String`/`Object` -> `Ref`, `TypedReference` -> `Other`, others -> `None`). For `TypeDef`/`TypeRef` it resolves the loaded `TypeHandle` and classifies via `RuntimeTypeSystem.GetSignatureCorElementType`, treating enums (`IsEnum`) as their underlying primitive (`None`). When the type cannot be resolved (e.g., not yet loaded), classification falls back to the signature's `rawTypeKind` (`ValueType` -> `Other`, otherwise `Ref`). Arrays are `Ref`, byrefs are `Interior`, raw pointers are `None`. Generic parameters (`!T`, `!!T`) are resolved against the `GcSignatureContext` (via `GetInstantiation` / `GetGenericMethodInstantiation`) and classified by their actual instantiation -- matching native `SigTypeContext`-driven `PeekElemTypeNormalized` behavior. `ELEMENT_TYPE_INTERNAL` resolves the `TypeHandle` via `RuntimeTypeSystem.GetSignatureCorElementType` and maps the `CorElementType` to a `GcTypeKind`.
-
-#### PromoteCallerStack Algorithm
-
-1. Read the `MethodDesc` pointer from the `FramedMethodFrame` and obtain a `MethodDescHandle` from `RuntimeTypeSystem`.
-2. Resolve the method's `MetadataReader` via `Loader.GetModuleHandleFromModulePtr` and `EcmaMetadata.GetMetadata`. If metadata is unavailable, no caller-stack refs are reported (matches native fallback behavior).
-3. Obtain the method's signature blob, matching native `MethodDesc::GetSig`:
-   - If `RuntimeTypeSystem.IsStoredSigMethodDesc` is true (dynamic, EEImpl, and array method descs), pin the stored signature span and pass a `BlobReader` over it to `RuntimeSignatureDecoder.DecodeMethodSignature`.
-   - Otherwise, look up the signature via the metadata token (`mdMethodDef`), skipping methods with a nil token (`0x06000000`).
-4. Decode the signature with `RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext>` and a `GcSignatureTypeProvider` constructed for the method's module. The `GcSignatureContext` passes the method's class and method instantiations so that `VAR`/`MVAR` placeholders resolve to their actual types. See [Signature contract](./Signature.md) for the decoder.
-5. Skip varargs methods (the caller-stack layout is not described by the callee signature alone).
-6. Compute the number of reserved register slots in the `TransitionBlock`:
-
-   | Reserved Slot | Condition |
-   |---|---|
-   | `this` pointer | `MethodSignature.Header.IsInstance` |
-   | Return buffer | Return type is `GcTypeKind.Other` |
-   | Generic instantiation arg | `RuntimeTypeSystem.RequiresInstArg(methodDesc)` |
-   | Async continuation | `RuntimeTypeSystem.IsAsyncMethod(methodDesc)` |
-   | ARM64 indirect-result register (`x8`) | Target architecture is ARM64 |
-
-7. If `IsInstance`, report the `this` slot at position `0` (or `1` on ARM64 to skip `x8`). The slot is reported as `GC_CALL_INTERIOR` for value-type `this`, otherwise as a normal reference.
-8. Walk `MethodSignature.ParameterTypes` starting at slot index = reserved slot count, advancing one slot per parameter:
-   - `GcTypeKind.Ref` -> report as a reference.
-   - `GcTypeKind.Interior` -> report with `GC_CALL_INTERIOR`.
-   - `GcTypeKind.Other` / `GcTypeKind.None` -> not reported (large value types are reported via the GCRefMap path when one is available; otherwise their interior refs are not visible to this scan).
-
-The slot address is computed using the same formula as the GCRefMap path:
-
-```csharp
-slotAddress = transitionBlockPtr + FirstGCRefMapSlot + (position * pointerSize);
-```
-
-#### Limitations vs. Native
-
-This signature-based scan has known gaps relative to native see [dotnet/runtime#127765](https://github.com/dotnet/runtime/issues/127765) for tracking.
+Both sets carry a non-zero, stack-resident `Source` and `StackPointer` set to the GCFrame / ExInfo node address (the node lives on the stack). A `GCFrame` node belongs to a separate chain from the explicit `Frame` chain, and an ExInfo node is likewise not a capital-F `Frame`, so neither is reported with the `Frame` source type. Both use the `Other` source type, which marks a root reported outside the per-frame walk.
 
 ### GCRefMap Format and Resolution
 
@@ -680,6 +731,8 @@ The x86 platform has some major differences to other platforms. In general this 
 
 #### GCInfo Parsing
 The GCInfo structure is encoded using a variety of formats to optimize for speed of decoding and size on disk. For information on decoding and parsing refer to [GC Information Encoding for x86](../coreclr/jit/jit-gc-info-x86.md).
+
+The x86 GCInfo decoder lives under the [GCInfo contract](GCInfo.md) at `src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/GCInfo/X86/` (`X86GCInfo` and the supporting `InfoHdr`, `GCArgTable`, `GCTransition`, `CallPattern`, `GCInfoTargetExtensions` types). It is shared between the GCInfo contract (which exposes the offset-independent queries `GetCodeLength` / `GetStackBaseRegister` / `GetCalleePoppedArgumentsSize` for SOS callers) and the x86 stack walker (which constructs `X86GCInfo` directly with a `relativeOffset` to access offset-bound state — `IsInProlog`, `IsInEpilog`, `PrologOffset`, `EpilogOffset`, `PushedArgSize` — that is not exposed through `IGCInfoDecoder`).
 
 #### Unwinding Algorithm
 

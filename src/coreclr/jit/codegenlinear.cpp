@@ -91,6 +91,8 @@ void CodeGen::genInitialize()
     }
 
     initializeVariableLiveKeeper();
+    emittedCallReturnInfo =
+        new (m_compiler, CMK_DebugInfo) jitstd::vector<EmittedCallReturnInfo>(m_compiler->getAllocator(CMK_DebugInfo));
 
     genPendingCallLabel = nullptr;
 
@@ -807,6 +809,21 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
 
         case BBJ_THROW:
         {
+#if defined(TARGET_WASM)
+            // Wasm validator needs an `unreachable` after the throw so the
+            // fall-through stack is polymorphic.
+            //
+            GetEmitter()->emitIns(INS_unreachable);
+
+            // At function/funclet end, close open intervals and emit `end`
+            // (we've already emitted the terminating `unreachable` above).
+            //
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            {
+                genEmitFunctionEnd(/* emitTerminalUnreachable */ false);
+            }
+#else  // !TARGET_WASM
+
             // If we have a throw at the end of a function or funclet, we need to emit another instruction
             // afterwards to help the OS unwinder determine the correct context during unwind.
             // We insert an unexecuted breakpoint instruction in several situations
@@ -838,15 +855,7 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
                     }
                 }
             }
-
-#if defined(TARGET_WASM)
-            // For wasm the last instruction in a function or funclet must be end.
-            //
-            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
-            {
-                GetEmitter()->emitIns(INS_end);
-            }
-#endif // defined(TARGET_WASM)
+#endif // !TARGET_WASM
 
             break;
         }
@@ -905,6 +914,18 @@ void CodeGen::genEmitEndBlock(BasicBlock* block)
 #if FEATURE_LOOP_ALIGN
             SetLoopAlignBackEdge(block, block->GetTarget());
 #endif // FEATURE_LOOP_ALIGN
+
+#if defined(TARGET_WASM)
+            // If this BBJ_ALWAYS is the last block of the function or funclet
+            // (e.g., backedge of an infinite loop), close any still-open
+            // wasm intervals and emit the function-body terminator.
+            //
+            if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
+            {
+                genEmitFunctionEnd();
+            }
+#endif // defined(TARGET_WASM)
+
             break;
 
         case BBJ_COND:
@@ -1817,7 +1838,6 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
     }
 }
 
-#ifndef TARGET_WASM
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // genConsumeOperands: Do liveness update for the operands of a multi-operand node,
@@ -1838,6 +1858,7 @@ void CodeGen::genConsumeMultiOpOperands(GenTreeMultiOp* tree)
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genConsumePutStructArgStk: Do liveness update for the operands of a PutArgStk node.
 //                      Also loads in the right register the addresses of the
@@ -2703,6 +2724,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
  * Possible values for JitEmitUnitTestsSections:
  * Amd64: all, sse2
  * Arm64: all, general, advsimd, sve
+ * Wasm:  all, simd
  */
 
 #if defined(DEBUG)
@@ -2727,7 +2749,14 @@ void CodeGen::genEmitterUnitTests()
 
     // Jump over the generated tests as they are not intended to be run.
     BasicBlock* skipLabel = genCreateTempLabel();
+#ifndef TARGET_WASM
     inst_JMP(EJ_jmp, skipLabel);
+#else
+    // On Wasm, we skip over the generated emitter test code by nesting it in a block where the
+    // first instruction branches to the end of the block.
+    GetEmitter()->emitIns_BlockTy(INS_block);
+    GetEmitter()->emitIns_J(INS_br, EA_4BYTE, 0, nullptr);
+#endif
 
     // Add NOPs at the start and end for easier script parsing.
     instGen(INS_nop);
@@ -2777,6 +2806,13 @@ void CodeGen::genEmitterUnitTests()
     {
         genArm64EmitterUnitTestsPac();
     }
+
+#elif defined(TARGET_WASM)
+    if (unitTestSectionAll || (strstr(unitTestSection, "simd") != nullptr))
+    {
+        genWasmEmitterUnitTestsSimd();
+    }
+    instGen(INS_end);
 #endif
 
     genDefineTempLabel(skipLabel);
