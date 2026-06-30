@@ -447,8 +447,7 @@ namespace Internal.Reflection.Augments
 
             // Generic enums are guaranteed to have generic type definition MethodTable,
             // so we can get the underlying type directly from the EEType.
-            RuntimeTypeHandle typeHandle = runtimeTypeInfo.InternalTypeHandleIfAvailable;
-            Debug.Assert(!typeHandle.IsNull);
+            RuntimeTypeHandle typeHandle = runtimeTypeInfo.TypeHandle;
             MethodTable* methodTable = typeHandle.ToMethodTable();
             Debug.Assert(methodTable->IsEnum);
 
