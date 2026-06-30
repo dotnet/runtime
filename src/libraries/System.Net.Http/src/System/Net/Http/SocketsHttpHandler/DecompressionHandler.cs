@@ -450,7 +450,7 @@ namespace System.Net.Http
         private sealed class ZstandardDecompressedContent(HttpContent originalContent, string[] contentEncodings) : DecompressedContent(originalContent, contentEncodings)
         {
             protected override Stream GetDecompressedStream(Stream originalStream) =>
-                new ZstandardStream(originalStream, CompressionMode.Decompress);
+                new ZstandardStream(originalStream, new ZstandardDecompressionOptions { MaxWindowLog = 23 });
         }
     }
 }
