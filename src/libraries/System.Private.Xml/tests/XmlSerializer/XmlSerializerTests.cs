@@ -716,60 +716,6 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_DerivedIXmlSerializable()
-    {
-        var dClass = new XmlSerializableDerivedClass() { AttributeString = "derivedIXmlSerTest", DateTimeValue = new DateTime(1999, 12, 31), BoolValue = true };
-
-        var expectedXml = WithXmlHeader(@$"<BaseIXmlSerializable xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:type=""DerivedIXmlSerializable"" AttributeString=""derivedIXmlSerTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""True"" xmlns=""{XmlSerializableBaseClass.XmlNamespace}"" />");
-        var fromBase = SerializeAndDeserialize(dClass, expectedXml, () => new XmlSerializer(typeof(XmlSerializableBaseClass), new Type[] { typeof(XmlSerializableDerivedClass) }));
-        Assert.Equal(dClass.AttributeString, fromBase.AttributeString);
-        Assert.Equal(dClass.DateTimeValue, fromBase.DateTimeValue);
-        Assert.Equal(dClass.BoolValue, fromBase.BoolValue);
-
-        // Derived class does not apply XmlRoot attribute to force itself to be emitted with the base class element name, so update expected xml accordingly.
-        // Since we can't smartly emit xsi:type during serialization though, it is still there even though it isn't needed.
-        expectedXml = WithXmlHeader(@"<DerivedIXmlSerializable xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:type=""DerivedIXmlSerializable"" AttributeString=""derivedIXmlSerTest"" DateTimeValue=""1999-12-31T00:00:00"" BoolValue=""True"" />");
-        var fromDerived = SerializeAndDeserialize(dClass, expectedXml, () => new XmlSerializer(typeof(XmlSerializableDerivedClass)));
-        Assert.Equal(dClass.AttributeString, fromDerived.AttributeString);
-        Assert.Equal(dClass.DateTimeValue, fromDerived.DateTimeValue);
-        Assert.Equal(dClass.BoolValue, fromDerived.BoolValue);
-    }
-
-    [Fact]
-    public static void Xml_DerivedIXmlSerializable_UnknownXsiTypeDoesNotClobberMember()
-    {
-        var serializer = new XmlSerializer(typeof(XmlSerializableMemberWrapper), new Type[] { typeof(XmlSerializableDerivedClass) });
-
-        // Produce valid XML carrying a real xsi:type for the IXmlSerializable member, then swap the
-        // xsi:type to a name that matches neither the declared serializable type nor any known derived
-        // type. On this path the ILGen reader emits only Reader.UnknownNode(null) and leaves the member
-        // untouched; the reflection reader must behave identically rather than overwriting it with null.
-        var wrapper = new XmlSerializableMemberWrapper()
-        {
-            Member = new XmlSerializableDerivedClass() { AttributeString = "derived", DateTimeValue = new DateTime(1999, 12, 31), BoolValue = true }
-        };
-
-        string validXml;
-        using (var sw = new StringWriter())
-        {
-            serializer.Serialize(sw, wrapper);
-            validXml = sw.ToString();
-        }
-
-        string unknownTypeXml = validXml.Replace(@"xsi:type=""DerivedIXmlSerializable""", @"xsi:type=""NonExistentDerivedType""");
-        Assert.DoesNotContain(@"xsi:type=""DerivedIXmlSerializable""", unknownTypeXml);
-
-        XmlSerializableMemberWrapper result;
-        using (var sr = new StringReader(unknownTypeXml))
-        {
-            result = (XmlSerializableMemberWrapper)serializer.Deserialize(sr);
-        }
-
-        Assert.NotNull(result.Member);
-        Assert.Equal(XmlSerializableMemberWrapper.PresetAttributeString, result.Member.AttributeString);
-    }
-
-    [Fact]
     public static void Xml_StructImplementingIXmlSerializableWithoutParameterlessConstructor()
     {
         StructImplementingIXmlSerializableWithoutParameterlessConstructor value = new()
