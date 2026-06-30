@@ -509,7 +509,7 @@ namespace System.Runtime.CompilerServices
 
             if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
             {
-                AsyncStateMachineDispatcherInfo.CompleteAsyncMethod(AsyncInstrumentation.ActiveFlags);
+                AsyncStateMachineDispatcherInfo.CompleteAsyncMethod(task, AsyncInstrumentation.ActiveFlags);
             }
 
             if (TplEventSource.Log.IsEnabled())
@@ -544,7 +544,7 @@ namespace System.Runtime.CompilerServices
 
             if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
             {
-                AsyncStateMachineDispatcherInfo.UnwindAsyncFrame(AsyncInstrumentation.ActiveFlags);
+                AsyncStateMachineDispatcherInfo.UnwindAsyncFrame(task, AsyncInstrumentation.ActiveFlags);
             }
 
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.

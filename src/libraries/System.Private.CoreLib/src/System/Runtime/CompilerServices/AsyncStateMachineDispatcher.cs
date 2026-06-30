@@ -93,10 +93,10 @@ namespace System.Runtime.CompilerServices
             return dispatcher;
         }
 
-        internal static unsafe void UnwindAsyncFrame(AsyncInstrumentation.Flags flags)
+        internal static unsafe void UnwindAsyncFrame(object completingBox, AsyncInstrumentation.Flags flags)
         {
             AsyncStateMachineDispatcherInfo* info = t_current;
-            if (info != null)
+            if (info != null && ReferenceEquals(info->AsyncProfilerInfo.CurrentContinuation, completingBox))
             {
                 info->AsyncProfilerInfo.CurrentContinuationCompleted = true;
 
@@ -148,10 +148,10 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void CompleteAsyncMethod(AsyncInstrumentation.Flags flags)
+        internal static unsafe void CompleteAsyncMethod(object completingBox, AsyncInstrumentation.Flags flags)
         {
             AsyncStateMachineDispatcherInfo* info = t_current;
-            if (info != null)
+            if (info != null && ReferenceEquals(info->AsyncProfilerInfo.CurrentContinuation, completingBox))
             {
                 info->AsyncProfilerInfo.CurrentContinuationCompleted = true;
 

@@ -2448,6 +2448,95 @@ namespace System.Threading.Tasks.Tests
 
         [RuntimeAsyncMethodGeneration(false)]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_InlineReentrantCompletion_Inner_Marker(Task innerGate)
+        {
+            await innerGate;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingValueTask_InlineReentrantCompletion_Outer_Marker(
+            TaskCompletionSource innerGate, StrongBox<int> resumedThreadId, Task resumeGate, Task finalGate)
+        {
+            await resumeGate;
+            resumedThreadId.Value = Environment.CurrentManagedThreadId;
+            innerGate.SetResult();
+            await finalGate;
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingValueTask_InlineReentrantCompletion()
+        {
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(async () =>
+                {
+                    var resumedThreadId = new StrongBox<int>();
+                    var innerGate = new TaskCompletionSource();
+                    var resumeGate = new TaskCompletionSource();
+                    var finalGate = new TaskCompletionSource();
+
+                    // Inner suspends on innerGate (pending pooling box + registered continuation).
+                    ValueTask inner = StateMachineAsync_PoolingValueTask_InlineReentrantCompletion_Inner_Marker(innerGate.Task);
+
+                    // Outer suspends on resumeGate.
+                    ValueTask outer = StateMachineAsync_PoolingValueTask_InlineReentrantCompletion_Outer_Marker(
+                        innerGate, resumedThreadId, resumeGate.Task, finalGate.Task);
+
+                    // Resume Outer inline; during its resume it completes Inner inline (the re-entrant
+                    // completion under test), then re-suspends on finalGate.
+                    int setResultThreadId = Environment.CurrentManagedThreadId;
+                    resumeGate.SetResult();
+
+                    Assert.True(resumedThreadId.Value == setResultThreadId,
+                        $"Expected inline resume on thread {setResultThreadId}, got {resumedThreadId.Value} (0 = no sync resume)");
+
+                    finalGate.SetResult();
+                    await outer;
+                    await inner;
+                });
+            });
+
+            // DumpAllEvents(events);
+
+            var stream = ParseAllEvents(events);
+
+            var markerCallstacks = stream.CallstacksWithMarker(
+                AsyncEventID.ResumeStateMachineAsyncCallstack, nameof(StateMachineAsync_PoolingValueTask_InlineReentrantCompletion_Outer_Marker));
+            AssertNotEmpty(stream, markerCallstacks);
+
+            // The Outer frame resumes after resumeGate and then RE-SUSPENDS on finalGate, so its dispatcher must
+            // emit a Suspend and must NOT emit a Complete at that point. A mis-attributed inline completion of
+            // Inner flips CurrentContinuationCompleted on this frame and produces a (wrong) Complete instead.
+            var markerDispatcherIds = markerCallstacks.Select(c => c.DispatcherId).Distinct().ToList();
+
+            bool foundReSuspend = false;
+            foreach (ulong id in markerDispatcherIds)
+            {
+                var ids = stream.All.Where(e => e.DispatcherId == id).OrderBy(e => e.Timestamp).Select(e => e.EventId).ToList();
+                int resumeIdx = ids.IndexOf(AsyncEventID.ResumeStateMachineAsyncContext);
+                if (resumeIdx < 0)
+                {
+                    continue;
+                }
+
+                int suspendIdx = ids.IndexOf(AsyncEventID.SuspendStateMachineAsyncContext, resumeIdx + 1);
+                if (suspendIdx > resumeIdx)
+                {
+                    foundReSuspend = true;
+                    int completeIdx = ids.IndexOf(AsyncEventID.CompleteStateMachineAsyncContext, resumeIdx + 1);
+                    AssertTrue(stream, completeIdx < 0,
+                        "Outer re-suspending frame emitted a Complete; inline inner completion was mis-attributed to it");
+                }
+            }
+
+            AssertTrue(stream, foundReSuspend, "Expected the Outer frame to re-suspend on finalGate (Suspend event)");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static async Task StateMachineAsync_ResetContext_ReplaysPendingV1Chain_Inner_Marker()
         {
             using var dummy = new TestEventListener();

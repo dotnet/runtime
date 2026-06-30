@@ -249,7 +249,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
                 {
-                    AsyncStateMachineDispatcherInfo.CompleteAsyncMethod(AsyncInstrumentation.ActiveFlags);
+                    AsyncStateMachineDispatcherInfo.CompleteAsyncMethod(this, AsyncInstrumentation.ActiveFlags);
                 }
 
                 _valueTaskSource.SetResult(result);
@@ -261,7 +261,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (AsyncStateMachineDispatcherInfo.AsyncProfilerInstrumentCheckPoint)
                 {
-                    AsyncStateMachineDispatcherInfo.UnwindAsyncFrame(AsyncInstrumentation.ActiveFlags);
+                    AsyncStateMachineDispatcherInfo.UnwindAsyncFrame(this, AsyncInstrumentation.ActiveFlags);
                 }
 
                 _valueTaskSource.SetException(error);
