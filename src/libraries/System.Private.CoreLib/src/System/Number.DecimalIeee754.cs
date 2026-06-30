@@ -14,7 +14,7 @@ namespace System
         {
             if (TDecimal.IsNaN(decimalBits) || TDecimal.IsInfinity(decimalBits))
             {
-                return decimalBits.GetHashCode();
+                return (decimalBits & TDecimal.NaNMask).GetHashCode();
             }
 
             DecodedDecimalIeee754<TValue> decoded = UnpackDecimalIeee754<TDecimal, TValue>(decimalBits);
@@ -199,16 +199,16 @@ namespace System
 
             static int InternalInfinityCompare(TValue current, TValue other)
             {
-                if (current == TDecimal.PositiveInfinity)
+                if (TDecimal.IsPositiveInfinity(current))
                 {
-                    return other == TDecimal.PositiveInfinity ? 0 : 1;
+                    return TDecimal.IsPositiveInfinity(other) ? 0 : 1;
                 }
-                else if (current == TDecimal.NegativeInfinity)
+                else if (TDecimal.IsNegativeInfinity(current))
                 {
-                    return other == TDecimal.NegativeInfinity ? 0 : -1;
+                    return TDecimal.IsNegativeInfinity(other) ? 0 : -1;
                 }
 
-                return other == TDecimal.PositiveInfinity ? -1 : 1;
+                return TDecimal.IsPositiveInfinity(other) ? -1 : 1;
             }
         }
 
@@ -385,7 +385,7 @@ namespace System
             }
             else
             {
-                return coefficient.DigitsCount > 1 && coefficient.Digits.Slice(1).ContainsAnyExcept((byte)'0')
+                return coefficient.DigitsCount > 1 && (coefficient.Digits.Slice(1).ContainsAnyExcept((byte)'0') || coefficient.HasNonZeroTail)
                     ? DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(coefficient.IsNegative, TValue.One, TDecimal.MinAdjustedExponent)
                     : DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(coefficient.IsNegative, TValue.Zero, TDecimal.MinAdjustedExponent);
             }

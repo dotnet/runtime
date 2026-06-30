@@ -297,6 +297,8 @@ namespace System.Numerics
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
+        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NaNMask => NaNMask;
+
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.SignMask => SignMask;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.G0G1Mask => G0G1Mask;
@@ -334,6 +336,16 @@ namespace System.Numerics
         static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsInfinity(uint decimalBits)
         {
             return (decimalBits & NaNMask) == InfinityMask;
+        }
+
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsPositiveInfinity(uint decimalBits)
+        {
+            return (decimalBits & (SignMask | NaNMask)) == PositiveInfinityValue;
+        }
+
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.IsNegativeInfinity(uint decimalBits)
+        {
+            return (decimalBits & (SignMask | NaNMask)) == NegativeInfinityValue;
         }
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.EncodeExponentToG0ThroughGwPlus1(uint biasedExponent)

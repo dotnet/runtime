@@ -339,6 +339,8 @@ namespace System.Numerics
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MostSignificantBitOfSignificandMask => new UInt128(0x0002_0000_0000_0000, 0);
 
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NaNMask => new UInt128(NaNMaskUpper, 0);
+
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SignMask => new UInt128(SignMaskUpper, 0);
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.G0G1Mask => new UInt128(0x6000_0000_0000_0000, 0);
@@ -376,6 +378,16 @@ namespace System.Numerics
         static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsInfinity(UInt128 decimalBits)
         {
             return (decimalBits.Upper & NaNMaskUpper) == InfinityMaskUpper;
+        }
+
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsPositiveInfinity(UInt128 decimalBits)
+        {
+            return (decimalBits.Upper & (SignMaskUpper | NaNMaskUpper)) == PositiveInfinityValue.Upper;
+        }
+
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.IsNegativeInfinity(UInt128 decimalBits)
+        {
+            return (decimalBits.Upper & (SignMaskUpper | NaNMaskUpper)) == NegativeInfinityValue.Upper;
         }
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.EncodeExponentToG0ThroughGwPlus1(uint biasedExponent)

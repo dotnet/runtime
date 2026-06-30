@@ -299,6 +299,8 @@ namespace System.Numerics
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NaNMask => NaNMask;
+
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.SignMask => SignMask;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.G0G1Mask => G0G1Mask;
@@ -336,6 +338,16 @@ namespace System.Numerics
         static bool IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.IsInfinity(ulong decimalBits)
         {
             return (decimalBits & NaNMask) == InfinityMask;
+        }
+
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.IsPositiveInfinity(ulong decimalBits)
+        {
+            return (decimalBits & (SignMask | NaNMask)) == PositiveInfinityValue;
+        }
+
+        static bool IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.IsNegativeInfinity(ulong decimalBits)
+        {
+            return (decimalBits & (SignMask | NaNMask)) == NegativeInfinityValue;
         }
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.EncodeExponentToG0ThroughGwPlus1(uint biasedExponent)

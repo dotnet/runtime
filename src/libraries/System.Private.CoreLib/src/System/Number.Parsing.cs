@@ -157,6 +157,7 @@ namespace System
         static abstract TSelf Construct(TValue value);
         static abstract int CountDigits(TValue significand);
         static abstract int NumberBitsSignificand { get; }
+        static abstract TValue NaNMask { get; }
         static abstract TValue SignMask { get; }
         static abstract TValue G0G1Mask { get; }
         static abstract TValue G0ToGwPlus1ExponentMask { get; } //G0 to G(w+1)
@@ -167,6 +168,8 @@ namespace System
         static abstract bool IsNaN(TValue decimalBits);
         static abstract bool IsFinite(TValue decimalBits);
         static abstract bool IsInfinity(TValue decimalBits);
+        static abstract bool IsPositiveInfinity(TValue decimalBits);
+        static abstract bool IsNegativeInfinity(TValue decimalBits);
         static abstract bool IsNegative(TValue decimalBits);
         static abstract TValue EncodeExponentToG0ThroughGwPlus1(uint biasedExponent);
         static abstract TValue EncodeExponentToG2ThroughGwPlus3(uint biasedExponent);
