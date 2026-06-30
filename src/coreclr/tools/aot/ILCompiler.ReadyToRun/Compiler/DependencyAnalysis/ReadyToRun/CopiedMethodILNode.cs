@@ -14,9 +14,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class CopiedMethodILNode : ObjectNode, ISymbolDefinitionNode
     {
-        // Throws NullReferenceException if the stripped body is encountered.
-        // Tiny header (0x0A: 2 bytes code size) + ldnull (0x14) + throw (0x7A).
-        private static readonly byte[] s_minimalILBody = [0x0A, 0x14, 0x7A];
+        // Sentinel body emitted for stripped IL methods. It is intentionally invalid IL
+        // so it can never collide with a real method body (e.g. a user 'throw null;' method,
+        // whose body is 'ldnull; throw'). The runtime detects this exact sentinel before the
+        // IL reaches the JIT and throws a descriptive BadImageFormatException
+        // (see GetAndVerifyMetadataILHeader / BFA_STRIPPED_IL_BODY in prestub.cpp).
+        // Tiny header (0x0A: 2 bytes code size) + the illegal two-byte opcode 0xFE 0x24 (CEE_UNUSED49).
+        private static readonly byte[] s_minimalILBody = [0x0A, 0xFE, 0x24];
 
         EcmaMethod _method;
 

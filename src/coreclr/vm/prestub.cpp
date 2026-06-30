@@ -18,7 +18,6 @@
 #include "comdelegate.h"
 #include "dbginterface.h"
 #include "stubgen.h"
-#include "openum.h"
 #include "eventtrace.h"
 #include "array.h"
 #include "ecall.h"
@@ -704,12 +703,15 @@ namespace
         if (status == COR_ILMETHOD_DECODER::FORMAT_ERROR)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
+        // ILCompiler replaces stripped method bodies with an intentionally invalid IL sentinel
+        // (the illegal two-byte opcode 0xFE 0x24) so it can never collide with a real method body;
+        // see CopiedMethodILNode.s_minimalILBody. Detect it before the IL reaches the JIT.
         Module* pModule = pMD->GetModule();
         if (pModule->IsReadyToRun()
             && pModule->GetReadyToRunInfo()->HasStrippedILBodies()
             && pHeader->GetCodeSize() == 2
-            && pHeader->Code[0] == CEE_LDNULL
-            && pHeader->Code[1] == CEE_THROW)
+            && pHeader->Code[0] == 0xFE
+            && pHeader->Code[1] == 0x24)
         {
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_STRIPPED_IL_BODY);
         }
