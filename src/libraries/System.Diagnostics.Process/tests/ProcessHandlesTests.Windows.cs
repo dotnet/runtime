@@ -229,7 +229,7 @@ namespace System.Diagnostics.Tests
 
             try
             {
-Assert.True(process.WaitForExit(WaitInMS));
+                Assert.True(process.WaitForExit(WaitInMS));
                 Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
             }
             finally
