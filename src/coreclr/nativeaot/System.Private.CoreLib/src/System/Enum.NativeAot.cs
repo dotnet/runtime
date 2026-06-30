@@ -28,7 +28,7 @@ namespace System
             var runtimeTypeInfo = enumType.GetRuntimeTypeInfo();
             if (runtimeTypeInfo.GenericCache is EnumInfo info)
                 return info;
-            return runtimeTypeInfo.CreateAndCacheEnumInfo();
+            return Internal.Reflection.Augments.ReflectionAugments.CreateAndCacheEnumInfo(runtimeTypeInfo);
         }
 
         internal static EnumInfo<TStorage> GetEnumInfo<TStorage>(RuntimeType enumType, bool getNames = true)
@@ -45,7 +45,7 @@ namespace System
             var runtimeTypeInfo = enumType.GetRuntimeTypeInfo();
             if (runtimeTypeInfo.GenericCache is EnumInfo<TStorage> info)
                 return info;
-            return (EnumInfo<TStorage>)runtimeTypeInfo.CreateAndCacheEnumInfo();
+            return (EnumInfo<TStorage>)Internal.Reflection.Augments.ReflectionAugments.CreateAndCacheEnumInfo(runtimeTypeInfo);
         }
 #pragma warning restore
 

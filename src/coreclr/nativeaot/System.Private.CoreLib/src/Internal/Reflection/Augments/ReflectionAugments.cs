@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.BindingFlagSupport;
@@ -430,6 +431,62 @@ namespace Internal.Reflection.Augments
         }
 
         public static Assembly[] GetLoadedAssemblies() => RuntimeAssemblyInfo.GetLoadedAssemblies();
+
+        internal static EnumInfo CreateAndCacheEnumInfo(RuntimeTypeInfo runtimeTypeInfo)
+        {
+            Debug.Assert(runtimeTypeInfo.IsActualEnum);
+
+            runtimeTypeInfo.GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
+            
+            // Generic enums are guaranteed to have generic type definition MethodTable,
+            // so we can always use RuntimeAugments to get the underlying type.
+            RuntimeTypeHandle typeHandle = runtimeTypeInfo.InternalTypeHandleIfAvailable;
+            Debug.Assert(!typeHandle.IsNull);
+            Type underlyingType = RuntimeAugments.GetEnumUnderlyingType(typeHandle);
+
+            // Sort by unsigned storage type to match Enum ordering semantics.
+            // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
+            // That codepath would bring functionality to compare everything that was ever allocated in the program.
+            ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
+
+            EnumInfo info = Type.GetTypeCode(underlyingType) switch
+            {
+                TypeCode.SByte or TypeCode.Byte => CreateEnumInfoTyped<byte>(underlyingType, unsortedNames, unsortedValues, isFlags),
+                TypeCode.Int16 or TypeCode.UInt16 => CreateEnumInfoTyped<ushort>(underlyingType, unsortedNames, unsortedValues, isFlags),
+                TypeCode.Int32 or TypeCode.UInt32 => CreateEnumInfoTyped<uint>(underlyingType, unsortedNames, unsortedValues, isFlags),
+                TypeCode.Int64 or TypeCode.UInt64 => CreateEnumInfoTyped<ulong>(underlyingType, unsortedNames, unsortedValues, isFlags),
+                _ => throw new NotSupportedException()
+            };
+
+            runtimeTypeInfo.GenericCache = info;
+            return info;
+        }
+
+        private static EnumInfo<TStorage> CreateEnumInfoTyped<TStorage>(Type underlyingType, string[] names, object[] valuesAsObject, bool isFlags)
+            where TStorage : struct, INumber<TStorage>
+        {
+            var values = new TStorage[valuesAsObject.Length];
+            for (int i = 0; i < valuesAsObject.Length; i++)
+                values[i] = (TStorage)valuesAsObject[i];
+            return new EnumInfo<TStorage>(underlyingType, values, names, isFlags);
+        }
+
+        private sealed class EnumUnderlyingTypeComparer : IComparer<object>
+        {
+            public static readonly EnumUnderlyingTypeComparer Instance = new EnumUnderlyingTypeComparer();
+
+            public int Compare(object? x, object? y)
+            {
+                Debug.Assert(x is byte or ushort or uint or ulong);
+                return x switch
+                {
+                    byte b => b.CompareTo((byte)y!),
+                    ushort us => us.CompareTo((ushort)y!),
+                    uint ui => ui.CompareTo((uint)y!),
+                    _ => ((ulong)x!).CompareTo((ulong)y!),
+                };
+            }
+        }
 
         public static DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
         {
