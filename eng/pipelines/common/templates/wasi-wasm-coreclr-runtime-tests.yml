@@ -64,7 +64,6 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_WASI_$(_BuildConfig)
-            runtimeFlavor: coreclr
             buildAllTestsAsStandalone: true
             # Initial gate subset: trees where every test either passes or
             # is documented in src/coreclr/wasi/tests/known-failures.txt.
