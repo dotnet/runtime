@@ -6,6 +6,7 @@
     <!-- This is needed so that code for TlsCipherSuite will have no namespace (causes compile errors) when used within T4 template  -->
     <DefineConstants>$(DefineConstants);PRODUCT</DefineConstants>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <NoWarn>$(NoWarn);SYSLIB5007</NoWarn>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -28,6 +29,8 @@
     <Compile Include="System\Security\Authentication\ExtendedProtection\ServiceNameCollection.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\Experimentals.cs"
+             Link="Common\System\Experimentals.cs" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs"
              Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"

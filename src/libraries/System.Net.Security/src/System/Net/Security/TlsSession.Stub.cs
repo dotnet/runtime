@@ -5,6 +5,7 @@ using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 
 namespace System.Net.Security
@@ -13,6 +14,7 @@ namespace System.Net.Security
     /// Stub implementation used on platforms where TlsSession is not yet supported.
     /// All operations throw <see cref="PlatformNotSupportedException"/>.
     /// </summary>
+    [Experimental(Experimentals.LowLevelTlsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class TlsSession : IDisposable
     {
         private TlsSession() { }

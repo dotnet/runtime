@@ -697,6 +697,7 @@ namespace System.Net.Security
         NeedsCertificateValidation = 5,
         NeedsServerOptions = 6,
     }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class TlsContext : System.IDisposable
     {
         internal TlsContext() { }
@@ -705,6 +706,7 @@ namespace System.Net.Security
         public static System.Net.Security.TlsContext Create(System.Net.Security.SslClientAuthenticationOptions options) { throw null; }
         public void Dispose() { }
     }
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class TlsSession : System.IDisposable
     {
         internal TlsSession() { }

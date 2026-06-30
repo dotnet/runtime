@@ -319,3 +319,4 @@ Diagnostic id values for experimental APIs must not be recycled, as that could s
 |  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental since performance is not as optimized as `T.DivRem` |
 |  __`SYSLIB5005`__ |     .NET 9 | .NET 10 | `System.Formats.Nrbf` is experimental |
 |  __`SYSLIB5006`__ |    .NET 10 |     TBD | Types for Post-Quantum Cryptography (PQC) are experimental. |
+|  __`SYSLIB5007`__ |    .NET 10 |     TBD | Low-level TLS engine types (`TlsContext`, `TlsSession`) in `System.Net.Security` are experimental. |

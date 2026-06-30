@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Sockets;
 using System.Security.Authentication;
@@ -42,6 +43,7 @@ namespace System.Net.Security
     /// is non-empty.
     /// </para>
     /// </remarks>
+    [Experimental(Experimentals.LowLevelTlsDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed partial class TlsSession : IDisposable
     {
         // Matches StreamSizes.Default on Unix; conservative upper bound for a
