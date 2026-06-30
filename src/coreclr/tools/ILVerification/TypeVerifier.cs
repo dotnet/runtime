@@ -39,17 +39,12 @@ namespace Internal.TypeVerifier
 
         public void Verify()
         {
-            // Once the base type metadata is invalid, later checks can force the type system to
-            // resolve the same bad base token again and produce a duplicate token resolution error.
-            if (!VerifyBaseType())
-            {
-                return;
-            }
+            VerifyBaseType();
 
             VerifyInterfaces();
         }
 
-        private bool VerifyBaseType()
+        private void VerifyBaseType()
         {
             TypeDefinition typeDefinition = _module.MetadataReader.GetTypeDefinition(_typeDefinitionHandle);
             EcmaType type = _module.GetType(_typeDefinitionHandle);
@@ -59,11 +54,18 @@ namespace Internal.TypeVerifier
                 if (!type.IsObject && !type.IsModuleType && !type.IsInterface)
                 {
                     VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
-                    return false;
+                    return;  
                 }
             }
             else
             {
+                if (baseType.Kind == HandleKind.TypeSpecification &&
+                    !IsValidBaseTypeSpecification((TypeSpecificationHandle)baseType))
+                {
+                    VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
+                    return;
+                }
+
                 TypeDesc resolvedBaseType;
                 try
                 {
@@ -72,27 +74,31 @@ namespace Internal.TypeVerifier
                 catch (BadImageFormatException)
                 {
                     VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
-                    return false;
+                    return;
                 }
                 catch (TypeSystemException)
                 {
                     VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
-                    return false;
+                    return;
                 }
 
-                // Arrays, pointers, and generic variables are valid TypeSpec forms in other
-                // metadata and IL token contexts, so GetType must continue to resolve them. A
-                // BaseType TypeSpec is narrower: it has to name a constructed generic class,
-                // which resolves to InstantiatedType.
-                if (resolvedBaseType.IsValueType ||
-                    (baseType.Kind == HandleKind.TypeSpecification && resolvedBaseType is not InstantiatedType))
+
+                if (resolvedBaseType.IsValueType || resolvedBaseType.IsInterface || !resolvedBaseType.IsDefType)
                 {
                     VerificationError(VerifierError.InvalidBaseType, Format(type), Format(baseType));
-                    return false;
                 }
             }
+        }
 
-            return true;
+        private bool IsValidBaseTypeSpecification(TypeSpecificationHandle handle)
+        {
+            TypeSpecification typeSpecification = _module.MetadataReader.GetTypeSpecification(handle);
+            BlobReader signatureReader = _module.MetadataReader.GetBlobReader(typeSpecification.Signature);
+
+            // Arrays, pointers, and generic variables are valid TypeSpec forms in other
+            // metadata and IL token contexts, so GetType must continue to resolve them. A
+            // BaseType TypeSpec is narrower: it has to name a constructed generic class.
+            return signatureReader.ReadSignatureTypeCode() == SignatureTypeCode.GenericTypeInstance;
         }
 
         public void VerifyInterfaces()

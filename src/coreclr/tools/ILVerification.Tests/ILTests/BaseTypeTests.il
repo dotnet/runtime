@@ -22,12 +22,12 @@
     }
 }
 
-.class public auto ansi beforefieldinit ArrayTypeSpecBase_InvalidType_InvalidBaseType
+.class public auto ansi beforefieldinit ArrayTypeSpecBase_InvalidType_InvalidBaseType@InvalidBaseType
     extends int32[]
 {
 }
 
-.class public auto ansi beforefieldinit PointerTypeSpecBase_InvalidType_InvalidBaseType
+.class public auto ansi beforefieldinit PointerTypeSpecBase_InvalidType_InvalidBaseType@InvalidBaseType
     extends int32*
 {
 }
@@ -56,7 +56,7 @@
 {
 }
 
-.class public auto ansi beforefieldinit ValueTypeBase_InvalidType_InvalidBaseType
+.class public auto ansi beforefieldinit ValueTypeBase_InvalidType_InvalidBaseType@InvalidBaseType
     extends valuetype ValueTypeBase
 {
 }
