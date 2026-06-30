@@ -327,9 +327,9 @@
       <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' == 'true'">libmono-wasm-relaxed-simd.a</_WasmSIMDLib>
       <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' != 'true'">libmono-wasm-simd.a</_WasmSIMDLib>
       <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' != 'true'">libmono-wasm-nosimd.a</_WasmSIMDLib>
-      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' != 'true'">libmono-wasm-simd.a;libmono-wasm-relaxed-simd.a</_WasmSIMDLibToExclude>
-      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' != 'true'">libmono-wasm-nosimd.a;libmono-wasm-relaxed-simd.a</_WasmSIMDLibToExclude>
-      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' == 'true'">libmono-wasm-nosimd.a;libmono-wasm-simd.a</_WasmSIMDLibToExclude>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-simd.a;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-relaxed-simd.a</_WasmSIMDLibToExclude>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-nosimd.a;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-relaxed-simd.a</_WasmSIMDLibToExclude>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' == 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-nosimd.a;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-simd.a</_WasmSIMDLibToExclude>
       <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
@@ -361,7 +361,7 @@
       <_WasmNativeFileForLinking Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLib)" />
       <_WasmNativeFileForLinking Condition="'$(_WasmSIMDLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLib)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
-      <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLibToExclude)" />
+      <_WasmNativeFileForLinking Remove="$(_WasmSIMDLibToExclude)" />
 
       <_WasmExtraJSFile Include="@(Content)" Condition="'%(Content.Extension)' == '.js'" />
 

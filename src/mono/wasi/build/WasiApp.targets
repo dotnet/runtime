@@ -371,9 +371,9 @@
       <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' == 'true'">libmono-wasm-relaxed-simd.a</_WasmSIMDLib>
       <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' != 'true'">libmono-wasm-simd.a</_WasmSIMDLib>
       <_WasmSIMDLib Condition="'$(WasmEnableSIMD)' != 'true'">libmono-wasm-nosimd.a</_WasmSIMDLib>
-      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' != 'true'">libmono-wasm-simd.a;libmono-wasm-relaxed-simd.a</_WasmSIMDLibToExclude>
-      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' != 'true'">libmono-wasm-nosimd.a;libmono-wasm-relaxed-simd.a</_WasmSIMDLibToExclude>
-      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' == 'true'">libmono-wasm-nosimd.a;libmono-wasm-simd.a</_WasmSIMDLibToExclude>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-simd.a;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-relaxed-simd.a</_WasmSIMDLibToExclude>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' != 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-nosimd.a;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-relaxed-simd.a</_WasmSIMDLibToExclude>
+      <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true' and '$(WasmEnableRelaxedSimd)' == 'true'">$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-nosimd.a;$(MicrosoftNetCoreAppRuntimePackRidNativeDir)libmono-wasm-simd.a</_WasmSIMDLibToExclude>
     </PropertyGroup>
 
     <ItemGroup>
@@ -404,7 +404,7 @@
       <_WasmNativeFileForLinking Condition="'$(_WasmEHLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLib)" />
       <_WasmNativeFileForLinking Condition="'$(_WasmSIMDLib)' != ''" Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLib)" />
       <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmEHLibToExclude)" />
-      <_WasmNativeFileForLinking Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)$(_WasmSIMDLibToExclude)" />
+      <_WasmNativeFileForLinking Remove="$(_WasmSIMDLibToExclude)" />
       <_WasmNativeFileForLinking Include="-lstdc++" />
       <_WasmNativeFileForLinking Include="@(NativeFileReference)" />
     </ItemGroup>
