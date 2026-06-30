@@ -942,20 +942,8 @@ protected:
     ULONG32 m_cElements;
 };
 
-
 //-----------------------------------------------------------------------------
-// Wrap win32 functions using HANDLE
-//-----------------------------------------------------------------------------
-
-FORCEINLINE void VoidCloseHandle(HANDLE h) { if (h != NULL) CloseHandle(h); }
-
-// (UINT_PTR) -1 is INVALID_HANDLE_VALUE
-//@TODO: Dangerous default value. Some Win32 functions return INVALID_HANDLE_VALUE, some return NULL (such as CreatEvent).
-typedef Wrapper<HANDLE, DoNothing<HANDLE>, VoidCloseHandle, (UINT_PTR) -1> HandleHolder;
-
-
-//-----------------------------------------------------------------------------
-// Misc holders
+// Holders
 //-----------------------------------------------------------------------------
 
 template<typename T>
@@ -1033,6 +1021,22 @@ public:
         return value;
     }
 };
+
+//-----------------------------------------------------------------------------
+// Wrap win32 functions using HANDLE
+//-----------------------------------------------------------------------------
+struct HandleTraits final
+{
+    using Type = HANDLE;
+    static Type Default() { return INVALID_HANDLE_VALUE; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (h != NULL && h != Default())
+            CloseHandle(h);
+    }
+};
+using HandleHolder = LifetimeHolder<HandleTraits>;
 
 struct MapViewTraits final
 {

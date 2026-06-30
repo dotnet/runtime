@@ -748,7 +748,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             mapAccess = PAGE_EXECUTE_READ;
         }
 #endif
-        m_FileMap.Assign(CreateFileMapping(hFile, NULL, mapAccess, 0, 0, NULL));
+        m_FileMap = CreateFileMapping(hFile, NULL, mapAccess, 0, 0, NULL);
         if (m_FileMap == NULL)
             ThrowLastError();
 
@@ -776,7 +776,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             // We will create another anonymous memory-only mapping and uncompress file there.
             // The flat image will refer to the anonymous mapping instead and we will release the original mapping.
 
-            HandleHolder anonMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL);
+            HandleHolder anonMap{ CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL) };
             if (anonMap == NULL)
                 ThrowLastError();
 
@@ -814,7 +814,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             size = uncompressedSize;
             // Replace file handles with the handles to anonymous map. This will release the handles to the original view and map.
             m_FileView = std::move(anonView);
-            m_FileMap.Assign(anonMap.Extract());
+            m_FileMap = std::move(anonMap);
 #else
             _ASSERTE(!"Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost.");
             ThrowHR(E_FAIL); // we don't have any indication of what kind of failure. Possibly a corrupt image.
@@ -861,7 +861,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
 
 #endif // defined(TARGET_WINDOWS)
 
-        m_FileMap.Assign(CreateFileMapping(INVALID_HANDLE_VALUE, NULL, mapAccess, 0, size, NULL));
+        m_FileMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, mapAccess, 0, size, NULL);
         if (m_FileMap == NULL)
             ThrowLastError();
 

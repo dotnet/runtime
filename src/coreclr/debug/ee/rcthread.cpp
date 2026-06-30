@@ -318,7 +318,7 @@ HRESULT DebuggerRCThread::Init(void)
     if (dwStatus == ERROR_ALREADY_EXISTS)
     {
         // clean up the handle now
-        rightSideEventAvailable.Clear();
+        rightSideEventAvailable.Free();
     }
 
     HandleHolder rightSideEventRead(CreateEvent(NULL, (BOOL) kAutoResetEvent, FALSE, NULL));
@@ -331,7 +331,7 @@ HRESULT DebuggerRCThread::Init(void)
     if (dwStatus == ERROR_ALREADY_EXISTS)
     {
         // clean up the handle now
-        rightSideEventRead.Clear();
+        rightSideEventRead.Free();
     }
 
 
@@ -340,12 +340,6 @@ HRESULT DebuggerRCThread::Init(void)
     // Copy RSEA and RSER into the control block only if shared memory is created without error.
     if (m_pDCB)
     {
-        // Since Init() gets ownership of handles as soon as it's called, we can
-        // release our ownership now.
-        rightSideEventAvailable.SuppressRelease();
-        rightSideEventRead.SuppressRelease();
-        leftSideUnmanagedWaitEvent.SuppressRelease();
-
         // NOTE: initialization of the debugger control block occurs partly on the left side and partly on
         // the right side. This initialization occurs in parallel, so it's unsafe to make assumptions about
         // the order in which the fields will be initialized.
@@ -356,6 +350,12 @@ HRESULT DebuggerRCThread::Init(void)
                                        leftSideUnmanagedWaitEvent);
 
         _ASSERTE(SUCCEEDED(hr)); // throws on error.
+
+        // Since Init() gets ownership of handles, we can
+        // release our ownership now.
+        rightSideEventAvailable.Detach();
+        rightSideEventRead.Detach();
+        leftSideUnmanagedWaitEvent.Detach();
     }
 #endif //FEATURE_DBGIPC_TRANSPORT_VM
 
