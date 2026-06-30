@@ -14,7 +14,7 @@
 
 // Swallow the trace messages so we don't output to stderr of a process that we
 // do not own unless tracing is enabled.
-static void __cdecl swallow_trace(const pal_char_t* msg)
+static void __cdecl no_trace(const pal_char_t* msg)
 {
     (void)msg;
 }
@@ -85,7 +85,7 @@ NETHOST_API int NETHOST_CALLTYPE get_hostfxr_path(
 
     // Swallow traces for the duration of the call and restore the previous error
     // writer before returning (equivalent to the C++ error_writer_scope_t).
-    trace_error_writer_fn previous_writer = trace_set_error_writer(swallow_trace);
+    trace_error_writer_fn previous_writer = trace_set_error_writer(no_trace);
 
     int rc = get_hostfxr_path_internal(buffer, buffer_size, parameters);
 
