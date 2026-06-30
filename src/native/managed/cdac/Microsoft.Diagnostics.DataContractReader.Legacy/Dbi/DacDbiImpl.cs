@@ -225,6 +225,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         bool resolved = false;
         TargetPointer targetAssembly = TargetPointer.Null;
         uint targetTypeDef = 0;
+        pTargetRefInfo->vmAssembly = 0;
+        pTargetRefInfo->typeToken = 0;
         try
         {
             Contracts.ILoader loader = _target.Contracts.Loader;
