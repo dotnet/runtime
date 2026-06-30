@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
@@ -103,6 +104,59 @@ namespace System.Diagnostics.Tests
             }, restrictHandles.ToString());
 
             Assert.Equal(RemoteExecutor.SuccessExitCode, RunWithInvalidHandles(process.StartInfo));
+        }
+
+        [Fact]
+        public unsafe void StartWithCallback_CreateProcess_CanRedirectOutput()
+        {
+            ProcessStartInfo startInfo = new("cmd")
+            {
+                ArgumentList = { "/c", "echo hello && echo error 1>&2" },
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            using Process process = WindowsProcessStartArguments.Start(startInfo, (WindowsProcessStartArguments args) =>
+            {
+                Interop.Kernel32.STARTUPINFOEX startupInfoEx = default;
+                Interop.Kernel32.PROCESS_INFORMATION processInfo = default;
+                Interop.Kernel32.SECURITY_ATTRIBUTES unused_SecAttrs = default;
+
+                startupInfoEx.StartupInfo.cb = sizeof(Interop.Kernel32.STARTUPINFOEX);
+                startupInfoEx.StartupInfo.hStdInput = args.StandardInput;
+                startupInfoEx.StartupInfo.hStdOutput = args.StandardOutput;
+                startupInfoEx.StartupInfo.hStdError = args.StandardError;
+                startupInfoEx.StartupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
+
+                bool retVal = Interop.Kernel32.CreateProcess(
+                    null,
+                    args.Arguments,
+                    ref unused_SecAttrs,
+                    ref unused_SecAttrs,
+                    bInheritHandles: true,
+                    Interop.Kernel32.EXTENDED_STARTUPINFO_PRESENT,
+                    args.EnvironmentVariables,
+                    null,
+                    &startupInfoEx,
+                    &processInfo
+                );
+
+                if (!retVal)
+                {
+                    throw new Win32Exception();
+                }
+
+                Interop.Kernel32.CloseHandle(processInfo.hThread);
+
+                return processInfo.hProcess;
+            });
+
+            (string output, string error) = process.ReadAllText();
+            process.WaitForExit(WaitInMS);
+
+            Assert.Equal("hello \r\n", output);
+            Assert.Equal("error \r\n", error);
+            Assert.Equal(0, process.ExitCode);
         }
 
         private unsafe int RunWithInvalidHandles(ProcessStartInfo startInfo)

@@ -411,6 +411,78 @@ namespace Microsoft.Win32.SafeHandles
             return procSH;
         }
 
+        internal static unsafe SafeProcessHandle StartWithCallback(ProcessStartInfo startInfo, SafeFileHandle stdinHandle, SafeFileHandle stdoutHandle, SafeFileHandle stderrHandle,
+            Func<WindowsProcessStartArguments, nint> callback)
+        {
+            ValueStringBuilder commandLine = new(stackalloc char[256]);
+            ProcessUtils.BuildCommandLine(startInfo, ref commandLine);
+            commandLine.NullTerminate();
+            SafeProcessHandle procSH = new SafeProcessHandle();
+
+            string? environmentBlock = null;
+            if (startInfo._environmentVariables != null)
+            {
+                environmentBlock = ProcessUtils.GetEnvironmentVariablesBlock(startInfo._environmentVariables!);
+            }
+
+            nint stdin = -1, stdout = -1, stderr = -1;
+            bool stdinRefAdded = false, stdoutRefAdded = false, stderrRefAdded = false;
+
+            // Acquire the process lock to avoid accidental handle inheritance issues.
+            ProcessUtils.s_processStartLock.EnterWriteLock();
+
+            try
+            {
+                ProcessUtils.DuplicateAsInheritableIfNeeded(stdinHandle, ref stdin, ref stdinRefAdded);
+                ProcessUtils.DuplicateAsInheritableIfNeeded(stdoutHandle, ref stdout, ref stdoutRefAdded);
+                ProcessUtils.DuplicateAsInheritableIfNeeded(stderrHandle, ref stderr, ref stderrRefAdded);
+
+                fixed (char* commandLinePtr = &commandLine.GetPinnableReference())
+                fixed (char* environmentBlockPtr = environmentBlock)
+                {
+                    WindowsProcessStartArguments args = new(commandLinePtr, environmentBlockPtr, stdin, stdout, stderr, startInfo);
+
+                    nint processHandle = callback(args);
+                    if (IsInvalidHandle(processHandle))
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidProcessHandle, nameof(callback));
+                    }
+
+                    Marshal.InitHandle(procSH, processHandle);
+                    return procSH;
+                }
+            }
+            catch
+            {
+                procSH.Dispose();
+                throw;
+            }
+            finally
+            {
+                // If the provided handle was inheritable, just release the reference we added.
+                // Otherwise if we created a valid duplicate, close it.
+
+                if (stdinRefAdded)
+                    stdinHandle.DangerousRelease();
+                else if (!IsInvalidHandle(stdin))
+                    Interop.Kernel32.CloseHandle(stdin);
+
+                if (stdoutRefAdded)
+                    stdoutHandle.DangerousRelease();
+                else if (!IsInvalidHandle(stdout))
+                    Interop.Kernel32.CloseHandle(stdout);
+
+                if (stderrRefAdded)
+                    stderrHandle.DangerousRelease();
+                else if (!IsInvalidHandle(stderr))
+                    Interop.Kernel32.CloseHandle(stderr);
+
+                ProcessUtils.s_processStartLock.ExitWriteLock();
+
+                commandLine.Dispose();
+            }
+        }
+
         private static unsafe SafeProcessHandle StartWithShellExecute(ProcessStartInfo startInfo)
         {
             if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
