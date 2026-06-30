@@ -440,7 +440,6 @@ CDAC_TYPE_BEGIN(PEAssembly)
 CDAC_TYPE_INDETERMINATE(PEAssembly)
 CDAC_TYPE_FIELD(PEAssembly, T_POINTER, PEImage, cdac_data<PEAssembly>::PEImage)
 CDAC_TYPE_FIELD(PEAssembly, T_POINTER, AssemblyBinder, cdac_data<PEAssembly>::AssemblyBinder)
-CDAC_TYPE_FIELD(PEAssembly, T_UINT32, MDImportIsRW, cdac_data<PEAssembly>::MDImportIsRW)
 CDAC_TYPE_FIELD(PEAssembly, T_POINTER, MDImport, cdac_data<PEAssembly>::MDImport)
 CDAC_TYPE_END(PEAssembly)
 

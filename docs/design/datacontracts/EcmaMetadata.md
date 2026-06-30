@@ -27,8 +27,7 @@ Data descriptors used:
 | `Module` | `FieldDefToDescMap` | Mapping table |
 | `DynamicMetadata` | `Size` | Size of the dynamic metadata blob (as a 32bit uint) |
 | `DynamicMetadata` | `Data` | Start of dynamic metadata data array |
-| `PEAssembly` | `MDImportIsRW` | Non-zero when `MDImport` is a read-write importer |
-| `PEAssembly` | `MDImport` | An `MDInternalRW` when `MDImportIsRW` is set |
+| `PEAssembly` | `MDImport` | An `MDInternalRW` when `MetadataGeneration` is non-zero and module is not dynamic |
 | `MDInternalRW` | `Stgdb` | Pointer to the read-write storage database |
 | `CLiteWeightStgdbRW` | `MiniMd` | Address of the embedded `CMiniMdRW` model |
 | `CLiteWeightStgdbRW` | `MetadataAddress` | Pointer to the metadata image |
@@ -132,7 +131,7 @@ AvailableMetadataType GetAvailableMetadataType(ModuleHandle handle)
     AvailableMetadataType flags = AvailableMetadataType.None;
 
     TargetPointer dynamicMetadata = Target.ReadPointer(handle.Address + /* Module::DynamicMetadata offset */);
-    uint metadataGeneration = Target.ReadPointer(handle.Address + /* Module::MetadataGeneration offset */);
+    uint metadataGeneration = Target.Read<uint>(handle.Address + /* Module::MetadataGeneration offset */);
 
     if (dynamicMetadata != TargetPointer.Null)
     {
