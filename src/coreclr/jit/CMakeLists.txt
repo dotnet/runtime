@@ -441,7 +441,9 @@ set ( JIT_ARMV6_HEADERS
 
 set ( JIT_S390X_HEADERS
   emits390x.h
+  emitfmtss390x.h
   instrss390x.h
+  registers390x.h
   # Not supported as JIT target
 )
 

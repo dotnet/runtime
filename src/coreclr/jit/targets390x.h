@@ -5,64 +5,71 @@
 #if !defined(TARGET_S390X)
 #error The file should not be included for this platform.
 #endif
-
 // clang-format off
-  #define CPU_LOAD_STORE_ARCH      1
-  #define ROUND_FLOAT              0       // Do not round intermed float expression results
-  #define CPU_HAS_BYTE_REGS        0
+#define CORINFO_ARCH_TARGET      CORINFO_ARCH_S390X
+
+#define CPU_LOAD_STORE_ARCH      1
+#define ROUND_FLOAT              0       // Do not round intermed float expression results
+#define CPU_HAS_BYTE_REGS        0
 
 #ifdef FEATURE_SIMD
-  #define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
-  #define FEATURE_PARTIAL_SIMD_CALLEE_SAVE 1 // Whether SIMD registers are partially saved at calls
+#define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
+#define FEATURE_PARTIAL_SIMD_CALLEE_SAVE 0 // s390x doesn't have partial SIMD save
 #endif // FEATURE_SIMD
 
   #define FEATURE_FIXED_OUT_ARGS   1       // Preallocate the outgoing arg area in the prolog
-  #define FEATURE_STRUCTPROMOTE    0       // JIT Optimization to promote fields of structs into registers
-  #define FEATURE_MULTIREG_STRUCT_PROMOTE 1  // True when we want to promote fields of a multireg struct into registers
-  #define FEATURE_FASTTAILCALL     0       // Tail calls made as epilog+jmp
-  #define FEATURE_TAILCALL_OPT     0       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
+  #define FEATURE_STRUCTPROMOTE    1       // JIT Optimization to promote fields of structs into registers
+  #define FEATURE_MULTIREG_STRUCT_PROMOTE 0 // s390x uses memory for large structs
+  #define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp
+  #define FEATURE_TAILCALL_OPT     1       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
   #define FEATURE_IMPLICIT_BYREFS       1  // Support for struct parameters passed via pointers to shadow copies
   #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
   #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
   #define FEATURE_STRUCT_CLASSIFIER     0  // Uses a classifier function to determine is structs are passed/returned in more than one register
-  #define MAX_PASS_SINGLEREG_BYTES     16  // Maximum size of a struct passed in a single register (16-byte vector).
-  #define MAX_PASS_MULTIREG_BYTES      64  // Maximum size of a struct that could be passed in more than one register (max is 4 16-byte vectors using an HVA)
-  #define MAX_RET_MULTIREG_BYTES       64  // Maximum size of a struct that could be returned in more than one register (Max is an HVA of 4 16-byte vectors)
-  #define MAX_ARG_REG_COUNT             4  // Maximum registers used to pass a single argument in multiple registers. (max is 4 128-bit vectors using an HVA)
-  #define MAX_RET_REG_COUNT             4  // Maximum registers used to return a value.
+  #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (16-byte vector).
+  #define MAX_PASS_MULTIREG_BYTES      16  // Maximum size of a struct that could be passed in more than one register (max is 4 16-byte vectors using an HVA)
+  #define MAX_RET_MULTIREG_BYTES       16  // Maximum size of a struct that could be returned in more than one register (Max is an HVA of 4 16-byte vectors)
+  #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass a single argument in multiple registers. (max is 4 128-bit vectors using an HVA)
+  #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
 
-  #define MAX_MULTIREG_COUNT            4  // Maximum number of registers defined by a single instruction (including calls).
+  #define MAX_MULTIREG_COUNT            2  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
 
-  #define NOGC_WRITE_BARRIERS      1       // We have specialized WriteBarrier JIT Helpers that DO-NOT trash the RBM_CALLEE_TRASH registers
+  #define NOGC_WRITE_BARRIERS      0       // s390x uses standard write barriers
   #define USER_ARGS_COME_LAST      1
-  #define EMIT_TRACK_STACK_DEPTH   1        // This is something of a workaround.  For both ARM and AMD64, the frame size is fixed, so we don't really
-                                           // need to track stack depth, but this is currently necessary to get GC information reported at call sites.
+  #define EMIT_TRACK_STACK_DEPTH   1       // Track stack depth for GC information
   #define TARGET_POINTER_SIZE      8       // equal to sizeof(void*) and the managed pointer size in bytes for this target
   #define FEATURE_EH               0       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
 
+
+					 //
   #define REG_FP_FIRST             REG_F0
   #define REG_FP_LAST              REG_F15
   #define FIRST_FP_ARGREG          REG_F0
-  #define LAST_FP_ARGREG           REG_F15
+  #define LAST_FP_ARGREG           REG_F6
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
-  #define FP_REGSIZE_BYTES         16      // number of bytes in one FP/SIMD register
+  #define FP_REGSIZE_BYTES         8      // number of bytes in one FP/SIMD register
   #define FPSAVE_REGSIZE_BYTES     8       // number of bytes in one FP/SIMD register that are saved/restored, for callee-saved registers
+
+  // s390x doesn't have predicate/mask registers
+  #define REG_MASK_FIRST           REG_NA
+  #define REG_MASK_LAST            REG_NA
+
 
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
-  #define CODE_ALIGN               1       // code alignment requirement
+  #define CODE_ALIGN               2       // code alignment requirement
   #define STACK_ALIGN              8      // stack alignment requirement
-	
-  #define FIRST_FLT_CALLEE_SAVED  REG_F0
-  #define FIRST_INT_CALLEE_SAVED  REG_R0
+					  
+  #define FIRST_FLT_CALLEE_SAVED  REG_F8
+  #define FIRST_INT_CALLEE_SAVED  REG_R6
   #define RBM_INT_CALLEE_SAVED    (RBM_R6|RBM_R7|RBM_R8|RBM_R9|RBM_R10|RBM_R12|RBM_R13)
-  #define RBM_INT_CALLEE_TRASH    (RBM_R1|RBM_R2|RBM_R3|RBM_R4|RBM_R5)
+  #define RBM_INT_CALLEE_TRASH    (RBM_R0|RBM_R1|RBM_R2|RBM_R3|RBM_R4|RBM_R5)
   #define RBM_FLT_CALLEE_SAVED    (RBM_F8|RBM_F9|RBM_F10|RBM_F11|RBM_F12|RBM_F13|RBM_F14|RBM_F15)
   #define RBM_FLT_CALLEE_TRASH    (RBM_F0|RBM_F1|RBM_F2|RBM_F3|RBM_F4|RBM_F5|RBM_F6|RBM_F7)
 
@@ -70,8 +77,8 @@
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
   #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
 
-  #define REG_DEFAULT_HELPER_CALL_TARGET REG_R12
-  #define RBM_DEFAULT_HELPER_CALL_TARGET RBM_R12
+  #define REG_DEFAULT_HELPER_CALL_TARGET REG_R1
+  #define RBM_DEFAULT_HELPER_CALL_TARGET RBM_R1
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
   #define RBM_ALLFLOAT            (RBM_FLT_CALLEE_SAVED | RBM_FLT_CALLEE_TRASH)
@@ -79,32 +86,28 @@
 
   // REG_VAR_ORDER is: (CALLEE_TRASH & ~CALLEE_TRASH_NOGC), CALLEE_TRASH_NOGC, CALLEE_SAVED
   #define REG_VAR_ORDER            REG_R1, REG_R2, REG_R3, REG_R4, REG_R5, \
-                                   REG_R12, REG_R6, REG_R7, REG_R8, REG_R9, REG_R10,\
+                                   REG_R6, REG_R7, REG_R8, REG_R9, REG_R10,REG_R12,\
                                    REG_R13					   
 
   #define REG_VAR_ORDER_FLT        REG_F0, REG_F1, REG_F2, REG_F3, REG_F4, REG_F5, REG_F6, REG_F7,   \
 				   REG_F8, REG_F9, REG_F10, REG_F11, REG_F12, REG_F13, REG_F14, REG_F15\
 
-  #define RBM_CALL_GC_REGS_ORDER   RBM_R6,RBM_R7,RBM_R8,RBM_R9,RBM_R10,RBM_R11,RBM_R12,RBM_R13,RBM_INTRET,RBM_INTRET_1
+  #define RBM_CALL_GC_REGS_ORDER   RBM_R6,RBM_R7,RBM_R8,RBM_R9,RBM_R10,RBM_R12,RBM_R13
   #define RBM_CALL_GC_REGS         (RBM_INT_CALLEE_SAVED|RBM_INTRET|RBM_INTRET_1)
 
-  #define CNT_CALLEE_SAVED        (11)
-  #define CNT_CALLEE_TRASH        (17)
+  #define CNT_CALLEE_SAVED        (7)
+  #define CNT_CALLEE_TRASH        (6)
   #define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED-1)
-  #define CNT_CALL_GC_REGS        (CNT_CALLEE_SAVED+2)
+  #define CNT_CALL_GC_REGS        (7)
 
   #define CNT_CALLEE_SAVED_FLOAT  (8)
-  #define CNT_CALLEE_TRASH_FLOAT  (24)
-  #define CNT_CALLEE_SAVED_MASK   (4)
-  #define CNT_CALLEE_TRASH_MASK   (8)
+  #define CNT_CALLEE_TRASH_FLOAT  (8)
+  #define CNT_CALLEE_SAVED_MASK   (0) //s390x doesn't have mask registers,Giri TODO: what should be correct values here ? 
+  #define CNT_CALLEE_TRASH_MASK   (0) //s390x doesn't have mask registers,Giri TODO: what should be correct values here ? 
 
   #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
 
-  // On ARM64 we do not use any additional callee-saves for ENC
-  // since there are so many volatile registers available, and
-  // callee saves have to be aggressively saved by ENC codegen
-  // because a future version could use them.
   #define RBM_ENC_CALLEE_SAVED     0
 
   // Temporary registers used for the GS cookie check.
@@ -116,7 +119,7 @@
   #define RBM_SHIFT                RBM_ALLINT
 
   // This is a general scratch register that does not conflict with the argument registers
-  #define REG_SCRATCH              REG_R9
+  #define REG_SCRATCH              REG_R1
 
   // This is a general register that can be optionally reserved for other purposes during codegen
   #define REG_OPT_RSVD             REG_R13
@@ -182,16 +185,15 @@
   #define RBM_CALLEE_TRASH_WRITEBARRIER_BYREF   (RBM_WRITE_BARRIER_DST_BYREF | RBM_WRITE_BARRIER_SRC_BYREF | RBM_CALLEE_TRASH_NOGC)
 
   // Registers no longer containing GC pointers after CORINFO_HELP_ASSIGN_BYREF.
-  // Note that x13 and x14 are still valid byref pointers after this helper call, despite their value being changed.
   #define RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF RBM_CALLEE_TRASH_NOGC
 
   // GenericPInvokeCalliHelper VASigCookie Parameter
-  #define REG_PINVOKE_COOKIE_PARAM          REG_R15
-  #define RBM_PINVOKE_COOKIE_PARAM          RBM_R15
+  #define REG_PINVOKE_COOKIE_PARAM          REG_R0
+  #define RBM_PINVOKE_COOKIE_PARAM          RBM_R0
 
   // GenericPInvokeCalliHelper unmanaged target Parameter
-  #define REG_PINVOKE_TARGET_PARAM          REG_R12
-  #define RBM_PINVOKE_TARGET_PARAM          RBM_R12
+  #define REG_PINVOKE_TARGET_PARAM          REG_R1
+  #define RBM_PINVOKE_TARGET_PARAM          RBM_R1
 
   // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM     REG_R12
