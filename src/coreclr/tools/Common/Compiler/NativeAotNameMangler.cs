@@ -129,7 +129,7 @@ namespace ILCompiler
         /// Dictionary given a mangled name for a given <see cref="TypeDesc"/>
         /// </summary>
         private Dictionary<TypeDesc, Utf8String> _mangledTypeNames = new Dictionary<TypeDesc, Utf8String>();
-        private Dictionary<string, Utf8String> _mangledAssemblyNames = new Dictionary<string, Utf8String>(StringComparer.Ordinal);
+        private Dictionary<string, Utf8String> _mangledAssemblyNames = new Dictionary<string, Utf8String>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Given a set of names <param name="set"/> check if <param name="origName"/>
@@ -215,7 +215,7 @@ namespace ILCompiler
                 if (!_mangledAssemblyNames.TryGetValue(assemblyName, out Utf8String name))
                 {
                     var assemblies = new List<string>(context.InputFilePaths.Count + context.ReferenceFilePaths.Count + 1);
-                    var assemblySet = new HashSet<string>(StringComparer.Ordinal);
+                    var assemblySet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     if (assemblySet.Add(assemblyName))
                         assemblies.Add(assemblyName);
                     foreach (string candidateAssemblyName in context.InputFilePaths.Keys)
