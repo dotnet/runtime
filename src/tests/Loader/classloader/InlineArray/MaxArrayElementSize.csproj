@@ -5,7 +5,4 @@
   <ItemGroup>
     <Compile Include="MaxArrayElementSize.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <IlcCompile Include="$(MSBuildProjectName)" />
-  </ItemGroup>
 </Project>
