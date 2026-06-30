@@ -3170,8 +3170,8 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
         !IsJitOptimizationLevelRequested() &&
 
-        // Tiering the async thunk methods is not supported currently
-        !IsAsyncThunkMethod() &&
+        // We tier async versions, but not task-returning wrapper thunks
+        (!IsAsyncThunkMethod() || SupportsAsyncVersionCodegen()) &&
 
         // Tiering P/Invoke methods is not supported currently
         !IsPInvoke()
