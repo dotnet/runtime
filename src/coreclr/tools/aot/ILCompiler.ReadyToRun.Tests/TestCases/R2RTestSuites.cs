@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
+using System.Reflection.PortableExecutable;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
+using Internal.Runtime;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -54,6 +57,147 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetValue", "GetValue", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInlinedMethod(reader, "TestGetString", "GetString", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void WasmWebcilModule()
+    {
+        var wasmWebcilModule = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmWebcilModule),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmWebcilModule),
+            [
+                new(nameof(WasmWebcilModule), [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs =
+                    {
+                        "--targetarch",
+                        "wasm",
+                        "--targetos",
+                        "browser",
+                    },
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(webcilReader.IsWasmWrapped);
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+            Assert.True(R2RAssert.GetAllMethods(reader).Exists(method =>
+                method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal)));
+        }
+    }
+
+    [Fact]
+    public void RuntimeFunctionsSectionSizeExcludesSentinel()
+    {
+        var lib = new CompiledAssembly
+        {
+            AssemblyName = nameof(RuntimeFunctionsSectionSizeExcludesSentinel),
+            SourceResourceNames = ["ThumbBit/HotColdSplitting.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(RuntimeFunctionsSectionSizeExcludesSentinel),
+            [
+                new(nameof(RuntimeFunctionsSectionSizeExcludesSentinel), [new CrossgenAssembly(lib)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(reader.ReadyToRunHeader.Sections.TryGetValue(
+                ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection section));
+
+            // The header entry records the runtime-functions table size *excluding* the trailing
+            // 0xffffffff sentinel word. Each entry is 12 bytes on x64 and 8 bytes on other targets.
+            int entrySize = reader.Machine == Machine.Amd64 ? 12 : 8;
+            Assert.True(section.Size > 0, "RuntimeFunctions section should not be empty");
+            Assert.True(
+                section.Size % entrySize == 0,
+                $"RuntimeFunctions section size {section.Size} is not a multiple of entry size {entrySize} (machine: {reader.Machine}); remainder {section.Size % entrySize} suggests the trailing sentinel was included.");
+        }
+    }
+
+    [Fact]
+    public void ArmThumbBitRelocationTargets()
+    {
+        var inlineableLib = new CompiledAssembly
+        {
+            AssemblyName = "InlineableLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/InlineableLib.cs"],
+        };
+        var exceptionHandling = new CompiledAssembly
+        {
+            AssemblyName = nameof(ArmThumbBitRelocationTargets),
+            SourceResourceNames = ["CrossModuleInlining/ExceptionHandling.cs"],
+            References = [inlineableLib],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ArmThumbBitRelocationTargets),
+            [
+                new(nameof(ArmThumbBitRelocationTargets),
+                [
+                    new CrossgenAssembly(exceptionHandling),
+                    new CrossgenAssembly(inlineableLib) { Kind = Crossgen2InputKind.Reference },
+                ])
+                {
+                    Options = [Crossgen2Option.TargetArchArm],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasExpectedArmThumbBitTargets(reader, out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void ArmThumbBitHotColdRuntimeFunctions()
+    {
+        var hotColdSplitting = new CompiledAssembly
+        {
+            AssemblyName = nameof(ArmThumbBitHotColdRuntimeFunctions),
+            SourceResourceNames = ["ThumbBit/HotColdSplitting.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ArmThumbBitHotColdRuntimeFunctions),
+            [
+                new(nameof(ArmThumbBitHotColdRuntimeFunctions), [new CrossgenAssembly(hotColdSplitting)])
+                {
+                    Options =
+                    [
+                        Crossgen2Option.TargetArchArm,
+                        Crossgen2Option.Optimize,
+                        Crossgen2Option.HotColdSplitting,
+                    ],
+                    AdditionalArgs =
+                    [
+                        "--codegenopt",
+                        "JitStressProcedureSplitting=1",
+                    ],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasExpectedArmHotColdRuntimeFunctionTargets(reader, out diag), diag);
         }
     }
 
@@ -173,6 +317,86 @@ public class R2RTestSuites
         {
             string diag;
             Assert.True(R2RAssert.HasManifestRef(reader, "CompositeLib", out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void CompositeManifestAssemblyMvidsAreAligned()
+    {
+        var compositeLib = new CompiledAssembly
+        {
+            AssemblyName = "MvidCompositeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+        };
+        var compositeMain = new CompiledAssembly
+        {
+            AssemblyName = nameof(CompositeManifestAssemblyMvidsAreAligned),
+            SourceResourceNames = ["CrossModuleInlining/CompositeBasic.cs"],
+            References = [compositeLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeManifestAssemblyMvidsAreAligned),
+            [
+                new(nameof(CompositeManifestAssemblyMvidsAreAligned),
+                [
+                    new CrossgenAssembly(compositeLib),
+                    new CrossgenAssembly(compositeMain),
+                ])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.ManifestAssemblyMvidsTableIsAligned(reader, out diag), diag);
+        }
+    }
+
+    public static bool IsWindows => System.OperatingSystem.IsWindows();
+
+    [ConditionalFact(nameof(IsWindows))]
+    public void CompositeManifestAssemblyMvidsArePaddedWhenPdbPresent()
+    {
+        var compositeLib = new CompiledAssembly
+        {
+            AssemblyName = "MvidCompositeLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/CompositeLib.cs"],
+        };
+        var compositeMain = new CompiledAssembly
+        {
+            AssemblyName = nameof(CompositeManifestAssemblyMvidsArePaddedWhenPdbPresent),
+            SourceResourceNames = ["CrossModuleInlining/CompositeBasic.cs"],
+            References = [compositeLib]
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeManifestAssemblyMvidsArePaddedWhenPdbPresent),
+            [
+                new(nameof(CompositeManifestAssemblyMvidsArePaddedWhenPdbPresent),
+                [
+                    new CrossgenAssembly(compositeLib),
+                    new CrossgenAssembly(compositeMain),
+                ])
+                {
+                    // --pdb creates an odd-sized debug directory section that exposes the MVID table
+                    // misalignment bug. The odd size derives from the composite output name length, so
+                    // renaming this test can shift the table back onto a 4-byte boundary and silently
+                    // neutralize the regression coverage; verify it still misaligns without the fix if
+                    // the name changes.
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    AdditionalArgs = ["--pdb"],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.ManifestAssemblyMvidsTableIsAligned(reader, out diag), diag);
         }
     }
 
@@ -896,6 +1120,55 @@ public class R2RTestSuites
     }
 
     /// <summary>
+    /// Composite + runtime-async caller awaiting a NON-runtime-async virtual callee that the JIT
+    /// devirtualizes to a sealed receiver. Resolving the callee's async-variant thunk must unwrap it
+    /// to the underlying EcmaMethod.
+    /// </summary>
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/129524")]
+    public void CompositeAsyncDevirtNonAsyncCallee()
+    {
+        // Compiled WITHOUT runtime-async so the awaited virtuals get synthesized async-variant thunks.
+        var nonAsyncCalleeLib = new CompiledAssembly
+        {
+            AssemblyName = "AsyncDevirtNonAsyncCalleeLib",
+            SourceResourceNames = ["RuntimeAsync/Dependencies/AsyncDevirtNonAsyncCalleeLib.cs"],
+        };
+        var main = new CompiledAssembly
+        {
+            AssemblyName = "CompositeAsyncDevirtNonAsyncCalleeMain",
+            SourceResourceNames = ["RuntimeAsync/CompositeAsyncDevirtNonAsyncCalleeMain.cs"],
+            Features = { RuntimeAsyncFeature },
+            References = [nonAsyncCalleeLib],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(CompositeAsyncDevirtNonAsyncCallee),
+            [
+                new(nameof(CompositeAsyncDevirtNonAsyncCallee),
+                [
+                    new CrossgenAssembly(nonAsyncCalleeLib),
+                    new CrossgenAssembly(main),
+                ])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncDevirtNonAsyncCalleeLib", out diag), diag);
+
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "WriterBase.CompleteValueTaskAsync(", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "WriterBase.CompleteTaskAsync(", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "AwaitInheritedValueTask(", out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "AwaitInheritedTask(", out diag), diag);
+        }
+    }
+
+    /// <summary>
     /// Composite with 3 assemblies in A→B→C transitive chain.
     /// Validates manifest refs for all three and transitive inlining.
     /// </summary>
@@ -1181,6 +1454,96 @@ public class R2RTestSuites
             // must be read as absolute values, not delta-accumulated, and validates
             // that the resolved method names match the expected inliners.
             Assert.True(R2RAssert.HasCrossModuleInliners(reader, "GetValue", ["GenericWrapperA", "GenericWrapperB"], out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void VirtualMethodGenericsNonGVM()
+    {
+        var nonGvmLib = new CompiledAssembly
+        {
+            AssemblyName = nameof(VirtualMethodGenericsNonGVM),
+            SourceResourceNames = ["VirtualMethodGenerics/NonGVM.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(VirtualMethodGenericsNonGVM),
+            [
+                new(nameof(VirtualMethodGenericsNonGVM), [new CrossgenAssembly(nonGvmLib)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+
+            // Test1: Interface impl on generic base type
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test1A`1<int>", "Test1Method", out diag), diag);
+
+            // Test2: Virtual override on generic intermediate type
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test2C`1<int>", "Test2Method", out diag), diag);
+
+            // Test3: Explicit DIM
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest3WithDim`1<int>", "ITest3Base.Test3Method", out diag), diag);
+
+            // Test4: Explicit interface impl on generic base
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test4A`1<int>", "ITest4<T>.Test4Method", out diag), diag);
+
+            // Test5: Interface dispatch resolves to override on intermediate type
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test5B`1<int>", "Test5Method", out diag), diag);
+
+            // Test6: Interface reimplementation with new slot
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test6B`1<int>", "Test6Method", out diag), diag);
+
+            // Test7: Non-final DIM
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "Test7Method", out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void VirtualMethodGenericsGVM()
+    {
+        var gvmLib = new CompiledAssembly
+        {
+            AssemblyName = nameof(VirtualMethodGenericsGVM),
+            SourceResourceNames = ["VirtualMethodGenerics/GVM.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(VirtualMethodGenericsGVM),
+            [
+                new(nameof(VirtualMethodGenericsGVM), [new CrossgenAssembly(gvmLib)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+
+            // Test1: Interface GVM on base type
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test1A", "Test1Method", out diag, ["int"]), diag);
+
+            // Test2: Interface GVM override on intermediate type
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test2B", "Test2Method", out diag, ["int"]), diag);
+
+            // Test3: Explicit interface GVM impl on generic base
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test3A`1<int>", "ITest3<T>.Test3Method", out diag, ["int"]), diag);
+
+            // Test4: Interface GVM reimplementation with new slot
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "Test4B", "Test4Method", out diag, ["int"]), diag);
+
+            // Test5: Non-final default interface GVM
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest5", "Test5Method", out diag, ["int"]), diag);
+
+            // Test6: Explicit DIM with generic method
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest6WithDim`1<int>", "ITest6Base.Test6Method", out diag, ["int"]), diag);
+
+            // Test7: Static virtual generic method
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ITest7`1<int>", "ITest7Base.Test7Method", out diag, ["int"]), diag);
         }
     }
 }

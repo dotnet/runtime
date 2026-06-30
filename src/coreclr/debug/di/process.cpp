@@ -387,7 +387,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
                     // debugger if it can find the metadata elsewhere.
                     // If this was live debugging, we should have just gotten the memory contents.
                     // Thus this code is for dump debugging, when you don't have the metadata in the dump.
-                    pMDII = LookupMetaDataFromDebugger(vmPEAssembly, pModule);
+                    pMDII = LookupMetaDataFromDebugger(pModule);
                 }
                 return pMDII;
             }
@@ -398,9 +398,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly)
 }
 
 
-IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
-    VMPTR_PEAssembly vmPEAssembly,
-    CordbModule * pModule)
+IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(CordbModule * pModule)
 {
     DWORD dwImageTimeStamp = 0;
     DWORD dwImageSize = 0;
@@ -409,7 +407,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
 
     // First, see if the debugger can locate the exact metadata we want.
     BOOL _metaDataFileInfoResult;
-    IfFailThrow(this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, &dwImageTimeStamp, &dwImageSize, &filePath, &_metaDataFileInfoResult));
+    IfFailThrow(this->GetDAC()->GetModuleMetaDataFileInfo(pModule->GetRuntimeModule(), &dwImageTimeStamp, &dwImageSize, &filePath, &_metaDataFileInfoResult));
     if (_metaDataFileInfoResult)
     {
         _ASSERTE(filePath.IsSet());
@@ -533,102 +531,6 @@ void CordbProcess::Free(void * p)
 }
 
 
-//---------------------------------------------------------------------------------------
-//
-// #DBIVersionChecking
-//
-// There are a few checks we need to do to make sure we are using the matching DBI and DAC for a particular
-// version of the runtime.
-//
-// 1. Runtime vs. DBI
-//     - Desktop
-//         This is done by making sure that the CorDebugInterfaceVersion passed to code:CreateCordbObject is
-//         compatible with the version of the DBI.
-//
-//     - Windows CoreCLR
-//         This is done by dbgshim.dll.  It checks whether the runtime DLL and the DBI DLL have the same
-//         product version.  See CreateDebuggingInterfaceForVersion() in dbgshim.cpp.
-//
-//     - Remote transport (Mac CoreCLR + CoreSystem CoreCLR)
-//         Since there is no dbgshim.dll for a remote CoreCLR, we have to do this check in some other place.
-//         We do this in code:CordbProcess::CreateDacDbiInterface, by calling
-//         code:DacDbiInterfaceImpl::CheckDbiVersion right after we have created the DDMarshal.
-//         The IDacDbiInterface implementation on remote device checks the product version of the device
-//         coreclr by:
-//             mac - looking at the Info.plist file in the CoreCLR bundle.
-//             CoreSystem - this check is skipped at the moment, but should be implemented if we release it
-//
-//         The one twist here is that the DBI needs to communicate with the IDacDbiInterface
-//         implementation on the device BEFORE it can verify the product versions.  This means that we need to
-//         have one IDacDbiInterface API which is consistent across all versions of the IDacDbiInterface.
-//         This puts two constraints on CheckDbiVersion():
-//
-//             1.  It has to be the first API on the IDacDbiInterface.
-//             - Otherwise, a wrong version of the DBI may end up calling a different API on the
-//               IDacDbiInterface and getting random results. (Really what matters is that it is
-//               protocol message id 0, at present the source code position implies the message id)
-//
-//             2.  Its parameters cannot change.
-//             - Otherwise, we may run into random errors when we marshal/unmarshal the arguments for the
-//               call to CheckDbiVersion().  Debugging will still fail, but we won't get the
-//               version mismatch error. (Again, the protocol is what ultimately matters)
-//             - To mitigate the impact of this constraint, we use the code:DbiVersion structure.
-//               In addition to the DBI version, it also contains a format number (in case we decide to
-//               check something else in the future), a breaking change number so that we can force
-//               breaking changes between a DBI and a DAC, and space reserved for future use.
-//
-// 2. DBI vs. DAC
-//     - Desktop and Windows CoreCLR (old architecture)
-//          No verification is done. There is a transitive implication that if DBI matches runtime and DAC matches
-//          runtime then DBI matches DAC. Technically because the DBI only matches runtime on major version number
-//          runtime and DAC could be from different builds. However because we service all three binaries together
-//          and DBI always loads the DAC that is sitting in the same directory DAC and DBI generally get tight
-//          version coupling. A user with admin privileges could put different builds together and no version check
-//          would ever fail though.
-//
-//      - Desktop and Windows CoreCLR (new architecture)
-//          No verification is done. Similar to above its implied that if DBI matches runtime and runtime matches
-//          DAC then DBI matches DAC. The only difference is that here both the DBI and DAC are provided by the
-//          debugger. We provide timestamp and filesize for both binaries which are relatively strongly bound hints,
-//          but there is no enforcement on the returned binaries beyond the runtime compat checking.
-//
-//      - Remote transport (Mac CoreCLR and CoreSystem CoreCLR)
-//          Because the transport exists between DBI and DAC it becomes much more important to do a versioning check
-//
-//          Mac - currently does a tightly bound version check between DBI and the runtime (CheckDbiVersion() above),
-//             which transitively gives a tightly bound check to DAC. In same function there is also a check that is
-//             logically a DAC DBI protocol check, verifying that the m_dwProtocolBreakingChangeCounter of DbiVersion
-//             matches. However this check should be weaker than the build version check and doesn't add anything here.
-//
-//          CoreSystem - currently skips the tightly bound version check to make internal deployment and usage easier.
-//             We want to use old desktop side debugger components to target newer CoreCLR builds, only forcing a desktop
-//             upgrade when the protocol actually does change. To do this we use two checks:
-//             1. The breaking change counter in CheckDbiVersion() whenever a dev knows they are breaking back
-//                compat and wants to be explicit about it. This is the same as mac above.
-//             2. During the auto-generation of the DDMarshal classes we take an MD5 hash of IDacDbiInterface source
-//                code and embed it in two DDMarshal functions, one which runs locally and one that runs remotely.
-//                If both DBI and DAC were built from the same source then the local and remote hashes will match. If the
-//                hashes don't match then we assume there has been a been a breaking change in the protocol. Note
-//                this hash could have both false-positives and false-negatives. False positives could occur when
-//                IDacDbiInterface is changed in a trivial way, such as changing a comment. False negatives could
-//                occur when the semantics of the protocol are changed even though the interface is not. Another
-//                case would be changing the DDMarshal proxy generation code. In addition to the hashes we also
-//                embed timestamps when the auto-generated code was produced. However this isn't used for version
-//                matching, only as a hint to indicate which of two mismatched versions is newer.
-//
-//
-// 3. Runtime vs. DAC
-//     - Desktop, Windows CoreCLR, CoreSystem CoreCLR
-//         In both cases we check this by matching the timestamp in the debug directory of the runtime image
-//         and the timestamp we store in the DAC table when we generate the DAC dll.  This is done in
-//         code:ClrDataAccess::VerifyDlls.
-//
-//     - Mac CoreCLR
-//         On Mac, we don't have a timestamp in the runtime image.  Instead, we rely on checking the 16-byte
-//         UUID in the image.  This UUID is used to check whether a symbol file matches the image, so
-//         conceptually it's the same as the timestamp we use on Windows.  This is also done in
-//         code:ClrDataAccess::VerifyDlls.
-//
 //---------------------------------------------------------------------------------------
 //
 // Instantiates a DacDbi Interface object in a live-debugging scenario that matches
@@ -2280,10 +2182,12 @@ HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue
                 _ASSERTE(pType != NULL);
                 _ASSERTE(cdbAppDomain != NULL);
 
-                DebuggerIPCE_ObjectData objData;
-                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, ELEMENT_TYPE_CLASS, &objData));
+                DacDbiObjectData objData = {};
+                BOOL isValidRef = FALSE;
 
-                NewHolder<CordbObjectValue> pNewObjectValue(new CordbObjectValue(cdbAppDomain, pType, TargetBuffer(addr, (ULONG)objData.objSize), &objData));
+                IfFailThrow(m_pDacPrimitives->GetBasicObjectInfo(addr, &isValidRef, &objData.objSize, &objData.objOffsetToVars, &objData.objTypeData));
+                objData.objRefBad = !isValidRef;
+                NewHolder<CordbObjectValue> pNewObjectValue(new CordbObjectValue(cdbAppDomain, pType, TargetBuffer(addr, objData.objSize), &objData));
                 hr = pNewObjectValue->Init();
 
                 if (SUCCEEDED(hr))
@@ -2552,13 +2456,13 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, C
 // CordbRefEnum
 // ******************************************
 CordbRefEnum::CordbRefEnum(CordbProcess *proc, BOOL walkWeakRefs)
-    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacksFQ(TRUE),
+    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacks(TRUE),
       mHandleMask((UINT32)(walkWeakRefs ? CorHandleAll : CorHandleStrongOnly))
 {
 }
 
 CordbRefEnum::CordbRefEnum(CordbProcess *proc, CorGCReferenceType types)
-    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacksFQ(FALSE),
+    : CordbBase(proc, 0, enumCordbHeap), mRefHandle(0), mEnumStacks(FALSE),
       mHandleMask((UINT32)types)
 {
 }
@@ -2657,7 +2561,7 @@ HRESULT CordbRefEnum::Next(ULONG celt, COR_GC_REFERENCE refs[], ULONG *pceltFetc
     EX_TRY
     {
         if (!mRefHandle)
-            hr = process->GetDAC()->CreateRefWalk(&mRefHandle, mEnumStacksFQ, mEnumStacksFQ, mHandleMask);
+            hr = process->GetDAC()->CreateRefWalk(&mRefHandle, mEnumStacks, mHandleMask);
 
         if (SUCCEEDED(hr))
         {
@@ -4356,156 +4260,6 @@ void CordbProcess::GetAssembliesInLoadOrder(
 
     // pAssemblies array has now been updated.
 }
-
-// Callback data for code:CordbProcess::GetModulesInLoadOrder
-class ShimModuleCallbackData
-{
-public:
-    // Ctor to initialize callback data
-    //
-    // Arguments:
-    //   pAssembly - assembly that the Modules are in.
-    //   pModules - preallocated array of smart pointers to hold Modules
-    //   countModules - size of pModules in elements.
-    ShimModuleCallbackData(
-        CordbAssembly * pAssembly,
-        RSExtSmartPtr<ICorDebugModule>* pModules,
-        ULONG countModules)
-    {
-        _ASSERTE(pAssembly != NULL);
-        _ASSERTE(pModules != NULL);
-
-        m_pProcess = pAssembly->GetAppDomain()->GetProcess();
-        m_pAssembly = pAssembly;
-        m_pModules = pModules;
-        m_countElements = countModules;
-        m_index = 0;
-
-        // Just to be safe, clear them all out
-        for(ULONG i = 0; i < countModules; i++)
-        {
-            pModules[i].Clear();
-        }
-    }
-
-    // Dtor
-    //
-    // Notes:
-    //   This can assert end-of-enumeration invariants.
-    ~ShimModuleCallbackData()
-    {
-        // Ensure that we went through all Modules.
-        _ASSERTE(m_index == m_countElements);
-    }
-
-    // Callback invoked from DAC enumeration.
-    //
-    // arguments:
-    //    vmAssembly - VMPTR for Assembly
-    //    pData - a 'this' pointer
-    //
-    static void Callback(VMPTR_Assembly vmAssembly, void * pData)
-    {
-        ShimModuleCallbackData * pThis = static_cast<ShimModuleCallbackData *> (pData);
-        INTERNAL_DAC_CALLBACK(pThis->m_pProcess);
-
-        CordbModule * pModule = pThis->m_pAssembly->GetAppDomain()->LookupOrCreateModule(vmAssembly);
-
-        pThis->SetAndMoveNext(pModule);
-    }
-
-    // Set the current index in the table and increment the cursor.
-    //
-    // Arguments:
-    //    pModule - Module from DAC enumerator
-    void SetAndMoveNext(CordbModule * pModule)
-    {
-        _ASSERTE(pModule != NULL);
-
-        if (m_index >= m_countElements)
-        {
-            // Enumerating the Modules in the target should be fixed since
-            // the target is not running.
-            // We should never get here unless the target is unstable.
-            // The caller (the shim) pre-allocated the table of Modules.
-            m_pProcess->TargetConsistencyCheck(!"Target changed Module count");
-            return;
-        }
-
-        m_pModules[m_index].Assign(pModule);
-        m_index++;
-    }
-
-protected:
-    CordbProcess * m_pProcess;
-    CordbAssembly * m_pAssembly;
-    RSExtSmartPtr<ICorDebugModule>* m_pModules;
-    ULONG m_countElements;
-    ULONG m_index;
-};
-
-//---------------------------------------------------------------------------------------
-// Shim Helper to enumerate the Modules in the load-order
-//
-// Arguments:
-//    pAppdomain - non-null appdomain to enumerate Modules.
-//    pModules - caller pre-allocated array to hold Modules
-//    countModules - size of the array.
-//
-// Notes:
-//    Caller preallocated array (likely from ICorDebugModuleEnum::GetCount),
-//    and now this function fills in the Modules in the order they were
-//    loaded.
-//
-//    The target should be stable, such that the number of Modules in the
-//    target is stable, and therefore countModules as determined by the
-//    shim via ICorDebugModuleEnum::GetCount should match the number of
-//    Modules enumerated here.
-//
-//    Called by code:ShimProcess::QueueFakeAssemblyAndModuleEvent.
-//    This provides the Modules in load-order. In contrast,
-//    ICorDebugAssembly::EnumerateModules is a random order. The shim needs
-//    load-order to match Whidbey semantics for dispatching fake load-Module
-//    callbacks on attach. The most important thing is that the manifest module
-//    gets a LodModule callback before any secondary modules.  For dynamic
-//    modules, this is necessary for operations on the secondary module
-//    that rely on manifest metadata (eg. GetSimpleName).
-//
-//    @dbgtodo : This is almost identical to GetAssembliesInLoadOrder, and
-//    (together wih the CallbackData classes) seems a HUGE amount of code and
-//    complexity for such a simple thing.  We also have extra code to order
-//    AppDomains and Threads.  We should try and rip all of this extra complexity
-//    out, and replace it with better data structures for storing these items.
-//    Eg., if we used std::map, we could have efficient lookups and ordered
-//    enumerations.  However, we do need to be careful about exposing new invariants
-//    through ICorDebug that customers may depend on, which could place a long-term
-//    compatibility burden on us.  We could have a simple generic data structure
-//    (eg. built on std::hash_map and std::list) which provided efficient look-up
-//    and both in-order and random enumeration.
-//
-void CordbProcess::GetModulesInLoadOrder(
-    ICorDebugAssembly * pAssembly,
-    RSExtSmartPtr<ICorDebugModule>* pModules,
-    ULONG countModules)
-{
-    PUBLIC_API_ENTRY_FOR_SHIM(this);
-    RSLockHolder lockHolder(GetProcessLock());
-
-    _ASSERTE(GetShim() != NULL);
-
-    CordbAssembly * pAssemblyInternal = static_cast<CordbAssembly *> (pAssembly);
-
-    ShimModuleCallbackData data(pAssemblyInternal, pModules, countModules);
-
-    // Enumerate through and fill out pModules table.
-    IfFailThrow(GetDAC()->EnumerateModulesInAssembly(
-        pAssemblyInternal->GetAssemblyPtr(),
-        ShimModuleCallbackData::Callback,
-        &data)); // user data
-
-    // pModules array has now been updated.
-}
-
 
 //---------------------------------------------------------------------------------------
 // Callback to count the number of enumerations in a process.
@@ -6810,19 +6564,6 @@ HRESULT CordbProcess::FindPatchByAddress(CORDB_ADDRESS address, bool *pfPatchFou
             if (traceType == m_runtimeOffsets.m_traceTypeUnmanaged)
             {
                 *pfPatchIsUnmanaged = true;
-
-#if defined(_DEBUG)
-                HRESULT hrDac = S_OK;
-                EX_TRY
-                {
-                    // We should be able to double check w/ DAC that this really is outside of the runtime.
-                    IDacDbiInterface::AddressType addrType;
-                    IfFailThrow(GetDAC()->GetAddressType(address, &addrType));
-                    CONSISTENCY_CHECK_MSGF(addrType == IDacDbiInterface::kAddressUnrecognized, ("Bad address type = %d", addrType));
-                }
-                EX_CATCH_HRESULT(hrDac);
-                CONSISTENCY_CHECK_MSGF(SUCCEEDED(hrDac), ("DAC::GetAddressType failed, hr=0x%08x", hrDac));
-#endif
             }
 
             break;
@@ -12063,17 +11804,14 @@ Reaction CordbProcess::Triage1stChanceNonSpecial(CordbUnmanagedThread * pUnmanag
     // Use DAC to decide if it's ours or not w/o going inproc.
     CORDB_ADDRESS address = PTR_TO_CORDB_ADDRESS(pExAddress);
 
-    IDacDbiInterface::AddressType addrType;
+    BOOL fIsManaged;
 
-    IfFailThrow(GetDAC()->GetAddressType(address, &addrType));
-    bool fIsCorCode =((addrType == IDacDbiInterface::kAddressManagedMethod) ||
-                      (addrType == IDacDbiInterface::kAddressRuntimeManagedCode) ||
-                      (addrType == IDacDbiInterface::kAddressRuntimeUnmanagedCode));
+    IfFailThrow(GetDAC()->IsManagedCode(address, &fIsManaged));
 
-    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsCorCode(0x%p)=%d\n", address, fIsCorCode);
+    STRESS_LOG2(LF_CORDB, LL_INFO1000, "W32ET::W32EL: IsManagedCode(0x%p)=%d\n", address, fIsManaged);
 
 
-    if (fIsCorCode)
+    if (fIsManaged)
     {
         return REACTION(cCLR);
     }
@@ -14748,7 +14486,7 @@ CordbClass * CordbProcess::LookupClass(ICorDebugAppDomain * pAppDomain, VMPTR_As
     if (pAppDomain != NULL)
     {
         VMPTR_Module vmModule = VMPTR_Module::NullPtr();
-        IfFailThrow(GetProcess()->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule));
+        IfFailThrow(GetProcess()->GetDAC()->GetModuleForAssembly(vmAssembly, &vmModule, NULL));
         _ASSERTE(!vmModule.IsNull());
         CordbModule * pModule = ((CordbAppDomain *)pAppDomain)->m_modules.GetBase(VmPtrToCookie(vmModule));
         if (pModule != NULL)

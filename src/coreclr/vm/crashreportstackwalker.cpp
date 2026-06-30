@@ -8,8 +8,13 @@
 #include "dbginterface.h"
 #include "method.hpp"
 #include "peassembly.h"
+#include <errno.h>
 #include <clrconfignocache.h>
+#include <limits>
 #include <minipal/guid.h>
+#include <limits.h>
+#include <new>
+#include <stdlib.h>
 
 #ifdef FEATURE_INPROC_CRASHREPORT
 
@@ -23,7 +28,187 @@ struct WalkContext
     void* userCtx;
 };
 
+struct CrashReportStackWalkerScratch
+{
+    char crashExceptionType[CRASHREPORT_STRING_BUFFER_SIZE];
+    char className[CRASHREPORT_STRING_BUFFER_SIZE];
+    GUID moduleGuid;
+    bool hasModuleGuid;
+};
+
+struct CrashReportStackWalkerState
+{
+    CrashReportStackWalkerScratch scratch;
+    WalkContext walkContext;
+};
+
+static CrashReportStackWalkerState* s_crashReportStackWalkerState = nullptr;
+
+inline CrashReportStackWalkerState* GetStackWalkerState()
+{
+    return VolatileLoad(&s_crashReportStackWalkerState);
+}
+
+static
+bool
+EnsureCrashReportStackWalkerState()
+{
+    if (GetStackWalkerState() != nullptr)
+    {
+        return true;
+    }
+
+    CrashReportStackWalkerState* state = new (std::nothrow) CrashReportStackWalkerState();
+    if (state == nullptr)
+    {
+        return false;
+    }
+
+    if (InterlockedCompareExchangeT(&s_crashReportStackWalkerState, state, nullptr) != nullptr)
+    {
+        delete state;
+    }
+
+    return true;
+}
+
+static
+DWORD
+GetCrashReportFrameLimitPerThread()
+{
+    DWORD frameLimitPerThread = CLRConfig::INTERNAL_CrashReportFrameLimitPerThread.defaultValue;
+
+    CLRConfigNoCache frameLimitCfg = CLRConfigNoCache::Get("CrashReportFrameLimitPerThread", /*noprefix*/ false, &getenv);
+    if (frameLimitCfg.IsSet())
+    {
+        DWORD configuredFrameLimitPerThread = 0;
+        if (frameLimitCfg.TryAsInteger(10, configuredFrameLimitPerThread))
+        {
+            frameLimitPerThread = configuredFrameLimitPerThread;
+        }
+    }
+
+    return frameLimitPerThread;
+}
+
 static void BuildTypeName(LPUTF8 buffer, size_t bufferSize, LPCUTF8 namespaceName, LPCUTF8 className);
+static bool TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int minValue, int maxValue, int* value);
+// Parses configuration during CrashReportConfigure initialization. This is not
+// async-signal-safe and must not be called from the crash-reporting path.
+static int GetCrashReportTimeoutSeconds();
+
+static
+void
+CrashReportGetModuleDetails(
+    Module* pModule,
+    LPCUTF8* moduleName,
+    GUID* moduleGuid,
+    bool* hasModuleGuid,
+    uint32_t* moduleTimestamp,
+    uint32_t* moduleSize)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (moduleName != nullptr)
+    {
+        *moduleName = nullptr;
+    }
+    if (hasModuleGuid != nullptr)
+    {
+        *hasModuleGuid = false;
+    }
+    if (moduleTimestamp != nullptr)
+    {
+        *moduleTimestamp = 0;
+    }
+    if (moduleSize != nullptr)
+    {
+        *moduleSize = 0;
+    }
+
+    if (pModule == nullptr)
+    {
+        return;
+    }
+
+    if (moduleName != nullptr)
+    {
+        Assembly* pAssembly = pModule->GetAssembly();
+        if (pAssembly != nullptr)
+        {
+            *moduleName = pAssembly->GetSimpleName();
+        }
+    }
+
+    if (moduleTimestamp != nullptr || moduleSize != nullptr)
+    {
+        PEAssembly* pPEAssembly = pModule->GetPEAssembly();
+        if (pPEAssembly != nullptr && pPEAssembly->HasLoadedPEImage())
+        {
+            if (moduleTimestamp != nullptr)
+            {
+                *moduleTimestamp = pPEAssembly->GetLoadedLayout()->GetTimeDateStamp();
+            }
+            if (moduleSize != nullptr)
+            {
+                *moduleSize = static_cast<uint32_t>(pPEAssembly->GetLoadedLayout()->GetSize());
+            }
+        }
+    }
+
+    if (moduleGuid != nullptr)
+    {
+        IMDInternalImport* pImport = pModule->GetMDImport();
+        if (pImport != nullptr && SUCCEEDED(pImport->GetScopeProps(nullptr, moduleGuid)))
+        {
+            if (hasModuleGuid != nullptr)
+            {
+                *hasModuleGuid = true;
+            }
+        }
+    }
+}
+
+static
+bool
+CrashReportGetModuleInfo(
+    const void* moduleHandle,
+    const char** moduleName,
+    GUID* moduleGuid)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (moduleName == nullptr || moduleGuid == nullptr || moduleHandle == nullptr)
+    {
+        return false;
+    }
+
+    LPCUTF8 resolvedModuleName = nullptr;
+    bool hasModuleGuid = false;
+    Module* pModule = reinterpret_cast<Module*>(const_cast<void*>(moduleHandle));
+    CrashReportGetModuleDetails(pModule, &resolvedModuleName, moduleGuid, &hasModuleGuid, nullptr, nullptr);
+    if (resolvedModuleName == nullptr || resolvedModuleName[0] == '\0' || !hasModuleGuid)
+    {
+        return false;
+    }
+
+    *moduleName = resolvedModuleName;
+    return true;
+}
 
 static
 StackWalkAction
@@ -41,7 +226,8 @@ FrameCallbackAdapter(
     CONTRACTL_END;
 
     WalkContext* ctx = static_cast<WalkContext*>(pData);
-    if (ctx == nullptr)
+    CrashReportStackWalkerState* state = GetStackWalkerState();
+    if (ctx == nullptr || state == nullptr)
     {
         return SWA_CONTINUE;
     }
@@ -68,19 +254,11 @@ FrameCallbackAdapter(
         }
     }
 
-    char classNameBuf[CRASHREPORT_STRING_BUFFER_SIZE];
-    BuildTypeName(classNameBuf, sizeof(classNameBuf), namespaceName, className);
+    CrashReportStackWalkerScratch& scratch = state->scratch;
+    scratch.className[0] = '\0';
+    BuildTypeName(scratch.className, sizeof(scratch.className), namespaceName, className);
 
-    LPCUTF8 moduleName = nullptr;
     Module* pModule = pMD->GetModule();
-    if (pModule != nullptr)
-    {
-        Assembly* pAssembly = pModule->GetAssembly();
-        if (pAssembly != nullptr)
-        {
-            moduleName = pAssembly->GetSimpleName();
-        }
-    }
 
     uint32_t nativeOffset = pCF->HasFaulted() ? 0 : pCF->GetRelOffset();
     uint32_t ilOffset = 0;
@@ -122,33 +300,33 @@ FrameCallbackAdapter(
         }
     }
 
+    LPCUTF8 moduleName = nullptr;
     uint32_t moduleTimestamp = 0;
     uint32_t moduleSize = 0;
-    char moduleGuid[MINIPAL_GUID_BUFFER_LEN];
-    moduleGuid[0] = '\0';
+    scratch.hasModuleGuid = false;
+    CrashReportGetModuleDetails(
+        pModule,
+        &moduleName,
+        &scratch.moduleGuid,
+        &scratch.hasModuleGuid,
+        &moduleTimestamp,
+        &moduleSize);
 
-    if (pModule != nullptr)
-    {
-        PEAssembly* pPEAssembly = pModule->GetPEAssembly();
-        if (pPEAssembly != nullptr && pPEAssembly->HasLoadedPEImage())
-        {
-            moduleTimestamp = pPEAssembly->GetLoadedLayout()->GetTimeDateStamp();
-            moduleSize = static_cast<uint32_t>(pPEAssembly->GetLoadedLayout()->GetSize());
-        }
-
-        IMDInternalImport* pImport = pModule->GetMDImport();
-        if (pImport != nullptr)
-        {
-            GUID mvid;
-            if (SUCCEEDED(pImport->GetScopeProps(nullptr, &mvid)))
-            {
-                minipal_guid_as_string(mvid, moduleGuid, MINIPAL_GUID_BUFFER_LEN);
-            }
-        }
-    }
-
-    className = classNameBuf[0] == '\0' ? nullptr : classNameBuf;
-    ctx->callback(static_cast<uint64_t>(ip), static_cast<uint64_t>(stackPointer), methodName, className, moduleName, nativeOffset, static_cast<uint32_t>(token), ilOffset, moduleTimestamp, moduleSize, moduleGuid, ctx->userCtx);
+    className = scratch.className[0] == '\0' ? nullptr : scratch.className;
+    ctx->callback(
+        static_cast<uint64_t>(ip),
+        static_cast<uint64_t>(stackPointer),
+        methodName,
+        className,
+        moduleName,
+        pModule,
+        moduleTimestamp,
+        moduleSize,
+        scratch.hasModuleGuid ? &scratch.moduleGuid : nullptr,
+        nativeOffset,
+        static_cast<uint32_t>(token),
+        ilOffset,
+        ctx->userCtx);
     return SWA_CONTINUE;
 }
 
@@ -159,13 +337,15 @@ CrashReportWalkThread(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
-    if (pThread == nullptr || frameCallback == nullptr)
+    CrashReportStackWalkerState* state = GetStackWalkerState();
+    if (pThread == nullptr || frameCallback == nullptr || state == nullptr)
     {
         return;
     }
 
-    WalkContext walkContext = { frameCallback, ctx };
-    pThread->StackWalkFrames(FrameCallbackAdapter, &walkContext,
+    state->walkContext.callback = frameCallback;
+    state->walkContext.userCtx = ctx;
+    pThread->StackWalkFrames(FrameCallbackAdapter, &state->walkContext,
         QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 }
 
@@ -353,14 +533,20 @@ CrashReportEnumerateThreads(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
+    CrashReportStackWalkerState* state = GetStackWalkerState();
+    if (state == nullptr)
+    {
+        return;
+    }
+
     Thread* pCrashThread = GetThreadAsyncSafe();
+    CrashReportStackWalkerScratch& scratch = state->scratch;
 
     // Capture the crashing thread's exception state BEFORE suspending the EE
     // so the throwable inspection runs in the thread's natural EE-live context,
     // outside the suspended window which exists for safe-point operations on
     // other threads.
-    char crashExceptionType[CRASHREPORT_STRING_BUFFER_SIZE];
-    crashExceptionType[0] = '\0';
+    scratch.crashExceptionType[0] = '\0';
     uint32_t crashHresult = 0;
     bool crashHasException = false;
     bool isCrashingThread = pCrashThread != nullptr
@@ -368,7 +554,10 @@ CrashReportEnumerateThreads(
     if (isCrashingThread)
     {
         crashHasException = CrashReportGetExceptionForThread(
-            pCrashThread, crashExceptionType, sizeof(crashExceptionType), &crashHresult);
+            pCrashThread,
+            scratch.crashExceptionType,
+            sizeof(scratch.crashExceptionType),
+            &crashHresult);
     }
 
     bool runtimeSuspended = CrashReportSuspendThreads(pCrashThread);
@@ -378,7 +567,7 @@ CrashReportEnumerateThreads(
     if (isCrashingThread)
     {
         uint64_t crashOsId = static_cast<uint64_t>(pCrashThread->GetOSThreadId());
-        threadCallback(crashOsId, true, crashHasException ? crashExceptionType : "", crashHresult, ctx);
+        threadCallback(crashOsId, true, crashHasException ? scratch.crashExceptionType : "", crashHresult, ctx);
 
         CrashReportWalkThread(pCrashThread, frameCallback, ctx);
     }
@@ -406,6 +595,94 @@ CrashReportEnumerateThreads(
     }
 }
 
+static
+bool
+TryParseCrashReportConfigurationInteger(CLRConfigNoCache config, int minValue, int maxValue, int* value)
+{
+    _ASSERTE(minValue <= maxValue);
+    _ASSERTE(value != nullptr);
+
+    if (!config.IsSet())
+    {
+        return false;
+    }
+
+    const char* configString = config.AsString();
+    if (configString == nullptr)
+    {
+        return false;
+    }
+
+    errno = 0;
+    char* end = nullptr;
+    long parsedValue = strtol(configString, &end, 10);
+    if (end == configString ||
+        *end != '\0' ||
+        errno == ERANGE ||
+        parsedValue < minValue ||
+        parsedValue > maxValue)
+    {
+        return false;
+    }
+
+    *value = static_cast<int>(parsedValue);
+    return true;
+}
+
+// This runs during configuration, not from the crash signal path. maxFileCount
+// is a positive retention bound; values outside [1, INT32_MAX] fall back to the
+// default.
+static
+int32_t
+GetCrashReportMaxFileCount()
+{
+    int32_t maxFileCount = CRASHREPORT_DEFAULT_MAX_FILE_COUNT;
+
+    CLRConfigNoCache maxFileCountCfg = CLRConfigNoCache::Get("CrashReportMaxFileCount", /*noprefix*/ false, &getenv);
+    if (!maxFileCountCfg.IsSet())
+    {
+        return maxFileCount;
+    }
+
+    int configuredMaxFileCount;
+    if (TryParseCrashReportConfigurationInteger(maxFileCountCfg, 1, INT32_MAX, &configuredMaxFileCount))
+    {
+        maxFileCount = configuredMaxFileCount;
+    }
+    else
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report using default CrashReportMaxFileCount: invalid configured value");
+    }
+
+    return maxFileCount;
+}
+
+// Parses configuration during CrashReportConfigure initialization. This is not
+// async-signal-safe and must not be called from the crash-reporting path.
+// DOTNET_CrashReportTimeoutSeconds is a seconds-based watchdog knob: unset,
+// unparseable, negative, or out-of-range values use the default; 0 disables the
+// watchdog; and positive in-range values configure a fixed timeout. Use
+// CLRConfigNoCache so Android-hosted apps can set DOTNET_* values after PAL
+// initialization but before crash-report configuration.
+static int
+GetCrashReportTimeoutSeconds()
+{
+    // Keep the default conservative: successful reports can be large, while 0
+    // remains available to disable the watchdog for diagnostics.
+    static constexpr int DefaultTimeoutSeconds = 30;
+    static constexpr int TimeoutSecondsToMilliseconds = 1000;
+    static constexpr int MaxTimeoutSeconds = std::numeric_limits<int>::max() / TimeoutSecondsToMilliseconds;
+
+    int timeoutSeconds;
+    CLRConfigNoCache timeoutCfg = CLRConfigNoCache::Get("CrashReportTimeoutSeconds", /*noprefix*/ false, &getenv);
+    if (!TryParseCrashReportConfigurationInteger(timeoutCfg, 0, MaxTimeoutSeconds, &timeoutSeconds))
+    {
+        return DefaultTimeoutSeconds;
+    }
+
+    return timeoutSeconds;
+}
+
 void
 CrashReportConfigure()
 {
@@ -425,18 +702,29 @@ CrashReportConfigure()
         return;
     }
 
-    CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
-    const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
-    if (dumpName == nullptr || dumpName[0] == '\0')
+    if (!EnsureCrashReportStackWalkerState())
     {
+        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to allocate stack walker storage");
         return;
     }
 
+    CLRConfigNoCache crashReportRootPathCfg = CLRConfigNoCache::Get("CrashReportRootPath", /*noprefix*/ false, &getenv);
+    const char* crashReportRootPath = crashReportRootPathCfg.IsSet() ? crashReportRootPathCfg.AsString() : nullptr;
+    bool rootConfigured = crashReportRootPath != nullptr && crashReportRootPath[0] != '\0';
+
     InProcCrashReporterSettings settings = {};
-    settings.reportPath = dumpName;
+    if (rootConfigured)
+    {
+        settings.reportRootPath = crashReportRootPath;
+        settings.maxFileCount = GetCrashReportMaxFileCount();
+    }
+
+    settings.timeoutSeconds = GetCrashReportTimeoutSeconds();
     settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
     settings.walkStackCallback = CrashReportWalkStack;
     settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
+    settings.moduleInfoCallback = CrashReportGetModuleInfo;
+    settings.frameLimitPerThread = GetCrashReportFrameLimitPerThread();
 
     // Initialize the reporter and register the PAL signal-path callback last
     // so PAL only observes the reporter after all VM callbacks are wired in.

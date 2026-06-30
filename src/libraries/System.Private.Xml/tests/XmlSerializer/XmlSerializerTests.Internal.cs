@@ -52,39 +52,4 @@ public static partial class XmlSerializerTests
         Assert.Equal(dClass.DateTimeValue, fromDerived.DateTimeValue);
         Assert.Equal(dClass.BoolValue, fromDerived.BoolValue);
     }
-
-    // TODO - Move this test to XmlSerializerTests.RuntimeOnly.cs once #1399 is fixed for the ReflectionOnly serializer.
-    [Fact]
-    public static void Xml_XmlSchema()
-    {
-        var expectedXml = WithXmlHeader("<xsd:schema xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" elementFormDefault=\"qualified\" targetNamespace=\"http://example.com/my-schema\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <xsd:element name=\"MyElement\" type=\"xsd:string\" />\r\n  <xsd:group name=\"MyGroup\">\r\n    <xsd:sequence>\r\n      <xsd:element name=\"Item1\" />\r\n      <xsd:element name=\"Item2\" />\r\n    </xsd:sequence>\r\n  </xsd:group>\r\n</xsd:schema>");
-
-        XmlSchema schema = new XmlSchema
-        {
-            TargetNamespace = "http://example.com/my-schema",
-            ElementFormDefault = XmlSchemaForm.Qualified
-        };
-        schema.Items.Add(new XmlSchemaElement
-        {
-            Name = "MyElement",
-            SchemaTypeName = new XmlQualifiedName("string", "http://www.w3.org/2001/XMLSchema")
-        });
-        schema.Items.Add(new XmlSchemaGroup
-        {
-            Name = "MyGroup",
-            Particle = new XmlSchemaSequence
-            {
-                Items = { new XmlSchemaElement { Name = "Item1" }, new XmlSchemaElement { Name = "Item2" } }
-            }
-        });
-        schema.Namespaces.Add("xsd", "http://www.w3.org/2001/XMLSchema");
-        schema.Namespaces.Add("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-
-        var actual = SerializeAndDeserialize(schema, expectedXml, () => new XmlSerializer(typeof(XmlSchema)));
-
-        Assert.Equal(schema.TargetNamespace, actual.TargetNamespace);
-        Assert.Equal(schema.ElementFormDefault, actual.ElementFormDefault);
-        Assert.Equal(schema.Items.Count, actual.Items.Count);
-    }
-
 }

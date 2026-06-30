@@ -31,6 +31,9 @@ internal struct AMD64Context : IPlatformContext
     }
 
     public readonly uint Size => 0x4d0;
+
+    public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
+
     public readonly uint FullContextFlags => (uint)ContextFlagsValues.CONTEXT_FULL;
 
     public readonly uint AllContextFlags => (uint)ContextFlagsValues.CONTEXT_ALL;
@@ -42,7 +45,7 @@ internal struct AMD64Context : IPlatformContext
         readonly get => new(Rsp);
         set => Rsp = value.Value;
     }
-    public TargetPointer InstructionPointer
+    public TargetCodePointer InstructionPointer
     {
         readonly get => new(Rip);
         set => Rip = value.Value;

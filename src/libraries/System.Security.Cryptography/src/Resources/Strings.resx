@@ -60,6 +60,9 @@
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
   </data>
+  <data name="Arg_EmptyCollection" xml:space="preserve">
+    <value>Collection may not be empty.</value>
+  </data>
   <data name="Arg_EmptyOrNullArray" xml:space="preserve">
     <value>Array may not be empty or null.</value>
   </data>
@@ -236,6 +239,9 @@
   </data>
   <data name="Cryptography_AlgorithmTypesMustBeVisible" xml:space="preserve">
     <value>Algorithms added to CryptoConfig must be accessible from outside their assembly.</value>
+  </data>
+  <data name="Cryptography_AndroidX509ChainContextInitializationFailed" xml:space="preserve">
+    <value>The Android X.509 certificate chain could not be initialized.</value>
   </data>
   <data name="Cryptography_ArgDSARequiresDSAKey" xml:space="preserve">
     <value>Keys used with the DSACng algorithm must have an algorithm group of DSA.</value>

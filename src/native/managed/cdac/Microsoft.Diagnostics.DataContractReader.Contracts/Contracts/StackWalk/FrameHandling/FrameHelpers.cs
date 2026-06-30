@@ -137,7 +137,7 @@ internal sealed class FrameHelpers
     /// <summary>
     /// Updates <paramref name="context"/> based on <paramref name="frame"/>'s type, replicating
     /// the per-frame context update performed by the native stack walker before it yields a
-    /// SW_FRAME (or transitions to SW_FRAMELESS for InterpreterFrame).
+    /// Frame (or transitions to Frameless for InterpreterFrame).
     /// </summary>
     public void UpdateContextFromFrame(Data.Frame frame, IPlatformAgnosticContext context)
     {
@@ -170,7 +170,7 @@ internal sealed class FrameHelpers
                 {
                     // Mirrors native InterpreterFrame::SetContextToInterpMethodContextFrame
                     // (frames.cpp). Sets context to the top InterpMethodContextFrame so the
-                    // walker transitions to SW_FRAMELESS and yields each interpreted method
+                    // walker transitions to Frameless and yields each interpreted method
                     // individually via virtual unwind.
                     Data.InterpreterFrame interpreterFrame = _target.ProcessedData.GetOrAdd<Data.InterpreterFrame>(frame.Address);
                     SetContextToInterpMethodContextFrame(context, interpreterFrame);
@@ -211,10 +211,10 @@ internal sealed class FrameHelpers
 
     /// <summary>
     /// Returns the return address for <paramref name="frame"/>, matching native Frame::GetReturnAddress().
-    /// Returns TargetPointer.Null if the Frame has no return address (e.g., non-active ICF,
+    /// Returns TargetCodePointer.Null if the Frame has no return address (e.g., non-active ICF,
     /// base Frame types, FuncEvalFrame during exception eval).
     /// </summary>
-    public TargetPointer GetReturnAddress(Data.Frame frame)
+    public TargetCodePointer GetReturnAddress(Data.Frame frame)
     {
         FrameType frameType = GetFrameType(frame.Identifier);
         switch (frameType)
@@ -222,7 +222,7 @@ internal sealed class FrameHelpers
             // InlinedCallFrame: returns 0 if inactive, else m_pCallerReturnAddress
             case FrameType.InlinedCallFrame:
                 Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
-                return InlinedCallFrameHasActiveCall(icf) ? icf.CallerReturnAddress : TargetPointer.Null;
+                return InlinedCallFrameHasActiveCall(icf) ? icf.CallerReturnAddress : TargetCodePointer.Null;
 
             // TransitionFrame types: read return address from the transition block
             case FrameType.FramedMethodFrame:
@@ -270,19 +270,17 @@ internal sealed class FrameHelpers
                 Data.TailCallFrame tcf = _target.ProcessedData.GetOrAdd<Data.TailCallFrame>(frame.Address);
                 return tcf.ReturnAddress;
 
-            // FuncEvalFrame: returns 0 during exception eval, else from transition block
+            // FuncEvalFrame: returns 0 during exception eval
             case FrameType.FuncEvalFrame:
                 Data.FuncEvalFrame funcEval = _target.ProcessedData.GetOrAdd<Data.FuncEvalFrame>(frame.Address);
                 Data.DebuggerEval dbgEval = _target.ProcessedData.GetOrAdd<Data.DebuggerEval>(funcEval.DebuggerEvalPtr);
-                if (dbgEval.EvalUsesHijack)
-                    return TargetPointer.Null;
-                Data.FramedMethodFrame funcEvalFmf = _target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(frame.Address);
-                Data.TransitionBlock funcEvalTb = _target.ProcessedData.GetOrAdd<Data.TransitionBlock>(funcEvalFmf.TransitionBlockPtr);
-                return funcEvalTb.ReturnAddress;
+                if (!dbgEval.EvalUsesHijack)
+                    return TargetCodePointer.Null;
+                return funcEval.ReturnAddress;
 
             // Base Frame and unknown types: return 0 (matches native Frame::GetReturnAddressPtr_Impl)
             default:
-                return TargetPointer.Null;
+                return TargetCodePointer.Null;
         }
     }
 
@@ -375,7 +373,7 @@ internal sealed class FrameHelpers
 
     private static bool InlinedCallFrameHasActiveCall(Data.InlinedCallFrame frame)
     {
-        return frame.CallerReturnAddress != TargetPointer.Null;
+        return frame.CallerReturnAddress != TargetCodePointer.Null;
     }
 
     private bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame)
@@ -467,7 +465,7 @@ internal sealed class FrameHelpers
             return;
 
         Data.InterpMethodContextFrame topContextFrame = _target.ProcessedData.GetOrAdd<Data.InterpMethodContextFrame>(topContextFramePtr);
-        context.InstructionPointer = new TargetPointer((ulong)topContextFrame.Ip);
+        context.InstructionPointer = new TargetCodePointer((ulong)topContextFrame.Ip);
         context.StackPointer = topContextFramePtr;
         context.FramePointer = topContextFrame.Stack;
         SetFirstArgRegister(context, interpreterFrame.Address);
@@ -516,7 +514,7 @@ internal sealed class FrameHelpers
         if (parentFrame.Ip == TargetPointer.Null)
             return false;
 
-        context.InstructionPointer = new TargetPointer((ulong)parentFrame.Ip);
+        context.InstructionPointer = new TargetCodePointer((ulong)parentFrame.Ip);
         context.StackPointer = currentFrame.ParentPtr;
         context.FramePointer = parentFrame.Stack;
         context.RawContextFlags = context.FullContextFlags;

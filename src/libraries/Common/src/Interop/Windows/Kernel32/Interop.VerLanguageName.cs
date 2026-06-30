@@ -7,6 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "VerLanguageNameW")]
         internal static unsafe partial int VerLanguageName(uint wLang, char* szLang, uint cchLang);
     }

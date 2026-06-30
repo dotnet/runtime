@@ -219,11 +219,6 @@ EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
 EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
 #endif
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
-
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
-#endif
 
 #if defined(HOST_ARM64) && !defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
 EXTERN_C CODE_LOCATION RhpCheckedLockCmpXchgAVLocation2;
@@ -252,10 +247,6 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         (uintptr_t)&RhpCheckedAssignRefESIAVLocation,
         (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
         (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
-#endif
-        (uintptr_t)&RhpByRefAssignRefAVLocation1,
-#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
-        (uintptr_t)&RhpByRefAssignRefAVLocation2,
 #endif
     };
 
@@ -335,6 +326,12 @@ static uintptr_t UnwindSimpleHelperToCaller(
     pContext->SetSp(sp+sizeof(uintptr_t)); // pop the stack
 #elif defined(HOST_ARM) || defined(HOST_ARM64)
     uintptr_t adjustedFaultingIP = pContext->GetLr();
+#if defined(HOST_ARM)
+    // Interface dispatch pushes {r1,r2} (8 bytes) before the potential null-this AV.
+    // Restore SP to the caller's original value.
+    if (InInterfaceDispatchHelper(pContext->GetIp()))
+        pContext->SetSp(pContext->GetSp() + 8);
+#endif
 #elif defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
     uintptr_t adjustedFaultingIP = pContext->GetRa();
 #else

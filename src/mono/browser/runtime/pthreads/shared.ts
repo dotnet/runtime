@@ -89,11 +89,6 @@ export function mono_wasm_schedule_synchronization_context (): void {
     Module.safeSetTimeout(exec_synchronization_context_pump, 0);
 }
 
-export function mono_wasm_pthread_ptr (): PThreadPtr {
-    if (!WasmEnableThreads) return PThreadPtrNull;
-    return (<any>Module)["_pthread_self"]();
-}
-
 export function mono_wasm_main_thread_ptr (): PThreadPtr {
     if (!WasmEnableThreads) return PThreadPtrNull;
     return (<any>Module)["_emscripten_main_runtime_thread_id"]();

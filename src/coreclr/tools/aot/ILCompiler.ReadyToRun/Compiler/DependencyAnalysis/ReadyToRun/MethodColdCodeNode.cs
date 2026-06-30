@@ -8,7 +8,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodColdCodeNode : ObjectNode, ISymbolDefinitionNode
+    public class MethodColdCodeNode : ObjectNode, ISymbolDefinitionNode, IPCodeSymbolNode
     {
         private ObjectData _methodColdCode;
         private MethodDesc _owningMethod;
@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 ReadyToRunContainerFormat.PE => ObjectNodeSection.ManagedCodeWindowsContentSection,
                 _ => ObjectNodeSection.ManagedCodeUnixContentSection
-            };            
+            };
         }
 
         public override bool IsShareable => false;

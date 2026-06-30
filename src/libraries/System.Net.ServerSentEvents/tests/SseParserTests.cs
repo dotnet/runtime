@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -900,6 +901,39 @@ namespace System.Net.ServerSentEvents.Tests
             Assert.Equal(2, count);
         }
 
+        [Theory]
+        [MemberData(nameof(NewlineAsyncData))]
+        public async Task Parse_LongLineCap_Throws(string newline, bool useAsync)
+        {
+            // Temporary workaround until we expose limit in public API
+            void ReduceLineLengthLimit(SseParser<string> parser)
+            {
+                Type type = typeof(SseParser<string>);
+                var field = type.GetField("_maxBufferSize", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.NotNull(field);
+                field.SetValue(parser, 10 * 1024);
+            }
+
+            using Stream stream = new InfiniteLineStream($"data: shortline{newline}{newline}data: ");
+            var parser = SseParser.Create(stream);
+            ReduceLineLengthLimit(parser);
+
+            if (useAsync)
+            {
+                await using var enumerator = parser.EnumerateAsync().GetAsyncEnumerator();
+                await enumerator.MoveNextAsync();
+                Assert.Equal("shortline", enumerator.Current.Data);
+                await Assert.ThrowsAsync<InvalidDataException>(async () => await enumerator.MoveNextAsync());
+            }
+            else
+            {
+                using var enumerator = parser.Enumerate().GetEnumerator();
+                enumerator.MoveNext();
+                Assert.Equal("shortline", enumerator.Current.Data);
+                Assert.Throws<InvalidDataException>(() => enumerator.MoveNext());
+            }
+        }
+
         private static void AssertSseItemEqual<T>(SseItem<T> left, SseItem<T> right)
         {
             Assert.Equal(left.EventType, right.EventType);
@@ -913,6 +947,11 @@ namespace System.Net.ServerSentEvents.Tests
             from trickle in new[] { false, true }
             from async in new[] { false, true }
             select new object[] { newline, trickle, async };
+
+        public static IEnumerable<object[]> NewlineAsyncData() =>
+            from newline in new[] { "\r", "\n", "\r\n" }
+            from async in new[] { false, true }
+            select new object[] { newline, async };
 
         private static Stream GetStream(string data, bool trickle) =>
             GetStream(Encoding.UTF8.GetBytes(data), trickle);
@@ -978,6 +1017,48 @@ namespace System.Net.ServerSentEvents.Tests
                 return await base.ReadAsync(buffer.Slice(0, Math.Min(buffer.Length, 1)), cancellationToken);
             }
 #endif
+        }
+
+        private sealed class InfiniteLineStream : Stream
+        {
+            private ReadOnlyMemory<byte> _initialData;
+
+            public InfiniteLineStream(string initialData)
+            {
+                _initialData = Encoding.UTF8.GetBytes(initialData);
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override void Flush() { }
+
+#if NET
+            public override int Read(Span<byte> buffer)
+#else
+            private int Read(Span<byte> buffer)
+#endif
+            {
+                if (!_initialData.IsEmpty)
+                {
+                    int toCopy = Math.Min(buffer.Length, _initialData.Length);
+                    _initialData.Span.Slice(0, toCopy).CopyTo(buffer);
+                    _initialData = _initialData.Slice(toCopy);
+                    return toCopy;
+                }
+
+                buffer.Fill((byte)'y');
+                return buffer.Length;
+            }
+
+            public override int Read(byte[] buffer, int offset, int count) =>
+                Read(buffer.AsSpan(offset, count));
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
 
         [JsonSerializable(typeof(Book))]

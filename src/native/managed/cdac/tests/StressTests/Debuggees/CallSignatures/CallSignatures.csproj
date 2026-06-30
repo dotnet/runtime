@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- This debuggee deliberately defines many "test scaffolding" types and
+         enums where StyleCop's one-value-per-line / no-unassigned-fields
+         conventions don't add value. Extend the parent NoWarn. -->
+    <NoWarn>$(NoWarn);SA1136;CS0649</NoWarn>
+  </PropertyGroup>
+</Project>

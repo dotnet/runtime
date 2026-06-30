@@ -179,8 +179,6 @@ EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase_Helper, MethodTable *pMT);
 EXTERN_C void DoJITFailFast();
 EXTERN_C FCDECL0(void, JIT_FailFast);
 
-FCDECL0(int, JIT_GetCurrentManagedThreadId);
-
 EXTERN_C void ReversePInvokeBadTransition();
 
 #if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
@@ -192,7 +190,6 @@ extern "C" FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
 
 #ifdef TARGET_ARM64
 #define RhpCheckedAssignRef RhpCheckedAssignRefArm64
-#define RhpByRefAssignRef RhpByRefAssignRefArm64
 #define RhpAssignRef RhpAssignRefArm64
 #elif defined (TARGET_LOONGARCH64)
 #define RhpAssignRef RhpAssignRefLoongArch64
@@ -203,7 +200,6 @@ extern "C" FCDECL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
 #endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 
 extern "C" FCDECL2_RAW(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
-extern "C" FCDECL2_RAW(VOID, RhpByRefAssignRef, Object **dst, Object **ref);
 extern "C" FCDECL2_RAW(VOID, RhpAssignRef, Object **dst, Object *ref);
 
 extern "C" FCDECL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
@@ -259,8 +255,6 @@ void ValidateWriteBarrierHelpers();
 
 extern "C"
 {
-    void STDCALL JIT_ByRefWriteBarrier();      // JIThelp.asm/JIThelp.s
-
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
     void STDCALL JIT_TailCall();                    // JIThelp.asm
 #endif // defined(TARGET_X86) && !defined(UNIX_X86_ABI)
@@ -303,6 +297,7 @@ class CEEInfo : public ICorJitInfo
     void GetTypeContext(CORINFO_CONTEXT_HANDLE context, SigTypeContext* pTypeContext);
 
     void HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers);
+
 public:
 #include "icorjitinfoimpl_generated.h"
     uint32_t getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);
@@ -412,6 +407,12 @@ public:
                                                    MethodDesc * pTemplateMD /* for method-based slots */,
                                                    MethodDesc * pCallerMD,
                                                    CORINFO_LOOKUP *pResultLookup);
+    void FinishComputeRuntimeLookup(
+        SigBuilder& sig,
+        MethodDesc* pCallerMD,
+        CORINFO_LOOKUP* pResultLookup);
+
+    void ComputeRuntimeLookupForAwaitCall(MethodDesc* pCallerMD, MethodDesc* pTypicalAwaitMD, CORINFO_LOOKUP* lookup);
 
 #if defined(FEATURE_GDBJIT)
     CalledMethod * GetCalledMethods() { return m_pCalledMethods; }
@@ -425,6 +426,7 @@ public:
 protected:
     COR_ILMETHOD_DECODER* getMethodInfoWorker(
         MethodDesc* ftn,
+        MethodDesc* ilFtn,
         COR_ILMETHOD_DECODER* header,
         CORINFO_METHOD_INFO* methInfo,
         CORINFO_CONTEXT_HANDLE exactContext = NULL);

@@ -6,9 +6,12 @@
 
 #include "pal.h"
 #include "trace.h"
-#include <type_traits>
 #include <runtime_version.h>
 #include <minipal/utils.h>
+
+#ifdef __cplusplus
+#include <type_traits>
+#endif
 
 #define DOTNET_CORE_DOWNLOAD_URL _X("https://aka.ms/dotnet/download")
 #define DOTNET_CORE_APPLAUNCH_URL _X("https://aka.ms/dotnet-core-applaunch")
@@ -39,6 +42,7 @@
     _X("%s&apphost_version=%s")
 
 #define DOTNET_ROOT_ENV_VAR _X("DOTNET_ROOT")
+#define DOTNET_ROOT_ARCH_ENV_VAR DOTNET_ROOT_ENV_VAR _X("_") _STRINGIFY(CURRENT_ARCH_NAME_UPPER)
 
 #define SDK_DOTNET_DLL _X("dotnet.dll")
 
@@ -46,6 +50,8 @@
 #define _QUOTE(x) _TEXT(x)
 
 #define HOST_VERSION _QUOTE(RuntimeProductVersion)
+
+#ifdef __cplusplus
 
 namespace utils
 {
@@ -197,5 +203,53 @@ size_t to_size_t_dbgchecked(T value)
     assert(static_cast<T>(result) == value);
     return result;
 }
+
+#endif // __cplusplus
+
+// ============================================================================
+// C-compatible declarations
+// ============================================================================
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
+
+void utils_append_path(pal_char_t* path_buffer, size_t path_buffer_len, const pal_char_t* component);
+
+// Caller should free() the returned pointer.
+pal_char_t* utils_append_path_alloc(const pal_char_t* path, const pal_char_t* component);
+
+// Return <dir>/<file_name> if the file exists, otherwise NULL.
+// Caller should free() the returned pointer.
+pal_char_t* utils_find_file_in_dir(const pal_char_t* dir, const pal_char_t* file_name);
+
+// Return the directory portion of `path`, always ending with DIR_SEPARATOR.
+// Caller should free() the returned pointer.
+pal_char_t* utils_get_directory(const pal_char_t* path);
+
+// Caller should free() the returned pointer.
+pal_char_t* utils_get_file_path_from_env(const pal_char_t* env_key);
+
+// Caller should free() the returned pointer.
+pal_char_t* utils_test_only_getenv(const pal_char_t* name);
+
+// Find the .NET install root from environment variables in priority order:
+//  - DOTNET_ROOT_<ARCH>
+//  - If running Windows WOW64 only, DOTNET_ROOT(x86)
+//  - DOTNET_ROOT
+// Caller should free() out_dotnet_root.
+bool utils_get_dotnet_root_from_env(const pal_char_t** out_env_var_name, pal_char_t** out_dotnet_root);
+
+// Caller should free() the returned pointer.
+pal_char_t* utils_get_runtime_id(void);
+
+#define MAX_DOWNLOAD_URL_LEN 512
+void utils_get_download_url(pal_char_t* out_url, size_t out_url_len, const pal_char_t* framework_name, const pal_char_t* framework_version);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

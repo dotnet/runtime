@@ -1024,7 +1024,7 @@ ep_rt_queue_job (
 	// it's called from browser event loop
 	ds_job_cb cb = (ds_job_cb)job_func;
 
-	// invoke the callback inline for the fist time
+	// invoke the callback inline for the first time
 	gsize done = cb (params);
 
 	// see if it's done or needs to be scheduled again
