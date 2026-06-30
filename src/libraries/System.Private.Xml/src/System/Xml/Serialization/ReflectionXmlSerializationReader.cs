@@ -1983,6 +1983,11 @@ namespace System.Xml.Serialization
                 {
                     if (attr is not XmlAttribute xmlAttribute)
                     {
+                         if (member.Mapping.CheckSpecified == SpecifiedAccessor.ReadWrite)
+                         {
+                             member.CheckSpecifiedSource?.Invoke(null);
+                         }
+
                         return;
                     }
 
