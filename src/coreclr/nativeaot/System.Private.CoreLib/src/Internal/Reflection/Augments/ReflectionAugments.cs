@@ -436,8 +436,15 @@ namespace Internal.Reflection.Augments
         {
             Debug.Assert(runtimeTypeInfo.IsActualEnum);
 
+            if (runtimeTypeInfo.IsConstructedGenericType)
+            {
+                EnumInfo enumInfo = Enum.GetEnumInfo((RuntimeType)runtimeTypeInfo.GetGenericTypeDefinition());
+                runtimeTypeInfo.GenericCache = enumInfo;
+                return enumInfo;
+            }
+
             runtimeTypeInfo.GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
-            
+
             // Generic enums are guaranteed to have generic type definition MethodTable,
             // so we can get the underlying type directly from the EEType.
             RuntimeTypeHandle typeHandle = runtimeTypeInfo.InternalTypeHandleIfAvailable;
