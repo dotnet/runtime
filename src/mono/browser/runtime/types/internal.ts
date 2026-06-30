@@ -174,7 +174,7 @@ export type LoaderHelpers = {
     isFirefox: boolean
 
     // from wasm-feature-detect npm package
-    exceptions: () => Promise<boolean>,
+    exceptionsFinal: () => Promise<boolean>,
     simd: () => Promise<boolean>,
     relaxedSimd: () => Promise<boolean>,
 }
@@ -226,7 +226,7 @@ export type RuntimeHelpers = {
     afterOnRuntimeInitialized: PromiseAndController<void>,
     afterPostRun: PromiseAndController<void>,
 
-    featureWasmEh: boolean,
+    featureWasmFinalEh: boolean,
     featureWasmSimd: boolean,
     featureWasmRelaxedSimd: boolean,
 
@@ -436,7 +436,9 @@ export declare interface EmscriptenModuleInternal {
     mainScriptUrlOrBlob?: string;
     ENVIRONMENT_IS_PTHREAD?: boolean;
     FS: any;
-    wasmModule: WebAssembly.Instance | null;
+    wasmModule: WebAssembly.Module | null;
+    wasmMemory: WebAssembly.Memory | null;
+    handlers: any;
     wasmExports: any;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
@@ -536,6 +538,8 @@ export interface PThreadWorker extends Worker {
     // this info is updated via async messages from the worker, it could be stale
     info: PThreadInfo;
     thread?: Thread;
+    queue: MessageEvent[];
+    handler: ((ev: MessageEvent) => void) | null;
 }
 
 export interface PThreadInfo {

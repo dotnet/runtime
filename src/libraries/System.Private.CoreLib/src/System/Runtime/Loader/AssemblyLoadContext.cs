@@ -345,7 +345,7 @@ namespace System.Runtime.Loader
             {
                 VerifyIsAlive();
 
-                return InternalLoadFromPath(assemblyPath, null);
+                return InternalLoadFromPath(assemblyPath);
             }
         }
 
@@ -368,7 +368,7 @@ namespace System.Runtime.Loader
             {
                 VerifyIsAlive();
 
-                return InternalLoadFromPath(assemblyPath, nativeImagePath);
+                return InternalLoadFromPath(assemblyPath);
             }
         }
 

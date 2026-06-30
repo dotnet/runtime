@@ -231,6 +231,12 @@
   <data name="StartDetachedNotCompatible" xml:space="preserve">
     <value>The StartDetached property cannot be used with UseShellExecute set to true.</value>
   </data>
+  <data name="StartSuspendedNotCompatible" xml:space="preserve">
+    <value>The StartSuspended property cannot be used with UseShellExecute set to true.</value>
+  </data>
+  <data name="ProcessNotStartedSuspended" xml:space="preserve">
+    <value>Resume can only be called on a process that was started with StartSuspended set to true.</value>
+  </data>
   <data name="DirectoryNotValidAsInput" xml:space="preserve">
     <value>The FileName property should not be a directory unless UseShellExecute is set.</value>
   </data>
@@ -374,5 +380,11 @@
   </data>
   <data name="NotSupportedForNonChildProcess" xml:space="preserve">
     <value>On Unix, it's impossible to obtain the exit status of a non-child process.</value>
+  </data>
+  <data name="Argument_InvalidProcessHandle" xml:space="preserve">
+    <value>The callback must return a valid process handle for the newly created process.</value>
+  </data>
+  <data name="Argument_InvalidProcessId" xml:space="preserve">
+    <value>The callback must return a positive process ID for the newly created process.</value>
   </data>
 </root>
