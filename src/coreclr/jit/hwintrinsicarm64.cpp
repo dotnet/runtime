@@ -576,6 +576,11 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = 7;
                 break;
 
+            case NI_Sha3_XorRotateRight:
+                immLowerBound = 0;
+                immUpperBound = 63;
+                break;
+
             default:
                 unreached();
         }
