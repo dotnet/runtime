@@ -472,3 +472,37 @@ namespace System.Diagnostics
         Unknown = 13,
     }
 }
+namespace System.Runtime.InteropServices
+{
+    public readonly ref struct WindowsProcessStartArguments
+    {
+        [System.CLSCompliantAttribute(false)]
+        public unsafe char* Arguments { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe char* EnvironmentVariables { get { throw null; } }
+        public System.Diagnostics.ProcessStartInfo ProcessStartInfo { get { throw null; } }
+        public System.IntPtr StandardError { get { throw null; } }
+        public System.IntPtr StandardInput { get { throw null; } }
+        public System.IntPtr StandardOutput { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.WindowsProcessStartArguments, System.IntPtr> callback) { throw null; }
+    }
+    public readonly ref struct UnixProcessStartArguments
+    {
+        [System.CLSCompliantAttribute(false)]
+        public unsafe byte* ResolvedPath { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe byte** Arguments { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe byte** EnvironmentVariables { get { throw null; } }
+        public System.Diagnostics.ProcessStartInfo ProcessStartInfo { get { throw null; } }
+        public System.IntPtr StandardError { get { throw null; } }
+        public System.IntPtr StandardInput { get { throw null; } }
+        public System.IntPtr StandardOutput { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("maccatalyst")]
+        public static System.Diagnostics.Process Start(System.Diagnostics.ProcessStartInfo startInfo, Func<System.Runtime.InteropServices.UnixProcessStartArguments, int> callback) { throw null; }
+    }
+}
