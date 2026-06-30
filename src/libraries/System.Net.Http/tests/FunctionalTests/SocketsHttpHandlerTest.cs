@@ -2045,6 +2045,355 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ShouldEvictConnection_CallbackReturnsTrue_ConnectionEvictedAndReplaced(bool useAsyncCallback)
+        {
+            var firstConnectionEvicted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var firstConnectionDisposalTokenCanceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            SocketsHttpConnectionEvictionContext capturedContext = null;
+            Uri serverUri = null;
+            var connectCallbackIds = new System.Collections.Concurrent.ConcurrentBag<long>();
+
+            using var handler = new SocketsHttpHandler
+            {
+                // Drive the pool maintenance timer (which invokes the eviction callback) to fire roughly once a
+                // second, while keeping the idle timeout long enough that idle expiry can't be what removes the
+                // connection during the test. Disable lifetime entirely so only eviction can retire a connection.
+                PooledConnectionIdleTimeout = TimeSpan.FromSeconds(4),
+                PooledConnectionLifetime = Timeout.InfiniteTimeSpan,
+            };
+
+            // The connection id surfaced to ConnectCallback is the same one passed to the eviction callback,
+            // so the caller can associate connect-time state with the connection and recover it on eviction.
+            handler.ConnectCallback = async (context, ct) =>
+            {
+                connectCallbackIds.Add(context.ConnectionId);
+                var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                await socket.ConnectAsync(context.DnsEndPoint, ct);
+                return new NetworkStream(socket, ownsSocket: true);
+            };
+
+            handler.ShouldEvictConnection = async (context, cancellationToken) =>
+            {
+                // Only one connection is evaluated at a time in this test, so no synchronization is needed here.
+                if (useAsyncCallback)
+                {
+                    await Task.Yield(); // Exercise the path where the callback completes asynchronously.
+                }
+
+                capturedContext ??= context;
+                if (context.ConnectionId == capturedContext.ConnectionId)
+                {
+                    // The token is canceled when the connection is disposed (i.e. once it has been retired).
+                    cancellationToken.Register(static s => ((TaskCompletionSource)s).TrySetResult(), firstConnectionDisposalTokenCanceled);
+                    firstConnectionEvicted.TrySetResult();
+                    return true; // Evict only the first connection we observe.
+                }
+
+                return false;
+            };
+
+            using HttpClient client = new HttpClient(handler);
+
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                serverUri = uri;
+
+                // Connection A: serve request 1 with a keep-alive response, then block reading until the client
+                // tears the connection down. If anything other than eviction were to remove it, the read below
+                // would observe request 2 instead of EOF and the test's second accept would not be a new connection.
+                Task serverTaskA = server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: "1");
+                    await connection.ReadLineAsync(); // Returns null (EOF) once the evicted connection is disposed.
+                });
+
+                Assert.Equal("1", await client.GetStringAsync(uri));
+
+                // Wait for the maintenance timer to invoke the eviction callback for connection A, then for the
+                // pool to actually retire it (serverTaskA's read completes at EOF once the client disposes it).
+                await firstConnectionEvicted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                await serverTaskA.WaitAsync(TimeSpan.FromSeconds(30));
+
+                // Disposing the retired connection cancels the token that was passed to the eviction callback.
+                await firstConnectionDisposalTokenCanceled.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+                // Request 2 must land on a brand new connection B, because A has been evicted.
+                Task<string> request2 = client.GetStringAsync(uri);
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: "2");
+                });
+
+                Assert.Equal("2", await request2);
+            });
+
+            Assert.NotNull(capturedContext);
+            Assert.Equal(System.Net.HttpVersion.Version11, capturedContext.HttpVersion);
+            Assert.NotNull(capturedContext.RemoteEndPoint);
+            Assert.Equal(serverUri.Port, capturedContext.DnsEndPoint.Port);
+            Assert.Equal(serverUri.IdnHost, capturedContext.DnsEndPoint.Host);
+            // The evicted connection's id was observed by ConnectCallback when it was established.
+            Assert.Contains(capturedContext.ConnectionId, connectCallbackIds);
+        }
+
+        [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
+        [Fact]
+        public async Task ShouldEvictConnection_ConnectionKeptBusy_StillEvaluatedWhenReturnedToPool()
+        {
+            var connectionEvaluated = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using var handler = new SocketsHttpHandler
+            {
+                // A single pooled connection means concurrent requests queue behind it, so the connection is handed
+                // straight from one request to the next and never sits idle on the pool's idle stack where the
+                // maintenance pass could evaluate it. Eviction therefore has to be triggered from the connection-return
+                // path. Drive the maintenance timer to ~1s while disabling lifetime/idle expiry as a cause of retirement.
+                MaxConnectionsPerServer = 1,
+                PooledConnectionLifetime = Timeout.InfiniteTimeSpan,
+                PooledConnectionIdleTimeout = TimeSpan.FromSeconds(4),
+            };
+
+            handler.ShouldEvictConnection = (context, _) =>
+            {
+                connectionEvaluated.TrySetResult();
+                return Task.FromResult(false); // Don't evict; we only need to observe that it gets evaluated.
+            };
+
+            using HttpClient client = new HttpClient(handler);
+
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                using var stop = new CancellationTokenSource();
+
+                // Keep the single connection continuously busy with overlapping requests so there is always one queued
+                // when the connection is returned, leaving it no opportunity to become idle.
+                Task[] clientLoops = Enumerable.Range(0, 3).Select(_ => Task.Run(async () =>
+                {
+                    while (!stop.IsCancellationRequested)
+                    {
+                        try { await client.GetStringAsync(uri, stop.Token); }
+                        catch { }
+                    }
+                })).ToArray();
+
+                Task serverLoop = server.AcceptConnectionAsync(async connection =>
+                {
+                    try
+                    {
+                        while (!stop.IsCancellationRequested)
+                        {
+                            await connection.ReadRequestHeaderAndSendResponseAsync(content: "hello");
+                        }
+                    }
+                    catch { } // The connection is torn down during cleanup.
+                });
+
+                // The connection is never idle during a maintenance pass, so it can only be evaluated when it is
+                // returned to the pool between requests. Without that path the callback would never run here.
+                await connectionEvaluated.Task.WaitAsync(TimeSpan.FromSeconds(60));
+
+                stop.Cancel();
+                await Task.WhenAny(Task.WhenAll(clientLoops), Task.Delay(TimeSpan.FromSeconds(10)));
+                await Task.WhenAny(serverLoop, Task.Delay(TimeSpan.FromSeconds(10)));
+            });
+        }
+
+        [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
+        [Fact]
+        public async Task ShouldEvictConnection_ProxyConnection_DnsEndPointHasProxyHostAndPort()
+        {
+            using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();
+
+            SocketsHttpConnectionEvictionContext capturedContext = null;
+            var callbackInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using var handler = new SocketsHttpHandler
+            {
+                Proxy = new WebProxy(proxyServer.Uri),
+                PooledConnectionLifetime = Timeout.InfiniteTimeSpan,
+                PooledConnectionIdleTimeout = TimeSpan.FromSeconds(4),
+            };
+
+            handler.ShouldEvictConnection = (context, _) =>
+            {
+                capturedContext ??= context;
+                callbackInvoked.TrySetResult();
+                return Task.FromResult(false);
+            };
+
+            using HttpClient client = new HttpClient(handler);
+
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                // A plain (non-secure, non-tunneled) HTTP request through a proxy uses HttpConnectionKind.Proxy, whose
+                // pooled connection targets the proxy itself. The proxy forwards the request to the loopback server.
+                Task<string> request = client.GetStringAsync(uri);
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    // Keep-alive response (no "Connection: close") so the client pools the connection to the proxy.
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: "hello");
+                });
+                Assert.Equal("hello", await request);
+
+                // The idle proxy connection is evaluated by the maintenance pass.
+                await callbackInvoked.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            });
+
+            Assert.NotNull(capturedContext);
+            // A forwarding proxy connection targets the proxy itself, so the context reports the proxy's host and port.
+            Assert.Equal(proxyServer.Uri.IdnHost, capturedContext.DnsEndPoint.Host);
+            Assert.Equal(proxyServer.Uri.Port, capturedContext.DnsEndPoint.Port);
+        }
+
+        [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
+        [Theory]
+        [InlineData(false)] // The callback returns false.
+        [InlineData(true)]  // The callback throws.
+        public async Task ShouldEvictConnection_CallbackDoesNotEvict_ConnectionReused(bool callbackThrows)
+        {
+            int callbackInvocations = 0;
+            var callbackInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using var handler = new SocketsHttpHandler
+            {
+                PooledConnectionIdleTimeout = TimeSpan.FromSeconds(4),
+                PooledConnectionLifetime = Timeout.InfiniteTimeSpan,
+            };
+
+            handler.ShouldEvictConnection = (context, _) =>
+            {
+                Interlocked.Increment(ref callbackInvocations);
+                callbackInvoked.TrySetResult();
+
+                // A throwing callback must be treated the same as one that declined to evict: the exception is
+                // swallowed and the connection is left in the pool.
+                if (callbackThrows)
+                {
+                    throw new InvalidOperationException("Eviction callback failure should not affect the pool.");
+                }
+
+                return Task.FromResult(false);
+            };
+
+            using HttpClient client = new HttpClient(handler);
+
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                Task<string> request1 = client.GetStringAsync(uri);
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: "1");
+                    Assert.Equal("1", await request1);
+
+                    // Wait until the callback has been invoked at least once, proving the maintenance timer ran.
+                    await callbackInvoked.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+                    // Because nothing was evicted, the second request must be served on the same connection.
+                    Task<string> request2 = client.GetStringAsync(uri);
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: "2");
+                    Assert.Equal("2", await request2);
+                });
+            });
+
+            Assert.True(callbackInvocations > 0);
+        }
+
+        [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
+        [Fact]
+        public async Task ShouldEvictConnection_Http2Connection_EvictedAndReplaced()
+        {
+            var firstConnectionEvicted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            SocketsHttpConnectionEvictionContext capturedContext = null;
+
+            await Http2LoopbackServerFactory.CreateServerAsync(async (server, url) =>
+            {
+                HttpClientHandler handler = CreateHttpClientHandler(HttpVersion.Version20);
+                SocketsHttpHandler s = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                s.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(4);
+                s.PooledConnectionLifetime = Timeout.InfiniteTimeSpan;
+                s.ShouldEvictConnection = (context, _) =>
+                {
+                    // Only one connection is evaluated at a time in this test, so no synchronization is needed here.
+                    capturedContext ??= context;
+                    if (context.ConnectionId == capturedContext.ConnectionId)
+                    {
+                        firstConnectionEvicted.TrySetResult();
+                        return Task.FromResult(true); // Evict only the first connection we observe.
+                    }
+
+                    return Task.FromResult(false);
+                };
+
+                using HttpClient client = CreateHttpClient(handler);
+                client.DefaultRequestVersion = HttpVersion.Version20;
+
+                Task<string> request1 = client.GetStringAsync(url);
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                int streamId = await connection.ReadRequestHeaderAsync();
+                await connection.SendDefaultResponseAsync(streamId);
+                await request1;
+
+                // Wait for the maintenance timer to mark the HTTP/2 connection for eviction.
+                await firstConnectionEvicted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+                // Detach the first connection's socket so its eviction-triggered teardown doesn't interfere.
+                (SocketWrapper socket, Stream stream) = connection.ResetNetwork();
+
+                // The second request must be served from a brand new connection because the first was evicted.
+                Task<string> request2 = client.GetStringAsync(url);
+                connection = await server.EstablishConnectionAsync();
+                streamId = await connection.ReadRequestHeaderAsync();
+                await connection.SendDefaultResponseAsync(streamId);
+                await request2;
+
+                await socket.CloseAsync();
+            });
+
+            Assert.NotNull(capturedContext);
+            Assert.Equal(System.Net.HttpVersion.Version20, capturedContext.HttpVersion);
+        }
+
+        [OuterLoop("Waits for the connection pool maintenance timer to fire.")]
+        [Fact]
+        public async Task ShouldEvictConnection_InfiniteIdleTimeout_CallbackInvokedOnMinimumCadence()
+        {
+            var callbackInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using var handler = new SocketsHttpHandler
+            {
+                // With both timeouts infinite, the maintenance timer would otherwise run only on its 30s default.
+                // Setting the eviction callback must shorten the timer period so the callback still runs promptly.
+                PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan,
+                PooledConnectionLifetime = Timeout.InfiniteTimeSpan,
+            };
+
+            handler.ShouldEvictConnection = (context, _) =>
+            {
+                callbackInvoked.TrySetResult();
+                return Task.FromResult(false); // Don't evict; we only care that the callback runs.
+            };
+
+            using HttpClient client = new HttpClient(handler);
+
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                Task<string> request1 = client.GetStringAsync(uri);
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    await connection.ReadRequestHeaderAndSendResponseAsync(content: "1");
+                    Assert.Equal("1", await request1);
+
+                    // The connection is now pooled. The callback must be invoked well before the 30s default that
+                    // an infinite idle timeout would otherwise impose.
+                    await callbackInvoked.Task.WaitAsync(TimeSpan.FromSeconds(20));
+                });
+            });
+        }
+
         [OuterLoop("Incurs a delay")]
         [Fact]
         public async Task ServerDisconnectsAfterInitialRequest_SubsequentRequestUsesDifferentConnection()
@@ -2543,6 +2892,22 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(TimeSpan.FromSeconds(1), handler.PooledConnectionLifetime);
 
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => handler.PooledConnectionLifetime = TimeSpan.FromSeconds(-2));
+            }
+        }
+
+        [Fact]
+        public void ShouldEvictConnection_GetSet_Roundtrips()
+        {
+            using (var handler = new SocketsHttpHandler())
+            {
+                Assert.Null(handler.ShouldEvictConnection);
+
+                Func<SocketsHttpConnectionEvictionContext, CancellationToken, Task<bool>> callback = static (_, _) => Task.FromResult(false);
+                handler.ShouldEvictConnection = callback;
+                Assert.Same(callback, handler.ShouldEvictConnection);
+
+                handler.ShouldEvictConnection = null;
+                Assert.Null(handler.ShouldEvictConnection);
             }
         }
 

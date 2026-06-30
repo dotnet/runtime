@@ -213,5 +213,12 @@ namespace System.Net.Http
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
+
+        [Experimental(Experimentals.SocketsHttpHandlerConnectionEvictionDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public Func<SocketsHttpConnectionEvictionContext, CancellationToken, Task<bool>>? ShouldEvictConnection
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
     }
 }

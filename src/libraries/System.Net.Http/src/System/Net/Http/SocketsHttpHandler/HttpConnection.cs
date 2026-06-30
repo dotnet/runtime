@@ -74,8 +74,9 @@ namespace System.Net.Http
             Stream stream,
             TransportContext? transportContext,
             Activity? connectionSetupActivity,
-            IPEndPoint? remoteEndPoint)
-            : base(pool, connectionSetupActivity, remoteEndPoint)
+            IPEndPoint? remoteEndPoint,
+            long connectionId)
+            : base(pool, connectionId, connectionSetupActivity, remoteEndPoint)
         {
             Debug.Assert(stream != null);
 

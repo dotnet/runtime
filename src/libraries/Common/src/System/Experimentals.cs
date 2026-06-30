@@ -33,6 +33,9 @@ namespace System
         // Types for Post-Quantum Cryptography (PQC) are experimental.
         internal const string PostQuantumCryptographyDiagId = "SYSLIB5006";
 
+        // SocketsHttpHandler connection eviction control APIs are experimental.
+        internal const string SocketsHttpHandlerConnectionEvictionDiagId = "SYSLIB5007";
+
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
     }

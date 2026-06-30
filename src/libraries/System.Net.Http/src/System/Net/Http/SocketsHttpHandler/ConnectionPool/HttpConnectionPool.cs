@@ -85,9 +85,12 @@ namespace System.Net.Http
             _maxHttp11Connections = Settings._maxConnectionsPerServer;
             _telemetryServerAddress = telemetryServerAddress;
 
-            // The only case where 'host' will not be set is if this is a Proxy connection pool.
+            // The only case where 'host' will not be set is if this is a Proxy connection pool. In that case the
+            // connection targets the proxy itself, so use the proxy's host and port for the origin authority.
             Debug.Assert(host is not null || (kind == HttpConnectionKind.Proxy && proxyUri is not null));
-            _originAuthority = new HttpAuthority(host ?? proxyUri!.IdnHost, port);
+            _originAuthority = host is not null
+                ? new HttpAuthority(host, port)
+                : new HttpAuthority(proxyUri!.IdnHost, proxyUri.Port);
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
 
@@ -560,12 +563,17 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<(Stream, TransportContext?, Activity?, IPEndPoint?)> ConnectAsync(HttpRequestMessage request, bool async, bool isForHttp2, CancellationToken cancellationToken)
+        private async ValueTask<(Stream, TransportContext?, Activity?, IPEndPoint?, long)> ConnectAsync(HttpRequestMessage request, bool async, bool isForHttp2, CancellationToken cancellationToken)
         {
             Stream? stream = null;
             IPEndPoint? remoteEndPoint = null;
             Exception? exception = null;
             TransportContext? transportContext = null;
+
+            // Allocate the connection id up front so it can be surfaced to a custom ConnectCallback (via
+            // SocketsHttpConnectionContext) and reused as the final connection's Id, allowing the caller to
+            // correlate connect-time state with the connection (e.g. in the ShouldEvictConnection callback).
+            long connectionId = HttpConnectionBase.GetNextConnectionId();
 
             Activity? activity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(IsSecure, _telemetryServerAddress, OriginAuthority.Port);
 
@@ -576,7 +584,7 @@ namespace System.Net.Http
                     case HttpConnectionKind.Http:
                     case HttpConnectionKind.Https:
                     case HttpConnectionKind.ProxyConnect:
-                        stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, connectionId, cancellationToken).ConfigureAwait(false);
                         // remoteEndPoint is returned for diagnostic purposes.
                         remoteEndPoint = GetRemoteEndPoint(stream);
                         if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
@@ -586,7 +594,7 @@ namespace System.Net.Http
                         break;
 
                     case HttpConnectionKind.Proxy:
-                        stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                        stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, connectionId, cancellationToken).ConfigureAwait(false);
                         // remoteEndPoint is returned for diagnostic purposes.
                         remoteEndPoint = GetRemoteEndPoint(stream);
                         if (_sslOptionsProxy != null)
@@ -608,7 +616,7 @@ namespace System.Net.Http
 
                     case HttpConnectionKind.SocksTunnel:
                     case HttpConnectionKind.SslSocksTunnel:
-                        stream = await EstablishSocksTunnel(request, async, cancellationToken).ConfigureAwait(false);
+                        stream = await EstablishSocksTunnel(request, async, connectionId, cancellationToken).ConfigureAwait(false);
                         // remoteEndPoint is returned for diagnostic purposes.
                         remoteEndPoint = GetRemoteEndPoint(stream);
                         break;
@@ -647,12 +655,12 @@ namespace System.Net.Http
                 }
             }
 
-            return (stream, transportContext, activity, remoteEndPoint);
+            return (stream, transportContext, activity, remoteEndPoint, connectionId);
 
             static IPEndPoint? GetRemoteEndPoint(Stream stream) => (stream as NetworkStream)?.Socket?.RemoteEndPoint as IPEndPoint;
         }
 
-        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, CancellationToken cancellationToken)
+        private async ValueTask<Stream> ConnectToTcpHostAsync(string host, int port, HttpRequestMessage initialRequest, bool async, long connectionId, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -663,7 +671,7 @@ namespace System.Net.Http
                 // If a ConnectCallback was supplied, use that to establish the connection.
                 if (Settings._connectCallback != null)
                 {
-                    ValueTask<Stream> streamTask = Settings._connectCallback(new SocketsHttpConnectionContext(endPoint, initialRequest), cancellationToken);
+                    ValueTask<Stream> streamTask = Settings._connectCallback(new SocketsHttpConnectionContext(endPoint, initialRequest, connectionId), cancellationToken);
 
                     if (!async && !streamTask.IsCompleted)
                     {
@@ -805,11 +813,11 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<Stream> EstablishSocksTunnel(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private async ValueTask<Stream> EstablishSocksTunnel(HttpRequestMessage request, bool async, long connectionId, CancellationToken cancellationToken)
         {
             Debug.Assert(_proxyUri != null);
 
-            Stream stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+            Stream stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, connectionId, cancellationToken).ConfigureAwait(false);
 
             try
             {
@@ -887,10 +895,15 @@ namespace System.Net.Http
         {
             Debug.Assert(!HasSyncObjLock);
 
+            if (connection.MarkedForEviction)
+            {
+                return true;
+            }
+
             TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
             if (pooledConnectionLifetime != Timeout.InfiniteTimeSpan)
             {
-                return connection.GetLifetimeTicks(Environment.TickCount64) > pooledConnectionLifetime.TotalMilliseconds;
+                return connection.Age > pooledConnectionLifetime;
             }
 
             return false;
@@ -898,13 +911,104 @@ namespace System.Net.Http
 
         private bool CheckExpirationOnReturn(HttpConnectionBase connection)
         {
+            if (connection.MarkedForEviction)
+            {
+                return true;
+            }
+
             TimeSpan lifetime = _poolManager.Settings._pooledConnectionLifetime;
             if (lifetime != Timeout.InfiniteTimeSpan)
             {
-                return lifetime == TimeSpan.Zero || connection.GetLifetimeTicks(Environment.TickCount64) > lifetime.TotalMilliseconds;
+                return lifetime == TimeSpan.Zero || connection.Age > lifetime;
             }
 
             return false;
+        }
+
+        /// <summary>Guards against overlapping <see cref="EvaluateConnectionsForEvictionAsync"/> runs for this pool.</summary>
+        private bool _evictionEvaluationInProgress;
+
+        /// <summary>
+        /// Incremented at the start of each eviction evaluation pass. Connections record the generation at which they
+        /// were last evaluated, so an HTTP/1.1 connection that was busy during a pass (and therefore not visible to it)
+        /// can be re-evaluated in the background when it is returned to the pool.
+        /// </summary>
+        internal int EvictionGeneration { get; private set; }
+
+        /// <summary>
+        /// Invokes the user-supplied <see cref="SocketsHttpHandler.ShouldEvictConnection"/> callback for each
+        /// pooled connection and marks for eviction those the callback selects. List snapshots are taken under
+        /// the pool lock; the callback itself is always awaited outside the lock.
+        /// </summary>
+        private async Task EvaluateConnectionsForEvictionAsync()
+        {
+            Debug.Assert(!HasSyncObjLock);
+
+            if (Interlocked.Exchange(ref _evictionEvaluationInProgress, true))
+            {
+                return;
+            }
+
+            EvictionGeneration++;
+
+            try
+            {
+                // HTTP/1.1: the idle stack is lock-free and its enumerator returns a snapshot, so we can inspect
+                // connections without removing them. Connections currently in use (and therefore not on the stack)
+                // are evaluated by ReturnHttp11Connection when they are returned to the pool.
+                foreach (HttpConnection connection in _http11Connections)
+                {
+                    await connection.EvaluateForEvictionAsync().ConfigureAwait(false);
+                }
+
+                // HTTP/2: snapshot the available list under the lock, then evaluate outside of it.
+                Http2Connection[]? http2Connections = null;
+                lock (SyncObj)
+                {
+                    if (_availableHttp2Connections is { Count: > 0 } http2)
+                    {
+                        http2Connections = http2.ToArray();
+                    }
+                }
+
+                if (http2Connections is not null)
+                {
+                    foreach (Http2Connection connection in http2Connections)
+                    {
+                        await connection.EvaluateForEvictionAsync().ConfigureAwait(false);
+                    }
+                }
+
+                if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3)
+                {
+                    Http3Connection[]? http3Connections = null;
+                    lock (SyncObj)
+                    {
+                        if (_availableHttp3Connections is { Count: > 0 } http3)
+                        {
+                            http3Connections = http3.ToArray();
+                        }
+                    }
+
+                    if (http3Connections is not null)
+                    {
+                        foreach (Http3Connection connection in http3Connections)
+                        {
+                            await connection.EvaluateForEvictionAsync().ConfigureAwait(false);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.Fail($"Unexpected exception while evaluating connections for eviction: {e}");
+
+                if (NetEventSource.Log.IsEnabled()) Trace($"Unexpected exception while evaluating connections for eviction: {e}");
+            }
+            finally
+            {
+                _evictionEvaluationInProgress = false;
+            }
         }
 
         /// <summary>
@@ -980,6 +1084,15 @@ namespace System.Net.Http
             TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
             TimeSpan pooledConnectionIdleTimeout = _poolManager.Settings._pooledConnectionIdleTimeout;
             long nowTicks = Environment.TickCount64;
+
+            // If the user supplied an eviction callback, give them a chance to mark pooled connections for
+            // eviction before we scavenge. The callback is asynchronous and may be slow (e.g. perform a DNS
+            // lookup), so it runs off the maintenance timer thread; connections it evicts are retired by a later
+            // scavenge pass or by the get/return paths.
+            if (_poolManager.Settings._shouldEvictConnection is not null)
+            {
+                _ = EvaluateConnectionsForEvictionAsync();
+            }
 
             List<HttpConnectionBase>? toDispose = null;
 

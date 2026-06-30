@@ -427,6 +427,41 @@ namespace System.Net.Http
         }
 
         /// <summary>
+        /// Gets or sets a callback that decides whether a pooled connection should be evicted.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// When set, the callback is invoked for pooled connections with a
+        /// <see cref="SocketsHttpConnectionEvictionContext"/> describing the connection. Returning <see langword="true"/>
+        /// marks the connection for eviction: it will not be used to serve new requests and is retired once it
+        /// becomes idle (an in-flight request on the connection is allowed to complete first).
+        /// </para>
+        /// <para>
+        /// The callback is not guaranteed to run for every request, and it may run concurrently with the connection
+        /// serving requests as well as concurrently for different connections. Because it is asynchronous, a caller
+        /// may perform work such as a name resolution inside it; however, it is invoked for each pooled connection, so
+        /// keeping it inexpensive (for example, consulting a cached resolution result) is recommended. The supplied
+        /// <see cref="CancellationToken"/> is canceled if the connection is disposed while the callback is running.
+        /// </para>
+        /// <para>
+        /// This callback complements <see cref="PooledConnectionLifetime"/>. Because a caller can use it to evict
+        /// connections in response to their own DNS resolution, it makes it possible to set
+        /// <see cref="PooledConnectionLifetime"/> to <see cref="Timeout.InfiniteTimeSpan"/> and
+        /// retain otherwise healthy connections rather than recycling them purely to observe address changes.
+        /// </para>
+        /// </remarks>
+        [Experimental(Experimentals.SocketsHttpHandlerConnectionEvictionDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public Func<SocketsHttpConnectionEvictionContext, CancellationToken, Task<bool>>? ShouldEvictConnection
+        {
+            get => _settings._shouldEvictConnection;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._shouldEvictConnection = value;
+            }
+        }
+
+        /// <summary>
         /// Gets a writable dictionary (that is, a map) of custom properties for the HttpClient requests. The dictionary is initialized empty; you can insert and query key-value pairs for your custom handlers and special processing.
         /// </summary>
         public IDictionary<string, object?> Properties =>

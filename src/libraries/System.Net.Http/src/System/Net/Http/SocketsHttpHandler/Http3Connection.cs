@@ -70,7 +70,7 @@ namespace System.Net.Http
         }
 
         public Http3Connection(HttpConnectionPool pool, HttpAuthority authority, bool includeAltUsedHeader)
-            : base(pool)
+            : base(pool, GetNextConnectionId())
         {
             _authority = authority;
 

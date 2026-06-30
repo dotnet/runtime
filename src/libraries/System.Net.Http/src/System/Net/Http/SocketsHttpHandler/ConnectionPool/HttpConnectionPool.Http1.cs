@@ -293,14 +293,14 @@ namespace System.Net.Http
 
         internal async ValueTask<HttpConnection> CreateHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            (Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint) = await ConnectAsync(request, async, isForHttp2: false, cancellationToken).ConfigureAwait(false);
-            return await ConstructHttp11ConnectionAsync(async, stream, transportContext, request, activity, remoteEndPoint, cancellationToken).ConfigureAwait(false);
+            (Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint, long connectionId) = await ConnectAsync(request, async, isForHttp2: false, cancellationToken).ConfigureAwait(false);
+            return await ConstructHttp11ConnectionAsync(async, stream, transportContext, request, activity, remoteEndPoint, connectionId, cancellationToken).ConfigureAwait(false);
         }
 
-        private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Stream stream, TransportContext? transportContext, HttpRequestMessage request, Activity? activity, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)
+        private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Stream stream, TransportContext? transportContext, HttpRequestMessage request, Activity? activity, IPEndPoint? remoteEndPoint, long connectionId, CancellationToken cancellationToken)
         {
             Stream newStream = await ApplyPlaintextFilterAsync(async, stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
-            return new HttpConnection(this, newStream, transportContext, activity, remoteEndPoint);
+            return new HttpConnection(this, newStream, transportContext, activity, remoteEndPoint, connectionId);
         }
 
         private void HandleHttp11ConnectionFailure(HttpConnectionWaiter<HttpConnection>? requestWaiter, Exception e)
@@ -367,6 +367,11 @@ namespace System.Net.Http
         private void ReturnHttp11Connection(HttpConnection connection)
         {
             connection.MarkConnectionAsIdle();
+
+            // Eviction callback checks are normally triggered from a background timer that looks at all idle connections.
+            // If this connection was in use during that time, the eviction callback may have been skipped for it.
+            // Check whether that's the case now by comparing the last EvictionGeneration of the connection with that of the pool.
+            connection.RunEvictionEvaluationIfNeeded();
 
             // The fast path when there are enough connections and no pending requests
             // is that we'll see _http11RequestQueueIsEmptyAndNotDisposed being true both
