@@ -348,6 +348,9 @@ namespace System.Reflection.Tests
 
             Assert.True(openEnumType.IsEnumDefined("Zero"));
             Assert.False(openEnumType.IsEnumDefined("Two"));
+
+            // GetEnumValues requires Array.CreateInstance which does not support open generic types
+            Assert.Throws<NotSupportedException>(() => openEnumType.GetEnumValues());
         }
 
         [Theory]
