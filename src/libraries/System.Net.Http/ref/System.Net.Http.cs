@@ -29,10 +29,10 @@ namespace System.Net.Http
     }
     public enum CompressionMethod
     {
-        GZip = 0,
-        Deflate = 1,
-        Brotli = 2,
-        Zstandard = 3,
+        GZip = 1,
+        Deflate = 2,
+        Brotli = 4,
+        Zstandard = 8,
     }
     public enum ClientCertificateOption
     {
