@@ -3864,7 +3864,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             if ((simdSize == 64) || canUseEvexEncoding())
             {
                 op1     = gtFoldExpr(gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseType, simdSize));
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_AVX512_MoveMask, simdBaseType, simdSize);
                 break;
             }
 
