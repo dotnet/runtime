@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.Cng.Tests
             {
                 RSACng_Ctor_UnusualKeysize(ExpectedKeySize, keyBlob, expected);
 
-                Assert.True(RSACngProvider.Instance.Supports384PrivateKey, "RSAFactory.Supports384PrivateKey");
+                AssertExtensions.TrueExpression(RSACngProvider.Instance.Supports384PrivateKey);
             }
             catch (CryptographicException)
             {
