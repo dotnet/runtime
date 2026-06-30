@@ -446,7 +446,7 @@ namespace Internal.Reflection.Augments
             runtimeTypeInfo.GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
 
             // Generic enums are guaranteed to have generic type definition MethodTable,
-            // so we can get the underlying type directly from the EEType.
+            // so we can get the underlying type directly from it.
             MethodTable* methodTable = runtimeTypeInfo.TypeHandle.ToMethodTable();
             Debug.Assert(methodTable->IsEnum);
 
