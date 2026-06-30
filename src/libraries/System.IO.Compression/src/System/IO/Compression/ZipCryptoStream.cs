@@ -1,19 +1,18 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
-using System.Text;
 
 namespace System.IO.Compression
 {
     internal sealed class ZipCryptoStream : Stream
     {
-        internal const int KeySize = 12; // 3 * sizeof(uint)
-
         private const int EncryptionBufferSize = 4096;
 
         private readonly bool _encrypting;
@@ -118,37 +117,29 @@ namespace System.IO.Compression
 
         // Creates the persisted key material from a password.
         // Returns a struct of 3 integers to keep the key off the heap.
-        internal static unsafe ZipCryptoKeys CreateKey(ReadOnlySpan<char> password)
+        internal static ZipCryptoKeys CreateKey(ReadOnlySpan<char> password)
         {
             // Initialize keys with standard ZipCrypto initial values
             uint key0 = 305419896;
             uint key1 = 591751049;
             uint key2 = 878082192;
 
-            // ASCII produces exactly 1 byte per char, so SegmentSize bytes is sufficient
-            // for SegmentSize chars.
-            const int SegmentSize = 32;
-            Span<byte> buf = stackalloc byte[SegmentSize];
-
-            ReadOnlySpan<char> pwSpan = password;
-
-            while (!pwSpan.IsEmpty)
+            // Feed the password's UTF-8 bytes into the key schedule. UTF-8 (rather than ASCII)
+            // preserves non-ASCII passwords; interop with tools that assume a different code page
+            // is documented as a caveat.
+            byte[] passwordBytes = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(password.Length));
+            try
             {
-                ReadOnlySpan<char> segment = pwSpan;
-
-                if (segment.Length > SegmentSize)
+                int byteCount = Encoding.UTF8.GetBytes(password, passwordBytes);
+                for (int i = 0; i < byteCount; i++)
                 {
-                    segment = segment.Slice(0, SegmentSize);
+                    UpdateKeys(ref key0, ref key1, ref key2, passwordBytes[i]);
                 }
-
-                int byteCount = Encoding.ASCII.GetBytes(segment, buf);
-
-                foreach (byte b in buf.Slice(0, byteCount))
-                {
-                    UpdateKeys(ref key0, ref key1, ref key2, b);
-                }
-
-                pwSpan = pwSpan.Slice(segment.Length);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(passwordBytes);
+                ArrayPool<byte>.Shared.Return(passwordBytes);
             }
 
             return new ZipCryptoKeys(key0, key1, key2);
@@ -156,10 +147,7 @@ namespace System.IO.Compression
 
         private void CalculateHeader(Span<byte> header)
         {
-            if (header.Length < 12)
-            {
-                throw new ArgumentException("Header must be at least 12 bytes.", nameof(header));
-            }
+            Debug.Assert(header.Length == 12);
 
             // bytes 0..9 random
             RandomNumberGenerator.Fill(header.Slice(0, 10));
@@ -176,7 +164,7 @@ namespace System.IO.Compression
             }
 
             // encrypt in place
-            for (int i = 0; i < 12; i++)
+            for (int i = 0; i < header.Length; i++)
             {
                 byte p = header[i];
                 byte ks = DecryptByte(_key2);
@@ -187,7 +175,7 @@ namespace System.IO.Compression
             }
         }
 
-        private unsafe void WriteHeader()
+        private unsafe void EnsureHeader()
         {
             if (!_encrypting || _headerWritten)
             {
@@ -200,7 +188,7 @@ namespace System.IO.Compression
             _headerWritten = true;
         }
 
-        private async ValueTask WriteHeaderAsync(CancellationToken cancellationToken)
+        private async ValueTask EnsureHeaderAsync(CancellationToken cancellationToken)
         {
             if (!_encrypting || _headerWritten)
             {
@@ -211,16 +199,6 @@ namespace System.IO.Compression
             CalculateHeader(header);
             await _base.WriteAsync(header, cancellationToken).ConfigureAwait(false);
             _headerWritten = true;
-        }
-
-        private void EnsureHeader()
-        {
-            WriteHeader();
-        }
-
-        private ValueTask EnsureHeaderAsync(CancellationToken cancellationToken)
-        {
-            return WriteHeaderAsync(cancellationToken);
         }
 
         private static async Task<(uint key0, uint key1, uint key2)> ReadAndValidateHeaderCore(bool isAsync, Stream baseStream, ZipCryptoKeys keys, byte expectedCheckByte, CancellationToken cancellationToken)
@@ -370,7 +348,7 @@ namespace System.IO.Compression
             if (disposing)
             {
                 // If encrypted empty entry (no payload written), still must emit 12-byte header:
-                if (_encrypting && !_headerWritten)
+                if (_encrypting)
                 {
                     EnsureHeader();
                 }
@@ -392,7 +370,7 @@ namespace System.IO.Compression
             _disposed = true;
 
             // If encrypted empty entry (no payload written), still must emit 12-byte header:
-            if (_encrypting && !_headerWritten)
+            if (_encrypting)
             {
                 await EnsureHeaderAsync(CancellationToken.None).ConfigureAwait(false);
             }

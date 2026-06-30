@@ -451,7 +451,7 @@ public static partial class ZipFile
         (sourceDirectoryName, destinationArchiveFileName) = GetFullPathsForDoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName);
 
         ZipArchive archive = await OpenAsync(destinationArchiveFileName, ZipArchiveMode.Create, options.EntryNameEncoding, cancellationToken).ConfigureAwait(false);
-        await using (archive)
+        await using (archive.ConfigureAwait(false))
         {
             await CreateZipArchiveFromDirectoryAsync(sourceDirectoryName, archive, options.CompressionLevel, options.IncludeBaseDirectory, options.Password, options.EncryptionMethod, cancellationToken).ConfigureAwait(false);
         }
@@ -478,7 +478,7 @@ public static partial class ZipFile
         sourceDirectoryName = ValidateAndGetFullPathForDoCreateFromDirectory(sourceDirectoryName, destination, options.CompressionLevel);
 
         ZipArchive archive = await ZipArchive.CreateAsync(destination, ZipArchiveMode.Create, leaveOpen: true, options.EntryNameEncoding, cancellationToken).ConfigureAwait(false);
-        await using (archive)
+        await using (archive.ConfigureAwait(false))
         {
             await CreateZipArchiveFromDirectoryAsync(sourceDirectoryName, archive, options.CompressionLevel, options.IncludeBaseDirectory, options.Password, options.EncryptionMethod, cancellationToken).ConfigureAwait(false);
         }
@@ -497,7 +497,7 @@ public static partial class ZipFile
         // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
 
         ZipArchive archive = await OpenAsync(destinationArchiveFileName, ZipArchiveMode.Create, entryNameEncoding, cancellationToken).ConfigureAwait(false);
-        await using (archive)
+        await using (archive.ConfigureAwait(false))
         {
             await CreateZipArchiveFromDirectoryAsync(sourceDirectoryName, archive, compressionLevel, includeBaseDirectory, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
@@ -511,7 +511,7 @@ public static partial class ZipFile
         sourceDirectoryName = ValidateAndGetFullPathForDoCreateFromDirectory(sourceDirectoryName, destination, compressionLevel);
 
         ZipArchive archive = await ZipArchive.CreateAsync(destination, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding, cancellationToken).ConfigureAwait(false);
-        await using (archive)
+        await using (archive.ConfigureAwait(false))
         {
             await CreateZipArchiveFromDirectoryAsync(sourceDirectoryName, archive, compressionLevel, includeBaseDirectory, cancellationToken: cancellationToken).ConfigureAwait(false);
         }

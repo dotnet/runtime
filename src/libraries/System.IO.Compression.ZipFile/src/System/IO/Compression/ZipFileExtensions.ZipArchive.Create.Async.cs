@@ -146,11 +146,11 @@ public static partial class ZipFileExtensions
 
         (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: true, password.Span, encryption);
 
-        await using (fs)
+        await using (fs.ConfigureAwait(false))
         {
             Stream es = await entry.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            await using (es)
+            await using (es.ConfigureAwait(false))
             {
                 await fs.CopyToAsync(es, cancellationToken).ConfigureAwait(false);
             }

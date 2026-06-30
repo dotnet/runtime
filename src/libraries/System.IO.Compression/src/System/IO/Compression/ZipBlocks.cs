@@ -708,17 +708,14 @@ namespace System.IO.Compression
             bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
             return TrySkipBlockFinalize(stream, blockBytes, bytesRead);
         }
-
     }
+
     internal struct WinZipAesExtraField
     {
         public const ushort HeaderId = 0x9901;
         private const int DataSize = 7; // Vendor version (2) + Vendor ID (2) + AES strength (1) + Compression method (2)
         private const byte VendorIdByte0 = (byte)'A';
         private const byte VendorIdByte1 = (byte)'E';
-        private ushort _vendorVersion = 2;
-        private byte _aesStrength;
-        private ushort _compressionMethod;
 
         public WinZipAesExtraField(ushort vendorVersion, byte aesStrength, ushort compressionMethod)
         {
@@ -727,11 +724,11 @@ namespace System.IO.Compression
             CompressionMethod = compressionMethod;
         }
 
-        public ushort VendorVersion { get => _vendorVersion; set => _vendorVersion = value; }
-        public byte AesStrength { get => _aesStrength; set => _aesStrength = value; } // 1=128bit, 2=192bit, 3=256bit
-        public ushort CompressionMethod { get => _compressionMethod; set => _compressionMethod = value; } // Original compression method
+        public ushort VendorVersion { get; set; } = 2;
+        public byte AesStrength { get; set; } // 1=128bit, 2=192bit, 3=256bit
+        public ushort CompressionMethod { get; set; } // Original compression method
 
-        public static int TotalSize => 11; // 2 (header) + 2 (size) + 7 (data)
+        public const int TotalSize = 11; // 2 (header) + 2 (size) + 7 (data)
 
         /// <summary>
         /// Tries to find and parse the WinZip AES extra field (0x9901) from a list of generic extra fields.
@@ -770,25 +767,25 @@ namespace System.IO.Compression
         public static bool TryGetFromRawExtraFieldData(ReadOnlySpan<byte> extraFieldData, out WinZipAesExtraField aesExtraField)
         {
             aesExtraField = default;
-            int offset = 0;
 
-            while (offset + 4 <= extraFieldData.Length) // Need at least 4 bytes for header ID and size
+            while (extraFieldData.Length >= 4) // Need at least 4 bytes for header ID and size
             {
-                ushort headerId = BinaryPrimitives.ReadUInt16LittleEndian(extraFieldData.Slice(offset, 2));
-                ushort fieldSize = BinaryPrimitives.ReadUInt16LittleEndian(extraFieldData.Slice(offset + 2, 2));
+                ushort headerId = BinaryPrimitives.ReadUInt16LittleEndian(extraFieldData);
+                ushort fieldSize = BinaryPrimitives.ReadUInt16LittleEndian(extraFieldData.Slice(2));
+                extraFieldData = extraFieldData.Slice(4);
 
-                if (offset + 4 + fieldSize > extraFieldData.Length)
+                if (fieldSize > extraFieldData.Length)
                 {
                     break; // Not enough data for this field
                 }
 
                 if (headerId == HeaderId && fieldSize >= DataSize &&
-                    TryParseData(extraFieldData.Slice(offset + 4, fieldSize), out aesExtraField))
+                    TryParseData(extraFieldData.Slice(0, fieldSize), out aesExtraField))
                 {
                     return true;
                 }
 
-                offset += 4 + fieldSize;
+                extraFieldData = extraFieldData.Slice(fieldSize);
             }
 
             return false;
@@ -805,7 +802,7 @@ namespace System.IO.Compression
         {
             aesExtraField = default;
 
-            ushort vendorVersion = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(0, 2));
+            ushort vendorVersion = BinaryPrimitives.ReadUInt16LittleEndian(data);
             byte aesStrength = data[4];
 
             // Validate vendor ID must be "AE", vendor version must be 1 or 2,
@@ -847,7 +844,7 @@ namespace System.IO.Compression
             buffer[6] = (byte)'A';
             buffer[7] = (byte)'E';
             buffer[8] = AesStrength;
-            BinaryPrimitives.WriteUInt16LittleEndian(buffer[9..], CompressionMethod);
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(9), CompressionMethod);
         }
     }
 

@@ -64,9 +64,7 @@ namespace System.IO.Compression.Tests
                    stream.Read(buffer, totalBytesRead, bytesLeftToRead);
 
                 if (bytesRead == 0) throw new IOException("Unexpected end of stream");
-                {
                 totalBytesRead += bytesRead;
-                }
                 bytesLeftToRead -= bytesRead;
             }
         }
@@ -99,9 +97,7 @@ namespace System.IO.Compression.Tests
             for (int i = 0; i < a.Length; i++)
             {
                 if (a[i].CompareTo(b[i]) != 0) return false;
-                {
             }
-                }
             return true;
         }
 
@@ -110,9 +106,7 @@ namespace System.IO.Compression.Tests
             for (int i = 0; i < length; i++)
             {
                 if (a[i].CompareTo(b[i]) != 0) return false;
-                {
             }
-                }
             return true;
         }
 

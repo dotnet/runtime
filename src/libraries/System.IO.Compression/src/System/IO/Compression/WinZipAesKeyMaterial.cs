@@ -34,41 +34,6 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Parses raw key material bytes into their individual components.
-        /// Validates that the input length matches the expected layout for the given key size.
-        /// </summary>
-        internal static WinZipAesKeyMaterial Parse(byte[] keyMaterial, int keySizeBits)
-        {
-            int saltSize = GetSaltSize(keySizeBits);
-            int keySizeBytes = keySizeBits / 8;
-            int expectedSize = checked(saltSize + keySizeBytes + keySizeBytes + 2);
-
-            if (keyMaterial.Length != expectedSize)
-            {
-                throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
-            }
-
-            int offset = 0;
-
-            byte[] salt = new byte[saltSize];
-            Array.Copy(keyMaterial, offset, salt, 0, saltSize);
-            offset += saltSize;
-
-            byte[] encryptionKey = new byte[keySizeBytes];
-            Array.Copy(keyMaterial, offset, encryptionKey, 0, keySizeBytes);
-            offset += keySizeBytes;
-
-            byte[] hmacKey = new byte[keySizeBytes];
-            Array.Copy(keyMaterial, offset, hmacKey, 0, keySizeBytes);
-            offset += keySizeBytes;
-
-            byte[] passwordVerifier = new byte[2];
-            Array.Copy(keyMaterial, offset, passwordVerifier, 0, 2);
-
-            return new WinZipAesKeyMaterial(salt, encryptionKey, hmacKey, passwordVerifier, keySizeBits);
-        }
-
-        /// <summary>
         /// Derives key material from a password and optional salt using PBKDF2-SHA1.
         /// </summary>
         internal static unsafe WinZipAesKeyMaterial Create(ReadOnlySpan<char> password, byte[]? salt, int keySizeBits)

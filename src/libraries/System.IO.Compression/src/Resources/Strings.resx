@@ -424,7 +424,7 @@
     <value>Encryption method should not be specified in update mode.</value>
   </data>
   <data name="WinZipEncryptionNotSupportedOnBrowser" xml:space="preserve">
-    <value>Zip archive encryption is not supported on browser platform.</value>
+    <value>WinZip AES encryption is not supported on the browser platform.</value>
   </data>
   <data name="UnsupportedEncryptionMethod" xml:space="preserve">
     <value>The entry's encryption method is not supported.</value>

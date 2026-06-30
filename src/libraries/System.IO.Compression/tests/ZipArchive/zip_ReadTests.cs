@@ -940,13 +940,13 @@ namespace System.IO.Compression.Tests
             {
                 byte[] data = "hello"u8.ToArray();
                 if (async)
-                    {
-                        await entryStream.WriteAsync(data);
-                    }
-                    else
-                    {
-                        entryStream.Write(data, 0, data.Length);
-                    }
+                {
+                    await entryStream.WriteAsync(data);
+                }
+                else
+                {
+                    entryStream.Write(data, 0, data.Length);
+                }
             }
             await DisposeZipArchive(async, createArchive);
 
@@ -1124,4 +1124,3 @@ namespace System.IO.Compression.Tests
         }
     }
 }
-

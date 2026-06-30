@@ -199,7 +199,7 @@ public static partial class ZipFile
         ArgumentNullException.ThrowIfNull(sourceArchiveFileName);
 
         ZipArchive archive = await OpenAsync(sourceArchiveFileName, ZipArchiveMode.Read, entryNameEncoding, cancellationToken).ConfigureAwait(false);
-        await using (archive)
+        await using (archive.ConfigureAwait(false))
         {
             await archive.ExtractToDirectoryAsync(destinationDirectoryName, overwriteFiles, cancellationToken).ConfigureAwait(false);
         }
@@ -268,7 +268,7 @@ public static partial class ZipFile
         ArgumentNullException.ThrowIfNull(sourceArchiveFileName);
 
         ZipArchive archive = await OpenAsync(sourceArchiveFileName, ZipArchiveMode.Read, entryNameEncoding, cancellationToken).ConfigureAwait(false);
-        await using (archive)
+        await using (archive.ConfigureAwait(false))
         {
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
@@ -430,7 +430,7 @@ public static partial class ZipFile
         }
 
         ZipArchive archive = await ZipArchive.CreateAsync(source, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding, cancellationToken).ConfigureAwait(false);
-        await using (archive)
+        await using (archive.ConfigureAwait(false))
         {
             await archive.ExtractToDirectoryAsync(destinationDirectoryName, overwriteFiles, cancellationToken).ConfigureAwait(false);
         }
@@ -486,7 +486,7 @@ public static partial class ZipFile
         }
 
         ZipArchive archive = await ZipArchive.CreateAsync(source, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding, cancellationToken).ConfigureAwait(false);
-        await using (archive)
+        await using (archive.ConfigureAwait(false))
         {
             foreach (ZipArchiveEntry entry in archive.Entries)
             {

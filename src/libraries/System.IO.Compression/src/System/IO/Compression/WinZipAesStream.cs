@@ -33,9 +33,6 @@ namespace System.IO.Compression
         private readonly bool _leaveOpen;
         private readonly long _encryptedDataSize;
         private long _encryptedDataRemaining;
-        private readonly byte[] _partialBlock = new byte[BlockSize];
-        private int _partialBlockBytes;
-
         // Pre-generated keystream buffer for efficiency
         private readonly byte[] _keystreamBuffer = new byte[KeystreamBufferSize];
         private int _keystreamOffset = KeystreamBufferSize; // Start depleted to force initial generation
@@ -117,8 +114,8 @@ namespace System.IO.Compression
                 throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
             }
 
-            // Verify the password verifier using constant-time comparison to prevent
-            // timing attacks that could distinguish a wrong password from a corrupt archive.
+            // Compare the 2-byte password verifier. This is a weak check (only 2 bytes) used to
+            // fail fast on an obviously wrong password; it is not a security guarantee.
             if (!CryptographicOperations.FixedTimeEquals(verifier, keyMaterial.PasswordVerifier))
             {
                 throw new InvalidDataException(SR.InvalidPassword);
@@ -222,10 +219,7 @@ namespace System.IO.Compression
 
         private async Task WriteHeaderAsync(CancellationToken cancellationToken)
         {
-            if (_headerWritten)
-            {
-                return;
-            }
+            Debug.Assert(!_headerWritten);
 
             await _baseStream.WriteAsync(_salt, cancellationToken).ConfigureAwait(false);
             await _baseStream.WriteAsync(_passwordVerifier, cancellationToken).ConfigureAwait(false);
@@ -235,10 +229,7 @@ namespace System.IO.Compression
 
         private void WriteHeader()
         {
-            if (_headerWritten)
-            {
-                return;
-            }
+            Debug.Assert(!_headerWritten);
 
             _baseStream.Write(_salt);
             _baseStream.Write(_passwordVerifier);
@@ -249,9 +240,7 @@ namespace System.IO.Compression
         {
             Debug.Assert(_hmac is not null, "HMAC should have been initialized");
 
-            int processed = 0;
-
-            while (processed < buffer.Length)
+            while (!buffer.IsEmpty)
             {
                 // Ensure we have enough keystream bytes available
                 int keystreamAvailable = KeystreamBufferSize - _keystreamOffset;
@@ -262,9 +251,9 @@ namespace System.IO.Compression
                 }
 
                 // Process as many bytes as possible with the available keystream
-                int bytesToProcess = Math.Min(buffer.Length - processed, keystreamAvailable);
+                int bytesToProcess = Math.Min(buffer.Length, keystreamAvailable);
 
-                Span<byte> dataSpan = buffer.Slice(processed, bytesToProcess);
+                Span<byte> dataSpan = buffer.Slice(0, bytesToProcess);
                 ReadOnlySpan<byte> keystreamSpan = _keystreamBuffer.AsSpan(_keystreamOffset, bytesToProcess);
 
                 if (_encrypting)
@@ -281,7 +270,7 @@ namespace System.IO.Compression
                 }
 
                 _keystreamOffset += bytesToProcess;
-                processed += bytesToProcess;
+                buffer = buffer.Slice(bytesToProcess);
             }
         }
 
@@ -320,7 +309,7 @@ namespace System.IO.Compression
                 return;
             }
 
-            byte[] authCode = new byte[20]; // SHA1 hash size
+            byte[] authCode = new byte[SHA1.HashSizeInBytes];
             if (!_hmac.TryGetHashAndReset(authCode, out int bytesWritten) || bytesWritten < 10)
             {
                 throw new CryptographicException();
@@ -454,24 +443,6 @@ namespace System.IO.Compression
 
         private void WriteCore(ReadOnlySpan<byte> buffer, byte[] workBuffer)
         {
-            // Fill the partial block buffer if it has data
-            if (_partialBlockBytes > 0)
-            {
-                int copyCount = Math.Min(BlockSize - _partialBlockBytes, buffer.Length);
-                buffer[..copyCount].CopyTo(_partialBlock.AsSpan(_partialBlockBytes));
-
-                _partialBlockBytes += copyCount;
-                buffer = buffer[copyCount..];
-
-                // If full, encrypt and write immediately
-                if (_partialBlockBytes == BlockSize)
-                {
-                    ProcessBlock(_partialBlock.AsSpan(0, BlockSize));
-                    _baseStream.Write(_partialBlock, 0, BlockSize);
-                    _partialBlockBytes = 0;
-                }
-            }
-
             while (!buffer.IsEmpty)
             {
                 int bytesToProcess = Math.Min(buffer.Length, workBuffer.Length);
@@ -528,24 +499,6 @@ namespace System.IO.Compression
 
             byte[] workBuffer = GetWriteWorkBuffer();
 
-            // Fill the partial block buffer if it has data
-            if (_partialBlockBytes > 0)
-            {
-                int copyCount = Math.Min(BlockSize - _partialBlockBytes, buffer.Length);
-                buffer[..copyCount].CopyTo(_partialBlock.AsMemory(_partialBlockBytes));
-
-                _partialBlockBytes += copyCount;
-                buffer = buffer[copyCount..];
-
-                // If full, encrypt and write immediately
-                if (_partialBlockBytes == BlockSize)
-                {
-                    ProcessBlock(_partialBlock.AsSpan(0, BlockSize));
-                    await _baseStream.WriteAsync(_partialBlock.AsMemory(0, BlockSize), cancellationToken).ConfigureAwait(false);
-                    _partialBlockBytes = 0;
-                }
-            }
-
             while (!buffer.IsEmpty)
             {
                 int bytesToProcess = Math.Min(buffer.Length, workBuffer.Length);
@@ -561,27 +514,6 @@ namespace System.IO.Compression
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             return WriteAsyncCore(buffer, cancellationToken);
-        }
-
-        private async Task FinalizeEncryptionAsync(bool isAsync, CancellationToken cancellationToken)
-        {
-            // Process any bytes remaining in the partial buffer
-            if (_partialBlockBytes > 0)
-            {
-                // Encrypt the partial block (ProcessBlock handles partials by XORing only available bytes)
-                ProcessBlock(_partialBlock.AsSpan(0, _partialBlockBytes));
-
-                if (isAsync)
-                {
-                    await _baseStream.WriteAsync(_partialBlock.AsMemory(0, _partialBlockBytes), cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    _baseStream.Write(_partialBlock, 0, _partialBlockBytes);
-                }
-
-                _partialBlockBytes = 0;
-            }
         }
 
         protected override void Dispose(bool disposing)
@@ -642,12 +574,11 @@ namespace System.IO.Compression
             }
 
             _disposed = true;
-            GC.SuppressFinalize(this);
         }
 
         /// <summary>
         /// Completes the encryption sequence: ensures the header is written (even for empty entries),
-        /// flushes any remaining partial block, appends the HMAC authentication code, and flushes the base stream.
+        /// appends the HMAC authentication code, and flushes the base stream.
         /// </summary>
         private async Task FinishEncryptingAsync(bool isAsync, CancellationToken cancellationToken)
         {
@@ -665,9 +596,6 @@ namespace System.IO.Compression
                     WriteHeader();
                 }
             }
-
-            // Encrypt remaining partial data
-            await FinalizeEncryptionAsync(isAsync, cancellationToken).ConfigureAwait(false);
 
             // Write Auth Code
             await WriteAuthCodeCoreAsync(isAsync, cancellationToken).ConfigureAwait(false);

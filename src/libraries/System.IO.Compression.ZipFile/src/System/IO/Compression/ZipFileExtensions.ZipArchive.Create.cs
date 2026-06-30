@@ -165,7 +165,7 @@ namespace System.IO.Compression
             }
 
             ZipArchiveEntry entry;
-            if (!password.IsEmpty && encryption != ZipEncryptionMethod.None)
+            if (encryption != ZipEncryptionMethod.None)
             {
                 entry = compressionLevel.HasValue
                     ? destination.CreateEntry(entryName, compressionLevel.Value, password, encryption)

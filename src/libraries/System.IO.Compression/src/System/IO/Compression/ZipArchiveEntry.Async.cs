@@ -404,7 +404,7 @@ public partial class ZipArchiveEntry
 
             // Write WinZip AES extra field AFTER Zip64 (matching sync version order)
             // Must match the exact check used in the sync version WriteCentralDirectoryFileHeader
-            if (UseAesEncryption())
+            if (UseAesEncryption)
             {
                 await CreateAesExtraField().WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
 
@@ -677,7 +677,7 @@ public partial class ZipArchiveEntry
 
             // Write WinZip AES extra field if using AES encryption
             // Must match the exact check used in the sync version WriteLocalFileHeader
-            if (UseAesEncryption())
+            if (UseAesEncryption)
             {
                 await CreateAesExtraField().WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
 
@@ -758,7 +758,7 @@ public partial class ZipArchiveEntry
                     await _storedUncompressedData.DisposeAsync().ConfigureAwait(false);
                     _storedUncompressedData = null;
                 }
-                else if (UseAesEncryption() && _derivedAesKeyMaterial != null)
+                else if (UseAesEncryption && _derivedAesKeyMaterial != null)
                 {
 
                     if (OperatingSystem.IsBrowser())
