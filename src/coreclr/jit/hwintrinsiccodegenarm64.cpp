@@ -800,30 +800,50 @@ void CodeGen::checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg)
     const bool canRepairTargetOverlap = (intrin.id == NI_Sve_MultiplyAddRotateComplex);
 
     GenTree* rmwOp;
-    switch (intrin.id)
+    if (HWIntrinsicInfo::IsFmaIntrinsic(intrin.id) && (intrin.numOperands == 3))
     {
-        case NI_Sve2_AddCarryWideningEven:
-        case NI_Sve2_AddCarryWideningOdd:
-            // RMW operates on op3
-            rmwOp = intrin.op3;
-            break;
-        case NI_Sve_CreateBreakPropagateMask:
-        case NI_Sve2_BitwiseSelect:
-        case NI_Sve2_BitwiseSelectLeftInverted:
-        case NI_Sve2_BitwiseSelectRightInverted:
-            // RMW operates on op2
+        // SVE FMA intrinsics can use either the addend or a multiplicand as the destructive operand. Codegen
+        // selects the matching instruction form and rearranges the operands based on the allocated target.
+        if (targetReg == intrin.op2->GetRegNum())
+        {
             rmwOp = intrin.op2;
-            break;
-        default:
-            if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
-            {
+        }
+        else if (targetReg == intrin.op3->GetRegNum())
+        {
+            rmwOp = intrin.op3;
+        }
+        else
+        {
+            rmwOp = intrin.op1;
+        }
+    }
+    else
+    {
+        switch (intrin.id)
+        {
+            case NI_Sve2_AddCarryWideningEven:
+            case NI_Sve2_AddCarryWideningOdd:
+                // RMW operates on op3
+                rmwOp = intrin.op3;
+                break;
+            case NI_Sve_CreateBreakPropagateMask:
+            case NI_Sve2_BitwiseSelect:
+            case NI_Sve2_BitwiseSelectLeftInverted:
+            case NI_Sve2_BitwiseSelectRightInverted:
+                // RMW operates on op2
                 rmwOp = intrin.op2;
-            }
-            else
-            {
-                rmwOp = intrin.op1;
-            }
-            break;
+                break;
+            default:
+                if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrin.id))
+                {
+                    rmwOp = intrin.op2;
+                }
+                else
+                {
+                    rmwOp = intrin.op1;
+                }
+                break;
+        }
     }
 
     regNumber rmwReg = rmwOp->GetRegNum();
