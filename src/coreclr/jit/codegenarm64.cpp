@@ -3117,7 +3117,10 @@ void CodeGen::genLclHeap(GenTree* tree)
     {
         // The size node being a contained constant means that Lower has taken care of
         // zeroing the memory if compInitMem is true.
-        initMem = false;
+        if (m_compiler->info.compInitMem)
+        {
+            initMem = false;
+        }
 
         // If amount is zero then return null in targetReg
         amount = size->AsIntCon()->IconValue();

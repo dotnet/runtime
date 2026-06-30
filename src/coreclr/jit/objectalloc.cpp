@@ -3128,7 +3128,6 @@ void ObjectAllocator::RewriteUses()
 
             if (!layout->HasGCPtr())
             {
-                assert(newType == TYP_I_IMPL);
                 JITDUMP("V%02u not GC\n", lclNum);
                 lclVarDsc->lvTracked = 0;
                 continue;

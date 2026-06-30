@@ -3089,6 +3089,7 @@ bool Compiler::fgExpandStackArrayAllocation(BasicBlock*  block,
 
             GenTree* const   zeroInit     = gtNewStoreLclVarNode(frameRunningTotalLclNum, gtNewIconNode(0, TYP_I_IMPL));
             Statement* const zeroInitStmt = fgNewStmtFromTree(zeroInit);
+            gtUpdateStmtSideEffects(zeroInitStmt);
             fgInsertStmtAtBeg(fgFirstBB, zeroInitStmt);
 
             JITDUMP("Created stack alloc frame running total V%02u, zero-init at " FMT_BB "\n", frameRunningTotalLclNum,
