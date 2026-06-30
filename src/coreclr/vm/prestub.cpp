@@ -703,9 +703,7 @@ namespace
         if (status == COR_ILMETHOD_DECODER::FORMAT_ERROR)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
-        // ILCompiler replaces stripped method bodies with an intentionally invalid IL sentinel
-        // (the illegal two-byte opcode 0xFE 0x24) so it can never collide with a real method body;
-        // see CopiedMethodILNode.s_minimalILBody. Detect it before the IL reaches the JIT.
+        // ILCompiler emits an invalid IL sentinel (0xFE 0x24) for stripped method bodies.
         Module* pModule = pMD->GetModule();
         if (pModule->IsReadyToRun()
             && pModule->GetReadyToRunInfo()->HasStrippedILBodies()
