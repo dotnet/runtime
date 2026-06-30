@@ -432,29 +432,35 @@ namespace Internal.Reflection.Augments
 
         public static Assembly[] GetLoadedAssemblies() => RuntimeAssemblyInfo.GetLoadedAssemblies();
 
-        internal static EnumInfo CreateAndCacheEnumInfo(RuntimeTypeInfo runtimeTypeInfo)
+        internal static unsafe EnumInfo CreateAndCacheEnumInfo(RuntimeTypeInfo runtimeTypeInfo)
         {
             Debug.Assert(runtimeTypeInfo.IsActualEnum);
 
             runtimeTypeInfo.GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
             
             // Generic enums are guaranteed to have generic type definition MethodTable,
-            // so we can always use RuntimeAugments to get the underlying type.
+            // so we can get the underlying type directly from the EEType.
             RuntimeTypeHandle typeHandle = runtimeTypeInfo.InternalTypeHandleIfAvailable;
             Debug.Assert(!typeHandle.IsNull);
-            Type underlyingType = RuntimeAugments.GetEnumUnderlyingType(typeHandle);
+            MethodTable* methodTable = typeHandle.ToMethodTable();
+            Debug.Assert(methodTable->IsEnum);
 
             // Sort by unsigned storage type to match Enum ordering semantics.
             // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
             // That codepath would bring functionality to compare everything that was ever allocated in the program.
             ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
 
-            EnumInfo info = Type.GetTypeCode(underlyingType) switch
+            EETypeElementType elementType = methodTable->ElementType;
+            EnumInfo info = elementType switch
             {
-                TypeCode.SByte or TypeCode.Byte => CreateEnumInfoTyped<byte>(underlyingType, unsortedNames, unsortedValues, isFlags),
-                TypeCode.Int16 or TypeCode.UInt16 => CreateEnumInfoTyped<ushort>(underlyingType, unsortedNames, unsortedValues, isFlags),
-                TypeCode.Int32 or TypeCode.UInt32 => CreateEnumInfoTyped<uint>(underlyingType, unsortedNames, unsortedValues, isFlags),
-                TypeCode.Int64 or TypeCode.UInt64 => CreateEnumInfoTyped<ulong>(underlyingType, unsortedNames, unsortedValues, isFlags),
+                EETypeElementType.SByte => CreateEnumInfoTyped<byte>(typeof(sbyte), unsortedNames, unsortedValues, isFlags),
+                EETypeElementType.Byte => CreateEnumInfoTyped<byte>(typeof(byte), unsortedNames, unsortedValues, isFlags),
+                EETypeElementType.Int16 => CreateEnumInfoTyped<ushort>(typeof(short), unsortedNames, unsortedValues, isFlags),
+                EETypeElementType.UInt16 => CreateEnumInfoTyped<ushort>(typeof(ushort), unsortedNames, unsortedValues, isFlags),
+                EETypeElementType.Int32 => CreateEnumInfoTyped<uint>(typeof(int), unsortedNames, unsortedValues, isFlags),
+                EETypeElementType.UInt32 => CreateEnumInfoTyped<uint>(typeof(uint), unsortedNames, unsortedValues, isFlags),
+                EETypeElementType.Int64 => CreateEnumInfoTyped<ulong>(typeof(long), unsortedNames, unsortedValues, isFlags),
+                EETypeElementType.UInt64 => CreateEnumInfoTyped<ulong>(typeof(ulong), unsortedNames, unsortedValues, isFlags),
                 _ => throw new NotSupportedException()
             };
 
