@@ -194,8 +194,7 @@ void CordbStackWalk::RefreshIfNeeded()
     // check if we need to refresh
     if (m_lastSyncFlushCounter != pProcess->m_flushCounter)
     {
-        // Make a local copy of the CONTEXT here.  DeleteAll() will delete the CONTEXT on the cached frame,
-        // and CreateStackWalk() actually uses the CONTEXT buffer we pass to it.
+        // Make a local copy of the CONTEXT here.
         DT_CONTEXT ctx = m_context;
 
         // clear all the state
@@ -418,7 +417,7 @@ HRESULT CordbStackWalk::Next()
             ThrowHR(CORDBG_E_PAST_END_OF_STACK);
         }
 
-        // update the cahced flag to indicate that we have reached an unwind CONTEXT
+        // update the cached flag to indicate that we have reached an unwind CONTEXT
         m_cachedSetContextFlag = SET_CONTEXT_FLAG_UNWIND_FRAME;
 
         if (UnwindStackFrame())

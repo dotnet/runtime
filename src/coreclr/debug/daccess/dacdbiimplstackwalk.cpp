@@ -638,18 +638,16 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackParameterSize(CORDB_ADDRE
 }
 
 #ifdef TARGET_X86
-static FramePointer ComputeX86FramePointer(CrawlFrame * pCF, T_CONTEXT * pSourceContext)
+static FramePointer ComputeX86FramePointer(T_CONTEXT * pSourceContext)
 {
-    REGDISPLAY * pRD = pCF->GetRegisterSet();
-
     T_CONTEXT tempContext;
     CopyOSContext(&tempContext, pSourceContext);
-    pCF->GetCodeManager()->UnwindStackFrame(&tempContext);
 
     EECodeInfo codeInfo;
-    codeInfo.Init(pRD->pCurrentContext->Eip);
+    codeInfo.Init(pSourceContext->Eip);
+    codeInfo.GetCodeManager()->UnwindStackFrame(&tempContext);
 
-    LPVOID PCTAddr = tempContext.Esp - codeInfo.GetCodeManager()->GetStackParameterSize(&codeInfo) - sizeof(DWORD);
+    UINT_PTR PCTAddr = tempContext.Esp - codeInfo.GetCodeManager()->GetStackParameterSize(&codeInfo) - sizeof(DWORD);
     return FramePointer::MakeFramePointer(PCTAddr);
 }
 #endif // TARGET_X86
@@ -668,7 +666,7 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
         case StackFrameIterator::SFITER_FRAMELESS_METHOD:
         {
 #ifdef TARGET_X86
-            fp = ComputeX86FramePointer(pCF, pRD->pCurrentContext);
+            fp = ComputeX86FramePointer(pRD->pCurrentContext);
 #else
             fp = FramePointer::MakeFramePointer(GetRegdisplayStackMark(pRD));
 #endif
@@ -683,9 +681,11 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
         case StackFrameIterator::SFITER_INITIAL_NATIVE_CONTEXT:
         {
 #ifdef TARGET_X86
-            // We only get here if we are unwinding a runtime-unwindable stub.
-            // So first we need to unwind the stub to get to the caller frame, and then we can get the frame pointer from that.
-            fp = ComputeX86FramePointer(pCF, RetrieveHijackedContext(pRD));
+            // We only get here if we are unwinding a runtime-unwindable stub.  RetrieveHijackedContext already
+            // returns the context the stub unwinds to, so we take the stack address of its return address directly.
+            T_CONTEXT * pHijackedContext = RetrieveHijackedContext(pRD);
+            UINT_PTR PCTAddr = pHijackedContext->Esp - sizeof(DWORD);
+            fp = FramePointer::MakeFramePointer(PCTAddr);
 #else
             fp = FramePointer::MakeFramePointer(GetRegdisplayStackMark(pRD));
 #endif
