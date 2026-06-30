@@ -373,7 +373,11 @@ namespace System.Net.Http.Functional.Tests
                 handler.AutomaticDecompression = DecompressionMethods.Zstandard;
                 using HttpClient client = CreateHttpClient(handler);
 
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetByteArrayAsync(uri));
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(
+                    () => client.GetByteArrayAsync(uri));
+                // The inner IOException should reference the maxWindowLog limit enforced by the decoder.
+                Assert.True(ex.InnerException is IOException innerIo && innerIo.Message.Contains("maxWindowLog"),
+                    $"Expected inner IOException mentioning 'maxWindowLog', but got: {ex.InnerException}");
             }, async server =>
             {
                 await server.AcceptConnectionAsync(async connection =>
