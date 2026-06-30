@@ -65,9 +65,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         _legacy = legacyObj as IDacDbiInterface;
     }
 
-    public int CheckDbiVersion(DbiVersion* pVersion)
-        => LegacyFallbackHelper.CanFallback() && _legacy is not null ? _legacy.CheckDbiVersion(pVersion) : HResults.E_NOTIMPL;
-
     public int FlushCache()
     {
         _target.Flush(FlushScope.All);

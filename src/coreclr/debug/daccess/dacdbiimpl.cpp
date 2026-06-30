@@ -372,13 +372,6 @@ DacDbiInterfaceImpl::DacDbiInterfaceImpl(
     _ASSERTE(pMetaDataLookup != NULL);
     _ASSERTE(pAllocator != NULL);
     _ASSERTE(pTarget != NULL);
-
-#ifdef _DEBUG
-    // Enable verification asserts in ICorDebug scenarios.  ICorDebug never guesses at the DAC path, so any
-    // mismatch should be fatal, and so always of interest to the user.
-    // This overrides the assignment in the base class ctor (which runs first).
-    m_fEnableDllVerificationAsserts = true;
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -520,26 +513,6 @@ STDMETHODIMP_(ULONG)
 DacDbiInterfaceImpl::Release(THIS)
 {
     return ClrDataAccess::Release();
-}
-
-// Check whether the version of the DBI matches the version of the runtime.
-// See code:CordbProcess::CordbProcess#DBIVersionChecking for more information regarding version checking.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CheckDbiVersion(const DbiVersion * pVersion)
-{
-    DD_ENTER_MAY_THROW;
-
-    if (pVersion->m_dwFormat != kCurrentDbiVersionFormat)
-    {
-        return CORDBG_E_INCOMPATIBLE_PROTOCOL;
-    }
-
-    if ((pVersion->m_dwProtocolBreakingChangeCounter != kCurrentDacDbiProtocolBreakingChangeCounter) ||
-        (pVersion->m_dwReservedMustBeZero1 != 0))
-    {
-        return CORDBG_E_INCOMPATIBLE_PROTOCOL;
-    }
-
-    return S_OK;
 }
 
 // Flush the DAC cache. This should be called when target memory changes.
@@ -3267,8 +3240,7 @@ DacDbiInterfaceImpl::DelegateType DacDbiInterfaceImpl::GetDelegateType(VMPTR_Obj
     if (invocationCount == 0)
     {
         // If this delegate points to a static function or this is a open virtual delegate, this should be non-null
-        // Special case: This might fail in a VSD delegate (instance open virtual)...
-        // TODO: There is the special signatures cases missing.
+        // This does not handle open virtual delegates correctly.
         TADDR targetMethodPtr = PCODEToPINSTR(pDelObj->GetMethodPtrAux());
         if (targetMethodPtr == (TADDR)NULL)
         {

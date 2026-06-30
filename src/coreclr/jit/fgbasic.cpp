@@ -5197,6 +5197,10 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         // Unlink this block from the bbNext chain
         fgUnlinkBlockForRemoval(block);
 
+        // Retarget any surviving EH region whose 'last' block was this one.
+        assert(bPrev != nullptr);
+        ehUpdateLastBlocks(block, bPrev);
+
         // At this point the bbPreds and bbRefs had better be zero
         noway_assert((block->bbRefs == 0) && (block->bbPreds == nullptr));
     }
