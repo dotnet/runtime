@@ -38,7 +38,7 @@ struct DacSharedReJitInfo;
 cpp_quote("#if 0")
 
 // FramePointer - wrapper around a single pointer (LPVOID m_sp in native code)
-// Passed by value in IsMatchingParentFrame, GetFramePointer, and the internal frame callback.
+// Passed by value in IsMatchingParentFrame and the internal frame callback.
 typedef struct { UINT_PTR m_sp; } FramePointer;
 
 // AsyncLocalData - struct passed by pointer to FP_ASYNC_LOCAL_CALLBACK.
@@ -281,7 +281,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetCountOfInternalFrames([in] VMPTR_Thread vmThread, [out] ULONG32 * pRetVal);
     HRESULT EnumerateInternalFrames([in] VMPTR_Thread vmThread, [in] FP_INTERNAL_FRAME_ENUMERATION_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
     HRESULT GetStackParameterSize([in] CORDB_ADDRESS controlPC, [out] ULONG32 * pRetVal);
-    HRESULT GetFramePointer([in] StackWalkHandle pSFIHandle, [out] FramePointer * pRetVal);
     HRESULT IsLeafFrame([in] VMPTR_Thread vmThread, [in] const DT_CONTEXT * pContext, [out] BOOL * pResult);
     HRESULT GetContext([in] VMPTR_Thread vmThread, [out] DT_CONTEXT * pContextBuffer);
 

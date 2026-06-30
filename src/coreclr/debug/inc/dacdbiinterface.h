@@ -1230,31 +1230,6 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetStackParameterSize(CORDB_ADDRESS controlPC, OUT ULONG32 * pRetVal) = 0;
 
     //
-    // Get the FramePointer of the current frame where the stackwalker is stopped at.
-    //
-    // Arguments:
-    //    pSFIHandle - the handle to the stackwalker
-    //    pRetVal - [out] The FramePointer of the current frame.
-    //
-    // Return Value:
-    //    S_OK on success; otherwise, an appropriate failure HRESULT.
-    //
-    // Notes:
-    //    The FramePointer of a stack frame is:
-    //    the stack address of the return address on x86,
-    //    the current SP on AMD64,
-    //
-    //    On x86, to get the stack address of the return address, we need to unwind one more frame
-    //    and use the SP of the caller frame as the FramePointer of the callee frame.  This
-    //    function does NOT do that.  It just returns the SP.  The caller needs to handle the
-    //    unwinding.
-    //
-    //    The FramePointer of an explicit frame is just the stack address of the explicit frame.
-    //
-
-    virtual HRESULT STDMETHODCALLTYPE GetFramePointer(StackWalkHandle pSFIHandle, OUT FramePointer * pRetVal) = 0;
-
-    //
     // Check whether the specified CONTEXT is the CONTEXT of the leaf frame.  This function doesn't care
     // whether the leaf frame is native or managed.
     //

@@ -1820,17 +1820,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int GetFramePointer(nuint pSFIHandle, ulong* pRetVal)
-    {
-        if (pSFIHandle == 0)
-            return HResults.E_INVALIDARG;
-
-        nuint legacyHandle = TryGetLegacyHandle(pSFIHandle);
-        return _legacy is not null && LegacyFallbackHelper.CanFallback() && legacyHandle != 0
-            ? _legacy.GetFramePointer(legacyHandle, pRetVal)
-            : HResults.E_NOTIMPL;
-    }
-
     private static nuint TryGetLegacyHandle(nuint pSFIHandle)
     {
         try

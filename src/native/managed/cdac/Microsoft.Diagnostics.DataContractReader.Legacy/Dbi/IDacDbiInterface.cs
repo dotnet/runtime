@@ -584,9 +584,6 @@ public unsafe partial interface IDacDbiInterface
     int GetStackParameterSize(ulong controlPC, uint* pRetVal);
 
     [PreserveSig]
-    int GetFramePointer(nuint pSFIHandle, ulong* pRetVal);
-
-    [PreserveSig]
     int IsLeafFrame(ulong vmThread, byte* pContext, Interop.BOOL* pResult);
 
     [PreserveSig]

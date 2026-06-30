@@ -637,23 +637,7 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackParameterSize(CORDB_ADDRE
     return hr;
 }
 
-// Return the FramePointer of the current frame at which the stackwalker is stopped.
-HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetFramePointer(StackWalkHandle pSFIHandle, OUT FramePointer * pRetVal)
-{
-    DD_ENTER_MAY_THROW;
-
-    HRESULT hr = S_OK;
-    EX_TRY
-    {
-
-        StackFrameIterator * pIter = GetIteratorFromHandle(pSFIHandle);
-        *pRetVal = GetFramePointerWorker(pIter);
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-}
-
-// Internal helper for GetFramePointer.
+// Internal helper for GetStackWalkCurrentFrameInfo.
 FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIter)
 {
     CrawlFrame * pCF = &(pIter->m_crawl);
@@ -665,8 +649,21 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
         // For managed methods, we have the full CONTEXT.  Additionally, we also have the caller CONTEXT
         // on WIN64.
         case StackFrameIterator::SFITER_FRAMELESS_METHOD:
+        {
+#ifdef TARGET_X86
+            // physical unwind
+            T_CONTEXT tempContext;
+            CopyOSContext(&tempContext, pRD->pCurrentContext);
+            pCF->GetCodeManager()->UnwindStackFrame(&tempContext);
+            EECodeInfo tempCodeInfo;
+            tempCodeInfo.Init(tempContext.Eip);
+            LPVOID PCTAddr = tempContext.Esp - tempCodeInfo.GetCodeManager()->GetStackParameterSize(&tempCodeInfo) - sizeof(DWORD);
+            fp = FramePointer::MakeFramePointer(PCTAddr);
+#else
             fp = FramePointer::MakeFramePointer(GetRegdisplayStackMark(pRD));
+#endif
             break;
+        }
 
         // In these cases, we only have the full CONTEXT, not the caller CONTEXT.
         case StackFrameIterator::SFITER_NATIVE_MARKER_FRAME:
@@ -674,8 +671,23 @@ FramePointer DacDbiInterfaceImpl::GetFramePointerWorker(StackFrameIterator * pIt
             // fall through
             //
         case StackFrameIterator::SFITER_INITIAL_NATIVE_CONTEXT:
+        {
+#ifdef TARGET_X86
+            // We only get here if we are unwinding a runtime-unwindable stub.
+            // So first we need to unwind the stub to get to the caller frame, and then we can get the frame pointer from that.
+            T_CONTEXT * pContext = RetrieveHijackedContext(pRD);
+            T_CONTEXT tempContext;
+            CopyOSContext(&tempContext, pContext);
+            pCF->GetCodeManager()->UnwindStackFrame(&tempContext);
+            EECodeInfo tempCodeInfo;
+            tempCodeInfo.Init(tempContext.Eip);
+            LPVOID PCTAddr = tempContext.Esp - tempCodeInfo.GetCodeManager()->GetStackParameterSize(&tempCodeInfo) - sizeof(DWORD);
+            fp = FramePointer::MakeFramePointer(PCTAddr);
+#else
             fp = FramePointer::MakeFramePointer(GetRegdisplayStackMark(pRD));
+#endif
             break;
+        }
 
         // In these cases, we use the address of the explicit frame as the frame marker.
         case StackFrameIterator::SFITER_FRAME_FUNCTION:
