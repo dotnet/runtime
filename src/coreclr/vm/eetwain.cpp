@@ -1752,6 +1752,22 @@ DWORD_PTR EECodeManager::CallFunclet(OBJECTREF throwable, void* pHandler, REGDIS
 
 #ifdef TARGET_WASM
     TADDR wasmFramePointer = GetWasmFramePointerFromStackPointer(GetSP(pRD->pCurrentContext));
+    // A handler that is lexically nested inside a funclet (e.g. a catch inside a finally) must
+    // run with the enclosing METHOD frame as its establishing frame.
+    if (pExInfo->m_frameIter.m_crawl.IsFunclet())
+    {
+        T_CONTEXT walkCtx = *(pRD->pCurrentContext);
+        for (;;)
+        {
+            UnwindStackFrame(&walkCtx);
+            EECodeInfo ci(dac_cast<PCODE>(GetIP(&walkCtx)));
+            if (!ci.IsValid() || !ci.IsFunclet())
+            {
+                break;
+            }
+        }
+        wasmFramePointer = GetWasmFramePointerFromStackPointer(GetSP(&walkCtx));
+    }
     TADDR handlerFnIndex = CastHandlerFn(pfnHandler);
     if (throwable != NULL)
     {
