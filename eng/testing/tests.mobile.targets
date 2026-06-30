@@ -116,9 +116,14 @@
     </ItemGroup>
 
     <ItemGroup>
+      <_ResolvedStreamConformanceTests
+          Include="@(ResolvedFileToPublish)"
+          Condition="'%(ResolvedFileToPublish.FileName)' == 'StreamConformanceTests'" />
       <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xunit.xml" Condition="'$(SkipXunitTrimmerDescriptor)' != 'true'"  />
       <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.TestUtilities.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true'" />
-      <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.StreamConformanceTests.xml" Condition="'$(SkipTestUtilitiesReference)' != 'true' and '$(TargetsAppleMobile)' == 'true'" />
+      <TrimmerRootDescriptor
+          Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.StreamConformanceTests.xml"
+          Condition="'$(SkipTestUtilitiesReference)' != 'true' and '$(TargetsAppleMobile)' == 'true' and '@(_ResolvedStreamConformanceTests)' != ''" />
     </ItemGroup>
   </Target>
 
