@@ -22091,12 +22091,6 @@ bool GenTree::isContainableHWIntrinsic() const
             FALLTHROUGH;
         }
 
-        case NI_Vector_GetElement:
-        {
-            // These HWIntrinsic operations are contained as part of a store
-            return node->GetSimdSize() == 16;
-        }
-
         case NI_Vector_ToScalar:
         case NI_X86Base_ConvertToInt32:
         case NI_X86Base_ConvertToUInt32:
@@ -22133,6 +22127,12 @@ bool GenTree::isContainableHWIntrinsic() const
         {
             // These HWIntrinsic operations are contained as part of a store
             return true;
+        }
+
+        case NI_Vector_GetElement:
+        {
+            // These HWIntrinsic operations are contained as part of a store
+            return node->GetSimdSize() == 16;
         }
 
         case NI_Vector_CreateScalar:
