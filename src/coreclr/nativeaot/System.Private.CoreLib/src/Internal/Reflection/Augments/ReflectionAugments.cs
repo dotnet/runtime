@@ -446,16 +446,15 @@ namespace Internal.Reflection.Augments
             {
                 runtimeTypeInfo.GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
 
-                // Generic enums are guaranteed to have generic type definition MethodTable,
-                // so we can get the underlying type directly from it.
-                MethodTable* methodTable = runtimeTypeInfo.TypeHandle.ToMethodTable();
-                Debug.Assert(methodTable->IsEnum);
-
                 // Sort by unsigned storage type to match Enum ordering semantics.
                 // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
                 // That codepath would bring functionality to compare everything that was ever allocated in the program.
                 ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
 
+                // Generic enums are guaranteed to have generic type definition MethodTable,
+                // so we can get the underlying type directly from it.
+                MethodTable* methodTable = runtimeTypeInfo.TypeHandle.ToMethodTable();
+                Debug.Assert(methodTable->IsEnum);
                 enumInfo = methodTable->ElementType switch
                 {
                     EETypeElementType.SByte => CreateEnumInfoTyped<byte>(typeof(sbyte), unsortedNames, unsortedValues, isFlags),
