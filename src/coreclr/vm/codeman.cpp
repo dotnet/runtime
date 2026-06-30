@@ -1544,8 +1544,7 @@ void EEJitManager::SetCpuInfo()
 #if defined(FEATURE_INTERPRETER) && (defined(TARGET_X86) || defined(TARGET_AMD64))
     // The interpreter only supports 128-bit vectors, so don't enable AVX. The ISA
     // dependency normalization below then removes AVX2/AVX512 and the dependent
-    // VectorT256/VectorT512, keeping the reported ISA support aligned with the
-    // interpreter-only expectations.
+    // VectorT256/VectorT512.
     enableAVX = enableAVX && !interpreterOnly;
 #endif
 
@@ -1896,10 +1895,8 @@ void EEJitManager::SetCpuInfo()
 #if defined(FEATURE_INTERPRETER) && (defined(TARGET_X86) || defined(TARGET_AMD64))
     if (interpreterOnly && (preferredVectorBitWidth > 128))
     {
-        // The interpreter only supports 128-bit vectors. Clamp the preferred vector
-        // width so the Vector256/Vector512 marker ISAs set below (which run after
-        // EnsureValidInstructionSetSupport) are not reintroduced after AVX was left
-        // disabled above, keeping the reported ISA set consistent.
+        // Limit the preferred vector width so the Vector256/Vector512 marker ISAs
+        // set below are not reported after AVX was left disabled above.
         preferredVectorBitWidth = 128;
     }
 #endif
