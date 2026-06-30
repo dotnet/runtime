@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -70,6 +71,37 @@ namespace System.IO.Compression
             try
             {
                 SetDictionary(dictionary);
+            }
+            catch
+            {
+                _context.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> class with the specified decompression options.</summary>
+        /// <param name="decompressionOptions">The options to use for Zstandard decompression.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="decompressionOptions"/> is null.</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
+        public ZstandardDecoder(ZstandardDecompressionOptions decompressionOptions)
+        {
+            ArgumentNullException.ThrowIfNull(decompressionOptions);
+
+            _disposed = false;
+
+            InitializeDecoder();
+
+            try
+            {
+                if (decompressionOptions.MaxWindowLog != 0)
+                {
+                    SetWindowLog(decompressionOptions.MaxWindowLog);
+                }
+
+                if (decompressionOptions.Dictionary is not null)
+                {
+                    SetDictionary(decompressionOptions.Dictionary);
+                }
             }
             catch
             {

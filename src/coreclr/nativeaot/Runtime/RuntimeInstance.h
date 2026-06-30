@@ -20,6 +20,7 @@ class RuntimeInstance
     friend class AsmOffsets;
     friend class Thread;
     friend void PopulateDebugHeaders();
+    friend struct ::cdac_data<RuntimeInstance>;
 
     HANDLE                      m_hPalInstance; // this is the HANDLE passed into DllMain
 
@@ -109,6 +110,13 @@ public:
 };
 typedef DPTR(RuntimeInstance) PTR_RuntimeInstance;
 
+template<> struct cdac_data<RuntimeInstance>
+{
+    static constexpr size_t OsModuleList = offsetof(RuntimeInstance, m_OsModuleList);
+    static constexpr size_t TypeManagerList = offsetof(RuntimeInstance, m_TypeManagerList);
+    static constexpr size_t ManagedCodeStartRange = offsetof(RuntimeInstance, m_pvManagedCodeStartRange);
+    static constexpr size_t ManagedCodeRangeSize = offsetof(RuntimeInstance, m_cbManagedCodeRange);
+};
 
 PTR_RuntimeInstance GetRuntimeInstance();
 

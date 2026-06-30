@@ -189,22 +189,11 @@ Also check [bench](../sample/wasm/browser-bench/README.md) sample to measure mon
 
 ## Templates
 
-The wasm templates, located in the `templates` directory, are templates for `dotnet new`, VS and VS for Mac. They are packaged and distributed as part of the `wasm-experimental` workload. We have 2 templates, `wasmbrowser` and `wasmconsole`, for browser and console WebAssembly applications.
+The wasm templates, located in the `templates` directory, are templates for `dotnet new`, VS and VS for Mac. They are packaged and distributed as part of the `wasm-experimental` workload. The remaining template is `wasmbrowser` for browser WebAssembly applications.
 
 For details about using `dotnet new` see the dotnet tool [documentation](https://learn.microsoft.com/dotnet/core/tools/dotnet-new).
 
-To test changes in the templates, use `dotnet new install --force src/mono/wasm/templates/templates/browser`.
-
-Example use of the `wasmconsole` template:
-
-```console
-> dotnet new wasmconsole
-> dotnet publish
-> cd bin/Debug/net9.0/browser-wasm/AppBundle
-> node main.mjs
-Hello World!
-Args:
-```
+To test changes in the template, use `dotnet new install --force src/mono/wasm/templates/templates/browser`.
 
 ## ES6 modules
 

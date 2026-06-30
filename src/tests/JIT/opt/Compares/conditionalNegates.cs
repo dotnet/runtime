@@ -148,4 +148,5 @@ public class ConditionalNegateTest
         }
         Assert.Equal(expected, op1);
     }
+
 }

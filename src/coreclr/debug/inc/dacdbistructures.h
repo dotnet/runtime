@@ -539,9 +539,7 @@ struct MSLAYOUT Debugger_JITFuncData
 struct MSLAYOUT Debugger_STRData
 {
     FramePointer            fp;
-    // @dbgtodo  stackwalker/shim- Ideally we should be able to get rid of the DebuggerREGDISPLAY and just use the CONTEXT.
     DT_CONTEXT *            ctx;
-    DebuggerREGDISPLAY *    rd;
     VMPTR_AppDomain         vmCurrentAppDomainToken;
 
 
@@ -739,7 +737,7 @@ class MSLAYOUT EnCHangingFieldInfo
 public:
     // Init will initialize fields, taking into account whether the field is static or not.
     void Init(VMPTR_Object     pObject,
-              SIZE_T           offset,
+              UINT             offset,
               mdFieldDef       fieldToken,
               CorElementType   elementType,
               mdTypeDef        metadataToken,
@@ -748,13 +746,13 @@ public:
     DebuggerIPCE_BasicTypeData GetObjectTypeData() const { return m_objectTypeData; };
     mdFieldDef GetFieldToken() const { return m_fldToken; };
     VMPTR_Object GetVmObject() const { return m_vmObject; };
-    SIZE_T GetOffsetToVars() const { return m_offsetToVars; };
+    UINT GetOffsetToVars() const { return m_offsetToVars; };
 
 private:
     DebuggerIPCE_BasicTypeData m_objectTypeData; // type data for the EnC field
     VMPTR_Object               m_vmObject;        // object instance to which the field has been added--if the field is
                                                  // static, this will be NULL instead of pointing to an instance
-    SIZE_T                     m_offsetToVars;   // offset to the beginning of variable storage in the object
+    UINT                       m_offsetToVars;   // offset to the beginning of variable storage in the object
     mdFieldDef                 m_fldToken;       // metadata token for the added field
 
 }; // EnCHangingFieldInfo

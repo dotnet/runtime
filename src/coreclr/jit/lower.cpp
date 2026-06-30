@@ -4312,6 +4312,50 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 BlockRange().Remove(cast);
             }
         }
+#ifdef TARGET_XARCH
+        else if ((castToType == TYP_BYTE) && FitsIn<INT8>(op2Value))
+        {
+            //
+            // Mirror the TYP_UBYTE case above for signed byte casts. Removing the cast lets
+            // codegen emit a single byte-sized `cmp` (e.g. `cmp cl, 0xC0`) instead of first
+            // sign-extending the operand with `movsx`. The compare stays signed because
+            // TYP_BYTE is a signed small type, so LowerCompare's small-unsigned promotion
+            // does not apply.
+            //
+            // Bail out for `x < 0` / `x >= 0` against a zero constant: codegen has a
+            // sign-bit-shift optimization (`mov + shr`) that assumes the operand is
+            // sign-extended to the full register width. After narrowing the operand to
+            // TYP_BYTE, the register no longer carries that sign extension and the shift
+            // amount would be wrong (it uses `emitActualTypeSize` which is still 4 for
+            // TYP_BYTE). Letting the cast survive keeps that path correct.
+            //
+            const bool isSignBitTest = (op2Value == 0) && cmp->OperIs(GT_LT, GT_GE);
+            bool       removeCast    = !isSignBitTest && (castOp->OperIs(GT_LCL_VAR, GT_CALL, GT_OR, GT_XOR, GT_AND) ||
+                                                 IsContainableMemoryOp(castOp));
+
+            if (removeCast)
+            {
+                assert(!castOp->gtOverflowEx()); // Must not be an overflow checking operation
+
+                castOp->gtType = castToType;
+                op2->gtType    = castToType;
+
+                // If we have any contained memory ops on castOp, they must now not be contained.
+                castOp->ClearContained();
+
+                if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
+                {
+                    castOp->gtGetOp1()->ClearContained();
+                    castOp->gtGetOp2()->ClearContained();
+                    ContainCheckBinary(castOp->AsOp());
+                }
+
+                cmp->AsOp()->gtOp1 = castOp;
+
+                BlockRange().Remove(cast);
+            }
+        }
+#endif // TARGET_XARCH
     }
     else if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
     {
@@ -6188,6 +6232,17 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
             regType = call->TypeGet();
         }
 #endif
+
+#if defined(TARGET_WASM)
+        CORINFO_CLASS_HANDLE clsHnd = layout->GetClassHandle();
+        if (clsHnd != NO_CLASS_HANDLE)
+        {
+            CorInfoWasmType wasmAbiType = m_compiler->info.compCompHnd->getWasmLowering(clsHnd);
+            assert(wasmAbiType != CORINFO_WASM_TYPE_VOID);
+            regType = WasmClassifier::ToJitType(wasmAbiType);
+        }
+#endif // TARGET_WASM
+
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
         LowerStoreIndirCommon(store->AsStoreInd());
@@ -8054,16 +8109,14 @@ bool Lowering::TryLowerConstIntUDivOrUMod(GenTreeOp* divMod)
 {
     assert(divMod->OperIs(GT_UDIV, GT_UMOD));
 
-#if defined(USE_HELPERS_FOR_INT_DIV)
-    if (!varTypeIsIntegral(divMod->TypeGet()))
-    {
-        assert(!"unreachable: integral GT_UDIV/GT_UMOD should get morphed into helper calls");
-    }
-    assert(varTypeIsFloating(divMod->TypeGet()));
+#if USE_HELPERS_FOR_INT_DIV
+    assert(varTypeIsFloating(divMod->TypeGet()) &&
+           "unreachable: integral GT_UDIV/GT_UMOD should get morphed into helper calls");
 #endif // USE_HELPERS_FOR_INT_DIV
-#if defined(TARGET_ARM64)
+
+#if defined(TARGET_ARMARCH)
     assert(!divMod->OperIs(GT_UMOD));
-#endif // TARGET_ARM64
+#endif // TARGET_ARMARCH
 
     GenTree* dividend = divMod->gtGetOp1();
     GenTree* divisor  = divMod->gtGetOp2();
@@ -8371,9 +8424,10 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
     const var_types type = divMod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
 
-#if defined(USE_HELPERS_FOR_INT_DIV)
+#if USE_HELPERS_FOR_INT_DIV
     assert(!"unreachable: integral GT_DIV/GT_MOD should get morphed into helper calls");
 #endif // USE_HELPERS_FOR_INT_DIV
+
 #if defined(TARGET_ARM64)
     if (divMod->OperIs(GT_MOD) && divisor->IsIntegralConstPow2())
     {
@@ -8381,8 +8435,11 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         *nextNode = node->gtNext;
         return true;
     }
-    assert(!node->OperIs(GT_MOD));
 #endif // TARGET_ARM64
+
+#if defined(TARGET_ARMARCH)
+    assert(!node->OperIs(GT_MOD));
+#endif // TARGET_ARMARCH
 
 #if defined(TARGET_WASM)
     // TODO-Wasm: evaluate if this is worth doing for Wasm, since some cases will increase
@@ -9190,7 +9247,7 @@ void Lowering::FindInducedParameterRegisterLocals()
             // accesses larger to generate smaller code.
 
 #ifdef TARGET_WASM
-            var_types fullWidthType = TYP_LONG;
+            var_types fullWidthType = genActualType(regSegment->GetRegisterType());
 #else
             var_types fullWidthType = TYP_I_IMPL;
 #endif
@@ -9420,7 +9477,11 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 
 #ifdef FEATURE_SIMD
         case GT_HWINTRINSIC:
+            // TODO-WASM: SIMD12 is still maintained through lowering.
+            // Fix the below once we've determined our lowering path for SIMD12.
+#ifndef TARGET_WASM
             assert(!node->TypeIs(TYP_SIMD12));
+#endif
             break;
 #endif // FEATURE_SIMD
 
@@ -9446,6 +9507,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         {
             const GenTreeLclVarCommon* lclVarAddr = node->AsLclVarCommon();
             const LclVarDsc*           varDsc     = compiler->lvaGetDesc(lclVarAddr);
+#if !defined(TARGET_WASM)
             if (((lclVarAddr->gtFlags & GTF_VAR_DEF) != 0) && varDsc->HasGCPtr())
             {
                 // Emitter does not correctly handle live updates for LCL_ADDR
@@ -9458,6 +9520,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
                 assert(lclVarAddr->isContained() || !varDsc->lvTracked || varTypeIsStruct(varDsc));
                 // TODO: support this assert for uses, see https://github.com/dotnet/runtime/issues/51900.
             }
+#endif // !TARGET_WASM
 
             assert(varDsc->lvDoNotEnregister);
             break;

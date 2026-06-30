@@ -19,7 +19,6 @@ struct DacThreadAllocInfo;
 struct NativeVarData;
 struct SequencePoints;
 struct Debugger_STRData;
-struct DebuggerREGDISPLAY;
 struct NativeCodeFunctionData;
 struct FieldData;
 struct DebuggerIPCE_ExpandedTypeData;
@@ -31,7 +30,6 @@ struct DacDbiArrayInfo;
 struct MonitorLockInfo;
 struct DacGcReference;
 struct DacSharedReJitInfo;
-struct AsyncLocalData;
 
 //
 // Types MIDL cannot handle natively. These dummy definitions satisfy the MIDL
@@ -42,6 +40,9 @@ cpp_quote("#if 0")
 // FramePointer - wrapper around a single pointer (LPVOID m_sp in native code)
 // Passed by value in IsMatchingParentFrame, GetFramePointer, and the internal frame callback.
 typedef struct { UINT_PTR m_sp; } FramePointer;
+
+// AsyncLocalData - struct passed by pointer to FP_ASYNC_LOCAL_CALLBACK.
+typedef struct { UINT_PTR dummy; } AsyncLocalData;
 
 // VMPTR types - opaque pointer-sized wrappers
 typedef ULONG64 VMPTR_AppDomain;
@@ -129,7 +130,6 @@ typedef struct { void *pList; int nEntries; } DacDbiArrayList_CORDB_ADDRESS;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_GUID;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_COR_SEGMENT;
 typedef struct { void *pList; int nEntries; } DacDbiArrayList_COR_MEMORY_RANGE;
-typedef struct { void *pList; int nEntries; } DacDbiArrayList_AsyncLocalData;
 
 cpp_quote("#endif")
 
@@ -142,6 +142,7 @@ typedef BOOL (*FP_INTERNAL_FRAME_ENUMERATION_CALLBACK)(FramePointer fpFrame, CAL
 typedef void (*FP_HEAPSEGMENT_CALLBACK)(CORDB_ADDRESS rangeStart, CORDB_ADDRESS rangeEnd, int generation, ULONG heap, CALLBACK_DATA pUserData);
 typedef void (*FP_RCW_INTERFACE_CALLBACK)(CORDB_ADDRESS itfPtr, CALLBACK_DATA pUserData);
 typedef void (*FP_EXCEPTION_STACK_FRAME_CALLBACK)(VMPTR_AppDomain vmAppDomain, VMPTR_Assembly vmAssembly, CORDB_ADDRESS ip, mdMethodDef methodDef, BOOL isLastForeignExceptionFrame, CALLBACK_DATA pUserData);
+typedef void (*FP_ASYNC_LOCAL_CALLBACK)(AsyncLocalData *pLocal, CALLBACK_DATA pUserData);
 typedef void (*FP_FIELDDATA_CALLBACK)(struct FieldData * pFieldData, CALLBACK_DATA pUserData);
 
 
@@ -283,7 +284,6 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetFramePointer([in] StackWalkHandle pSFIHandle, [out] FramePointer * pRetVal);
     HRESULT IsLeafFrame([in] VMPTR_Thread vmThread, [in] const DT_CONTEXT * pContext, [out] BOOL * pResult);
     HRESULT GetContext([in] VMPTR_Thread vmThread, [out] DT_CONTEXT * pContextBuffer);
-    HRESULT ConvertContextToDebuggerRegDisplay([in] const DT_CONTEXT * pInContext, [out] struct DebuggerREGDISPLAY * pOutDRD, [in] BOOL fActive);
 
     // Method
     HRESULT IsDiagnosticsHiddenOrLCGMethod([in] VMPTR_MethodDesc vmMethodDesc, [out] DynamicMethodType * pRetVal);
@@ -327,7 +327,7 @@ interface IDacDbiInterface : IUnknown
     // Field
     HRESULT GetThreadStaticAddress([in] VMPTR_FieldDesc vmField, [in] VMPTR_Thread vmRuntimeThread, [out] CORDB_ADDRESS * pRetVal);
     HRESULT GetCollectibleTypeStaticAddress([in] VMPTR_FieldDesc vmField, [out] CORDB_ADDRESS * pRetVal);
-    HRESULT GetEnCHangingFieldInfo([in] const struct EnCHangingFieldInfo * pEnCFieldInfo, [out] struct FieldData * pFieldData, [out] BOOL * pfStatic);
+    HRESULT GetEnCHangingFieldInfo([in] const struct EnCHangingFieldInfo * pEnCFieldInfo, [out] struct FieldData * pFieldData);
     HRESULT GetTypeHandleParams([in] VMPTR_TypeHandle vmTypeHandle, [out] TypeParamsList * pParams);
     HRESULT GetSimpleType(
         [in] CorElementType simpleType,
@@ -366,8 +366,8 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetAttachStateFlags([out] CLR_DEBUGGING_PROCESS_FLAGS * pRetVal);
 
     // Metadata
-    HRESULT GetMetaDataFileInfoFromPEFile(
-        [in] VMPTR_PEAssembly vmPEAssembly,
+    HRESULT GetModuleMetaDataFileInfo(
+        [in] VMPTR_Module vmModule,
         [out] DWORD * pTimeStamp,
         [out] DWORD * pImageSize,
         [in] IDacDbiStringHolder pStrFilename,
@@ -384,7 +384,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT IsValidObject([in] CORDB_ADDRESS obj, [out] BOOL * pResult);
 
     // Reference Walking
-    HRESULT CreateRefWalk([out] RefWalkHandle * pHandle, [in] BOOL walkStacks, [in] BOOL walkFQ, [in] UINT32 handleWalkMask);
+    HRESULT CreateRefWalk([out] RefWalkHandle * pHandle, [in] BOOL walkStacks, [in] UINT32 handleWalkMask);
     HRESULT DeleteRefWalk([in] RefWalkHandle handle);
     HRESULT WalkRefs([in] RefWalkHandle handle, [in] ULONG count, [out] struct DacGcReference * refs, [out] ULONG * pFetched);
 
@@ -435,7 +435,7 @@ interface IDacDbiInterface : IUnknown
         [out] PCODE * pDiagnosticIP,
         [out] CORDB_ADDRESS * pNextContinuation,
         [out] UINT32 * pState);
-    HRESULT GetAsyncLocals([in] VMPTR_MethodDesc vmMethod, [in] CORDB_ADDRESS codeAddr, [in] UINT32 state, [out] DacDbiArrayList_AsyncLocalData * pAsyncLocals);
+    HRESULT EnumerateAsyncLocals([in] VMPTR_MethodDesc vmMethod, [in] CORDB_ADDRESS codeAddr, [in] UINT32 state, [in] FP_ASYNC_LOCAL_CALLBACK fpCallback, [in] CALLBACK_DATA pUserData);
 
     // Generic Arg Token
     HRESULT GetGenericArgTokenIndex([in] VMPTR_MethodDesc vmMethod, [out] UINT32 * pTokenIndex);

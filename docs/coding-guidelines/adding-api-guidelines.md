@@ -65,13 +65,15 @@ in Visual Studio and Visual Studio Code.
 
 ### API usage examples
 
-API usage examples are included in the test sources so they can be validated during regular test runs. These examples should either be placed in the `examples` subdirectory or use a filename with the `Examples` suffix. depending on what's the best fit for the test project structure. The specific code intended for the published documentation is marked with a #region directive, which allows test-related boilerplate (such as the [Fact] attribute) to be excluded from the final documentation.
+API usage examples are included in the test sources so they can be validated during regular test runs. These examples should either be placed in the `examples` subdirectory or use a filename with the `Examples` suffix, depending on what's the best fit for the test project structure. The specific code intended for the published documentation is marked with a #region directive, which allows test-related boilerplate (such as the [Fact] attribute) to be excluded from the final documentation.
 
-The API usage examples are referenced from the documentation using the code-csharp directive. For example:
+Reference an API usage example from the documentation using a `<code lang="cs" source="..." region="..." />` element within an `example` element.
+
+However, if the example is referenced within a Markdown block, use the `code-csharp` directive instead. For example:
 
 `[!code-csharp[](../../../../tests/System.Text.RegularExpressions/FunctionalTests/Regex.Examples.cs#Match)]`
 
-This directive pulls the code snippet identified by the specified `#region` from the source file and embeds it directly into the documentation.
+These syntaxes pull the code snippet identified by the specified region from the source file and embed it directly into the documentation.
 
 ### Documentation placement in platform-specific libraries
 

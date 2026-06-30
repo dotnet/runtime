@@ -1,6 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR {
+#else // SERVER_GC
+namespace WKS {
+#endif // SERVER_GC
+
 void gc_heap::update_collection_counts_for_no_gc()
 {
     assert (settings.pause_mode == pause_no_gc);
@@ -929,3 +937,5 @@ enable_no_gc_region_callback_status gc_heap::enable_no_gc_callback(NoGCRegionCal
 
     return status;
 }
+
+} // namespace WKS/SVR
