@@ -456,21 +456,26 @@ typedef Wrapper<void *, DoNothing, DoNothing> PALPEFileHolder;
 #define SetupForComCallDWORD() SetupThreadForComCall(ERROR_OUTOFMEMORY)
 
 // A holder for NATIVE_LIBRARY_HANDLE.
-FORCEINLINE void VoidFreeNativeLibrary(NATIVE_LIBRARY_HANDLE h)
+struct NativeLibraryHandleTraits final
 {
-    WRAPPER_NO_CONTRACT;
+    using Type = NATIVE_LIBRARY_HANDLE;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
 
-    if (h == NULL)
-        return;
+        if (h == NULL)
+            return;
 
 #ifdef HOST_UNIX
-    PAL_FreeLibraryDirect(h);
+        PAL_FreeLibraryDirect(h);
 #else
-    FreeLibrary(h);
+        FreeLibrary(h);
 #endif
-}
+    }
+};
 
-typedef Wrapper<NATIVE_LIBRARY_HANDLE, DoNothing<NATIVE_LIBRARY_HANDLE>, VoidFreeNativeLibrary, 0> NativeLibraryHandleHolder;
+using NativeLibraryHandleHolder = LifetimeHolder<NativeLibraryHandleTraits>;
 
 extern thread_local size_t t_CantStopCount;
 
