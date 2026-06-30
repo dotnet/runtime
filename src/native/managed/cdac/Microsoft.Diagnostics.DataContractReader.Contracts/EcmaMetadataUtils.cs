@@ -39,4 +39,39 @@ public static class EcmaMetadataUtils
         Debug.Assert((tokenParts & 0xff000000) == 0, $"Token type should not be set in {nameof(tokenParts)}");
         return (uint)TokenType.mdtFieldDef | tokenParts;
     }
+
+    public static bool TryFindTopLevelTypeDef(MetadataReader reader, string @namespace, string name, out TypeDefinitionHandle result)
+    {
+        foreach (TypeDefinitionHandle handle in reader.TypeDefinitions)
+        {
+            TypeDefinition typeDef = reader.GetTypeDefinition(handle);
+            if (!typeDef.GetDeclaringType().IsNil)
+                continue;
+            if (reader.StringComparer.Equals(typeDef.Name, name) && reader.StringComparer.Equals(typeDef.Namespace, @namespace))
+            {
+                result = handle;
+                return true;
+            }
+        }
+
+        result = default;
+        return false;
+    }
+
+    public static bool TryFindNestedTypeDef(MetadataReader reader, TypeDefinitionHandle declaringType, string name, out TypeDefinitionHandle result)
+    {
+        TypeDefinition declaring = reader.GetTypeDefinition(declaringType);
+        foreach (TypeDefinitionHandle handle in declaring.GetNestedTypes())
+        {
+            TypeDefinition nested = reader.GetTypeDefinition(handle);
+            if (reader.StringComparer.Equals(nested.Name, name))
+            {
+                result = handle;
+                return true;
+            }
+        }
+
+        result = default;
+        return false;
+    }
 }

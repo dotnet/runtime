@@ -402,7 +402,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             if (reader is null)
                 return false;
 
-            if (TryFindTopLevelTypeDef(reader, topLevel.Namespace, topLevel.Name, out typeDefHandle))
+            if (EcmaMetadataUtils.TryFindTopLevelTypeDef(reader, topLevel.Namespace, topLevel.Name, out typeDefHandle))
             {
                 definingReader = reader;
                 foundTopLevel = true;
@@ -425,31 +425,13 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         // Descend into nested types within the defining module.
         for (int level = 1; level < nameChain.Count; level++)
         {
-            if (!TryFindNestedTypeDef(definingReader!, typeDefHandle, nameChain[level].Name, out typeDefHandle))
+            if (!EcmaMetadataUtils.TryFindNestedTypeDef(definingReader!, typeDefHandle, nameChain[level].Name, out typeDefHandle))
                 return false;
         }
 
         targetAssembly = loader.GetAssembly(module);
         targetTypeDef = (uint)MetadataTokens.GetToken(typeDefHandle);
         return true;
-    }
-
-    private static bool TryFindTopLevelTypeDef(MetadataReader reader, string @namespace, string name, out TypeDefinitionHandle result)
-    {
-        foreach (TypeDefinitionHandle handle in reader.TypeDefinitions)
-        {
-            TypeDefinition typeDef = reader.GetTypeDefinition(handle);
-            if (!typeDef.GetDeclaringType().IsNil)
-                continue;
-            if (reader.StringComparer.Equals(typeDef.Name, name) && reader.StringComparer.Equals(typeDef.Namespace, @namespace))
-            {
-                result = handle;
-                return true;
-            }
-        }
-
-        result = default;
-        return false;
     }
 
     private static bool TryFindTopLevelExportedForwarder(
@@ -472,23 +454,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         }
 
         nextModule = default;
-        return false;
-    }
-
-    private static bool TryFindNestedTypeDef(MetadataReader reader, TypeDefinitionHandle declaringType, string name, out TypeDefinitionHandle result)
-    {
-        TypeDefinition declaring = reader.GetTypeDefinition(declaringType);
-        foreach (TypeDefinitionHandle handle in declaring.GetNestedTypes())
-        {
-            TypeDefinition nested = reader.GetTypeDefinition(handle);
-            if (reader.StringComparer.Equals(nested.Name, name))
-            {
-                result = handle;
-                return true;
-            }
-        }
-
-        result = default;
         return false;
     }
 
