@@ -1440,13 +1440,6 @@ private:
     // If true, inconsistencies in the target will cause ASSERTs to be raised in DEBUG builds
     bool m_fEnableTargetConsistencyAsserts;
 
-#ifdef _DEBUG
-protected:
-    // If true, a mscorwks/mscordacwks mismatch will trigger a nice assert dialog
-    bool m_fEnableDllVerificationAsserts;
-private:
-#endif
-
 protected:
     // Populates a DacpJitCodeHeapInfo with proper information about the
     // code heap type and the information needed to locate it.

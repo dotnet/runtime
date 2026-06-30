@@ -372,13 +372,6 @@ DacDbiInterfaceImpl::DacDbiInterfaceImpl(
     _ASSERTE(pMetaDataLookup != NULL);
     _ASSERTE(pAllocator != NULL);
     _ASSERTE(pTarget != NULL);
-
-#ifdef _DEBUG
-    // Enable verification asserts in ICorDebug scenarios.  ICorDebug never guesses at the DAC path, so any
-    // mismatch should be fatal, and so always of interest to the user.
-    // This overrides the assignment in the base class ctor (which runs first).
-    m_fEnableDllVerificationAsserts = true;
-#endif
 }
 
 //-----------------------------------------------------------------------------

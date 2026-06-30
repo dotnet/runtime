@@ -2836,10 +2836,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     {
         m_fEnableTargetConsistencyAsserts = true;
     }
-
-    // Verification asserts are disabled by default because some debuggers (cdb/windbg) probe likely locations
-    // for DAC and having this assert pop up all the time can be annoying.  We let derived classes enable this if they want.
-    m_fEnableDllVerificationAsserts = false;
 #endif
 }
 
