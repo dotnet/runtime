@@ -431,43 +431,15 @@ namespace Internal.Reflection.Augments
 
         public static Assembly[] GetLoadedAssemblies() => RuntimeAssemblyInfo.GetLoadedAssemblies();
 
+#pragma warning disable IDE0060
         public static EnumInfo GetEnumInfo(Type type, Func<Type, string[], object[], bool, EnumInfo> create)
         {
             RuntimeTypeInfo runtimeType = type.ToRuntimeTypeInfo();
-
-            var info = runtimeType.GenericCache as EnumInfo;
-            if (info != null)
+            if (runtimeType.GenericCache is EnumInfo info)
                 return info;
-
-            runtimeType.GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
-            Type underlyingType = runtimeType.GetEnumUnderlyingType();
-
-            // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
-            // That codepath would bring functionality to compare everything that was ever allocated in the program.
-            ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
-
-            info = create(underlyingType, unsortedNames, unsortedValues, isFlags);
-
-            runtimeType.GenericCache = info;
-            return info;
+            return runtimeType.CreateAndCacheEnumInfo();
         }
-
-        private sealed class EnumUnderlyingTypeComparer : IComparer<object>
-        {
-            public static readonly EnumUnderlyingTypeComparer Instance = new EnumUnderlyingTypeComparer();
-
-            public int Compare(object? x, object? y)
-            {
-                Debug.Assert(x is byte or ushort or uint or ulong);
-                return x switch
-                {
-                    byte b => b.CompareTo((byte)y!),
-                    ushort us => us.CompareTo((ushort)y!),
-                    uint ui => ui.CompareTo((uint)y!),
-                    _ => ((ulong)x!).CompareTo((ulong)y!),
-                };
-            }
-        }
+#pragma warning restore IDE0060
 
         public static DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)
         {

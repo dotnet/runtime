@@ -9,7 +9,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using Internal.Reflection.Augments;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -22,27 +21,14 @@ namespace System
     public abstract partial class Enum : ValueType, IComparable, IFormattable, IConvertible
     {
 #pragma warning disable IDE0060
-        internal static unsafe EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
+        internal static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {
             Debug.Assert(enumType != null);
             Debug.Assert(enumType.IsEnum);
-
-            MethodTable* pEEType = enumType.ToMethodTableMayBeNull();
-            if (pEEType == null)
-            {
-                // Open generic enum: get the underlying type's EEType to drive the element type switch below.
-                Type underlyingType = enumType.GetRuntimeTypeInfo().GetEnumUnderlyingType();
-                pEEType = underlyingType.TypeHandle.ToMethodTable();
-            }
-
-            return pEEType->ElementType switch
-            {
-                EETypeElementType.SByte or EETypeElementType.Byte => GetEnumInfo<byte>(enumType),
-                EETypeElementType.Int16 or EETypeElementType.UInt16 => GetEnumInfo<ushort>(enumType),
-                EETypeElementType.Int32 or EETypeElementType.UInt32 => GetEnumInfo<uint>(enumType),
-                EETypeElementType.Int64 or EETypeElementType.UInt64 => GetEnumInfo<ulong>(enumType),
-                _ => throw new NotSupportedException(),
-            };
+            var runtimeTypeInfo = enumType.GetRuntimeTypeInfo();
+            if (runtimeTypeInfo.GenericCache is EnumInfo info)
+                return info;
+            return runtimeTypeInfo.CreateAndCacheEnumInfo();
         }
 
         internal static EnumInfo<TStorage> GetEnumInfo<TStorage>(RuntimeType enumType, bool getNames = true)
@@ -56,17 +42,10 @@ namespace System
                 typeof(TStorage) == typeof(uint) ||
                 typeof(TStorage) == typeof(ulong));
 
-            return (EnumInfo<TStorage>)ReflectionAugments.GetEnumInfo(enumType,
-                static (underlyingType, names, valuesAsObject, isFlags) =>
-                {
-                    // Only after we've sorted, create the underlying array.
-                    var values = new TStorage[valuesAsObject.Length];
-                    for (int i = 0; i < valuesAsObject.Length; i++)
-                    {
-                        values[i] = (TStorage)valuesAsObject[i];
-                    }
-                    return new EnumInfo<TStorage>(underlyingType, values, names, isFlags);
-                });
+            var runtimeTypeInfo = enumType.GetRuntimeTypeInfo();
+            if (runtimeTypeInfo.GenericCache is EnumInfo<TStorage> info)
+                return info;
+            return (EnumInfo<TStorage>)runtimeTypeInfo.CreateAndCacheEnumInfo();
         }
 #pragma warning restore
 
