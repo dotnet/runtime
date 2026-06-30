@@ -707,9 +707,8 @@ namespace
         if (pModule->IsReadyToRun()
             && pModule->GetReadyToRunInfo()->HasStrippedILBodies()
             && pHeader->GetCodeSize() == 2
-            && pHeader->Code[0] == 0x14  // ldnull
-            && pHeader->Code[1] == 0x7A) // throw
-        {
+            && pHeader->Code[0] == CEE_LDNULL
+            && pHeader->Code[1] == CEE_THROW)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_STRIPPED_IL_BODY);
         }
 
