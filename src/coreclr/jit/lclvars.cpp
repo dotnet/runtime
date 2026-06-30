@@ -6724,6 +6724,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
         for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
         {
+#ifdef TARGET_POWERPC64
+            if (lclNum <= 8 && varDsc->lvIsParam)
+            {
+                printf("PPC64LE: Processing V%02u param in frame layout loop (lvOnFrame=%d, allocOrder=0x%x)\n",
+                        lclNum, varDsc->lvOnFrame, alloc_order[cur]);
+            }
+#endif
             /* Ignore field locals of the promotion type PROMOTION_TYPE_FIELD_DEPENDENT.
                In other words, we will not calculate the "base" address of the struct local if
                the promotion type is PROMOTION_TYPE_FIELD_DEPENDENT.
@@ -7197,7 +7204,23 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
     //
     // TYP_SIMD structs locals have alignment preference given by getSIMDTypeAlignment() for
     // better performance.
+    
+#ifdef TARGET_POWERPC64
+    // PPC64LE: Skip 8-byte alignment for register parameters
+    // Register parameters are homed to the parameter save area without alignment gaps
+    bool skipAlignment = false;
+    if (lcl->lvIsParam && lcl->lvIsRegArg)
+    {
+        // All register parameters should be packed tightly in the parameter save area
+        skipAlignment = true;
+        printf("PPC64LE: Skipping 8-byte alignment for register parameter V%02u (size=%u, type=%s)\n",
+               lclNum, size, varTypeName(lcl->TypeGet()));
+    }
+    
+    if (!skipAlignment && (size >= 8) && ((lvaDoneFrameLayout != FINAL_FRAME_LAYOUT) || ((stkOffs % 8) != 0)
+#else
     if ((size >= 8) && ((lvaDoneFrameLayout != FINAL_FRAME_LAYOUT) || ((stkOffs % 8) != 0)
+#endif
 #if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
                         || varTypeIsSIMD(lcl)
 #endif
@@ -7253,6 +7276,8 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
         lvaIncrementFrameSize(pad);
 #if defined(TARGET_POWERPC64)
         // PPC64LE: positive offsets grow upward
+        printf("PPC64LE: Adding %d bytes padding before V%02u (stkOffs was %d, now %d)\n",
+               pad, lclNum, stkOffs, stkOffs + pad);
         stkOffs += pad;
 #else
         stkOffs -= pad;
@@ -7285,7 +7310,10 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
     }
     
     int frameOffset = LINKAGE_AREA_SIZE + paramSaveArea;
-    lcl->SetStackOffset(stkOffs + frameOffset);
+    int finalOffset = stkOffs + frameOffset;
+    lcl->SetStackOffset(finalOffset);
+    printf("PPC64LE: V%02u assigned offset %d (stkOffs=%d, frameOffset=%d, size=%u)\n",
+           lclNum, finalOffset, stkOffs, frameOffset, size);
     stkOffs += size;
 #else
     stkOffs -= size;

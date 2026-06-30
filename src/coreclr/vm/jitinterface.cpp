@@ -6,6 +6,7 @@
 
 // ===========================================================================
 
+#include "ctime"
 #include "common.h"
 #include "jitinterface.h"
 #include "codeman.h"
@@ -12401,7 +12402,6 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         "AsPointer",
         "GetUnderlyingNativeHandle",
         "Unregister",
-        "Exchange",
         "ThrowIfInvalid",
         "GetHandleValue",
         "InternalFree",
@@ -12462,6 +12462,40 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
         "ReadUnaligned",
 	"WriteUnaligned",
         "_Memmove",
+       "op_Inequality",
+       "get_Default",
+       "get_Ordinal",
+       "get_OrdinalIgnoreCase",
+       "GetStringComparer",
+       "wcslen",
+       "ByteOffset",
+       "GetBucket",
+        "get_Attributes",
+        "get_Keys",
+        "get_IsCompleted",
+        "get_IsClosed",
+        "ThrowIfNegative",
+        "ThrowIfNegativeOrZero",
+        "IsNegative",
+        "IsWhiteSpace",
+        "IsSurrogate",
+       "AddByteOffset",
+       "BitCast",
+       "NullRef",
+       "IsNullRef",
+       "LoadNUInt",
+       "AsRef",
+       "IsEventSourceLoggingEnabled",
+       "Log2",
+       "IndexOfChar",
+       "Max",
+       "RoundUpToEven",
+       "Min",
+       "CountHexDigits",
+       "NegateIfNeeded",
+       "IsAsciiLetter",
+       "IsNullOrWhiteSpace",
+       "IndexOfAnyChar"
     };
 
     struct JitInclusionEntry
@@ -12477,7 +12511,7 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
 	{ "System.Collections.Generic.Dictionary`2[__Canon,ConsoleKeyInfo]","Initialize"},
 	{ "System.Diagnostics.Tracing.EventSource", "get_IsSupported"},
 	{ "System.StartupHookProvider", "get_IsSupported"},
-	{ "EmptyArray`1[Char]", ".cctor"},
+	/*{ "EmptyArray`1[Char]", ".cctor"},
 	{ "EmptyArray`1[__Canon]", ".cctor"},
 	{ "FileDescriptors", ".cctor"},
 	{ "Microsoft.Win32.SafeHandles.SafeFileHandle", ".cctor"},
@@ -12519,7 +12553,7 @@ static bool ShouldUseInterpreterFallback(MethodDesc* ftnDesc,const char* ftnName
 	{ "System.Threading.Tasks.TaskCache", ".cctor"},
 	{ "System.Threading.Tasks.Task`1[Boolean]", ".cctor"},
 	{ "System.Threading.Tasks.Task`1[Int32]", ".cctor"},
-	{ "System.Type", ".cctor"},
+	{ "System.Type", ".cctor"},*/
     };
 
     const size_t numInclusions = sizeof(jitInclusionList) / sizeof(jitInclusionList[0]);
@@ -12597,18 +12631,42 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 #if defined(TARGET_S390X) || defined(TARGET_POWERPC64)
     MethodDesc* ftnDesc = GetMethod(info->ftn);
     const char* ftnName = ftnDesc->GetName();
-
+ 
     forceInterpreter = true;
-    if (ShouldUseInterpreterFallback(ftnDesc,ftnName))
+    /*if (ShouldUseInterpreterFallback(ftnDesc,ftnName))
     {
-	printf ("Jitting -> %s:%s \n", ftnDesc->m_pszDebugClassName,ftnName);
-	interpreterFallback = true;
+        printf ("Jitting -> %s:%s \n", ftnDesc->m_pszDebugClassName,ftnName);
+        interpreterFallback = true;
     }
     else
     {
-	printf ("Interpreting -> %s:%s \n", ftnDesc->m_pszDebugClassName,ftnName);
+        printf ("Interpreting -> %s:%s \n", ftnDesc->m_pszDebugClassName,ftnName);
         interpreterFallback = false;
-    }
+    }*/
+ 
+interpreterFallback = ShouldUseInterpreterFallback(ftnDesc, ftnName);
+ 
+ 
+        char filename[64];
+	std::time_t now = std::time(nullptr);
+	std::strftime(filename, sizeof(filename),"./log-%d-%m-%y_%H-%M.log",std::localtime(&now));
+ 
+        FILE* fp = fopen(filename, "a");
+ 
+        if (fp != nullptr)
+        {
+            if (interpreterFallback)
+            {
+                    fprintf(fp,"Jitting -> %s:%s\n",ftnDesc->m_pszDebugClassName,ftnName);
+            }
+            else
+            {
+                    fprintf(fp,"Interpreting -> %s:%s\n",ftnDesc->m_pszDebugClassName,ftnName);
+            }
+ 
+            fclose(fp);
+        }
+ 
 #endif
 
     if (interpreterFallback == false)

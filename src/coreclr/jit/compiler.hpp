@@ -3659,6 +3659,9 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
     return regNum - REG_V0;
 #elif defined(UNIX_AMD64_ABI)
     return regNum - REG_FLTARG_0;
+#elif defined(TARGET_POWERPC64)
+    // PPC64LE has 13 float argument registers (f1-f13)
+    return regNum - REG_FLTARG_0;
 #else
 
 #if MAX_FLOAT_REG_ARG >= 1
