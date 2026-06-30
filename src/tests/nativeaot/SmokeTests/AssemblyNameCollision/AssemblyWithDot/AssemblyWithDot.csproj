@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>A.B</AssemblyName>
+  </PropertyGroup>
+</Project>

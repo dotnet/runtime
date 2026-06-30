@@ -37,22 +37,11 @@
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
-    <ProjectReference Include="ILCompiler.Compiler.Tests.Assets\ManglerCollision.A.B\ManglerCollision.A.B.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </ProjectReference>
-    <ProjectReference Include="ILCompiler.Compiler.Tests.Assets\ManglerCollision.A_B\ManglerCollision.A_B.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <OutputItemType>Content</OutputItemType>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="DependencyGraphTests.cs" />
     <Compile Include="DevirtualizationTests.cs" />
-    <Compile Include="NameManglerTests.cs" />
     <Compile Include="SwiftLoweringTests.cs" />
   </ItemGroup>
 </Project>

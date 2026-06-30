@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="AssemblyWithDot\AssemblyWithDot.csproj" Aliases="AssemblyWithDot" />
+    <ProjectReference Include="AssemblyWithUnderscore\AssemblyWithUnderscore.csproj" Aliases="AssemblyWithUnderscore" />
+  </ItemGroup>
+</Project>
