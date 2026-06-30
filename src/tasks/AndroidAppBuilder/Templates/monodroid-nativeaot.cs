@@ -120,7 +120,7 @@ internal unsafe struct JNIEnv
     {
         fixed (JNIEnv* thisptr = &this)
         {
-            byte isCopy;
+            byte isCopy = 0;
             byte* chars = NativeInterface->GetStringUTFChars(thisptr, str, &isCopy);
             if (chars is null)
                 return null;
