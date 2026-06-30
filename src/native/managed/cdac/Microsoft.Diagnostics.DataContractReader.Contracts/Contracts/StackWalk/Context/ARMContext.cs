@@ -65,6 +65,7 @@ internal struct ARMContext : IPlatformContext
     }
 
     public void UnsetSingleStepFlag() => throw new NotSupportedException("ARM uses emulated single-stepping; there is no hardware single-step flag in the context.");
+    public bool SupportsSingleStep => false;
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {

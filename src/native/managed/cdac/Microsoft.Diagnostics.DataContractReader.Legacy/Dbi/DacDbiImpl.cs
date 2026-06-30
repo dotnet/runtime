@@ -685,32 +685,17 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    // Maximum number of exception parameters in an OS EXCEPTION_RECORD (EXCEPTION_MAXIMUM_PARAMETERS).
+    // EXCEPTION_MAXIMUM_PARAMETERS from the Windows SDK.
     private const int ExceptionMaximumParameters = 15;
 
-    // offsetof(EXCEPTION_RECORD, ExceptionInformation) for the target's pointer size.
-    // Layout: ExceptionCode (DWORD) + ExceptionFlags (DWORD) + ExceptionRecord (ptr) +
-    //         ExceptionAddress (ptr) + NumberParameters (DWORD), then ExceptionInformation[]
-    //         aligned up to the pointer size.
-    private int ExceptionRecordHeaderSize()
+    // Full size of a native EXCEPTION_RECORD for the target's pointer size: the header
+    // (two DWORDs + two pointers + NumberParameters DWORD, aligned up to the pointer size)
+    // followed by the fixed ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS] array.
+    private static int ExceptionRecordFullSize(int ptrSize)
     {
-        int ptrSize = _target.PointerSize;
         int unaligned = sizeof(uint) + sizeof(uint) + ptrSize + ptrSize + sizeof(uint);
-        return (unaligned + (ptrSize - 1)) & ~(ptrSize - 1);
-    }
-
-    // EXCEPTION_RECORD::NumberParameters lives after the two leading DWORDs and the two pointers.
-    private uint ReadExceptionRecordNumberParameters(nint pExceptionRecord)
-    {
-        int numberParametersOffset = sizeof(uint) + sizeof(uint) + (2 * _target.PointerSize);
-        return (uint)*(int*)(pExceptionRecord + numberParametersOffset);
-    }
-
-    private void WriteExceptionRecordHelper(TargetPointer remotePtr, nint pExceptionRecord)
-    {
-        uint numberParameters = ReadExceptionRecordNumberParameters(pExceptionRecord);
-        int cbSize = ExceptionRecordHeaderSize() + ((int)numberParameters * _target.PointerSize);
-        _target.WriteBuffer(remotePtr.Value, new Span<byte>((void*)pExceptionRecord, cbSize));
+        int header = (unaligned + (ptrSize - 1)) & ~(ptrSize - 1);
+        return header + (ExceptionMaximumParameters * ptrSize);
     }
 
     public int Hijack(ulong vmThread, uint dwThreadId, nint pRecord, nint pOriginalContext, uint cbSizeContext, int reason, nint pUserData, ulong* pRemoteContextAddr)
@@ -721,88 +706,40 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         int hr = HResults.S_OK;
         try
         {
-            TargetPointer pfnHijackFunction = _target.Contracts.Debugger.GetHijackAddress();
-            if (pfnHijackFunction == TargetPointer.Null)
-                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_NOTREADY)!;
-
             // Read the thread's current context.
             IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
             byte[] contextBuffer = new byte[ctx.Size];
             if (!_target.TryGetThreadContext(dwThreadId, ctx.AllContextFlags, contextBuffer))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
-            ctx.FillFromBuffer(contextBuffer);
 
             // If the caller requested it, copy back the original (pre-hijack) context.
             if (pOriginalContext != 0)
             {
-                if (cbSizeContext != ctx.Size)
+                if (cbSizeContext != contextBuffer.Length)
                     throw Marshal.GetExceptionForHR(HResults.E_INVALIDARG)!;
                 contextBuffer.AsSpan().CopyTo(new Span<byte>((void*)pOriginalContext, (int)cbSizeContext));
             }
 
-            if (_target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X64 or RuntimeInfoArchitecture.X86 or RuntimeInfoArchitecture.Arm64)
-                ctx.UnsetSingleStepFlag();
-
-            TargetPointer sp = ctx.StackPointer;
-            TargetPointer espContext = TargetPointer.Null;
-            TargetPointer espRecord = TargetPointer.Null;
-
-            if (vmThread != 0)
+            byte[]? recordBytes = null;
+            if (pRecord != 0)
             {
-                ThreadData threadData = _target.Contracts.Thread.GetThreadData(vmThread);
-                if (threadData.IsExceptionInProgress)
-                {
-                    TargetPointer espOSContext = threadData.OSExceptionContextRecord;
-                    TargetPointer espOSRecord = threadData.OSExceptionRecord;
-                    if (espOSContext < sp)
-                    {
-                        _target.WriteBuffer(espOSContext.Value, ctx.GetBytes());
-                        espContext = espOSContext;
-
-                        // We should have an EXCEPTION_RECORD if we're hijacked at an exception.
-                        WriteExceptionRecordHelper(espOSRecord, pRecord);
-                        espRecord = espOSRecord;
-
-                        sp = espOSContext < espOSRecord ? espOSContext : espOSRecord;
-                    }
-                }
+                int recordSize = ExceptionRecordFullSize(_target.PointerSize);
+                recordBytes = new byte[recordSize];
+                new ReadOnlySpan<byte>((void*)pRecord, recordSize).CopyTo(recordBytes);
             }
 
-            // If we didn't reuse the OS stack space, push fresh structures at the leaf of the stack.
-            if (espContext == TargetPointer.Null)
-            {
-                Debug.Assert(espRecord == TargetPointer.Null);
-
-                espContext = StackPusher.Push(_target, ref sp, ctx.GetBytes(), align: true);
-
-                // If the caller didn't pass an exception record, we're not hijacking at an
-                // exception and pass null for the record argument.
-                if (pRecord != 0)
-                {
-                    int fullRecordSize = ExceptionRecordHeaderSize() + (ExceptionMaximumParameters * _target.PointerSize);
-                    espRecord = StackPusher.Push(_target, ref sp, new Span<byte>((void*)pRecord, fullRecordSize), align: true);
-                }
-            }
+            TargetPointer espContext = _target.Contracts.Debugger.PrepareExceptionHijack(
+                contextBuffer,
+                new TargetPointer(vmThread),
+                recordBytes,
+                reason,
+                new TargetPointer((ulong)pUserData));
 
             if (pRemoteContextAddr is not null)
                 *pRemoteContextAddr = espContext.Value;
 
-            ReadOnlySpan<TargetNUInt> args =
-            [
-                new TargetNUInt(espContext.Value),
-                new TargetNUInt(espRecord.Value),
-                new TargetNUInt((uint)reason),
-                new TargetNUInt((ulong)pUserData),
-            ];
-            byte[] ctxBytes = ctx.GetBytes();
-            _target.Contracts.Debugger.PlaceExceptionHijackWorkerArguments(ctxBytes, ref sp, args);
-            ctx.FillFromBuffer(ctxBytes);
-
-            ctx.StackPointer = sp;
-            ctx.InstructionPointer = new TargetCodePointer(pfnHijackFunction.Value);
-
             // Commit the modified context to the thread.
-            if (!_target.TrySetThreadContext(dwThreadId, ctx.GetBytes()))
+            if (!_target.TrySetThreadContext(dwThreadId, contextBuffer))
                 throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
         }
         catch (System.Exception ex)

@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -181,12 +184,103 @@ internal readonly struct Debugger_1 : IDebugger
         return true;
     }
 
-    void IDebugger.PlaceExceptionHijackWorkerArguments(byte[] context, ref TargetPointer sp, ReadOnlySpan<TargetNUInt> args)
+    // offsetof(EXCEPTION_RECORD, ExceptionInformation) for the target's pointer size.
+    // Layout: ExceptionCode (DWORD) + ExceptionFlags (DWORD) + ExceptionRecord (ptr) +
+    //         ExceptionAddress (ptr) + NumberParameters (DWORD), then ExceptionInformation[]
+    //         aligned up to the pointer size.
+    private int ExceptionRecordHeaderSize()
     {
+        int ptrSize = _target.PointerSize;
+        int unaligned = sizeof(uint) + sizeof(uint) + ptrSize + ptrSize + sizeof(uint);
+        return (unaligned + (ptrSize - 1)) & ~(ptrSize - 1);
+    }
+
+    // EXCEPTION_RECORD::NumberParameters lives after the two leading DWORDs and the two pointers.
+    private uint ReadExceptionRecordNumberParameters(ReadOnlySpan<byte> record)
+    {
+        int numberParametersOffset = sizeof(uint) + sizeof(uint) + (2 * _target.PointerSize);
+        ReadOnlySpan<byte> slice = record.Slice(numberParametersOffset, sizeof(uint));
+        return _target.IsLittleEndian
+            ? BinaryPrimitives.ReadUInt32LittleEndian(slice)
+            : BinaryPrimitives.ReadUInt32BigEndian(slice);
+    }
+
+    private void WriteExceptionRecordHelper(TargetPointer remotePtr, byte[] record)
+    {
+        uint numberParameters = ReadExceptionRecordNumberParameters(record);
+        int cbSize = ExceptionRecordHeaderSize() + ((int)numberParameters * _target.PointerSize);
+        _target.WriteBuffer(remotePtr.Value, record.AsSpan(0, cbSize));
+    }
+
+    TargetPointer IDebugger.PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byte[]? exceptionRecord, int reason, TargetPointer userData)
+    {
+        TargetPointer pfnHijackFunction = ((IDebugger)this).GetHijackAddress();
+        if (pfnHijackFunction == TargetPointer.Null)
+            throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_NOTREADY)!;
+
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(_target);
         ctx.FillFromBuffer(context);
+
+        if (ctx.SupportsSingleStep)
+            ctx.UnsetSingleStepFlag();
+
+        TargetPointer sp = ctx.StackPointer;
+        TargetPointer espContext = TargetPointer.Null;
+        TargetPointer espRecord = TargetPointer.Null;
+
+        if (vmThread != TargetPointer.Null)
+        {
+            ThreadData threadData = _target.Contracts.Thread.GetThreadData(vmThread);
+            if (threadData.IsExceptionInProgress)
+            {
+                TargetPointer espOSContext = threadData.OSExceptionContextRecord;
+                TargetPointer espOSRecord = threadData.OSExceptionRecord;
+                if (espOSContext < sp)
+                {
+                    _target.WriteBuffer(espOSContext.Value, ctx.GetBytes());
+                    espContext = espOSContext;
+
+                    // We should have an EXCEPTION_RECORD if we're hijacked at an exception.
+                    WriteExceptionRecordHelper(espOSRecord, exceptionRecord!);
+                    espRecord = espOSRecord;
+
+                    sp = espOSContext < espOSRecord ? espOSContext : espOSRecord;
+                }
+            }
+        }
+
+        // If we didn't reuse the OS stack space, push fresh structures at the leaf of the stack.
+        if (espContext == TargetPointer.Null)
+        {
+            Debug.Assert(espRecord == TargetPointer.Null);
+
+            espContext = StackPusher.Push(_target, ref sp, ctx.GetBytes(), align: true);
+
+            // If the caller didn't pass an exception record, we're not hijacking at an
+            // exception and pass null for the record argument.
+            if (exceptionRecord is not null)
+            {
+                espRecord = StackPusher.Push(_target, ref sp, exceptionRecord, align: true);
+            }
+        }
+
+        // Set up the arguments for the hijack worker:
+        //   void ExceptionHijackWorker(CONTEXT* pContext, EXCEPTION_RECORD* pRecord, EHijackReason reason, void* pData)
+        ReadOnlySpan<TargetNUInt> args =
+        [
+            new TargetNUInt(espContext.Value),
+            new TargetNUInt(espRecord.Value),
+            new TargetNUInt((uint)reason),
+            new TargetNUInt(userData.Value),
+        ];
         IntegerArgPlacer.PlaceArgs(_target, ctx, ref sp, args);
+
+        ctx.StackPointer = sp;
+        ctx.InstructionPointer = new TargetCodePointer(pfnHijackFunction.Value);
+
         ctx.GetBytes().AsSpan().CopyTo(context);
+
+        return espContext;
     }
 
     private static class IntegerArgPlacer

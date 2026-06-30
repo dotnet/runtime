@@ -69,6 +69,7 @@ internal struct LoongArch64Context : IPlatformContext
     }
 
     public void UnsetSingleStepFlag() => throw new NotSupportedException("LoongArch64 uses emulated single-stepping; there is no hardware single-step flag in the context.");
+    public bool SupportsSingleStep => false;
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {

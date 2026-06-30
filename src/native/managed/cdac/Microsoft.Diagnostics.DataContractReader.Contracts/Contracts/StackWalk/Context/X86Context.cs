@@ -73,6 +73,7 @@ public struct X86Context : IPlatformContext
 
     // Clears the x86 hardware trace flag (EFLAGS.TF, bit 0x100).
     public void UnsetSingleStepFlag() => EFlags &= ~0x100u;
+    public bool SupportsSingleStep => true;
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {

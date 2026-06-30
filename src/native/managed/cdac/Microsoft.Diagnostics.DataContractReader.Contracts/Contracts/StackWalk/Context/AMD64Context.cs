@@ -66,6 +66,7 @@ internal struct AMD64Context : IPlatformContext
 
     // Clears the x64 hardware trace flag (EFLAGS.TF, bit 0x100).
     public void UnsetSingleStepFlag() => EFlags &= ~0x100;
+    public bool SupportsSingleStep => true;
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {
