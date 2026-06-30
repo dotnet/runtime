@@ -2133,7 +2133,7 @@ public:
     }
 
     // Returns the AsyncVariantLookup that matches this method's async kind.
-    inline AsyncVariantLookup GetAsyncVariantLookup() const
+    inline AsyncVariantLookup GetMatchingAsyncVariantLookup() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         if (IsReturnDroppingThunk())

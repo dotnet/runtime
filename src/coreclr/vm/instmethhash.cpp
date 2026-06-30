@@ -211,7 +211,7 @@ BOOL InstMethodHashTable::ContainsMethodDesc(MethodDesc* pMD)
 
     return FindMethodDesc(
         pMD->GetMethodTable(), pMD->GetMemberDef(), pMD->IsUnboxingStub(),
-        pMD->GetMethodInstantiation(), pMD->RequiresInstArg(), pMD->GetAsyncVariantLookup()) != NULL;
+        pMD->GetMethodInstantiation(), pMD->RequiresInstArg(), pMD->GetMatchingAsyncVariantLookup()) != NULL;
 }
 
 #endif // #ifndef DACCESS_COMPILE
