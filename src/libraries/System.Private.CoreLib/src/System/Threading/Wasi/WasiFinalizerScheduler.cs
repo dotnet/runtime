@@ -22,7 +22,7 @@ namespace System.Threading
     // WasiFinalizer_TryClearPending between work-queue iterations from
     // PollWasiEventLoopUntilResolved and, when the flag is set, calls
     // WasiFinalizer_RunWorker at a safe point.
-    internal static unsafe partial class WasiFinalizerScheduler
+    internal static partial class WasiFinalizerScheduler
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WasiFinalizer_TryClearPending")]
         [return: MarshalAs(UnmanagedType.Bool)]
