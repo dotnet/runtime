@@ -1560,7 +1560,6 @@ void HelperCallProperties::init()
                 break;
 
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
-                isPure     = true;
                 exceptions = ExceptionSetFlags::None;
                 break;
 
