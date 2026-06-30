@@ -641,9 +641,12 @@ public static partial class XmlSerializerTests
         element.Attributes.Append(customDoc.CreateAttribute("regularElementAttribute", "regularElementAttributeValue"));
         customDoc.AddItem(element);
         var actual = SerializeAndDeserialize(customDoc,
-            WithXmlHeader(@"<customElement name=""testElement"" regularAttribute=""regularValue"" customAttribute=""customValue""/>"), skipStringCompare: true);
+            WithXmlHeader(@"<customElement name=\"testElement\" regularAttribute=\"regularValue\" customAttribute=\"customValue\"/>"), skipStringCompare: true);
+
         Assert.NotNull(actual);
-    }
+        Assert.Single(actual.CustomItems);
+        Assert.Equal("testElement", actual.CustomItems[0].Name);
+        Assert.Contains(actual.CustomItems[0].CustomAttributes, n => n is CustomAttribute a && a.LocalName == "customAttribute" && a.Value == "customValue");
 
     [Fact]
     public static void Xml_Struct()
