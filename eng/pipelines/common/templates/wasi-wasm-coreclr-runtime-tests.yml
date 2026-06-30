@@ -12,15 +12,19 @@ jobs:
 # the src/tests CoreCLR runtime tests on Helix under wasmtime.
 #
 # Mirrors eng/pipelines/common/templates/wasm-runtime-tests.yml (Mono
-# variant). Key differences:
+# variant), with one difference:
 #   * runtimeFlavor: coreclr  (Mono variant uses 'mono'/monointerpreter)
-#   * buildAllTestsAsStandalone: true  (CoreCLR-WASI tests use the
-#     standalone per-test bash wrappers that emit "WASM EXIT N" on
-#     stderr; the merged-runner / WasmTestRunner path is Mono-specific)
-#   * testBuildArgs restricts the build to the test trees that have
-#     been categorized in src/coreclr/wasi/tests/known-failures.txt
-#     and verified to have zero unexpected failures locally
-#     (~3,700 tests; see runtime/src/coreclr/wasi/tests/README.md).
+#
+# Tests are built in the standard merged-runner mode, the same mode
+# Browser-CoreCLR (runtime.yml lines 168-216) and all Mono wasm test
+# runs use. helixpublishwitharcade.proj discovers the merged-runner
+# assemblies and dispatches them as Helix work items; tests.wasi.targets
+# wires the execution script to xharness + wasmtime.
+#
+# testBuildArgs restricts the build to the test trees that have been
+# categorized in src/coreclr/wasi/tests/known-failures.txt and verified
+# to have zero unexpected failures locally (~3,700 tests; see
+# src/coreclr/wasi/tests/README.md).
 #
 # Helix queue: reuses the existing 'wasi_wasm' mapping in
 # eng/pipelines/libraries/helix-queues-setup.yml which already targets
@@ -64,7 +68,6 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_WASI_$(_BuildConfig)
-            buildAllTestsAsStandalone: true
             # Initial gate subset: trees where every test either passes or
             # is documented in src/coreclr/wasi/tests/known-failures.txt.
             # Expand once the gate is green for a few weeks. The full list
