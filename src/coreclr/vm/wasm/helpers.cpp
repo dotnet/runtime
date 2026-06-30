@@ -520,12 +520,16 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     PORTABILITY_ASSERT("FaultingExceptionFrame::UpdateRegDisplay_Impl is not implemented on wasm");
 }
 
+TADDR GetWasmFramePointerFromStackPointer(TADDR sp);
+
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     pRD->IsCallerContextValid = FALSE;
 
     pRD->pCurrentContext->InterpreterIP = GetReturnAddress();
     pRD->pCurrentContext->InterpreterSP = GetSP();
+    // Recover the frame pointer so GC-info readers can locate frame slots.
+    pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer(GetSP());
 
     SyncRegDisplayToCurrentContext(pRD);
 
@@ -1514,6 +1518,7 @@ RtlVirtualUnwind (
         PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
         ContextRecord->InterpreterSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
         ContextRecord->InterpreterIP = GetWasmVirtualIPFromStackPointer(ContextRecord->InterpreterSP);
+        ContextRecord->InterpreterFP = GetWasmFramePointerFromStackPointer(ContextRecord->InterpreterSP);
     }
     else
     {
@@ -1521,6 +1526,7 @@ RtlVirtualUnwind (
         _ASSERTE(FALSE);
         ContextRecord->InterpreterIP = 0;
         ContextRecord->InterpreterSP = 0;
+        ContextRecord->InterpreterFP = 0;
     }
 
     return nullptr;
