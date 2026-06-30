@@ -29,7 +29,6 @@ public interface IPlatformAgnosticContext
     public abstract bool TryReadRegister(string fieldName, out TargetNUInt value);
     public abstract bool TrySetRegister(int number, TargetNUInt value);
     public abstract bool TryReadRegister(int number, out TargetNUInt value);
-    public abstract bool SupportsSingleStep { get; }
 
     public abstract void Unwind(Target target);
 

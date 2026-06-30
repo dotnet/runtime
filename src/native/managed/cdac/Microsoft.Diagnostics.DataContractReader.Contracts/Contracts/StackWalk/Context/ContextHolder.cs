@@ -53,7 +53,6 @@ public sealed class ContextHolder<T> : IPlatformAgnosticContext, IEquatable<Cont
     public void Clear() => Context = default;
     public void Unwind(Target target) => Context.Unwind(target);
     public void UnsetSingleStepFlag() => Context.UnsetSingleStepFlag();
-    public bool SupportsSingleStep => Context.SupportsSingleStep;
 
     public bool TrySetRegister(string fieldName, TargetNUInt value) => Context.TrySetRegister(fieldName, value);
     public bool TryReadRegister(string fieldName, out TargetNUInt value) => Context.TryReadRegister(fieldName, out value);

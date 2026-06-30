@@ -64,9 +64,7 @@ internal struct ARMContext : IPlatformContext
         unwinder.Unwind(ref this);
     }
 
-    public void UnsetSingleStepFlag() => throw new NotSupportedException("ARM uses emulated single-stepping; there is no hardware single-step flag in the context.");
-    public bool SupportsSingleStep => false;
-
+    public void UnsetSingleStepFlag() { }
     public bool TrySetRegister(string name, TargetNUInt value)
     {
         if (name.Equals("r0", StringComparison.OrdinalIgnoreCase)) { R0 = (uint)value.Value; return true; }

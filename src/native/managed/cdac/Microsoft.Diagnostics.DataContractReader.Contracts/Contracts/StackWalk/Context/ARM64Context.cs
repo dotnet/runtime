@@ -72,7 +72,6 @@ internal struct ARM64Context : IPlatformContext
 
     // Clears the AArch64 hardware single-step flag (CPSR.SS, bit 0x00200000).
     public void UnsetSingleStepFlag() => Cpsr &= ~0x00200000u;
-    public bool SupportsSingleStep => true;
 
     public bool TrySetRegister(string name, TargetNUInt value)
     {

@@ -18,8 +18,6 @@ public interface IPlatformContext
 
     uint RawContextFlags { get; set; }
 
-    bool SupportsSingleStep { get; }
-
     void Unwind(Target target);
 
     /// <summary>

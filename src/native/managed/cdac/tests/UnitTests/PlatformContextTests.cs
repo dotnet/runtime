@@ -180,8 +180,12 @@ public class PlatformContextTests
 
     [Theory]
     [MemberData(nameof(EmulatedSingleStepContexts))]
-    public void UnsetSingleStepFlag_Throws_OnEmulatedSingleStepArches(IPlatformAgnosticContext ctx)
+    public void UnsetSingleStepFlag_IsNoOp_OnEmulatedSingleStepArches(IPlatformAgnosticContext ctx)
     {
-        Assert.Throws<NotSupportedException>(ctx.UnsetSingleStepFlag);
+        byte[] before = ctx.GetBytes();
+
+        ctx.UnsetSingleStepFlag();
+
+        Assert.Equal(before, ctx.GetBytes());
     }
 }
