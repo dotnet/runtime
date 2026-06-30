@@ -84,6 +84,7 @@
     <Compile Include="eh\basics\throwinfinallyerrpathfn.cs" />
     <Compile Include="eh\basics\throwoutside.cs" />
     <Compile Include="eh\basics\trycatch.cs" />
+    <Compile Include="eh\interp\interpr2rfunclets.cs" />
     <Compile Include="eh\basics\trycatchtrycatch.cs" />
     <Compile Include="eh\basics\tryfinally.cs" />
     <Compile Include="eh\basics\tryfinallytrycatch.cs" />
