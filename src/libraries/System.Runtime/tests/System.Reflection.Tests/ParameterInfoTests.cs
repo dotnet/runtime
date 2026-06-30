@@ -334,7 +334,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void EnumAPIs_OnOpenGenericEnumType()
         {
-            Type openEnumType = typeof(NestedGenericEnumContainer<>).GetNestedType("NestedEnum")!;
+            Type openEnumType = typeof(NestedGenericEnumContainer<>.NestedEnum);
 
             Assert.Equal(typeof(byte), openEnumType.GetEnumUnderlyingType());
 
