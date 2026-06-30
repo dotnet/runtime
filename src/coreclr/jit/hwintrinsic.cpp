@@ -4903,10 +4903,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 intrinsic = varTypeIsLong(simdBaseType) ? NI_AdvSimd_ShiftLogicalScalar : NI_AdvSimd_ShiftLogical;
             }
 #elif defined(TARGET_WASM)
-                // TODO-WASM-SIMD: Implement NI_Vector_ShiftLeft
-                return nullptr;
+            // TODO-WASM-SIMD: Implement NI_Vector_ShiftLeft
+            return nullptr;
 #else
-                unreached();
+            unreached();
 #endif
 
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
@@ -5371,7 +5371,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseType, simdSize);
             break;
         }
-#endif  // !TARGET_XARCH && !TARGET_ARM64
+#endif // !TARGET_XARCH && !TARGET_ARM64
 
         case NI_Vector_ZipLower:
         case NI_Vector_ZipUpper:
