@@ -703,7 +703,6 @@ namespace
         if (status == COR_ILMETHOD_DECODER::FORMAT_ERROR)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
 
-        // ILCompiler emits an invalid IL sentinel (0xFE 0x24) for stripped method bodies.
         Module* pModule = pMD->GetModule();
         if (pModule->IsReadyToRun()
             && pModule->GetReadyToRunInfo()->HasStrippedILBodies()

@@ -15,8 +15,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class CopiedMethodILNode : ObjectNode, ISymbolDefinitionNode
     {
         // Sentinel body for stripped IL methods: tiny header (0x0A) + the illegal two-byte
-        // opcode 0xFE 0x24. Invalid IL so it can never collide with a real method body; the
-        // runtime detects it in prestub.cpp (BFA_STRIPPED_IL_BODY) before it reaches the JIT.
+        // opcode 0xFE 0x24. Invalid IL so it can never collide with a real method body.
         private static readonly byte[] s_minimalILBody = [0x0A, 0xFE, 0x24];
 
         EcmaMethod _method;
