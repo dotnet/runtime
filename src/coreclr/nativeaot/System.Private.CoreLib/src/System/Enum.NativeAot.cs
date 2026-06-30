@@ -154,7 +154,7 @@ namespace System
         {
             Debug.Assert(enumType is RuntimeType);
             Debug.Assert(enumType.IsEnum);
-
+Debug.Assert(enumType..IsActualEnum);
             return GetEnumInfo(enumType).UnderlyingType;
         }
     }
