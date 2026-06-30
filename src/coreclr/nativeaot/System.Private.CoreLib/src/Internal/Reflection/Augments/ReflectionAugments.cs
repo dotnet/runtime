@@ -436,40 +436,41 @@ namespace Internal.Reflection.Augments
         {
             Debug.Assert(runtimeTypeInfo.IsActualEnum);
 
+            EnumInfo enumInfo;
             if (runtimeTypeInfo.IsConstructedGenericType)
             {
-                EnumInfo enumInfo = Enum.GetEnumInfo((RuntimeType)runtimeTypeInfo.GetGenericTypeDefinition());
-                runtimeTypeInfo.GenericCache = enumInfo;
-                return enumInfo;
+                enumInfo = Enum.GetEnumInfo((RuntimeType)runtimeTypeInfo.GetGenericTypeDefinition());
+            }
+            else
+            {
+                runtimeTypeInfo.GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
+
+                // Generic enums are guaranteed to have generic type definition MethodTable,
+                // so we can get the underlying type directly from it.
+                MethodTable* methodTable = runtimeTypeInfo.TypeHandle.ToMethodTable();
+                Debug.Assert(methodTable->IsEnum);
+
+                // Sort by unsigned storage type to match Enum ordering semantics.
+                // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
+                // That codepath would bring functionality to compare everything that was ever allocated in the program.
+                ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
+
+                enumInfo = methodTable->ElementType switch
+                {
+                    EETypeElementType.SByte => CreateEnumInfoTyped<byte>(typeof(sbyte), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.Byte => CreateEnumInfoTyped<byte>(typeof(byte), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.Int16 => CreateEnumInfoTyped<ushort>(typeof(short), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.UInt16 => CreateEnumInfoTyped<ushort>(typeof(ushort), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.Int32 => CreateEnumInfoTyped<uint>(typeof(int), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.UInt32 => CreateEnumInfoTyped<uint>(typeof(uint), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.Int64 => CreateEnumInfoTyped<ulong>(typeof(long), unsortedNames, unsortedValues, isFlags),
+                    EETypeElementType.UInt64 => CreateEnumInfoTyped<ulong>(typeof(ulong), unsortedNames, unsortedValues, isFlags),
+                    _ => throw new NotSupportedException()
+                };
             }
 
-            runtimeTypeInfo.GetEnumValuesAndNames(out string[] unsortedNames, out object[] unsortedValues, out bool isFlags);
-
-            // Generic enums are guaranteed to have generic type definition MethodTable,
-            // so we can get the underlying type directly from it.
-            MethodTable* methodTable = runtimeTypeInfo.TypeHandle.ToMethodTable();
-            Debug.Assert(methodTable->IsEnum);
-
-            // Sort by unsigned storage type to match Enum ordering semantics.
-            // Call into IntrospectiveSort directly to avoid the Comparer<T>.Default codepath.
-            // That codepath would bring functionality to compare everything that was ever allocated in the program.
-            ArraySortHelper<object, string>.IntrospectiveSort(unsortedValues, unsortedNames, EnumUnderlyingTypeComparer.Instance);
-
-            EnumInfo info = methodTable->ElementType switch
-            {
-                EETypeElementType.SByte => CreateEnumInfoTyped<byte>(typeof(sbyte), unsortedNames, unsortedValues, isFlags),
-                EETypeElementType.Byte => CreateEnumInfoTyped<byte>(typeof(byte), unsortedNames, unsortedValues, isFlags),
-                EETypeElementType.Int16 => CreateEnumInfoTyped<ushort>(typeof(short), unsortedNames, unsortedValues, isFlags),
-                EETypeElementType.UInt16 => CreateEnumInfoTyped<ushort>(typeof(ushort), unsortedNames, unsortedValues, isFlags),
-                EETypeElementType.Int32 => CreateEnumInfoTyped<uint>(typeof(int), unsortedNames, unsortedValues, isFlags),
-                EETypeElementType.UInt32 => CreateEnumInfoTyped<uint>(typeof(uint), unsortedNames, unsortedValues, isFlags),
-                EETypeElementType.Int64 => CreateEnumInfoTyped<ulong>(typeof(long), unsortedNames, unsortedValues, isFlags),
-                EETypeElementType.UInt64 => CreateEnumInfoTyped<ulong>(typeof(ulong), unsortedNames, unsortedValues, isFlags),
-                _ => throw new NotSupportedException()
-            };
-
-            runtimeTypeInfo.GenericCache = info;
-            return info;
+            runtimeTypeInfo.GenericCache = enumInfo;
+            return enumInfo;
         }
 
         private static EnumInfo<TStorage> CreateEnumInfoTyped<TStorage>(Type underlyingType, string[] names, object[] valuesAsObject, bool isFlags)
