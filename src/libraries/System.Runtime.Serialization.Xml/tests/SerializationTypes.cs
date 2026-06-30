@@ -1128,6 +1128,23 @@ namespace SerializationTypes
         public string StringField1;
     }
 
+    public class TypeWithArrayLikeFieldsOrdered
+    {
+        // Like TypeWithFieldsOrdered, the 'Order' values intentionally differ from the order of
+        // definition, and two string members share the ambiguous element name "strfld" so that
+        // honoring the declared order is required to read the fields correctly. The int array adds
+        // an array-like member in the middle of the sequence: it can match several repeated
+        // elements, and the sequence position only advances once a non-matching element is seen.
+        [XmlElement(Order = 3, ElementName = "strfld")]
+        public string StringField2;
+        [XmlElement(Order = 1, ElementName = "num")]
+        public int[] Numbers;
+        [XmlElement(Order = 0)]
+        public int Leading;
+        [XmlElement(Order = 2, ElementName = "strfld")]
+        public string StringField1;
+    }
+
     [KnownType(typeof(List<SimpleType>))]
     [KnownType(typeof(SimpleType[]))]
     [DataContract]
