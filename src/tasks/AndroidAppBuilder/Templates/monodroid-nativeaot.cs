@@ -120,7 +120,8 @@ internal unsafe struct JNIEnv
     {
         fixed (JNIEnv* thisptr = &this)
         {
-            byte* chars = NativeInterface->GetStringUTFChars(thisptr, str, out byte isCopy);
+            byte isCopy;
+            byte* chars = NativeInterface->GetStringUTFChars(thisptr, str, &isCopy);
             if (chars is null)
                 return null;
 
@@ -383,7 +384,7 @@ internal unsafe struct JNIEnv
 
         void* NewStringUTF;
         delegate* unmanaged[Cdecl]<JNIEnv*, JString, int> GetStringUTFLength;
-        public delegate* unmanaged[Cdecl]<JNIEnv*, JString, out byte, byte*> GetStringUTFChars;
+        public delegate* unmanaged[Cdecl]<JNIEnv*, JString, byte*, byte*> GetStringUTFChars;
         public delegate* unmanaged[Cdecl]<JNIEnv*, JString, byte*, void> ReleaseStringUTFChars;
         public delegate* unmanaged[Cdecl]<JNIEnv*, JObjectArray, JSize> GetArrayLength;
 
