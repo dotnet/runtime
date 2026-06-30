@@ -439,6 +439,7 @@ namespace Internal.Reflection.Augments
             EnumInfo enumInfo;
             if (runtimeTypeInfo.IsConstructedGenericType)
             {
+                // Constructed generic enum instantiations share names/values/underlying type with the generic definition.
                 enumInfo = Enum.GetEnumInfo((RuntimeType)runtimeTypeInfo.GetGenericTypeDefinition());
             }
             else
