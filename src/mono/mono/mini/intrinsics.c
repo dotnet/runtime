@@ -102,7 +102,9 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (in_corlib && !strcmp (m_class_get_name (cmethod->klass), "MathF") && cfg->r4fp) {
 		// (float)
 		if (fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R4) {
-			if (!strcmp (cmethod->name, "Ceiling")) {
+			if (!strcmp (cmethod->name, "Abs")) {
+				opcode = OP_ABSF;
+			} else if (!strcmp (cmethod->name, "Ceiling")) {
 				opcode = OP_CEILF;
 			} else if (!strcmp (cmethod->name, "Cos")) {
 				opcode = OP_COSF;
@@ -110,6 +112,8 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				opcode = OP_EXPF;
 			} else if (!strcmp (cmethod->name, "Floor")) {
 				opcode = OP_FLOORF;
+			} else if (!strcmp (cmethod->name, "Log")) {
+				opcode = OP_LOGF;
 			} else if (!strcmp (cmethod->name, "Log2")) {
 				opcode = OP_LOG2F;
 			} else if (!strcmp (cmethod->name, "Log10")) {
@@ -281,6 +285,46 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			ins->dreg = mono_alloc_dreg (cfg, (MonoStackType)ins->type);
 			ins->sreg1 = args [0]->dreg;
 			ins->sreg2 = args [1]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+		}
+	}
+
+	if (in_corlib && (!strcmp (m_class_get_name (cmethod->klass), "Single") || !strcmp (m_class_get_name (cmethod->klass), "Double"))) {
+		// Recognize a handful of helpers on the primitive `Single` / `Double` types
+		// (forwarded from INumberBase<TSelf> / INumber<TSelf>). These don't have
+		// corresponding APIs on Math/MathF -- e.g. there is no `Math.MinNumber` --
+		// so the existing Math/MathF block above doesn't catch them.
+		//
+		// * MinNumber / MaxNumber: IEEE 754-2008 minNum / maxNum (NaN-suppressing).
+		//   Lower to llvm.minnum / llvm.maxnum, which on AArch64 maps to a single
+		//   fminnm / fmaxnm instruction; matches the BCL spec "if either is NaN
+		//   return the non-NaN; if both are NaN return NaN".
+		// * Abs: BCL forwarder to MathF.Abs / Math.Abs. Today this usually inlines
+		//   into the Math/MathF recognition above, but adding direct recognition
+		//   keeps the lowering working even if the JIT inliner declines.
+		opcode = 0;
+		if (fsig->param_count == 1 &&
+			(fsig->params [0]->type == MONO_TYPE_R4 || fsig->params [0]->type == MONO_TYPE_R8)) {
+			gboolean is_r4 = fsig->params [0]->type == MONO_TYPE_R4;
+			if (!strcmp (cmethod->name, "Abs"))
+				opcode = is_r4 ? OP_ABSF : OP_ABS;
+		}
+		if (fsig->param_count == 2 &&
+			fsig->params [0]->type == fsig->params [1]->type &&
+			(fsig->params [0]->type == MONO_TYPE_R4 || fsig->params [0]->type == MONO_TYPE_R8)) {
+			gboolean is_r4 = fsig->params [0]->type == MONO_TYPE_R4;
+			if (!strcmp (cmethod->name, "MaxNumber"))
+				opcode = is_r4 ? OP_RMAXNUM : OP_FMAXNUM;
+			else if (!strcmp (cmethod->name, "MinNumber"))
+				opcode = is_r4 ? OP_RMINNUM : OP_FMINNUM;
+		}
+		if (opcode) {
+			MONO_INST_NEW (cfg, ins, opcode);
+			ins->type = STACK_R8;
+			ins->dreg = mono_alloc_dreg (cfg, (MonoStackType)ins->type);
+			ins->sreg1 = args [0]->dreg;
+			if (fsig->param_count > 1)
+				ins->sreg2 = args [1]->dreg;
 			MONO_ADD_INS (cfg->cbb, ins);
 		}
 	}

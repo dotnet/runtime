@@ -437,6 +437,21 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
         }
     }
 
+    // Inject any unreachable in-try blocks as successors of the try entry, so
+    // wasm DFS visits them and the layout pass keeps them inside the try region.
+    //
+    if (comp->bbIsTryBeg(block) && (comp->fgTryRegions != nullptr))
+    {
+        FlowGraphTryRegion* const region = comp->fgTryRegions->GetTryRegionByHeader(block);
+        if (region != nullptr)
+        {
+            for (BasicBlock* const tb : region->UnreachableBlocks())
+            {
+                RETURN_ON_ABORT(func(tb));
+            }
+        }
+    }
+
     switch (block->GetKind())
     {
             // Funclet returns have no successors

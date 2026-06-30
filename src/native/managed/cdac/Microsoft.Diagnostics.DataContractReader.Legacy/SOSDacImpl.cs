@@ -1745,6 +1745,12 @@ public sealed unsafe partial class SOSDacImpl
             }
         }
 
+        public SOSMemoryEnum(SOSMemoryRegion[] regions, ISOSMemoryEnum? legacyMemoryEnum = null)
+        {
+            _regions = regions;
+            _legacyMemoryEnum = legacyMemoryEnum;
+        }
+
         int ISOSMemoryEnum.Next(uint count, SOSMemoryRegion[] memRegions, uint* pNeeded)
         {
             int hr = HResults.S_OK;
@@ -4057,7 +4063,7 @@ public sealed unsafe partial class SOSDacImpl
                 throw new ArgumentException($"No thread with OS ID {osThreadID} was found.");
             }
 
-            IReadOnlyList<StackReferenceData> refs = stackWalkContract.WalkStackReferences(matchingThread.Value);
+            IReadOnlyList<StackReferenceData> refs = stackWalkContract.WalkStackReferences(matchingThread.Value, false);
 
             SOSStackRefData[] sosRefs = new SOSStackRefData[refs.Count];
             for (int i = 0; i < refs.Count; i++)
@@ -7339,6 +7345,36 @@ public sealed unsafe partial class SOSDacImpl
 
             IEnumerable<Contracts.StressMsgData> messages = stressLogContract.GetStressMessages(matchedThread.Value);
             ppEnum.Interface = new SOSStressLogMsgEnum(_target, messages);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
+
+    int ISOSDacInterface17.GetStressLogMemoryRanges(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            Contracts.IStressLog stressLogContract = _target.Contracts.StressLog;
+            if (!stressLogContract.HasStressLog())
+                return HResults.S_FALSE;
+
+            Contracts.StressLogData logData = stressLogContract.GetStressLogData();
+
+            SOSMemoryRegion[] regions = stressLogContract.GetStressLogMemoryRanges(logData)
+                .Select(r => new SOSMemoryRegion
+                {
+                    Start = r.Start.ToClrDataAddress(_target),
+                    Size = (ClrDataAddress)r.Size,
+                    ExtraData = default,
+                    Heap = 0,
+                })
+                .ToArray();
+            ppEnum.Interface = new SOSMemoryEnum(regions);
         }
         catch (System.Exception ex)
         {

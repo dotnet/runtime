@@ -19,8 +19,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// </summary>
 public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProcess2
 {
-    private const uint DacStressPrivRequestFlushTargetState = 0xf2000000;
-
     int IXCLRDataProcess.Flush()
     {
         _target.Flush(FlushScope.All);
@@ -754,22 +752,18 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
                 hr = HResults.S_OK;
             }
         }
-        else if (reqCode == DacStressPrivRequestFlushTargetState)
+        else if (StressTestApi.CdacStressApi.IsStressRequest(reqCode))
         {
-            if (inBufferSize == 0 && inBuffer is null && outBufferSize == 0 && outBuffer is null)
-            {
-                _target.Flush(FlushScope.ForwardExecution);
-                hr = HResults.S_OK;
-            }
+            hr = StressTestApi.CdacStressApi.HandleRequest(_target, reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer);
         }
         else
         {
             return LegacyFallbackHelper.CanFallback() && _legacyProcess is not null ? _legacyProcess.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
         }
 #if DEBUG
-        // The private DACSTRESSPRIV_REQUEST_FLUSH_TARGET_STATE opcode is cDAC-only
-        // and must NOT be forwarded to the legacy DAC.
-        if (_legacyProcess is not null && reqCode != DacStressPrivRequestFlushTargetState)
+        // Private DACSTRESSPRIV_REQUEST_* opcodes are cDAC-only and must NOT be
+        // forwarded to the legacy DAC.
+        if (_legacyProcess is not null && !StressTestApi.CdacStressApi.IsStressRequest(reqCode))
         {
             byte[] localBuffer = new byte[(int)outBufferSize];
             fixed (byte* localOutBuffer = localBuffer)
