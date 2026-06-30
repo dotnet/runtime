@@ -245,14 +245,16 @@
 .endm
 
 .macro GetThreadA2
-    addi  sp, sp, -16
+    addi  sp, sp, -32
     sd    a0, 0(sp)
     sd    a1, 8(sp)
+    sd    a4, 16(sp)
     call  C_FUNC(RhpGetThread)
     mv    a2, a0
     ld    a0, 0(sp)
     ld    a1, 8(sp)
-    addi  sp, sp, 16
+    ld    a4, 16(sp)
+    addi  sp, sp, 32
 .endm
 
 #define rsp_offsetof_ExInfo  0
