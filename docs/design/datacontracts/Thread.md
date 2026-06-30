@@ -28,7 +28,7 @@ enum ThreadState
 {
     Unknown             = 0x00000000,    // threads are initialized this way
     SuspensionTrapped   = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code)
-    GCSuspendRedirected = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspension routine
+    GCSuspendRedirected = 0x00000004,    // Thread has been redirected to suspension routi
     DebugSuspendPending = 0x00000008,    // Is the debugger suspending threads?
     Hijacked            = 0x00000080,    // Return address has been hijacked
     Background          = 0x00000200,    // Thread is a background thread
