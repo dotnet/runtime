@@ -1554,7 +1554,7 @@ namespace Internal.JitInterface
                 return null;
             }
 
-            variantIsThunk = (method?.IsAsyncVariant() != method?.IsAsync) ?? false;
+            variantIsThunk = method.IsAsyncVariant() != method.IsAsync;
             return ObjectToHandle(method);
         }
 
