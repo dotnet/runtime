@@ -506,7 +506,7 @@ public:
         TS_AbortRequested         = 0x00000001,    // Abort the thread
 
         TS_SuspensionTrapped      = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code). [cDAC] [Thread]: Contract depends on this value.
-        TS_GCSuspendRedirected    = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspension routine. [cDAC] [Thread]: Contract depends on this value.
+        TS_GCSuspendRedirected    = 0x00000004,    // Thread has been redirected to suspension routine. [cDAC] [Thread]: Contract depends on this value.
 
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads? [cDAC] [Thread]: Contract depends on this value.
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
