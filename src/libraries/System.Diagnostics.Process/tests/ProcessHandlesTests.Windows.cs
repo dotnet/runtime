@@ -164,16 +164,13 @@ namespace System.Diagnostics.Tests
         [InlineData(false)]
         public unsafe void ChildProcess_CanBreakAwayFromJob(bool killOnParentExit)
         {
-            using Process process = CreateProcess(arg =>
+            using Process process = CreateProcess(() =>
             {
                 using (Process grandChild = CreateProcess(() =>
                 {
                     return RemoteExecutor.SuccessExitCode;
                 }))
                 {
-                    grandChild.StartInfo.KillOnParentExit = bool.Parse(arg);
-                    grandChild.StartInfo.RedirectStandardOutput = true;
-
                     ProcessStartInfo grandChildStartInfo = grandChild.StartInfo;
 
                     using Process started = WindowsProcessStartArguments.Start(grandChildStartInfo, (WindowsProcessStartArguments args) =>
@@ -214,7 +211,7 @@ namespace System.Diagnostics.Tests
                     started.WaitForExit(WaitInMS);
                     return started.ExitCode;
                 }
-            }, killOnParentExit.ToString());
+            });
 
             process.StartInfo.KillOnParentExit = killOnParentExit;
             process.Start();
