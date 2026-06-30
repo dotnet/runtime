@@ -343,19 +343,15 @@ HRESULT DebuggerRCThread::Init(void)
         // NOTE: initialization of the debugger control block occurs partly on the left side and partly on
         // the right side. This initialization occurs in parallel, so it's unsafe to make assumptions about
         // the order in which the fields will be initialized.
-        hr = m_pDCB->Init(rightSideEventAvailable,
-                                       rightSideEventRead,
+        // Since Init() gets ownership of handles, we can release our ownership now.
+        hr = m_pDCB->Init(rightSideEventAvailable.Detach(),
+                                       rightSideEventRead.Detach(),
                                        NULL,
                                        NULL,
-                                       leftSideUnmanagedWaitEvent);
+                                       leftSideUnmanagedWaitEvent.Detach());
 
         _ASSERTE(SUCCEEDED(hr)); // throws on error.
 
-        // Since Init() gets ownership of handles, we can
-        // release our ownership now.
-        rightSideEventAvailable.Detach();
-        rightSideEventRead.Detach();
-        leftSideUnmanagedWaitEvent.Detach();
     }
 #endif //FEATURE_DBGIPC_TRANSPORT_VM
 
