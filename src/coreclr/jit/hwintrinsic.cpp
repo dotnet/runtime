@@ -994,7 +994,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_Sve2, LAST_NI_Sve2 },                            // Sve2
     { FIRST_NI_Sha3, LAST_NI_Sha3 },                            // Sha3
     { FIRST_NI_Sm4, LAST_NI_Sm4 },                              // Sm4
-    { NI_Illegal, NI_Illegal },                                 //      SveAes
+    { FIRST_NI_SveAes, LAST_NI_SveAes },                        // SveAes
     { FIRST_NI_SveSha3, LAST_NI_SveSha3 },                      // SveSha3
     { FIRST_NI_SveSm4, LAST_NI_SveSm4 },                        // SveSm4
     { NI_Illegal, NI_Illegal },                                 //      Cssc
