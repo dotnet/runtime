@@ -18,6 +18,7 @@
 #include "comdelegate.h"
 #include "dbginterface.h"
 #include "stubgen.h"
+#include "openum.h"
 #include "eventtrace.h"
 #include "array.h"
 #include "ecall.h"
@@ -709,6 +710,7 @@ namespace
             && pHeader->GetCodeSize() == 2
             && pHeader->Code[0] == CEE_LDNULL
             && pHeader->Code[1] == CEE_THROW)
+        {
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_STRIPPED_IL_BODY);
         }
 
