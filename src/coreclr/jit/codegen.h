@@ -1416,9 +1416,8 @@ public:
                          regNumber dstReg,
                          regNumber srcReg,
                          bool      canSkip,
-                         emitAttr  size    = EA_UNKNOWN,
-                         insFlags  flags   = INS_FLAGS_DONT_CARE,
-                         var_types dstType = TYP_UNKNOWN);
+                         emitAttr  size  = EA_UNKNOWN,
+                         insFlags  flags = INS_FLAGS_DONT_CARE);
 
     void inst_RV_RV(instruction ins,
                     regNumber   reg1,
@@ -1638,7 +1637,7 @@ public:
     bool arm_Valid_Imm_For_Add_SP(target_ssize_t imm);
 #endif
 
-    instruction ins_Move_Extend(var_types srcType, bool srcInReg, var_types dstType = TYP_UNKNOWN);
+    instruction ins_Move_Extend(var_types srcType, bool srcInReg);
 
     instruction ins_Copy(var_types dstType);
     instruction ins_Copy(regNumber srcReg, var_types dstType);

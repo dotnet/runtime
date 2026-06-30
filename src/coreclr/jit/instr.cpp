@@ -790,10 +790,9 @@ void CodeGen::inst_Mov_Extend(var_types srcType,
                               regNumber srcReg,
                               bool      canSkip,
                               emitAttr  size,
-                              insFlags  flags /* = INS_FLAGS_DONT_CARE */,
-                              var_types dstType /* = TYP_UNKNOWN */)
+                              insFlags  flags /* = INS_FLAGS_DONT_CARE */)
 {
-    instruction ins = ins_Move_Extend(srcType, srcInReg, dstType);
+    instruction ins = ins_Move_Extend(srcType, srcInReg);
 
     if (size == EA_UNKNOWN)
     {
@@ -1921,17 +1920,9 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
  *  Parameters
  *      srcType   - source type
  *      srcInReg  - whether source is in a register
- *      dstType   - type the value will be consumed as; defaults to srcType. Must share srcType's
- *                  actual type, as genuine widening (e.g. int -> long) must use a cast instead.
  */
-instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg, var_types dstType /* = TYP_UNKNOWN */)
+instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 {
-    if (dstType == TYP_UNKNOWN)
-    {
-        dstType = srcType;
-    }
-    assert(genActualType(srcType) == genActualType(dstType));
-
     if (varTypeUsesIntReg(srcType))
     {
         instruction ins = INS_invalid;
@@ -1984,40 +1975,19 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg, var_types
         //
         if (srcInReg)
         {
-            if (varTypeIsUnsigned(srcType))
+            if (!varTypeIsSmall(srcType))
             {
-                if (varTypeIsByte(srcType))
-                {
-                    ins = INS_uxtb;
-                }
-                else if (varTypeIsShort(srcType))
-                {
-                    ins = INS_uxth;
-                }
-                else
-                {
-                    // A mov Rd, Rm instruction performs the zero extend
-                    // for the upper 32 bits when the size is EA_4BYTE
-
-                    ins = INS_mov;
-                }
+                // An int/long value already fills its register width, so a plain mov suffices;
+                // for int the EA_4BYTE mov also zero extends the unused upper bits.
+                ins = INS_mov;
+            }
+            else if (varTypeIsUnsigned(srcType))
+            {
+                ins = varTypeIsByte(srcType) ? INS_uxtb : INS_uxth;
             }
             else
             {
-                if (varTypeIsByte(srcType))
-                {
-                    ins = INS_sxtb;
-                }
-                else if (varTypeIsShort(srcType))
-                {
-                    ins = INS_sxth;
-                }
-                else
-                {
-                    // A signed int/long value already fills its register width, so a plain mov
-                    // suffices; for int the EA_4BYTE mov also zero extends the unused upper bits.
-                    ins = INS_mov;
-                }
+                ins = varTypeIsByte(srcType) ? INS_sxtb : INS_sxth;
             }
         }
         else
