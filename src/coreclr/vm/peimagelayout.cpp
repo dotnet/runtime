@@ -766,7 +766,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         if (view == NULL)
             ThrowLastError();
 
-        m_FileView.Assign(view);
+        m_FileView = view;
         addr = (LPVOID)((size_t)view + offset - mapBegin);
 
         if (isCompressed)
@@ -780,7 +780,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             if (anonMap == NULL)
                 ThrowLastError();
 
-            CLRMapViewHolder anonView = CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+            CLRMapViewHolder anonView{ CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0) };
             if (anonView == NULL)
                 ThrowLastError();
 
@@ -813,7 +813,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             addr = anonView;
             size = uncompressedSize;
             // Replace file handles with the handles to anonymous map. This will release the handles to the original view and map.
-            m_FileView.Assign(anonView.Extract());
+            m_FileView = std::move(anonView);
             m_FileMap.Assign(anonMap.Extract());
 #else
             _ASSERTE(!"Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost.");
@@ -865,7 +865,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
         if (m_FileMap == NULL)
             ThrowLastError();
 
-        m_FileView.Assign(CLRMapViewOfFile(m_FileMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0));
+        m_FileView = CLRMapViewOfFile(m_FileMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
         if (m_FileView == NULL)
             ThrowLastError();
 

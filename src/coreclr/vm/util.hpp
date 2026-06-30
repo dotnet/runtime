@@ -427,12 +427,20 @@ CLRUnmapViewOfFile(
     IN LPVOID lpBaseAddress
     );
 
+struct CLRMapViewTraits final
+{
+    using Type = void*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type ptr)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-FORCEINLINE void VoidCLRUnmapViewOfFile(void *ptr) { CLRUnmapViewOfFile(ptr); }
-typedef Wrapper<void *, DoNothing, VoidCLRUnmapViewOfFile> CLRMapViewHolder;
-#else
-typedef Wrapper<void *, DoNothing, DoNothing> CLRMapViewHolder;
+        if (ptr != NULL)
+            CLRUnmapViewOfFile(ptr);
 #endif
+    }
+};
+using CLRMapViewHolder = LifetimeHolder<CLRMapViewTraits>;
 
 #ifdef TARGET_UNIX
 #ifndef DACCESS_COMPILE
