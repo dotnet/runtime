@@ -1489,18 +1489,19 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    public static void DCS_NullableDataContractStructAsRoot()
+    public static void DCS_NullableDataContractStructAsRoot_DeserializesWithoutPriorInitialization()
     {
-        NullableRootDataContractStruct? value = new NullableRootDataContractStruct();
+        // Regression: cold-cache deserialization of Nullable<T> for a [DataContract] struct
+        // must not throw SerializationException ("DataContract cache overflow").
+        const string xml = "<DataContractSerializerTests.NullableRootDataContractStruct" +
+            " xmlns=\"http://schemas.datacontract.org/2004/07/\"" +
+            " xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"/>";
         var serializer = new DataContractSerializer(typeof(NullableRootDataContractStruct?));
 
-        using var stream = new MemoryStream();
-        serializer.WriteObject(stream, value);
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml));
+        var deserialized = (NullableRootDataContractStruct?)serializer.ReadObject(stream);
 
-        stream.Position = 0;
-        var roundTripped = (NullableRootDataContractStruct?)serializer.ReadObject(stream);
-
-        Assert.True(roundTripped.HasValue);
+        Assert.True(deserialized.HasValue);
     }
 
     [Fact]
