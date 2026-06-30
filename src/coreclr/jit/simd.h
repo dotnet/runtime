@@ -1658,14 +1658,14 @@ void EvaluateSimdCvtMaskToVector(TSimd* result, simdmask_t arg0)
 #ifdef TARGET_ARM64
             // TODO-SVE: We want to unify this output to 'AllBitsSet' as in other
             // architectures, so we can benefit fully from optimizations on this value.
-            memset(&output, 0x1, 1);
+            output = static_cast<TBase>(1);
 #else
             memset(&output, 0xFF, sizeof(TBase));
 #endif
         }
         else
         {
-            memset(&output, 0x00, sizeof(TBase));
+            output = static_cast<TBase>(0);
         }
 
         memcpy(&result->u8[i * sizeof(TBase)], &output, sizeof(TBase));
