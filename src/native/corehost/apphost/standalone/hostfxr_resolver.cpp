@@ -116,22 +116,25 @@ hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
         append_path(&app_relative_dotnet_path, app_relative_dotnet.c_str());
     }
 
-    pal_char_t* dotnet_root = nullptr;
-    pal_char_t* fxr_path = nullptr;
-    bool resolved = fxr_resolver_try_get_path(
-        app_root.c_str(),
-        search_location,
-        app_relative_dotnet_path.empty() ? nullptr : app_relative_dotnet_path.c_str(),
-        &dotnet_root,
-        &fxr_path);
-    if (resolved)
+    bool resolved;
     {
-        m_dotnet_root.assign(dotnet_root);
-        m_fxr_path.assign(fxr_path);
-    }
+        pal_char_t* dotnet_root = nullptr;
+        pal_char_t* fxr_path = nullptr;
+        resolved = fxr_resolver_try_get_path(
+            app_root.c_str(),
+            search_location,
+            app_relative_dotnet_path.empty() ? nullptr : app_relative_dotnet_path.c_str(),
+            &dotnet_root,
+            &fxr_path);
+        if (resolved)
+        {
+            m_dotnet_root.assign(dotnet_root);
+            m_fxr_path.assign(fxr_path);
+        }
 
-    free(dotnet_root);
-    free(fxr_path);
+        free(dotnet_root);
+        free(fxr_path);
+    }
 
     if (!resolved)
     {
