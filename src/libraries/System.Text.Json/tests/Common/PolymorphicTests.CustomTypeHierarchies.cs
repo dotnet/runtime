@@ -129,7 +129,7 @@ namespace System.Text.Json.Serialization.Tests
 
         //--
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [MemberData(nameof(Get_PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Serialization))]
         public Task PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Serialization(PolymorphicClass.TestData testData)
             => TestMultiContextSerialization(
@@ -142,7 +142,7 @@ namespace System.Text.Json.Serialization.Tests
         public static IEnumerable<object[]> Get_PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Serialization()
             => PolymorphicClass.GetSerializeTestData_CustomConfigWithBaseTypeFallback().Select(entry => new object[] { entry });
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [MemberData(nameof(Get_PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Deserialization))]
         public Task PolymorphicClass_CustomConfigWithBaseTypeFallback_TestData_Deserialization(PolymorphicClass.TestData testData)
             => TestMultiContextDeserialization<PolymorphicClass>(
@@ -157,7 +157,7 @@ namespace System.Text.Json.Serialization.Tests
                 .Where(entry => entry.ExpectedJson != null)
                 .Select(entry => new object[] { entry });
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task PolymorphicClass_CustomConfigWithBaseTypeFallback_TestDataArray_Serialization()
         {
             IEnumerable<(PolymorphicClass Value, string ExpectedJson)> inputs =
@@ -168,7 +168,7 @@ namespace System.Text.Json.Serialization.Tests
             await TestMultiContextSerialization(inputs, options: PolymorphicClass.CustomConfigWithBaseTypeFallback);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task PolymorphicClass_CustomConfigWithBaseTypeFallbacks_TestDataArray_Deserialization()
         {
             IEnumerable<(string ExpectedJson, PolymorphicClass ExpectedRoundtripValue)> inputs =
@@ -182,7 +182,7 @@ namespace System.Text.Json.Serialization.Tests
                 options: PolymorphicClass.CustomConfigWithBaseTypeFallback);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [InlineData("$['$type']", """{ "$type" : "derivedClass1", "Number" : 42 }""")]
         [InlineData("$._case", """{ "_case" : "derivedClass1", "_case" : "derivedClass1", "Number" : 42 }""")]
         [InlineData("$._case", """{ "_case" : "derivedClass1", "Number" : 42, "_case" : "derivedClass1"}""")]
@@ -206,7 +206,7 @@ namespace System.Text.Json.Serialization.Tests
 
         //---
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [MemberData(nameof(Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Serialization))]
         public Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Serialization(PolymorphicClass.TestData testData)
             => TestMultiContextSerialization(
@@ -219,7 +219,7 @@ namespace System.Text.Json.Serialization.Tests
         public static IEnumerable<object[]> Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Serialization()
             => PolymorphicClass.GetSerializeTestData_CustomConfigWithNearestAncestorFallback().Select(entry => new object[] { entry });
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [MemberData(nameof(Get_PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Deserialization))]
         public Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestData_Deserialization(PolymorphicClass.TestData testData)
             => TestMultiContextDeserialization<PolymorphicClass>(
@@ -234,7 +234,7 @@ namespace System.Text.Json.Serialization.Tests
                     .Where(entry => entry.ExpectedJson != null)
                     .Select(entry => new object[] { entry });
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestDataArray_Serialization()
         {
             IEnumerable<(PolymorphicClass Value, string ExpectedJson)> inputs =
@@ -245,7 +245,7 @@ namespace System.Text.Json.Serialization.Tests
             await TestMultiContextSerialization(inputs, options: PolymorphicClass.CustomConfigWithNearestAncestorFallback);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task PolymorphicClass_CustomConfigWithNearestAncestorFallback_TestDataArray_Deserialization()
         {
             IEnumerable<(string ExpectedJson, PolymorphicClass ExpectedRoundtripValue)> inputs =
@@ -259,7 +259,7 @@ namespace System.Text.Json.Serialization.Tests
                 options: PolymorphicClass.CustomConfigWithNearestAncestorFallback);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [InlineData("$['$type']", """{ "$type" : "derivedClass1", "Number" : 42 }""")]
         [InlineData("$._case", """{ "_case" : "derivedClass1", "_case" : "derivedClass1", "Number" : 42 }""")]
         [InlineData("$._case", """{ "_case" : "derivedClass1", "Number" : 42, "_case" : "derivedClass1"}""")]
@@ -1944,7 +1944,7 @@ namespace System.Text.Json.Serialization.Tests
             public record TestData(PolymorphicDictionary Value, string ExpectedJson, PolymorphicDictionary ExpectedRoundtripValue);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task PolymorphicDictionaryInterface_Serialization()
         {
             var values = new IEnumerable<KeyValuePair<int, object>>[]
@@ -1968,7 +1968,7 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual(expectedJson, actualJson);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public async Task PolymorphicDictionaryInterface_Deserialization()
         {
             string json =

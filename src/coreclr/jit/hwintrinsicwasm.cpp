@@ -76,8 +76,97 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        unsigned              simdSize,
                                        bool                  mustExpand)
 {
-    NYI_WASM_SIMD("impSpecialIntrinsic");
-    return nullptr;
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    GenTree* retNode = nullptr;
+    GenTree* op1     = nullptr;
+    GenTree* op2     = nullptr;
+
+    switch (intrinsic)
+    {
+        case NI_Vector128_GetElement:
+        case NI_Vector128_WithElement:
+        {
+            // Vector128.GetElement / WithElement have valid managed implementations in
+            // Vector128.cs. Return nullptr to let the importer fall back to those rather
+            // than asserting / NYI'ing in the JIT.
+            return nullptr;
+        }
+
+        // The following PackedSimd intrinsics are not yet implemented on WASM. Because they are must-expand,
+        // when we return nullptr here the importer will insert a PlatformNotSupportedException throw.
+        case NI_PackedSimd_CompareGreaterThan:
+        case NI_PackedSimd_CompareGreaterThanOrEqual:
+        case NI_PackedSimd_CompareLessThan:
+        case NI_PackedSimd_CompareLessThanOrEqual:
+            break;
+
+        case NI_PackedSimd_ExtractScalar:
+            break;
+
+        case NI_PackedSimd_ReplaceScalar:
+            break;
+
+        case NI_PackedSimd_LoadVector128:
+        {
+            assert(sig->numArgs == 1);
+            assert(simdSize == 16);
+            op1 = impPopStack().val;
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
+            }
+
+            return gtNewSimdLoadNode(retType, op1, simdBaseType, simdSize);
+        }
+
+        case NI_PackedSimd_LoadScalarVector128:
+        case NI_PackedSimd_LoadScalarAndSplatVector128:
+        case NI_PackedSimd_LoadScalarAndInsert:
+        case NI_PackedSimd_LoadWideningVector128:
+            break;
+
+        case NI_PackedSimd_Store:
+        {
+            assert(sig->numArgs == 2);
+            assert(simdSize == 16);
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST) && op1->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                // If what we have is a BYREF, that's what we really want, so throw away the cast.
+                op1 = op1->gtGetOp1();
+            }
+
+            return gtNewSimdStoreNode(op1, op2, simdBaseType, simdSize);
+        }
+
+        case NI_PackedSimd_StoreSelectedScalar:
+            break;
+
+        case NI_PackedSimd_ShiftLeft:
+        case NI_PackedSimd_ShiftRightArithmetic:
+        case NI_PackedSimd_ShiftRightLogical:
+            break;
+
+        case NI_PackedSimd_Splat:
+            break;
+
+        case NI_Vector128_Create:
+        {
+            retNode = impSimdCreate(intrinsic, sig, simdBaseType, retType, simdSize);
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    return retNode;
 }
 
 //------------------------------------------------------------------------

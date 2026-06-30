@@ -7514,6 +7514,7 @@ static bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
 //
 COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
     MethodDesc* ftn,
+    MethodDesc* ilFtn,
     COR_ILMETHOD_DECODER* header,
     CORINFO_METHOD_INFO* methInfo,
     CORINFO_CONTEXT_HANDLE exactContext)
@@ -7529,10 +7530,6 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
 
     /* Grab information from the IL header */
     SigPointer localSig{};
-
-    // For async versions we get the IL of the ordinary variant and pass the
-    // JIT a flag indicating that.
-    MethodDesc* ilFtn = ftn->SupportsAsyncVersionCodegen() ? ftn->GetOrdinaryVariant() : ftn;
 
     MethodInfoWorkerContext cxt{ ftn, header };
 
@@ -7740,22 +7737,24 @@ CEEInfo::getMethodInfo(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* ftn = GetMethod(ftnHnd);
+    MethodDesc* ilFtn = ftn->GetOrdinaryVariantIfAsyncVersion();
+
     COR_ILMETHOD* pILHeader;
-    if (ftn->MayHaveILHeader() && (pILHeader = ftn->GetILHeader()) != NULL)
+    if (ilFtn->MayHaveILHeader() && (pILHeader = ilFtn->GetILHeader()) != NULL)
     {
         // Get the IL header and set it.
-        COR_ILMETHOD_DECODER header(pILHeader, ftn->GetMDImport(), NULL);
-        getMethodInfoWorker(ftn, &header, methInfo, context);
+        COR_ILMETHOD_DECODER header(pILHeader, ilFtn->GetMDImport(), NULL);
+        getMethodInfoWorker(ftn, ilFtn, &header, methInfo, context);
         result = true;
     }
-    else if (ftn->IsIL() || ftn->IsDynamicMethod())
+    else if (ilFtn->IsIL() || ilFtn->IsDynamicMethod())
     {
         // IL methods with no IL header indicate there is no implementation defined in metadata.
-        // NOTE: P/Invoke methods are also IL methods with no IL header,
-        // but it is generally not profitable to inline the marshalling IL.
-        // As a result, we skip inlining the marshalling IL.
+        // NOTE: P/Invoke methods have marshalling IL but it is generally not
+        // profitable to inline it. The IsIL check above returns false for them
+        // and thus we will not inline them.
         // P/Invokes that don't require marshalling can still be inlined directly by the JIT.
-        getMethodInfoWorker(ftn, NULL, methInfo, context);
+        getMethodInfoWorker(ftn, ilFtn, NULL, methInfo, context);
         result = true;
     }
 
@@ -7940,7 +7939,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             else if (pCallee->IsIL())
             {
                 CORINFO_METHOD_INFO methodInfo;
-                getMethodInfoWorker(pCallee, NULL, &methodInfo);
+                getMethodInfoWorker(pCallee, pCallee->GetOrdinaryVariantIfAsyncVersion(), NULL, &methodInfo);
                 if (methodInfo.EHcount > 0)
                 {
                     result = INLINE_FAIL;
@@ -8770,15 +8769,6 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
             return false;
         }
-
-        // If we devirtualized into a default interface method on a generic type, we should actually return an
-        // instantiating stub but this is not happening.
-        // Making this work is tracked by https://github.com/dotnet/runtime/issues/9588
-        if (pDevirtMD->GetMethodTable()->IsInterface() && pDevirtMD->HasClassInstantiation())
-        {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_DIM;
-            return false;
-        }
     }
     else
     {
@@ -8841,52 +8831,104 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     bool isArray = false;
     bool isGenericVirtual = false;
 
-    if (pApproxMT->IsInterface())
-    {
-        // As noted above, we can't yet handle generic interfaces
-        // with default methods.
-        _ASSERTE(!pDevirtMD->HasClassInstantiation());
-
-    }
-    else if (pBaseMT->IsInterface() && pObjMT->IsArray())
+    if (pBaseMT->IsInterface() && pObjMT->IsArray())
     {
         isArray = true;
     }
-    else
+    else if (!pApproxMT->IsInterface())
     {
         pExactMT = pDevirtMD->GetExactDeclaringType(pObjMT);
     }
 
+    MethodDesc* pInstantiatedMD = pDevirtMD;
+
     // This is generic virtual method devirtualization.
     if (!isArray && pBaseMD->HasMethodInstantiation())
     {
-        MethodDesc* pPrimaryMD = pDevirtMD;
+        MethodDesc* pPrimaryMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
+
         pDevirtMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
             pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), true);
-        if (pDevirtMD->IsSharedByGenericMethodInstantiations())
-        {
-            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-            return false;
-        }
+
+        pInstantiatedMD = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pPrimaryMD, pExactMT, pExactMT->IsValueType() && !pPrimaryMD->IsStatic(), pBaseMD->GetMethodInstantiation(), false);
 
         isGenericVirtual = true;
     }
 
-    if (isArray || isGenericVirtual)
+    MethodDesc* pInstArgMD = pDevirtMD;
+    bool isUnboxingStubOfInstantiatingStub = false;
+
+    if (pDevirtMD->IsUnboxingStub())
     {
-        if (pDevirtMD->IsInstantiatingStub())
+        // RequiresInstMethodDescArg and RequiresInstMethodTableArg are only valid for canonical instantiatins,
+        // use pDevirtMD instead of pInstantiatedMD for pInstArgMD.
+        //
+        pInstArgMD = pDevirtMD->GetWrappedMethodDesc();
+        if (pInstArgMD->IsInstantiatingStub())
         {
-            info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE)pDevirtMD;
-            info->instParamLookup.constLookup.accessType = IAT_VALUE;
+            isUnboxingStubOfInstantiatingStub = true;
+        }
+    }
+    else if (pDevirtMD->IsInstantiatingStub())
+    {
+        pInstArgMD = pDevirtMD->GetWrappedMethodDesc();
+    }
+
+    if (pInstArgMD->RequiresInstMethodDescArg())
+    {
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()))
+        {
+            // If we end up with a shared MethodTable that is not exact,
+            // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
         }
 
-        info->tokenLookupContext = MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pDevirtMD);
-        pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
+        {
+            // TODO: Support for runtime lookup
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
+        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstantiatedMD;
+        info->instParamLookup.constLookup.accessType = IAT_VALUE;
     }
-    else
+    else if (pInstArgMD->RequiresInstMethodTableArg())
     {
-        info->tokenLookupContext = MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
+        if (!pDevirtMD->IsUnboxingStub() && TypeHandle::IsCanonicalSubtypeInstantiation(pExactMT->GetInstantiation()))
+        {
+            // If we end up with a shared MethodTable that is not exact,
+            // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
+        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pExactMT;
+        info->instParamLookup.constLookup.accessType = IAT_VALUE;
     }
+    else if (isUnboxingStubOfInstantiatingStub)
+    {
+        if (TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetClassInstantiation()) ||
+            TypeHandle::IsCanonicalSubtypeInstantiation(pInstantiatedMD->GetMethodInstantiation()))
+        {
+            // This is an unboxing stub that points to an instantiating stub that requires a runtime lookup.
+            // Bail out.
+            info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+            return false;
+        }
+
+        // pInstArgMD is the wrapped instantiating stub in the unboxing stub.
+        //
+        info->instParamLookup.constLookup.handle = (CORINFO_GENERIC_HANDLE) pInstArgMD;
+        info->instParamLookup.constLookup.accessType = IAT_VALUE;
+    }
+
+    pDevirtMD = pDevirtMD->IsInstantiatingStub() ? pDevirtMD->GetWrappedMethodDesc() : pDevirtMD;
+    info->tokenLookupContext = (isArray || isGenericVirtual)
+        ? MAKE_METHODCONTEXT((CORINFO_METHOD_HANDLE) pInstantiatedMD)
+        : MAKE_CLASSCONTEXT((CORINFO_CLASS_HANDLE) pExactMT);
 
     // If we devirtualized into an unboxing stub, also hand back the unboxed entry
     // so the jit can perform the unboxing transformation.
@@ -10975,7 +11017,7 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(config != NULL);
-    COR_ILMETHOD_DECODER* ilHeader = getMethodInfoWorker(m_pMethodBeingCompiled, m_ILHeader, &m_MethodInfo);
+    COR_ILMETHOD_DECODER* ilHeader = getMethodInfoWorker(m_pMethodBeingCompiled, m_pMethodBeingCompiled->GetOrdinaryVariantIfAsyncVersion(), m_ILHeader, &m_MethodInfo);
 
     // The header maybe replaced during the call to getMethodInfoWorker. This is most probable
     // when the input is null (that is, no metadata), but we can also examine the method and generate
@@ -11021,6 +11063,9 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
     {
         helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
         _ASSERTE(PortableEntryPoint::GetMethodDesc((PCODE)targetAddr) == helperMD);
+#ifdef FEATURE_READYTORUN
+        _ASSERTE(PortableEntryPoint::GetActualCode((PCODE)targetAddr) != NULL);
+#endif
     }
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -12254,6 +12299,16 @@ void CEEJitInfo::recordRelocation(void *       location,
         break;
     }
 
+    case CorInfoReloc::ARM64_PAGEOFFSET_12L:
+    {
+        _ASSERTE(addlDelta == 0);
+
+        // Write the 12 bits page offset into the ldr instruction.
+        INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
+        PutArm64Rel12Ldr((UINT32 *)locationRW, imm12);
+        break;
+    }
+
 #endif // TARGET_ARM64
 
 #ifdef TARGET_LOONGARCH64
@@ -13150,11 +13205,7 @@ void CEECodeGenInfo::getEHinfo(
 
     bool isMethodBeingCompiled = pMD == m_pMethodBeingCompiled;
 
-    if (pMD->SupportsAsyncVersionCodegen())
-    {
-        // Get the EH info from the ordinary variant.
-        pMD = pMD->GetOrdinaryVariant();
-    }
+    pMD = pMD->GetOrdinaryVariantIfAsyncVersion();
 
     COR_ILMETHOD* pILHeader;
     if (pMD->IsDynamicMethod())
@@ -14639,8 +14690,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 }
             }
 
-            // Strip off method instantiation for comparison if the method is generic virtual.
-            if (pDeclMethod->HasMethodInstantiation())
+            // Strip off method instantiation for comparison if the method is generic virtual or generic DIM.
+            if (pDeclMethod->HasMethodInstantiation() || pDeclMethod->IsInterface())
             {
                 if (pImplMethodRuntime != NULL)
                 {
@@ -15092,10 +15143,18 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
     {
         TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
-        DWORD loc = pCode->NewLocal(LocalDesc(tyHnd));
-        pCode->EmitLDLOCA(loc);
-        pCode->EmitINITOBJ(pCode->GetToken(tyHnd));
-        pCode->EmitLDLOC(loc);
+        if (tyHnd.IsByRef())
+        {
+            pCode->EmitLDC(0);
+            pCode->EmitCONV_U();
+        }
+        else
+        {
+            DWORD loc = pCode->NewLocal(LocalDesc(tyHnd));
+            pCode->EmitLDLOCA(loc);
+            pCode->EmitINITOBJ(pCode->GetToken(tyHnd));
+            pCode->EmitLDLOC(loc);
+        }
         numArgs++;
     }
 

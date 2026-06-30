@@ -902,6 +902,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         case NI_AVXVNNI_MultiplyWideningAndAdd:
                         case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+                        case NI_AVX512v3_MultiplyWideningAndAdd:
+                        case NI_AVX512v3_MultiplyWideningAndAddSaturate:
                         case NI_AVX512BMM_BitMultiplyMatrix16x16WithOrReduction:
                         case NI_AVX512BMM_BitMultiplyMatrix16x16WithXorReduction:
                         {

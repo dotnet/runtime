@@ -2748,6 +2748,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_AVXVNNI_MultiplyWideningAndAdd:
             case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+            case NI_AVX512v3_MultiplyWideningAndAdd:
+            case NI_AVX512v3_MultiplyWideningAndAddSaturate:
             case NI_AVXVNNIINT_MultiplyWideningAndAdd:
             case NI_AVXVNNIINT_MultiplyWideningAndAddSaturate:
             case NI_AVXVNNIINT_V512_MultiplyWideningAndAdd:
