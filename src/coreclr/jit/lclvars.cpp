@@ -7206,12 +7206,15 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
     // better performance.
     
 #ifdef TARGET_POWERPC64
-    // PPC64LE: Skip 8-byte alignment for register parameters
-    // Register parameters are homed to the parameter save area without alignment gaps
+    // PPC64LE: Skip 8-byte alignment for register parameters that don't need it
+    // Float and float-only HFA parameters can be 4-byte aligned for tight packing
+    // Double and double HFA parameters still need 8-byte alignment
     bool skipAlignment = false;
-    if (lcl->lvIsParam && lcl->lvIsRegArg)
+    if (lcl->lvIsParam && lcl->lvIsRegArg && (size < 8 || (size % 4 == 0 && size % 8 != 0)))
     {
-        // All register parameters should be packed tightly in the parameter save area
+        // Skip alignment for:
+        // - Parameters smaller than 8 bytes (floats, small structs)
+        // - Parameters with size that's a multiple of 4 but not 8 (float-only HFAs: 4, 12, 20, 28 bytes)
         skipAlignment = true;
         printf("PPC64LE: Skipping 8-byte alignment for register parameter V%02u (size=%u, type=%s)\n",
                lclNum, size, varTypeName(lcl->TypeGet()));
