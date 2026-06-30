@@ -66,6 +66,18 @@ internal readonly struct Thread_1 : IThread
             threadStore.DeadCount);
     }
 
+    // The runtime Thread::m_State bitfield contains many bits that are internal to the runtime.
+    // Only the subset wrapped by the ThreadState contract enum is meaningful to the diagnostic
+    // stack, so filter the raw value to expose exactly those bits.
+    private const ThreadState WrappedThreadState =
+        ThreadState.SuspensionTrapped | ThreadState.GCSuspendRedirected | ThreadState.DebugSuspendPending |
+        ThreadState.Hijacked | ThreadState.Background | ThreadState.Unstarted |
+        ThreadState.CoInitialized | ThreadState.InSTA | ThreadState.InMTA |
+        ThreadState.Stopped | ThreadState.SyncSuspended | ThreadState.DebugWillSync |
+        ThreadState.ThreadPoolWorker | ThreadState.WaitSleepJoin | ThreadState.Detached;
+
+    private static ThreadState GetThreadState(uint state) => (ThreadState)(state & unchecked((uint)WrappedThreadState));
+
     ThreadData IThread.GetThreadData(TargetPointer threadPointer)
     {
         Data.Thread thread = _target.ProcessedData.GetOrAdd<Data.Thread>(threadPointer);
@@ -104,7 +116,7 @@ internal readonly struct Thread_1 : IThread
             threadPointer,
             thread.Id,
             thread.OSId,
-            (ThreadState)thread.State,
+            GetThreadState(thread.State),
             (thread.PreemptiveGCDisabled & 0x1) != 0,
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Pointer ?? TargetPointer.Null,
             thread.RuntimeThreadLocals?.AllocContext.GCAllocationContext.Limit ?? TargetPointer.Null,
