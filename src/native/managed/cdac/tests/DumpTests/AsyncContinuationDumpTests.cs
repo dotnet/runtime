@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -38,14 +37,15 @@ public class AsyncContinuationDumpTests : DumpTestBase
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
 
         // The ContinuationMethodTable global points to the Continuation base class itself.
-        // IsContinuation checks if a type's parent is the Continuation base class,
+        // IsContinuationWithoutMetadata checks if a type's parent is the Continuation base class
+        // and its EEClass matches the singleton continuation EEClass,
         // so the base class itself is NOT considered a continuation (its parent is Object).
         TargetPointer continuationMTGlobal = Target.ReadGlobalPointer("ContinuationMethodTable");
         TargetPointer continuationMT = Target.ReadPointer(continuationMTGlobal);
         Assert.NotEqual(TargetPointer.Null, continuationMT);
 
         TypeHandle handle = rts.GetTypeHandle(continuationMT);
-        Assert.False(rts.IsContinuation(handle));
+        Assert.False(rts.IsContinuationWithoutMetadata(handle));
     }
 
     [ConditionalTheory]
@@ -59,7 +59,7 @@ public class AsyncContinuationDumpTests : DumpTestBase
         TargetPointer objectMTGlobal = Target.ReadGlobalPointer("ObjectMethodTable");
         TargetPointer objectMT = Target.ReadPointer(objectMTGlobal);
         TypeHandle objectHandle = rts.GetTypeHandle(objectMT);
-        Assert.False(rts.IsContinuation(objectHandle));
+        Assert.False(rts.IsContinuationWithoutMetadata(objectHandle));
     }
 
     [ConditionalTheory]
@@ -69,55 +69,13 @@ public class AsyncContinuationDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
-        ILoader loader = Target.Contracts.Loader;
         IThread threadContract = Target.Contracts.Thread;
-        IEcmaMetadata ecmaMetadata = Target.Contracts.EcmaMetadata;
+        IManagedTypeSource mts = Target.Contracts.ManagedTypeSource;
 
-        // 1. Locate the AsyncDispatcherInfo type in System.Private.CoreLib.
-        TargetPointer systemAssembly = loader.GetSystemAssembly();
-        ModuleHandle coreLibModule = loader.GetModuleHandleFromAssemblyPtr(systemAssembly);
-        TypeHandle asyncDispatcherInfoHandle = rts.GetTypeByNameAndModule(
-            "AsyncDispatcherInfo",
-            "System.Runtime.CompilerServices",
-            coreLibModule);
-        Assert.True(asyncDispatcherInfoHandle.Address != 0,
-            "Could not find AsyncDispatcherInfo type in CoreLib");
+        const string AsyncDispatcherInfoFqn = "System.Runtime.CompilerServices.AsyncDispatcherInfo";
+        const string TCurrentFieldName = "t_current";
 
-        // 2. Find the t_current field's offset within the non-GC thread statics block.
-        //    Walk the FieldDescList to find the ThreadStatic field named "t_current".
-        System.Reflection.Metadata.MetadataReader? md = ecmaMetadata.GetMetadata(coreLibModule);
-        Assert.NotNull(md);
-
-        ushort numStaticFields = rts.GetNumStaticFields(asyncDispatcherInfoHandle);
-        ushort numThreadStaticFields = rts.GetNumThreadStaticFields(asyncDispatcherInfoHandle);
-        ushort numInstanceFields = rts.GetNumInstanceFields(asyncDispatcherInfoHandle);
-
-        // FieldDescList yields introduced instance fields followed by static fields.
-        // Thread-static fields are the tail subset of the statics; filter via IsFieldDescThreadStatic.
-        uint tCurrentOffset = 0;
-        bool foundField = false;
-
-        foreach (TargetPointer fieldDesc in rts.GetFieldDescList(asyncDispatcherInfoHandle))
-        {
-            if (!rts.IsFieldDescThreadStatic(fieldDesc))
-                continue;
-
-            uint memberDef = rts.GetFieldDescMemberDef(fieldDesc);
-            var fieldDefHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)memberDef);
-            var fieldDef = md.GetFieldDefinition(fieldDefHandle);
-            string fieldName = md.GetString(fieldDef.Name);
-
-            if (fieldName == "t_current")
-            {
-                tCurrentOffset = rts.GetFieldDescOffset(fieldDesc, fieldDef);
-                foundField = true;
-                break;
-            }
-        }
-
-        Assert.True(foundField, $"Could not find t_current field. numStatic={numStaticFields} numThreadStatic={numThreadStaticFields} numInstance={numInstanceFields}");
-
-        // 3. Walk all threads and read t_current at the discovered offset.
+        // Walk all threads and locate one whose t_current points at a continuation.
         ThreadStoreData threadStore = threadContract.GetThreadStoreData();
         TargetPointer threadPtr = threadStore.FirstThread;
 
@@ -126,13 +84,9 @@ public class AsyncContinuationDumpTests : DumpTestBase
         {
             ThreadData threadData = threadContract.GetThreadData(threadPtr);
 
-            TargetPointer nonGCBase = rts.GetNonGCThreadStaticsBasePointer(
-                asyncDispatcherInfoHandle, threadPtr);
-
-            if (nonGCBase != TargetPointer.Null)
+            if (mts.TryGetThreadStaticFieldAddress(AsyncDispatcherInfoFqn, TCurrentFieldName, threadPtr, out TargetPointer tCurrentSlot))
             {
-                TargetPointer tCurrent = Target.ReadPointer(nonGCBase + tCurrentOffset);
-
+                TargetPointer tCurrent = Target.ReadPointer(tCurrentSlot);
                 if (tCurrent != TargetPointer.Null)
                 {
                     // AsyncDispatcherInfo layout:
@@ -158,6 +112,6 @@ public class AsyncContinuationDumpTests : DumpTestBase
         TargetPointer objMT = Target.Contracts.Object.GetMethodTableAddress(
             new TargetPointer(continuationAddress));
         TypeHandle handle = rts.GetTypeHandle(objMT);
-        Assert.True(rts.IsContinuation(handle));
+        Assert.True(rts.IsContinuationWithoutMetadata(handle));
     }
 }

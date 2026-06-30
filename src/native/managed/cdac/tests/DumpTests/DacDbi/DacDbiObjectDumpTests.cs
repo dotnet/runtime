@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
-using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -97,6 +98,44 @@ public class DacDbiObjectDumpTests : DumpTestBase
         Assert.Equal((uint)sizeof(uint), layout.rankSize);
         Assert.Equal(rank, layout.numRanks);
         Assert.Equal((uint)Target.PointerSize, layout.rankOffset);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void IsValidObject_HandleObjects_AreValid(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+        IGC gc = Target.Contracts.GC;
+
+        int validCount = 0;
+        foreach (HandleData handleData in gc.GetHandles([HandleType.Strong]))
+        {
+            TargetPointer objectAddress = Target.ReadPointer(handleData.Handle);
+            if (objectAddress == TargetPointer.Null)
+                continue;
+
+            Interop.BOOL result;
+            int hr = dbi.IsValidObject(objectAddress.Value, &result);
+            Assert.Equal(System.HResults.S_OK, hr);
+            Assert.Equal(Interop.BOOL.TRUE, result);
+            validCount++;
+        }
+
+        Assert.True(validCount > 0, "Expected at least one valid object from strong handles.");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    public unsafe void IsValidObject_InvalidAddress_ReturnsFalse(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        DacDbiImpl dbi = CreateDacDbi();
+
+        Interop.BOOL result;
+        int hr = dbi.IsValidObject(0x12345678, &result);
+        Assert.Equal(System.HResults.S_OK, hr);
+        Assert.Equal(Interop.BOOL.FALSE, result);
     }
 
     [ConditionalTheory]
@@ -208,7 +247,7 @@ public class DacDbiObjectDumpTests : DumpTestBase
         Assert.Equal(cFields, fetched);
 
         TargetPointer[] fieldDescList = rts.GetFieldDescList(stringHandle).Take((int)cFields).ToArray();
-        uint firstFieldOffset = rts.IsObjRef(stringHandle) ? Target.GetTypeInfo(DataType.Object).Size!.Value : 0;
+        uint firstFieldOffset = rts.IsCorElementTypeObjRef(rts.GetInternalCorElementType(stringHandle)) ? Target.GetTypeInfo(DataType.Object).Size!.Value : 0;
 
         for (uint i = 0; i < cFields; i++)
         {

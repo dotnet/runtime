@@ -118,11 +118,7 @@ namespace System.Resources
         ResourceReader(Stream stream)
 #endif
         {
-#if RESOURCES_EXTENSIONS
             ArgumentNullException.ThrowIfNull(stream);
-#else
-            ArgumentNullException.ThrowIfNull(stream);
-#endif
 
             if (!stream.CanRead)
             {

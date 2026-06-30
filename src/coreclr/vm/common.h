@@ -315,6 +315,7 @@ namespace Loader
 #include "dynamicmethod.h"
 
 #include "gcstress.h"
+#include "cdacstress.h"
 
 HRESULT EnsureRtlFunctions();
 
@@ -374,7 +375,6 @@ extern DummyGlobalContract ___contract;
 #include "object.inl"
 #include "clsload.inl"
 #include "method.inl"
-#include "syncblk.inl"
 #include "threads.inl"
 #include "eehash.inl"
 #include "eventtrace.inl"

@@ -1487,6 +1487,14 @@ public:
                                               DWORD &dwRvaHint,
                                               _Out_writes_(cchFilePath) LPWSTR wszFilePath,
                                               DWORD cchFilePath);
+
+    static bool GetMetaDataFileInfoFromModule(Module *pModule,
+                                              DWORD &dwTimeStamp,
+                                              DWORD &dwSize,
+                                              DWORD &dwDataSize,
+                                              DWORD &dwRvaHint,
+                                              _Out_writes_(cchFilePath) LPWSTR wszFilePath,
+                                              const DWORD cchFilePath);
 };
 
 extern ClrDataAccess* g_dacImpl;
@@ -1765,8 +1773,6 @@ public:
     HRESULT ListNearObjects(CORDB_ADDRESS obj, CORDB_ADDRESS *pPrev, CORDB_ADDRESS *pContaining, CORDB_ADDRESS *pNext);
 
 private:
-    HRESULT MoveToNextObject();
-
     bool GetSize(TADDR tMT, size_t &size);
 
     inline static size_t Align(size_t size)
@@ -1795,11 +1801,11 @@ private:
         return count;
     }
 
-    HRESULT NextSegment();
+    HRESULT AdvanceToNextValidSegment();
     void CheckAllocAndSegmentRange();
 
 private:
-    int mThreadCount;
+    int mAllocContextCount;
     AllocInfo *mAllocInfo;
 
     size_t mHeapCount;

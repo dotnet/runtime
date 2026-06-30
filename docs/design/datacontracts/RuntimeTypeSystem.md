@@ -18,6 +18,8 @@ struct TypeHandle
     public bool IsNull => Address != 0;
 }
 
+readonly record struct TypedByRefInfo(TargetPointer Data, TargetPointer TypeHandle);
+
 internal enum CorElementType
 {
     // Values defined in ECMA-335 - II.23.1.16 Element types used in signatures
@@ -39,6 +41,11 @@ partial interface IRuntimeTypeSystem : IContract
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
     public virtual TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle);
+    // Returns the EEClass pointer for this MethodTable. For non-canonical MTs, follows the tagged pointer
+    // to the canonical MT and returns its EEClass.
+    public virtual TargetPointer GetClassPointer(TypeHandle typeHandle);
+    // True if this MethodTable is the canonical MethodTable (i.e., EEClassOrCanonMT points directly to the EEClass)
+    public virtual bool IsCanonicalMethodTable(TypeHandle typeHandle);
     public virtual TargetPointer GetParentMethodTable(TypeHandle typeHandle);
 
     public virtual TargetPointer GetMethodDescForSlot(TypeHandle typeHandle, ushort slot);
@@ -46,6 +53,11 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual TargetCodePointer GetSlot(TypeHandle typeHandle, uint slot);
 
     public virtual uint GetBaseSize(TypeHandle typeHandle);
+    // The number of bytes of instance fields stored in an object of this type on the GC heap.
+    // Equivalent to the native MethodTable::GetNumInstanceFieldBytes(), which is computed as
+    // GetBaseSize() minus the EEClass base-size padding (the trailing alignment/min-object-size
+    // bytes included in BaseSize but not occupied by actual instance fields).
+    public virtual uint GetNumInstanceFieldBytes(TypeHandle typeHandle);
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
     public virtual uint GetComponentSize(TypeHandle typeHandle);
 
@@ -54,14 +66,19 @@ partial interface IRuntimeTypeSystem : IContract
     // True if the MethodTable is the System.Object MethodTable (g_pObjectClass)
     public virtual bool IsObject(TypeHandle typeHandle);
     public virtual bool IsString(TypeHandle typeHandle);
-    // True if the type is a GC-collectable object reference.
-    public virtual bool IsObjRef(TypeHandle typeHandle);
+    // True if the CorElementType represents a GC-collectable object reference.
+    public virtual bool IsCorElementTypeObjRef(CorElementType elementType);
+    // Returns the address of one of the runtime's well-known singleton MethodTables, or
+    // TargetPointer.Null if the runtime has not yet initialized that global.
+    public virtual TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind);
     // True if the MethodTable represents a type that contains managed references
     public virtual bool ContainsGCPointers(TypeHandle typeHandle);
+    // True if the MethodTable represents a byref-like value type (Span<T>, ReadOnlySpan<T>, any ref struct).
+    public virtual bool IsByRefLike(TypeHandle typeHandle);
     // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
     public virtual bool RequiresAlign8(TypeHandle typeHandle);
     // True if the MethodTable represents a continuation type used by the async continuation feature
-    public virtual bool IsContinuation(TypeHandle typeHandle);
+    public virtual bool IsContinuationWithoutMetadata(TypeHandle typeHandle);
     // Returns the GC pointer runs for the method table as (offset, size) pairs. Each
     // run starts Offset bytes from the object pointer (`this`), where offset 0
     // is the method table pointer, and includes Size bytes of contiguous pointers
@@ -109,16 +126,19 @@ partial interface IRuntimeTypeSystem : IContract
     bool IsValueType(TypeHandle typeHandle);
     // return true if the TypeHandle represents an enum type.
     bool IsEnum(TypeHandle typeHandle);
+    // return true if the TypeHandle represents a delegate type (i.e., its parent is System.MulticastDelegate)
+    bool IsDelegate(TypeHandle typeHandle);
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     bool IsArray(TypeHandle typeHandle, out uint rank);
     TypeHandle GetTypeParam(TypeHandle typeHandle);
-    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments);
+    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, SignatureCallingConvention callConv = SignatureCallingConvention.Default);
     TypeHandle GetPrimitiveType(CorElementType typeCode);
     bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
-    bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
+    bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv);
     bool IsPointer(TypeHandle typeHandle);
     bool IsTypeDesc(TypeHandle typeHandle);
     TargetPointer GetLoaderModule(TypeHandle typeHandle);
+    TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef);
 
     #endregion TypeHandle inspection APIs
 }
@@ -164,8 +184,21 @@ public enum OptimizationTier
 public enum GenericContextLoc
 {
     None,
-    InstArg,
+    InstArgMethodDesc,
+    InstArgMethodTable,
     ThisPtr,
+}
+
+// Identifies one of the runtime's well-known singleton MethodTables, each addressable
+// via a dedicated global pointer (e.g. g_pObjectClass, g_pStringClass, g_pFreeObjectMethodTable).
+public enum WellKnownMethodTable
+{
+    Object,
+    String,
+    Array,
+    Exception,
+    Free,
+    Canon,
 }
 ```
 
@@ -212,7 +245,7 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual bool HasMDContextArg(MethodDescHandle);
 
     // Determine where a shared generic method obtains its generic context.
-    // Returns None if not shared, InstArg if via a hidden parameter, or ThisPtr if via the 'this' pointer's MethodTable.
+    // Returns None if not shared, InstArgMethodDesc if an MD via a hidden parameter, InstArgMethodTable if an MT via a hidden parameter or ThisPtr if via the 'this' pointer's MethodTable.
     public virtual GenericContextLoc GetGenericContextLoc(MethodDescHandle methodDesc);
 
     // Return true if the method uses the async calling convention.
@@ -259,6 +292,10 @@ partial interface IRuntimeTypeSystem : IContract
     // Return true if the method is a wrapper stub (unboxing or instantiating).
     public virtual bool IsWrapperStub(MethodDescHandle methodDesc);
 
+    // Return true if the method is an unboxing stub (a wrapper around a
+    // value-type instance method that unboxes `this` before forwarding).
+    public virtual bool IsUnboxingStub(MethodDescHandle methodDesc);
+
 }
 ```
 
@@ -268,8 +305,10 @@ TargetPointer GetMTOfEnclosingClass(TargetPointer fieldDescPointer);
 uint GetFieldDescMemberDef(TargetPointer fieldDescPointer);
 bool IsFieldDescThreadStatic(TargetPointer fieldDescPointer);
 bool IsFieldDescStatic(TargetPointer fieldDescPointer);
+bool IsFieldDescRVA(TargetPointer fieldDescPointer);
 uint GetFieldDescType(TargetPointer fieldDescPointer);
-uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition fieldDef);
+uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef);
+TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer);
 TargetPointer GetFieldDescStaticAddress(TargetPointer fieldDescPointer, bool unboxValueTypes = true);
 TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, TargetPointer thread, bool unboxValueTypes = true);
 ```
@@ -294,8 +333,11 @@ internal partial struct RuntimeTypeSystem_1
     internal enum WFLAGS_LOW : uint
     {
         GenericsMask = 0x00000030,
-        GenericsMask_NonGeneric = 0x00000000,   // no instantiation
-        GenericsMask_TypicalInstantiation = 0x00000030,   // the type instantiated at its formal parameters, e.g. List<T>
+        GenericsMask_NonGeneric = 0x00000000,            // no instantiation
+        GenericsMask_SharedInst = 0x00000020,            // shared instantiation, e.g. List<__Canon> or List<MyValueType<__Canon>>
+        GenericsMask_TypicalInstantiation = 0x00000030,  // the type instantiated at its formal parameters, e.g. List<T>
+
+        IsByRefLike = 0x00001000,                        // value type that may contain managed pointers (e.g. Span<T>, ReadOnlySpan<T>)
 
         StringArrayValues = GenericsMask_NonGeneric,
     }
@@ -370,6 +412,8 @@ internal partial struct RuntimeTypeSystem_1
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
         public bool IsTrackedReferenceWithFinalizer => GetFlag(WFLAGS_HIGH.IsTrackedReferenceWithFinalizer) != 0;
         public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
+        public bool IsSharedByGenericInstantiations => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_SharedInst);
+        public bool IsByRefLike => TestFlagWithMask(WFLAGS_LOW.IsByRefLike, WFLAGS_LOW.IsByRefLike);
     }
 
     [Flags]
@@ -451,8 +495,14 @@ The contract depends on the following globals
 | Global name | Meaning |
 | --- | --- |
 | `ContinuationMethodTable` | A pointer to the address of the base `Continuation` `MethodTable`, or null if no continuations have been created
+| `ContinuationSingletonEEClass` | A pointer to the address of the singleton `EEClass` shared by continuation subtypes that have no metadata of their own
 | `FreeObjectMethodTable` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
+| `MulticastDelegateMethodTable` | A pointer to the address of the `System.MulticastDelegate` `MethodTable` (`g_pMulticastDelegateClass`)
 | `ObjectMethodTable` | A pointer to the address of the `System.Object` `MethodTable` (`g_pObjectClass`)
+| `StringMethodTable` | A pointer to the address of the `System.String` `MethodTable` (`g_pStringClass`)
+| `ObjectArrayMethodTable` | A pointer to the address of the `object[]` `MethodTable` (`g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]`)
+| `ExceptionMethodTable` | A pointer to the address of the `System.Exception` `MethodTable` (`g_pExceptionClass`)
+| `CanonMethodTable` | A pointer to the address of the canonical `MethodTable` used for shared generics (`System.__Canon`)
 | `StaticsPointerMask` | For masking out a bit of DynamicStaticsInfo pointer fields
 | `ArrayBaseSize` | The base size of an array object; used to compute multidimensional array rank from `MethodTable::BaseSize`
 
@@ -495,6 +545,10 @@ The contract additionally depends on these data descriptors
 | `FnPtrTypeDesc` | `RetAndArgTypes` | Pointer to an array of TypeHandle addresses. This length of this is 1 more than `NumArgs` |
 | `GenericsDictInfo` | `NumDicts` | Number of instantiation dictionaries, including inherited ones, in this `GenericsDictInfo` |
 | `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
+| `LoaderAllocator` | `IsCollectible` | Non-zero if the `LoaderAllocator` is collectible. |
+| `LoaderAllocator` | `CreationNumber` | Monotonically-increasing creation number assigned to each collectible `LoaderAllocator`. |
+| `TypedByRef` | `Data` | Managed pointer (the byref) stored in a `System.TypedReference` value |
+| `TypedByRef` | `Type` | Raw `TypeHandle` pointer of the referent type |
 
 The value of the `NativeCodeVersionNode::OptimizationTier` field is one of:
 ```csharp
@@ -527,6 +581,7 @@ Contracts used:
     internal TargetPointer FreeObjectMethodTablePointer {get; }
     internal TargetPointer ObjectMethodTablePointer {get; }
     internal TargetPointer ContinuationMethodTablePointer {get; }
+    private TargetPointer _continuationSingletonEEClassPointer;
 
     public TypeHandle GetTypeHandle(TargetPointer typeHandlePointer)
     {
@@ -568,14 +623,16 @@ Contracts used:
 
     public uint GetBaseSize(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[TypeHandle.Address].Flags.BaseSize;
 
+    public uint GetNumInstanceFieldBytes(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[TypeHandle.Address].Flags.BaseSize - GetClassData(TypeHandle).BaseSizePadding;
+
     public uint GetComponentSize(TypeHandle TypeHandle) =>!typeHandle.IsMethodTable() ? (uint)0 :  GetComponentSize(_methodTables[TypeHandle.Address]);
 
-    private TargetPointer GetClassPointer(TypeHandle TypeHandle)
+    public TargetPointer GetClassPointer(TypeHandle TypeHandle)
     {
-        ... // if the MethodTable stores a pointer to the EEClass, return it
-            // otherwise the MethodTable stores a pointer to the canonical MethodTable
-            // in that case, return the canonical MethodTable's EEClass.
-            // Canonical MethodTables always store an EEClass pointer.
+        // Returns TargetPointer.Null if not a MethodTable.
+        // If EEClassOrCanonMT points directly to an EEClass, returns that pointer.
+        // If EEClassOrCanonMT is a tagged pointer to a canonical MethodTable, follows
+        // the canonical MT and returns its EEClass pointer.
     }
 
     private Data.EEClass GetClassData(TypeHandle TypeHandle)
@@ -590,15 +647,49 @@ Contracts used:
 
     public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
 
-    public bool IsObjRef(TypeHandle typeHandle) => // Returns true if GetSignatureCorElementType returns Class, Array, or SzArray.
+    public bool IsCorElementTypeObjRef(CorElementType elementType) =>
+        elementType is CorElementType.Class
+            or CorElementType.Object
+            or CorElementType.String
+            or CorElementType.Array
+            or CorElementType.SzArray;
+
+    public TargetPointer GetWellKnownMethodTable(WellKnownMethodTable kind)
+    {
+        // Map the well-known kind to the corresponding runtime global. Returns
+        // TargetPointer.Null if the global is missing or the pointer it stores has
+        // not yet been initialized (e.g. SOS load notifications can run before the
+        // runtime has populated the MT globals).
+        string globalName = kind switch
+        {
+            WellKnownMethodTable.Object => "ObjectMethodTable",
+            WellKnownMethodTable.String => "StringMethodTable",
+            WellKnownMethodTable.Array => "ObjectArrayMethodTable",
+            WellKnownMethodTable.Exception => "ExceptionMethodTable",
+            WellKnownMethodTable.Free => "FreeObjectMethodTable",
+            WellKnownMethodTable.Canon => "CanonMethodTable",
+        };
+        if (!target.TryReadGlobalPointer(globalName, out TargetPointer? ptrPtr))
+            return TargetPointer.Null;
+        if (!target.TryReadPointer(ptrPtr.Value, out TargetPointer value))
+            return TargetPointer.Null;
+        return value;
+    }
 
     public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
+    public bool IsByRefLike(TypeHandle typeHandle) => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].Flags.IsByRefLike;
+
     public bool RequiresAlign8(TypeHandle typeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[typeHandle.Address].Flags.RequiresAlign8;
 
-    public bool IsContinuation(TypeHandle typeHandle) => typeHandle.IsMethodTable()
+    public bool IsCanonicalMethodTable(TypeHandle typeHandle)
+        => typeHandle.IsMethodTable() && _methodTables[typeHandle.Address].IsCanonMT;
+
+    public bool IsContinuationWithoutMetadata(TypeHandle typeHandle) => typeHandle.IsMethodTable()
         && ContinuationMethodTablePointer != TargetPointer.Null
-        && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer;
+        && _methodTables[typeHandle.Address].ParentMethodTable == ContinuationMethodTablePointer
+        && _continuationSingletonEEClassPointer != TargetPointer.Null
+        && GetClassPointer(typeHandle) == _continuationSingletonEEClassPointer;
 
     IEnumerable<(uint Offset, uint Size)> GetGCDescSeries(TypeHandle typeHandle, uint numComponents = 0)
     {
@@ -905,6 +996,15 @@ Contracts used:
         return methodTable.Flags.GetFlag(WFLAGS_HIGH.Category_Mask) == WFLAGS_HIGH.Category_Primitive;
     }
 
+    public bool IsDelegate(TypeHandle typeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return false;
+
+        TargetPointer parentMT = GetParentMethodTable(typeHandle);
+        return parentMT == MulticastDelegateMethodTablePointer;
+    }
+
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
     public bool IsArray(TypeHandle typeHandle, out uint rank)
     {
@@ -991,6 +1091,22 @@ Contracts used:
 
     }
 
+    private bool FnPtrMatch(TypeHandle candidate, ImmutableArray<TypeHandle> retAndArgTypes, SignatureCallingConvention callConv)
+    {
+        if (!IsFunctionPointer(candidate, out ReadOnlySpan<TypeHandle> candidateRetAndArgs, out SignatureCallingConvention candidateCallConv))
+            return false;
+        if (candidateCallConv != callConv)
+            return false;
+        if (candidateRetAndArgs.Length != retAndArgTypes.Length)
+            return false;
+        for (int i = 0; i < candidateRetAndArgs.Length; i++)
+        {
+            if (candidateRetAndArgs[i].Address != retAndArgTypes[i].Address)
+                return false;
+        }
+        return true;
+    }
+
     private bool IsLoaded(TypeHandle typeHandle)
     {
         if (typeHandle.Address == TargetPointer.Null)
@@ -1006,12 +1122,17 @@ Contracts used:
         return (flags & (uint)MethodTableAuxiliaryFlags.IsNotFullyLoaded) == 0;
     }
 
-    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments)
+    TypeHandle GetConstructedType(TypeHandle typeHandle, CorElementType corElementType, int rank, ImmutableArray<TypeHandle> typeArguments, SignatureCallingConvention callConv)
     {
-        if (typeHandle.Address == TargetPointer.Null)
+        // For function pointers the type handle arg is unused - type information is provided in the type arguments.
+        if (corElementType != CorElementType.FnPtr && typeHandle.Address == TargetPointer.Null)
             return new TypeHandle(TargetPointer.Null);
         ILoader loaderContract = _target.Contracts.Loader;
-        TargetPointer loaderModule = GetLoaderModule(typeHandle);
+        // Function pointer types may not be owned by the loader module of any single type argument,
+        // so they need their own loader-module selection.
+        TargetPointer loaderModule = corElementType == CorElementType.FnPtr
+            ? FindFnPtrLoaderModule(typeArguments)
+            : GetLoaderModule(typeHandle);
         ModuleHandle moduleHandle = loaderContract.GetModuleHandleFromModulePtr(loaderModule);
         TypeHandle potentialMatch = new TypeHandle(TargetPointer.Null);
         foreach (TargetPointer ptr in loaderContract.GetAvailableTypeParams(moduleHandle))
@@ -1021,17 +1142,31 @@ Contracts used:
             {
                 if (GenericInstantiationMatch(typeHandle, potentialMatch, typeArguments) && IsLoaded(potentialMatch))
                 {
-                    _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
+                    return potentialMatch;
+                }
+            }
+            else if (corElementType == CorElementType.FnPtr)
+            {
+                if (FnPtrMatch(potentialMatch, typeArguments, callConv) && IsLoaded(potentialMatch))
+                {
                     return potentialMatch;
                 }
             }
             else if (ArrayPtrMatch(typeHandle, corElementType, rank, potentialMatch) && IsLoaded(potentialMatch))
             {
-                _ = _typeHandles.TryAdd(new TypeKey(typeHandle, corElementType, rank, typeArguments), potentialMatch);
                 return potentialMatch;
             }
         }
         return new TypeHandle(TargetPointer.Null);
+    }
+
+    // Mirrors `ClassLoader::ComputeLoaderModuleForFunctionPointer`.
+    private TargetPointer FindFnPtrLoaderModule(ImmutableArray<TypeHandle> retAndArgTypes)
+    {
+        // The loader module of a
+        // function pointer type is the loader module of the collectible ret/arg type with the
+        // largest `LoaderAllocator::CreationNumber`, or CoreLib's loader module if none of the
+        // ret/arg types are collectible.
     }
 
     public TypeHandle GetPrimitiveType(CorElementType typeCode)
@@ -1064,7 +1199,7 @@ Contracts used:
         return false;
     }
 
-    public bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv)
+    public bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out SignatureCallingConvention callConv)
     {
         retAndArgTypes = default;
         callConv = default;
@@ -1123,11 +1258,19 @@ Contracts used:
         }
         return target.ReadPointer(mt.AuxiliaryData + /* MethodTableAuxiliaryData::LoaderModule offset */);
     }
+
+    public TypedByRefInfo GetTypedByRefInfo(TargetPointer typedByRef)
+    {
+        // Read both fields of a TypedByRef using the TypedByRef data descriptor.
+        TargetPointer data = target.ReadPointer(typedByRef + /* TypedByRef::Data offset */);
+        TargetPointer typeHandle = target.ReadPointer(typedByRef + /* TypedByRef::Type offset */);
+        return new TypedByRefInfo(data, typeHandle);
+    }
 ```
 
 ### MethodDesc
 
-The version 1 `MethodDesc` APIs depend on the following globals:
+The `MethodDesc` APIs of RuntimeTypeSystem version 1 depend on the following globals:
 
 | Global name | Meaning |
 | --- | --- |
@@ -1679,17 +1822,16 @@ Determining where a shared generic method obtains its generic context:
         MethodDesc md = _methodDescs[methodDescHandle.Address];
         if (!IsSharedByGenericInstantiations(md))
             return GenericContextLoc.None;
-        else if (RequiresInstArg(md))
-            return GenericContextLoc.InstArg;
+        else if (HasMethodInstantiation(md))
+            return GenericContextLoc.InstArgMethodDesc;
+        else if (RequiresInstArgMethodTable(md))
+            return GenericContextLoc.InstArgMethodTable;
         else
             return GenericContextLoc.ThisPtr;
     }
 
-    private bool RequiresInstArg(MethodDesc md)
+    private bool RequiresInstArgMethodTable(MethodDesc md)
     {
-        if (HasMethodInstantiation(md))
-            return true;
-
         if (md.IsStatic)
             return true;
 
@@ -1714,7 +1856,7 @@ Determining where a shared generic method obtains its generic context:
                 return true;
         }
         MethodTable mt = _methodTables[md.MethodTable];
-        return mt.IsCanonMT && mt.Flags.HasInstantiation;
+        return mt.Flags.IsSharedByGenericInstantiations;
     }
 ```
 
@@ -1740,6 +1882,17 @@ Determining if a method is a wrapper stub (unboxing or instantiating):
         MethodDesc md = _methodDescs[methodDescHandle.Address];
         return md.IsUnboxingStub || IsInstantiatingStub(md);
     }
+```
+
+Determining if a method is an unboxing stub. An unboxing stub is a wrapper
+around a value-type instance method whose `this` is a boxed object: the
+stub unboxes `this` and forwards to the real instance method. The bit is
+stored in `MethodDescFlags3` and surfaces as the `IsUnboxingStub` flag on
+`MethodDesc`:
+
+```csharp
+    public bool IsUnboxingStub(MethodDescHandle methodDescHandle)
+        => _methodDescs[methodDescHandle.Address].IsUnboxingStub;
 ```
 
 Extracting a pointer to the `MethodDescVersioningState` data for a given method
@@ -2011,7 +2164,14 @@ Getting a MethodDesc for a certain slot in a MethodTable
 
 ### FieldDesc
 
-The version 1 FieldDesc APIs depend on the following data descriptors:
+The FieldDesc APIs of RuntimeTypeSystem version 1 depend on the following globals:
+
+| Global name | Meaning |
+| --- | --- |
+| `FieldOffsetBigRVA` | Sentinel value of `FieldDesc::DWord2` indicating the field is an RVA static whose offset is too large to encode in the bitfield; the real offset must be read from the field's metadata (`FieldDefinition.GetRelativeVirtualAddress`). |
+| `FieldOffsetNewEnc` | Sentinel value of `FieldDesc`'s offset bitfield indicating the field was added via Edit-and-Continue and does not yet have backing storage. |
+
+The FieldDesc APIs of RuntimeTypeSystem version 1 depend on the following data descriptors:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | `FieldDesc` | `MTOfEnclosingClass` | Pointer to method table of enclosing class |
@@ -2024,6 +2184,7 @@ internal enum FieldDescFlags1 : uint
     TokenMask = 0xffffff,
     IsStatic = 0x1000000,
     IsThreadStatic = 0x2000000,
+    IsRVA = 0x4000000,
 }
 
 internal enum FieldDescFlags2 : uint
@@ -2055,18 +2216,26 @@ bool IsFieldDescStatic(TargetPointer fieldDescPointer)
     return (DWord1 & (uint)FieldDescFlags1.IsStatic) != 0;
 }
 
+bool IsFieldDescRVA(TargetPointer fieldDescPointer)
+{
+    uint DWord1 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord1 offset */);
+    return (DWord1 & (uint)FieldDescFlags1.IsRVA) != 0;
+}
+
 uint GetFieldDescType(TargetPointer fieldDescPointer)
 {
     uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
     return (DWord2 & (uint)FieldDescFlags2.TypeMask) >> 27;
 }
 
-uint GetFieldDescOffset(TargetPointer fieldDescPointer)
+uint GetFieldDescOffset(TargetPointer fieldDescPointer, FieldDefinition? fieldDef)
 {
     uint DWord2 = target.Read<uint>(fieldDescPointer + /* FieldDesc::DWord2 offset */);
     if (DWord2 == _target.ReadGlobal<uint>("FieldOffsetBigRVA"))
     {
-        return (uint)fieldDef.GetRelativeVirtualAddress();
+        if (fieldDef is null)
+            throw new ArgumentNullException(nameof(fieldDef), "Field definition is required for big RVA fields");
+        return (uint)fieldDef.Value.GetRelativeVirtualAddress();
     }
     return DWord2 & (uint)FieldDescFlags2.OffsetMask;
 }
@@ -2085,6 +2254,15 @@ TargetPointer GetFieldDescThreadStaticAddress(TargetPointer fieldDescPointer, Ta
     // Like GetFieldDescStaticAddress, but resolves thread-local base pointers instead.
     // Uses GetGCThreadStaticsBasePointer / GetNonGCThreadStaticsBasePointer.
     // The unboxValueTypes parameter behaves the same as in GetFieldDescStaticAddress.
+}
+
+TypeHandle GetFieldDescApproxTypeHandle(TargetPointer fieldDescPointer)
+{
+    // Resolve enclosing MT -> Module -> MetadataReader, decode the field's
+    // signature using the SignatureDecoder contract with a SignatureTypeProvider
+    // bound to the enclosing class as generic context, and return the resulting
+    // TypeHandle. Returns TypeHandle.Null if any link in the chain is unavailable
+    // (e.g. uncached constructed instantiation).
 }
 ```
 

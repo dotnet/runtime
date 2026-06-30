@@ -914,6 +914,14 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
             break;
 
+        case GT_BFX:
+        {
+            srcCount = BuildOperandUses(tree->gtGetOp1());
+            assert(dstCount == 1);
+            BuildDef(tree);
+            break;
+        }
+
         case GT_RETURNTRAP:
             // this just turns into a compare of its child with an int
             // + a conditional call
@@ -965,6 +973,32 @@ int LinearScan::BuildNode(GenTree* tree)
                 {
                     assert(varTypeIsFloating(tree->gtGetOp1()));
                     assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
+
+                    BuildUse(tree->gtGetOp1());
+                    srcCount = 1;
+                    assert(dstCount == 1);
+                    BuildDef(tree);
+                    break;
+                }
+
+                case NI_PRIMITIVE_PopCount:
+                {
+                    assert(varTypeIsIntegral(tree->gtGetOp1()));
+
+                    // We need a SIMD register to execute popcnt
+                    buildInternalFloatRegisterDefForNode(tree, allSIMDRegs());
+
+                    BuildUse(tree->gtGetOp1());
+                    buildInternalRegisterUses();
+                    srcCount = 1;
+                    assert(dstCount == 1);
+                    BuildDef(tree);
+                    break;
+                }
+
+                case NI_PRIMITIVE_TrailingZeroCount:
+                {
+                    assert(varTypeIsIntegral(tree->gtGetOp1()));
 
                     BuildUse(tree->gtGetOp1());
                     srcCount = 1;
@@ -1175,7 +1209,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 // (if it's set, Lower will emit a STORE_BLK for this LCLHEAP), but we still need to
                 // do stack-probing for large allocations.
                 //
-                size_t sizeVal = size->AsIntCon()->gtIconVal;
+                size_t sizeVal = size->AsIntCon()->IconValue();
                 if (AlignUp(sizeVal, STACK_ALIGN) >= m_compiler->eeGetPageSize())
                 {
                     // We need two registers: regCnt and RegTmp
@@ -1656,6 +1690,7 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                 case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
                 case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
                 case NI_AdvSimd_Arm64_DuplicateSelectedScalarToVector128:
+                case NI_Sve_ShiftRightArithmeticForDivide:
                     needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
                     break;
 
@@ -1663,6 +1698,8 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                 case NI_AdvSimd_ExtractVector128:
                 case NI_AdvSimd_StoreSelectedScalar:
                 case NI_AdvSimd_Arm64_StoreSelectedScalar:
+                case NI_Sha3_XorRotateRight:
+                case NI_Sve_AddRotateComplex:
                 case NI_Sve_Prefetch16Bit:
                 case NI_Sve_Prefetch32Bit:
                 case NI_Sve_Prefetch64Bit:
@@ -1746,14 +1783,6 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                     needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
                     // Ensure that internal does not collide with destination.
                     setInternalRegsDelayFree = true;
-                    break;
-
-                case NI_Sve_ShiftRightArithmeticForDivide:
-                    needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
-                    break;
-
-                case NI_Sve_AddRotateComplex:
-                    needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                     break;
 
                 case NI_Sve_MultiplyAddRotateComplex:
